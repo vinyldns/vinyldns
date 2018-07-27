@@ -27,6 +27,8 @@ Integration is simple with first-class language support including:
 * python
 * go-lang
 
+VinylDNS is currently used in Production managing millions of DNS records.
+
 ## Table of Contents
 - [Roadmap](#roadmap)
 - [Code of Conduct](#code-of-conduct)
