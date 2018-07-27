@@ -1,0 +1,192 @@
+@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks)
+
+@content = {
+<!-- PAGE CONTENT -->
+<div class="right_col" role="main">
+
+    <!-- BREADCRUMB -->
+    <ul class="breadcrumb">
+      <li><a href="/">Home</a></li>
+      <li class="active">Groups</li>
+    </ul>
+    <!-- END BREADCRUMB -->
+
+    <!-- PAGE TITLE -->
+    <div class="page-title"><h3><span class="fa fa-group"></span> Groups</h3></div>
+    <!-- END PAGE TITLE -->
+
+    <!-- PAGE CONTENT WRAPPER -->
+    <div class="page-content-wrap">
+        <div class="alert-wrapper">
+            <div ng-repeat="alert in alerts">
+                <notification ng-model="alert"></notification>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+
+                <!-- SIMPLE DATATABLE -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <div class="btn-group">
+                            <button id="open-group-modal-button" class="btn btn-default" ng-click="openModal($event);">
+                                <span class="fa fa-plus"></span> New Group
+                            </button>
+                            <button id="refresh-group-button" class="btn btn-default" ng-click="refresh();">
+                                <span class="fa fa-refresh"></span> Refresh
+                            </button>
+                        </div>
+                          <!-- TODO unhide after MVP
+                          <div class="pull-right" style="width: 200px;">
+                            <div class="input-group">
+                              <div class="input-group-addon"><span class="fa fa-search"></span></div>
+                              <input type="text" class="form-control" placeholder="Group Name"/>
+                            </div>
+                          </div> -->
+                    </div>
+                    <div id="group-list" class="panel-body">
+                        <p ng-if="!groupsLoaded">Loading groups...</p>
+                        <p ng-if="!groups.items.length && groupsLoaded">You don't have any groups yet.</p>
+                        <table class="table datatable_simple" ng-if="groups.items.length">
+                            <thead>
+                                <tr>
+                                    <th>Group Name</th>
+                                    <th>Email</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="group in groups.items | orderBy:'+name'">
+                                    <td>{{group.name}}</td>
+                                    <td>{{group.email}}</td>
+                                    <td>{{group.description}}</td>
+                                    <td>
+                                        <div class="table-form-group">
+                                            <a class="btn btn-info btn-rounded" ng-href="/groups/{{group.id}}">
+                                            View</a>
+                                            <button id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
+                                            Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- END SIMPLE DATATABLE -->
+
+            </div>
+        </div>
+    </div>
+    <!-- END PAGE CONTENT WRAPPER -->
+
+</div>
+<!-- END PAGE CONTENT -->
+
+<!-- CREATE GROUP MODAL -->
+<div class="modal" id="modal_new_group" tabindex="-1" role="dialog" aria-labelledby="largeModalHead" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form class="form-horizontal" name="createGroupForm" ng-submit="createGroupForm.$valid &&
+        createGroup(currentGroup.name, currentGroup.email, currentGroup.description);"
+        novalidate>
+            <div class="modal-content" id="group-form">
+                <div class="modal-header">
+                    <button type="button" class="close" ng-click="closeModal($evt);"><span aria-hidden="true">&times;</span><span class="sr-only">
+                      Close</span></button>
+                    <h4 class="modal-title" id="largeModalHead">Create a Group</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="panel-header">
+                        <p>
+                        Groups simplify setup and access to resources in Vinyl.  A Group consists of one or more members,
+                        who are registered users of Vinyl.  Any member in the group can be designated as a Group Admin, which
+                        allows that member full administrative access to the group, including deleting the group.
+                        </p>
+                    </div>
+                    <div class="panel-body">
+                        <modal-element label="Name" invalid-when="createGroupForm.$submitted && createGroupForm.name.$invalid">
+                            <input id="group-name"
+                                name="name"
+                                class="form-control"
+                                ng-model="currentGroup.name"
+                                type="text"
+                                required>
+                            </input>
+                            <span class="help-block">
+                                This should be a single word name used for the groups.  Use hyphens if needed, no spaces.
+                            </span>
+                        </modal-element>
+                        <modal-element label="Email" invalid-when="createGroupForm.$submitted && createGroupForm.email.$invalid">
+                            <input id="group-email"
+                                name="email"
+                                class="form-control"
+                                ng-model="currentGroup.email"
+                                type="text"
+                                required>
+                            </input>
+                            <span class="help-block">The email distribution list for the group.</span>
+                        </modal-element>
+                        <modal-element label="Description">
+                            <input id="group-description"
+                                name="description"
+                                class="form-control"
+                                ng-model="currentGroup.description"
+                                type="text">
+                            </input>
+                            <span class="help-block">
+                              A short description of the group, if more info is needed other than the name.
+                            </span>
+                        </modal-element>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="clear-group-button" type="button" class="btn btn-default pull-left" ng-click="reset()">Clear Form</button>
+                    <button id="create-group-button" class="btn btn-primary pull-right">Create</button>
+                    <button type="button" class="btn btn-default" ng-click="closeModal($evt);">Close</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- END CREATE GROUP MODAL -->
+
+<!-- DELETE GROUP MODAL -->
+<form name="deleteGroupForm" ng-submit="deleteGroup()" role="form" class="form-horizontal" novalidate>
+    <modal modal-id="delete_group_modal" modal-title="Delete a Group">
+        <modal-body>
+            <modal-element label="Group Name">
+                <div class="form-control-static">
+                    <span ng-bind="currentGroup.name" name="nameval" />
+                </div>
+            </modal-element>
+            <modal-element label="Email">
+                <div class="form-control-static">
+                    <span ng-bind="currentGroup.email" name="emailval" />
+                </div>
+            </modal-element>
+            <modal-element label="Description">
+                <div class="form-control-static">
+                    <span ng-bind="currentGroup.description" name="emailval" />
+                </div>
+            </modal-element>
+        </modal-body>
+        <modal-footer>
+            <span>
+                <span class="text-danger">Are you sure you want to delete this group?&nbsp;</span>
+                <button id="delete-group-confirm" class="btn btn-danger pull-right noty_message" ng-click="submitDeleteGroup()">Yes</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="cancel()">No</button>
+            </span>
+        </modal-footer>
+    </modal>
+</form>
+<!-- END DELETE GROUP MODAL -->
+}
+
+@plugins = {
+    <script type='text/javascript' src='/public/gentelella/vendors/iCheck/icheck.min.js'></script>
+    <script type="text/javascript" src="/public/gentelella/vendors/malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.js"></script>
+    <script type="text/javascript" src="/public/gentelella/vendors/jQuery-Smart-Wizard/js/jquery.smartWizard.js"></script>
+}
+
+@main(rootAccountName)("GroupsController")("Groups")(content)(plugins)

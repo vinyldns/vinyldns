@@ -1,0 +1,135 @@
+
+@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks)
+
+@content = {
+<!-- PAGE CONTENT -->
+<div class="right_col" role="main">
+
+    <!-- BREADCRUMB -->
+    <ul class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li><a href="/batchchanges">Batch Changes</a></li>
+        <li class="active">{{batch.id}}</li>
+    </ul>
+    <!-- END BREADCRUMB -->
+
+    <!-- PAGE TITLE -->
+    <div class="page-title">
+        <h3>
+            <span class="fa fa-list-ol"></span> Batch Change
+            <span ng-if="batch.status =='Complete'" class="label label-success">{{batch.status}}</span>
+            <span ng-if="batch.status =='PartialFailure'" class="label label-warning">Partial Failure</span>
+            <span ng-if="batch.status =='Failed'" class="label label-danger">{{batch.status}}</span>
+        </h3>
+    </div>
+    <!-- END PAGE TITLE -->
+
+
+    <!-- PAGE CONTENT WRAPPER -->
+    <div class="page-content-wrap">
+        <div class="alert-wrapper">
+            <div ng-repeat="alert in alerts">
+                <notification ng-model="alert"></notification>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <h5>Created: {{batch.createdTimestamp}}</h5>
+                <h5 ng-if="batch.comments">Description: {{batch.comments}}</h5>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-md-12">
+                <!-- SIMPLE DATABLE -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Changes</h3>
+                    </div>
+                    <div class="panel-body">
+                        <!-- SEARCH BOX -->
+                        <div class="clearfix">
+                            <button class="btn btn-default" ng-click="refresh()"><span class="fa fa-refresh"></span> Refresh</button>
+                            <form class="input-group pull-right col-md-3">
+                                <div class="input-group">
+                                    <span class="input-group-btn">
+                                        <button id="batch-change-search-button" type="submit" class="btn btn-primary btn-left-round">
+                                            <span class="fa fa-search"></span>
+                                        </button>
+                                    </span>
+                                    <input ng-model="query" type="text" class="form-control"/>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- END SEARCH BOX -->
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Change Type</th>
+                                <th>Input Name</th>
+                                <th>Recordset Name</th>
+                                <th>Zone Name</th>
+                                <th>Record Type</th>
+                                <th>Record Data</th>
+                                <th>TTL</th>
+                                <th>Status</th>
+                                <th class="col-md-2">Additional Info</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr ng-repeat="change in batch.changes|filter:query">
+                                <td ng-bind="change.changeType"></td>
+                                <td>{{change.inputName}}</td>
+                                <td>{{change.recordName}}</td>
+                                <td>{{change.zoneName}}</td>
+                                <td>{{change.type}}</td>
+                                <!--record data name based on record type-->
+                                    <td ng-if="change.type=='A'||change.type=='AAAA'">
+                                        <ul>
+                                            <li>{{change.record.address}}</li>
+                                        </ul>
+                                    </td>
+                                    <td ng-if="change.type=='CNAME'">
+                                        <ul>
+                                            <li>{{change.record.cname}}</li>
+                                        </ul>
+                                    </td>
+                                    <td ng-if="change.type=='PTR'">
+                                        <ul>
+                                            <li>{{change.record.ptrdname}}</li>
+                                        </ul>
+                                    </td>
+                                    <td ng-if="change.type=='TXT'">
+                                        <ul>
+                                            <li>{{change.record.text}}</li>
+                                        </ul>
+                                    </td>
+                                    <td ng-if="change.type=='MX'">
+                                        <ul>
+                                            <li>Preference: {{change.record.preference}}</li>
+                                            <li>Exchange: {{change.record.exchange}}</li>
+                                        </ul>
+                                    </td>
+                                <!--end record data name based on record type-->
+                                <td>{{change.ttl}}</td>
+                                <td>
+                                    <span ng-if="change.status =='Complete'" class="label label-success">{{change.status}}</span>
+                                    <span ng-if="change.status =='Pending'" class="label label-warning">{{change.status}}</span>
+                                    <span ng-if="change.status =='Failed'" class="label label-danger">{{change.status}}</span>
+
+                                </td>
+                                <td>{{change.systemMessage}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@plugins = {}
+
+@main(rootAccountName)("BatchChangeDetailController")("Batch Change")(content)(plugins)

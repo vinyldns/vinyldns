@@ -1,0 +1,7 @@
+{
+  "groups": [ "vinyl.", "Example", "GroupName" ],
+  "groupName": "vinyl.",
+  "startFrom": 1,
+  "nextId": 5,
+  "maxItems": 100
+}

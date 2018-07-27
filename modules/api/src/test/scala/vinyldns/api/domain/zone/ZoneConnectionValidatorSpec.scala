@@ -1,0 +1,194 @@
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package vinyldns.api.domain.zone
+
+import org.joda.time.DateTime
+import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.typelevel.scalatest.DisjunctionMatchers
+import vinyldns.api.Interfaces._
+import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
+import vinyldns.api.domain.record._
+import vinyldns.api.{AkkaTestJawn, ResultHelpers, VinylDNSTestData}
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+class ZoneConnectionValidatorSpec
+    extends AkkaTestJawn
+    with WordSpecLike
+    with Matchers
+    with MockitoSugar
+    with VinylDNSTestData
+    with BeforeAndAfterEach
+    with ResultHelpers
+    with DisjunctionMatchers {
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  private val mockDnsConnection = mock[DnsConnection]
+  private val mockZoneView = mock[ZoneView]
+
+  override protected def beforeEach(): Unit =
+    reset(mockDnsConnection, mockZoneView)
+
+  private def testDnsConnection(conn: ZoneConnection) =
+    if (conn.keyName == "error.") {
+      throw new RuntimeException("main connection failure!")
+    } else {
+      mockDnsConnection
+    }
+
+  private def testLoadDns(zone: Zone) = zone.name match {
+    case "error." => Future.failed(new RuntimeException("transfer connection failure!"))
+    case "timeout." =>
+      Future {
+        Thread.sleep(100)
+        mockZoneView
+      }
+    case _ =>
+      Future.successful(mockZoneView)
+  }
+
+  private def testDefaultConnection = mock[ZoneConnection]
+
+  private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
+    ZoneView(
+      zone = zone,
+      recordSets = recordSets.toList
+    )
+
+  class TestConnectionValidator()
+      extends ZoneConnectionValidator(testDefaultConnection, system.scheduler) {
+    override val futureTimeout: FiniteDuration = 10.milliseconds
+    override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
+    override def loadDns(zone: Zone): Future[ZoneView] = testLoadDns(zone)
+  }
+
+  private val underTest = new TestConnectionValidator()
+
+  private val testZone = Zone(
+    "vinyldns.",
+    "test@test.com",
+    connection =
+      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
+    transferConnection =
+      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+  )
+
+  private val successSoa = RecordSet(
+    ptrIp4.name,
+    "vinyldns.",
+    RecordType.SOA,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(SOAData("something", "other", 1, 2, 3, 5, 6)))
+
+  private val mockRecordSet = mock[RecordSet]
+
+  "ConnectionValidator" should {
+    "respond with a success if the connection is resolved" in {
+      doReturn(testZone).when(mockZoneView).zone
+      doReturn(generateZoneView(testZone, successSoa).recordSetsMap)
+        .when(mockZoneView)
+        .recordSetsMap
+      doReturn(List(successSoa).toResult)
+        .when(mockDnsConnection)
+        .resolve(testZone.name, testZone.name, RecordType.SOA)
+
+      val result = awaitResultOf(underTest.validateZoneConnections(testZone).run)
+      result should be(right)
+    }
+
+    "respond with a failure if no records are returned from the backend" in {
+      doReturn(testZone).when(mockZoneView).zone
+      doReturn(generateZoneView(testZone).recordSetsMap).when(mockZoneView).recordSetsMap
+      doReturn(List.empty[RecordSet].toResult)
+        .when(mockDnsConnection)
+        .resolve(testZone.name, testZone.name, RecordType.SOA)
+
+      val result = leftResultOf(underTest.validateZoneConnections(testZone).run)
+      result shouldBe a[ConnectionFailed]
+    }
+
+    "respond with a failure if any failure is returned from the backend" in {
+      doReturn(result(TypeNotFound("fail")))
+        .when(mockDnsConnection)
+        .resolve(testZone.name, testZone.name, RecordType.SOA)
+
+      val error = leftResultOf(underTest.validateZoneConnections(testZone).run)
+      error shouldBe a[ConnectionFailed]
+    }
+
+    "respond with a failure if connection cant be made" in {
+      val badZone = Zone(
+        "vinyldns.",
+        "test@test.com",
+        connection =
+          Some(ZoneConnection("error.", "error.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
+        transferConnection =
+          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+      )
+
+      val result = leftResultOf(underTest.validateZoneConnections(badZone).run)
+      result shouldBe a[ConnectionFailed]
+      result.getMessage should include("main connection failure!")
+    }
+
+    "respond with a failure if loadDns throws an error" in {
+      val badZone = Zone(
+        "error.",
+        "test@test.com",
+        connection =
+          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
+        transferConnection =
+          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+      )
+
+      doReturn(List(mockRecordSet).toResult)
+        .when(mockDnsConnection)
+        .resolve(badZone.name, badZone.name, RecordType.SOA)
+
+      val result = leftResultOf(underTest.validateZoneConnections(badZone).run)
+      result shouldBe a[ConnectionFailed]
+      result.getMessage should include("transfer connection failure!")
+    }
+
+    "respond with a failure if loadDns times out" in {
+      val badZone = Zone(
+        "timeout.",
+        "test@test.com",
+        connection =
+          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
+        transferConnection =
+          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+      )
+
+      doReturn(List(mockRecordSet).toResult)
+        .when(mockDnsConnection)
+        .resolve(badZone.name, badZone.name, RecordType.SOA)
+
+      val result = leftResultOf(underTest.validateZoneConnections(badZone).run)
+      result shouldBe a[ConnectionFailed]
+      result.getMessage should include("Transfer connection invalid")
+    }
+  }
+}

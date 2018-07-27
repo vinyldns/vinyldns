@@ -1,0 +1,347 @@
+<form name="addRecordForm" role="form" class="form-horizontal" novalidate>
+    <modal modal-id="record_modal" modal-title="{{ recordModal.title }}">
+        <modal-body>
+            <modal-element label="Record Type">
+                <select name="recordType" class="form-control"
+                        ng-model="currentRecord.type"
+                        ng-disabled="recordModal.basics.readOnly"
+                        ng-class="recordModal.basics.class"
+                        ng-options="type for type in recordTypes">
+                </select>
+            </modal-element>
+
+            <modal-element label="Record Name" invalid-when="addRecordForm.$submitted && addRecordForm.recordName.$invalid">
+                <input id="create-record-name-text" type="text" name="recordName" class="form-control"
+                       ng-model="currentRecord.name"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.details.readOnly"
+                       placeholder="{{currentRecord.type != 'PTR' ? 'e.g. jenkins' : 'e.g. 10.02 (IPv4), 1.0.0.2 (IPv6)'}}"
+                       required>
+                <modal-invalid>
+                    Record name is required
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element label="TTL (Seconds)" invalid-when="addRecordForm.$submitted && addRecordForm.recordTtl.$invalid">
+                <input id="create-record-TTL-text" type="text"
+                       placeholder="i.e. 300"
+                       name="recordTtl"
+                       class="form-control"
+                       ng-model="currentRecord.ttl"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.details.readOnly"
+                       required
+                       validate-ttl/>
+                <modal-invalid>
+                    Please enter a minimum value of 30
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'A'"
+                           label="IP Addresses (one per line)"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.recordData.$invalid">
+                <textarea id="create-record-IPs-text"
+                          name="recordData"
+                          ng-model="currentRecord.aRecordData"
+                          rows="5"
+                          class="form-control"
+                          ng-list="&#10;"
+                          ng-trim="false"
+                          ng-class="recordModal.details.class"
+                          ng-readonly="recordModal.details.readOnly"
+                          required>
+                </textarea>
+                <modal-invalid>
+                    At least one IPv4 Address is required
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'PTR'"
+                           label="FQDN"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.ptrRecordData.$invalid">
+                <input name="ptrRecordData"
+                       class="form-control"
+                       ng-model="currentRecord.ptrRecordData"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.details.readOnly"
+                       required>
+                </input>
+                <modal-invalid>
+                    A fully qualified domain name is required
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'CNAME'"
+                           label="CNAME Target FQDN"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.cnameRecordData.$invalid">
+                <input name="cnameRecordData"
+                       class="form-control"
+                       ng-model="currentRecord.cnameRecordData"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.details.readOnly"
+                       required>
+                </input>
+                <modal-invalid>
+                    Must specify target FQDN for CNAME
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'MX'" label="Record Data">
+                <table class="table table-condensed">
+                    <tr>
+                        <td class="table-col-20"><label class="control-label">Preference</label></td>
+                        <td><label class="control-label">Exchange</label></td>
+                        <td></td>
+                    </tr>
+                    <tr ng-repeat="item in currentRecord.mxItems">
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['preference_' + ($index)].$invalid}">
+                            <input name="preference_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.preference"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['exchange_' + ($index)].$invalid}">
+                            <input name="exchange_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.exchange"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger fa fa-times"
+                                    ng-disabled="disabledStates.indexOf(recordModal.action) > -1"
+                                    ng-click="deleteMx($index)">
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'MX'">
+                <button type="button" class="btn btn-success"
+                        ng-disabled="disabledStates.indexOf(recordModal.action) > -1" ng-click="addNewMx()">
+                    Add Row
+                </button>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'AAAA'"
+                           label="IPv6 Addresses (one per line)"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.aaaaRecordData.$invalid">
+                <textarea name="aaaaRecordData"
+                          ng-model="currentRecord.aaaaRecordData"
+                          rows="5"
+                          class="form-control"
+                          ng-list="&#10;"
+                          ng-trim="false"
+                          ng-class="recordModal.details.class"
+                          ng-readonly="recordModal.details.readOnly"
+                          required>
+                </textarea>
+                <modal-invalid>
+                    At least one IPv6 Address is required
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'TXT'"
+                           label="Record Text"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.textArea.$invalid">
+                <input name="textArea"
+                       class="form-control"
+                       ng-model="currentRecord.textRecordData"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.details.readOnly"
+                       required>
+                </input>
+                <modal-invalid>
+                    Record text is required
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'SPF'"
+                           label="Host Names/IP Addresses"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.spfRecordData.$invalid">
+                <textarea name="spfRecordData"
+                          ng-model="currentRecord.spfRecordData"
+                          rows="5"
+                          class="form-control"
+                          ng-list="&#10;"
+                          ng-trim="false"
+                          ng-class="recordModal.details.class"
+                          ng-readonly="recordModal.details.readOnly"
+                          required>
+                </textarea>
+                <modal-invalid>
+                    At least one host name or IP address is required
+                </modal-invalid>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'SRV'" label="Record Data">
+                <table class="table table-condensed">
+                    <tr>
+                        <td><label class="control-label">Priority</label></td>
+                        <td><label class="control-label">Weight</label></td>
+                        <td class="table-col-20"><label class="control-label">Port</label></td>
+                        <td class="table-col-50"><label class="control-label">Target</label></td>
+                        <td></td>
+                    </tr>
+                    <tr ng-repeat="item in currentRecord.srvItems">
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['priority_' + ($index)].$invalid}">
+                            <input name="priority_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.priority"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['weight_' + ($index)].$invalid}">
+                            <input name="weight_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.weight"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['port_' + ($index)].$invalid}">
+                            <input name="port_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.port"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['target_' + ($index)].$invalid}">
+                            <input name="target_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.target"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger fa fa-times"
+                                    ng-disabled="disabledStates.indexOf(recordModal.action) > -1"
+                                    ng-click="deleteSrv($index)">
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+
+                <button type="button" class="btn btn-success"
+                        ng-disabled="disabledStates.indexOf(recordModal.action) > -1" ng-click="addNewSrv()">
+                    Add Row
+                </button>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'SSHFP'" label="Record Data">
+                <table class="table table-condensed">
+                    <tr>
+                        <td><label class="control-label">Algorithm</label></td>
+                        <td><label class="control-label">Type</label></td>
+                        <td><label class="control-label">Fingerprint</label></td>
+                        <td></td>
+                    </tr>
+                    <tr ng-repeat="item in currentRecord.sshfpItems">
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['algorithm_' + ($index)].$invalid}">
+                            <select name="algorithm_{{$index}}"
+                                    class="form-control"
+                                    ng-model="item.algorithm"
+                                    ng-class="recordModal.basics.class"
+                                    ng-options="item.number as item.name for item in sshfpAlgorithms"
+                                    required>
+                            </select>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['type_' + ($index)].$invalid}">
+                            <select name="type_{{$index}}"
+                                    class="form-control"
+                                    ng-model="item.type"
+                                    ng-class="recordModal.basics.class"
+                                    ng-options="item.number as item.name for item in sshfpTypes"
+                                    required>
+                            </select>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['fingerprint_' + ($index)].$invalid}">
+                            <input name="fingerprint_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.fingerprint"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger fa fa-times"
+                                    ng-disabled="disabledStates.indexOf(recordModal.action) > -1"
+                                    ng-click="deleteSshfp($index)">
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+
+                <button type="button" class="btn btn-success"
+                        ng-disabled="disabledStates.indexOf(recordModal.action) > -1" ng-click="addNewSshfp()">
+                    Add Row
+                </button>
+            </modal-element>
+
+            <modal-element ng-if="currentRecord.type == 'NS'"
+                           label="NS Target FQDN's (one per line)"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.nsRecordData.$invalid">
+                <textarea name="nsRecordData"
+                          ng-model="currentRecord.nsRecordData"
+                          rows="5"
+                          class="form-control"
+                          ng-list="&#10;"
+                          ng-trim="false"
+                          ng-class="recordModal.details.class"
+                          ng-readonly="recordModal.details.readOnly"
+                          required>
+                </textarea>
+                <modal-invalid>
+                    Must supply at least one target FQDN for NS
+                </modal-invalid>
+            </modal-element>
+
+        </modal-body>
+        <modal-footer>
+            <span ng-if="recordModal.action == recordModalState.CREATE">
+                <button type="button" class="btn btn-default pull-left" ng-click="clearRecord(currentRecord)">Clear Form</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">Close</button>
+                <button class="btn btn-primary" id="save_recordset" ng-click="submitCreateRecord()"><span class="fa fa-edit"></span> Save</button>
+            </span>
+
+            <span ng-if="recordModal.action == recordModalState.UPDATE">
+                <button type="button" class="btn btn-default pull-left" ng-click="clearRecord(currentRecord)">Clear Form</button>
+                <span ng-show="recordsDiffer(currentRecord, recordModal.previous)">
+                    <button class="btn btn-primary pull-right" ng-click="confirmUpdate()">Update</button>
+                </span>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">Close</button>
+            </span>
+
+            <span ng-if="recordModal.action == recordModalState.CONFIRM_UPDATE">
+                Are you sure you want to update this record?&nbsp;
+                <button class="btn btn-primary pull-right" ng-click="submitUpdateRecord()" id="update_recordset">Yes</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">No</button>
+            </span>
+
+            <span ng-if="recordModal.action == recordModalState.CONFIRM_DELETE">
+                <span class="text-danger">Are you sure you want to delete this record?&nbsp;</span>
+                <button id="yes-delete-record-button" class="btn btn-danger pull-right" ng-click="submitDeleteRecord(currentRecord)">Yes</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">No</button>
+            </span>
+
+            <span ng-if="recordModal.action == recordModalState.VIEW_DETAILS">
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">Close</button>
+            </span>
+        </modal-footer>
+    </modal>
+</form>

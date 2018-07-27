@@ -1,0 +1,114 @@
+@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks)
+
+@content = {
+
+    <!-- PAGE CONTENT -->
+    <div class="right_col" role="main" >
+
+<div>
+        <!-- START BREADCRUMB -->
+        <ul class="breadcrumb">
+            <li><a href="/">Home</a></li>
+            <li><a href="/groups">Groups</a></li>
+            <li class="active">{{membership.group.name}}</li>
+        </ul>
+        <!-- END BREADCRUMB -->
+
+        <!-- PAGE TITLE -->
+        <div class="page-title">
+            <h3><span class="fa fa-group"></span> Group {{membership.group.name}}</h3>
+        </div>
+        <!-- END PAGE TITLE -->
+
+        <!-- PAGE CONTENT WRAPPER -->
+        <div class="page-content-wrap">
+
+            <div class="alert-wrapper">
+                <div ng-repeat="alert in alerts">
+                    <notification ng-model="alert"></notification>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+
+                    <!-- START SIMPLE DATATABLE -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <div ng-if="isGroupAdmin">
+                                <form class="form-inline" role="form" name="addMemberForm" ng-submit="addMemberForm.$valid && addMember();">
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <div class="input-group">
+                                                <input type="text" ng-model="newMemberData.login" name="newMemberLogin" class="form-control" placeholder="NT User Name" required/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group" style="padding-left: 10px;">
+                                            <label class="check">
+                                                <input type="checkbox"
+                                                    ng-model="newMemberData.isAdmin" name="newMemberAdmin"
+                                                    class="icheckbox_minimal-grey"/>
+                                                Is Group Manager?</label>
+                                        </div>
+                                        <div class="form-group" style="padding-left: 10px;">
+                                            <div class="input-group">
+                                            <button type="submit" class="btn btn-sm vinyldns-btn-dark">Add Group Member</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <p id="no-group-list" ng-if="!membershipLoaded">Loading members...</p>
+                            <p id="no-group-list" ng-if="!membership.members.length && membershipLoaded">You don't have any members yet.</p>
+                            <table class="table datatable_simple group-members" ng-if="membership.members.length">
+                                <thead>
+                                    <tr>
+                                        <th>User Name</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Group Manager</th>
+                                        <th ng-if="isGroupAdmin">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="member in membership.members | orderBy:'+userName'">
+                                        <td>{{member.userName}}</td>
+                                        <td>{{([member.lastName, member.firstName] | filter: "" ).join(", ")}}</td>
+                                        <td>{{member.email}}</td>
+                                        <td>
+                                            <label class="switch col-md-1">
+                                                <input class="switch-checkbox" type="checkbox" ng-model="member.isAdmin" ng-disabled="!isGroupAdmin" ng-change="toggleAdmin(member);"/>
+                                                <span class="slider"></span>
+                                            </label>
+                                        </td>
+                                        <td ng-if="isGroupAdmin">
+                                            <button class="btn btn-danger btn-rounded" ng-click="removeMember(member.id);">
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- END SIMPLE DATATABLE -->
+
+                </div>
+            </div>
+
+        </div>
+        <!-- PAGE CONTENT WRAPPER -->
+</div>
+    </div>
+    <!-- END PAGE CONTENT -->
+}
+
+@plugins = {
+    <script type='text/javascript' src='/public/gentelella/vendors/iCheck/icheck.min.js'></script>
+    <script type="text/javascript" src="/public/gentelella/vendors/malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.js"></script>
+    <script type="text/javascript" src="/public/gentelella/vendors/datatables.net/js/jquery.dataTables.min.js"></script>
+}
+
+@main(rootAccountName)("MembershipController")("Group")(content)(plugins)

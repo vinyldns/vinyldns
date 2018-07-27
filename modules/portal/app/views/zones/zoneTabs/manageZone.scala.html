@@ -1,0 +1,436 @@
+@(implicit request: play.api.mvc.Request[Any])
+
+<div class="alert-wrapper">
+    <div ng-repeat="alert in alerts">
+        <notification ng-model="alert"></notification>
+    </div>
+</div>
+
+<!-- START ZONE INFO FORM -->
+<div>
+    <form class="form-horizontal">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Zone Info</h3>
+            </div>
+            <div class="panel-body">
+                <div class="block">
+                    <div class="row">
+
+                        <div class="col-md-6">
+
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Zone Id</label>
+                                <div class="col-md-9">
+                                    <div>
+                                        <p class="form-control-static">{{zoneId}}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Zone Email</label>
+                                <div class="col-md-9">
+                                    <div>
+                                        <input id="zone-update-email" type="text" ng-model="updateZoneInfo.email" class="form-control" ng-disabled="!isZoneAdmin"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Status</label>
+                                <div class="col-md-9 col-xs-12">
+                                    <div>
+                                        <span class="label label-form label-{{ getZoneStatusLabel() }}">{{ updateZoneInfo.status }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group" ng-if="isZoneAdmin">
+                                <label class="col-md-3 control-label">Admin Group</label>
+                                <div class="col-md-9 col-xs-12">
+                                    <select class="form-control" ng-model="updateZoneInfo.adminGroupId">
+                                        <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
+                                                ng-selected="updateZoneInfo.adminGroupName == group.name">
+                                            {{group.name}} ({{group.description}})</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="col-md-6">
+
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Created</label>
+                                <div class="col-md-9 col-xs-12">
+                                    <p class="form-control-static">{{updateZoneInfo.created}}</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Latest Update</label>
+                                <div class="col-md-9 col-xs-12">
+                                    <p class="form-control-static">{{updateZoneInfo.updated}}</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">Latest Sync</label>
+                                <div class="col-md-9 col-xs-12">
+                                    <p class="form-control-static">{{updateZoneInfo.latestSync}}</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="block" ng-if="isZoneAdmin">
+                    <div class="row">
+                        <div class="col-md-6">
+
+                            <div class="block">
+                                <h4>Connection Information (Optional)</h4>
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Key Name</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <input type="text" class="form-control" ng-model="updateZoneInfo.connection.keyName"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Key Secret</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <input type="password" class="form-control" ng-model="updateZoneInfo.hiddenKey"
+                                                   placeholder="Current Key Hidden - Enter new key to edit"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">DNS Server</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <input type="text" class="form-control" ng-model="updateZoneInfo.connection.primaryServer"/>
+                                        </div>
+                                        <span class="help-block">
+                                            If no connection is provided the default Vinyl connection will be used.
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-danger pull-right"
+                                        ng-disabled="updateZoneInfo.connection == undefined && updateZoneInfo.hiddenKey == ''"
+                                        ng-click="clearUpdateConnection()" type="button">Clear Connection</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="block">
+
+                                <h4>Transfer Connection (Optional)</h4>
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Key Name</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <input type="text" class="form-control" ng-model="updateZoneInfo.transferConnection.keyName"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">Key Secret</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <input type="password" class="form-control" ng-model="updateZoneInfo.hiddenTransferKey"
+                                                   placeholder="Current Key Hidden - Enter new key to edit"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="col-md-3 control-label">DNS Server</label>
+                                    <div class="col-md-9">
+                                        <div>
+                                            <input type="text" class="form-control" ng-model="updateZoneInfo.transferConnection.primaryServer"/>
+                                        </div>
+                                        <span class="help-block">
+                                            If no connection is provided the default Vinyl connection will be used.
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-danger pull-right"
+                                        ng-disabled="updateZoneInfo.transferConnection == undefined &&
+                                                     updateZoneInfo.hiddenTransferKey == ''"
+                                        ng-click="clearUpdateTransferConnection()" type="button">Clear Connection</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="form-group panel-footer" ng-if="isZoneAdmin">
+                <div class="col-md-12">
+                    <span ng-if="currentManageZoneState == manageZoneState.UPDATE">
+                        <button id="zone-update-button" type="button"
+                                ng-disabled="!objectsDiffer(updateZoneInfo, zoneInfo) && updateZoneInfo.hiddenKey == '' &&
+                                             updateZoneInfo.hiddenTransferKey == ''"
+                                class="btn btn-primary pull-right"
+                                ng-click="clickUpdateZone()">Update Zone</button>
+                        <button type="button" class="btn btn-primary" ng-click="refreshZone()"
+                                ng-disabled="!objectsDiffer(updateZoneInfo, zoneInfo) && updateZoneInfo.hiddenKey == '' &&
+                                             updateZoneInfo.hiddenTransferKey == ''">Reset</button>
+                    </span>
+
+                    <span class="update-zone-msg" ng-if="currentManageZoneState == manageZoneState.CONFIRM_UPDATE">
+                        <span>Are you sure you want to update this zone?&emsp;</span>
+                        <button type="button" class="btn btn-default" ng-click="cancelUpdateZone()">Cancel</button>
+                        <button id="confirm-zone-update-button" type="button" class="btn btn-success"
+                                ng-click="submitUpdateZone()">Yes</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+    <!-- END ZONE INFO FORM -->
+
+    <!-- START ACL TABLE -->
+<div class="panel panel-default" ng-if="isZoneAdmin">
+
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            Zone Access Rules
+        </h3>
+    </div>
+    <div class="panel-body" >
+
+        <div class="btn-group">
+            <button id="refresh-acl-rules-button" class="btn btn-default" ng-click="refreshZone()">
+                <span class="fa fa-refresh"></span> Refresh
+            </button>
+            <button id="create-acl-rule-button" class="btn btn-default" ng-click="clickCreateAclRule()">
+                <span class="fa fa-plus"></span> Create ACL Rule
+            </button>
+        </div>
+
+        <table id="aclRuleTable" class="table table-hover table-striped">
+            <thead>
+                <tr>
+                    <th>User/Group</th>
+                    <th>Access Level</th>
+                    <th>Record Types</th>
+                    <th>Record Mask</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="rule in aclRules track by $index">
+                    <td>
+                        {{rule.displayName}}
+                    </td>
+
+                    <td>
+                        {{rule.accessLevel}}
+                    </td>
+
+                    <td>
+                        <span ng-if="rule.recordTypes.length == 0">All Types</span>
+                        <ul class="table-cell-list">
+                            <li ng-repeat="item in rule.recordTypes">
+                                {{item}}
+                            </li>
+                        </ul>
+                    </td>
+
+                    <td>
+                        {{rule.recordMask}}
+                    </td>
+
+                    <td>
+                        {{rule.description}}
+                    </td>
+
+                    <td>
+                        <span>
+                            <button class="btn btn-info btn-sm" id="update-acl-rule-button-{{$index}}"
+                                ng-click="clickUpdateAclRule($index)">
+                                Update
+                            </button>
+                            <button class="btn btn-danger btn-sm" id="delete-acl-rule-button-{{$index}}"
+                                    ng-click="clickDeleteAclRule($index)">
+                                Delete
+                            </button>
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+    <!-- END ACL TABLE -->
+
+    <!-- START ACL MODAL -->
+<form name="addAclRuleForm" role="form" class="form-horizontal" novalidate>
+    <modal modal-id="acl_modal" modal-title="{{ aclModal.title }}">
+        <div class="modal-body">
+            <modal-element label="Apply Rule to" invalid-when="addAclRuleForm.$submitted && addAclRuleForm.priority.$invalid">
+                <select name="priority"
+                        id="acl-rule-priority"
+                        class="form-control"
+                        ng-model="currentAclRule.priority"
+                        ng-options="type for type in aclTypes"
+                        ng-disabled="aclModal.details.readOnly"
+                        required>
+                </select>
+                <span class="help-block">
+                The more specific a rule is the more precedence it has. User rules will have a higher priority
+                than Group, which will have a higher priority than All.
+                </span>
+            </modal-element>
+
+            <modal-element label="Group" invalid-when="addAclRuleForm.$submitted && addAclRuleForm.groupId.$invalid"
+                            ng-if="currentAclRule.priority == 'Group'">
+                <select name="groupId"
+                        class="form-control"
+                        ng-model="currentAclRule.groupId"
+                        ng-controller="ZonesController"
+                        ng-disabled="aclModal.details.readOnly"
+                        required>
+                    <option ng-repeat="group in myGroups" value="{{ group.id }}">
+                        {{group.name}} ({{group.description}})</option>
+                    <option value="">--- Please select a group ---</option>
+                </select>
+                <span class="help-block">
+                    The group this rule will apply to
+                </span>
+            </modal-element>
+
+            <modal-element label="User NTID" invalid-when="addAclRuleForm.$submitted && addAclRuleForm.userName.$invalid"
+                           ng-if="currentAclRule.priority == 'User'">
+                <input name="userName"
+                       class="form-control"
+                       ng-model="currentAclRule.userName"
+                       id="acl-rule-username"
+                       ng-disabled="aclModal.details.readOnly"
+                       required>
+                </input>
+                <span class="help-block">
+                    The NTID of the user this rule will apply to.
+                </span>
+            </modal-element>
+
+            <modal-element label="Access Level" invalid-when="addAclRuleForm.$submitted && addAclRuleForm.accessLevel.$invalid">
+                <select name="accessLevel"
+                        id="acl-rule-accessLevel"
+                        class="form-control"
+                        ng-model="currentAclRule.accessLevel"
+                        ng-disabled="aclModal.details.readOnly"
+                        ng-options="type for type in aclAccessLevels">
+                </select>
+                <span class="help-block">
+                    The access level that the selected user or group will be given within this zone.
+                </span>
+            </modal-element>
+
+            <modal-element label="Record Type(s)" invalid-when="addAclRuleForm.$submitted && addAclRuleForm.recordTypes.$invalid">
+                <select name="recordTypes"
+                        id="acl-rule-recordTypes"
+                        class="form-control select"
+                        ng-model="currentAclRule.recordTypes"
+                        multiple
+                        ng-disabled="aclModal.details.readOnly"
+                        ng-options="type for type in recordTypes">
+                </select>
+                <button type = "button"
+                        class="btn btn-sm btn-info pull-right"
+                        ng-disabled="aclModal.details.readOnly"
+                        ng-click="currentAclRule.recordTypes = []">
+                    Clear Types
+                </button>
+                <span class="help-block">
+                    This rule will apply only to the selected record types. If no types are selected then the rule will
+                    apply to all record types.
+                </span>
+            </modal-element>
+
+            <modal-element label="Record Mask">
+                <input type="text"
+                       id="acl-rule-recordMask"
+                       name="recordMask"
+                       ng-model="currentAclRule.recordMask"
+                       ng-disabled="aclModal.details.readOnly"
+                       class="form-control">
+                </input>
+                <span class="help-block">
+                    Record masks further refine the types of records this record applies to. For non-PTR
+                    records, any valid regex will be accepted. For PTR records, please input a CIDR rule. If no mask is entered, the
+                    rule will apply to all.
+                </span>
+            </modal-element>
+
+            <modal-element label="Description">
+                <textarea name="description"
+                          id="acl-rule-description"
+                          rows="3"
+                          class="form-control"
+                          ng-disabled="aclModal.details.readOnly"
+                          ng-model="currentAclRule.description">
+                </textarea>
+            </modal-element>
+
+        <modal-footer>
+            <span ng-if="aclModal.action == aclModalState.CREATE">
+                <button type="button" class="btn btn-default pull-left" ng-click="clearForm()">
+                    Clear Form
+                </button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    Close
+                </button>
+                <button ng-click="submitAclRule('Create')" class="btn btn-primary" id="save-acl-rule-button">
+                    <span class="fa fa-edit"></span>Save
+                </button>
+            </span>
+
+            <span ng-if="aclModal.action == aclModalState.UPDATE">
+                <button type="button" class="btn btn-default pull-left" ng-click="clearForm()">
+                    Clear Form
+                </button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    Close
+                </button>
+                <button type="button" ng-click="confirmUpdateAclRule(true)" class="btn btn-primary"
+                        id="update-acl-rule-button">
+                    <span class="fa fa-edit"></span>Save
+                </button>
+            </span>
+
+            <span ng-if="aclModal.action == aclModalState.CONFIRM_UPDATE">
+                <span class="text-danger">Are you sure you want to update this rule?&nbsp;</span>
+                <button type="button" class="btn btn-danger pull-right" ng-click="submitAclRule('Update')"
+                        id="confirm-update-acl-rule-button">
+                    Yes
+                </button>
+                <button class="btn btn-default" data-dismiss="modal" ng-click="confirmUpdateAclRule(false)">
+                    No
+                </button>
+            </span>
+
+            <span ng-if="aclModal.action == aclModalState.CONFIRM_DELETE">
+                <span class="text-danger">Are you sure you want to delete this rule?&nbsp;</span>
+                <button id="confirm-delete-acl-rule" type="button" class="btn btn-danger pull-right" ng-click="submitDeleteAclRule()">
+                    Yes
+                </button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeAclModal()">
+                    No
+                </button>
+            </span>
+        </modal-footer>
+        </div>
+    </modal>
+</form>
+    <!-- END ACL MODAL -->

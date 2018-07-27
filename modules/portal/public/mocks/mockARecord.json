@@ -1,0 +1,20 @@
+{
+  "recordSets":[
+    {
+      "type":"A",
+      "zoneId":"bf744806-fa76-4b5d-ac7d-bf5d974112c5",
+      "name":"arecord",
+      "ttl":300,
+      "status":"Active",
+      "created":"2016-05-24T18:51:03Z",
+      "updated":"2016-05-24T18:51:03Z",
+      "records":[
+        {
+          "address":"10.2.2.2"
+        }
+      ],
+      "id":"f4b8fff2-0c84-4d8b-8f52-08f2791b0446",
+      "account":"testacct"
+    }
+  ]
+}

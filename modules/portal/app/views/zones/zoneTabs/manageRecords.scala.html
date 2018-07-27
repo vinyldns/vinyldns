@@ -1,0 +1,304 @@
+@(implicit request: play.api.mvc.Request[Any])
+
+    <!-- START ACCORDION -->
+    <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
+<div class="panel panel-default x_panel">
+    <div class="panel-heading">
+        <h3 class="panel-title">
+            <a class="collapse-link">
+                <i class="fa fa-chevron-down"></i>
+                    Recent Record Changes
+            </a>
+        </h3>
+    </div>
+
+    <div class="panel-body x_content panel-body-open">
+        <button class="btn btn-default" ng-click="refreshRecordChangesPreview()"><span class="fa fa-refresh"></span> Refresh</button>
+        <table id="recordChangePreviewTable" class="table table-condensed">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Recordset Name</th>
+                    <th>Recordset Type</th>
+                    <th>Change Type</th>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>Additional Info</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="change in recordsetChangesPreview track by $index">
+                    <td>{{change.created}}</td>
+                    <td>{{change.recordSet.name}}</td>
+                    <td>{{change.recordSet.type}}</td>
+                    <td>{{change.changeType}}</td>
+                    <td>{{change.userName}}</td>
+                    <td>
+                        <span class="label label-{{ getRecordChangeStatusLabel(change.status) }}">{{ change.status }}</span>
+                    </td>
+                    <td class="col-md-3">
+                        {{change.systemMessage}}
+                        <div ng-if="change.status !='Failed'">
+                            <a ng-if="change.changeType =='Create'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View created recordset</a>
+                            <a ng-if="change.changeType =='Delete'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View deleted recordset</a>
+
+                            <div><a ng-if="change.changeType =='Update'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View new recordset</a></div>
+                            <div><a ng-if="change.changeType =='Update'" ng-click="viewRecordInfo(change.updates)" class="force-cursor">View old recordset</a></div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+
+        </table>
+            <!-- <button type="button" class="btn btn-info btn-sm">View full change log</button> -->
+    </div>
+</div>
+    <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
+    <!-- END ACCORDION -->
+
+    <!-- START RECORD TABLE -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Records {{ getRecordPageTitle() }}</h3>
+    </div>
+
+    <div class="panel-body">
+      <div class="vinyldns-panel-top">
+        <div class="btn-group">
+            <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
+            <button id="create-record-button" class="btn btn-default" ng-click="createRecord()"><span class="fa fa-plus"></span> Create Record Set</button>
+            <button id="zone-sync-button" class="btn btn-default mb-control" ng-hide="!isZoneAdmin" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
+        </div>
+
+        <div>
+            <form class="input-group" ng-submit="refreshRecords()">
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                    </span>
+                    <input id="record-search-text" ng-model="query" type="text" class="form-control" placeholder="Record Name">
+                </div>
+            </form>
+        </div>
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="dataTables_paginate">
+          <ul class="pagination">
+              <li class="paginate_button previous">
+                  <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+              </li>
+              <li class="paginate_button next">
+                  <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+              </li>
+          </ul>
+      </div>
+      <!-- END PAGINATION -->
+
+      <table id="recordDataTable" class="table table-hover table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>TTL</th>
+                    <th>Record Data</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="(recordName, record) in records track by $index">
+                    <td>
+                        <div ng-if="record.isDotted" class="text-danger" data-toggle="tooltip" data-placement="top"
+                        title="Dotted hosts are invalid! Please delete or update without a '.'">
+                            {{record.name}} <span class="fa fa-warning" />
+                        </div>
+                        <div ng-if="!record.isDotted">
+                            {{record.name}}
+                        </div>
+                    </td>
+                    <td>{{record.type}}</td>
+                    <td>{{record.ttl}}</td>
+                    <td>
+                        <span ng-if="record.accessLevel != 'NoAccess'">
+                        <span ng-if="record.type == 'A'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.aRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <li ng-if="record.onlyFour && record.aRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'AAAA'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.aaaaRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <li ng-if="record.onlyFour && record.aaaaRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'SPF'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.spfRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <li ng-if="record.onlyFour && record.spfRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'CNAME'">{{ record.cnameRecordData }}</span>
+                        <span ng-if="record.type == 'MX'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.mxItems track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">
+                                    Preference: {{ item.preference }} | Exchange: {{ item.exchange }}
+                                </li>
+                                <li ng-if="record.onlyFour && record.mxItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'PTR'">{{ record.ptrRecordData }}</span>
+                        <span ng-if="record.type == 'TXT'">{{ record.textRecordData }}</span>
+                        <span ng-if="record.type == 'NS'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.nsRecordData track by $index"
+                                ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <li ng-if="record.onlyFour && record.nsRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'SOA'">
+                            <table>
+                                <tr>
+                                    <td> Mname: </td>
+                                    <td> {{ record.soaMName }} </td>
+                                </tr>
+                                <tr>
+                                    <td> Rname: </td>
+                                    <td> {{ record.soaRName }} </td>
+                                </tr>
+                                <tr>
+                                    <td> Serial: </td>
+                                    <td> {{ record.soaSerial }} </td>
+                                </tr>
+                                <tr>
+                                    <td> Refresh: </td>
+                                    <td> {{ record.soaRefresh }} </td>
+                                </tr>
+                                <tr>
+                                    <td> Retry: </td>
+                                    <td> {{ record.soaRetry }} </td>
+                                </tr>
+                                <tr>
+                                    <td> Expire: </td>
+                                    <td> {{ record.soaExpire }} </td>
+                                </tr>
+                                <tr>
+                                    <td> Minimum:&emsp; </td>
+                                    <td> {{ record.soaMinimum }} </td>
+                                </tr>
+                            </table>
+                        </span>
+                        <span ng-if="record.type == 'SRV'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.srvItems track by $index"
+                                ng-if="!record.onlyFour || $index <= 3">
+                                    Priority: {{ item.priority }} | Weight: {{ item.weight }} | Port: {{ item.port }}
+                                    | Target: {{ item.target }}
+                                </li>
+                                <li ng-if="record.onlyFour && record.srvItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        <span ng-if="record.type == 'SSHFP'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.sshfpItems track by $index"
+                                ng-if="!record.onlyFour || $index <= 3">
+                                    Algorithm: {{ sshfpAlgorithms[item.algorithm-1].name }}
+                                    | Type: {{ sshfpTypes[item.type-1].name }}
+                                    | Fingerprint: {{ item.fingerprint }}
+                                </li>
+                                <li ng-if="record.onlyFour && record.sshfpItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
+                        </span>
+                    </td>
+                    <td>
+                        <span ng-if="(record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
+                            <div class="table-form-group">
+                                <span><button class="btn btn-info btn-sm" ng-click="editRecord(record)">Update</button></span>
+                                <span ng-if="record.accessLevel == 'Delete'"><button id="delete-record-{{record.name}}-button" class="btn btn-danger btn-sm btn-rounded" ng-click="deleteRecord(record)">Delete</button></span>
+                            </div>
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+      <!-- PAGINATION -->
+      <div class="dataTables_paginate">
+          <ul class="pagination">
+              <li class="paginate_button previous">
+                  <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+              </li>
+              <li class="paginate_button next">
+                  <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+              </li>
+          </ul>
+      </div>
+      <!-- END PAGINATION -->
+
+    </div>
+    <div class="panel-footer"></div>
+</div>
+    <!-- END RECORD TABLE -->
+
+    <!-- MESSAGE MODAL-->
+<div class="fade in modal" data-sound="alert" id="mb-sync">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+              <h4>Sync Zone?</h4>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to sync {{ zoneInfo.name }}? This zone will be unavailable for
+                    changes until the zone sync has completed.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <div class="pull-right">
+                    <button id="zone-sync-yes-button" class="btn btn-info" data-dismiss="modal" ng-click="syncZone()">Yes</button>
+                    <button class="btn btn-primary" data-dismiss="modal">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- END MESSAGE MODAL-->

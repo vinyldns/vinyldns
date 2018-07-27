@@ -1,0 +1,31 @@
+{
+  "changes": [
+    {
+      "id": "abc123",
+      "changeType": "UPDATE",
+      "userId": "abc123",
+      "created": "2016-05-24T18:51:03Z",
+      "group": {
+        "id": "abc123",
+        "name": "Vinyl",
+        "email": "test@test.com",
+        "created": "2016-05-24T18:51:03Z",
+        "status": "ACTIVE",
+        "members": [ { "id": "ok"} ],
+        "admins": [ { "id": "ok"} ]
+      },
+      "oldVersion": {
+        "id": "abc123",
+        "name": "Vinyl",
+        "email": "test@test.com",
+        "created": "2016-05-24T18:51:03Z",
+        "status": "ACTIVE",
+        "members": [ { "id": "ok"} ],
+        "admins": [ { "id": "ok"} ]
+      },
+      "startFrom": 1,
+      "nextId": 5,
+      "maxItems": 100
+    }
+  ]
+}

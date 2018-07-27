@@ -1,0 +1,82 @@
+---
+layout: docs
+title: "List Groups"
+section: "apidocs"
+---
+
+# List Groups
+
+Retrieves a list of groups that you are a part of
+
+#### HTTP REQUEST
+
+> GET /groups?startFrom={response.nextId}&maxItems={1 - 100}&groupNameFilter={filter}
+
+#### HTTP REQUEST PARAMS
+
+name          | type          | required?   | description |
+ ------------ | ------------- | ----------- | :---------- |
+groupNameFilter    | string        | no          | One or more characters contained in the name of the group set to search for.  For example `TP`.  This is a contains search only, no wildcards or regular expressions are supported |
+startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
+maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
+
+#### HTTP RESPONSE TYPES
+
+Code          | description |
+ ------------ | :---------- |
+200           | **OK** - The groups have been returned in the response body|
+401           | **Unauthorized** - The authentication information provided is invalid.  Typically the request was not signed properly, or the access key and secret used to sign the request are incorrect |
+
+#### HTTP RESPONSE ATTRIBUTES
+
+name          | type          | description |
+ ------------ | ------------- | :---------- |
+groups        | Array of Groups | refer to [membership model](../apidocs/membership-model) |
+startFrom     | *any*         | startFrom sent in request, will not be returned if not provided |
+nextId        | *any*         | nextId, used as startFrom parameter of next page request, will not be returned if groups are exhausted |
+maxItems      | integer       | maxItems sent in request, default is 100 |
+groupNameFilter    | string  | name filter sent in request |
+
+#### EXAMPLE RESPONSE
+
+```
+{
+  "maxItems": 100,
+  "groups": [
+    {
+      "id": "93887728-2b26-4749-ba69-98871dda9cc0",
+      "name": "some-other-group",
+      "email": "test@example.com",
+      "created": "2017-03-02T16:23:07Z",
+      "status": "Active",
+      "members": [
+        {
+          "id": "2764183c-5e75-4ae6-8833-503cd5f4dcb0"
+        }
+      ],
+      "admins": [
+        {
+          "id": "2764183c-5e75-4ae6-8833-503cd5f4dcb0"
+        }
+      ]
+    },
+    {
+      "id": "aa1ea217-70a7-4350-b22b-c7e2f2158fb9",
+      "name": "some-group",
+      "email": "test@example.com",
+      "created": "2017-03-02T16:22:57Z",
+      "status": "Active",
+      "members": [
+        {
+          "id": "2764183c-5e75-4ae6-8833-503cd5f4dcb0"
+        }
+      ],
+      "admins": [
+        {
+          "id": "2764183c-5e75-4ae6-8833-503cd5f4dcb0"
+        }
+      ]
+    }
+  ]
+}
+```
