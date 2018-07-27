@@ -67,6 +67,12 @@ review.  There are different ways that you can make revisions, but the following
 1. When all tests pass, `git push origin your-user-name/user-branch-name` to revise your commit.  GitHub automatically
 recognizes the update and will re-run verification on your PR!
 
+### Contributor License Agreement
+
+Before Comcast merges your code into the project you must sign the [Comcast Contributor License Agreement (CLA)](https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a).
+
+If you haven't previously signed a Comcast CLA, you'll automatically be asked to when you open a pull request. Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request a PDF version of the CLA.
+
 ### Merging your Pull Request
 Once your PR is approved, one of the maintainers will merge your request for you.  If you are a maintainer, you can
 merge your PR once you have the approval of at least 2 other maintainers.
