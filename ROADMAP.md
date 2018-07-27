@@ -9,6 +9,7 @@ a group as the owner of the record to restrict who can modify that record.
 1. Zone Management - Presently VinylDNS _connects to existing zones_ for management.  Zone Management will allow users
 to create and manage zones in the authoritative systems themselves.
 1. Record meta data - VinylDNS will allow the "tagging" of DNS records with arbitrary key-value pairs
+1. DNS GSLB - Integration with various GSLB vendors for common DNS GSLB configurations
 
 In addition to large feature initiatives, we will be looking to improve how VinylDNS is operated.  The current
 installation requires the following components:
