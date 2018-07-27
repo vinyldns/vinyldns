@@ -1,0 +1,7 @@
+-Xms512M
+-Xmx2048M
+-Xss2M
+-XX:MaxMetaspaceSize=1024M
+-Dsbt.gigahorse=false
+-Dhttp.port=9001
+-Djava.net.preferIPv4Stack=true
