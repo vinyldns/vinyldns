@@ -2,6 +2,7 @@
 
 # VinylDNS
 **(we are in the midst of setting up our projects, backlog, and everything else.  Will be in tip top shape in the coming days)**
+
 VinylDNS is a vendor agnostic front-end for managing self-service DNS across your DNS systems.
 The platform provides fine-grained access controls, auditing of all changes, a self-service user interface,
 secure REST based API, and integration with infrastructure automation tools like Ansible and Terraform.
