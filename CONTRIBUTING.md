@@ -34,20 +34,19 @@ work that is already in-progress.
 ### Submitting a Code Contribution
 We follow the standard *GitHub Flow* for taking code contributions.  The following is the process typically followed:
 
-1 - Create a fork of the repository that you want to contribute code to
-1 - Clone your forked repository to your local machine
-1 - In your local machine, add a remote to the "main" repository, we call this "upstream" by running
-`git remote add upstream https://github.com/vinyldns/vinyldns.git`.  Note: you can also use `ssh` instead of `https`
-1 - Create a local branch for your work `git checkout -b your-user-name/user-branch-name`.  Add whatever your GitHub
+1. Create a fork of the repository that you want to contribute code to
+1. Clone your forked repository to your local machine
+1. In your local machine, add a remote to the "main" repository, we call this "upstream" by running `git remote add upstream https://github.com/vinyldns/vinyldns.git`.  Note: you can also use `ssh` instead of `https`
+1. Create a local branch for your work `git checkout -b your-user-name/user-branch-name`.  Add whatever your GitHub
 user name is before whatever you want your branch to be.
-1 - Begin working on your local branch
-1 - Make sure you run all builds before posting a PR!  It's faster to run everything locally rather than waiting for
+1. Begin working on your local branch
+1. Make sure you run all builds before posting a PR!  It's faster to run everything locally rather than waiting for
 the build server to complete its job.  See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for information on local development
-1 - When you are ready to contribute your code, run `git push origin your-user-name/user-branch-name` to push your changes
+1. When you are ready to contribute your code, run `git push origin your-user-name/user-branch-name` to push your changes
 to your _own fork_.
-1 - Go to the [VinylDNS main repository](https://github.com/vinyldns/vinyldns.git) (or whatever repo you are contributing to)
+1. Go to the [VinylDNS main repository](https://github.com/vinyldns/vinyldns.git) (or whatever repo you are contributing to)
 and you will see your change waiting and a link to "Create a PR".  Click the link to create a PR.
-1 - You will receive comments on your PR.  Use the PR as a dialog on your changes.
+1. You will receive comments on your PR.  Use the PR as a dialog on your changes.
 
 ### Commit Messages
 * Limit the first line to 72 characters or fewer.
@@ -61,11 +60,11 @@ to link your PR to other issues.  _Note: This is essential, otherwise we may not
 Often times, you will need to make revisions to your PRs that you submit.  This is part of the standard process of code
 review.  There are different ways that you can make revisions, but the following process is pretty standard.
 
-1 - Sync with upstream first.  `git checkout master && git fetch upstream && git rebase upstream master && git push origin master`
-1 - Checkout your branch on your local `git checkout your-user-name/user-branch-name`
-1 - Sync your branch with latest `git rebase master`.  Note: If you have merge conflicts, you will have to resolve them
-1 - Revise your PR, making changes recommended in the comments / code review
-1 - When all tests pass, `git push origin your-user-name/user-branch-name` to revise your commit.  GitHub automatically
+1. Sync with upstream first.  `git checkout master && git fetch upstream && git rebase upstream master && git push origin master`
+1. Checkout your branch on your local `git checkout your-user-name/user-branch-name`
+1. Sync your branch with latest `git rebase master`.  Note: If you have merge conflicts, you will have to resolve them
+1. Revise your PR, making changes recommended in the comments / code review
+1. When all tests pass, `git push origin your-user-name/user-branch-name` to revise your commit.  GitHub automatically
 recognizes the update and will re-run verification on your PR!
 
 ### Merging your Pull Request
