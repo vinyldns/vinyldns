@@ -1,0 +1,180 @@
+@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks)
+
+@content = {
+<!-- PAGE CONTENT -->
+<div class="right_col" role="main">
+
+    <!-- BREADCRUMB -->
+    <ul class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li><a href="/batchchanges">Batch Changes</a></li>
+        <li class="active">New Batch Change</li>
+    </ul>
+    <!-- END BREADCRUMB -->
+
+    <!-- PAGE TITLE -->
+    <div class="page-title"><h3><span class="fa fa-list-ol"></span> New Batch Change</h3></div>
+    <!-- END PAGE TITLE -->
+
+
+    <!-- PAGE CONTENT WRAPPER -->
+    <div class="page-content-wrap">
+        <div class="alert-wrapper">
+            <div ng-repeat="alert in alerts">
+                <notification ng-model="alert"></notification>
+            </div>
+        </div>
+        <form novalidate name="createBatchChangeForm" class="createBatchChangeForm" ng-submit="createBatchChangeForm.$valid && createBatchChange(newBatch)">
+            <div class="row">
+                <div class="col-md-12">
+
+                    <!-- SIMPLE DATABLE -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <div class="form-group">
+                                <label class="h4">Description: </label>
+                                <input type="text" class="form-control" ng-model="newBatch.comments">
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <h4>Changes</h4>
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th class="col-md-2">Change Type</th>
+                                    <th class="col-md-1">Record Type</th>
+                                    <th>Input Name</th>
+                                    <th class="col-md-1">TTL</th>
+                                    <th>Record Data</th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr ng-repeat="change in newBatch.changes track by $index" ng-class="{changeError: change.errors}">
+                                    <td><span>{{$index + 1}}</span></td>
+                                    <td>
+                                        <select class="form-control changeType" ng-model="change.changeType">
+                                            <option value="Add">Add</option>
+                                            <option value="DeleteRecordSet">DeleteRecordSet</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-control" ng-model="change.type" >
+                                            <option value="A" selected>A</option>
+                                            <option>AAAA</option>
+                                            <option>CNAME</option>
+                                            <option>PTR</option>
+                                            <option>TXT</option>
+                                            <option>MX</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input ng-if="change.type!=='PTR'" name="inputName_{{$index}}" type="text" ng-model="change.inputName" required="string" class="form-control" placeholder="e.g. test.example.com.">
+                                        <input ng-if="change.type=='PTR'" name="inputName_{{$index}}" type="text" ng-model="change.inputName" required="string" class="form-control" placeholder="e.g. 192.0.2.193">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.inputName_{{$index}}.$error.required" class="batch-change-error-help">Input name is required!</span>
+                                        </p>
+                                    </td>
+                                    <!--TTL based on change type-->
+                                    <td ng-if="change.changeType=='Add'">
+                                        <input name="ttl_{{$index}}" type="number" ng-model="change.ttl" ng-required="change.changeType=='Add'" required="number" min="30" max="2147483647" class="form-control" ng-disabled="change.changeType=='DeleteRecordSet'">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.ttl_{{$index}}.$error.required || createBatchChangeForm.ttl_{{$index}}.$error.min || createBatchChangeForm.ttl_{{$index}}.$error.max" class="batch-change-error-help">TTL must be between 30 and 2147483647.</span>
+                                        </p>
+                                    </td>
+                                    <td ng-if="change.changeType=='DeleteRecordSet'">
+                                        <input class="form-control" disabled/>
+                                    </td>
+                                    <!--TTL based on change type-->
+                                    <!--record data name based on record type and change type-->
+                                    <td ng-if="change.changeType=='DeleteRecordSet'">
+                                        <input class="form-control" placeholder="" disabled/>
+                                    </td>
+
+                                    <td ng-if="change.type=='A' && change.changeType=='Add'">
+                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1.1.1.1" ng-disabled="change.changeType=='DeleteRecordSet'" ipv4>
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.ipv4" class="batch-change-error-help">must be a valid IPv4 Address!</span>
+                                        </p>
+                                    </td>
+                                    <td ng-if="change.type=='AAAA' && change.changeType=='Add'">
+                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. fd69:27cc:fe91::60" ng-disabled="change.changeType=='DeleteRecordSet'" ipv6>
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.ipv6" class="batch-change-error-help">must be a valid IPv6 Address!</span>
+                                        </p>
+                                    </td>
+                                    <td ng-if="change.type=='CNAME' && change.changeType=='Add'">
+                                        <input name="record_cname_{{$index}}" type="text" ng-model="change.record.cname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn>
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_cname_{{$index}}.$error.fqdn" class="batch-change-error-help">CNAME data must be absolute!</span>
+                                        </p>
+                                    </td>
+                                    <td ng-if="change.type=='PTR' && change.changeType=='Add'">
+                                        <input name="record_ptr_{{$index}}" type="text" ng-model="change.record.ptrdname" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.com." ng-disabled="change.changeType=='DeleteRecordSet'">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_ptr_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                        </p>
+                                    </td>
+                                    <td ng-if="change.type=='TXT' && change.changeType=='Add'">
+                                        <textarea name="record_txt_{{$index}}" type="text" ng-model="change.record.text" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. attr=val" ng-disabled="change.changeType=='DeleteRecordSet'"></textarea>
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_txt_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                        </p>
+                                    </td>
+                                    <td ng-if="change.type=='MX' && change.changeType=='Add'">
+                                        <label class="batch-label">Preference</label>
+                                        <input name="record_mx_preference_{{$index}}" type="number" ng-model="change.record.preference" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1" ng-min="0" ng-max="65535" ng-disabled="change.changeType=='DeleteRecordSet'">
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_mx_preference_{{$index}}.$error.required" class="batch-change-error-help">Preference is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_mx_preference_{{$index}}.$error.min" class="batch-change-error-help">Must be between 0 and 65535!</span>
+                                            <span ng-show="createBatchChangeForm.record_mx_preference_{{$index}}.$error.max" class="batch-change-error-help">Must be between 0 and 65535!</span>
+
+                                        </p>
+
+                                        <br />
+
+                                        <label class="batch-label">Exchange</label>
+                                        <input name="record_mx_exchange_{{$index}}" type="text" ng-model="change.record.exchange" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. test.example.com." ng-disabled="change.changeType=='DeleteRecordSet'" fqdn>
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.required" class="batch-change-error-help">Exchange data is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_mx_exchange_{{$index}}.$error.fqdn" class="batch-change-error-help">Exchange data must be absolute!</span>
+                                        </p>
+                                    </td>
+                                    <!--end record data name based on record type and change type-->
+                                    <td class="col-md-3" ng-if="batchChangeErrors">
+                                        <p ng-repeat="batchError in change.errors">
+                                            {{batchError}}
+                                        </p>
+                                    </td>
+                                    <td><button class="btn btn-danger batch-change-delete" ng-click="deleteSingleChange($index)">Delete</button></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <button id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length == batchChangeLimit"><span class="fa fa-plus"></span> Add a Change</button>
+                            <span ng-if="newBatch.changes.length == batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</span>
+                        </div>
+                        <div class="panel-footer clearfix">
+                            <div ng-if="formStatus=='pendingSubmit'" class="pull-right">
+                                <button id="create-batch-changes-button" class="btn btn-primary" ng-click="submitChange()">Submit</button>
+                            </div>
+                            <div ng-if="formStatus=='pendingConfirm'" class="pull-right">
+                                <span>Are you sure you want to submit this batch change request?</span>
+                                <button class="btn btn-default" ng-click="cancelSubmit()">Cancel</button>
+                                <button class="btn btn-success" type="submit" ng-click="confirmSubmit(createBatchChangeForm)">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+}
+
+@plugins = {}
+
+@main(rootAccountName)("BatchChangeNewController")("New Batch Change")(content)(plugins)

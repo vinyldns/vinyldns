@@ -1,0 +1,64 @@
+@import helper.CSRF
+@(alertMessage: Option[String] = None)(implicit requestHeader: RequestHeader, customLinks: models.CustomLinks)
+<!DOCTYPE html>
+<html lang="en" class="body-full-height">
+    <head>
+            <!-- META SECTION -->
+        <title>Please sign in using your Corporate Credentials</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon" />
+            <!-- END META SECTION -->
+
+            <!-- CSS INCLUDE -->
+        <link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/vendors/bootstrap/dist/css/bootstrap.min.css"/>
+        <link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/build/css/custom.css"/>
+        <link rel="stylesheet" type="text/css" id="custom" href="/public/css/vinyldns.css"/>
+            <!-- EOF CSS INCLUDE -->
+    </head>
+    <body class="vinyldns-login">
+        <div class="login_wrapper">
+
+            <div class="animate form login_form vinyldns-login-box">
+                @*<div class="login-logo"></div>*@
+                <div class="login_content">
+                    @if(alertMessage.isDefined) {
+                        <h3 class="vinyldns-login-title">@{alertMessage.get}</h3>
+                    } else {
+                        <h3 class="vinyldns-login-title">Welcome to VinylDNS</h3>
+                    }
+                    <form id="login" action=@CSRF(routes.VinylDNS.login).url method="post">
+                        <div>
+                            <input id="username" autofocus name="username" type="text" class="form-control" placeholder="Username"/>
+                        </div>
+                        <div>
+                            <input id="password" name="password" type="password" class="form-control" placeholder="Password"/>
+                        </div>
+                        <div>
+                          <button id="action-login" class="vinyldns-login-btn btn btn-block">Log In</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="vinyldns-login-footer">
+                    <div class="pull-left">
+                        VinylDNS, for all your DNS needs.
+                        <ul class="login-links">
+                            @*****************************************
+                            * Custom links from application config *
+                            *****************************************@
+
+                            @for(link <- customLinks.links) {
+                                @if(link.displayOnLoginScreen) {
+                                <li>
+                                    <a href='@{link.href}' target="_blank">@{link.title}</a>
+                                </li>
+                                }
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,103 @@
+<form name="addZoneConnectionForm" ng-submit="addZoneConnectionForm.$valid && addZoneConnection()" role="form" class="form-horizontal" novalidate>
+    <modal modal-id="zone_connection_modal" modal-title="Connect to a Zone">
+        <modal-body>
+            <p>
+                Use this form to connect to an already existing zone.  If you need a new zone, please contact DNS Ops. Be sure to
+                inform them that you are managing your zone through Vinyl, and that you need the DNS server to connect to, along
+                with the TSIG key and key name.
+            </p>
+            <br />
+            <modal-element label="Zone Name" invalid-when="addZoneConnectionForm.$submitted && addZoneConnectionForm.nameval.$invalid">
+                <input id="zone-name" type="text" ng-model="currentZone.name" name="nameval" class="form-control" required/>
+                <span class="help-block">Name for the DNS zone, for example "vinyldns.example.net.".</span>
+            </modal-element>
+            <modal-element label="Email" invalid-when="addZoneConnectionForm.$submitted && addZoneConnectionForm.emailval.$invalid">
+                <input id="zone-email" type="text" ng-model="currentZone.email" name="emailval" class="form-control" required/>
+                <span class="help-block">
+                    The email distribution list for the zone.  Typically the distribution email for the org that owns
+                    the zone.
+                </span>
+            </modal-element>
+            <modal-element label="Admin Group" invalid-when="addZoneConnectionForm.$submitted && addZoneConnectionForm.admingroup.$invalid">
+                <select id="zone-admin-group" name="admingroup" class="form-control" ng-model="currentZone.adminGroupId" required>
+                    <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}">
+                        {{group.name}}
+                        <span ng-show="group.description">({{group.description}})</span></option>
+                </select>
+                <span class="help-block">
+                    The Vinyl Group that will be given admin rights to the zone.  All users in the admin group
+                    will have the ability to manage <i>all</i>
+                    records in the zone, as well as change zone level information
+                    and access rules. <a href="/groups">You can create a new group from the Groups page.</a>
+                </span>
+            </modal-element>
+
+            <div class="dns-connection-form">
+                <h4>DNS Server (Optional)</h4>
+                <hr>
+            </div>
+
+            <modal-element label="Key Name">
+                <input id="zone-dns-key-name" type="text" ng-model="currentZone.connection.keyName" name="keynameval" class="form-control"/>
+                <span class="help-block">
+                    The name of the key used to sign requests to the DNS server.  This is set when the zone
+                    is setup in the DNS server, and is used to connect to the DNS server when performing
+                    updates and transfers.
+                </span>
+            </modal-element>
+
+            <modal-element label="Key Secret">
+                <input id="zone-dns-key-secret" type="password" ng-model="currentZone.connection.key" name="keyval" class="form-control"/>
+                <span class="help-block">The secret key used to sign requests sent to the DNS server.</span>
+            </modal-element>
+
+            <modal-element label="DNS Server">
+                <input id="zone-dns-server" type="text" ng-model="currentZone.connection.primaryServer" name="serverval" class="form-control"/>
+                <span class="help-block">
+                    The IP Address or host name of the backing DNS server.  This host will
+                    be the target for DNS updates.  If the port is not specified, port 53
+                    is assumed.  If the port to connect to is different than 53, then include
+                    the port when specifying the DNS Server.  For example: <i> bind-01.sys.example.net:5300</i>
+                    would be used to connect to server <i>bind-01.sys.example.net</i> on port 5300
+                </span>
+            </modal-element>
+
+            <div class="dns-connection-form">
+                <h4>Zone Transfer Server (Optional)</h4>
+                <hr>
+            </div>
+
+            <modal-element label="Key Name">
+                <input id="zone-transfer-key-name" type="text" ng-model="currentZone.transferConnection.keyName" name="transferkeynameval" class="form-control"/>
+                <span class="help-block">
+                    The name of the key used to sign requests to the DNS server.  This is set when the zone
+                    is setup in the DNS server, and is used to connect to the DNS server when performing
+                    updates and transfers.
+                </span>
+            </modal-element>
+
+            <modal-element label="Key Secret">
+                <input id="zone-transfer-key-secret" type="password" ng-model="currentZone.transferConnection.key" name="transferkeyval" class="form-control"/>
+                <span class="help-block">The secret key used to sign requests sent to the DNS server.</span>
+            </modal-element>
+
+            <modal-element label="DNS Server">
+                <input id="zone-transfer-server" type="text" ng-model="currentZone.transferConnection.primaryServer" name="transferserverval" class="form-control"/>
+                <span class="help-block">
+                    The IP Address or host name of the backing DNS server for zone transfers.  This host will
+                    be the target for syncing zones with Vinyl.  If the port is not specified, port 53
+                    is assumed.  If the port to connect to is different than 53, then include
+                    the port when specifying the DNS Server.  For example: <i> bind-01.sys.example.net:5300</i>
+                    would be used to connect to server <i>bind-01.sys.example.net</i> on port 5300
+                </span>
+            </modal-element>
+        </modal-body>
+        <modal-footer>
+            <button type="button" class="btn btn-default pull-left" ng-click="resetCurrentZone()">Clear Form</button>
+            <button id="connect-zone-button" class="btn btn-primary pull-right">Connect</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="resetCurrentZone()">
+                Close
+            </button>
+        </modal-footer>
+    </modal>
+</form>

@@ -1,0 +1,178 @@
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+angular.module('controller.groups', []).controller('GroupsController', function ($scope, $log, $location, groupsService, profileService, utilityService) {
+        //registering bootstrap modal close event to refresh data after create group action
+    angular.element('#modal_new_group').one('hide.bs.modal', function () {
+        $scope.closeModal();
+    });
+
+    $scope.groups = { items: [] };
+    $scope.groupsLoaded = false;
+    $scope.alerts = [];
+
+    function handleError(error, type) {
+        var alert = utilityService.failure(error, type);
+        $scope.alerts.push(alert);
+        $scope.processing = false;
+    }
+
+    //views
+    //shared modal
+    var modalDialog;
+
+    $scope.openModal = function(evt){
+        $scope.currentGroup = {};
+        void(evt && evt.preventDefault());
+        if(!modalDialog){
+            modalDialog = angular.element('#modal_new_group').modal();
+        }
+        modalDialog.modal('show');
+    };
+
+    $scope.closeModal = function(evt){
+        void(evt && evt.preventDefault());
+        if(!modalDialog){
+            modalDialog = angular.element('#modal_new_group').modal();
+        }
+        modalDialog.modal('hide');
+        return true;
+    };
+
+    $scope.createGroup = function (name, email, description) {
+        //prevent user executing service call multiple times
+        //if true prevent, if false allow for execution of rest of code
+        //ng-href='/groups'
+       $log.log('createGroup::called', $scope.data);
+
+        if ($scope.processing) {
+            $log.log('createGroup::processing is true; exiting');
+            return;
+        }
+        //flag to prevent multiple clicks until previous promise has resolved.
+        $scope.processing = true;
+
+        //data from user form values
+        var payload =
+            {
+                'name': name,
+                'email': email,
+                'description': description,
+                'members': [{ id: $scope.profile.id }],
+                'admins': [{ id: $scope.profile.id }]
+            };
+
+        //create group success callback
+        function success(response) {
+        var alert = utilityService.success('Successfully Created Group: ' + name, response, 'createGroup::createGroup successful');
+        $scope.alerts.push(alert);
+            $scope.closeModal();
+            $scope.reset();
+            $scope.refresh();
+            return response.data;
+        }
+
+        return groupsService.createGroup(payload)
+            .then(success)
+            .catch(function (error){
+                handleError(error, 'groupsService::createGroup-failure');
+            });
+    };
+
+    $scope.refresh = function () {
+        //get users groups
+        function success(result) {
+            $log.log('getMyGroups:refresh-success', result);
+            //update groups
+            $scope.groups.items = result.groups;
+            $scope.groupsLoaded = true;
+            return result;
+        }
+        return getMyGroups()
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'getMyGroups::refresh-failure');
+            });
+    };
+
+    $scope.reset = function () {
+        //reset processing flag
+        $scope.processing = false;
+        //fields with ng-patterns need to be set to null first then cleared
+        $scope.createGroupForm.$commitViewValue();
+        //this resets $scope.currentGroup object to empty object;
+        angular.copy({}, $scope.currentGroup);
+        //reset all validations & error messages to pre-form submission state
+        $scope.createGroupForm.$setUntouched();
+        $scope.createGroupForm.$setPristine();
+
+        return true;
+    };
+
+    function getMyGroups() {
+        function success(response) {
+            $log.log('groupsService::getMyGroups-success');
+            return response.data;
+        }
+        return groupsService
+            .getMyGroups()
+            .then(success)
+            .catch(function (error){
+                handleError(error, 'groupsService::getMyGroups-failure');
+        });
+    }
+
+    $scope.confirmDeleteGroup = function (groupInfo) {
+        $scope.currentGroup = groupInfo;
+        $("#delete_group_modal").modal("show");
+    };
+
+    $scope.submitDeleteGroup = function () {
+        function success (response){
+            $("#delete_group_modal").modal("hide");
+            $scope.refresh();
+            var alert = utilityService.success('Removed Group: ' + $scope.currentGroup.name, response, 'groupsService::deleteGroup successful');
+            $scope.alerts.push(alert);
+        }
+        groupsService.deleteGroups($scope.currentGroup.id)
+        .then(success)
+        .catch(function (error){
+            handleError(error, 'groupsService::deleteGroup-failure');
+        });
+    };
+
+    function profileSuccess(results) {
+        //if data is provided
+        if (results.data) {
+            //update user profile data
+            //make user profile available to page
+            $scope.profile = results.data;
+            $log.log($scope.profile);
+            //load data in grid
+            $scope.refresh();
+        }
+    }
+
+    function profileFailure(results) {
+        $scope.profile = $scope.profile || {};
+    }
+
+    //get user data on groups view load
+    profileService.getAuthenticatedUserData()
+        .then(profileSuccess, profileFailure)
+        .catch(profileFailure);
+
+});

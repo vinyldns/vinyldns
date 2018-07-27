@@ -1,0 +1,13 @@
+/conf/local.conf
+__pycache__
+*.pyc
+/func_test/.virtualenv
+bower_components/
+node_modules/
+public/javascripts/
+public/stylesheets/
+public/custom/views.vinyl.js
+package-lock.json
+release.version
+private
+public/gentelella

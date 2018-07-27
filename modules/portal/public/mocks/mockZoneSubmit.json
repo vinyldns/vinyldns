@@ -1,0 +1,11 @@
+{
+  "name":"vinyl.",
+  "email":"test@test.com",
+  "connection":{
+    "name":"vinyl.",
+    "keyName":"vinyl.",
+    "key":"abc123",
+    "primaryServer":"1.2.3.4"
+  },
+  "shared":false
+}

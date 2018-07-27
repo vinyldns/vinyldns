@@ -1,0 +1,11 @@
+{
+  "zoneId":"abc123",
+  "name":"arecord.",
+  "type":"A",
+  "ttl":300,
+  "records":[
+    {
+      "address":"10.2.2.2"
+    }
+  ]
+}

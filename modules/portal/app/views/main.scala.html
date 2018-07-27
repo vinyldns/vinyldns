@@ -1,0 +1,162 @@
+@import helper.CSRF
+@(rootAccountName: String)(controller: String)(pageHeader: String)(pageContent: Html)(pagePlugins: Html)(implicit request: play.api.mvc.Request[Any], requestHeader: RequestHeader, customLinks: models.CustomLinks)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+            <!-- META SECTION -->
+        <title>@pageHeader | VinylDNS</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta id="csrf" content="@CSRF.getToken.value" />
+        <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon" />
+            <!-- END META SECTION -->
+
+            <!-- CSS INCLUDE -->
+        <link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/vendors/bootstrap/dist/css/bootstrap.min.css"/>
+        <link rel="stylesheet" type="text/css" href="/public/gentelella/vendors/font-awesome/css/font-awesome.css">
+        <link rel="stylesheet" type="text/css" href="/public/gentelella/vendors/animate.css/animate.css">
+        <link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/build/css/custom.css"/>
+        <link rel="stylesheet" type="text/css" id="custom" href="/public/css/theme-overrides.css"/>
+        <link rel="stylesheet" type="text/css" id="custom" href="/public/css/vinyldns.css"/>
+            <!-- EOF CSS INCLUDE -->
+    </head>
+
+    <body class="nav-md" ng-app="vinyldns" ng-controller="AppController">
+        <div class="container body">
+
+            <!-- START PAGE CONTAINER -->
+            <div class="main_container" ng-cloak ng-controller="@controller">
+
+            <!-- START PAGE SIDEBAR -->
+                <div class="col-md-3 left_col">
+                    <div class="left_col scroll-view">
+                        <div class="navbar nav_title vinyldns-nav-title">
+                            <a href="/index"><span><img src="/assets/images/vinyldns-portal.png" class="vinyldns-logo"/></span></a>
+                            <a href="/index"><img src="/assets/images/vinyldns-logo.png" class="vinyldns-logo vinyldns-logo-small"/></a>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
+                            <div class="menu_section">
+                                <ul class="nav side-menu vinyldns-side-menu">
+                                  @if(controller == "RecordsController" || controller == "ZonesController") {
+                                    <li class="active">
+                                  } else {
+                                    <li>
+                                  }
+                                    <a href="/zones"><i class="fa fa-table"></i>Zones</a>
+                                  </li>
+                                  @if(controller == "GroupsController" || controller == "MembershipController") {
+                                    <li class="active">
+                                  } else {
+                                    <li>
+                                  }
+                                    <a href="/groups"><i class="fa fa-group"></i>Groups</a>
+                                  </li>
+                                  @if(controller == "BatchChangesController" || controller == "BatchChangeNewController" || controller == "BatchChangeDetailController") {
+                                    <li class="active">
+                                  } else {
+                                    <li>
+                                  }
+                                    <a href="/batchchanges"><i class="fa fa-list-ol"></i>Batch Changes</a>
+                                  </li>
+                                  @*****************************************
+                                   * Custom links from application config *
+                                   *****************************************@
+                                    @for(link <- customLinks.links) {
+                                      @if(link.displayOnSidebar) {
+                                        <li>
+                                          <a href='@{link.href}' target="_blank">
+                                              <i class='@{link.icon}'></i><!--
+                                              -->@{link.title}
+                                          </a>
+                                        </li>
+                                      }
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @header(rootAccountName)(request)
+                @pageContent
+
+                <footer/></footer>
+
+            </div>
+            <!-- END PAGE CONTAINER -->
+
+            <!-- MESSAGE BOX-->
+            <div class="fade in modal" id="mb-signout" data-sound="alert">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+                            <h4>Log Out?</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you want to log out?</p>
+                            <p>Press No if you want to continue work. Press Yes to logout current user.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <div class="pull-right">
+                                <a href="/logout" class="btn btn-info">Yes</a>
+                                <button class="btn btn-primary" data-dismiss="modal">No</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+            <!-- END MESSAGE BOX-->
+
+            <!-- START SCRIPTS -->
+            <!-- START INJECTED DEPENDENCIES -->
+            <!-- injector:js -->
+            <script src="/public/gentelella/vendors/jquery/dist/jquery.min.js"></script>
+            <script src="/public/javascripts/angular.min.js"></script>
+            <script src="/public/gentelella/vendors/bootstrap/dist/js/bootstrap.min.js"></script>
+            <script src="/public/lib/batch-change/batch-change.module.js"></script>
+            <script src="/public/lib/batch-change/batch-change-detail.controller.js"></script>
+            <script src="/public/lib/batch-change/batch-change-new.controller.js"></script>
+            <script src="/public/lib/batch-change/batch-change.directive.js"></script>
+            <script src="/public/lib/batch-change/batch-change.service.js"></script>
+            <script src="/public/lib/batch-change/batch-changes.controller.js"></script>
+            <script src="/public/lib/constants.js"></script>
+            <script src="/public/lib/controllers/controller.groups.js"></script>
+            <script src="/public/lib/controllers/controller.manageZones.js"></script>
+            <script src="/public/lib/controllers/controller.membership.js"></script>
+            <script src="/public/lib/controllers/controller.records.js"></script>
+            <script src="/public/lib/controllers/controller.zones.js"></script>
+            <script src="/public/lib/controllers/controllers.js"></script>
+            <script src="/public/lib/directives/directives.js"></script>
+            <script src="/public/lib/directives/directives.modals.body.js"></script>
+            <script src="/public/lib/directives/directives.modals.element.js"></script>
+            <script src="/public/lib/directives/directives.modals.footer.js"></script>
+            <script src="/public/lib/directives/directives.modals.invalid.js"></script>
+            <script src="/public/lib/directives/directives.modals.js"></script>
+            <script src="/public/lib/directives/directives.modals.modal.js"></script>
+            <script src="/public/lib/directives/directives.modals.record.js"></script>
+            <script src="/public/lib/directives/directives.modals.zoneconnection.js"></script>
+            <script src="/public/lib/directives/directives.notifications.js"></script>
+            <script src="/public/lib/directives/directives.validations.js"></script>
+            <script src="/public/lib/directives/directives.validations.zones.js"></script>
+            <script src="/public/lib/services/groups/service.groups.js"></script>
+            <script src="/public/lib/services/paging/service.paging.js"></script>
+            <script src="/public/lib/services/profile/service.profile.js"></script>
+            <script src="/public/lib/services/records/service.records.js"></script>
+            <script src="/public/lib/services/services.js"></script>
+            <script src="/public/lib/services/utility/service.utility.js"></script>
+            <script src="/public/lib/services/zones/service.zones.js"></script>
+            <script src="/public/app.js"></script>
+            <script src="/public/gentelella/build/js/custom.js"></script>
+            <script src="/public/js/custom.js"></script>
+            <!-- endinjector -->
+            <!-- END INJECTED DEPENDENCIES -->
+
+        @pagePlugins
+
+    </body>
+</html>

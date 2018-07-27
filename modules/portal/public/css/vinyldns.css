@@ -1,0 +1,380 @@
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+    display: none !important;
+}
+
+.table-cell-list {
+    list-style-position: inside;
+    padding-left:0;
+}
+.login-container .login-box .login-footer .login-links a {
+    color: #428bca;
+}
+
+.vinyldns-login-title {
+    text-align: center;
+}
+
+.form-horizontal .label-top-left {
+    text-align:left;
+    width: 100%;
+    padding-left:5px;
+    padding-bottom:5px;
+}
+
+a.action-link {
+    text-decoration:none;
+}
+
+.form-control.record-edit {
+    background: #F9F9F9;
+    color:#555;
+}
+
+.form-control.acl-edit {
+    background: #F9F9F9;
+    color:#555;
+}
+
+.fa.inline-icon {
+    padding: 1px 2px 1px 2px;
+    font-size: 15px;
+    vertical-align: middle;
+}
+
+.modal {
+    text-align: center;
+    padding: 0!important;
+}
+
+.modal:before {
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+    margin-right: -4px;
+}
+
+.modal-dialog {
+    display: inline-block;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.page-container .page-content .content-frame .content-frame-body {
+    /*  joli admin had this at 300px to make a left data panel possible. We were using the left panel to add recordsets,
+        but decided this should be in a modal of its own instead. We are now making the recordset list full sized */
+    margin-left: 0px;
+}
+
+.x-navigation > li > a.logo-header {
+    padding: 3px 50px 3px 20px;
+    border-bottom: none;
+    background-color: #f5f5f5;
+}
+
+.x-navigation > li.logo > a.logo-header > img {
+    width: 100%;
+}
+
+.alert-box {
+    position: relative;
+    left: -50%;
+    padding: 10px 10px 12px 10px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.alert-wrapper {
+    position: fixed;
+    top: 3px;
+    left: 50%;
+    width: 40%;
+    z-index: 100;
+}
+
+.dns-connection-form {
+    padding-top: 10px;
+    margin: 0 20px;
+}
+
+.dns-connection-form hr {
+    margin-top: 0px;
+}
+
+.table-col-20 {
+    width: 20%;
+}
+
+.table-col-50 {
+    width: 50%;
+}
+
+.header-drop-down {
+    border: 0px
+}
+
+.btn-left-round {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+.form-control.zone-edit {
+    background: #F9F9F9;
+    color:#555;
+}
+
+.force-cursor {
+    cursor: pointer;
+}
+
+.vinyldns-login {
+    background: #1b1e24!important;
+}
+
+.vinyldns-login-box {
+    width: 100%;
+    float: left;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    -moz-border-radius: 0px;
+    -webkit-border-radius: 0px;
+    border-radius: 0px;
+}
+
+.vinyldns-login-title {
+    color: #FFFFFF;
+    text-shadow: none;
+}
+
+.vinyldns-login-btn {
+    background: #1bcfe1;
+    color: #FFFFFF;
+}
+
+.vinyldns-login-btn:hover {
+    background: #16a3b1;
+    color: #FFFFFF;
+}
+
+.vinyldns-login-footer {
+    color: #FFFFFF;
+}
+
+.vinyldns-login-footer a {
+    color: #1bcfe1;
+}
+
+.vinyldns-btn-dark {
+    background: #000000;
+    color: #FFFFFF;
+}
+
+.vinyldns-btn-dark:hover {
+    color: #FFFFFF;
+}
+
+.vinyldns-panel-top {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* V3 MAIN*/
+
+body {
+    background: #1b1e24;
+    font-family: "Helvetica Neue", Roboto, Arial, "Droid Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.left_col {
+  background: #1b1e24;
+}
+
+.nav.side-menu>li.active>a {
+    text-shadow: rgba(0, 0, 0, 0.25) 0 -1px 0;
+    background: #1bcfe1;
+    box-shadow: rgba(0, 0, 0, 0.25) 0 1px 0, inset rgba(255, 255, 255, 0.16) 0 1px 0
+}
+
+.nav.side-menu>li.active {
+  border-right: 5px solid #1bcfe1;
+}
+
+.left_col .vinyldns-logo {
+  height: 100%;
+  display: block;
+  padding: 5px;
+}
+
+.nav_title {
+    width: 230px;
+    float: left;
+    background: #1b1e24;
+    border-radius: 0;
+    height: 57px
+}
+
+.vinyldns-nav-title {
+    background: #FFFFFF;
+    padding-left: 5px;
+    border-bottom: 3px solid #1b1e24;
+}
+
+.vinyldns-side-menu {
+    margin-top: 0!important;
+}
+
+.nav_menu {
+    float: left;
+    background: #1b1e24;
+    border-bottom: 1px solid #D9DEE4;
+    margin-bottom: 10px;
+    width: 100%;
+    position: relative
+}
+
+.nav-sm .container.body .right_col {
+    padding: 0;
+}
+
+.nav-md .container.body .right_col {
+    padding: 0;
+}
+
+.breadcrumb {
+    background: #E8E8E8;
+}
+
+.page-title {
+    padding: 10px 20px 0;
+}
+
+.page-content-wrap {
+    padding: 10px 20px 0;
+    min-height: 100vh;
+}
+
+.vinyldns-logo-small {
+    display: none!important;
+}
+
+.nav-sm .vinyldns-logo-small {
+    display: block!important;
+}
+
+
+/* GROUP MANAGER SWITCH */
+label.switch {
+  margin-bottom: 0;
+}
+.switch {
+    position: relative;
+    height: 30px;
+}
+
+.switch-checkbox {
+    position: absolute;
+    opacity: 0;
+    filter: alpha(opacity=0);
+}
+
+.switch input:checked + .slider:after {
+    left: 30px;
+}
+
+.switch input:checked + .slider {
+    background-color: #95b75d;
+}
+
+.switch input:disabled + .slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.slider {
+    cursor: pointer;
+    position: relative;
+    width: 60px;
+    height: 30px;
+    background-color: #E04B4A;
+    border: 1px solid #E5E5E5;
+    display: inline-block;
+    transition: all 200ms ease;
+    border-color: rgba(0, 0, 0, 0.1);
+    left: 0px;
+    border-radius: 20px;
+}
+
+.slider:after {
+    content: "";
+    position: absolute;
+    background-color: #FFFFFF;
+    width: 27px;
+    top: 1px;
+    bottom: 1px;
+    left: 1px;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.35);
+    border-radius: 20px;
+    transition: all 200ms ease;
+}
+
+.panel-tabs {
+    padding-top: 5px;
+}
+
+.update-zone-msg {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media(min-width: 991px) {
+    #menu_mobile {
+        display: none;
+    }
+    .nav-md > .container > .main_container > .top_nav > .nav_menu > nav > .toggle >  #menu_indent {
+        display: none;
+    }
+
+    .nav-sm > .container > .main_container > .top_nav > .nav_menu > nav > .toggle >  #menu_dedent {
+        display: none;
+    }
+}
+
+@media(max-width: 990px) {
+    #menu_indent {
+        display: none;
+    }
+    #menu_dedent {
+        display: none;
+    }
+}
+
+.table-form-group > .btn {
+   margin-bottom: 0;
+}
+
+.createBatchChangeForm.ng-submitted input.ng-invalid {
+   border-color: #a94442;
+}
+
+.createBatchChangeForm .form-control:focus {
+    border-color: #1bcfe1;
+}
+
+.batch-change-error-help {
+    color: #a94442;
+}
+
+.ng-hide {
+   display: none;
+}
+
+.changeError {
+    background: rgba(255, 0, 0, 0.32);
+}
+
+.batch-label {
+    color: #73879C;
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="35px" height="24px" viewBox="0 0 35 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.4.4 (17249) - http://www.bohemiancoding.com/sketch -->
+    <title>Rectangle 166 + Triangle 1</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1----AO" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="9-About-Interior" sketch:type="MSArtboardGroup" transform="translate(-482.000000, -306.000000)">
+            <g id="Rectangle-166-+-Triangle-1" sketch:type="MSLayerGroup" transform="translate(483.000000, 307.000000)">
+                <rect id="Rectangle-166" fill="#2B9CD8" sketch:type="MSShapeGroup" x="0" y="0.851851852" width="33" height="22.1481481" rx="2"></rect>
+                <path d="M0.846383082,1.31346518 C0.0202402538,0.58805839 0.252639601,0 1.34800226,0 L31.7410613,0 C32.8442408,0 33.0645576,0.591872248 32.2428531,1.31346518 L16.545524,15.0983254 L0.846383082,1.31346518 Z" id="Triangle-1" stroke="#FFFFFF" stroke-width="2" sketch:type="MSShapeGroup"></path>
+            </g>
+        </g>
+    </g>
+</svg>
