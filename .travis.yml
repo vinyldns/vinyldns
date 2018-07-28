@@ -13,6 +13,11 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    
+install:
+  - wget https://protobuf.googlecode.com/files/protobuf-2.6.1.tar.gz
+  - tar -xzvf protobuf-2.6.1.tar.gz
+  - pushd protobuf-2.6.1 && ./configure --prefix=/usr && make && sudo make install && popd    
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
