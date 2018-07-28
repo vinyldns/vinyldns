@@ -23,7 +23,7 @@ import org.json4s.jackson.JsonMethods._
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
-import scalaz.Scalaz._
+import cats.implicits._
 
 // Test classes
 object PetType extends Enumeration {
@@ -67,22 +67,22 @@ class JsonValidationSpec
   case object HomeSerializer extends ValidationSerializer[Home] {
     override def fromJson(js: JValue): JsonDeserialized[Home] =
       (
-        (js \ "typ").optional(HomeType)
-          |@| (js \ "address").required[Address]("Missing Home.address")
-      )(Home.apply)
+        (js \ "typ").optional(HomeType),
+        (js \ "address").required[Address]("Missing Home.address")
+      ).mapN(Home.apply)
   }
   case object PetSerializer extends ValidationSerializer[Pet] {
     override def fromJson(js: JValue): JsonDeserialized[Pet] =
       (
-        (js \ "typ").required(PetType, "Missing Pet.type")
-          |@| (js \ "name")
-            .required[String]("Missing Pet.name")
-            .check(
-              "Pet.name is too long" -> (_.length < 10),
-              "Pet.name is too short" -> (_.length > 5),
-              "Pet.name must end with y" -> (_.endsWith("y"))
-            )
-      )(Pet.apply)
+        (js \ "typ").required(PetType, "Missing Pet.type"),
+        (js \ "name")
+          .required[String]("Missing Pet.name")
+          .check(
+            "Pet.name is too long" -> (_.length < 10),
+            "Pet.name is too short" -> (_.length > 5),
+            "Pet.name must end with y" -> (_.endsWith("y"))
+          )
+      ).mapN(Pet.apply)
 
     override def toJson(pet: Pet): JValue =
       ("name" -> pet.name) ~
@@ -91,11 +91,11 @@ class JsonValidationSpec
   case object UserSerializer extends ValidationSerializer[User] {
     override def fromJson(js: JValue): JsonDeserialized[User] =
       (
-        (js \ "name").default[String]("Anonymous")
-          |@| (js \ "pet").optional[Pet]
-          |@| (js \ "home").required[Home]("Missing User.home")
-          |@| (js \ "typ").default(UserType, UserType.Free)
-      )(User.apply)
+        (js \ "name").default[String]("Anonymous"),
+        (js \ "pet").optional[Pet],
+        (js \ "home").required[Home]("Missing User.home"),
+        (js \ "typ").default(UserType, UserType.Free)
+      ).mapN(User.apply)
   }
 
   "Deserialization" should {
@@ -132,10 +132,10 @@ class JsonValidationSpec
 
     "throw errors for requried values" in {
       val pet: JValue = ("key" -> "val") ~ ("other" -> "whatever")
-      val extracted = try { pet.extract[Pet].success[Throwable] } catch {
-        case e: Throwable => e.failure[Pet]
+      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+        case e: Throwable => e.invalid[Pet]
       }
-      extracted.isFailure shouldBe true
+      extracted.isInvalid shouldBe true
       val str = extracted.swap.map(_.getMessage).getOrElse("")
       str should not be ""
       val err = (parse(str) \ "errors").extract[List[String]]
@@ -144,10 +144,10 @@ class JsonValidationSpec
 
     "throw errors for checked conditions" in {
       val pet: JValue = ("name" -> "fido") ~ ("other" -> "whatever")
-      val extracted = try { pet.extract[Pet].success[Throwable] } catch {
-        case e: Throwable => e.failure[Pet]
+      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+        case e: Throwable => e.invalid[Pet]
       }
-      extracted.isFailure shouldBe true
+      extracted.isInvalid shouldBe true
       val str = extracted.swap.map(_.getMessage).getOrElse("")
       str should not be ""
       val err = (parse(str) \ "errors").extract[List[String]]
@@ -159,10 +159,10 @@ class JsonValidationSpec
 
     "throw errors for invalid Enumerations" in {
       val pet: JValue = ("name" -> "Scruffy") ~ ("typ" -> "Fish")
-      val extracted = try { pet.extract[Pet].success[Throwable] } catch {
-        case e: Throwable => e.failure[Pet]
+      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+        case e: Throwable => e.invalid[Pet]
       }
-      extracted.isFailure shouldBe true
+      extracted.isInvalid shouldBe true
       val str = extracted.swap.map(_.getMessage).getOrElse("")
       str should not be ""
       val err = (parse(str) \ "errors").extract[List[String]]
@@ -180,10 +180,10 @@ class JsonValidationSpec
             ("typ" -> HomeType.Apartment.toString) ~
               ("random" -> "other")
           ))
-      val extracted = try { user.extract[User].success[Throwable] } catch {
-        case e: Throwable => e.failure[User]
+      val extracted = try { user.extract[User].valid[Throwable] } catch {
+        case e: Throwable => e.invalid[User]
       }
-      extracted.isFailure shouldBe true
+      extracted.isInvalid shouldBe true
       val str = extracted.swap.map(_.getMessage).getOrElse("")
       str should not be ""
       val err = (parse(str) \ "errors").extract[List[String]]
@@ -197,10 +197,10 @@ class JsonValidationSpec
 
     "throw reasonable errors using default deserialization" in {
       val addr: JValue = ("key" -> "val") ~ ("other" -> "whatever")
-      val extracted = try { addr.extract[Address].success[Throwable] } catch {
-        case e: Throwable => e.failure[Address]
+      val extracted = try { addr.extract[Address].valid[Throwable] } catch {
+        case e: Throwable => e.invalid[Address]
       }
-      extracted.isFailure shouldBe true
+      extracted.isInvalid shouldBe true
       val str = extracted.swap.map(_.getMessage).getOrElse("")
       str should not be ""
       val err = (parse(str) \ "errors").extract[List[String]]
@@ -209,10 +209,10 @@ class JsonValidationSpec
 
     "catch errors from the default parsers" in {
       val pet: JValue = ("name" -> ("unnecessary" -> "json")) ~ ("typ" -> "Dog")
-      val extracted = try { pet.extract[Pet].success[Throwable] } catch {
-        case e: Throwable => e.failure[Pet]
+      val extracted = try { pet.extract[Pet].valid[Throwable] } catch {
+        case e: Throwable => e.invalid[Pet]
       }
-      extracted.isFailure shouldBe true
+      extracted.isInvalid shouldBe true
       val str = extracted.swap.map(_.getMessage).getOrElse("")
       str should not be ""
       val err = (parse(str) \ "errors").extract[List[String]]

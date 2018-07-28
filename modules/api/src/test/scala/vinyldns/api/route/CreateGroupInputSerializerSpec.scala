@@ -16,18 +16,18 @@
 
 package vinyldns.api.route
 
+import cats.scalatest.ValidatedMatchers
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-import org.typelevel.scalatest.ValidationMatchers
 import vinyldns.api.domain.membership.UserInfo
 
 class CreateGroupInputSerializerSpec
     extends WordSpec
     with MembershipJsonProtocol
     with Matchers
-    with ValidationMatchers {
+    with ValidatedMatchers {
 
   val serializers: Seq[Serializer[_]] = membershipSerializers
 
@@ -76,27 +76,27 @@ class CreateGroupInputSerializerSpec
     "return an error if the name is not specified" in {
       val json = render("email" -> "test@test.com")
       val result = CreateGroupInputSerializer.fromJson(json)
-      result should haveFailure("Missing Group.name")
+      result should haveInvalid("Missing Group.name")
     }
 
     "return an error if the email is not specified" in {
       val json = render("name" -> "myname")
       val result = CreateGroupInputSerializer.fromJson(json)
-      result should haveFailure("Missing Group.email")
+      result should haveInvalid("Missing Group.email")
     }
 
     "return an error if both the email and name are not specified" in {
       val json = render("description" -> "some description")
       val result = CreateGroupInputSerializer.fromJson(json)
-      result should haveFailure("Missing Group.email")
-      result should haveFailure("Missing Group.name")
+      result should haveInvalid("Missing Group.email")
+      result should haveInvalid("Missing Group.name")
     }
 
     "return an error if the members or admins are not provided" in {
       val json = render(("name" -> "name") ~~ ("email" -> "email"))
       val result = CreateGroupInputSerializer.fromJson(json)
-      result should haveFailure("Missing Group.members")
-      result should haveFailure("Missing Group.admins")
+      result should haveInvalid("Missing Group.members")
+      result should haveInvalid("Missing Group.admins")
     }
   }
 }

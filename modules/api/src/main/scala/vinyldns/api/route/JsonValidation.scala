@@ -20,6 +20,8 @@ import java.util.NoSuchElementException
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, MalformedRequestContentRejection, RejectionHandler}
+import cats.Order
+import cats.data.Validated.{Invalid, Valid}
 import com.fasterxml.jackson.core.JsonParseException
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import org.joda.time.DateTime
@@ -29,8 +31,8 @@ import org.json4s.ext._
 import org.json4s.jackson.JsonMethods._
 
 import scala.reflect.ClassTag
-import scalaz.Scalaz._
-import scalaz._
+import cats.data._
+import cats.implicits._
 
 case class JsonErrors(errors: List[String])
 
@@ -105,7 +107,7 @@ trait JsonValidationSupport extends Json4sSupport {
 
 trait JsonValidation extends JsonValidationSupport {
 
-  type JsonDeserialized[T] = ValidationNel[String, T]
+  type JsonDeserialized[T] = ValidatedNel[String, T]
 
   /**
     * Simplifies creation of a ValidationSerializer
@@ -169,9 +171,9 @@ trait JsonValidation extends JsonValidationSupport {
     def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), A] = {
       case (TypeInfo(Class, _), json) =>
         fromJson(json) match {
-          case Success(a: A) => a
-          case Failure(err) =>
-            throw new MappingException(compact(render("errors" -> err.list.toSet)(format)))
+          case Valid(a: A) => a
+          case Invalid(err) =>
+            throw new MappingException(compact(render("errors" -> err.toList.toSet)(format)))
         }
     }
 
@@ -190,12 +192,12 @@ trait JsonValidation extends JsonValidationSupport {
     def fromJson(js: JValue): JsonDeserialized[A] =
       try {
         Extraction.extract(js, TypeInfo(Class, None))(subsetFormats) match {
-          case a: A => a.successNel[String]
-          case _ => "Extraction.extract returned unexpected type".failureNel[A]
+          case a: A => a.validNel[String]
+          case _ => "Extraction.extract returned unexpected type".invalidNel[A]
         }
       } catch {
         case _: MappingException | _: JsonParseException =>
-          s"Failed to parse ${Class.getSimpleName.replace("$", "")}".failureNel[A]
+          s"Failed to parse ${Class.getSimpleName.replace("$", "")}".invalidNel[A]
       }
 
     // use a subset of formats that does not include this class or we will StackOverflow
@@ -216,7 +218,7 @@ trait JsonValidation extends JsonValidationSupport {
         case j =>
           try {
             // Call the Json4s extractor and wrap it in a Success NEL
-            j.extract[T].successNel[String]
+            j.extract[T].validNel[String]
           } catch {
             case MappingException(err, _) =>
               try {
@@ -224,27 +226,27 @@ trait JsonValidation extends JsonValidationSupport {
                 (parse(err) \ "errors")
                   .extractOpt[List[String]]
                   .flatMap(_.toNel)
-                  .map(_.failure[T])
+                  .map(_.invalid[T])
                   .getOrElse(default)
               } catch {
                 case _: JsonParseException =>
-                  err.failureNel[T]
+                  err.invalidNel[T]
               }
             case e: JsonParseException =>
-              s"While parsing $json, received unexpected error '${e.getMessage}'".failureNel[T]
+              s"While parsing $json, received unexpected error '${e.getMessage}'".invalidNel[T]
           }
       }
 
     def extractEnum[E <: Enumeration](enum: E)(
         default: => JsonDeserialized[E#Value]): JsonDeserialized[E#Value] = {
       lazy val invalidMsg =
-        s"Invalid ${enum.getClass.getSimpleName.replace("$", "")}".failureNel[E#Value]
+        s"Invalid ${enum.getClass.getSimpleName.replace("$", "")}".invalidNel[E#Value]
 
       json match {
         case JNothing | JNull => default
         case JString(s) =>
           try {
-            enum.withName(s).successNel[String]
+            enum.withName(s).validNel[String]
           } catch {
             case _: NoSuchElementException => invalidMsg
           }
@@ -259,7 +261,7 @@ trait JsonValidation extends JsonValidationSupport {
       *
       * @return The type extracted from JSON, or a failure with the message specified if not present
       */
-    def required[T: Manifest](msg: => String): JsonDeserialized[T] = extractType(msg.failureNel[T])
+    def required[T: Manifest](msg: => String): JsonDeserialized[T] = extractType(msg.invalidNel[T])
 
     /**
       * Indicates that the value is optional
@@ -267,7 +269,7 @@ trait JsonValidation extends JsonValidationSupport {
       * @return The value parsed, or None if the value was not present
       */
     def optional[T: Manifest]: JsonDeserialized[Option[T]] =
-      extractType[Option[T]](None.successNel[String])
+      extractType[Option[T]](None.validNel[String])
 
     /**
       * Sets a default value if the type could not be extracted from Json
@@ -277,7 +279,7 @@ trait JsonValidation extends JsonValidationSupport {
       * @return The value that was parsed, or the default
       */
     def default[T: Manifest](default: => T): JsonDeserialized[T] =
-      extractType[T](default.successNel[String])
+      extractType[T](default.validNel[String])
 
     /**
       * Indicates that the value needs to be present
@@ -287,7 +289,7 @@ trait JsonValidation extends JsonValidationSupport {
       * @return The type extracted from JSON, or a failure with the message specified if not present
       */
     def required[E <: Enumeration](enum: E, msg: => String): JsonDeserialized[E#Value] =
-      extractEnum(enum)(msg.failureNel[E#Value])
+      extractEnum(enum)(msg.invalidNel[E#Value])
 
     /**
       * Indicates that the value is optional
@@ -295,7 +297,7 @@ trait JsonValidation extends JsonValidationSupport {
       * @return The value parsed, or None if the value was not present
       */
     def optional[E <: Enumeration](enum: E): JsonDeserialized[Option[E#Value]] =
-      extractEnum(enum)(Success(null))
+      extractEnum(enum)(Valid(null))
         .map(Option(_))
 
     /**
@@ -306,13 +308,17 @@ trait JsonValidation extends JsonValidationSupport {
       * @return The value that was parsed, or the default
       */
     def default[E <: Enumeration](enum: E, default: => E#Value): JsonDeserialized[E#Value] =
-      extractEnum(enum)(default.successNel[String])
+      extractEnum(enum)(default.validNel[String])
+  }
+
+  object JsonDeserialized {
+    def apply[A](a: => A): JsonDeserialized[A] = a.validNel[String]
   }
 
   /**
     * Extends the ValidationNel to provide a check and findFailure function
     */
-  implicit class ValidationNelImprovements[E: Order, A](base: ValidationNel[E, A]) {
+  implicit class JsonDeserializedImprovements[A](base: JsonDeserialized[A]) {
 
     /**
       * Aggregates validations on contained success by checking boolean conditions
@@ -325,25 +331,32 @@ trait JsonValidation extends JsonValidationSupport {
       *                    functions on the success type.
       * @return The aggregated failure messages or the successfully validated type
       */
-    def check(validations: (E, (A => Boolean))*): ValidationNel[E, A] =
+    def check(validations: (String, A => Boolean)*): JsonDeserialized[A] =
       validations
-        .map({ case (err, func) => base.ensure(err.wrapNel)(func) })
+        .map({ case (err, func) => base.ensure(NonEmptyList.one(err))(func) })
         .fold(base)(_.findFailure(_))
         .leftMap(_.distinct)
 
-    def checkif(b: Boolean)(validations: (E, (A => Boolean))*): ValidationNel[E, A] =
+    def checkif(b: Boolean)(validations: (String, A => Boolean)*): JsonDeserialized[A] =
       if (b) base.check(validations: _*) else base
 
     /**
       * Modeled off of `findSuccess` to combine failures and favor failures over successes, returning only the first
       * if both are successful
       */
-    def findFailure[EE >: E, AA >: A](that: => ValidationNel[EE, AA]): ValidationNel[EE, AA] =
+    def findFailure[AA >: A](that: => JsonDeserialized[AA]): JsonDeserialized[AA] =
       (base, that) match {
-        case (Failure(a), Failure(b)) => Failure(a.append(b))
-        case (Failure(_), _) => base
-        case (_, Failure(_)) => that
+        case (Invalid(a), Invalid(b)) => Invalid(a.concatNel(b))
+        case (Invalid(_), _) => base
+        case (_, Invalid(_)) => that
         case _ => base
       }
+
+    def flatMap[B](that: A => JsonDeserialized[B]): JsonDeserialized[B] =
+      base.andThen { a =>
+        that(a)
+      }
+
+    def mod[B](f: A => B): JsonDeserialized[B] = base.map(f)
   }
 }

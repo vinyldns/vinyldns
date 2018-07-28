@@ -19,8 +19,7 @@ package vinyldns.api.route
 import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
-import scalaz.Scalaz._
-import scalaz.Validation.FlatMap._
+import cats.implicits._
 import vinyldns.api.domain.DomainValidationError
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
@@ -48,8 +47,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       val changeList =
         (js \ "changes").required[List[ChangeInput]]("Missing BatchChangeInput.changes")
 
-      ((js \ "comments").optional[String]
-        |@| changeList)(BatchChangeInput.apply)
+      ((js \ "comments").optional[String], changeList).mapN(BatchChangeInput)
     }
   }
 
@@ -69,10 +67,11 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): JsonDeserialized[AddChangeInput] = {
       val recordType = (js \ "type").required(RecordType, "Missing BatchChangeInput.changes.type")
 
-      ((js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName")
-        |@| recordType
-        |@| (js \ "ttl").required[Long]("Missing BatchChangeInput.changes.ttl")
-        |@| recordType.flatMap(extractRecord(_, js \ "record")))(AddChangeInput.apply)
+      (
+        (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
+        recordType,
+        (js \ "ttl").required[Long]("Missing BatchChangeInput.changes.ttl"),
+        recordType.flatMap(extractRecord(_, js \ "record"))).mapN(AddChangeInput.apply)
     }
 
     override def toJson(aci: AddChangeInput): JValue =
@@ -87,8 +86,9 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     override def fromJson(js: JValue): JsonDeserialized[DeleteChangeInput] = {
       val recordType = (js \ "type").required(RecordType, "Missing BatchChangeInput.changes.type")
 
-      ((js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName")
-        |@| recordType)(DeleteChangeInput.apply)
+      (
+        (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
+        recordType).mapN(DeleteChangeInput.apply)
     }
 
     override def toJson(aci: DeleteChangeInput): JValue =
@@ -170,7 +170,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         js.required[MXData](
           "Missing BatchChangeInput.changes.record.preference and BatchChangeInput.changes.record.exchange")
       case _ =>
-        s"Unsupported type $typ, valid types include: A, AAAA, CNAME, PTR, TXT, and MX".failureNel
+        s"Unsupported type $typ, valid types include: A, AAAA, CNAME, PTR, TXT, and MX".invalidNel
     }
   }
 }
