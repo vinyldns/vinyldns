@@ -4,8 +4,8 @@ _NOTE: This format comes from the
 - Feature or Prototype: (fill me in with a unique identity, e.g.
   my_awesome_feature)
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: (leave this empty, populate once the PR is created)
-- Issue: (link to the Issue opened for this RFC.  The issue should be labeled "rfc")
+- RFC PR: (leave this empty, populate once the PR is created with a github link to the PR)
+- Issue: (once approved, this will link to the issue tracker for implementation of the RFC)
 
 # Summary
 [summary]: #summary
