@@ -5,6 +5,9 @@ scala:
 
 jdk:
   - oraclejdk8
+  
+services:
+  - docker  
 
 cache:
   directories:
@@ -15,6 +18,14 @@ before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete
+  
+jobs:  
+  include:
+    - stage: "Verify"
+      script: sbt ++$TRAVIS_SCALA_VERSION ";validate;"
+      script: sbt ++$TRAVIS_SCALA_VERSION ";verify;"
+      script: ./bin/func-test-api.sh # run func tests in parallel
+
 
 script:
   - sbt ++$TRAVIS_SCALA_VERSION ";validate;verify"
