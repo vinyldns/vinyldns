@@ -15,7 +15,7 @@ cache:
     - $HOME/.sbt
     
 install:
-  - wget https://protobuf.googlecode.com/files/protobuf-2.6.1.tar.gz
+  - wget https://github.com/google/protobuf/releases/tag/v2.6.1
   - tar -xzvf protobuf-2.6.1.tar.gz
   - pushd protobuf-2.6.1 && ./configure --prefix=/usr && make && sudo make install && popd    
 
