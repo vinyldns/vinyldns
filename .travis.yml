@@ -13,7 +13,8 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
-    
+    - $HOME/.protobuf-2.6.1/src
+
 install:
   - wget https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz
   - tar -xzvf protobuf-2.6.1.tar.gz
@@ -27,10 +28,9 @@ before_cache:
 jobs:  
   include:
     - stage: "Verify"
-      script: sbt ++$TRAVIS_SCALA_VERSION ";validate;"
-      script: sbt ++$TRAVIS_SCALA_VERSION ";verify;"
-      script: ./bin/func-test-api.sh # run func tests in parallel
-
-
-script:
-  - sbt ++$TRAVIS_SCALA_VERSION ";validate;verify"
+      script: sbt ++$TRAVIS_SCALA_VERSION ";validate-api; validate-core; verify-api"
+      name: "Validate and verify API"
+    - script: sbt ++$TRAVIS_SCALA_VERSION ";validate-portal; verify-portal"
+      name: "Validate and verify portal"
+    - script: ./bin/func-test-portal.sh
+      name: "Run portal functional tests"
