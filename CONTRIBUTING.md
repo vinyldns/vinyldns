@@ -5,7 +5,7 @@ The following are a set of guidelines for contributing to VinylDNS and its assoc
 - [Code of Conduct](#code-of-conduct)
 - [Issues](#issues)
 - [Making Contributions](#making-contributions)
-- [Style Guide](#style-guide)
+- [Style Guides](#style-guides)
 - [Testing](#testing)
 - [License Header Check](#license-header-check)
 - [Release Management](#release-management)

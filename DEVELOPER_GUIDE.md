@@ -3,7 +3,7 @@
 ## Table of Contents
 - [Project Structure](#project-structure)
 - [Developer Requirements](#developer-requirements)
-- [Docker](#docker-setup)
+- [Docker](#docker)
 - [Configuration](#configuration)
 - [Starting the API Server Locally](#starting-the-api-server-locally)
 - [Starting the Portal Locally](#starting-the-portal-locally)
