@@ -1,10 +1,10 @@
 [![Join the chat at https://gitter.im/vinyldns/Lobby](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns/Lobby)
 
-<p align="center">
+<p align="left">
   <a href="http://www.vinyldns.io/">
     <img
       alt="VinylDNS"
-      src="img/vinyldns-logo-full.svg"
+      src="img/vinyldns-logo-full.png"
       width="400"
     />
   </a>
