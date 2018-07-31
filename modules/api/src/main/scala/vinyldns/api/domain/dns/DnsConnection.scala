@@ -16,9 +16,10 @@
 
 package vinyldns.api.domain.dns
 
+import cats._, cats.implicits._, cats.data._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
-import scalaz.\/
+
 import vinyldns.api.Interfaces.{result, _}
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
@@ -108,7 +109,7 @@ class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
   private[dns] def toQuery(
       name: String,
       zoneName: String,
-      typ: RecordType): Throwable \/ DnsQuery = {
+      typ: RecordType): Either[Throwable, DnsQuery] = {
     val dnsName = recordDnsName(name, zoneName)
     logger.info(s"Querying for dns dnsRecordName='${dnsName.toString}'; recordType='$typ'")
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
@@ -116,13 +117,13 @@ class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
     lookup.setSearchPath(Array.empty[String])
     lookup.setCache(null)
 
-    \/.right(new DnsQuery(lookup, zoneDnsName(zoneName)))
+    Right(new DnsQuery(lookup, zoneDnsName(zoneName)))
   }
 
-  private def recordsArePresent(change: RecordSetChange): Throwable \/ RecordSetChange =
+  private def recordsArePresent(change: RecordSetChange): Either[Throwable, RecordSetChange] =
     change.recordSet.records match {
-      case Nil => \/.left(InvalidRecord(s"DNS.Record submitted ${change.recordSet} has no records"))
-      case _ => \/.right(change)
+      case Nil => Left(InvalidRecord(s"DNS.Record submitted ${change.recordSet} has no records"))
+      case _ => Right(change)
     }
 
   private[dns] def addRecord(change: RecordSetChange): Result[DnsResponse] = result {
@@ -138,7 +139,7 @@ class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
     for {
       change <- recordsArePresent(change)
       dnsRecord <- toDnsRRset(change.recordSet, change.zone.name)
-      oldRecord <- change.updates.map(toDnsRRset(_, change.zone.name)).getOrElse(dnsRecord.right)
+      oldRecord <- change.updates.map(toDnsRRset(_, change.zone.name)).getOrElse(dnsRecord.asRight)
       update <- toUpdateRecordMessage(dnsRecord, oldRecord, change.zone.name)
       response <- send(update)
     } yield response
@@ -153,10 +154,10 @@ class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
     } yield response
   }
 
-  private def send(msg: DNS.Message): Throwable \/ DnsResponse = {
+  private def send(msg: DNS.Message): Either[Throwable, DnsResponse] = {
     val result =
       for {
-        resp <- \/.fromTryCatchNonFatal(resolver.send(msg))
+        resp <- Either.catchNonFatal(resolver.send(msg))
         resp <- toDnsResponse(resp)
       } yield resp
 
@@ -166,7 +167,7 @@ class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
     result
   }
 
-  private def runQuery(query: DnsQuery): Throwable \/ List[RecordSet] = {
+  private def runQuery(query: DnsQuery): Either[Throwable, List[RecordSet]] = {
     val answers = query.run()
 
     logger.info(s"Result of DNS lookup is ${answers.map(_.toString)}; result code: ${query.result}")
@@ -184,15 +185,15 @@ class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
           fromDnsRcodeToError(DNS.Rcode.value(query.error), query.error)
         } else {
           logger.info(s"Unparseable error code returned from DNS: ${query.error}")
-          \/.left(TryAgain(query.error))
+          Left(TryAgain(query.error))
         }
 
-      case DNS.Lookup.UNRECOVERABLE => \/.left(Unrecoverable(query.error))
+      case DNS.Lookup.UNRECOVERABLE => Left(Unrecoverable(query.error))
       case DNS.Lookup.TYPE_NOT_FOUND =>
-        \/.right(List()) //The host exists, but has no records associated with the queried type.
+        Right(List()) //The host exists, but has no records associated with the queried type.
       case DNS.Lookup.HOST_NOT_FOUND =>
-        \/.right(Nil) // This is NXDOMAIN, which means not found, return an empty list
-      case DNS.Lookup.SUCCESSFUL => \/.right(toFlattenedRecordSets(answers, query.zoneName))
+        Right(Nil) // This is NXDOMAIN, which means not found, return an empty list
+      case DNS.Lookup.SUCCESSFUL => Right(toFlattenedRecordSets(answers, query.zoneName))
     }
   }
 }

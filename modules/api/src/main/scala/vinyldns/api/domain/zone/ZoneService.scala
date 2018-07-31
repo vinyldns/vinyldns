@@ -16,8 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import scalaz.Scalaz._
-import scalaz.syntax.ToEitherOps
+import cats._, cats.implicits._, cats.data._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.api.domain.auth.AuthPrincipal
@@ -35,8 +34,7 @@ class ZoneService(
     commandBus: EngineCommandBus,
     zoneValidations: ZoneValidations,
     accessValidation: AccessValidationAlgebra)(implicit ec: ExecutionContext)
-    extends ZoneServiceAlgebra
-    with ToEitherOps {
+    extends ZoneServiceAlgebra {
 
   import accessValidation._
   import zoneValidations._
@@ -175,8 +173,8 @@ class ZoneService(
       .getZoneByName(zone.name)
       .map {
         case Some(existingZone) if existingZone.status != ZoneStatus.Deleted =>
-          ZoneAlreadyExistsError(s"Zone with name ${zone.name} already exists").left
-        case _ => ().right
+          ZoneAlreadyExistsError(s"Zone with name ${zone.name} already exists").asLeft
+        case _ => ().asRight
       }
       .toResult
 
@@ -184,8 +182,8 @@ class ZoneService(
     groupRepository
       .getGroup(groupId)
       .map {
-        case Some(_) => ().right
-        case None => InvalidZoneAdminError(s"Admin group with ID $groupId does not exist").left
+        case Some(_) => ().asRight
+        case None => InvalidZoneAdminError(s"Admin group with ID $groupId does not exist").asLeft
       }
       .toResult
 

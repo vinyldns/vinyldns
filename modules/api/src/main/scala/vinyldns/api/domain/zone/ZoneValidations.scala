@@ -16,64 +16,61 @@
 
 package vinyldns.api.domain.zone
 
+import cats.syntax.either._
 import com.aaronbedra.orchard.CIDR
 import org.joda.time.DateTime
-import scalaz.Disjunction
-import scalaz.syntax.ToEitherOps
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.record.RecordType
 
 import scala.util.{Failure, Success, Try}
 
-class ZoneValidations(syncDelayMillis: Int) extends ToEitherOps {
+class ZoneValidations(syncDelayMillis: Int) {
 
-  def userIsMemberOfGroup(
-      groupId: String,
-      authPrincipal: AuthPrincipal): Disjunction[Throwable, Unit] =
+  def userIsMemberOfGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(InvalidZoneAdminError(s"User is not a member of $groupId."))(
       authPrincipal.isAuthorized(groupId))
 
-  def outsideSyncDelay(zone: Zone): Disjunction[Throwable, Unit] =
+  def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
       case Some(time) if DateTime.now.getMillis - time.getMillis < syncDelayMillis => {
-        RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").left
+        RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").asLeft
       }
-      case _ => ().right
+      case _ => Right(())
     }
 
   // TODO - zone ACL validations should happen up front as input validation longer term
-  def isValidZoneAcl(acl: ZoneACL): Disjunction[Throwable, Unit] =
-    acl.rules.foldLeft(().right[Throwable]) {
+  def isValidZoneAcl(acl: ZoneACL): Either[Throwable, Unit] =
+    acl.rules.foldLeft(().asRight[Throwable]) {
       case (acc, rule) => acc.flatMap(_ => isValidAclRule(rule))
     }
 
-  def isValidAclRule(rule: ACLRule): Disjunction[Throwable, Unit] =
+  def isValidAclRule(rule: ACLRule): Either[Throwable, Unit] =
     for {
       _ <- isUserOrGroupRule(rule)
       _ <- aclRuleMaskIsValid(rule)
     } yield ()
 
-  def isUserOrGroupRule(rule: ACLRule): Disjunction[Throwable, Unit] =
+  def isUserOrGroupRule(rule: ACLRule): Either[Throwable, Unit] =
     ensuring(InvalidRequest("Invalid ACL rule: ACL rules must have a group or user id")) {
       (rule.groupId ++ rule.userId).size == 1
     }
 
-  def aclRuleMaskIsValid(rule: ACLRule): Disjunction[Throwable, Unit] =
+  def aclRuleMaskIsValid(rule: ACLRule): Either[Throwable, Unit] =
     rule.recordMask match {
       case Some(mask) if rule.recordTypes == Set(RecordType.PTR) =>
         Try(CIDR.valueOf(mask)) match {
-          case Success(_) => ().right
+          case Success(_) => Right(())
           case Failure(e) =>
-            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: ${e.getMessage}").left
+            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: ${e.getMessage}").asLeft
         }
       case Some(_) if rule.recordTypes.contains(RecordType.PTR) =>
-        InvalidRequest("Multiple record types including PTR must have no mask").left
+        InvalidRequest("Multiple record types including PTR must have no mask").asLeft
       case Some(mask) =>
         Try("string".matches(mask)) match {
-          case Success(_) => ().right
-          case Failure(_) => InvalidRequest(s"record mask $mask is an invalid regex").left
+          case Success(_) => ().asRight
+          case Failure(_) => InvalidRequest(s"record mask $mask is an invalid regex").asLeft
         }
-      case None => ().right
+      case None => ().asRight
     }
 }

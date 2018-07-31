@@ -27,13 +27,15 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import scalaz.syntax.ToEitherOps
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, _}
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
 import vinyldns.api.{GroupTestData, VinylDNSTestData}
+
+import cats.implicits._
+import cats.syntax.either._
 
 class MembershipRoutingSpec
     extends WordSpec
@@ -45,7 +47,6 @@ class MembershipRoutingSpec
     with VinylDNSDirectives
     with Matchers
     with VinylDNSTestData
-    with ToEitherOps
     with GroupTestData
     with MockitoSugar
     with BeforeAndAfterEach {

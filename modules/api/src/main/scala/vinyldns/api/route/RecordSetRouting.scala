@@ -19,7 +19,6 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
 import akka.util.Timeout
-import scalaz._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.record.{RecordSet, RecordSetServiceAlgebra}
@@ -146,17 +145,17 @@ trait RecordSetRoute extends Directives {
     }
     .result()
 
-  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.run) {
-    case \/-(a) => rt(a)
-    case -\/(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case -\/(RecordSetAlreadyExists(msg)) => complete(StatusCodes.Conflict, msg)
-    case -\/(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-    case -\/(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
-    case -\/(RecordSetNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case -\/(InvalidRequest(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
-    case -\/(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
-    case -\/(RecordSetChangeNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case -\/(e) => failWith(e)
+  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.value) {
+    case Right(a) => rt(a)
+    case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+    case Left(RecordSetAlreadyExists(msg)) => complete(StatusCodes.Conflict, msg)
+    case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+    case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
+    case Left(RecordSetNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+    case Left(InvalidRequest(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
+    case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
+    case Left(RecordSetChangeNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+    case Left(e) => failWith(e)
   }
 }

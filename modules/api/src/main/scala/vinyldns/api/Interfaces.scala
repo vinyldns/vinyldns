@@ -21,45 +21,43 @@ import akka.pattern.after
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
-import scalaz._
-import scalaz.syntax.ToEitherOps
+import cats.data._
+import cats.instances._
+import cats.syntax.either._
 
-object Interfaces extends ToEitherOps {
+object Interfaces {
 
-  /**
-    * the type returned from the ZoneActor is a ScalaZ disjunction \/, EitherT extends that to support
-    * Future[ZoneError \/ ZoneEvt] this makes it easy to use results in for comprehensions among other things
-    */
+  /* Our standard business error type */
   type Result[A] = EitherT[Future, Throwable, A]
 
   /* Transforms a disjunction to a Result */
-  def result[A](either: => Throwable \/ A): Result[A] = Result(Future.successful(either))
+  def result[A](either: => Either[Throwable, A]): Result[A] = Result(Future.successful(either))
 
   /* Transforms any value at all into a positive result */
-  def result[A](a: A): Result[A] = Result(Future.successful(a.right))
+  def result[A](a: A): Result[A] = Result(Future.successful(a.asRight[Throwable]))
 
   /* Transforms an error into a Result with a left disjunction */
-  def result[A](error: Throwable): Result[A] = Result(Future.successful(\/.left(error)))
+  def result[A](error: Throwable): Result[A] = Result(Future.successful(error.asLeft[A]))
 
-  def ensuring(onError: => Throwable)(check: => Boolean): Disjunction[Throwable, Unit] =
-    if (check) ().right else onError.left
+  def ensuring(onError: => Throwable)(check: => Boolean): Either[Throwable, Unit] =
+    if (check) Right(()) else Left(onError)
 
   /**
-    * If the future is a disjunction already, return the disjunction; otherwise return the successful value
+    * If the future is an Either already, return the Either; otherwise return the successful value
     * as a disjunction
     */
   def result[A](fut: Future[_])(implicit ec: ExecutionContext): Result[A] =
     Result(
       fut
         .map {
-          case disj: Disjunction[_, _] => disj
-          case e: Throwable => e.left
-          case a => a.right
+          case disj: Either[_, _] => disj
+          case e: Throwable => Left(e)
+          case a => Right(a)
         }
         .recover {
-          case e: Throwable => e.left
+          case e: Throwable => Left(e)
         }
-        .mapTo[Throwable \/ A]
+        .mapTo[Either[Throwable, A]]
     )
 
   def withTimeout[A](
@@ -72,31 +70,33 @@ object Interfaces extends ToEitherOps {
     Future.firstCompletedOf(Seq(theFuture, timeOut))
   }
 
-  /* Pimps futures to easily lift the future to a Result */
+  /* Enhances futures to easily lift the future to a Result */
   implicit class FutureResultImprovements(fut: Future[_])(implicit ec: ExecutionContext) {
 
     /* Lifts a future into a Result */
     def toResult[A]: Result[A] = result[A](fut)
   }
 
-  /*Convenience operations for working with Future of Option*/
+  /* Convenience operations for working with Future of Option */
   implicit class FutureOptionImprovements[A](fut: Future[Option[A]])(
       implicit ec: ExecutionContext) {
 
     /* If the result of the future is None, then fail with the provided parameter `ifNone` */
-    def orFail(ifNone: => Throwable): Future[Throwable \/ A] = fut.map {
-      case Some(a) => a.right
-      case None => ifNone.left
+    // TODO: Can use OptionT here instead
+    def orFail(ifNone: => Throwable): Future[Either[Throwable, A]] = fut.map {
+      case Some(a) => Right(a)
+      case None => Left(ifNone)
     }
   }
 
-  /* Pimps any value to easily lift the class to a Result */
+  /* Enhances any value to easily lift the class to a Result */
   implicit class AnyResultImprovements[A](a: A)(implicit ec: ExecutionContext) {
     def toResult: Result[A] = result[A](a)
   }
 
-  /* Pimps any existing Disjunction to easily lift the class to a Result */
-  implicit class DisjunctionImprovements[A](disj: Throwable \/ A)(implicit ec: ExecutionContext) {
+  /* Enhances any existing Disjunction to easily lift the class to a Result */
+  implicit class DisjunctionImprovements[A](disj: Either[Throwable, A])(
+      implicit ec: ExecutionContext) {
     def toResult: Result[A] = result[A](disj)
   }
 
@@ -120,5 +120,5 @@ object Interfaces extends ToEitherOps {
 
 object Result {
 
-  def apply[A](f: => Future[Throwable \/ A]): Interfaces.Result[A] = EitherT(f)
+  def apply[A](f: => Future[Either[Throwable, A]]): Interfaces.Result[A] = EitherT(f)
 }

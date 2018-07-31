@@ -26,7 +26,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
-import scalaz.\/
+
 import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
@@ -128,72 +128,74 @@ class ZoneRoutingSpec
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(zone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] = {
       val outcome = zone.id match {
-        case alreadyExists.id => \/.left(ZoneAlreadyExistsError(s"$zone"))
-        case notFound.id => \/.left(ZoneNotFoundError(s"$zone"))
-        case notAuthorized.id => \/.left(NotAuthorizedError(s"$zone"))
-        case badAdminId.id => \/.left(InvalidZoneAdminError(s"$zone"))
+        case alreadyExists.id => Left(ZoneAlreadyExistsError(s"$zone"))
+        case notFound.id => Left(ZoneNotFoundError(s"$zone"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$zone"))
+        case badAdminId.id => Left(InvalidZoneAdminError(s"$zone"))
         case ok.id | connectionOk.id | trailingDot.id =>
-          \/.right(zoneCreate
-            .copy(status = ZoneChangeStatus.Complete, zone = zone.copy(status = ZoneStatus.Active)))
-        case error.id => \/.left(new RuntimeException("fail"))
-        case connectionFailed.id => \/.left(ConnectionFailed(zone, "fail"))
+          Right(
+            zoneCreate.copy(
+              status = ZoneChangeStatus.Complete,
+              zone = zone.copy(status = ZoneStatus.Active)))
+        case error.id => Left(new RuntimeException("fail"))
+        case connectionFailed.id => Left(ConnectionFailed(zone, "fail"))
         case zoneValidationFailed.id =>
-          \/.left(ZoneValidationFailed(zone, List("fail"), "failure message"))
+          Left(ZoneValidationFailed(zone, List("fail"), "failure message"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
 
     def updateZone(newZone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] = {
       val outcome = newZone.id match {
-        case alreadyExists.id => \/.left(ZoneAlreadyExistsError(s"$newZone"))
-        case notFound.id => \/.left(ZoneNotFoundError(s"$newZone"))
-        case notAuthorized.id => \/.left(NotAuthorizedError(s"$newZone"))
-        case badAdminId.id => \/.left(InvalidZoneAdminError(s"$newZone"))
+        case alreadyExists.id => Left(ZoneAlreadyExistsError(s"$newZone"))
+        case notFound.id => Left(ZoneNotFoundError(s"$newZone"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$newZone"))
+        case badAdminId.id => Left(InvalidZoneAdminError(s"$newZone"))
         case ok.id | connectionOk.id =>
-          \/.right(
+          Right(
             zoneUpdate.copy(
               status = ZoneChangeStatus.Complete,
               zone = newZone.copy(status = ZoneStatus.Active)))
-        case error.id => \/.left(new RuntimeException("fail"))
-        case zone1.id => \/.left(ZoneUnavailableError(s"$newZone"))
-        case connectionFailed.id => \/.left(ConnectionFailed(newZone, "fail"))
+        case error.id => Left(new RuntimeException("fail"))
+        case zone1.id => Left(ZoneUnavailableError(s"$newZone"))
+        case connectionFailed.id => Left(ConnectionFailed(newZone, "fail"))
         case zoneValidationFailed.id =>
-          \/.left(ZoneValidationFailed(newZone, List("fail"), "failure message"))
+          Left(ZoneValidationFailed(newZone, List("fail"), "failure message"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
 
     def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
-        case notFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorized.id => \/.left(NotAuthorizedError(s"$zoneId"))
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
         case ok.id | connectionOk.id =>
-          \/.right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Complete))
-        case error.id => \/.left(new RuntimeException("fail"))
-        case zone1.id => \/.left(ZoneUnavailableError(zoneId))
+          Right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Complete))
+        case error.id => Left(new RuntimeException("fail"))
+        case zone1.id => Left(ZoneUnavailableError(zoneId))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
 
     def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
-        case ok.id => \/.right(zoneUpdate.copy(changeType = ZoneChangeType.Sync))
-        case notFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorized.id => \/.left(NotAuthorizedError(s"$zoneId"))
-        case zone1.id => \/.left(InvalidSyncStateError(s"$zoneId"))
-        case zone2.id => \/.left(PendingUpdateError(s"$zoneId"))
-        case zone3.id => \/.left(RecentSyncError(s"$zoneId"))
-        case zone4.id => \/.left(ZoneInactiveError(s"$zoneId"))
-        case zone5.id => \/.left(ZoneUnavailableError(s"$zoneId"))
+        case ok.id => Right(zoneUpdate.copy(changeType = ZoneChangeType.Sync))
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
+        case zone1.id => Left(InvalidSyncStateError(s"$zoneId"))
+        case zone2.id => Left(PendingUpdateError(s"$zoneId"))
+        case zone3.id => Left(RecentSyncError(s"$zoneId"))
+        case zone4.id => Left(ZoneInactiveError(s"$zoneId"))
+        case zone5.id => Left(ZoneUnavailableError(s"$zoneId"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
 
     def getZone(zoneId: String, auth: AuthPrincipal): Result[ZoneInfo] = {
       val outcome = zoneId match {
-        case notFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
-        case ok.id => \/.right(okAsZoneInfo)
-        case error.id => \/.left(new RuntimeException("fail"))
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case ok.id => Right(okAsZoneInfo)
+        case error.id => Left(new RuntimeException("fail"))
       }
       outcome.toResult
     }
@@ -206,7 +208,7 @@ class ZoneRoutingSpec
 
       val outcome = (authPrincipal, nameFilter, startFrom, maxItems) match {
         case (_, None, Some(3), 3) =>
-          \/.right(
+          Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
@@ -216,7 +218,7 @@ class ZoneRoutingSpec
             )
           )
         case (_, None, Some(4), 4) =>
-          \/.right(
+          Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
@@ -227,7 +229,7 @@ class ZoneRoutingSpec
           )
 
         case (_, None, None, 3) =>
-          \/.right(
+          Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
@@ -238,7 +240,7 @@ class ZoneRoutingSpec
           )
 
         case (_, Some(filter), Some(4), 4) =>
-          \/.right(
+          Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = Some(filter),
@@ -249,7 +251,7 @@ class ZoneRoutingSpec
           )
 
         case (_, None, None, _) =>
-          \/.right(
+          Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
@@ -259,7 +261,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case _ => \/.left(InvalidRequest("shouldnt get here"))
+        case _ => Left(InvalidRequest("shouldnt get here"))
       }
 
       outcome.toResult
@@ -271,9 +273,9 @@ class ZoneRoutingSpec
         startFrom: Option[String],
         maxItems: Int): Result[ListZoneChangesResponse] = {
       val outcome = zoneId match {
-        case notFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorized.id => \/.left(NotAuthorizedError("no way"))
-        case _ => \/.right(listZoneChangeResponse)
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorized.id => Left(NotAuthorizedError("no way"))
+        case _ => Right(listZoneChangeResponse)
       }
       outcome.toResult
     }
@@ -284,12 +286,12 @@ class ZoneRoutingSpec
         authPrincipal: AuthPrincipal): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
         case badRegex.id =>
-          \/.left(InvalidRequest("record mask x{5,-3} is an invalid regex"))
-        case notFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorized.id => \/.left(NotAuthorizedError(s"$zoneId"))
+          Left(InvalidRequest("record mask x{5,-3} is an invalid regex"))
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
         case ok.id | connectionOk.id =>
           val newRule = ACLRule(aclRuleInfo)
-          \/.right(
+          Right(
             ZoneChange
               .forUpdate(
                 ok.addACLRule(newRule),
@@ -298,7 +300,7 @@ class ZoneRoutingSpec
               )
               .copy(status = ZoneChangeStatus.Complete)
           )
-        case error.id => \/.left(new RuntimeException("fail"))
+        case error.id => Left(new RuntimeException("fail"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
@@ -308,11 +310,11 @@ class ZoneRoutingSpec
         aclRuleInfo: ACLRuleInfo,
         authPrincipal: AuthPrincipal): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
-        case notFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorized.id => \/.left(NotAuthorizedError(s"$zoneId"))
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
         case ok.id | connectionOk.id =>
           val rule = ACLRule(aclRuleInfo)
-          \/.right(
+          Right(
             ZoneChange
               .forUpdate(
                 ok.deleteACLRule(rule),
@@ -321,7 +323,7 @@ class ZoneRoutingSpec
               )
               .copy(status = ZoneChangeStatus.Complete)
           )
-        case error.id => \/.left(new RuntimeException("fail"))
+        case error.id => Left(new RuntimeException("fail"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }

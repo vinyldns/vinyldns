@@ -27,12 +27,14 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-import scalaz.syntax.ToEitherOps
 import vinyldns.api.GroupTestData
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
 import vinyldns.api.domain.record.RecordType._
 import vinyldns.api.domain.record._
+
+import cats.implicits._
+import cats.syntax.either._
 
 import scala.concurrent.Future
 

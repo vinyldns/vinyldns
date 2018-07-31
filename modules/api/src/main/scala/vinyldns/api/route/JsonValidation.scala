@@ -149,7 +149,7 @@ trait JsonValidation extends JsonValidationSupport {
     * remove the current serializer wwhen you delegate (see the toJson method below).
     *
     * Otherwise, you can override the fromJson method and provide a function that takes a JValue and returns
-    * a ValidationNel[String, T] (aliased by the type JsonDeserialized[T])
+    * a ValidatedNel[String, T] (aliased by the type JsonDeserialized[T])
     */
   abstract class ValidationSerializer[A: Manifest] extends Serializer[A] {
 
@@ -186,7 +186,7 @@ trait JsonValidation extends JsonValidationSupport {
       *
       * @param js A [[JValue]] to be validated and deserialized
       *
-      * @return A ValidationNel[String, T] that will contain either the deserialized type T
+      * @return A ValidatedNel[String, T] that will contain either the deserialized type T
       *         or a list of String that contain errors
       */
     def fromJson(js: JValue): JsonDeserialized[A] =
@@ -316,7 +316,7 @@ trait JsonValidation extends JsonValidationSupport {
   }
 
   /**
-    * Extends the ValidationNel to provide a check and findFailure function
+    * Extends the ValidatedNel to provide a check and findFailure function
     */
   implicit class JsonDeserializedImprovements[A](base: JsonDeserialized[A]) {
 

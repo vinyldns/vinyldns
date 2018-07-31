@@ -58,23 +58,23 @@ class BatchChangeProtobufConversionsSpec
   "BatchChangeProtobufConversions" should {
     "round trip single add changes with all values provided" in {
       val pb = toPB(testAddChange)
-      val roundTrip = fromPB(pb.right.value)
+      val roundTrip = fromPB(pb.asRight.value)
 
-      roundTrip.right.value shouldBe testAddChange
+      roundTrip.asRight.value shouldBe testAddChange
     }
 
     "round trip single delete changes with all values provided" in {
       val pb = toPB(testDeleteChange)
-      val roundTrip = fromPB(pb.right.value)
+      val roundTrip = fromPB(pb.asRight.value)
 
-      roundTrip.right.value shouldBe testDeleteChange
+      roundTrip.asRight.value shouldBe testDeleteChange
     }
 
     "round trip single add changes when optional values are not present" in {
       val tst = testAddChange.copy(systemMessage = None, recordChangeId = None, recordSetId = None)
       val pb = toPB(tst)
 
-      val roundTrip = fromPB(pb.right.value)
+      val roundTrip = fromPB(pb.asRight.value)
 
       roundTrip.right.value shouldBe tst
     }

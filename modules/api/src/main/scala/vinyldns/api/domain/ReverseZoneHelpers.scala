@@ -16,8 +16,8 @@
 
 package vinyldns.api.domain
 
+import cats._, cats.implicits._, cats.data._
 import com.aaronbedra.orchard.CIDR
-import scalaz.Disjunction
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordType
 import vinyldns.api.domain.record.RecordType.RecordType
@@ -35,10 +35,7 @@ object ReverseZoneHelpers {
       Try(CIDR.valueOf(mask).contains(ipAddr)).getOrElse(false)
     }
 
-  def ptrIsInZone(
-      zone: Zone,
-      recordName: String,
-      recordType: RecordType): Disjunction[Throwable, Unit] =
+  def ptrIsInZone(zone: Zone, recordName: String, recordType: RecordType): Either[Throwable, Unit] =
     recordType match {
       case RecordType.PTR => {
         if (zone.isIPv4) {
@@ -47,10 +44,10 @@ object ReverseZoneHelpers {
           handleIpv6RecordValidation(zone: Zone, recordName)
         } else {
           InvalidRequest(
-            s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").left
+            s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
         }
       }
-      case _ => ().right
+      case _ => ().asRight
     }
 
   private[domain] def convertPTRtoIPv4(zone: Zone, recordName: String): String = {
@@ -99,33 +96,33 @@ object ReverseZoneHelpers {
   private def ipv4ReverseSplitByOctets(string: String): List[String] =
     string.split('.').filter(!_.isEmpty).reverse.toList
 
-  private def getZoneAsCIDRString(zone: Zone): Disjunction[Throwable, String] = {
+  private def getZoneAsCIDRString(zone: Zone): Either[Throwable, String] = {
     val zoneName = zone.name.split("in-addr.arpa.")(0)
     val zoneOctets = ipv4ReverseSplitByOctets(zoneName)
     val zoneString = zoneOctets.mkString(".")
 
     if (zoneString.contains("/")) {
-      zoneString.right
+      zoneString.asRight
     } else {
       zoneOctets.length match {
-        case 1 => (zoneString + ".0.0.0/8").right
-        case 2 => (zoneString + ".0.0/16").right
-        case 3 => (zoneString + ".0/24").right
-        case _ => InvalidRequest(s"Zone ${zone.name} does not have 1-3 octets: illegal").left
+        case 1 => (zoneString + ".0.0.0/8").asRight
+        case 2 => (zoneString + ".0.0/16").asRight
+        case 3 => (zoneString + ".0/24").asRight
+        case _ => InvalidRequest(s"Zone ${zone.name} does not have 1-3 octets: illegal").asLeft
       }
     }
   }
 
   private def handleIpv4RecordValidation(
       zone: Zone,
-      recordName: String): Disjunction[Throwable, Unit] = {
+      recordName: String): Either[Throwable, Unit] = {
     val isValid = for {
       cidrMask <- getZoneAsCIDRString(zone)
       validated <- if (recordsetIsWithinCidrMask(cidrMask, zone, recordName)) {
-        true.right
+        true.asRight
       } else {
         InvalidRequest(
-          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").left
+          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
       }
     } yield validated
 
@@ -134,14 +131,14 @@ object ReverseZoneHelpers {
 
   private def handleIpv6RecordValidation(
       zone: Zone,
-      recordName: String): Disjunction[Throwable, Unit] = {
+      recordName: String): Either[Throwable, Unit] = {
     val v6Regex = "([0-9a-f][.]){32}ip6.arpa.".r
 
     s"$recordName.${zone.name}" match {
-      case v6Regex(_*) => ().right
+      case v6Regex(_*) => ().asRight
       case _ =>
         InvalidRequest(
-          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").left
+          s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
     }
   }
 

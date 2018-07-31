@@ -25,7 +25,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
-import scalaz.\/
+
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.api.domain.record.RecordType._
@@ -79,7 +79,7 @@ class DnsConnectionSpec
   private val mockDnsQuery = mock[DnsQuery]
   private val underTest = new DnsConnection(mockResolver) {
     override def toQuery(name: String, zoneName: String, typ: RecordType): Throwable \/ DnsQuery =
-      \/.right(mockDnsQuery)
+      Right(mockDnsQuery)
   }
   private val dnsQueryTest = new DnsConnection(mockResolver)
 

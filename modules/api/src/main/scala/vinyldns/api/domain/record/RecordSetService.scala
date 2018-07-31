@@ -16,7 +16,8 @@
 
 package vinyldns.api.domain.record
 
-import scalaz.Scalaz._
+import cats._, cats.implicits._, cats.data._
+import cats.syntax.either._
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.api.domain.auth.AuthPrincipal
@@ -169,11 +170,12 @@ class RecordSetService(
     recordSetRepository
       .getRecordSets(zone.id, recordSet.name, recordSet.typ)
       .map {
-        case Nil => ().right
+        case Nil => Right(())
         case _ =>
-          RecordSetAlreadyExists(
-            s"RecordSet with name ${recordSet.name} and type ${recordSet.typ} already " +
-              s"exists in zone ${zone.name}").left
+          Left(
+            RecordSetAlreadyExists(
+              s"RecordSet with name ${recordSet.name} and type ${recordSet.typ} already " +
+                s"exists in zone ${zone.name}"))
       }
       .toResult
 

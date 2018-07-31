@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import scalaz.\/
+
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, GroupRepository, User, UserRepository}

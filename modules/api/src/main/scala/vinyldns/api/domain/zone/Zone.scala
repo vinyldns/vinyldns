@@ -18,9 +18,8 @@ package vinyldns.api.domain.zone
 
 import java.util.UUID
 
+import cats._, cats.implicits._, cats.data._
 import org.joda.time.DateTime
-import scalaz.Scalaz._
-import scalaz._
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.{DomainValidationError, zone}
 import vinyldns.api.domain.ValidationImprovements._
@@ -83,13 +82,14 @@ object Zone {
       adminGroupId: String,
       connection: Option[ZoneConnection],
       transfer: Option[ZoneConnection],
-      zoneAcl: Option[ZoneACL]): ValidationNel[DomainValidationError, Zone] =
-    (validateZoneName(name)
-      |@| validateEmail(email)
-      |@| adminGroupId.successNel
-      |@| validateZoneConnection(connection)
-      |@| validateZoneConnection(transfer)
-      |@| validateZoneAcl(zoneAcl)) { (nm, em, ag, cn, tr, za) =>
+      zoneAcl: Option[ZoneACL]): ValidatedNel[DomainValidationError, Zone] =
+    (
+      validateZoneName(name),
+      validateEmail(email),
+      adminGroupId.validNel,
+      validateZoneConnection(connection),
+      validateZoneConnection(transfer),
+      validateZoneAcl(zoneAcl)).mapN { (nm, em, ag, cn, tr, za) =>
       Zone(
         name = nm,
         email = em,
@@ -100,17 +100,18 @@ object Zone {
       )
     }
 
-  def validateZoneName(name: String): ValidationNel[DomainValidationError, String] =
-    (validateStringLength(name, Some(ZONE_MIN_LENGTH), ZONE_MAX_LENGTH) +++ validateTrailingDot(
-      name)).map(_ => name)
+  def validateZoneName(name: String): ValidatedNel[DomainValidationError, String] =
+    validateStringLength(name, Some(ZONE_MIN_LENGTH), ZONE_MAX_LENGTH)
+      .combine(validateTrailingDot(name))
+      .map(_ => name)
 
   def validateZoneConnection(connection: Option[ZoneConnection])
-    : ValidationNel[DomainValidationError, Option[ZoneConnection]] =
+    : ValidatedNel[DomainValidationError, Option[ZoneConnection]] =
     validateIfDefined(connection) { c =>
       ZoneConnection.build(c.name, c.keyName, c.key, c.primaryServer)
     }
 
-  def validateZoneAcl(acl: Option[ZoneACL]): ValidationNel[DomainValidationError, Option[ZoneACL]] =
+  def validateZoneAcl(acl: Option[ZoneACL]): ValidatedNel[DomainValidationError, Option[ZoneACL]] =
     validateIfDefined(acl) { acl =>
       ZoneACL.build(acl.rules)
     }
@@ -124,9 +125,9 @@ case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 }
 
 object ZoneACL {
-  def build(rules: Set[ACLRule]): ValidationNel[DomainValidationError, ZoneACL] =
+  def build(rules: Set[ACLRule]): ValidatedNel[DomainValidationError, ZoneACL] =
     rules.toList
-      .traverseU(
+      .traverse(
         r =>
           ACLRule
             .build(r.accessLevel, r.description, r.userId, r.groupId, r.recordMask, r.recordTypes))
@@ -150,18 +151,20 @@ object ZoneConnection {
       name: String,
       keyName: String,
       key: String,
-      primaryServer: String): ValidationNel[DomainValidationError, ZoneConnection] =
-    (validateStringLength(name, Some(ZONE_CONNECTION_MIN), ZONE_CONNECTION_MAX)
-      |@| keyName.successNel
-      |@| key.successNel
-      |@| validateHostServer(primaryServer))(ZoneConnection.apply)
+      primaryServer: String): ValidatedNel[DomainValidationError, ZoneConnection] =
+    (
+      validateStringLength(name, Some(ZONE_CONNECTION_MIN), ZONE_CONNECTION_MAX),
+      keyName.validNel,
+      key.validNel,
+      validateHostServer(primaryServer)
+    ).mapN(ZoneConnection.apply)
 
-  def validateHostServer(host: String): ValidationNel[DomainValidationError, String] = {
+  def validateHostServer(host: String): ValidatedNel[DomainValidationError, String] = {
     val splitHosts = host.split(":") // First part is host name or IPv4
 
     val checkDomainName = validateHostName(splitHosts(0))
     val checkIpv4 = validateIpv4Address(splitHosts(0))
-    val checkPort = if (splitHosts.length == 1) "".successNel else validatePort(splitHosts(1))
+    val checkPort = if (splitHosts.length == 1) "".validNel else validatePort(splitHosts(1))
 
     /*
      This is a little hard to follow:
@@ -172,6 +175,6 @@ object ZoneConnection {
      Note: We use the `.map(_ => ...)` convention here to return the original string upon success since the +++ operator
      appends Successes and Failures if both are of the same type.
      */
-    (checkDomainName.findSuccess(checkIpv4) +++ checkPort).map(_ => host)
+    checkDomainName.findValid(checkIpv4).combine(checkPort).map(_ => host)
   }
 }

@@ -21,7 +21,7 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import scalaz.std.scalaFuture._
+import cats.implicits._
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.membership.{ListUsersResults, UserRepository}
 import vinyldns.api.domain.zone._

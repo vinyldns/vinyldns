@@ -17,16 +17,15 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.util.Timeout
 import vinyldns.api.Interfaces._
 
 import scala.concurrent.duration._
-import scalaz.{-\/, \/-}
 
 trait PingRoute extends Directives {
 
-  val pingRoute = (get & path("ping")) {
+  val pingRoute: Route = (get & path("ping")) {
     complete("PONG")
   }
 }
@@ -40,10 +39,10 @@ trait HealthCheckRoute extends Directives {
   // perform a query against, fail with an ok if we can get zones from the zone manager
   val healthCheckRoute =
     (get & path("health")) {
-      onSuccess(checkStatus.run) {
-        case \/-(_) =>
+      onSuccess(checkStatus.value) {
+        case Right(_) =>
           complete(StatusCodes.OK)
-        case -\/(e) => failWith(e)
+        case Left(e) => failWith(e)
       }
     }
 

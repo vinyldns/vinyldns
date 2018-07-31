@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.membership
 
-import scalaz.std.scalaFuture._
+import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.ZoneRepository
@@ -186,9 +186,9 @@ class MembershipService(
       .getGroupByName(name)
       .map {
         case Some(existingGroup) if existingGroup.status != GroupStatus.Deleted =>
-          GroupAlreadyExistsError(s"Group with name $name already exists").left
+          GroupAlreadyExistsError(s"Group with name $name already exists").asLeft
         case _ =>
-          ().right
+          ().asRight
       }
       .toResult
 
@@ -196,9 +196,9 @@ class MembershipService(
     userRepo.getUsers(userIds, None, None).map { results =>
       val delta = userIds.diff(results.users.map(_.id).toSet)
       if (delta.isEmpty)
-        ().right
+        ().asRight
       else
-        UserNotFoundError(s"Users [ ${delta.mkString(",")} ] were not found").left
+        UserNotFoundError(s"Users [ ${delta.mkString(",")} ] were not found").asLeft
     }
   }.toResult
 
@@ -208,9 +208,9 @@ class MembershipService(
       .map {
         case Some(existingGroup)
             if existingGroup.status != GroupStatus.Deleted && existingGroup.id != groupId =>
-          GroupAlreadyExistsError(s"Group with name $name already exists").left
+          GroupAlreadyExistsError(s"Group with name $name already exists").asLeft
         case _ =>
-          ().right
+          ().asRight
       }
       .toResult
 

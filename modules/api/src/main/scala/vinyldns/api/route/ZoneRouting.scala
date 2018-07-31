@@ -19,7 +19,6 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
 import akka.util.Timeout
-import scalaz._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone._
@@ -138,21 +137,21 @@ trait ZoneRoute extends Directives {
     }
     .result()
 
-  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.run) {
-    case \/-(a) => rt(a)
-    case -\/(ZoneAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
-    case -\/(ConnectionFailed(_, msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(ZoneValidationFailed(zone, errors, _)) =>
+  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.value) {
+    case Right(a) => rt(a)
+    case Left(ZoneAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
+    case Left(ConnectionFailed(_, msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(ZoneValidationFailed(zone, errors, _)) =>
       complete(StatusCodes.BadRequest, ZoneRejected(zone, errors))
-    case -\/(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-    case -\/(InvalidZoneAdminError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case -\/(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
-    case -\/(InvalidSyncStateError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
-    case -\/(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
-    case -\/(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(e) => failWith(e)
+    case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+    case Left(InvalidZoneAdminError(msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+    case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
+    case Left(InvalidSyncStateError(msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
+    case Left(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
+    case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(e) => failWith(e)
   }
 }

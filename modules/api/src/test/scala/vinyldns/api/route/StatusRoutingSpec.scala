@@ -24,7 +24,9 @@ import fs2.async.mutable.Signal
 import cats.effect.IO
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
-import scalaz.syntax.ToEitherOps
+
+import cats.implicits._
+import cats.syntax.either._
 
 class StatusRoutingSpec
     extends WordSpec
@@ -35,7 +37,6 @@ class StatusRoutingSpec
     with VinylDNSJsonProtocol
     with BeforeAndAfterEach
     with MockitoSugar
-    with ToEitherOps
     with Matchers {
 
   def actorRefFactory: ActorSystem = system

@@ -506,7 +506,7 @@ class BatchChangeServiceSpec
           ),
           okAuth
         )
-        .right
+        .asRight
         .value
 
       result shouldBe a[BatchChange]

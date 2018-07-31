@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain
 
-import scalaz.Disjunction
+import cats.syntax.either._
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.record.{RecordSet, RecordType}
@@ -26,12 +26,12 @@ import vinyldns.api.domain.zone._
 
 class AccessValidations(approvedNsGroups: Set[String] = Set()) extends AccessValidationAlgebra {
 
-  def canSeeZone(auth: AuthPrincipal, zone: Zone): Disjunction[Throwable, Unit] =
+  def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
       (hasZoneAdminAccess(auth, zone) || zone.shared) || userHasAclRules(auth, zone))
 
-  def canChangeZone(auth: AuthPrincipal, zone: Zone): Disjunction[Throwable, Unit] =
+  def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot modify zone '${zone.name}'"))(
       hasZoneAdminAccess(auth, zone))
@@ -40,7 +40,7 @@ class AccessValidations(approvedNsGroups: Set[String] = Set()) extends AccessVal
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit] = {
+      zone: Zone): Either[Throwable, Unit] = {
     val accessLevel = getAccessLevel(auth, recordName, recordType, zone)
     val access = ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to create " +
@@ -50,14 +50,14 @@ class AccessValidations(approvedNsGroups: Set[String] = Set()) extends AccessVal
     for {
       _ <- access
       _ <- doNSCheck(auth, recordType, zone)
-    } yield ().right
+    } yield ().asRight
   }
 
   def canUpdateRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit] = {
+      zone: Zone): Either[Throwable, Unit] = {
     val accessLevel = getAccessLevel(auth, recordName, recordType, zone)
     val access = ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to update " +
@@ -67,14 +67,14 @@ class AccessValidations(approvedNsGroups: Set[String] = Set()) extends AccessVal
     for {
       _ <- access
       _ <- doNSCheck(auth, recordType, zone)
-    } yield ().right
+    } yield ().asRight
   }
 
   def canDeleteRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit] = {
+      zone: Zone): Either[Throwable, Unit] = {
     val access = ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to delete " +
         s"$recordName.${zone.name}"))(
@@ -83,14 +83,14 @@ class AccessValidations(approvedNsGroups: Set[String] = Set()) extends AccessVal
     for {
       _ <- access
       _ <- doNSCheck(auth, recordType, zone)
-    } yield ().right
+    } yield ().asRight
   }
 
   def canViewRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit] =
+      zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to view " +
         s"$recordName.${zone.name}"))(
@@ -126,7 +126,7 @@ class AccessValidations(approvedNsGroups: Set[String] = Set()) extends AccessVal
   def doNSCheck(
       authPrincipal: AuthPrincipal,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit] = {
+      zone: Zone): Either[Throwable, Unit] = {
     def nsAuthorized: Boolean =
       authPrincipal.signedInUser.isSuper ||
         (authPrincipal.isAuthorized(zone.adminGroupId) && approvedNsGroups.contains(

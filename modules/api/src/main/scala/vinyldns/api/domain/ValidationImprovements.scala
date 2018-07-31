@@ -15,22 +15,22 @@
  */
 
 package vinyldns.api.domain
-
-import scalaz.Scalaz._
-import scalaz._
+import cats.data.ValidatedNel
+import cats.implicits._
+import cats.syntax._
 
 object ValidationImprovements {
 
   /**
-    * Runs a validator on an optional value, returning a ValidationNel of an option if it is present.
+    * Runs a validator on an optional value, returning a ValidatedNel of an option if it is present.
     *
     * If the value is not present, will return None as success
     *
     */
   def validateIfDefined[E, A](value: => Option[A])(
-      validator: A => ValidationNel[E, A]): ValidationNel[E, Option[A]] =
+      validator: A => ValidatedNel[E, A]): ValidatedNel[E, Option[A]] =
     value match {
-      case None => Option.empty[A].successNel[E]
+      case None => Option.empty[A].validNel[E]
       case Some(a) => validator(a).map(Some(_))
     }
 }

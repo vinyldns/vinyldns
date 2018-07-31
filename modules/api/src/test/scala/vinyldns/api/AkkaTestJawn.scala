@@ -26,8 +26,8 @@ import org.typelevel.scalatest.ValidationMatchers
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
-import scalaz.{-\/, Disjunction, Failure, Success, ValidationNel, \/, \/-}
-
+import cats.implicits._
+import cats.syntax.either._
 trait ResultHelpers {
 
   implicit val baseTimeout: Timeout = new Timeout(2.seconds)
@@ -38,14 +38,14 @@ trait ResultHelpers {
   // Waits for the future to complete, then returns the value as a Throwable \/ T
   def awaitResultOf[T](
       f: => Future[Throwable \/ T],
-      duration: FiniteDuration = 1.second): Disjunction[Throwable, T] =
+      duration: FiniteDuration = 1.second): Either[Throwable, T] =
     Await.ready(f.mapTo[Throwable \/ T], duration).value.get.get
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
   def rightResultOf[T](f: => Future[Throwable \/ T], duration: FiniteDuration = 1.second): T =
     awaitResultOf[T](f, duration) match {
-      case \/-(result) => result
-      case -\/(error) => throw error
+      case Right(result) => result
+      case Left(error) => throw error
     }
 
   // Assumes that the result of the future operation will fail, this will error on a right disjunction
@@ -60,8 +60,8 @@ trait ResultHelpers {
 
 object ValidationTestImprovements extends PropSpec with Matchers with ValidationMatchers {
 
-  implicit class ValidationNelTestImprovements[DomainValidationError, A](
-      value: ValidationNel[DomainValidationError, A]) {
+  implicit class ValidatedNelTestImprovements[DomainValidationError, A](
+      value: ValidatedNel[DomainValidationError, A]) {
 
     def failures: List[DomainValidationError] = value match {
       case Failure(e) => e.list
