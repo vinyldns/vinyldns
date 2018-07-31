@@ -130,6 +130,23 @@ lazy val apiDockerSettings = Seq(
   composeFile := baseDirectory.value.getAbsolutePath + "/../../docker/docker-compose.yml"
 )
 
+lazy val portalDockerSettings = Seq(
+  dockerBaseImage := "openjdk:8u171-jdk",
+  dockerUsername := Some("vinyldns"),
+  packageName in Docker := "portal",
+  dockerExposedPorts := Seq(9001),
+  dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
+  dockerExposedVolumes := Seq("/opt/docker/conf"), // mount extra config to the classpath
+
+  // add extra libs to class path via mount
+  scriptClasspath in bashScriptDefines ~= (cp => cp :+ "/opt/docker/lib_extra/*"),
+
+  // adds config file to mount
+  bashScriptExtraDefines += """addJava "-Dconfig.file=/opt/docker/conf/application.conf"""",
+  bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"""",
+  credentials in Docker := Seq(Credentials(Path.userHome / ".iv2" / ".dockerCredentials"))
+)
+
 lazy val noPublishSettings = Seq(
   publish := {},
   publishLocal := {},
@@ -214,6 +231,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
   .settings(sharedSettings)
   .settings(testSettings)
   .settings(noPublishSettings)
+  .settings(portalDockerSettings)
   .settings(
     name := "portal",
     libraryDependencies ++= portalDependencies,
