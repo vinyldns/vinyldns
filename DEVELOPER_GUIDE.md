@@ -106,9 +106,21 @@ Run `protoc --version`, if it is not 2.6.1, then
 Be sure to install the latest version of [docker](https://docs.docker.com/).  You must have docker running in order to work with VinylDNS on your machine.
 Be sure to start it up if it is not running before moving further.
 
-### How to use the Docker Image
-#### Starting a vinyldns-api server instance
-VinylDNS depends on several dependencies including mysql, sqs, dynamodb and a DNS server.  These can be passed in as
+#### Starting a vinyldns installation locally in docker
+Running `./bin/docker-up-vinyldns.sh` will spin up the production docker images of the vinyldns-api and vinyldns-portal.
+This will startup all the dependencies as well as the api and portal servers.  
+It will then ping the api on `http://localhost:9000` and the portal on `http://localhost:9001` and notify you if either failed to start.
+The portal can be viewed in a browser at `http://localhost:9001`
+
+Alternatively, you can manually run docker-compose with this config `docker/docker-compose-build.yml`.
+From the root directory run `docker-compose -f ./docker/docker-compose-build.yml up -d`
+
+To stop the local setup, run `./bin/stop-all-docker-containers.sh` from the project root.
+
+> Warning: the `./bin/stop-all-docker-containers.sh` will stop and remove all local docker containers
+
+### Configuration for the vinyldns-api image
+VinylDNS depends on several dependencies including mysql, sqs, dynamodb and a DNS server. These can be passed in as
 environment variables, or you can override the config file with your own settings.
 
 #### Environment variables
@@ -126,21 +138,28 @@ variables.
 #### Ports
 vinyldns only exposes port 9000 for HTTP access to all endpoints
 
-#### Starting a vinyldns installation locally in docker
-There is a handy docker-compose file for spinning up the production docker image on your local under `docker/docker-compose-build.yml`
+### Configuration for the vinyldns-portal image
 
-From the root directory run...
+#### Volume mounts
+* `/opt/docker/lib_extra` - place here additional jar files that need to be loaded into the classpath when the application starts up.
+This is used for "plugins" that are proprietary or not part of the standard build.  All jar files here will be placed on the class path.
+* `/opt/docker/conf/application.conf` - to override default configuration settings
+* `/opt/docker/conf/application.ini` - to pass additional JVM options 
+* `/opt/docker/conf/trustStore.jks` - to make available a custom trustStore, which has to be set in `/opt/docker/conf/application.ini` as `-Djavax.net.ssl.trustStore=/opt/docker/conf/trustStore.jks`
 
-```
-> docker-compose -f ./docker/docker-compose-build.yml up -d
-```
+#### Custom LDAP config
+In `docker/portal/application.conf` there is a switch for `portal.test_login = true`. This is set by default so 
+developers can login to the portal with username=testuser and password=testpassword. Custom LDAP settings will have to 
+be set in `docker/portal/application.conf`
 
-This will startup all the dependencies as well as the api server.  Once the api server is running, you can verify it is
-up by running the following `curl -v http://localhost:9000/status`
+#### Configuring a custom Java trustStore
+To add a custom Java trustStore, say for LDAP certs, add the trustStore to `docker/portal/trustStore.jks`. Then
+add `-Djavax.net.ssl.trustStore=/opt/docker/conf/trustStore.jks` to `docker/portal/application.ini`.  
 
-To stop the local setup, run `./bin/stop-all-docker-containers.sh` from the project root.
+#### Additional JVM parameters
+Additional JVM parameters can be added to `docker/portal/application.ini`
 
-#### Validating everything
+### Validating everything
 VinylDNS comes with a build script `./build.sh` that validates, verifies, and runs functional tests.  Note: This
 takes a while to run, and typically is only necessary if you want to simulate the same process that runs on the build
 servers
