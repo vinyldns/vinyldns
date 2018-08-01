@@ -7,6 +7,8 @@ position: 1
 
 # Welcome
 
+![VinylDNS logo](/img/vinyldns-fulllogoDARK-300.png)
+
 VinylDNS is a DNS Management Platform that provides safe and convenient access
 for your DNS needs.
 
