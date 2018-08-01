@@ -24,3 +24,4 @@ release.version
 .ensime
 .ensime_cache
 package-lock.json
+*trustStore.jks
