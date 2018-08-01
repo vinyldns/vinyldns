@@ -108,6 +108,7 @@ lazy val apiDockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jdk",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "api",
+  dockerUpdateLatest := true,
   dockerExposedPorts := Seq(9000),
   dockerEntrypoint := Seq("/opt/docker/bin/boot"),
   dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
@@ -134,6 +135,7 @@ lazy val portalDockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jdk",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "portal",
+  dockerUpdateLatest := true,
   dockerExposedPorts := Seq(9001),
   dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
   dockerExposedVolumes := Seq("/opt/docker/conf"), // mount extra config to the classpath
@@ -154,6 +156,12 @@ lazy val noPublishSettings = Seq(
 )
 
 lazy val apiPublishSettings = Seq(
+  publishArtifact := false,
+  publishLocal := (publishLocal in Docker).value,
+  publish := (publish in Docker).value
+)
+
+lazy val portalPublishSettings = Seq(
   publishArtifact := false,
   publishLocal := (publishLocal in Docker).value,
   publish := (publish in Docker).value
@@ -230,7 +238,7 @@ val createJsHeaders = TaskKey[Unit]("createJsHeaders", "Runs script to prepend A
 lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, AutomateHeaderPlugin)
   .settings(sharedSettings)
   .settings(testSettings)
-  .settings(noPublishSettings)
+  .settings(portalPublishSettings)
   .settings(portalDockerSettings)
   .settings(
     name := "portal",

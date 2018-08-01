@@ -35,7 +35,7 @@ services:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
   api:
-    image: "vinyldns/api:0.1" # the version of the api image we want to pull
+    image: "vinyldns/api:latest"
     environment:
       - REST_PORT=9000
     container_name: "vinyldns-api"
@@ -48,7 +48,7 @@ services:
       - dynamodb
 
   portal:
-    image: "vinyldns/portal:0.1" # the version of the portal image we want to pull
+    image: "vinyldns/portal:latest"
     ports:
       - "9001:9001"
     container_name: "vinyldns-portal"
