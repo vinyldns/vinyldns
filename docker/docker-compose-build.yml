@@ -35,7 +35,7 @@ services:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
   api:
-    image: vinyldns/api:0.1 # the version of the docker container we want to pull
+    image: "vinyldns/api:latest"
     environment:
       - REST_PORT=9000
     container_name: "vinyldns-api"
@@ -46,3 +46,14 @@ services:
       - bind9
       - elasticmq
       - dynamodb
+
+  portal:
+    image: "vinyldns/portal:latest"
+    ports:
+      - "9001:9001"
+    container_name: "vinyldns-portal"
+    volumes:
+      - ./portal/application.conf:/opt/docker/conf/application.conf
+      - ./portal/application.ini:/opt/docker/conf/application.ini
+    depends_on:
+      - api
