@@ -79,6 +79,7 @@ See the [Contributing Guide](CONTRIBUTING.md).
 ## Maintainers and Contributors
 The current maintainers (people who can merge pull requests) are:
 - Paul Cleary
+- Nima Eskandary
 - Michael Ly
 - Rebecca Star
 - Britney Wright
