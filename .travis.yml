@@ -3,11 +3,14 @@ language: scala
 scala:
   - 2.12.6
 
+sudo: false
+
 jdk:
   - oraclejdk8
   
 services:
-  - docker  
+  - docker
+  - docker-compose
 
 cache:
   directories:
