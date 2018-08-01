@@ -123,6 +123,9 @@ To stop the local setup, run `./bin/stop-all-docker-containers.sh` from the proj
 VinylDNS depends on several dependencies including mysql, sqs, dynamodb and a DNS server. These can be passed in as
 environment variables, or you can override the config file with your own settings.
 
+By default, the api image is configured to run in a docker compose environment locally. To run in a production environment,
+you would have to configure the portal appropriately. 
+
 #### Environment variables
 1. `MYSQL_ADDRESS` - the IP address of the mysql server; defaults to `vinyldns-mysql` assuming a docker compose setup
 1. `MYSQL_PORT` - the port of the mysql server; defaults to 3306
@@ -139,6 +142,8 @@ variables.
 vinyldns only exposes port 9000 for HTTP access to all endpoints
 
 ### Configuration for the vinyldns-portal image
+Like the api image, the portal image is configured to run in a docker compose environment locally. To run in a production environment,
+you would have to configure the portal appropriately using these settings. 
 
 #### Volume mounts
 * `/opt/docker/lib_extra` - place here additional jar files that need to be loaded into the classpath when the application starts up.
@@ -243,8 +248,10 @@ server.  If you need to add or modify the test DNS zone files, you can find them
 `docker/bind9/zones`
 
 ## Handy Scripts
-### Start up a complete local API server
-`bin/docker-up-api-server.sh` - this will build vinyl (if not built) and then start up an api server and all dependencies
+### Start up complete local API and Portal servers
+`bin/docker-up-vinyldns.sh` - this will start up the `vinyldns/api:latest` and `vinyldns/portal:latest` images from docker hub
+
+> Note: to start up images with local changes, run `sbt ;project api; docker:publishLocal; project portal; docker:publishLocal`
 
 The following ports and services are available:
 
