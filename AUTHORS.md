@@ -34,6 +34,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Sheree Liu
 - Deepak Mohanakrishnan
 - Joshulyne Park
+- Michael Pilquist
 - Sriram Ramakrishnan
 - Khalid Reid
 - Trent Schmidt
