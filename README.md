@@ -1,5 +1,15 @@
 [![Join the chat at https://gitter.im/vinyldns/Lobby](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns/Lobby)
 
+<p align="left">
+  <a href="http://www.vinyldns.io/">
+    <img
+      alt="VinylDNS"
+      src="img/vinyldns-logo-full.png"
+      width="400"
+    />
+  </a>
+</p>
+
 # VinylDNS
 **(we are in the midst of setting up our projects, backlog, and everything else.  Will be in tip top shape in the coming days)**
 
