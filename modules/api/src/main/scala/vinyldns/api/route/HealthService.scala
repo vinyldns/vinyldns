@@ -16,7 +16,7 @@
 
 package vinyldns.api.route
 
-import cats._, cats.implicits._, cats.data._
+import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.zone.ZoneRepository
 

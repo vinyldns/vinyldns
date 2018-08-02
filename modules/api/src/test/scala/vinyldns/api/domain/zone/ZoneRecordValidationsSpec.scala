@@ -16,12 +16,16 @@
 
 package vinyldns.api.domain.zone
 
+import cats.scalatest.ValidatedMatchers
 import org.scalatest.{Matchers, WordSpec}
-import org.typelevel.scalatest.ValidationMatchers._
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.record._
 
-class ZoneRecordValidationsSpec extends WordSpec with Matchers with VinylDNSTestData {
+class ZoneRecordValidationsSpec
+    extends WordSpec
+    with Matchers
+    with VinylDNSTestData
+    with ValidatedMatchers {
 
   import vinyldns.api.domain.zone.ZoneRecordValidations._
 
@@ -49,50 +53,50 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with VinylDNSTest
   "Approved Name Server check" should {
     "return successfully if the name server is in the list of approved name servers" in {
       val result = isApprovedNameServer(approvedNameServers, NSData("ns1.test.com"))
-      result should beSuccess(NSData("ns1.test.com"))
+      result should beValid(NSData("ns1.test.com"))
     }
 
     "return an error if the name server is not in the list of approved name servers" in {
       val result = isApprovedNameServer(approvedNameServers, NSData("blah."))
-      result should haveFailure("Name Server blah. is not an approved name server.")
+      result should haveInvalid("Name Server blah. is not an approved name server.")
     }
   }
 
   "Contains approved name servers" should {
     "return success if all name servers are in the list of approved name servers" in {
       val test = ns
-      containsApprovedNameServers(approvedNameServers, test) should beSuccess(test)
+      containsApprovedNameServers(approvedNameServers, test) should beValid(test)
     }
 
     "return failure if none of the name servers are in the list of approved name servers" in {
       val test = ns.copy(records = List(NSData("blah1."), NSData("blah2.")))
-      containsApprovedNameServers(approvedNameServers, test) should (haveFailure(
+      containsApprovedNameServers(approvedNameServers, test) should haveInvalid(
         "Name Server blah1. is not an approved name server.").and(
-        haveFailure("Name Server blah2. is not an approved name server.")))
+        haveInvalid("Name Server blah2. is not an approved name server."))
     }
 
     "return a failure if any of the name servers are not in the list of approved name servers" in {
       val test = ns.copy(records = List(NSData("blah1."), NSData("ns1.test.com")))
-      containsApprovedNameServers(approvedNameServers, test) should haveFailure(
+      containsApprovedNameServers(approvedNameServers, test) should haveInvalid(
         "Name Server blah1. is not an approved name server.")
     }
 
     "return success if the name server matches a regular expression" in {
       for (nameServer <- fullNameServers) {
         val test = ns.copy(records = List(NSData(nameServer)))
-        containsApprovedNameServers(fullNameServerRx, test) should beSuccess(test)
+        containsApprovedNameServers(fullNameServerRx, test) should beValid(test)
       }
     }
 
     "return success even if part of the ns record matches an approved name server" in {
       val test = ns.copy(records = List(NSData("cdn-tr-001-456")))
-      containsApprovedNameServers(fullNameServerRx, test) should beSuccess(test)
+      containsApprovedNameServers(fullNameServerRx, test) should beValid(test)
     }
 
     "return a failure if the name server does not match one of the regular expressions" in {
       val test = ns.copy(records = List(NSData("test-foo-ns.")))
       val approved = List(".*bar.*".r, "www.*".r)
-      containsApprovedNameServers(approved, test) should haveFailure(
+      containsApprovedNameServers(approved, test) should haveInvalid(
         "Name Server test-foo-ns. is not an approved name server.")
     }
   }
@@ -100,7 +104,7 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with VinylDNSTest
   "Valid name server" should {
     "return failure if the name server is not in the approved list" in {
       val test = ns.copy(name = "this-is-ok", records = List(NSData("un-approved.server.")))
-      validNameServer(approvedNameServers, test) should haveFailure(
+      validNameServer(approvedNameServers, test) should haveInvalid(
         s"Name Server un-approved.server. is not an approved name server.")
     }
   }
@@ -111,7 +115,7 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with VinylDNSTest
         ns.copy(name = "this-is-valid"),
         aaaa.copy(name = "this-is-valid-too")
       )
-      validateDnsZone(approvedNameServers, test) should beSuccess(test)
+      validateDnsZone(approvedNameServers, test) should beValid(test)
     }
 
     "allow dotted hosts" in {
@@ -120,7 +124,7 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with VinylDNSTest
         aaaa.copy(name = "this.is.valid.too")
       )
 
-      validateDnsZone(approvedNameServers, test) should beSuccess(test)
+      validateDnsZone(approvedNameServers, test) should beValid(test)
     }
   }
 }

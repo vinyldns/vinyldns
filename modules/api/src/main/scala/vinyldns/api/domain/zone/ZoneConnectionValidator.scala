@@ -18,7 +18,6 @@ package vinyldns.api.domain.zone
 
 import akka.actor.Scheduler
 
-import cats.data._
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig

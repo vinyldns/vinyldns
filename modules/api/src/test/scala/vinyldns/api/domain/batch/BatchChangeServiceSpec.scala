@@ -506,8 +506,8 @@ class BatchChangeServiceSpec
           ),
           okAuth
         )
-        .asRight
-        .value
+        .toOption
+        .get
 
       result shouldBe a[BatchChange]
       result.changes.head shouldBe SingleAddChange(

@@ -82,7 +82,6 @@ case class Group(
 object Group {
   import cats.data.ValidatedNel
   import cats.implicits._
-  import cats.syntax.either._
 
   def build(
       name: String,

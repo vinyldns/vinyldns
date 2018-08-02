@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.dns
 
-import cats._, cats.implicits._, cats.data._
+import cats.implicits._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 

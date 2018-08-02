@@ -22,7 +22,6 @@ import akka.pattern.after
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import cats.data._
-import cats.instances._
 import cats.syntax.either._
 
 object Interfaces {

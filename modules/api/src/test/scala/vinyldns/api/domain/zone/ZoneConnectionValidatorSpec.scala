@@ -16,11 +16,11 @@
 
 package vinyldns.api.domain.zone
 
+import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
-import org.typelevel.scalatest.DisjunctionMatchers
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
@@ -38,7 +38,7 @@ class ZoneConnectionValidatorSpec
     with VinylDNSTestData
     with BeforeAndAfterEach
     with ResultHelpers
-    with DisjunctionMatchers {
+    with EitherMatchers {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -114,7 +114,7 @@ class ZoneConnectionValidatorSpec
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
-      val result = awaitResultOf(underTest.validateZoneConnections(testZone).run)
+      val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
       result should be(right)
     }
 
@@ -125,7 +125,7 @@ class ZoneConnectionValidatorSpec
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
-      val result = leftResultOf(underTest.validateZoneConnections(testZone).run)
+      val result = leftResultOf(underTest.validateZoneConnections(testZone).value)
       result shouldBe a[ConnectionFailed]
     }
 
@@ -134,7 +134,7 @@ class ZoneConnectionValidatorSpec
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
-      val error = leftResultOf(underTest.validateZoneConnections(testZone).run)
+      val error = leftResultOf(underTest.validateZoneConnections(testZone).value)
       error shouldBe a[ConnectionFailed]
     }
 
@@ -148,7 +148,7 @@ class ZoneConnectionValidatorSpec
           Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
       )
 
-      val result = leftResultOf(underTest.validateZoneConnections(badZone).run)
+      val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("main connection failure!")
     }
@@ -167,7 +167,7 @@ class ZoneConnectionValidatorSpec
         .when(mockDnsConnection)
         .resolve(badZone.name, badZone.name, RecordType.SOA)
 
-      val result = leftResultOf(underTest.validateZoneConnections(badZone).run)
+      val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("transfer connection failure!")
     }
@@ -186,7 +186,7 @@ class ZoneConnectionValidatorSpec
         .when(mockDnsConnection)
         .resolve(badZone.name, badZone.name, RecordType.SOA)
 
-      val result = leftResultOf(underTest.validateZoneConnections(badZone).run)
+      val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("Transfer connection invalid")
     }

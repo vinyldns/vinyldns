@@ -18,13 +18,11 @@ package vinyldns.api.route
 
 import java.util.UUID
 
-import vinyldns.api.domain.dns.DnsConversions._
+import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import cats._
-import cats.data._
-import cats.implicits._
+import vinyldns.api.domain.dns.DnsConversions._
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone._
 
@@ -161,7 +159,12 @@ trait DnsJsonProtocol extends JsonValidation {
           .required[String]("Missing RecordSet.name"),
         recordType,
         (js \ "ttl")
-          .required[Long]("Missing RecordSet.ttl"),
+          .required[Long]("Missing RecordSet.ttl")
+          .check(
+            // RFC 1035.2.3.4 and  RFC 2181.8
+            "RecordSet.ttl must be a positive signed 32 bit number" -> (_ <= 2147483647),
+            "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
+          ),
         (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
         (js \ "created").default[DateTime](DateTime.now),
         (js \ "updated").optional[DateTime],

@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain
 
-import cats._, cats.implicits._, cats.data._
+import cats.implicits._, cats.data._
 import vinyldns.api.domain.ValidationImprovements._
 import vinyldns.api.domain.record.RecordType.{RecordType, _}
 

@@ -16,7 +16,6 @@
 
 package vinyldns.api.engine
 
-import cats._, cats.implicits._, cats.data._
 import cats.effect.IO
 import fs2._
 import org.slf4j.LoggerFactory

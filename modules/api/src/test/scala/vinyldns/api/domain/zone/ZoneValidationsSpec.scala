@@ -16,10 +16,10 @@
 
 package vinyldns.api.domain.zone
 
+import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import org.typelevel.scalatest.DisjunctionMatchers
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import vinyldns.api.domain.record._
 
@@ -30,7 +30,7 @@ class ZoneValidationsSpec
     with ResultHelpers
     with VinylDNSTestData
     with GroupTestData
-    with DisjunctionMatchers {
+    with EitherMatchers {
 
   val testing = new ZoneValidations(syncDelayMillis = 10000)
 

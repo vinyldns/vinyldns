@@ -18,7 +18,7 @@ package vinyldns.api.domain.zone
 
 import java.util.UUID
 
-import cats._, cats.implicits._, cats.data._
+import cats.implicits._, cats.data._
 import org.joda.time.DateTime
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.{DomainValidationError, zone}

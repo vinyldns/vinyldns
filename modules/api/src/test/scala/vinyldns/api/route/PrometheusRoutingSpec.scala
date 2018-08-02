@@ -25,9 +25,6 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.VinylDNSMetrics
 
-import cats.implicits._
-import cats.syntax.either._
-
 class PrometheusRoutingSpec
     extends WordSpec
     with ScalatestRouteTest

@@ -20,7 +20,6 @@ import java.util.NoSuchElementException
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, MalformedRequestContentRejection, RejectionHandler}
-import cats.Order
 import cats.data.Validated.{Invalid, Valid}
 import com.fasterxml.jackson.core.JsonParseException
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport

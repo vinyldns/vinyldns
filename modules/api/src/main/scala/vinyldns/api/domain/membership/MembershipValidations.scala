@@ -16,9 +16,6 @@
 
 package vinyldns.api.domain.membership
 
-import cats.implicits._
-import cats.syntax.either._
-
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError

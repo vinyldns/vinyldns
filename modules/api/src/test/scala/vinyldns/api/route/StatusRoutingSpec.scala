@@ -20,13 +20,10 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import fs2.async.mutable.Signal
 import cats.effect.IO
+import fs2.async.mutable.Signal
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
-
-import cats.implicits._
-import cats.syntax.either._
 
 class StatusRoutingSpec
     extends WordSpec

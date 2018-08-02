@@ -16,11 +16,11 @@
 
 package vinyldns.api.domain.zone
 
+import cats.scalatest.EitherMatchers
 import org.scalacheck.Gen._
 import org.scalacheck._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import org.typelevel.scalatest.ValidationMatchers
 import vinyldns.api.ValidationTestImprovements._
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.DomainValidations._
@@ -32,7 +32,7 @@ class ZoneConnectionSpec
     extends PropSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
-    with ValidationMatchers
+    with EitherMatchers
     with VinylDNSTestData {
   val validName: String = "zoneConnectionName"
   val keyName: String = "zoneConnectionKeyName"
@@ -94,7 +94,7 @@ class ZoneConnectionSpec
 
   property("Valid descriptions should pass property-based testing") {
     forAll(connectionNameGen) { name: String =>
-      validateStringLength(name, Some(ZONE_CONNECTION_MIN), ZONE_CONNECTION_MAX) shouldBe success
+      validateStringLength(name, Some(ZONE_CONNECTION_MIN), ZONE_CONNECTION_MAX) shouldBe valid
       name.length should be > 0
       name.length should be <= HOST_MAX_LENGTH
     }
@@ -111,11 +111,11 @@ class ZoneConnectionSpec
 
   property("Valid connection host servers should pass validations") {
     validAddrs.foreach {
-      validateHostServer(_) shouldBe success
+      validateHostServer(_) shouldBe valid
     }
 
     buildConnectionCombos(validAddrs, validPorts).foreach {
-      validateHostServer(_) shouldBe success
+      validateHostServer(_) shouldBe valid
     }
   }
 
@@ -135,7 +135,7 @@ class ZoneConnectionSpec
 
   property("Build should succeed when valid parameters are passed in") {
     buildConnectionCombos(validAddrs, validPorts).foreach {
-      ZoneConnection.build(validName, keyName, keyValue, _) shouldBe success
+      ZoneConnection.build(validName, keyName, keyValue, _) shouldBe valid
     }
   }
 

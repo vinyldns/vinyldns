@@ -16,9 +16,9 @@
 
 package vinyldns.api.domain.zone
 
+import cats.scalatest.ValidatedMatchers
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import org.typelevel.scalatest.ValidationMatchers
 import vinyldns.api.ValidationTestImprovements._
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.{InvalidDomainName, InvalidEmail}
@@ -27,7 +27,7 @@ class ZoneSpec
     extends PropSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
-    with ValidationMatchers
+    with ValidatedMatchers
     with VinylDNSTestData {
   import AccessLevel._
 
@@ -67,27 +67,27 @@ class ZoneSpec
   }
 
   property("Build should succeed when valid parameters are passed in") {
-    Zone.build(validName, validEmail, adminGroupId, None, None, None) shouldBe success
-    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, None) shouldBe success
-    Zone.build(validName, validEmail, adminGroupId, None, Some(validTransfer), None) shouldBe success
-    Zone.build(validName, validEmail, adminGroupId, None, None, Some(zoneAcl)) shouldBe success
+    Zone.build(validName, validEmail, adminGroupId, None, None, None) shouldBe valid
+    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, None) shouldBe valid
+    Zone.build(validName, validEmail, adminGroupId, None, Some(validTransfer), None) shouldBe valid
+    Zone.build(validName, validEmail, adminGroupId, None, None, Some(zoneAcl)) shouldBe valid
     Zone.build(
       validName,
       validEmail,
       adminGroupId,
       Some(validConnection),
       Some(validTransfer),
-      None) shouldBe success
-    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, Some(validZoneACL)) shouldBe success
-    Zone.build(validName, validEmail, adminGroupId, None, Some(validTransfer), Some(validZoneACL)) shouldBe success
-    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, Some(validZoneACL)) shouldBe success
+      None) shouldBe valid
+    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, Some(validZoneACL)) shouldBe valid
+    Zone.build(validName, validEmail, adminGroupId, None, Some(validTransfer), Some(validZoneACL)) shouldBe valid
+    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, Some(validZoneACL)) shouldBe valid
     Zone.build(
       validName,
       validEmail,
       adminGroupId,
       Some(validConnection),
       Some(validTransfer),
-      Some(validZoneACL)) shouldBe success
+      Some(validZoneACL)) shouldBe valid
   }
 
   property("Build should fail when invalid parameters are passed in") {

@@ -16,8 +16,7 @@
 
 package vinyldns.api.domain.record
 
-import cats._, cats.implicits._, cats.data._
-import cats.syntax.either._
+import cats.implicits._
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.api.domain.auth.AuthPrincipal

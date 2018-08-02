@@ -17,7 +17,6 @@
 package vinyldns.api.domain
 import cats.data.ValidatedNel
 import cats.implicits._
-import cats.syntax._
 
 object ValidationImprovements {
 

@@ -18,8 +18,6 @@ package vinyldns.api.domain.zone
 
 import cats.data._
 import cats.implicits._
-import cats.syntax._
-import cats.syntax.either._
 import AccessLevel.AccessLevel
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.DomainValidations._

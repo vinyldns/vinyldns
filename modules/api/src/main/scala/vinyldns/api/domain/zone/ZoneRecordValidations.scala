@@ -16,13 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import cats._
-import cats.data._
-import cats.implicits._
-import cats.syntax.either._
-import cats.instances.list._
-import cats.instances.option._
-import cats.syntax.traverse._
+import cats.implicits._, cats.data._
 import vinyldns.api.domain.record.{NSData, RecordSet, RecordType}
 
 import scala.util.matching.Regex
@@ -69,8 +63,6 @@ object ZoneRecordValidations {
       case otherRecordType =>
         otherRecordType.validNel[String]
     }
-
-    validations.foldLeft(List.empty[RecordSet]) { (acc, cur) =>
-      }
+    validations.sequence
   }
 }

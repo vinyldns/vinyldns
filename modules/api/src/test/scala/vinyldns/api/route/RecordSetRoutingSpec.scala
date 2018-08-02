@@ -330,7 +330,8 @@ class RecordSetRoutingSpec
     spf.id -> spf,
     srv.id -> srv,
     sshfp.id -> sshfp,
-    txt.id -> txt)
+    txt.id -> txt
+  )
 
   private val rsChange1 = RecordSetChange(
     okZone,
@@ -359,7 +360,7 @@ class RecordSetRoutingSpec
         rsId: String,
         zoneId: String,
         authPrincipal: AuthPrincipal,
-        chgType: RecordSetChangeType): Throwable \/ RecordSetChange = zoneId match {
+        chgType: RecordSetChangeType): Either[Throwable, RecordSetChange] = zoneId match {
       case zoneNotFound.id => Left(ZoneNotFoundError(zoneId))
       case zoneDeleted.id => Left(ZoneInactiveError(zoneId))
       case notAuthorizedZone.id => Left(NotAuthorizedError(zoneId))

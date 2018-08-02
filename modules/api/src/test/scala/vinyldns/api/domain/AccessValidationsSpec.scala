@@ -16,10 +16,10 @@
 
 package vinyldns.api.domain
 
+import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
-import org.typelevel.scalatest.DisjunctionMatchers
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.Group
 import vinyldns.api.domain.record._
@@ -34,7 +34,7 @@ class AccessValidationsSpec
     with ResultHelpers
     with GroupTestData
     with VinylDNSTestData
-    with DisjunctionMatchers {
+    with EitherMatchers {
 
   private val userReadAcl =
     ACLRule(AccessLevel.Read, userId = Some(okUserAuth.userId), groupId = None)

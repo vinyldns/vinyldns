@@ -16,9 +16,8 @@
 
 package vinyldns.api.domain
 
-import cats._, cats.implicits._, cats.data._
+import cats.implicits._
 import com.aaronbedra.orchard.CIDR
-import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordType
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.zone.{InvalidRequest, Zone}

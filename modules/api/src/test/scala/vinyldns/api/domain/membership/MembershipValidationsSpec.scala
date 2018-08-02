@@ -16,9 +16,9 @@
 
 package vinyldns.api.domain.membership
 
+import cats.scalatest.EitherMatchers
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
-import org.typelevel.scalatest.DisjunctionMatchers
 import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError
@@ -30,7 +30,7 @@ class MembershipValidationsSpec
     with BeforeAndAfterEach
     with ResultHelpers
     with GroupTestData
-    with DisjunctionMatchers {
+    with EitherMatchers {
 
   import vinyldns.api.domain.membership.MembershipValidations._
 

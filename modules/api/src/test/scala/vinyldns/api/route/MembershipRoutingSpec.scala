@@ -34,9 +34,6 @@ import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
 import vinyldns.api.{GroupTestData, VinylDNSTestData}
 
-import cats.implicits._
-import cats.syntax.either._
-
 class MembershipRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
