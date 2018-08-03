@@ -16,6 +16,7 @@
 
 package vinyldns.api.route
 
+import cats.data._, cats.implicits._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -65,14 +66,14 @@ class JsonValidationSpec
 
   case object AddressSerializer extends ValidationSerializer[Address] // default serialization
   case object HomeSerializer extends ValidationSerializer[Home] {
-    override def fromJson(js: JValue): JsonDeserialized[Home] =
+    override def fromJson(js: JValue): ValidatedNel[String, Home] =
       (
         (js \ "typ").optional(HomeType),
         (js \ "address").required[Address]("Missing Home.address")
       ).mapN(Home.apply)
   }
   case object PetSerializer extends ValidationSerializer[Pet] {
-    override def fromJson(js: JValue): JsonDeserialized[Pet] =
+    override def fromJson(js: JValue): ValidatedNel[String, Pet] =
       (
         (js \ "typ").required(PetType, "Missing Pet.type"),
         (js \ "name")
@@ -89,7 +90,7 @@ class JsonValidationSpec
         ("typ" -> pet.typ.toString)
   }
   case object UserSerializer extends ValidationSerializer[User] {
-    override def fromJson(js: JValue): JsonDeserialized[User] =
+    override def fromJson(js: JValue): ValidatedNel[String, User] =
       (
         (js \ "name").default[String]("Anonymous"),
         (js \ "pet").optional[Pet],

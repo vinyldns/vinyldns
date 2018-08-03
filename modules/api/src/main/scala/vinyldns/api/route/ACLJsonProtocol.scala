@@ -17,7 +17,7 @@
 package vinyldns.api.route
 
 import org.json4s.JValue
-import cats.implicits._
+import cats.data._, cats.implicits._
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.zone.{ACLRule, ACLRuleInfo, AccessLevel}
 
@@ -31,7 +31,7 @@ trait ACLJsonProtocol extends JsonValidation {
 
   /* Used for adding rules to the zone acl */
   case object ACLRuleInfoSerializer extends ValidationSerializer[ACLRuleInfo] {
-    override def fromJson(js: JValue): JsonDeserialized[ACLRuleInfo] = {
+    override def fromJson(js: JValue): ValidatedNel[String, ACLRuleInfo] = {
       val deserialized = (
         (js \ "accessLevel").required(AccessLevel, "Missing ACLRule.accessLevel"),
         (js \ "description").optional[String],

@@ -18,7 +18,7 @@ package vinyldns.api.route
 
 import java.util.UUID
 
-import cats.implicits._
+import cats.data._, cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -58,7 +58,7 @@ trait DnsJsonProtocol extends JsonValidation {
   )
 
   case object ZoneChangeSerializer extends ValidationSerializer[ZoneChange] {
-    override def fromJson(js: JValue): JsonDeserialized[ZoneChange] =
+    override def fromJson(js: JValue): ValidatedNel[String, ZoneChange] =
       (
         (js \ "zone").required[Zone]("Missing ZoneChange.zone"),
         (js \ "userId").required[String]("Missing ZoneChange.userId"),
@@ -71,7 +71,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object RecordSetChangeSerializer extends ValidationSerializer[RecordSetChange] {
-    override def fromJson(js: JValue): JsonDeserialized[RecordSetChange] =
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetChange] =
       (
         (js \ "zone").required[Zone]("Missing RecordSetChange.zone"),
         (js \ "recordSet").required[RecordSet]("Missing RecordSetChange.recordSet"),
@@ -87,11 +87,11 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object ZoneSerializer extends ValidationSerializer[Zone] {
-    override def fromJson(js: JValue): JsonDeserialized[Zone] =
+    override def fromJson(js: JValue): ValidatedNel[String, Zone] =
       (
         (js \ "name")
           .required[String]("Missing Zone.name")
-          .mod(name => if (name.endsWith(".")) name else s"$name."),
+          .map(name => if (name.endsWith(".")) name else s"$name."),
         (js \ "email").required[String]("Missing Zone.email"),
         (js \ "status").default(ZoneStatus, ZoneStatus.Active),
         (js \ "created").default[DateTime](DateTime.now),
@@ -108,7 +108,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
-    override def fromJson(js: JValue): JsonDeserialized[ZoneConnection] =
+    override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] =
       (
         (js \ "name").required[String]("Missing ZoneConnection.name"),
         (js \ "keyName").required[String]("Missing ZoneConnection.keyName"),
@@ -148,7 +148,7 @@ trait DnsJsonProtocol extends JsonValidation {
 
   case object RecordSetSerializer extends ValidationSerializer[RecordSet] {
     import RecordType._
-    override def fromJson(js: JValue): JsonDeserialized[RecordSet] = {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSet] = {
       val recordType = (js \ "type").required(RecordType, "Missing RecordSet.type")
       // This variable is ONLY used for record type checks where the type is already known to be a success.
       // The "getOrElse" is only so that it will cast the type
@@ -168,13 +168,14 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
         (js \ "created").default[DateTime](DateTime.now),
         (js \ "updated").optional[DateTime],
-        recordType.flatMap(extractRecords(_, js \ "records")),
+        recordType
+          .andThen(extractRecords(_, js \ "records")),
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "account").default[String]("system")
       ).mapN(RecordSet.apply)
 
       // Put additional record set level checks below
-      recordSetResult.checkif(recordTypeGet == RecordType.CNAME)(
+      recordSetResult.checkIf(recordTypeGet == RecordType.CNAME)(
         "CNAME record sets cannot contain multiple records" -> { rs =>
           rs.records.length <= 1
         }
@@ -196,7 +197,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
-    override def fromJson(js: JValue): JsonDeserialized[RecordSetInfo] =
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetInfo] =
       (
         RecordSetSerializer.fromJson(js),
         (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId"))
@@ -216,7 +217,7 @@ trait DnsJsonProtocol extends JsonValidation {
         ("accessLevel" -> rs.accessLevel.toString)
   }
 
-  def extractRecords(typ: RecordType, js: JValue): JsonDeserialized[List[RecordData]] =
+  def extractRecords(typ: RecordType, js: JValue): ValidatedNel[String, List[RecordData]] =
     typ match {
       case RecordType.A => js.required[List[AData]]("Missing A Records")
       case RecordType.AAAA => js.required[List[AAAAData]]("Missing AAAA Records")
@@ -233,7 +234,7 @@ trait DnsJsonProtocol extends JsonValidation {
     }
 
   case object ASerializer extends ValidationSerializer[AData] {
-    override def fromJson(js: JValue): JsonDeserialized[AData] =
+    override def fromJson(js: JValue): ValidatedNel[String, AData] =
       (js \ "address")
         .required[String]("Missing A.address")
         .check(
@@ -243,7 +244,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object AAAASerializer extends ValidationSerializer[AAAAData] {
-    override def fromJson(js: JValue): JsonDeserialized[AAAAData] =
+    override def fromJson(js: JValue): ValidatedNel[String, AAAAData] =
       (js \ "address")
         .required[String]("Missing AAAA.address")
         .check(
@@ -253,7 +254,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object CNAMESerializer extends ValidationSerializer[CNAMEData] {
-    override def fromJson(js: JValue): JsonDeserialized[CNAMEData] =
+    override def fromJson(js: JValue): ValidatedNel[String, CNAMEData] =
       (js \ "cname")
         .required[String]("Missing CNAME.cname")
         .check(
@@ -265,7 +266,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object MXSerializer extends ValidationSerializer[MXData] {
-    override def fromJson(js: JValue): JsonDeserialized[MXData] =
+    override def fromJson(js: JValue): ValidatedNel[String, MXData] =
       (
         (js \ "preference")
           .required[Integer]("Missing MX.preference")
@@ -277,12 +278,12 @@ trait DnsJsonProtocol extends JsonValidation {
           .check(
             "MX.exchange must be less than 255 characters" -> checkDomainNameLen
           )
-          .mod(ensureTrailingDot)
+          .map(ensureTrailingDot)
       ).mapN(MXData.apply)
   }
 
   case object NSSerializer extends ValidationSerializer[NSData] {
-    override def fromJson(js: JValue): JsonDeserialized[NSData] =
+    override def fromJson(js: JValue): ValidatedNel[String, NSData] =
       (js \ "nsdname")
         .required[String]("Missing NS.nsdname")
         .check(
@@ -293,7 +294,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object PTRSerializer extends ValidationSerializer[PTRData] {
-    override def fromJson(js: JValue): JsonDeserialized[PTRData] =
+    override def fromJson(js: JValue): ValidatedNel[String, PTRData] =
       (js \ "ptrdname")
         .required[String]("Missing PTR.ptrdname")
         .check(
@@ -304,7 +305,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object SOASerializer extends ValidationSerializer[SOAData] {
-    override def fromJson(js: JValue): JsonDeserialized[SOAData] =
+    override def fromJson(js: JValue): ValidatedNel[String, SOAData] =
       (
         (js \ "mname")
           .required[String]("Missing SOA.mname")
@@ -345,7 +346,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object SPFSerializer extends ValidationSerializer[SPFData] {
-    override def fromJson(js: JValue): JsonDeserialized[SPFData] =
+    override def fromJson(js: JValue): ValidatedNel[String, SPFData] =
       (js \ "text")
         .required[String]("Missing SPF.text")
         .check(
@@ -355,7 +356,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object SRVSerializer extends ValidationSerializer[SRVData] {
-    override def fromJson(js: JValue): JsonDeserialized[SRVData] =
+    override def fromJson(js: JValue): ValidatedNel[String, SRVData] =
       (
         (js \ "priority")
           .required[Integer]("Missing SRV.priority")
@@ -377,12 +378,12 @@ trait DnsJsonProtocol extends JsonValidation {
           .check(
             "SRV.target must be less than 255 characters" -> checkDomainNameLen
           )
-          .mod(ensureTrailingDot)
+          .map(ensureTrailingDot)
       ).mapN(SRVData.apply)
   }
 
   case object SSHFPSerializer extends ValidationSerializer[SSHFPData] {
-    override def fromJson(js: JValue): JsonDeserialized[SSHFPData] =
+    override def fromJson(js: JValue): ValidatedNel[String, SSHFPData] =
       (
         (js \ "algorithm")
           .required[Integer]("Missing SSHFP.algorithm")
@@ -405,7 +406,7 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object TXTSerializer extends ValidationSerializer[TXTData] {
-    override def fromJson(js: JValue): JsonDeserialized[TXTData] =
+    override def fromJson(js: JValue): ValidatedNel[String, TXTData] =
       (js \ "text")
         .required[String]("Missing TXT.text")
         .check(

@@ -16,6 +16,7 @@
 
 package vinyldns.api.route
 
+import cats.data._, cats.implicits._
 import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -43,7 +44,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   )
 
   case object BatchChangeInputSerializer extends ValidationSerializer[BatchChangeInput] {
-    override def fromJson(js: JValue): JsonDeserialized[BatchChangeInput] = {
+    override def fromJson(js: JValue): ValidatedNel[String, BatchChangeInput] = {
       val changeList =
         (js \ "changes").required[List[ChangeInput]]("Missing BatchChangeInput.changes")
 
@@ -52,11 +53,11 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   }
 
   case object ChangeInputSerializer extends ValidationSerializer[ChangeInput] {
-    override def fromJson(js: JValue): JsonDeserialized[ChangeInput] = {
+    override def fromJson(js: JValue): ValidatedNel[String, ChangeInput] = {
       val changeType =
         (js \ "changeType").required(ChangeInputType, "Missing BatchChangeInput.changes.changeType")
 
-      changeType.flatMap {
+      changeType.andThen {
         case Add => js.required[AddChangeInput]("Invalid AddChangeInput json")
         case DeleteRecordSet => js.required[DeleteChangeInput]("Invalid DeleteChangeInput json")
       }
@@ -64,14 +65,14 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   }
 
   case object AddChangeInputSerializer extends ValidationSerializer[AddChangeInput] {
-    override def fromJson(js: JValue): JsonDeserialized[AddChangeInput] = {
+    override def fromJson(js: JValue): ValidatedNel[String, AddChangeInput] = {
       val recordType = (js \ "type").required(RecordType, "Missing BatchChangeInput.changes.type")
 
       (
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
         recordType,
         (js \ "ttl").required[Long]("Missing BatchChangeInput.changes.ttl"),
-        recordType.flatMap(extractRecord(_, js \ "record"))).mapN(AddChangeInput.apply)
+        recordType.andThen(extractRecord(_, js \ "record"))).mapN(AddChangeInput.apply)
     }
 
     override def toJson(aci: AddChangeInput): JValue =
@@ -83,7 +84,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   }
 
   case object DeleteChangeInputSerializer extends ValidationSerializer[DeleteChangeInput] {
-    override def fromJson(js: JValue): JsonDeserialized[DeleteChangeInput] = {
+    override def fromJson(js: JValue): ValidatedNel[String, DeleteChangeInput] = {
       val recordType = (js \ "type").required(RecordType, "Missing BatchChangeInput.changes.type")
 
       (
@@ -158,7 +159,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     override def toJson(dve: DomainValidationError): JValue = dve.message
   }
 
-  def extractRecord(typ: RecordType, js: JValue): JsonDeserialized[RecordData] = {
+  def extractRecord(typ: RecordType, js: JValue): ValidatedNel[String, RecordData] = {
     import RecordType._
     typ match {
       case A => js.required[AData]("Missing BatchChangeInput.changes.record.address")

@@ -134,7 +134,6 @@ object DomainValidations {
       types.toList.map(validateKnownRecordType)
     a.sequence.map(_.toSet)
   }
-  //types.toList.traverseU(r => validateKnownRecordType(r)).map(x => x.toSet[RecordType])
 
   def validateKnownRecordType(rType: RecordType): ValidatedNel[DomainValidationError, RecordType] =
     rType match {

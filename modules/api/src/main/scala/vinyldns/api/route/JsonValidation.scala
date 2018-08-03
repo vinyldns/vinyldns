@@ -106,20 +106,18 @@ trait JsonValidationSupport extends Json4sSupport {
 
 trait JsonValidation extends JsonValidationSupport {
 
-  type JsonDeserialized[T] = ValidatedNel[String, T]
-
   /**
     * Simplifies creation of a ValidationSerializer
     */
   def JsonV[A: Manifest]: ValidationSerializer[A] = new ValidationSerializer[A] {}
 
-  def JsonV[A: Manifest](validator: JValue => JsonDeserialized[A]): ValidationSerializer[A] =
+  def JsonV[A: Manifest](validator: JValue => ValidatedNel[String, A]): ValidationSerializer[A] =
     new ValidationSerializer[A] {
       override def fromJson(jv: JValue) = validator(jv)
     }
 
   def JsonV[A: Manifest](
-      validator: JValue => JsonDeserialized[A],
+      validator: JValue => ValidatedNel[String, A],
       serializer: A => JValue): ValidationSerializer[A] =
     new ValidationSerializer[A] {
       override def fromJson(jv: JValue) = validator(jv)
@@ -145,10 +143,10 @@ trait JsonValidation extends JsonValidationSupport {
     * right serializer" and call the same serialize function again.
     *
     * The workaround is that either you MUST implement the serialize method (which stinks), or you have to dynamically
-    * remove the current serializer wwhen you delegate (see the toJson method below).
+    * remove the current serializer when you delegate (see the toJson method below).
     *
     * Otherwise, you can override the fromJson method and provide a function that takes a JValue and returns
-    * a ValidatedNel[String, T] (aliased by the type JsonDeserialized[T])
+    * a ValidatedNel[String, T] (aliased by the type ValidatedNel[String,T])
     */
   abstract class ValidationSerializer[A: Manifest] extends Serializer[A] {
 
@@ -188,7 +186,7 @@ trait JsonValidation extends JsonValidationSupport {
       * @return A ValidatedNel[String, T] that will contain either the deserialized type T
       *         or a list of String that contain errors
       */
-    def fromJson(js: JValue): JsonDeserialized[A] =
+    def fromJson(js: JValue): ValidatedNel[String, A] =
       try {
         Extraction.extract(js, TypeInfo(Class, None))(subsetFormats) match {
           case a: A => a.validNel[String]
@@ -210,7 +208,7 @@ trait JsonValidation extends JsonValidationSupport {
     */
   implicit class JsonValidationImprovements(json: JValue) {
 
-    def extractType[T: Manifest](default: => JsonDeserialized[T]): JsonDeserialized[T] =
+    def extractType[T: Manifest](default: => ValidatedNel[String, T]): ValidatedNel[String, T] =
       json match {
         case JNothing | JNull => default
 
@@ -237,7 +235,7 @@ trait JsonValidation extends JsonValidationSupport {
       }
 
     def extractEnum[E <: Enumeration](enum: E)(
-        default: => JsonDeserialized[E#Value]): JsonDeserialized[E#Value] = {
+        default: => ValidatedNel[String, E#Value]): ValidatedNel[String, E#Value] = {
       lazy val invalidMsg =
         s"Invalid ${enum.getClass.getSimpleName.replace("$", "")}".invalidNel[E#Value]
 
@@ -260,14 +258,15 @@ trait JsonValidation extends JsonValidationSupport {
       *
       * @return The type extracted from JSON, or a failure with the message specified if not present
       */
-    def required[T: Manifest](msg: => String): JsonDeserialized[T] = extractType(msg.invalidNel[T])
+    def required[T: Manifest](msg: => String): ValidatedNel[String, T] =
+      extractType(msg.invalidNel[T])
 
     /**
       * Indicates that the value is optional
       *
       * @return The value parsed, or None if the value was not present
       */
-    def optional[T: Manifest]: JsonDeserialized[Option[T]] =
+    def optional[T: Manifest]: ValidatedNel[String, Option[T]] =
       extractType[Option[T]](None.validNel[String])
 
     /**
@@ -277,7 +276,7 @@ trait JsonValidation extends JsonValidationSupport {
       *
       * @return The value that was parsed, or the default
       */
-    def default[T: Manifest](default: => T): JsonDeserialized[T] =
+    def default[T: Manifest](default: => T): ValidatedNel[String, T] =
       extractType[T](default.validNel[String])
 
     /**
@@ -287,7 +286,7 @@ trait JsonValidation extends JsonValidationSupport {
       *
       * @return The type extracted from JSON, or a failure with the message specified if not present
       */
-    def required[E <: Enumeration](enum: E, msg: => String): JsonDeserialized[E#Value] =
+    def required[E <: Enumeration](enum: E, msg: => String): ValidatedNel[String, E#Value] =
       extractEnum(enum)(msg.invalidNel[E#Value])
 
     /**
@@ -295,7 +294,7 @@ trait JsonValidation extends JsonValidationSupport {
       *
       * @return The value parsed, or None if the value was not present
       */
-    def optional[E <: Enumeration](enum: E): JsonDeserialized[Option[E#Value]] =
+    def optional[E <: Enumeration](enum: E): ValidatedNel[String, Option[E#Value]] =
       extractEnum(enum)(Valid(null))
         .map(Option(_))
 
@@ -306,18 +305,11 @@ trait JsonValidation extends JsonValidationSupport {
       *
       * @return The value that was parsed, or the default
       */
-    def default[E <: Enumeration](enum: E, default: => E#Value): JsonDeserialized[E#Value] =
+    def default[E <: Enumeration](enum: E, default: => E#Value): ValidatedNel[String, E#Value] =
       extractEnum(enum)(default.validNel[String])
   }
 
-  object JsonDeserialized {
-    def apply[A](a: => A): JsonDeserialized[A] = a.validNel[String]
-  }
-
-  /**
-    * Extends the ValidatedNel to provide a check and findFailure function
-    */
-  implicit class JsonDeserializedImprovements[A](base: JsonDeserialized[A]) {
+  implicit class ValidationNelImprovements[A](base: ValidatedNel[String, A]) {
 
     /**
       * Aggregates validations on contained success by checking boolean conditions
@@ -330,32 +322,25 @@ trait JsonValidation extends JsonValidationSupport {
       *                    functions on the success type.
       * @return The aggregated failure messages or the successfully validated type
       */
-    def check(validations: (String, A => Boolean)*): JsonDeserialized[A] =
+    def check(validations: (String, A => Boolean)*): ValidatedNel[String, A] =
       validations
         .map({ case (err, func) => base.ensure(NonEmptyList.one(err))(func) })
         .fold(base)(_.findFailure(_))
         .leftMap(_.distinct)
 
-    def checkif(b: Boolean)(validations: (String, A => Boolean)*): JsonDeserialized[A] =
+    def checkIf(b: Boolean)(validations: (String, A => Boolean)*): ValidatedNel[String, A] =
       if (b) base.check(validations: _*) else base
 
     /**
       * Modeled off of `findSuccess` to combine failures and favor failures over successes, returning only the first
       * if both are successful
       */
-    def findFailure[AA >: A](that: => JsonDeserialized[AA]): JsonDeserialized[AA] =
+    def findFailure[AA >: A](that: => ValidatedNel[String, AA]): ValidatedNel[String, AA] =
       (base, that) match {
-        case (Invalid(a), Invalid(b)) => Invalid(a.concatNel(b))
+        case (Invalid(a), Invalid(b)) => Invalid(a.combine(b))
         case (Invalid(_), _) => base
         case (_, Invalid(_)) => that
         case _ => base
       }
-
-    def flatMap[B](that: A => JsonDeserialized[B]): JsonDeserialized[B] =
-      base.andThen { a =>
-        that(a)
-      }
-
-    def mod[B](f: A => B): JsonDeserialized[B] = base.map(f)
   }
 }
