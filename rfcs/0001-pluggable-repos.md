@@ -13,7 +13,7 @@ object UserRepository {
     DynamoDBUserRepository()
 ```
 
-The goal will be to allow users to _configure_ what database implementation they are using.
+The goal will be to allow users to _configure_ what database implementation they are using so that they can use any database they want.  The database implementation will be dynamically loaded when VinylDNS starts up.
 
 # Motivation
 [motivation]: #motivation
@@ -23,7 +23,7 @@ VinylDNS is presently hard-coded to the choices made by Comcast to support our s
 * MySQL - used for zones and zone access.  Managing zone access required query patterns that were ill-suited for DynamoDB.  We also use MySQL for batch changes as well.
 * DynamoDB - used for all other things, in particular Record data.  Due to the scale of Comcast, DynamoDB was a good choice as the number of records is in the 100s of millions.
 
-Not all VinylDNS (it could be argued very few) would want to run the same setup that we do.  To encourage adoption of VinylDNS, we need to allow users to "bring their own repositories" based on their databases of choice.  For example, even at very large scale it is possible to fit everything inside a large Postgres installation.
+Not all VinylDNS users (it could be argued very few) would want to run the same setup that we do.  To encourage adoption of VinylDNS, we need to allow users to "bring their own repositories" based on their databases of choice.  For example, even at very large scale it is possible to fit everything inside a large Postgres installation.
 
 # Design and Goals
 [design]: #design-and-goals
