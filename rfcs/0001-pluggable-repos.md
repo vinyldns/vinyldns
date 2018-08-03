@@ -32,16 +32,17 @@ Not all VinylDNS users (it could be argued very few) would want to run the same 
 1. Support each database backend to have 1 or more repositories.  This allows mix-and-match across database types
 
 ```yaml
-mysql {
+data-stores = [{
+  type = "vinyldns.data.mysql"
   url = ...
   user = ...
   password = ...
 
   user { // define user table name here }
   zone { // define zone table name here }
-}
-
-dynamodb {
+},
+{
+  type = "vinyldns.data.dynamodb"
   access-key = ...
   secret-key = ...
   endpoint = ...
@@ -49,6 +50,7 @@ dynamodb {
   recordSet { // record set table properties go here, throughput, name }
   recordSetChange  { // record set change properties go in here}
 }
+]
 ```
 
 
