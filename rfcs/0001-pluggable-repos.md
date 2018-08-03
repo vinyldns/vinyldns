@@ -1,7 +1,7 @@
 - Feature or Prototype: pluggable_repos
 - Start Date: 2018-08-03
-- RFC PR: (leave this empty, populate once the PR is created with a github link to the PR)
-- Issue: (once approved, this will link to the issue tracker for implementation of the RFC)
+- RFC PR: https://github.com/vinyldns/vinyldns/pull/54/files
+- Issue: https://github.com/vinyldns/vinyldns/issues/55
 
 # Summary
 [summary]: #summary
