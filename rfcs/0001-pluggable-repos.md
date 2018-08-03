@@ -53,6 +53,48 @@ data-stores = [{
 ]
 ```
 
+In following the proposed configuration, we would have the following...
+
+```scala
+trait DataStore {
+  def zone: Option[ZoneRepository]
+  def user: Option[UserRepository]
+  ...
+}
+
+/* Use a "provider" to avoid forcing a constructor parameter, also allows initialization of the data store */
+trait DataStoreProvider {
+  /* Loads a DataStore object for the given config */
+  def load(config: Config): IO[DataStore]
+}
+
+object DataStore {
+  
+  /* For each data store, load and initialize it.  Note: these can be done in parallel */
+  def load(config: Config): Seq[DataStore] = ...
+}
+
+...
+
+class Repos(
+  val zone: ZoneRepository,
+  val user: UserRepository,
+  val recordSet: RecordSetRepository
+  ...
+)
+
+object Repos {
+  def load(config: Config): IO[Repos] = {
+    for { 
+      dsConfig <- IO(config.getConfigList("data-stores"))
+      store <- DataStore.load(dsConfig)
+    } yield {
+      // attempt to build a "Repos"
+      // if any repo is missing fail
+      // if any repo is duplicate fail
+    }
+  }
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
