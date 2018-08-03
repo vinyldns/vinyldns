@@ -28,43 +28,27 @@ Not all VinylDNS users (it could be argued very few) would want to run the same 
 # Design and Goals
 [design]: #design-and-goals
 
-* Create a `DatabaseProvider` trait that loads _all_ repositories.  This is necessary as it supports 1) the setting up of the database and 2) the sharing of database connection information
-* Create a `Database` trait that has all of the repositories
-* The `DatabaseProvider` will be responsible for loading the `Database` via a `Config`
-* Move all hard-coded database initialization into a default `DatabaseProvider`
-* Load the `DatabaseProvider` implementation from a config section.
+1. Support having any number of database backends for the repositories.  This is required as we have to support things like running database migrations and setting up connection pools
+1. Support each database backend to have 1 or more repositories.  This allows mix-and-match across database types
 
-```scala
-trait Database { 
-  def zone: ZoneRepository
-  def recordSet: RecordSetRepository
-  def user: UserRepository
-  ...
+```yaml
+mysql {
+  url = ...
+  user = ...
+  password = ...
+
+  user { // define user table name here }
+  zone { // define zone table name here }
 }
 
-trait DatabaseProvider {
-  def load(config: Config): IO[Database]
+dynamodb {
+  access-key = ...
+  secret-key = ...
+  endpoint = ...
+  
+  recordSet { // record set table properties go here, throughput, name }
+  recordSetChange  { // record set change properties go in here}
 }
-
-object Database {
-  def loadDatabaseProvider(config: Config): IO[DatabaseProvider] = 
-    for {
-      className <- IO(config.getString("type"))
-      classInstance <- IO(
-        Class
-          .forName(className)
-          .getDeclaredConstructor()
-          .newInstance()
-          .asInstanceOf[DatabaseProvider])
-    } yield classInstance
-    
-  def load(config: Config): IO[Database] = 
-    for {
-      provider <- loadDatabaseProvider(config)
-      database <- provider.load(config)
-    yield database
-}
-    
 ```
 
 
