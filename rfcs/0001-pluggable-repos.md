@@ -28,67 +28,43 @@ Not all VinylDNS (it could be argued very few) would want to run the same setup 
 # Design and Goals
 [design]: #design-and-goals
 
-There is some precedent in the codebase in the way that we externalized Cryptography.  In open sourcing VinylDNS, the cryptography library that was used was not available in open source.  The library was also very difficult to replace.  We decided that the best way to support Cryptography was to make it "pluggable".
-
-The following is an example crypto config section...
-
-```yml
-crypto {
-  secret = "dont tell anyone"
-  type = "vinyldns.some.crypto"
-  }
-}
-```
-
-VinylDNS loads the class specified in `crypto.type` above.
-
-When we load cryptography, we assume that the class has been made available to the runtime by adding the jar(s) to the classpath.  The following code snippet _loads_ the cryptography...
+* Create a `DatabaseProvider` trait that loads _all_ repositories.  This is necessary as it supports 1) the setting up of the database and 2) the sharing of database connection information
+* Create a `Database` trait that has all of the repositories
+* The `DatabaseProvider` will be responsible for loading the `Database` via a `Config`
+* Move all hard-coded database initialization into a default `DatabaseProvider`
+* Load the `DatabaseProvider` implementation from a config section.
 
 ```scala
-  def load(cryptoConfig: Config): IO[CryptoAlgebra] =
+trait Database { 
+  def zone: ZoneRepository
+  def recordSet: RecordSetRepository
+  def user: UserRepository
+  ...
+}
+
+trait DatabaseProvider {
+  def load(config: Config): IO[Database]
+}
+
+object Database {
+  def loadDatabaseProvider(config: Config): IO[DatabaseProvider] = 
     for {
-      className <- IO(cryptoConfig.getString("type"))
+      className <- IO(config.getString("type"))
       classInstance <- IO(
         Class
           .forName(className)
-          .getDeclaredConstructor(classOf[Config])
-          .newInstance(cryptoConfig)
-          .asInstanceOf[CryptoAlgebra])
+          .getDeclaredConstructor()
+          .newInstance()
+          .asInstanceOf[DatabaseProvider])
     } yield classInstance
- ```
-
-The design mandates that there is a `class` that has a constructor taking a `Config` in order to initialize itself.  The following is the NoOp implementation...
-
-```scala
-class NoOpCrypto(config: Config) extends CryptoAlgebra {
-  def encrypt(value: String): String = value
-  def decrypt(value: String): String = value
+    
+  def load(config: Config): IO[Database] = 
+    for {
+      provider <- loadDatabaseProvider(config)
+      database <- provider.load(config)
+    yield database
 }
-```
-
-The current Crypto design suffers from a few flows, namely:
-* there is no way to know for sure that the class has the right Constructor that takes a config.  
-* there is no way to know for sure that the config passed in has the correct attributes
-
-**Solution**
-The proposed solution is to make the loading of plugins more general, and more strongly typed
-
-* Create a `DatabaseProvider` trait that loads _all_ repositories.  This is necessary
-
-We can extend the same concept to repositories, and make the interface more general...
-
-```scala
-object Plugin {
-  def load[A](pluginConfig: Config): IO[A] = ???
-}
-```
-
-We can then update the companion objects for the repositories to take a Config...
-
-```scala
-object UserRepository {
-  def apply(config: Config): UserRepository =
-    Plugin.load(config)
+    
 ```
 
 
