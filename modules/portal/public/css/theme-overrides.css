@@ -19,14 +19,18 @@ a {
 
 .btn-info, .btn-info:disabled:hover {
     background-color: #fff;
-    border-color: #1bcfe1;
-    color: #1bcfe1;
+    border-color: #0086ff;
+    color: #0086ff;
+}
+
+.btn-info:focus, .btn-info:active, .btn-info:active:hover {
+  background-color: #005fb3;
 }
 
 .btn-info:hover {
     background-color: #fff;
-    border-color: #18baca;
-    color: #18baca;
+    border-color: #005fb3;
+    color: #005fb3;
 }
 
 .btn-danger, .btn-danger:disabled:hover {
@@ -42,13 +46,13 @@ a {
 }
 
 .btn-success, .btn-success:disabled:hover {
-    background-color: #1bcfe1;
-    border-color: #19bfcf;
+    background-color: #0086ff;
+    border-color: #005fb3;
 }
 
-.btn-success:hover {
-    background-color: #19bfcf;
-    border-color: #17afbe;
+.btn-success:hover, .btn-success:active, .btn-success:active:hover, .btn-success:focus {
+    background-color: #005fb3;
+    border-color: #004480;
 }
 
 .dataTables_paginate .pagination {
@@ -56,7 +60,7 @@ a {
 }
 
 .nav-sm .nav.side-menu li.active-sm {
-    border-right: 5px solid #1bcfe1;
+    border-right: 5px solid #0086ff;
 }
 
 .nav-sm span.fa {
@@ -74,11 +78,11 @@ a {
 .top_nav .nav>li>a:focus, .top_nav .nav>li>a:hover,
 .top_nav .nav .open>a, .top_nav .nav .open>a:focus,
 .top_nav .nav .open>a:hover {
-    background: #1bcfe1;
+    background: #0086ff;
 }
 
 .top_nav .nav>li>a:hover {
-    background: #1bcfe1;
+    background: #0086ff;
 }
 
 .toggle a {
