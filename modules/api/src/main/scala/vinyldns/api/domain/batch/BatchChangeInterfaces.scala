@@ -61,15 +61,6 @@ object BatchChangeInterfaces {
     def toLeftBatchResult: BatchResult[A] = EitherT.leftT[Future, A](err)
   }
 
-  def toSingleValidation[E <: DomainValidationError, A](
-      validation: ValidatedNel[E, A]): SingleValidation[A] =
-    validation match {
-      case Valid(s) => s.validNel[DomainValidationError]
-      case Invalid(f) =>
-        // Unsafe is ok here - we're converting NonEmptyList to NonEmptyList (cats), so we know it exists
-        NonEmptyList.fromListUnsafe(f.toList).invalid[A]
-    }
-
   implicit class ValidatedBatchImprovements[A](batch: ValidatedBatch[A]) {
     def mapValid[B](fn: A => ValidatedNel[DomainValidationError, B]): ValidatedBatch[B] =
       // gets rid of the map then flatmap thing we have to do when dealing with Seq[ValidatedNel[]]
