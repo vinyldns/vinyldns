@@ -32,8 +32,7 @@ code from Spray.io, so Akka HTTP was a rather seamless upgrade
 FS2 has back-pressure built in, and gives us tools like throttling and concurrency.
 * [Cats Effect](https://typelevel.org/cats-effect/) - We are currently migrating away from `Future` as our primary type
 and towards cats effect IO.  Hopefully, one day, all the things will be using IO.
-* [Cats](https://typelevel.org/cats) - Used for functional programming.  There is presently a hybrid of somethings
-scalaz and other things cats.  We are migrating away from scalaz, so when building new code prefer cats if possible.
+* [Cats](https://typelevel.org/cats) - Used for functional programming.
 * [PureConfig](https://pureconfig.github.io/) - For loading configuration values.  We are currently migrating to
 use PureConfig everywhere.  Not all the places use it yet.
 
