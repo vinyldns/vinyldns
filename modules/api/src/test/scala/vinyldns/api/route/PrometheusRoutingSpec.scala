@@ -25,8 +25,6 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.VinylDNSMetrics
 
-import scalaz.syntax.ToEitherOps
-
 class PrometheusRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
@@ -34,7 +32,6 @@ class PrometheusRoutingSpec
     with PrometheusRoute
     with BeforeAndAfterEach
     with MockitoSugar
-    with ToEitherOps
     with Matchers {
 
   val metricRegistry = VinylDNSMetrics.metricsRegistry

@@ -21,7 +21,7 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import scalaz.std.scalaFuture._
+import cats.implicits._
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.membership.{ListUsersResults, UserRepository}
 import vinyldns.api.domain.zone._
@@ -72,7 +72,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.matches(record, zoneAuthorized.name) shouldBe true
       result.changeType shouldBe RecordSetChangeType.Create
@@ -82,7 +82,7 @@ class RecordSetServiceSpec
       doReturn(Future.successful(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
-      val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).run)
+      val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
     }
     "fail if the record is dotted" in {
@@ -96,7 +96,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
-      val result = leftResultOf(underTest.addRecordSet(record, okAuth).run)
+      val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe a[InvalidRequest]
     }
     "fail if the record is relative with trailing dot" in {
@@ -110,7 +110,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
-      val result = leftResultOf(underTest.addRecordSet(record, okAuth).run)
+      val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe a[InvalidRequest]
     }
     "succeed if record is apex with dot" in {
@@ -126,7 +126,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
@@ -143,7 +143,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
@@ -160,7 +160,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
@@ -179,7 +179,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.matches(newRecord, zoneAuthorized.name) shouldBe true
       result.updates.get.matches(oldRecord, zoneAuthorized.name) shouldBe true
@@ -191,7 +191,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(
-        underTest.updateRecordSet(aaaa.copy(zoneId = zoneNotAuthorized.id), okAuth).run)
+        underTest.updateRecordSet(aaaa.copy(zoneId = zoneNotAuthorized.id), okAuth).value)
       result shouldBe a[NotAuthorizedError]
     }
     "fail if the record is dotted" in {
@@ -205,7 +205,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
-      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).run)
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
       result shouldBe a[InvalidRequest]
     }
     "fail if the record is relative with trailing dot" in {
@@ -219,7 +219,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
-      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).run)
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
       result shouldBe a[InvalidRequest]
     }
     "succeed if record is apex with dot" in {
@@ -235,7 +235,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
@@ -252,7 +252,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
@@ -269,7 +269,7 @@ class RecordSetServiceSpec
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
       val result: RecordSetChange = rightResultOf(
-        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).run)
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
@@ -286,7 +286,7 @@ class RecordSetServiceSpec
         underTest
           .deleteRecordSet(record.id, zoneAuthorized.id, okAuth)
           .map(_.asInstanceOf[RecordSetChange])
-          .run)
+          .value)
 
       result.recordSet.matches(record, zoneAuthorized.name) shouldBe true
       result.changeType shouldBe RecordSetChangeType.Delete
@@ -297,7 +297,7 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result =
-        leftResultOf(underTest.deleteRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).run)
+        leftResultOf(underTest.deleteRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
     }
   }
@@ -308,14 +308,14 @@ class RecordSetServiceSpec
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, aaaa.id)
       val result: RecordSet =
-        rightResultOf(underTest.getRecordSet(aaaa.id, zoneAuthorized.id, okAuth).run)
+        rightResultOf(underTest.getRecordSet(aaaa.id, zoneAuthorized.id, okAuth).value)
       result shouldBe aaaa
     }
     "fail when the account is not authorized" in {
       doReturn(Future.successful(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
-      val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).run)
+      val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
     }
   }
@@ -338,7 +338,7 @@ class RecordSetServiceSpec
             maxItems = None,
             recordNameFilter = None,
             authPrincipal = okAuth)
-          .run)
+          .value)
       result.recordSets shouldBe List(RecordSetInfo(aaaa, AccessLevel.Delete))
     }
     "fails when the account is not authorized" in {
@@ -350,7 +350,7 @@ class RecordSetServiceSpec
             maxItems = None,
             recordNameFilter = None,
             authPrincipal = okAuth)
-          .run)
+          .value)
       result shouldBe a[NotAuthorizedError]
     }
   }
@@ -365,7 +365,8 @@ class RecordSetServiceSpec
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
       val result: ListRecordSetChangesResponse =
-        rightResultOf(underTest.listRecordSetChanges(zoneAuthorized.id, authPrincipal = okAuth).run)
+        rightResultOf(
+          underTest.listRecordSetChanges(zoneAuthorized.id, authPrincipal = okAuth).value)
       val changesWithName =
         completeRecordSetChanges.map(change => RecordSetChangeInfo(change, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(
@@ -383,7 +384,8 @@ class RecordSetServiceSpec
         .listRecordSetChanges(zoneId = zoneAuthorized.id, startFrom = None, maxItems = 100)
 
       val result: ListRecordSetChangesResponse =
-        rightResultOf(underTest.listRecordSetChanges(zoneAuthorized.id, authPrincipal = okAuth).run)
+        rightResultOf(
+          underTest.listRecordSetChanges(zoneAuthorized.id, authPrincipal = okAuth).value)
       val expectedResults = ListRecordSetChangesResponse(
         zoneId = zoneAuthorized.id,
         recordSetChanges = List(),
@@ -395,7 +397,7 @@ class RecordSetServiceSpec
 
     "return a NotAuthorizedError" in {
       val error = leftResultOf(
-        underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).run)
+        underTest.listRecordSetChanges(zoneNotAuthorized.id, authPrincipal = okAuth).value)
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -408,7 +410,8 @@ class RecordSetServiceSpec
         .listRecordSetChanges(zoneId = zoneAuthorized.id, startFrom = None, maxItems = 100)
 
       val result: ListRecordSetChangesResponse =
-        rightResultOf(underTest.listRecordSetChanges(zoneAuthorized.id, authPrincipal = okAuth).run)
+        rightResultOf(
+          underTest.listRecordSetChanges(zoneAuthorized.id, authPrincipal = okAuth).value)
       val changesWithName =
         List(RecordSetChangeInfo(rsChange2, Some("ok")), RecordSetChangeInfo(rsChange1, Some("ok")))
       val expectedResults = ListRecordSetChangesResponse(
@@ -427,7 +430,7 @@ class RecordSetServiceSpec
         .when(mockRecordChangeRepo)
         .getRecordSetChange(pendingCreateAAAA.zoneId, pendingCreateAAAA.id)
       val actual: RecordSetChange = rightResultOf(
-        underTest.getRecordSetChange(zoneAuthorized.id, pendingCreateAAAA.id, okAuth).run)
+        underTest.getRecordSetChange(zoneAuthorized.id, pendingCreateAAAA.id, okAuth).value)
       actual shouldBe pendingCreateAAAA
     }
 
@@ -436,13 +439,13 @@ class RecordSetServiceSpec
         .when(mockRecordChangeRepo)
         .getRecordSetChange(pendingCreateAAAA.zoneId, pendingCreateAAAA.id)
       val error = leftResultOf(
-        underTest.getRecordSetChange(zoneAuthorized.id, pendingCreateAAAA.id, okAuth).run)
+        underTest.getRecordSetChange(zoneAuthorized.id, pendingCreateAAAA.id, okAuth).value)
       error shouldBe a[RecordSetChangeNotFoundError]
     }
 
     "return a NotAuthorizedError if the user is not authorized to access the zone" in {
       val error = leftResultOf(
-        underTest.getRecordSetChange(zoneNotAuthorized.id, pendingCreateAAAA.id, notAuth).run)
+        underTest.getRecordSetChange(zoneNotAuthorized.id, pendingCreateAAAA.id, notAuth).value)
 
       error shouldBe a[NotAuthorizedError]
     }

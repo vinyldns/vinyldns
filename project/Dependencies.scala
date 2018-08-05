@@ -38,7 +38,6 @@ object Dependencies {
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.json4s"                %% "json4s-ext"                     % "3.5.3",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
-    "org.scalaz"                %% "scalaz-core"                    % "7.1.16",
     "org.scalikejdbc"           %% "scalikejdbc"                    % "2.5.2",
     "org.scalikejdbc"           %% "scalikejdbc-config"             % "2.5.2",
     "org.scodec"                %% "scodec-bits"                    % scodecV,
@@ -64,7 +63,6 @@ object Dependencies {
     "junit"                     %  "junit"                          % "4.12",
     "org.mockito"               %  "mockito-core"                   % "1.10.19",
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
-    "org.typelevel"             %% "scalaz-scalatest"               % "0.5.2",
     "org.scalacheck"            %% "scalacheck"                     % "1.13.4",
     "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1"
   ) map (_ % "it, test")

@@ -16,10 +16,10 @@
 
 package vinyldns.api.route
 
+import cats.scalatest.EitherMatchers
 import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import org.typelevel.scalatest.DisjunctionMatchers
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.zone.ZoneRepository
 
@@ -31,7 +31,7 @@ class HealthServiceSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers
-    with DisjunctionMatchers {
+    with EitherMatchers {
 
   private val mockZoneRepo = mock[ZoneRepository]
   val underTest = new HealthService(mockZoneRepo)
@@ -39,13 +39,13 @@ class HealthServiceSpec
   "Checking Status" should {
     "return an error if the zone repository could not be reached" in {
       doReturn(Future.failed(new RuntimeException("fail"))).when(mockZoneRepo).getZone("notFound")
-      val result = leftResultOf(underTest.checkHealth().run)
+      val result = leftResultOf(underTest.checkHealth().value)
       result shouldBe a[RuntimeException]
     }
 
     "return success if the zone repository returns appropriately" in {
       doReturn(Future.successful(None)).when(mockZoneRepo).getZone("notFound")
-      val result = awaitResultOf(underTest.checkHealth().run)
+      val result = awaitResultOf(underTest.checkHealth().value)
       result should be(right)
     }
   }

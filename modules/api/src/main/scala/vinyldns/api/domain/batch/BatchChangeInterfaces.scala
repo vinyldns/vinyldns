@@ -19,7 +19,6 @@ package vinyldns.api.domain.batch
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.{NonEmptyList, _}
 import cats.implicits._
-import scalaz.{Disjunction, Failure, Success, ValidationNel}
 import vinyldns.api.domain.DomainValidationError
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,15 +61,6 @@ object BatchChangeInterfaces {
     def toLeftBatchResult: BatchResult[A] = EitherT.leftT[Future, A](err)
   }
 
-  def toSingleValidation[E <: DomainValidationError, A](
-      validation: ValidationNel[E, A]): SingleValidation[A] =
-    validation match {
-      case Success(s) => s.validNel[DomainValidationError]
-      case Failure(f) =>
-        // Unsafe is ok here - we're converting NonEmptyList (scalaz) to NonEmptyList (cats), so we know it exists
-        NonEmptyList.fromListUnsafe(f.list).invalid[A]
-    }
-
   implicit class ValidatedBatchImprovements[A](batch: ValidatedBatch[A]) {
     def mapValid[B](fn: A => ValidatedNel[DomainValidationError, B]): ValidatedBatch[B] =
       // gets rid of the map then flatmap thing we have to do when dealing with Seq[ValidatedNel[]]
@@ -82,16 +72,6 @@ object BatchChangeInterfaces {
     def getValid: List[A] = batch.collect {
       case Valid(input) => input
     }
-  }
-
-  implicit class ScalazCatsValidationImprovements[A](
-      validation: ValidationNel[DomainValidationError, A]) {
-    def toCats: SingleValidation[A] = toSingleValidation(validation)
-  }
-
-  implicit class ScalazCatsDisjunctionImprovements[A](
-      disjunction: Disjunction[DomainValidationError, A]) {
-    def toCats: SingleValidation[A] = toSingleValidation(disjunction.validationNel)
   }
 
   implicit class SingleValidationImprovements[A](validation: SingleValidation[A]) {

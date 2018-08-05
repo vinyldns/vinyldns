@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import scalaz.\/
+
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, GroupRepository, User, UserRepository}
@@ -129,7 +129,10 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
   "ZoneEntity" should {
     "reject a DeleteZone with bad auth" in {
       val result =
-        testZoneService.deleteZone(zone.id, badAuth).run.mapTo[Throwable \/ ZoneCommandResult]
+        testZoneService
+          .deleteZone(zone.id, badAuth)
+          .value
+          .mapTo[Either[Throwable, ZoneCommandResult]]
       whenReady(result, timeout) { _ =>
         val error = leftResultOf(result)
         error shouldBe a[NotAuthorizedError]
@@ -139,7 +142,8 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
       val removeARecord = ChangeSet(RecordSetChange.forDelete(testRecordA, zone))
       waitForSuccess(recordSetRepo.apply(removeARecord))
 
-      val result = testZoneService.deleteZone(zone.id, auth).run.mapTo[Throwable \/ ZoneChange]
+      val result =
+        testZoneService.deleteZone(zone.id, auth).value.mapTo[Either[Throwable, ZoneChange]]
       whenReady(result, timeout) { out =>
         out.isRight shouldBe true
         val change = out.toOption.get

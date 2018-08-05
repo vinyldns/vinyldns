@@ -19,7 +19,6 @@ package vinyldns.api.engine
 import cats.effect.IO
 import fs2._
 import org.slf4j.LoggerFactory
-import scalaz.{-\/, \/-}
 import vinyldns.api.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.api.domain.dns.DnsProtocol.NoError
 import vinyldns.api.domain.record._
@@ -112,7 +111,7 @@ object RecordSetChangeHandler {
       dnsResult.exists(_.matches(recordSet, zoneName))
 
     dnsConnector.dnsResolve(change.recordSet.name, change.zone.name, change.recordSet.typ).map {
-      case \/-(existingRecords) =>
+      case Right(existingRecords) =>
         change.changeType match {
           case RecordSetChangeType.Create =>
             if (existingRecords.isEmpty) ReadyToApply(change)
@@ -141,7 +140,7 @@ object RecordSetChangeHandler {
             if (existingRecords.nonEmpty) ReadyToApply(change) // we have a record set, move forward
             else AlreadyApplied(change) // we did not find the record set, so already applied
         }
-      case -\/(error) => Failure(change, error.getMessage)
+      case Left(error) => Failure(change, error.getMessage)
     }
   }
 
@@ -216,9 +215,9 @@ object RecordSetChangeHandler {
   /* Step 2: Apply the change to the dns backend */
   private def apply(change: RecordSetChange, dnsConnector: DnsConnector): IO[ProcessorState] =
     dnsConnector.dnsUpdate(change).map {
-      case \/-(_: NoError) =>
+      case Right(_: NoError) =>
         Applied(change)
-      case -\/(error) =>
+      case Left(error) =>
         Completed(change.failed(
           s"Failed applying update to DNS for change ${change.id}:${change.recordSet.name}: ${error.getMessage}"))
     }

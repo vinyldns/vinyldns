@@ -25,7 +25,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-import scalaz.\/
+
 import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
@@ -330,7 +330,8 @@ class RecordSetRoutingSpec
     spf.id -> spf,
     srv.id -> srv,
     sshfp.id -> sshfp,
-    txt.id -> txt)
+    txt.id -> txt
+  )
 
   private val rsChange1 = RecordSetChange(
     okZone,
@@ -359,22 +360,22 @@ class RecordSetRoutingSpec
         rsId: String,
         zoneId: String,
         authPrincipal: AuthPrincipal,
-        chgType: RecordSetChangeType): Throwable \/ RecordSetChange = zoneId match {
-      case zoneNotFound.id => \/.left(ZoneNotFoundError(zoneId))
-      case zoneDeleted.id => \/.left(ZoneInactiveError(zoneId))
-      case notAuthorizedZone.id => \/.left(NotAuthorizedError(zoneId))
-      case syncingZone.id => \/.left(ZoneUnavailableError(zoneId))
+        chgType: RecordSetChangeType): Either[Throwable, RecordSetChange] = zoneId match {
+      case zoneNotFound.id => Left(ZoneNotFoundError(zoneId))
+      case zoneDeleted.id => Left(ZoneInactiveError(zoneId))
+      case notAuthorizedZone.id => Left(NotAuthorizedError(zoneId))
+      case syncingZone.id => Left(ZoneUnavailableError(zoneId))
       case okZone.id =>
         rsId match {
-          case rsError.id => \/.left(new RuntimeException("fail"))
-          case rsAlreadyExists.id => \/.left(RecordSetAlreadyExists(rsId))
-          case rsPendingUpdate.id => \/.left(PendingUpdateError(rsId))
-          case rsNotFound.id => \/.left(RecordSetNotFoundError(rsId))
-          case rsNotAuthorized.id => \/.left(NotAuthorizedError(rsId))
-          case rsInvalidRequest.id => \/.left(InvalidRequest(rsId))
+          case rsError.id => Left(new RuntimeException("fail"))
+          case rsAlreadyExists.id => Left(RecordSetAlreadyExists(rsId))
+          case rsPendingUpdate.id => Left(PendingUpdateError(rsId))
+          case rsNotFound.id => Left(RecordSetNotFoundError(rsId))
+          case rsNotAuthorized.id => Left(NotAuthorizedError(rsId))
+          case rsInvalidRequest.id => Left(InvalidRequest(rsId))
           case other =>
             if (chgType == RecordSetChangeType.Create)
-              \/.right(
+              Right(
                 RecordSetChange(
                   zone = okZone,
                   recordSet = recordSets
@@ -386,7 +387,7 @@ class RecordSetRoutingSpec
                   userId = authPrincipal.userId
                 ))
             else
-              \/.right(
+              Right(
                 RecordSetChange(
                   zone = okZone,
                   recordSet = recordSets
@@ -423,13 +424,13 @@ class RecordSetRoutingSpec
         zoneId: String,
         authPrincipal: AuthPrincipal): Result[RecordSet] = {
       if (zoneId == zoneNotFound.id) {
-        \/.left(ZoneNotFoundError(s"$zoneId"))
+        Left(ZoneNotFoundError(s"$zoneId"))
       } else {
         recordSetId match {
-          case rsError.id => \/.left(new RuntimeException("fail"))
-          case rsNotFound.id => \/.left(RecordSetNotFoundError(s"$zoneId"))
+          case rsError.id => Left(new RuntimeException("fail"))
+          case rsNotFound.id => Left(RecordSetNotFoundError(s"$zoneId"))
           case valid if recordSets.contains(valid) =>
-            \/.right(recordSets.get(valid).get)
+            Right(recordSets.get(valid).get)
         }
       }
     }.toResult
@@ -441,9 +442,9 @@ class RecordSetRoutingSpec
         recordNameFilter: Option[String],
         authPrincipal: AuthPrincipal): Result[ListRecordSetsResponse] = {
       zoneId match {
-        case zoneNotFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case okZone.id =>
-          \/.right(
+          Right(
             ListRecordSetsResponse(
               List(
                 RecordSetInfo(rs1, AccessLevel.Read),
@@ -458,10 +459,10 @@ class RecordSetRoutingSpec
         changeId: String,
         authPrincipal: AuthPrincipal): Result[RecordSetChange] = {
       changeId match {
-        case "changeNotFound" => \/.left(RecordSetChangeNotFoundError(""))
-        case "zoneNotFound" => \/.left(ZoneNotFoundError(""))
-        case "forbidden" => \/.left(NotAuthorizedError(""))
-        case _ => \/.right(rsChange1)
+        case "changeNotFound" => Left(RecordSetChangeNotFoundError(""))
+        case "zoneNotFound" => Left(ZoneNotFoundError(""))
+        case "forbidden" => Left(NotAuthorizedError(""))
+        case _ => Right(rsChange1)
       }
     }.toResult
 
@@ -471,9 +472,9 @@ class RecordSetRoutingSpec
         maxItems: Int,
         authPrincipal: AuthPrincipal): Result[ListRecordSetChangesResponse] = {
       zoneId match {
-        case zoneNotFound.id => \/.left(ZoneNotFoundError(s"$zoneId"))
-        case notAuthorizedZone.id => \/.left(NotAuthorizedError("no way"))
-        case _ => \/.right(listRecordSetChangesResponse)
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
+        case _ => Right(listRecordSetChangesResponse)
       }
     }.toResult
 

@@ -19,7 +19,6 @@ package vinyldns.api.domain.membership
 import java.util.UUID
 
 import org.joda.time.DateTime
-import scalaz.ValidationNel
 import vinyldns.api.domain.auth.AuthPrincipal
 
 object GroupStatus extends Enumeration {
@@ -81,20 +80,21 @@ case class Group(
 }
 
 object Group {
-  import scalaz.syntax.validation._
+  import cats.data.ValidatedNel
+  import cats.implicits._
 
   def build(
       name: String,
       email: String,
       description: Option[String],
       memberIds: Set[UserInfo],
-      adminUserIds: Set[UserInfo]): ValidationNel[String, Group] =
+      adminUserIds: Set[UserInfo]): ValidatedNel[String, Group] =
     Group(
       name,
       email,
       description,
       memberIds = memberIds.map(_.id) ++ adminUserIds.map(_.id),
-      adminUserIds = adminUserIds.map(_.id)).successNel[String]
+      adminUserIds = adminUserIds.map(_.id)).validNel[String]
 
   def build(
       id: String,
@@ -102,14 +102,14 @@ object Group {
       email: String,
       description: Option[String],
       memberIds: Set[UserInfo],
-      adminUserIds: Set[UserInfo]): ValidationNel[String, Group] =
+      adminUserIds: Set[UserInfo]): ValidatedNel[String, Group] =
     Group(
       name,
       email,
       description,
       id,
       memberIds = memberIds.map(_.id) ++ adminUserIds.map(_.id),
-      adminUserIds = adminUserIds.map(_.id)).successNel[String]
+      adminUserIds = adminUserIds.map(_.id)).validNel[String]
 }
 
 object GroupChangeType extends Enumeration {

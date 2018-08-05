@@ -23,7 +23,7 @@ import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone._
 
 class BatchChangeSpec extends WordSpec with Matchers {
-  val pendingChange = SingleAddChange(
+  private val pendingChange = SingleAddChange(
     "zoneid",
     "zonename",
     "rname",
@@ -35,10 +35,10 @@ class BatchChangeSpec extends WordSpec with Matchers {
     None,
     None,
     None)
-  val failedChange = pendingChange.copy(status = SingleChangeStatus.Failed)
-  val completeChange = pendingChange.copy(status = SingleChangeStatus.Complete)
+  private val failedChange = pendingChange.copy(status = SingleChangeStatus.Failed)
+  private val completeChange = pendingChange.copy(status = SingleChangeStatus.Complete)
 
-  val batchChangeBase = BatchChange(
+  private val batchChangeBase = BatchChange(
     "userId",
     "userName",
     None,

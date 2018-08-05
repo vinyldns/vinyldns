@@ -27,7 +27,6 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import scalaz.syntax.ToEitherOps
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, _}
@@ -45,7 +44,6 @@ class MembershipRoutingSpec
     with VinylDNSDirectives
     with Matchers
     with VinylDNSTestData
-    with ToEitherOps
     with GroupTestData
     with MockitoSugar
     with BeforeAndAfterEach {

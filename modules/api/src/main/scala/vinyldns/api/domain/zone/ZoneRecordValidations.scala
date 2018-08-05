@@ -16,10 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import scalaz.ValidationNel
-import scalaz.std.list._
-import scalaz.syntax.traverse._
-import scalaz.syntax.validation._
+import cats.implicits._, cats.data._
 import vinyldns.api.domain.record.{NSData, RecordSet, RecordType}
 
 import scala.util.matching.Regex
@@ -29,44 +26,43 @@ object ZoneRecordValidations {
   /* Checks to see if an individual ns data is part of the approved server list */
   def isApprovedNameServer(
       approvedServerList: List[Regex],
-      nsData: NSData): ValidationNel[String, NSData] =
+      nsData: NSData): ValidatedNel[String, NSData] =
     if (approvedServerList.exists(rx => rx.findAllIn(nsData.nsdname).contains(nsData.nsdname))) {
-      nsData.successNel[String]
+      nsData.validNel[String]
     } else {
-      s"Name Server ${nsData.nsdname} is not an approved name server.".failureNel[NSData]
+      s"Name Server ${nsData.nsdname} is not an approved name server.".invalidNel[NSData]
     }
 
   /* Inspects each record in the rdata, returning back the record set itself or all ns records that are not approved */
   def containsApprovedNameServers(
       approvedServerList: List[Regex],
-      nsRecordSet: RecordSet): ValidationNel[String, RecordSet] = {
-    val validations: List[ValidationNel[String, NSData]] =
+      nsRecordSet: RecordSet): ValidatedNel[String, RecordSet] = {
+    val validations: List[ValidatedNel[String, NSData]] =
       nsRecordSet.records
         .map(_.asInstanceOf[NSData])
         .map(isApprovedNameServer(approvedServerList, _))
 
-    validations.sequenceU.map(_ => nsRecordSet)
+    validations.sequence.map(_ => nsRecordSet)
   }
 
   /* name server must exist in the approved server list, and have a valid name */
   def validNameServer(
       approvedServerList: List[Regex],
-      rs: RecordSet): ValidationNel[String, RecordSet] =
+      rs: RecordSet): ValidatedNel[String, RecordSet] =
     containsApprovedNameServers(approvedServerList, rs)
 
   /* Performs the actual validations on the zone */
   def validateDnsZone(
       approvedServerList: List[Regex],
-      recordSets: List[RecordSet]): ValidationNel[String, List[RecordSet]] = {
-    val validations: List[ValidationNel[String, RecordSet]] = recordSets.map {
+      recordSets: List[RecordSet]): ValidatedNel[String, List[RecordSet]] = {
+    val validations: List[ValidatedNel[String, RecordSet]] = recordSets.map {
       case ns if ns.typ == RecordType.NS =>
         // This is awful, need to redo the core domain model
         validNameServer(approvedServerList, ns)
 
       case otherRecordType =>
-        otherRecordType.successNel[String]
+        otherRecordType.validNel[String]
     }
-
-    validations.sequenceU
+    validations.sequence
   }
 }

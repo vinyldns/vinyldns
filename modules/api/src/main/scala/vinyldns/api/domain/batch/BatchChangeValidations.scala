@@ -20,7 +20,7 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.batch.BatchChangeInterfaces.{ScalazCatsValidationImprovements, _}
+import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
@@ -49,8 +49,8 @@ trait BatchChangeValidationsAlgebra {
 class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidationAlgebra)
     extends BatchChangeValidationsAlgebra {
 
-  import accessValidation._
   import RecordType._
+  import accessValidation._
 
   def validateBatchChangeInputSize(
       input: BatchChangeInput): Either[BatchChangeErrorResponse, Unit] =
@@ -71,7 +71,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
 
   def validateAddChangeInput(addChangeInput: AddChangeInput): SingleValidation[Unit] = {
-    val validTTL = validateTTL(addChangeInput.ttl).toCats.asUnit
+    val validTTL = validateTTL(addChangeInput.ttl).asUnit
     val validRecord = validateRecordData(addChangeInput.record)
     val validInput = validateInputName(addChangeInput)
 
@@ -80,28 +80,28 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
 
   def validateRecordData(record: RecordData): SingleValidation[Unit] =
     record match {
-      case a: AData => validateIpv4Address(a.address).toCats.asUnit
-      case aaaa: AAAAData => validateIpv6Address(aaaa.address).toCats.asUnit
-      case cname: CNAMEData => validateHostName(cname.cname).toCats.asUnit
-      case ptr: PTRData => validateHostName(ptr.ptrdname).toCats.asUnit
-      case txt: TXTData => validateTxtTextLength(txt.text).toCats.asUnit
+      case a: AData => validateIpv4Address(a.address).asUnit
+      case aaaa: AAAAData => validateIpv6Address(aaaa.address).asUnit
+      case cname: CNAMEData => validateHostName(cname.cname).asUnit
+      case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
+      case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>
-        validateMxPreference(mx.preference).toCats.asUnit |+| validateHostName(mx.exchange).toCats.asUnit
+        validateMxPreference(mx.preference).asUnit |+| validateHostName(mx.exchange).asUnit
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
 
   def validateInputName(change: ChangeInput): SingleValidation[Unit] =
     change.typ match {
       case A | AAAA | MX =>
-        validateHostName(change.inputName).toCats.asUnit |+| notInReverseZone(change)
-      case CNAME | TXT => validateHostName(change.inputName).toCats.asUnit
+        validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
+      case CNAME | TXT => validateHostName(change.inputName).asUnit
       case PTR => validatePtrIp(change.inputName)
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
 
   def validatePtrIp(ip: String): SingleValidation[Unit] = {
-    val validIpv4 = validateIpv4Address(ip).toCats.asUnit
-    val validIpv6 = validateIpv6Address(ip).toCats.asUnit
+    val validIpv4 = validateIpv4Address(ip).asUnit
+    val validIpv6 = validateIpv6Address(ip).asUnit
 
     validIpv4.findValid(validIpv6).leftMap(_ => NonEmptyList.of(InvalidIPAddress(ip)))
   }
@@ -315,7 +315,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       input: ChangeForValidation,
       authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
     val result = canAddRecordSet(authPrincipal, input.recordName, input.inputChange.typ, input.zone)
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toCats
+    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
   }
 
   def userCanDeleteRecordSet(
@@ -323,7 +323,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
     val result =
       canDeleteRecordSet(authPrincipal, input.recordName, input.inputChange.typ, input.zone)
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toCats
+    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
   }
 
   def canGetBatchChange(

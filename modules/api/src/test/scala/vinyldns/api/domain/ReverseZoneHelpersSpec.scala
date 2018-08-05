@@ -16,11 +16,11 @@
 
 package vinyldns.api.domain
 
+import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import org.typelevel.scalatest.DisjunctionMatchers
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone.{InvalidRequest, _}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
@@ -34,7 +34,7 @@ class ReverseZoneHelpersSpec
     with ResultHelpers
     with BeforeAndAfterEach
     with GroupTestData
-    with DisjunctionMatchers {
+    with EitherMatchers {
 
   "ReverseZoneHelpersSpec" should {
     "convertPTRtoIPv4" should {

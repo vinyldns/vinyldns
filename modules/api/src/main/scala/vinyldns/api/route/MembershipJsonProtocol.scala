@@ -18,9 +18,10 @@ package vinyldns.api.route
 
 import java.util.UUID
 
+import cats.data._
+import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s._
-import scalaz.Scalaz._
 import vinyldns.api.domain.membership._
 
 object MembershipJsonProtocol {
@@ -55,25 +56,25 @@ trait MembershipJsonProtocol extends JsonValidation {
   )
 
   case object CreateGroupInputSerializer extends ValidationSerializer[CreateGroupInput] {
-    override def fromJson(js: JValue): JsonDeserialized[CreateGroupInput] =
+    override def fromJson(js: JValue): ValidatedNel[String, CreateGroupInput] =
       (
-        (js \ "name").required[String]("Missing Group.name")
-          |@| (js \ "email").required[String]("Missing Group.email")
-          |@| (js \ "description").optional[String]
-          |@| (js \ "members").required[Set[UserInfo]]("Missing Group.members")
-          |@| (js \ "admins").required[Set[UserInfo]]("Missing Group.admins")
-      )(CreateGroupInput.apply)
+        (js \ "name").required[String]("Missing Group.name"),
+        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "description").optional[String],
+        (js \ "members").required[Set[UserInfo]]("Missing Group.members"),
+        (js \ "admins").required[Set[UserInfo]]("Missing Group.admins")
+      ).mapN(CreateGroupInput.apply)
   }
   case object UpdateGroupInputSerializer extends ValidationSerializer[UpdateGroupInput] {
-    override def fromJson(js: JValue): JsonDeserialized[UpdateGroupInput] =
+    override def fromJson(js: JValue): ValidatedNel[String, UpdateGroupInput] =
       (
-        (js \ "id").required[String]("Missing Group.id")
-          |@| (js \ "name").required[String]("Missing Group.name")
-          |@| (js \ "email").required[String]("Missing Group.email")
-          |@| (js \ "description").optional[String]
-          |@| (js \ "members").required[Set[UserInfo]]("Missing Group.members")
-          |@| (js \ "admins").required[Set[UserInfo]]("Missing Group.admins")
-      )(UpdateGroupInput.apply)
+        (js \ "id").required[String]("Missing Group.id"),
+        (js \ "name").required[String]("Missing Group.name"),
+        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "description").optional[String],
+        (js \ "members").required[Set[UserInfo]]("Missing Group.members"),
+        (js \ "admins").required[Set[UserInfo]]("Missing Group.admins")
+      ).mapN(UpdateGroupInput.apply)
   }
 
   /**
@@ -81,42 +82,42 @@ trait MembershipJsonProtocol extends JsonValidation {
     * serialization works with Enum values.
     */
   case object GroupSerializer extends ValidationSerializer[Group] {
-    override def fromJson(js: JValue): JsonDeserialized[Group] =
+    override def fromJson(js: JValue): ValidatedNel[String, Group] =
       (
-        (js \ "name").required[String]("Missing Group.name")
-          |@| (js \ "email").required[String]("Missing Group.email")
-          |@| (js \ "description").optional[String]
-          |@| (js \ "id").default[String](UUID.randomUUID().toString)
-          |@| (js \ "created").default[DateTime](DateTime.now)
-          |@| (js \ "status").default(GroupStatus, GroupStatus.Active)
-          |@| (js \ "memberIds").default[Set[String]](Set.empty)
-          |@| (js \ "adminUserIds").default[Set[String]](Set.empty)
-      )(Group.apply)
+        (js \ "name").required[String]("Missing Group.name"),
+        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "description").optional[String],
+        (js \ "id").default[String](UUID.randomUUID().toString),
+        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "status").default(GroupStatus, GroupStatus.Active),
+        (js \ "memberIds").default[Set[String]](Set.empty),
+        (js \ "adminUserIds").default[Set[String]](Set.empty)
+      ).mapN(Group.apply)
   }
 
   case object GroupInfoSerializer extends ValidationSerializer[GroupInfo] {
-    override def fromJson(js: JValue): JsonDeserialized[GroupInfo] =
+    override def fromJson(js: JValue): ValidatedNel[String, GroupInfo] =
       (
-        (js \ "id").default[String](UUID.randomUUID().toString)
-          |@| (js \ "name").required[String]("Missing Group.name")
-          |@| (js \ "email").required[String]("Missing Group.email")
-          |@| (js \ "description").optional[String]
-          |@| (js \ "created").default[DateTime](DateTime.now)
-          |@| (js \ "status").default(GroupStatus, GroupStatus.Active)
-          |@| (js \ "members").default[Set[UserInfo]](Set.empty)
-          |@| (js \ "admins").default[Set[UserInfo]](Set.empty)
-      )(GroupInfo.apply)
+        (js \ "id").default[String](UUID.randomUUID().toString),
+        (js \ "name").required[String]("Missing Group.name"),
+        (js \ "email").required[String]("Missing Group.email"),
+        (js \ "description").optional[String],
+        (js \ "created").default[DateTime](DateTime.now),
+        (js \ "status").default(GroupStatus, GroupStatus.Active),
+        (js \ "members").default[Set[UserInfo]](Set.empty),
+        (js \ "admins").default[Set[UserInfo]](Set.empty)
+      ).mapN(GroupInfo.apply)
   }
 
   case object GroupChangeInfoSerializer extends ValidationSerializer[GroupChangeInfo] {
-    override def fromJson(js: JValue): JsonDeserialized[GroupChangeInfo] =
+    override def fromJson(js: JValue): ValidatedNel[String, GroupChangeInfo] =
       (
-        (js \ "newGroup").required[GroupInfo]("Missing new group")
-          |@| (js \ "changeType").required(GroupChangeType, "Missing change type")
-          |@| (js \ "userId").required[String]("Missing userId")
-          |@| (js \ "oldGroup").optional[GroupInfo]
-          |@| (js \ "id").default[String](UUID.randomUUID().toString)
-          |@| (js \ "created").default[String](DateTime.now.getMillis.toString)
-      )(GroupChangeInfo.apply)
+        (js \ "newGroup").required[GroupInfo]("Missing new group"),
+        (js \ "changeType").required(GroupChangeType, "Missing change type"),
+        (js \ "userId").required[String]("Missing userId"),
+        (js \ "oldGroup").optional[GroupInfo],
+        (js \ "id").default[String](UUID.randomUUID().toString),
+        (js \ "created").default[String](DateTime.now.getMillis.toString)
+      ).mapN(GroupChangeInfo.apply)
   }
 }

@@ -25,7 +25,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
-import scalaz.\/
+
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.api.domain.record.RecordType._
@@ -78,8 +78,11 @@ class DnsConnectionSpec
   private val messageCaptor = ArgumentCaptor.forClass(classOf[DNS.Message])
   private val mockDnsQuery = mock[DnsQuery]
   private val underTest = new DnsConnection(mockResolver) {
-    override def toQuery(name: String, zoneName: String, typ: RecordType): Throwable \/ DnsQuery =
-      \/.right(mockDnsQuery)
+    override def toQuery(
+        name: String,
+        zoneName: String,
+        typ: RecordType): Either[Throwable, DnsQuery] =
+      Right(mockDnsQuery)
   }
   private val dnsQueryTest = new DnsConnection(mockResolver)
 
@@ -145,7 +148,7 @@ class DnsConnectionSpec
   "Resolving records" should {
     "return a single record when only one DNS record is returned" in {
       val records: List[RecordSet] =
-        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).run)
+        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).value)
       records.head should have(
         'name ("a-record."),
         'typ (RecordType.A),
@@ -167,7 +170,7 @@ class DnsConnectionSpec
       doReturn(List(a1, a2)).when(mockDnsQuery).run()
 
       val records: List[RecordSet] =
-        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).run)
+        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).value)
       records.head should have(
         'name ("a-record."),
         'typ (RecordType.A),
@@ -179,14 +182,14 @@ class DnsConnectionSpec
       doReturn(DNS.Lookup.HOST_NOT_FOUND).when(mockDnsQuery).result
 
       val records: List[RecordSet] =
-        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).run)
+        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).value)
 
       records shouldBe empty
     }
     "return an Uncrecoverable error" in {
       doReturn(DNS.Lookup.UNRECOVERABLE).when(mockDnsQuery).result
 
-      val error = leftResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).run)
+      val error = leftResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).value)
 
       error shouldBe a[Unrecoverable]
     }
@@ -194,7 +197,7 @@ class DnsConnectionSpec
       doReturn("this is bad").when(mockDnsQuery).error
       doReturn(DNS.Lookup.TRY_AGAIN).when(mockDnsQuery).result
 
-      val error = leftResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).run)
+      val error = leftResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).value)
 
       error shouldBe a[TryAgain]
     }
@@ -202,7 +205,7 @@ class DnsConnectionSpec
       doReturn(DNS.Lookup.TYPE_NOT_FOUND).when(mockDnsQuery).result
 
       val result: List[RecordSet] =
-        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).run)
+        rightResultOf(underTest.resolve("www", "vinyldns.", RecordType.A).value)
 
       result shouldBe List()
     }
@@ -212,14 +215,14 @@ class DnsConnectionSpec
     "return an InvalidRecord error if there are no records present" in {
       val noRecords = testA.copy(records = Nil)
 
-      val result = leftResultOf(underTest.addRecord(addRsChange(testZone, noRecords)).run)
+      val result = leftResultOf(underTest.addRecord(addRsChange(testZone, noRecords)).value)
 
       result shouldBe a[InvalidRecord]
     }
     "send an appropriate update message to the resolver" in {
       val change = addRsChange()
 
-      val result: DnsResponse = rightResultOf(underTest.addRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.addRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -238,7 +241,7 @@ class DnsConnectionSpec
     "send an appropriate update message to the resolver when multiple record sets are present" in {
       val change = addRsChange(testZone, testAMultiple)
 
-      val result: DnsResponse = rightResultOf(underTest.addRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.addRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -265,14 +268,14 @@ class DnsConnectionSpec
     "return an InvalidRecord error if there are no records present" in {
       val noRecords = testA.copy(records = Nil)
 
-      val result = leftResultOf(underTest.updateRecord(updateRsChange(testZone, noRecords)).run)
+      val result = leftResultOf(underTest.updateRecord(updateRsChange(testZone, noRecords)).value)
 
       result shouldBe a[InvalidRecord]
     }
     "send an appropriate replace message to the resolver for a name change" in {
       val change = updateRsChange().copy(updates = Some(testA.copy(name = "updated-a-record")))
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -298,7 +301,7 @@ class DnsConnectionSpec
     "send an appropriate replace message to the resolver for a TTL change" in {
       val change = updateRsChange(rs = testA.copy(ttl = 300)).copy(updates = Some(testA))
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -324,7 +327,7 @@ class DnsConnectionSpec
     "send an appropriate replace message in the event that the record being replaced is None" in {
       val change = updateRsChange().copy(updates = None)
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -337,7 +340,7 @@ class DnsConnectionSpec
       val change = updateRsChange(testZone, testAMultiple).copy(
         updates = Some(testAMultiple.copy(name = "updated-a-record")))
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -375,14 +378,14 @@ class DnsConnectionSpec
     "return an InvalidRecord error if there are no records present" in {
       val noRecords = testA.copy(records = Nil)
 
-      val result = leftResultOf(underTest.updateRecord(updateRsChange(testZone, noRecords)).run)
+      val result = leftResultOf(underTest.updateRecord(updateRsChange(testZone, noRecords)).value)
 
       result shouldBe a[InvalidRecord]
     }
     "send a message with an empty body to the resolver when no changes have occurred" in {
       val change = updateRsChange().copy(updates = Some(testA))
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -395,7 +398,7 @@ class DnsConnectionSpec
       val change =
         updateRsChange().copy(updates = Some(testA.copy(records = List(AData("127.0.0.1")))))
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -421,7 +424,7 @@ class DnsConnectionSpec
     "send an appropriate replace message in the event that the record being replaced is None" in {
       val change = updateRsChange().copy(updates = None)
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -434,7 +437,7 @@ class DnsConnectionSpec
       val change = updateRsChange(testZone, testAMultiple).copy(
         updates = Some(testAMultiple.copy(records = List(AData("4.4.4.4"), AData("3.3.3.3")))))
 
-      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.updateRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -481,14 +484,14 @@ class DnsConnectionSpec
     "return an InvalidRecord error if there are no records present in the delete" in {
       val noRecords = testA.copy(records = Nil)
 
-      val result = leftResultOf(underTest.updateRecord(deleteRsChange(testZone, noRecords)).run)
+      val result = leftResultOf(underTest.updateRecord(deleteRsChange(testZone, noRecords)).value)
 
       result shouldBe a[InvalidRecord]
     }
     "send an appropriate delete message to the resolver" in {
       val change = deleteRsChange()
 
-      val result: DnsResponse = rightResultOf(underTest.deleteRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.deleteRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 
@@ -507,7 +510,7 @@ class DnsConnectionSpec
     "send an appropriate delete message to the resolver for multiple records" in {
       val change = deleteRsChange(testZone, testAMultiple)
 
-      val result: DnsResponse = rightResultOf(underTest.deleteRecord(change).run)
+      val result: DnsResponse = rightResultOf(underTest.deleteRecord(change).value)
 
       val sentMessage = messageCaptor.getValue
 

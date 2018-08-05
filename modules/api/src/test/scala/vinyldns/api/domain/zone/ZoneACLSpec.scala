@@ -81,11 +81,11 @@ class ZoneACLSpec
 
   property("Build returns ZoneACL when valid values are passed in") {
     forAll(validAclRuleSet) { aclRule: List[ACLRule] =>
-      ZoneACL.build(aclRule.toSet).isSuccess shouldEqual true
+      ZoneACL.build(aclRule.toSet).isValid shouldEqual true
     }
     import AccessLevel._
 
-    ZoneACL.build(Set(ACLRule(Read))).isSuccess shouldEqual true
-    ZoneACL.build(Set.empty).isSuccess shouldEqual true
+    ZoneACL.build(Set(ACLRule(Read))).isValid shouldEqual true
+    ZoneACL.build(Set.empty).isValid shouldEqual true
   }
 }

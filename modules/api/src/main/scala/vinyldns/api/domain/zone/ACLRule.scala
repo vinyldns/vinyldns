@@ -16,10 +16,10 @@
 
 package vinyldns.api.domain.zone
 
+import cats.data._
+import cats.implicits._
 import AccessLevel.AccessLevel
 import vinyldns.api.domain.record.RecordType.RecordType
-import scalaz._
-import Scalaz._
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.{DomainValidationError, zone}
 
@@ -54,11 +54,12 @@ object ACLRule {
       userId: Option[String],
       groupId: Option[String],
       recordMask: Option[String],
-      recordTypes: Set[RecordType]): ValidationNel[DomainValidationError, ACLRule] =
-    (accessLevel.successNel[DomainValidationError]
-      |@| validateStringLength(description, None, DESCRIPTION_MAX)
-      |@| userId.successNel
-      |@| groupId.successNel
-      |@| recordMask.successNel
-      |@| validateKnownRecordTypes(recordTypes))(ACLRule.apply)
+      recordTypes: Set[RecordType]): ValidatedNel[DomainValidationError, ACLRule] =
+    (
+      accessLevel.validNel[DomainValidationError],
+      validateStringLength(description, None, DESCRIPTION_MAX),
+      userId.validNel[DomainValidationError],
+      groupId.validNel[DomainValidationError],
+      recordMask.validNel[DomainValidationError],
+      validateKnownRecordTypes(recordTypes)).mapN(ACLRule.apply)
 }

@@ -16,42 +16,40 @@
 
 package vinyldns.api.domain
 
-import scalaz.Disjunction
-import scalaz.syntax.ToEitherOps
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.record.RecordSet
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.zone.{RecordSetInfo, Zone}
 
-trait AccessValidationAlgebra extends ToEitherOps {
+trait AccessValidationAlgebra {
 
-  def canSeeZone(auth: AuthPrincipal, zone: Zone): Disjunction[Throwable, Unit]
+  def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
 
-  def canChangeZone(auth: AuthPrincipal, zone: Zone): Disjunction[Throwable, Unit]
+  def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
 
   def canAddRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit]
+      zone: Zone): Either[Throwable, Unit]
 
   def canUpdateRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit]
+      zone: Zone): Either[Throwable, Unit]
 
   def canDeleteRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit]
+      zone: Zone): Either[Throwable, Unit]
 
   def canViewRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Disjunction[Throwable, Unit]
+      zone: Zone): Either[Throwable, Unit]
 
   def getListAccessLevels(
       auth: AuthPrincipal,

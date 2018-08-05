@@ -16,17 +16,17 @@
 
 package vinyldns.api.domain
 
+import cats.scalatest.ValidatedMatchers
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop._
-import org.typelevel.scalatest.ValidationMatchers
 import vinyldns.api.ValidationTestImprovements._
 
 class DomainValidationsSpec
     extends PropSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
-    with ValidationMatchers {
+    with ValidatedMatchers {
 
   import Gen._
   import vinyldns.api.domain.DomainValidations._
@@ -42,7 +42,7 @@ class DomainValidationsSpec
     } yield local + "@" + domain + "." + topLevelDomain
 
     forAll(emailGenerator) { email: String =>
-      whenever(validateEmail(email).isSuccess) {
+      whenever(validateEmail(email).isValid) {
         email.length should be > 0
         (email should fullyMatch).regex(validEmailRegex)
 
@@ -57,17 +57,17 @@ class DomainValidationsSpec
   }
 
   property("Shortest domain name should be valid") {
-    validateHostName("a.") shouldBe success
+    validateHostName("a.") shouldBe valid
   }
 
   property("Longest domain name should be valid") {
     val name = ("a" * 50 + ".") * 5
-    validateHostName(name) shouldBe success
+    validateHostName(name) shouldBe valid
   }
 
   property("Domain name should pass property-based testing") {
-    forAll(domainGenerator) { (domain: String) =>
-      whenever(validateHostName(domain).isSuccess) {
+    forAll(domainGenerator) { domain: String =>
+      whenever(validateHostName(domain).isValid) {
         domain.length should be > 0
         domain.length should be < 256
         (domain should fullyMatch).regex(validFQDNRegex)
@@ -83,30 +83,30 @@ class DomainValidationsSpec
   }
 
   property("Valid Ipv4 addresses should pass property-based testing") {
-    forAll(validIpv4Gen) { (validIp: String) =>
+    forAll(validIpv4Gen) { validIp: String =>
       val res = validateIpv4Address(validIp)
-      res shouldBe success
+      res shouldBe valid
       (validIp should fullyMatch).regex(validIpv4Regex)
     }
   }
 
   property("Invalid Ipv4 addresses should fail property-based testing") {
-    forAll(invalidIpGen) { (invalidIp: String) =>
-      whenever(validateIpv4Address(invalidIp).isFailure) {
+    forAll(invalidIpGen) { invalidIp: String =>
+      whenever(validateIpv4Address(invalidIp).isInvalid) {
         (invalidIp shouldNot fullyMatch).regex(validIpv4Regex)
       }
     }
   }
 
   property("Smallest and largest port numbers should pass") {
-    validatePort("0") shouldBe success
-    validatePort("65535") shouldBe success
+    validatePort("0") shouldBe valid
+    validatePort("65535") shouldBe valid
   }
 
   property("Valid port numbers should pass property-based testing") {
     val validPortNumberGen: Gen[String] = choose(0, 65535).map(_.toString)
-    forAll(validPortNumberGen) { (validPortNum: String) =>
-      validatePort(validPortNum) shouldBe success
+    forAll(validPortNumberGen) { validPortNum: String =>
+      validatePort(validPortNum) shouldBe valid
       val intValue = validPortNum.toInt
       intValue should be >= 0
       intValue should be < 65535
@@ -117,7 +117,7 @@ class DomainValidationsSpec
     val invalidPortNums = List("-1", "65536")
     invalidPortNums.foreach(validatePort(_).failWith[InvalidPortNumber])
 
-    forAll(alphaStr) { (invalidPort: String) =>
+    forAll(alphaStr) { invalidPort: String =>
       validatePort(invalidPort).failWith[InvalidPortNumber]
     }
   }
@@ -125,14 +125,14 @@ class DomainValidationsSpec
   property("Valid string lengths should pass property-based testing") {
     val validDescGen: Gen[String] = listOfN(255, alphaNumChar).map(_.mkString)
 
-    forAll(option(validDescGen)) { (desc: Option[String]) =>
-      validateStringLength(desc, None, 255) shouldBe success
+    forAll(option(validDescGen)) { desc: Option[String] =>
+      validateStringLength(desc, None, 255) shouldBe valid
     }
   }
 
   property("Description of None and Some(\"\") should succeed") {
-    validateStringLength(Some(""), None, 255) shouldBe success
-    validateStringLength(None, None, 255) shouldBe success
+    validateStringLength(Some(""), None, 255) shouldBe valid
+    validateStringLength(None, None, 255) shouldBe valid
   }
 
   property("String exceeding maximum description length should fail with InvalidLength") {
@@ -141,13 +141,13 @@ class DomainValidationsSpec
   }
 
   property("Strings with trailing dots should pass property-based testing") {
-    forAll(domainGenerator) { (trailingDot: String) =>
-      validateTrailingDot(trailingDot) shouldBe success
+    forAll(domainGenerator) { trailingDot: String =>
+      validateTrailingDot(trailingDot) shouldBe valid
     }
   }
 
   property("Strings missing trailing dots should fail with MissingTrailingDot") {
-    forAll(alphaNumComponent) { (noTrailingDot: String) =>
+    forAll(alphaNumComponent) { noTrailingDot: String =>
       validateTrailingDot(noTrailingDot).failWith[InvalidDomainName]
     }
   }

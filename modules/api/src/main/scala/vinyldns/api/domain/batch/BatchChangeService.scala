@@ -110,7 +110,7 @@ class BatchChangeService(
     }
 
     val (ptr, nonPTR) = changes.getValid.partition(_.typ == PTR)
-    val (ipv4ptr, ipv6ptr) = ptr.partition(ch => validateIpv4Address(ch.inputName).isSuccess)
+    val (ipv4ptr, ipv6ptr) = ptr.partition(ch => validateIpv4Address(ch.inputName).isValid)
 
     val nonPTRZoneNames = getPossibleNonPtrZoneNames(nonPTR)
     val ipv4ptrZoneFilters = getPtrIpv4ZoneFilters(ipv4ptr)
@@ -144,9 +144,9 @@ class BatchChangeService(
       change.typ match {
         case A | AAAA | TXT | MX => standardZoneDiscovery(change, zoneMap)
         case CNAME => cnameZoneDiscovery(change, zoneMap)
-        case PTR if validateIpv4Address(change.inputName).isSuccess =>
+        case PTR if validateIpv4Address(change.inputName).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
-        case PTR if validateIpv6Address(change.inputName).isSuccess =>
+        case PTR if validateIpv6Address(change.inputName).isValid =>
           ptrIpv6ZoneDiscovery(change, zoneMap)
         case _ => ZoneDiscoveryError(change.inputName).invalidNel
       }

@@ -17,7 +17,7 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
-import scalaz.\/
+
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsProtocol.DnsResponse
 import vinyldns.api.domain.dns.{DnsConnection, DnsConversions}
@@ -30,11 +30,11 @@ import scala.concurrent.ExecutionContext
 /* Wraps DnsConnection things in IO */
 case class DnsConnector(conn: DnsConnection) extends DnsConversions {
   def dnsResolve(name: String, zoneName: String, typ: RecordType)(
-      implicit ec: ExecutionContext): IO[Throwable \/ List[RecordSet]] =
-    IO.fromFuture(IO(conn.resolve(name, zoneName, typ).run))
+      implicit ec: ExecutionContext): IO[Either[Throwable, List[RecordSet]]] =
+    IO.fromFuture(IO(conn.resolve(name, zoneName, typ).value))
 
-  def dnsUpdate(change: RecordSetChange): IO[Throwable \/ DnsResponse] =
-    IO.fromFuture(IO(conn.applyChange(change).run))
+  def dnsUpdate(change: RecordSetChange): IO[Either[Throwable, DnsResponse]] =
+    IO.fromFuture(IO(conn.applyChange(change).value))
 }
 
 object DnsConnector {

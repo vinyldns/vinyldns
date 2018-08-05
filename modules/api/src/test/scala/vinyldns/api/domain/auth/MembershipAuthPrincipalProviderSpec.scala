@@ -53,9 +53,7 @@ class MembershipAuthPrincipalProviderSpec
       val result = await[Option[AuthPrincipal]](underTest.getAuthPrincipal(accessKey))
       result.map { authPrincipal =>
         authPrincipal.signedInUser shouldBe okUser
-        authPrincipal.memberGroupIds should contain theSameElementsAs (Seq(
-          okGroup.id,
-          dummyGroup.id))
+        authPrincipal.memberGroupIds should contain theSameElementsAs Seq(okGroup.id, dummyGroup.id)
       }
     }
     "return None if there is no such user" in {

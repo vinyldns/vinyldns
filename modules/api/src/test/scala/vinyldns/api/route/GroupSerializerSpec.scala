@@ -16,19 +16,19 @@
 
 package vinyldns.api.route
 
+import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatest.{Matchers, WordSpec}
-import org.typelevel.scalatest.{ValidationMatchers, ValidationValues}
 import vinyldns.api.domain.membership.GroupStatus
 
 class GroupSerializerSpec
     extends WordSpec
     with MembershipJsonProtocol
     with Matchers
-    with ValidationMatchers
-    with ValidationValues {
+    with ValidatedMatchers
+    with ValidatedValues {
 
   val serializers: Seq[Serializer[_]] = membershipSerializers
 
@@ -64,7 +64,7 @@ class GroupSerializerSpec
           ("description" -> Extraction.decompose(Some("description")))
 
       val result = GroupSerializer.fromJson(json)
-      result should haveFailure("Missing Group.name")
+      result should haveInvalid("Missing Group.name")
     }
 
     "require the email" in {
@@ -73,7 +73,7 @@ class GroupSerializerSpec
           ("description" -> Extraction.decompose(Some("description")))
 
       val result = GroupSerializer.fromJson(json)
-      result should haveFailure("Missing Group.email")
+      result should haveInvalid("Missing Group.email")
     }
 
     "default the description to None" in {
