@@ -18,7 +18,6 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import scalaz._
 import vinyldns.api.Interfaces.Result
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership._
@@ -174,14 +173,14 @@ trait MembershipRoute extends Directives {
     }
     .result()
 
-  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.run) {
-    case \/-(a) => rt(a)
-    case -\/(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case -\/(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-    case -\/(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
-    case -\/(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case -\/(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case -\/(e) => failWith(e)
+  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.value) {
+    case Right(a) => rt(a)
+    case Left(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+    case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+    case Left(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
+    case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+    case Left(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
+    case Left(e) => failWith(e)
   }
 }

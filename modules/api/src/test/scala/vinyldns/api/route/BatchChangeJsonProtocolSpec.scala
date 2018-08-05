@@ -17,13 +17,13 @@
 package vinyldns.api.route
 
 import cats.data.NonEmptyList
+import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import cats.syntax.all._
 import org.joda.time.DateTime
 import org.json4s.Extraction._
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatest.{Matchers, WordSpec}
-import org.typelevel.scalatest.{ValidationMatchers, ValidationValues}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain._
 import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, ChangeForValidation}
@@ -37,8 +37,8 @@ class BatchChangeJsonProtocolSpec
     extends WordSpec
     with Matchers
     with BatchChangeJsonProtocol
-    with ValidationValues
-    with ValidationMatchers
+    with ValidatedValues
+    with ValidatedMatchers
     with VinylDNSTestData {
 
   val serializers: Seq[Serializer[_]] = batchChangeSerializers
@@ -139,14 +139,14 @@ class BatchChangeJsonProtocolSpec
     "return an error if changeType is not specified" in {
       val result = ChangeInputSerializer.fromJson("test" -> "test")
 
-      result should haveFailure("Missing BatchChangeInput.changes.changeType")
+      result should haveInvalid("Missing BatchChangeInput.changes.changeType")
     }
 
     "return an error if an unsupported record type is specified" in {
       val json = buildAddChangeInputJson(Some("bizz.baz."), Some(UNKNOWN), Some(2000))
       val result = ChangeInputSerializer.fromJson(json)
 
-      result should haveFailure(
+      result should haveInvalid(
         s"Unsupported type $UNKNOWN, valid types include: A, AAAA, CNAME, PTR, TXT, and MX")
     }
 
@@ -155,7 +155,7 @@ class BatchChangeJsonProtocolSpec
         buildAddChangeInputJson(typ = Some(A), ttl = Some(3600), record = Some(AData("1.1.1.1")))
       val result = ChangeInputSerializer.fromJson(json)
 
-      result should haveFailure("Missing BatchChangeInput.changes.inputName")
+      result should haveInvalid("Missing BatchChangeInput.changes.inputName")
     }
 
     "return an error if the type is not specified" in {
@@ -165,7 +165,7 @@ class BatchChangeJsonProtocolSpec
         record = Some(AData("1.1.1.1")))
       val result = ChangeInputSerializer.fromJson(json)
 
-      result should haveFailure("Missing BatchChangeInput.changes.type")
+      result should haveInvalid("Missing BatchChangeInput.changes.type")
     }
 
     "return an error if the ttl is not specified" in {
@@ -175,19 +175,19 @@ class BatchChangeJsonProtocolSpec
         record = Some(AData("1.1.1.1")))
       val result = ChangeInputSerializer.fromJson(json)
 
-      result should haveFailure("Missing BatchChangeInput.changes.ttl")
+      result should haveInvalid("Missing BatchChangeInput.changes.ttl")
     }
 
     "return an error if the record is not specified for add" in {
       val jsonA = buildAddChangeInputJson(Some("foo."), Some(A), Some(3600))
       val resultA = ChangeInputSerializer.fromJson(jsonA)
 
-      resultA should haveFailure("Missing BatchChangeInput.changes.record.address")
+      resultA should haveInvalid("Missing BatchChangeInput.changes.record.address")
 
       val jsonAAAA = buildAddChangeInputJson(Some("foo."), Some(AAAA), Some(3600))
       val resultAAAA = ChangeInputSerializer.fromJson(jsonAAAA)
 
-      resultAAAA should haveFailure("Missing BatchChangeInput.changes.record.address")
+      resultAAAA should haveInvalid("Missing BatchChangeInput.changes.record.address")
     }
   }
 
@@ -220,18 +220,18 @@ class BatchChangeJsonProtocolSpec
       val json = "comments" -> "some comments"
       val result = BatchChangeInputSerializer.fromJson(json)
 
-      result should haveFailure("Missing BatchChangeInput.changes")
+      result should haveInvalid("Missing BatchChangeInput.changes")
 
-      BatchChangeInputSerializer.fromJson("") should haveFailure("Missing BatchChangeInput.changes")
+      BatchChangeInputSerializer.fromJson("") should haveInvalid("Missing BatchChangeInput.changes")
     }
 
     "return an error if the data is not specified" in {
       val json = "changeType" -> decompose(Add)
       val result = AddChangeInputSerializer.fromJson(json)
 
-      result should haveFailure("Missing BatchChangeInput.changes.inputName")
-      result should haveFailure("Missing BatchChangeInput.changes.type")
-      result should haveFailure("Missing BatchChangeInput.changes.ttl")
+      result should haveInvalid("Missing BatchChangeInput.changes.inputName")
+      result should haveInvalid("Missing BatchChangeInput.changes.type")
+      result should haveInvalid("Missing BatchChangeInput.changes.ttl")
     }
   }
 

@@ -20,6 +20,8 @@ import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
 import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.server._
+import cats.data.Validated.{Invalid, Valid}
+import cats.data.ValidatedNel
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
@@ -27,7 +29,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Failure
 import scala.util.control.NonFatal
-import scalaz.{ValidationNel, Failure => ScalazFailure, Success => ScalazSuccess}
 import vinyldns.api.domain.auth.AuthPrincipal
 
 trait VinylDNSDirectives extends Directives {
@@ -87,10 +88,10 @@ trait VinylDNSDirectives extends Directives {
 
   private[route] def getMonitor(name: String) = Monitor(name)
 
-  def ifValid[A](validation: => ValidationNel[String, A]): Directive1[A] =
+  def ifValid[A](validation: => ValidatedNel[String, A]): Directive1[A] =
     validation match {
-      case ScalazSuccess(a) => provide(a)
-      case ScalazFailure(errors) =>
-        reject(ValidationRejection(compact(render("errors" -> errors.list.toSet))))
+      case Valid(a) => provide(a)
+      case Invalid(errors) =>
+        reject(ValidationRejection(compact(render("errors" -> errors.toList.toSet))))
     }
 }

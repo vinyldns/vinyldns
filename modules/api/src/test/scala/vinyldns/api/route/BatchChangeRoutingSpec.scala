@@ -27,7 +27,6 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-import scalaz.syntax.ToEitherOps
 import vinyldns.api.GroupTestData
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
@@ -142,21 +141,28 @@ class BatchChangeRoutingSpec
 
   import TestData._
 
-  object TestBatchChangeService extends BatchChangeServiceAlgebra with ToEitherOps {
+  object TestBatchChangeService extends BatchChangeServiceAlgebra {
     def applyBatchChange(
         batchChangeInput: BatchChangeInput,
         auth: AuthPrincipal): EitherT[Future, BatchChangeErrorResponse, BatchChange] =
       batchChangeInput.comments match {
         case Some("validChangeWithComments") =>
-          EitherT(Future.successful(validResponseWithComments.asRight))
-        case None => EitherT(Future.successful(validResponseWithoutComments.asRight))
+          EitherT[Future, BatchChangeErrorResponse, BatchChange](
+            Future.successful(Right(validResponseWithComments)))
+        case None =>
+          EitherT[Future, BatchChangeErrorResponse, BatchChange](
+            Future.successful(Right(validResponseWithoutComments)))
         case Some("runtimeException") =>
           throw new RuntimeException("Unexpected run-time exception has occurred!")
         case Some("batchChangeIsEmpty") =>
-          EitherT(Future.successful(BatchChangeIsEmpty(batchChangeLimit).asLeft))
+          EitherT[Future, BatchChangeErrorResponse, BatchChange](
+            Future.successful(Left(BatchChangeIsEmpty(batchChangeLimit))))
         case Some("changeLimitExceeded") =>
-          EitherT(Future.successful(ChangeLimitExceeded(batchChangeLimit).asLeft))
-        case Some(_) => EitherT(Future.successful(genericValidResponse.asRight))
+          EitherT[Future, BatchChangeErrorResponse, BatchChange](
+            Future.successful(Left(ChangeLimitExceeded(batchChangeLimit))))
+        case Some(_) =>
+          EitherT[Future, BatchChangeErrorResponse, BatchChange](
+            Future.successful(Right(genericValidResponse)))
       }
 
     def getBatchChange(

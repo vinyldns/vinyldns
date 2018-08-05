@@ -16,11 +16,11 @@
 
 package vinyldns.api.domain.zone
 
+import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import org.scalacheck.Gen._
 import org.scalacheck._
 import org.scalatest.{Matchers, _}
 import org.scalatest.prop._
-import org.typelevel.scalatest.{ValidationMatchers, ValidationValues}
 import vinyldns.api.ValidationTestImprovements._
 import vinyldns.api.domain.record.RecordType._
 import vinyldns.api.domain.{InvalidLength, InvalidRecordType}
@@ -28,8 +28,8 @@ import vinyldns.api.domain.{InvalidLength, InvalidRecordType}
 class ACLSpec
     extends PropSpec
     with Matchers
-    with ValidationMatchers
-    with ValidationValues
+    with ValidatedMatchers
+    with ValidatedValues
     with GeneratorDrivenPropertyChecks {
   object AclGenerator {
     import AccessLevel._
@@ -59,13 +59,13 @@ class ACLSpec
 
   property("Valid record types should pass property-based testing") {
     forAll(validRecordTypeGen) { rt: Seq[RecordType] =>
-      validateKnownRecordTypes(rt.toSet) shouldBe success
+      validateKnownRecordTypes(rt.toSet) shouldBe valid
     }
   }
 
   property("Invalid record types should fail property-based testing") {
     forAll(invalidRecordTypeGen) { rt: Seq[RecordType] =>
-      whenever(validateKnownRecordTypes(rt.toSet).isFailure) {
+      whenever(validateKnownRecordTypes(rt.toSet).isInvalid) {
         rt.toSet should contain(UNKNOWN)
       }
     }
@@ -86,7 +86,7 @@ class ACLSpec
           gId: Option[String],
           mask: Option[String],
           rt: Seq[RecordType]) =>
-        ACLRule.build(al, desc, uId, gId, mask, rt.toSet) shouldBe success
+        ACLRule.build(al, desc, uId, gId, mask, rt.toSet) shouldBe valid
     }
   }
 

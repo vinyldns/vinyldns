@@ -16,10 +16,10 @@
 
 package vinyldns.api.route
 
+import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import org.json4s.JsonDSL._
 import org.json4s.{Extraction, Serializer => json4sSerializer}
 import org.scalatest.{Matchers, WordSpec}
-import org.typelevel.scalatest.{ValidationMatchers, ValidationValues}
 import vinyldns.api.domain.record.RecordType
 import vinyldns.api.domain.zone.AccessLevel
 
@@ -27,8 +27,8 @@ class ACLRuleInfoSerializerSpec
     extends WordSpec
     with ACLJsonProtocol
     with Matchers
-    with ValidationMatchers
-    with ValidationValues {
+    with ValidatedMatchers
+    with ValidatedValues {
 
   // need to add the record type serializer since we pull record type
   val serializers: Seq[json4sSerializer[_]] = aclSerializers ++ Seq(JsonEnumV(RecordType))
@@ -43,7 +43,7 @@ class ACLRuleInfoSerializerSpec
           ("recordMask" -> "www-*") ~~
           ("recordTypes" -> Extraction.decompose(Set(RecordType.CNAME, RecordType.A)))
       val result = ACLRuleInfoSerializer.fromJson(fullJson)
-      result should haveFailure("Cannot specify both a userId and a groupId")
+      result should haveInvalid("Cannot specify both a userId and a groupId")
     }
 
     "serialize a full json when just the group id is provided" in {
@@ -119,7 +119,7 @@ class ACLRuleInfoSerializerSpec
           ("userId" -> Extraction.decompose(Some("johnny")))
 
       val result = ACLRuleInfoSerializer.fromJson(json)
-      result should haveFailure("Missing ACLRule.accessLevel")
+      result should haveInvalid("Missing ACLRule.accessLevel")
     }
   }
 }

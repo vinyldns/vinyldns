@@ -17,8 +17,8 @@
 package vinyldns.api.domain.zone
 
 import akka.actor.Scheduler
-import scalaz.\/
-import scalaz.std.scalaFuture._
+
+import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
@@ -56,13 +56,13 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection, scheduler: Sche
         nel =>
           ZoneValidationFailed(
             zoneView.zone,
-            nel.list,
+            nel.toList,
             "Zone could not be loaded due to validation errors."))
-      .disjunction
+      .toEither
       .toResult
 
   def getDnsConnection(zone: Zone): Result[DnsConnection] =
-    \/.fromTryCatchNonFatal(dnsConnection(zone.connection.getOrElse(defaultConnection))).toResult
+    Either.catchNonFatal(dnsConnection(zone.connection.getOrElse(defaultConnection))).toResult
 
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(
@@ -73,9 +73,9 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection, scheduler: Sche
 
   def hasSOA(records: List[RecordSet], zone: Zone): Result[Unit] = {
     if (records.isEmpty) {
-      ConnectionFailed(zone, "SOA Record for zone not found").left[Unit]
+      ConnectionFailed(zone, "SOA Record for zone not found").asLeft[Unit]
     } else {
-      ().right[Throwable]
+      ().asRight[Throwable]
     }
   }.toResult
 

@@ -18,9 +18,9 @@ package vinyldns.api.domain.dns
 
 import java.net.InetAddress
 
+import cats.syntax.either._
 import org.joda.time.DateTime
 import org.xbill.DNS
-import scalaz.\/
 import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.api.domain.record
 import vinyldns.api.domain.record.RecordType._
@@ -89,29 +89,29 @@ trait DnsConversions {
     else
       DNS.Name.fromString(s"$origin.")
 
-  def fromDnsRcodeToError[T](rCode: Int, message: String): Throwable \/ T = rCode match {
-    case DNS.Rcode.BADKEY => \/.left(BadKey(message))
-    case DNS.Rcode.BADMODE => \/.left(BadMode(message))
-    case DNS.Rcode.BADSIG => \/.left(BadSig(message))
-    case DNS.Rcode.BADTIME => \/.left(BadTime(message))
-    case DNS.Rcode.FORMERR => \/.left(FormatError(message))
-    case DNS.Rcode.NOTAUTH => \/.left(NotAuthorized(message))
-    case DNS.Rcode.NOTIMP => \/.left(NotImplemented(message))
-    case DNS.Rcode.NOTZONE => \/.left(NotZone(message))
-    case DNS.Rcode.NXDOMAIN => \/.left(NameNotFound(message))
-    case DNS.Rcode.NXRRSET => \/.left(RecordSetNotFound(message))
-    case DNS.Rcode.REFUSED => \/.left(Refused(message))
-    case DNS.Rcode.SERVFAIL => \/.left(ServerFailure(message))
-    case DNS.Rcode.YXDOMAIN => \/.left(NameExists(message))
-    case DNS.Rcode.YXRRSET => \/.left(RecordSetExists(message))
-    case _ => \/.left(UnrecognizedResponse(message))
+  def fromDnsRcodeToError[T](rCode: Int, message: String): Either[Throwable, T] = rCode match {
+    case DNS.Rcode.BADKEY => Left(BadKey(message))
+    case DNS.Rcode.BADMODE => Left(BadMode(message))
+    case DNS.Rcode.BADSIG => Left(BadSig(message))
+    case DNS.Rcode.BADTIME => Left(BadTime(message))
+    case DNS.Rcode.FORMERR => Left(FormatError(message))
+    case DNS.Rcode.NOTAUTH => Left(NotAuthorized(message))
+    case DNS.Rcode.NOTIMP => Left(NotImplemented(message))
+    case DNS.Rcode.NOTZONE => Left(NotZone(message))
+    case DNS.Rcode.NXDOMAIN => Left(NameNotFound(message))
+    case DNS.Rcode.NXRRSET => Left(RecordSetNotFound(message))
+    case DNS.Rcode.REFUSED => Left(Refused(message))
+    case DNS.Rcode.SERVFAIL => Left(ServerFailure(message))
+    case DNS.Rcode.YXDOMAIN => Left(NameExists(message))
+    case DNS.Rcode.YXRRSET => Left(RecordSetExists(message))
+    case _ => Left(UnrecognizedResponse(message))
   }
 
-  def toDnsResponse(message: DNS.Message): Throwable \/ DnsResponse = {
+  def toDnsResponse(message: DNS.Message): Either[Throwable, DnsResponse] = {
 
     val obscured = obscuredDnsMessage(message)
     obscured.getRcode match {
-      case DNS.Rcode.NOERROR => \/.right(NoError(obscured))
+      case DNS.Rcode.NOERROR => Right(NoError(obscured))
       case _ => fromDnsRcodeToError(obscured.getRcode, obscured.toString)
     }
   }
@@ -273,8 +273,8 @@ trait DnsConversions {
       List(TXTData(data.getStrings.asScala.mkString(",")))
     }
 
-  def toARecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.ARecord =
-    \/.fromTryCatchNonFatal {
+  def toARecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.ARecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[AData]
       new DNS.ARecord(
         recordDnsName(rs.name, zoneName),
@@ -283,8 +283,8 @@ trait DnsConversions {
         InetAddress.getByName(data.address))
     }
 
-  def toAAAARecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.AAAARecord =
-    \/.fromTryCatchNonFatal {
+  def toAAAARecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.AAAARecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[AAAAData]
       new DNS.AAAARecord(
         recordDnsName(rs.name, zoneName),
@@ -293,8 +293,8 @@ trait DnsConversions {
         InetAddress.getByName(data.address))
     }
 
-  def toCNAMERecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.CNAMERecord =
-    \/.fromTryCatchNonFatal {
+  def toCNAMERecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.CNAMERecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[CNAMEData]
       new DNS.CNAMERecord(
         recordDnsName(rs.name, zoneName),
@@ -303,8 +303,8 @@ trait DnsConversions {
         DNS.Name.fromString(data.cname))
     }
 
-  def toNSRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.NSRecord =
-    \/.fromTryCatchNonFatal {
+  def toNSRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.NSRecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[NSData]
       new DNS.NSRecord(
         recordDnsName(rs.name, zoneName),
@@ -313,8 +313,8 @@ trait DnsConversions {
         DNS.Name.fromString(data.nsdname))
     }
 
-  def toMXRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.MXRecord =
-    \/.fromTryCatchNonFatal {
+  def toMXRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.MXRecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[MXData]
       new DNS.MXRecord(
         recordDnsName(rs.name, zoneName),
@@ -324,8 +324,8 @@ trait DnsConversions {
         DNS.Name.fromString(data.exchange))
     }
 
-  def toPTRRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.PTRRecord =
-    \/.fromTryCatchNonFatal {
+  def toPTRRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.PTRRecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[PTRData]
       new DNS.PTRRecord(
         recordDnsName(rs.name, zoneName),
@@ -334,8 +334,8 @@ trait DnsConversions {
         DNS.Name.fromString(data.ptrdname))
     }
 
-  def toSOARecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.SOARecord =
-    \/.fromTryCatchNonFatal {
+  def toSOARecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.SOARecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[SOAData]
       new DNS.SOARecord(
         recordDnsName(rs.name, zoneName),
@@ -351,8 +351,8 @@ trait DnsConversions {
       )
     }
 
-  def toSRVRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.SRVRecord =
-    \/.fromTryCatchNonFatal {
+  def toSRVRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.SRVRecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[SRVData]
       new DNS.SRVRecord(
         recordDnsName(rs.name, zoneName),
@@ -364,8 +364,8 @@ trait DnsConversions {
         DNS.Name.fromString(data.target))
     }
 
-  def toSSHFPRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.SSHFPRecord =
-    \/.fromTryCatchNonFatal {
+  def toSSHFPRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.SSHFPRecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[SSHFPData]
       new DNS.SSHFPRecord(
         recordDnsName(rs.name, zoneName),
@@ -376,20 +376,20 @@ trait DnsConversions {
         data.fingerprint.getBytes)
     }
 
-  def toSPFRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.SPFRecord =
-    \/.fromTryCatchNonFatal {
+  def toSPFRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.SPFRecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[SPFData]
       new DNS.SPFRecord(recordDnsName(rs.name, zoneName), DNS.DClass.IN, rs.ttl, data.text)
     }
 
-  def toTXTRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.TXTRecord =
-    \/.fromTryCatchNonFatal {
+  def toTXTRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.TXTRecord] =
+    Either.catchNonFatal {
       val data = rs.records.head.asInstanceOf[TXTData]
       new DNS.TXTRecord(recordDnsName(rs.name, zoneName), DNS.DClass.IN, rs.ttl, data.text)
     }
 
-  def toDnsRecords(recordSet: RecordSet, zoneName: String): Throwable \/ List[DNS.Record] =
-    \/.fromTryCatchNonFatal {
+  def toDnsRecords(recordSet: RecordSet, zoneName: String): Either[Throwable, List[DNS.Record]] =
+    Either.catchNonFatal {
       val ttl = recordSet.ttl
       val recordName = recordDnsName(recordSet.name, zoneName)
 
@@ -451,15 +451,15 @@ trait DnsConversions {
       }
     }
 
-  def toDnsRRset(recordSet: RecordSet, zoneName: String): Throwable \/ DNS.RRset =
-    \/.fromTryCatchNonFatal {
+  def toDnsRRset(recordSet: RecordSet, zoneName: String): Either[Throwable, DNS.RRset] =
+    Either.catchNonFatal {
       val dnsRecordSet = new DNS.RRset()
       toDnsRecords(recordSet, zoneName).map(_.foreach(dnsRecordSet.addRR))
 
       dnsRecordSet
     }
 
-  def toDnsRecord(rs: RecordSet, zoneName: String): Throwable \/ DNS.Record =
+  def toDnsRecord(rs: RecordSet, zoneName: String): Either[Throwable, DNS.Record] =
     rs.typ match {
       case RecordType.A => toARecord(rs, zoneName)
       case RecordType.AAAA => toAAAARecord(rs, zoneName)
@@ -488,16 +488,16 @@ trait DnsConversions {
     case RecordType.TXT => DNS.Type.TXT
   }
 
-  def toAddRecordMessage(r: DNS.RRset, zoneName: String): Throwable \/ DNS.Update = {
+  def toAddRecordMessage(r: DNS.RRset, zoneName: String): Either[Throwable, DNS.Update] = {
     val update = new DNS.Update(zoneDnsName(zoneName))
     update.add(r)
-    \/.right(update)
+    Right(update)
   }
 
   def toUpdateRecordMessage(
       r: DNS.RRset,
       old: DNS.RRset,
-      zoneName: String): Throwable \/ DNS.Update = {
+      zoneName: String): Either[Throwable, DNS.Update] = {
     val update = new DNS.Update(zoneDnsName(zoneName))
 
     if (!r.getName.equals(old.getName) || r.getTTL != old.getTTL) { // Name or TTL has changed
@@ -514,13 +514,13 @@ trait DnsConversions {
       deleteRecords.foreach(update.delete)
       addRecords.foreach(update.add)
     }
-    \/.right(update)
+    Right(update)
   }
 
-  def toDeleteRecordMessage(r: DNS.RRset, zoneName: String): Throwable \/ DNS.Update = {
+  def toDeleteRecordMessage(r: DNS.RRset, zoneName: String): Either[Throwable, DNS.Update] = {
     val update = new DNS.Update(zoneDnsName(zoneName))
     update.delete(r.getName, r.getType)
-    \/.right(update)
+    Right(update)
   }
 }
 

@@ -16,40 +16,36 @@
 
 package vinyldns.api.domain.dns
 
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{Matchers, WordSpec}
 import org.xbill.DNS
-import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
 import vinyldns.api.domain.record.RecordSetChange
 import vinyldns.api.domain.zone.{Zone, ZoneConnection, ZoneStatus}
+import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 
 class DnsConversionsIntegrationSpec
     extends WordSpec
     with Matchers
-    with BeforeAndAfterAll
     with VinylDNSTestData
     with ResultHelpers {
 
   private val zoneName = "vinyldns."
-  private var testZone: Zone = _
-
-  override protected def beforeAll(): Unit =
-    testZone = Zone(
-      zoneName,
-      "test@test.com",
-      ZoneStatus.Active,
-      connection = Some(
-        ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")),
-      transferConnection = Some(
-        ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
-    )
+  private val testZone = Zone(
+    zoneName,
+    "test@test.com",
+    ZoneStatus.Active,
+    connection =
+      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")),
+    transferConnection =
+      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
+  )
 
   "Obscuring Dns Messages" should {
     "remove the tsig key value during an update" in {
       val testRecord = aaaa.copy(zoneId = testZone.id)
       val conn = DnsConnection(testZone.connection.get)
       val result: DnsResponse =
-        rightResultOf(conn.addRecord(RecordSetChange.forAdd(testRecord, testZone)).run)
+        rightResultOf(conn.addRecord(RecordSetChange.forAdd(testRecord, testZone)).value)
 
       result shouldBe a[NoError]
       val resultingMessage = result.asInstanceOf[NoError].message

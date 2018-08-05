@@ -16,25 +16,23 @@
 
 package vinyldns.api.domain.membership
 
-import scalaz.Disjunction
-import scalaz.syntax.ToEitherOps
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError
 
-object MembershipValidations extends ToEitherOps {
+object MembershipValidations {
 
-  def hasMembersAndAdmins(group: Group): Disjunction[Throwable, Unit] =
+  def hasMembersAndAdmins(group: Group): Either[Throwable, Unit] =
     ensuring(InvalidGroupError("Group must have at least one member and one admin")) {
       group.memberIds.nonEmpty && group.adminUserIds.nonEmpty
     }
 
-  def isAdmin(group: Group, authPrincipal: AuthPrincipal): Disjunction[Throwable, Unit] =
+  def isAdmin(group: Group, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized")) {
       group.adminUserIds.contains(authPrincipal.userId) || authPrincipal.signedInUser.isSuper
     }
 
-  def canSeeGroup(groupId: String, authPrincipal: AuthPrincipal): Disjunction[Throwable, Unit] =
+  def canSeeGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized")) {
       authPrincipal.isAuthorized(groupId)
     }

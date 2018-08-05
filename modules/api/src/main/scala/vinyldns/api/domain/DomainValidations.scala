@@ -16,8 +16,7 @@
 
 package vinyldns.api.domain
 
-import scalaz.Scalaz._
-import scalaz._
+import cats.implicits._, cats.data._
 import vinyldns.api.domain.ValidationImprovements._
 import vinyldns.api.domain.record.RecordType.{RecordType, _}
 
@@ -61,15 +60,15 @@ object DomainValidations {
   val MX_PREFERENCE_MIN_VALUE: Int = 0
   val MX_PREFERENCE_MAX_VALUE: Int = 65535
 
-  def validateEmail(email: String): ValidationNel[DomainValidationError, String] =
+  def validateEmail(email: String): ValidatedNel[DomainValidationError, String] =
     /*
      Basic e-mail checking that also blocks some positive e-mails (by RFC standards)
      (eg. e-mails containing hex and special characters.)
      */
-    if (validEmailRegex.findFirstIn(email).isDefined) email.successNel
-    else InvalidEmail(email).failureNel
+    if (validEmailRegex.findFirstIn(email).isDefined) email.validNel
+    else InvalidEmail(email).invalidNel
 
-  def validateHostName(name: String): ValidationNel[DomainValidationError, String] = {
+  def validateHostName(name: String): ValidatedNel[DomainValidationError, String] = {
     /*
       Label rules are as follows (from RFC 952; detailed in RFC 1034):
         - Starts with a letter, OR digit (as of RFC 1123)
@@ -85,38 +84,38 @@ object DomainValidations {
      */
     val checkRegex = validFQDNRegex
       .findFirstIn(name)
-      .map(_.successNel)
-      .getOrElse(InvalidDomainName(name).failureNel)
+      .map(_.validNel)
+      .getOrElse(InvalidDomainName(name).invalidNel)
     val checkLength = validateStringLength(name, Some(HOST_MIN_LENGTH), HOST_MAX_LENGTH)
 
-    (checkRegex +++ checkLength).map(_ => name)
+    checkRegex.combine(checkLength).map(_ => name)
   }
 
-  def validateIpv4Address(address: String): ValidationNel[DomainValidationError, String] =
+  def validateIpv4Address(address: String): ValidatedNel[DomainValidationError, String] =
     validIpv4Regex
       .findFirstIn(address)
-      .map(_.successNel)
-      .getOrElse(InvalidIpv4Address(address).failureNel)
+      .map(_.validNel)
+      .getOrElse(InvalidIpv4Address(address).invalidNel)
 
-  def validateIpv6Address(address: String): ValidationNel[DomainValidationError, String] =
+  def validateIpv6Address(address: String): ValidatedNel[DomainValidationError, String] =
     validIpv6Regex
       .findFirstIn(address)
-      .map(_.successNel)
-      .getOrElse(InvalidIpv6Address(address).failureNel)
+      .map(_.validNel)
+      .getOrElse(InvalidIpv6Address(address).invalidNel)
 
-  def validatePort(port: String): ValidationNel[DomainValidationError, String] =
+  def validatePort(port: String): ValidatedNel[DomainValidationError, String] =
     Try(port.toInt)
       .map {
-        case ok if ok >= PORT_MIN_VALUE && ok <= PORT_MAX_VALUE => port.successNel
+        case ok if ok >= PORT_MIN_VALUE && ok <= PORT_MAX_VALUE => port.validNel
         case outOfRange =>
-          InvalidPortNumber(outOfRange.toString, PORT_MIN_VALUE, PORT_MAX_VALUE).failureNel
+          InvalidPortNumber(outOfRange.toString, PORT_MIN_VALUE, PORT_MAX_VALUE).invalidNel
       }
-      .getOrElse(InvalidPortNumber(port, PORT_MIN_VALUE, PORT_MAX_VALUE).failureNel)
+      .getOrElse(InvalidPortNumber(port, PORT_MIN_VALUE, PORT_MAX_VALUE).invalidNel)
 
   def validateStringLength(
       value: Option[String],
       minInclusive: Option[Int],
-      maxInclusive: Int): ValidationNel[DomainValidationError, Option[String]] =
+      maxInclusive: Int): ValidatedNel[DomainValidationError, Option[String]] =
     validateIfDefined(value) { d =>
       validateStringLength(d, minInclusive, maxInclusive)
     }
@@ -124,32 +123,35 @@ object DomainValidations {
   def validateStringLength(
       value: String,
       minInclusive: Option[Int],
-      maxInclusive: Int): ValidationNel[DomainValidationError, String] =
+      maxInclusive: Int): ValidatedNel[DomainValidationError, String] =
     if (minInclusive.forall(m => value.length >= m) && value.length <= maxInclusive)
-      value.successNel
-    else InvalidLength(value, minInclusive.getOrElse(0), maxInclusive).failureNel
+      value.validNel
+    else InvalidLength(value, minInclusive.getOrElse(0), maxInclusive).invalidNel
 
   def validateKnownRecordTypes(
-      types: Set[RecordType]): ValidationNel[DomainValidationError, Set[RecordType]] =
-    types.toList.traverseU(r => validateKnownRecordType(r)).map(x => x.toSet[RecordType])
+      types: Set[RecordType]): ValidatedNel[DomainValidationError, Set[RecordType]] = {
+    val a: List[ValidatedNel[DomainValidationError, RecordType]] =
+      types.toList.map(validateKnownRecordType)
+    a.sequence.map(_.toSet)
+  }
 
-  def validateKnownRecordType(rType: RecordType): ValidationNel[DomainValidationError, RecordType] =
+  def validateKnownRecordType(rType: RecordType): ValidatedNel[DomainValidationError, RecordType] =
     rType match {
-      case UNKNOWN => InvalidRecordType(rType.toString).failureNel
-      case _ => rType.successNel
+      case UNKNOWN => InvalidRecordType(rType.toString).invalidNel
+      case _ => rType.validNel
     }
 
-  def validateTrailingDot(value: String): ValidationNel[DomainValidationError, String] =
-    if (value.endsWith(".")) value.successNel else InvalidDomainName(value).failureNel
+  def validateTrailingDot(value: String): ValidatedNel[DomainValidationError, String] =
+    if (value.endsWith(".")) value.validNel else InvalidDomainName(value).invalidNel
 
-  def validateTTL(ttl: Long): ValidationNel[DomainValidationError, Long] =
-    if (ttl >= TTL_MIN_LENGTH && ttl <= TTL_MAX_LENGTH) ttl.successNel
-    else InvalidTTL(ttl).failureNel[Long]
+  def validateTTL(ttl: Long): ValidatedNel[DomainValidationError, Long] =
+    if (ttl >= TTL_MIN_LENGTH && ttl <= TTL_MAX_LENGTH) ttl.validNel
+    else InvalidTTL(ttl).invalidNel[Long]
 
-  def validateTxtTextLength(value: String): ValidationNel[DomainValidationError, String] =
+  def validateTxtTextLength(value: String): ValidatedNel[DomainValidationError, String] =
     validateStringLength(value, Some(TXT_TEXT_MIN_LENGTH), TXT_TEXT_MAX_LENGTH)
 
-  def validateMxPreference(pref: Int): ValidationNel[DomainValidationError, Int] =
-    if (pref >= MX_PREFERENCE_MIN_VALUE && pref <= MX_PREFERENCE_MAX_VALUE) pref.successNel
-    else InvalidMxPreference(pref).failureNel[Int]
+  def validateMxPreference(pref: Int): ValidatedNel[DomainValidationError, Int] =
+    if (pref >= MX_PREFERENCE_MIN_VALUE && pref <= MX_PREFERENCE_MAX_VALUE) pref.validNel
+    else InvalidMxPreference(pref).invalidNel[Int]
 }

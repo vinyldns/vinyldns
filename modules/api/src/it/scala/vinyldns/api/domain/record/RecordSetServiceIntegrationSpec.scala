@@ -22,7 +22,7 @@ import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import scalaz.\/
+
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, User, UserRepository}
@@ -185,8 +185,8 @@ class RecordSetServiceIntegrationSpec
     "not alter record name when seeding database for tests" in {
       val originalRecord = testRecordSetService
         .getRecordSet(apexTestRecordA.id, apexTestRecordA.zoneId, auth)
-        .run
-        .mapTo[Throwable \/ RecordSet]
+        .value
+        .mapTo[Either[Throwable, RecordSet]]
       whenReady(originalRecord, timeout) { out =>
         rightValue(out).name shouldBe "live-zone-test"
       }
@@ -205,7 +205,10 @@ class RecordSetServiceIntegrationSpec
         None,
         List(AData("10.1.1.1")))
       val result =
-        testRecordSetService.addRecordSet(newRecord, auth).run.mapTo[Throwable \/ RecordSetChange]
+        testRecordSetService
+          .addRecordSet(newRecord, auth)
+          .value
+          .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         rightValue(out).recordSet.name shouldBe "zone-test-add-records."
       }
@@ -215,8 +218,8 @@ class RecordSetServiceIntegrationSpec
       val newRecord = apexTestRecordA.copy(ttl = 200)
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
-        .run
-        .mapTo[Throwable \/ RecordSetChange]
+        .value
+        .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
         change.recordSet.name shouldBe "live-zone-test."
@@ -228,8 +231,8 @@ class RecordSetServiceIntegrationSpec
       val newRecord = apexTestRecordAAAA.copy(ttl = 200)
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
-        .run
-        .mapTo[Throwable \/ RecordSetChange]
+        .value
+        .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
         change.recordSet.name shouldBe "live-zone-test."
@@ -241,8 +244,8 @@ class RecordSetServiceIntegrationSpec
       val newRecord = subTestRecordA.copy(ttl = 200)
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
-        .run
-        .mapTo[Throwable \/ RecordSetChange]
+        .value
+        .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
         change.recordSet.name shouldBe "a-record"
@@ -254,8 +257,8 @@ class RecordSetServiceIntegrationSpec
       val newRecord = subTestRecordAAAA.copy(ttl = 200)
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
-        .run
-        .mapTo[Throwable \/ RecordSetChange]
+        .value
+        .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
         change.recordSet.name shouldBe "aaaa-record"
@@ -268,8 +271,8 @@ class RecordSetServiceIntegrationSpec
       val superAuth = AuthPrincipal(okGroupAuth.signedInUser.copy(isSuper = true), Seq.empty)
       val result = testRecordSetService
         .updateRecordSet(newRecord, superAuth)
-        .run
-        .mapTo[Throwable \/ RecordSetChange]
+        .value
+        .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
         change.recordSet.name shouldBe "ns-record"
@@ -280,7 +283,10 @@ class RecordSetServiceIntegrationSpec
     "fail to add relative record if apex record with same name already exists" in {
       val newRecord = apexTestRecordNameConflict.copy(name = "zone-test-name-conflicts")
       val result =
-        testRecordSetService.addRecordSet(newRecord, auth).run.mapTo[Throwable \/ RecordSetChange]
+        testRecordSetService
+          .addRecordSet(newRecord, auth)
+          .value
+          .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         leftValue(out) shouldBe a[RecordSetAlreadyExists]
       }
@@ -289,7 +295,10 @@ class RecordSetServiceIntegrationSpec
     "fail to add apex record if relative record with same name already exists" in {
       val newRecord = subTestRecordNameConflict.copy(name = "relative-name-conflict.")
       val result =
-        testRecordSetService.addRecordSet(newRecord, auth).run.mapTo[Throwable \/ RecordSetChange]
+        testRecordSetService
+          .addRecordSet(newRecord, auth)
+          .value
+          .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         leftValue(out) shouldBe a[RecordSetAlreadyExists]
       }
