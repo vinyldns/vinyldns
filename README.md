@@ -43,6 +43,7 @@ VinylDNS is currently used in Production managing millions of DNS records.
 ## Table of Contents
 - [Roadmap](#roadmap)
 - [Code of Conduct](#code-of-conduct)
+- [Quickstart](#quickstart)
 - [Developer Guide](#developer-guide)
 - [Project Layout](#project-layout)
 - [Contributing](#contributing)
@@ -56,6 +57,43 @@ See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
 ## Code of Conduct
 This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
 participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
+
+## Quickstart
+Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
+To start up a local instance of VinylDNS on your machine with docker:
+
+1. Ensure that you have docker and docker-compose
+1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
+1. Navigate to repo: `cd vinyldns`
+1. Run `bin/docker-up-vinyldns.sh`
+1. This will start up the api at `localhost:9000`, and the portal at `localhost:9001`
+
+Things to try after VinylDNS is running:
+
+1. View the portal at <http://localhost:9001> in a web browser
+1. Login with the credentials ***testuser*** and ***testpassword***
+1. Navigate to the `groups` tab: <http://localhost:9001/groups>
+1. Click on the **New Group** button and create a new group
+1. Navigate to the `zones` tab: <http://localhost:9001/zones>
+1. Click on the **Connect** button to connect to zone, the `bin/docker-up-vinyldns.sh` started up a local bind9 DNS server 
+with a few test zones preloaded, 
+connect to `Zone Name = dummy.`, `Email = sometest@vinyldns.com`, `Admin Group = the group you just created`. The DNS
+Server and Zone Transfer Server can be left blank as the test zones use the defaults 
+1. This is async, so refresh the zones page to view the newly created zone
+1. Click the **View** button under the **Actions** column for the `dummy.` zone
+1. You will see that some records are preloaded already, this is because these records existed in the bind9 server 
+and VinylDNS automatically syncs records with the backend DNS server upon zone connection
+1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
+in the **Manage Zone** tab
+1. To try creating a DNS record, click on the **Create Record Set** button under Records, `Record Type = A, Record Name = my-test-a,
+TTL = 300, IP Addressess = 1.1.1.1`
+1. Click on the **Refresh** button under Records, you should see your new record created
+
+Things to note: 
+
+1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
+1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
+1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
 
 ## Developer Guide
 ### Requirements
