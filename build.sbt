@@ -296,6 +296,8 @@ lazy val docSettings = Seq(
       Map("title" -> "Contributing", "section" -> "contributing", "position" -> "2")
     )
   ),
+  micrositePushSiteWith := GitHub4s,
+  micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),
   ghpagesNoJekyll := false,
   fork in tut := true
 )
@@ -314,8 +316,6 @@ addCommandAlias("validate-portal",
 addCommandAlias("validate", ";validate-core;validate-api;validate-portal")
 
 // Verify runs all tests and code coverage
-addCommandAlias("verify-api", ";project api; dockerComposeUp; test; it:test; dockerComposeStop")
-addCommandAlias("verify-portal", ";project portal; test")
 addCommandAlias("verify",
   ";project api;dockerComposeUp;project root;coverage;test;it:test;coverageReport;coverageAggregate;project api;dockerComposeStop")
 

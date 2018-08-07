@@ -48,7 +48,8 @@ object Dependencies {
     "io.prometheus"             % "simpleclient_dropwizard"         % prometheusV,
     "io.prometheus"             % "simpleclient_common"             % prometheusV,
     "com.typesafe"              % "config"                          % configV,
-    "org.typelevel"             %% "cats-effect"                    % catsEffectV
+    "org.typelevel"             %% "cats-effect"                    % catsEffectV,
+    "com.47deg"                 %% "github4s"                       % "0.18.6"
   )
 
   lazy val coreDependencies = Seq(
