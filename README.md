@@ -41,22 +41,15 @@ Integration is simple with first-class language support including:
 VinylDNS is currently used in Production managing millions of DNS records.
 
 ## Table of Contents
+- [Quickstart](#quickstart)
 - [Roadmap](#roadmap)
 - [Code of Conduct](#code-of-conduct)
-- [Quickstart](#quickstart)
 - [Developer Guide](#developer-guide)
 - [Project Layout](#project-layout)
 - [Contributing](#contributing)
 - [Contact](#contact)
 - [Maintainers and Contributors](#maintainers-and-contributors)
 - [Credits](#credits)
-
-## Roadmap
-See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
-
-## Code of Conduct
-This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
-participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
 
 ## Quickstart
 Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
@@ -94,6 +87,13 @@ Things to note:
 1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
 1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
 1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
+
+## Roadmap
+See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
+
+## Code of Conduct
+This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
+participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
 
 ## Developer Guide
 ### Requirements
