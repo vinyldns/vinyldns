@@ -1,152 +1,218 @@
 options:
 
   #############################
-  #   API Docs Menu Options   #
+  # Docs Layout Menu Options  #
   #############################
 
-  - title: API Documentation
-    url: apidocs/index
-    menu_type: apidocs
-    menu_section: apidocs
+  - title: Guides
+    url: guides.html
+    menu_type: main_menu
 
-  - title: 1 - Getting Started
-    url: apidocs/basics.html
-    menu_type: apidocs
-    menu_section: gettingstarted
+  - title: Main menu
+    url: guides.html
+    menu_type: user_menu
+
+  - title: Main menu
+    url: guides.html
+    menu_type: developer_menu
+
+  - title: Main menu
+    url: guides.html
+    menu_type: contributing_menu
+
+  - title: Main menu
+    url: guides.html
+    menu_type: operator_menu
+
+  - title: User Guide
+    url: user/index.html
+    menu_type: main_menu
+
+  - title: Developer Guide
+    url: developer/index.html
+    menu_type: main_menu
+
+  - title: Contributing Guide
+    url: contributing/index.html
+    menu_type: main_menu
+
+  - title: Operator Guide
+    url: operator/index.html
+    menu_type: main_menu
+
+  - title: RFC Guide
+    url: //github.com/vinyldns/rfcs
+    menu_type: main_menu
+
+  - title: Getting Help
+    url: getting-help.html
+    menu_type: main_menu
+
+  - title: User Guide
+    url: user/index.html
+    menu_type: user_menu
+    menu_section: user_section
 
     nested_options:
-    - title: Basics
-      url: apidocs/basics.html
-      menu_section: gettingstarted
-    - title: Getting Help
-      url: apidocs/getting-help.html
-      menu_section: gettingstarted
-    - title: FAQ
-      url: apidocs/faq.html
-      menu_section: gettingstarted
-    - title: Tools
-      url: apidocs/tools.html
-      menu_section: gettingstarted
+      - title: FAQ
+        url: faq.html
+        menu_section: user_section
+      - title: API documentation
+        url: api/index.html
+        menu_section: user_section
+      - title: Portal documentation
+        url: user/portal.html
+        menu_section: user_section
+      - title: Tools
+        url: tools.html
+        menu_section: user_section
 
-  - title: 2.1 - Authentication
-    url: apidocs/auth-mechanism.html
-    menu_type: apidocs
-    menu_section: authentication
+  - title: Developer Guide
+    url: developer/index.html
+    menu_type: developer_menu
+    menu_section: developer_section
 
-  - title: 2.2 - Zone
-    url: apidocs/zone-model.html
-    menu_type: apidocs
+  - title: Contributing Guide
+    url: contributing/index.html
+    menu_type: contributing_menu
+    menu_section: contributing_section
+
+  - title: Operator Guide
+    url: operator/index.html
+    menu_type: operator_menu
+    menu_section: operator_section
+
+  - title: User Guide
+    url: user/index.html
+    menu_type: api
+
+  - title: User Guide
+    url: user/index.html
+    menu_type: getting_started
+
+  - title: API documentation
+    url: api/index
+    menu_type: api
+    menu_section: api_section
+
+  - title: Authentication
+    url: api/auth-mechanism.html
+    menu_type: api
+
+  - title: Zone
+    url: api/zone-model.html
+    menu_type: api
     menu_section: zoneapireference
 
     nested_options:
     - title: Zone Model
-      url: apidocs/zone-model.html
+      url: api/zone-model.html
       menu_section: zoneapireference
     - title: Create Zone
-      url: apidocs/create-zone.html
+      url: api/create-zone.html
       menu_section: zoneapireference
     - title: Update Zone
-      url: apidocs/update-zone.html
+      url: api/update-zone.html
       menu_section: zoneapireference
     - title: Delete Zone
-      url: apidocs/delete-zone.html
+      url: api/delete-zone.html
       menu_section: zoneapireference
     - title: Get Zone
-      url: apidocs/get-zone.html
+      url: api/get-zone.html
       menu_section: zoneapireference
     - title: List / Search Zone
-      url: apidocs/list-zones.html
+      url: api/list-zones.html
       menu_section: zoneapireference
     - title: Sync Zone
-      url: apidocs/sync-zone.html
+      url: api/sync-zone.html
       menu_section: zoneapireference
     - title: List Zone Changes
-      url: apidocs/list-zone-changes.html
+      url: api/list-zone-changes.html
       menu_section: zoneapireference
 
-  - title: 2.3 - RecordSet
-    url: apidocs/recordset-model.html
-    menu_type: apidocs
+  - title: RecordSet
+    url: api/recordset-model.html
+    menu_type: api
     menu_section: recordsetapireference
 
     nested_options:
     - title: RecordSet Model
-      url: apidocs/recordset-model.html
+      url: api/recordset-model.html
       menu_section: recordsetapireference
     - title: Create RecordSet
-      url: apidocs/create-recordset.html
+      url: api/create-recordset.html
       menu_section: recordsetapireference
     - title: Update RecordSet
-      url: apidocs/update-recordset.html
+      url: api/update-recordset.html
       menu_section: recordsetapireference
     - title: Delete RecordSet
-      url: apidocs/delete-recordset.html
+      url: api/delete-recordset.html
       menu_section: recordsetapireference
     - title: Get RecordSet
-      url: apidocs/get-recordset.html
+      url: api/get-recordset.html
       menu_section: recordsetapireference
     - title: List / Search RecordSets
-      url: apidocs/list-recordsets.html
+      url: api/list-recordsets.html
       menu_section: recordsetapireference
     - title: Get RecordSet Change
-      url: apidocs/get-recordset-change.html
+      url: api/get-recordset-change.html
       menu_section: recordsetapireference
     - title: List RecordSet Changes
-      url: apidocs/list-recordset-changes.html
+      url: api/list-recordset-changes.html
       menu_section: recordsetapireference
 
-  - title: 2.4 - Batch Change
-    url: apidocs/batchchange-model.html
-    menu_type: apidocs
+  - title: Batch Change
+    url: api/batchchange-model.html
+    menu_type: api
     menu_section: batchchangeapireference
 
     nested_options:
     - title: Batch Change Model
-      url: apidocs/batchchange-model.html
+      url: api/batchchange-model.html
       menu_section: batchchangeapireference
     - title: Create Batch Change
-      url: apidocs/create-batchchange.html
+      url: api/create-batchchange.html
       menu_section: batchchangeapireference
     - title: Get Batch Change
-      url: apidocs/get-batchchange.html
+      url: api/get-batchchange.html
       menu_section: batchchangeapireference
     - title: List Batch Changes
-      url: apidocs/list-batchchanges.html
+      url: api/list-batchchanges.html
       menu_section: batchchangeapireference
     - title: Batch Change Errors
-      url: apidocs/batchchange-errors.html
+      url: api/batchchange-errors.html
       menu_section: batchchangeapireference
 
-  - title: 2.5 - Membership
-    url: apidocs/membership-model.html
-    menu_type: apidocs
+  - title: Membership
+    url: api/membership-model.html
+    menu_type: api
     menu_section: membershipapireference
 
     nested_options:
     - title: Membership Model
-      url: apidocs/membership-model.html
+      url: api/membership-model.html
       menu_section: membershipapireference
     - title: Create Group
-      url: apidocs/create-group.html
+      url: api/create-group.html
       menu_section: membershipapireference
     - title: Update Group
-      url: apidocs/update-group.html
+      url: api/update-group.html
       menu_section: membershipapireference
     - title: Delete Group
-      url: apidocs/delete-group.html
+      url: api/delete-group.html
       menu_section: membershipapireference
     - title: Get Group
-      url: apidocs/get-group.html
+      url: api/get-group.html
       menu_section: membershipapireference
     - title: List Groups
-      url: apidocs/list-groups.html
+      url: api/list-groups.html
       menu_section: membershipapireference
     - title: List Group Admins
-      url: apidocs/list-group-admins.html
+      url: api/list-group-admins.html
       menu_section: membershipapireference
     - title: List Group Members
-      url: apidocs/list-group-members.html
+      url: api/list-group-members.html
       menu_section: membershipapireference
     - title: List Group Activity
-      url: apidocs/list-group-activity.html
+      url: api/list-group-activity.html
       menu_section: membershipapireference

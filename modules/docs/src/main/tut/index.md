@@ -22,4 +22,4 @@ Features Include:
 - Manage Groups and Members
 - Synchronize VinylDNS with records from DNS
 
-[Click Here to Get Started!](./apidocs/basics)
+[Click Here to Get Started!](guides)
