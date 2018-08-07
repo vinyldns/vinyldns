@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 ######################################################################
-# Copies the contents of `docker` into target/scala-2.12
-# to start up dependent services via docker compose.  Once
-# dependent services are started up, the fat jar built by sbt assembly
-# is loaded into a docker container.  The api will be available
-## by default on port 9000 and the portal will be on port 9001
+# Starts up the api, portal, and dependent services via
+# docker-compose. The api will be available on localhost:9000 and the
+# portal will be on localhost:9001
 ######################################################################
 
 DIR=$( cd $(dirname $0) ; pwd -P )
