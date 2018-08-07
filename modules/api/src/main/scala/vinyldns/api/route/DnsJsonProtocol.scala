@@ -156,7 +156,12 @@ trait DnsJsonProtocol extends JsonValidation {
       val recordSetResult = (
         (js \ "zoneId").required[String]("Missing RecordSet.zoneId"),
         (js \ "name")
-          .required[String]("Missing RecordSet.name"),
+          .required[String]("Missing RecordSet.name")
+          .check("Record name must not exceed 255 characters" -> checkDomainNameLen)
+          .checkIf(recordType.isValid)(
+            "Record name cannot contain '.' with given type" ->
+              ((s: String) => !((recordTypeGet == CNAME) && nameContainsDots(s)))
+          ),
         recordType,
         (js \ "ttl")
           .required[Long]("Missing RecordSet.ttl")
