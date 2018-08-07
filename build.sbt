@@ -314,8 +314,6 @@ addCommandAlias("validate-portal",
 addCommandAlias("validate", ";validate-core;validate-api;validate-portal")
 
 // Verify runs all tests and code coverage
-addCommandAlias("verify-api", ";project api; dockerComposeUp; test; it:test; dockerComposeStop")
-addCommandAlias("verify-portal", ";project portal; test")
 addCommandAlias("verify",
   ";project api;dockerComposeUp;project root;coverage;test;it:test;coverageReport;coverageAggregate;project api;dockerComposeStop")
 

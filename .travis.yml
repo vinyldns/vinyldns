@@ -32,12 +32,17 @@ before_cache:
   
 jobs:  
   include:
-    - stage: "Verify"
-      script: sbt ++$TRAVIS_SCALA_VERSION ";validate-api; validate-core; verify-api"
+    - stage: "Verify core and API modules"
+      script: sbt ++$TRAVIS_SCALA_VERSION ";validate-api; validate-core"
       name: "Validate and verify API"
     - script: ./bin/func-test-api-travis.sh
       name: "Run API functional tests"
-    - script: sbt ++$TRAVIS_SCALA_VERSION ";validate-portal; verify-portal"
-      name: "Validate and verify portal"
+    - script: sbt ++$TRAVIS_SCALA_VERSION "validate-portal"
+      name: "Validate portal"
     - script: ./bin/func-test-portal.sh
       name: "Run portal functional tests"
+    - script: sbt ++$TRAVIS_SCALA_VERSION "verify"
+      name: "Verify and run coverage on API and portal"
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
