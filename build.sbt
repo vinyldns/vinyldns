@@ -291,11 +291,21 @@ lazy val docSettings = Seq(
   micrositeDocumentationLabelDescription := "API Documentation",
   micrositeShareOnSocial := false,
   micrositeExtraMdFiles := Map(
+    file("CONTRIBUTING.md") -> ExtraMdFileConfig(
+      "contributing.md",
+      "page",
+      Map("title" -> "Contributing", "section" -> "contributing", "position" -> "3")
+    ),
+    file("DEVELOPER_GUIDE.md") -> ExtraMdFileConfig(
+      "developer_guide.md",
+      "page",
+      Map("title" -> "Developing", "section" -> "developing", "position" -> "4")
+    ),
     file("ROADMAP.md") -> ExtraMdFileConfig(
       "roadmap.md",
       "page",
-      Map("title" -> "Roadmap", "section" -> "roadmap", "position" -> "3")
-    )
+      Map("title" -> "Roadmap", "section" -> "roadmap", "position" -> "5")
+    ),
   ),
   micrositePushSiteWith := GitHub4s,
   micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),

@@ -29,11 +29,11 @@ options:
     menu_type: main_menu
 
   - title: Developer Guide
-    url: developer/index.html
+    url: developer_guide.html
     menu_type: main_menu
 
   - title: Contributing Guide
-    url: contributing/index.html
+    url: contributing.html
     menu_type: main_menu
 
   - title: Operator Guide
@@ -66,16 +66,6 @@ options:
       - title: Tools
         url: tools.html
         menu_section: user_section
-
-  - title: Developer Guide
-    url: developer/index.html
-    menu_type: developer_menu
-    menu_section: developer_section
-
-  - title: Contributing Guide
-    url: contributing/index.html
-    menu_type: contributing_menu
-    menu_section: contributing_section
 
   - title: Operator Guide
     url: operator/index.html

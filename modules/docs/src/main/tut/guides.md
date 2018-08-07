@@ -7,12 +7,12 @@ position: 2
 
 ## Guides
 
-* [User Guide](user/index.html)
+* [User Guide](user)
 
-* [Developer Guide](developer/index.html)
+* [Developer Guide](developer_guide)
 
-* [Operator Guide](operator/index.html)
+* [Operator Guide](operator)
 
-* [Contributing Guide](contributing/index.html)
+* [Contributing Guide](contributing)
 
 * [RFC Guide](https://github.com/vinyldns/rfcs){:target="_blank"}
