@@ -33,11 +33,11 @@ fi
 cp -f $DIR/../modules/api/target/scala-2.12/vinyldns.jar $WORK_DIR/docker/api
 
 echo "Starting docker environment and running func tests..."
-docker-compose -f $WORK_DIR/docker/docker-compose-func-test.yml --project-directory $WORK_DIR/docker --log-level ERROR up --build --exit-code-from functest
+docker-compose -f $WORK_DIR/docker/docker-compose-func-test.yml --project-directory $WORK_DIR/docker up --exit-code-from functest
 test_result=$?
 
 echo "Grabbing the logs..."
-
+docker logs vinyldns-functest
 docker logs vinyldns-api > $DIR/../target/vinyldns-api.log 2>/dev/null
 docker logs vinyldns-bind9 > $DIR/../target/vinyldns-bind9.log 2>/dev/null
 docker logs vinyldns-mysql > $DIR/../target/vinyldns-mysql.log 2>/dev/null
