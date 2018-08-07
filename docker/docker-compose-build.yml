@@ -35,7 +35,7 @@ services:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
   api:
-    image: "vinyldns/api:latest"
+    image: "vinyldns/api:0.8.0"
     environment:
       - REST_PORT=9000
     container_name: "vinyldns-api"
@@ -48,7 +48,7 @@ services:
       - dynamodb
 
   portal:
-    image: "vinyldns/portal:latest"
+    image: "vinyldns/portal:0.8.0"
     ports:
       - "9001:9001"
     container_name: "vinyldns-portal"
