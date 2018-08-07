@@ -296,6 +296,8 @@ lazy val docSettings = Seq(
       Map("title" -> "Contributing", "section" -> "contributing", "position" -> "2")
     )
   ),
+  micrositePushSiteWith := GitHub4s,
+  micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),
   ghpagesNoJekyll := false,
   fork in tut := true
 )
