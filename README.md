@@ -134,6 +134,8 @@ The current maintainers (people who can merge pull requests) are:
 
 See [AUTHORS.md](AUTHORS.md) for the full list of contributors to VinylDNS.
 
+See [MAINTAINERS.md](MAINTAINERS.md) for documentation specific to maintainers 
+
 ## Credits
 VinylDNS would not be possible without the help of many other pieces of open source software. Thank you open source world!
 

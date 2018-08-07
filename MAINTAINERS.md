@@ -6,14 +6,15 @@
 ## Pushing images to Docker Hub
 
 ### Docker content trust
-Official vinyldns Docker images are signed when being pushed to Docker Hub. Docs for Docker Content Trust can be found 
+Official VinylDNS Docker images are signed when being pushed to Docker Hub. Docs for Docker Content Trust can be found 
 at https://docs.docker.com/engine/security/trust/content_trust/.
 
 Content trust is enabled through the `DOCKER_CONTENT_TRUST` environment variable, which must be set to 1. It is recommended that 
 in your `~/.bashrc`, you have `export DOCKER_CONTENT_TRUST=1` by default, and if you ever want to turn it off for a 
-docker command, add the `--disable-content-trust` flag to the command, e.g. `docker pull --disable-content-trust ...`.
+Docker command, add the `--disable-content-trust` flag to the command, e.g. `docker pull --disable-content-trust ...`.
 
-There are multiple Docker repositories on Docker Hub under the vinyldns organization. Namely: 
+There are multiple Docker repositories on Docker Hub under 
+the [vinyldns organization](https://hub.docker.com/u/vinyldns/dashboard/). Namely: 
 
 * vinyldns/api: images for vinyldns core api engine 
 * vinyldns/portal: images for vinyldns web client
@@ -21,7 +22,7 @@ There are multiple Docker repositories on Docker Hub under the vinyldns organiza
 
 The offline root key and repository keys are managed by the core maintainer team. The keys managed are:
 
-* root key: the root key, also known as the offline key, is used to create the separate repository signing keys
+* root key: also known as the offline key, used to create the separate repository signing keys
 * api key: used to sign tagged images in vinyldns/api
 * portal key: used to sign tagged images in vinyldns/portal
 * bind9 key: used to sign tagged images in the vinyldns/bind9
@@ -34,13 +35,13 @@ must have available when pushing an image.
 
 ### Pushing a signed image
 First make sure you have been given the correct permissions in the vinyldns org on Docker Hub. Then, publish the image 
-you will be pushing locally first. For the api, run `sbt ;project:api;docker:publishLocal`, for the portal, 
+you will be pushing locally first. For the API, run `sbt ;project:api;docker:publishLocal`, for the portal, 
 run `sbt ;project:portal;docker:publishLocal`. The image tag will be whatever the project version is set to in 
 `build.sbt` 
 
 Then make sure `DOCKER_CONTENT_TRUST=1` is in your environment, and run `docker push vinyldns/<repo>:<tag>`. e.g. 
 `docker push vinyldns/api:0.1.0`. When prompted, enter the passphrase for the root key, then the passphrase for the 
-repo you are pushing to. 
+Docker repo you are pushing to. 
 
 ### Delegating image signing
 The above method will work as long as a pusher has the required keys and passphrases. Optionally, the following steps can be taken
@@ -69,7 +70,7 @@ e.g. `cd ~/Downloads/; mv notary-Darwin-amd64 notary; mv notary ~/Documents/nota
 ```
 
 You can test notary with `notary -s https://notary.docker.io -d ~/.docker/trust" list docker.io/vinyldns/api`, in which
-you should see tagged images for the api
+you should see tagged images for the API
 
 #### Generating a personal delegation key
 1. cd to a directory where you will save your delegation keys
