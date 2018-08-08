@@ -286,14 +286,15 @@ lazy val docSettings = Seq(
   micrositeDescription := "DNS Management Platform",
   micrositeAuthor := "VinylDNS",
   micrositeHomepage := "http://vinyldns.io",
-  micrositeDocumentationUrl := "/apidocs",
+  micrositeDocumentationUrl := "/api",
   micrositeGitterChannelUrl := "vinyldns/Lobby",
+  micrositeDocumentationLabelDescription := "API Documentation",
   micrositeShareOnSocial := false,
   micrositeExtraMdFiles := Map(
     file("CONTRIBUTING.md") -> ExtraMdFileConfig(
       "contributing.md",
       "page",
-      Map("title" -> "Contributing", "section" -> "contributing", "position" -> "2")
+      Map("title" -> "Contributing", "section" -> "contributing", "position" -> "4")
     )
   ),
   micrositePushSiteWith := GitHub4s,
