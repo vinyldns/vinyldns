@@ -1,8 +1,7 @@
 ---
-layout: docs
+layout: page
 title: "Getting Help"
-section: "main_menu"
-position: 4
+position: 7
 ---
 
 # Getting Help

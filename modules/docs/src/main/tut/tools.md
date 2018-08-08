@@ -1,7 +1,7 @@
 ---
-layout: docs
+layout: page
 title: "Tools"
-section: "user_menu"
+position: 5
 ---
 
 # VinylDNS Tools

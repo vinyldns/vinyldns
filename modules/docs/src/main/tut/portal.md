@@ -1,7 +1,8 @@
 ---
 layout: docs
-title:  "Portal documentation"
+title:  "Portal Guide"
 section: "user_menu"
+position: 2
 ---
 
 ## Portal documentation

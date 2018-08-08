@@ -4,86 +4,20 @@ options:
   # Docs Layout Menu Options  #
   #############################
 
-  - title: Guides
-    url: guides.html
-    menu_type: main_menu
-
-  - title: Main menu
-    url: guides.html
-    menu_type: user_menu
-
-  - title: Main menu
-    url: guides.html
-    menu_type: developer_menu
-
-  - title: Main menu
-    url: guides.html
-    menu_type: contributing_menu
-
-  - title: Main menu
-    url: guides.html
-    menu_type: operator_menu
-
-  - title: User Guide
+  - title: Portal Guide
     url: user/index.html
-    menu_type: main_menu
-
-  - title: Developer Guide
-    url: developer_guide.html
-    menu_type: main_menu
-
-  - title: Contributing Guide
-    url: contributing.html
-    menu_type: main_menu
-
-  - title: Operator Guide
-    url: operator/index.html
-    menu_type: main_menu
-
-  - title: RFC Guide
-    url: //github.com/vinyldns/rfcs
-    menu_type: main_menu
-
-  - title: Getting Help
-    url: getting-help.html
-    menu_type: main_menu
-
-  - title: User Guide
-    url: user/index.html
-    menu_type: user_menu
-    menu_section: user_section
-
-    nested_options:
-      - title: FAQ
-        url: faq.html
-        menu_section: user_section
-      - title: API documentation
-        url: api/index.html
-        menu_section: user_section
-      - title: Portal documentation
-        url: user/portal.html
-        menu_section: user_section
-      - title: Tools
-        url: tools.html
-        menu_section: user_section
+    menu_type: portal_menu
+    menu_section: portal_section
 
   - title: Operator Guide
     url: operator/index.html
     menu_type: operator_menu
     menu_section: operator_section
 
-  - title: User Guide
-    url: user/index.html
-    menu_type: api
-
-  - title: User Guide
-    url: user/index.html
-    menu_type: getting_started
-
   - title: API documentation
     url: api/index
     menu_type: api
-    menu_section: api_section
+    menu_section: api
 
   - title: Authentication
     url: api/auth-mechanism.html
