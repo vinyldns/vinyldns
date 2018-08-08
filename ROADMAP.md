@@ -4,13 +4,15 @@ expressed by the VinylDNS community.  In open source, demand is driven by the co
 Github issues and the [VinylDNS RFC process](https://github.com/vinyldns/rfcs).  As more members join the discussion,
 we anticipate the "plan" to change.  This document will be updated regularly to reflect the changes in prioritization.
 
+This document is organized by priority / planned release timeframes.  Reading top-down should give you a sense of the order in which new features are planned to be delivered.
+
 ## Pluggable Dependencies
 **Planned for: Q3 2018**
 Presently, VinylDNS requires operators to run DynamoDB, MySQL, and SQS.  These system dependencies were chosen to
 support the massive DNS footprint of Comcast.  However, they are viewed as a hurdle to adoption for VinylDNS.  We would like to make the external system dependencies "pluggable".  This will allow VinylDNS users to provide their own implementations which can be configured and loaded dynamically at run-time.
 
 The following high-level features will be developed:
-1. Pluggable Repositories - support multiple datastores other than the ones we run. 
+1. Pluggable Repositories - support multiple datastores other than MySQL and DynamoDB, for example PostgreSQL or MongoDB.
 1. Pluggable Queues - support different message queues other than SQS, for example RabbitMQ.
 
 ## Batch Change
