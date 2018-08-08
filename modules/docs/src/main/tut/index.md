@@ -21,5 +21,3 @@ Features Include:
 - View every change to every record in your zone(s)
 - Manage Groups and Members
 - Synchronize VinylDNS with records from DNS
-
-[Click Here to Get Started!](./apidocs/basics)
