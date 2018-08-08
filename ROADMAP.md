@@ -32,6 +32,7 @@ a group as the owner of the record to restrict who can modify that record.
 from being modified via VinylDNS.
 
 ## Zone Management
+**Planned for: Q2 2019**
 Presently VinylDNS _connects to existing zones_ for management.  Zone Management will allow users
 to create and manage zones in the authoritative systems themselves.  The following high-level features are planned:
 
@@ -42,8 +43,6 @@ be created for specific DNS vendors
 1. Zone Creation - allow the creation of a sub-domain from an existing Zone.  Users choose the Server Group where
 the zone will live, VinylDNS creates the delegation as well as access controls for the new zone.
 1. Zone Maintenance - support the modification of zone properties, like default SOA record settings.
-
-**Planned for: Q2 2019**
 
 ## Other
 There are several other features that we would like to support.  We will be opening up these for RFC, and their
