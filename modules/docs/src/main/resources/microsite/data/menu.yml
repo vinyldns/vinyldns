@@ -5,9 +5,29 @@ options:
   #############################
 
   - title: Portal Guide
-    url: user/index.html
+    url: portal/index.html
     menu_type: portal_menu
     menu_section: portal_section
+
+    nested_options:
+    - title: Credentials
+      url: portal/credentials.html
+      menu_section: portal_section
+    - title: Managing Records
+      url: portal/managing-records.html
+      menu_section: portal_section
+    - title: Connecting to your Zone
+      url: portal/connecting-to-zone.html
+      menu_section: portal_section
+    - title: Understanding Connections
+      url: portal/connections.html
+      menu_section: portal_section
+    - title: Managing Access
+      url: portal/managing-access.html
+      menu_section: portal_section
+    - title: Batch Changes
+      url: portal/batch-changes.html
+      menu_section: portal_section
 
   - title: Operator Guide
     url: operator/index.html
