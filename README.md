@@ -1,4 +1,6 @@
 [![Join the chat at https://gitter.im/vinyldns/Lobby](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns/Lobby)
+[![Travis build](https://api.travis-ci.com/vinyldns/vinyldns.svg?branch=master)](https://travis-ci.com/vinyldns/vinyldns)
+[![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
 
 <p align="left">
   <a href="http://www.vinyldns.io/">
