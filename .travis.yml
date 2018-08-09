@@ -47,5 +47,5 @@ jobs:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
   - if ["$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false"]; then
-      sbt 'project docs' 'publishMicrosite'
+      sbt 'project docs' 'publishMicrosite';
     fi
