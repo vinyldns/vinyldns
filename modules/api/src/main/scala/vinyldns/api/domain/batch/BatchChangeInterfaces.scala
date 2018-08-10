@@ -17,7 +17,7 @@
 package vinyldns.api.domain.batch
 
 import cats.data.Validated.{Invalid, Valid}
-import cats.data.{NonEmptyList, _}
+import cats.data._
 import cats.implicits._
 import vinyldns.api.domain.DomainValidationError
 
