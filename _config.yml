@@ -1,0 +1,11 @@
+name: VinylDNS
+baseurl: ''
+description: DNS Management Platform
+highlighter: rouge
+docs: true
+collections:
+  tut:
+    output: true
+version: '0.1'
+org: docs
+markdown: kramdown
