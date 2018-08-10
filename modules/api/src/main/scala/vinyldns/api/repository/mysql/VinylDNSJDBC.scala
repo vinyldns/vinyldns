@@ -29,16 +29,11 @@ import vinyldns.api.VinylDNSConfig
 object VinylDNSJDBC {
 
   val config: Config = VinylDNSConfig.dbConfig
-
-  lazy val isEmbeddedDatabase: Boolean =
-    config.getBoolean("local-mode") && config.getString("default.url").contains("password=pass")
-
   lazy val instance: VinylDNSJDBC = new VinylDNSJDBC(config)
 }
 
+/* Loads and initializes the MySQL database.  Unsafe, will fail if there are any issues and the app won't start */
 class VinylDNSJDBC(config: Config) {
-
-  import VinylDNSJDBC._
 
   private val logger = LoggerFactory.getLogger("VinylDNSJDBC")
 
@@ -50,9 +45,7 @@ class VinylDNSJDBC(config: Config) {
     ds.setPassword(config.getString("default.password"))
     ds.setConnectionTimeout(config.getLong("default.connectionTimeoutMillis"))
     ds.setMaximumPoolSize(config.getInt("default.poolMaxSize"))
-    if (!isEmbeddedDatabase) {
-      ds.setMaxLifetime(config.getLong("default.maxLifeTime"))
-    }
+    ds.setMaxLifetime(config.getLong("default.maxLifeTime"))
     ds.setRegisterMbeans(true)
     ds
   }
@@ -68,21 +61,19 @@ class VinylDNSJDBC(config: Config) {
   }
 
   // Only run migrations if we are using embedded db as embedded requires initialization
-  if (isEmbeddedDatabase) {
-    logger.info("Using embedded database, running migrations to ready the databases")
+  logger.info("Running migrations to ready the databases")
 
-    val migration = new Flyway()
-    migration.setDataSource(migrationDataSource)
+  val migration = new Flyway()
+  migration.setDataSource(migrationDataSource)
 
-    val dbName = config.getString("name")
-    val placeholders = Map("dbName" -> dbName)
-    migration.setPlaceholders(placeholders.asJava)
-    migration.setSchemas(dbName)
+  val dbName = config.getString("name")
+  val placeholders = Map("dbName" -> dbName)
+  migration.setPlaceholders(placeholders.asJava)
+  migration.setSchemas(dbName)
 
-    // Runs ALL flyway migrations including SQL and scala, assumes empty databases
-    migration.migrate()
-    logger.info("migrations complete")
-  }
+  // Runs ALL flyway migrations including SQL and scala, assumes empty databases
+  migration.migrate()
+  logger.info("migrations complete")
 
   logger.info("configuring connection pool")
 
