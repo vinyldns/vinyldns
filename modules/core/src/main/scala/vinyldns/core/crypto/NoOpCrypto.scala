@@ -26,7 +26,7 @@ import com.typesafe.config.Config
   * @param config - [[com.typesafe.config.Config]] that holds the no-op configuration.  This is required in order
   *               to dynamically load this Crypto implementation.  However, it is not used.
   */
-class NoOpCrypto(config: Config) extends CryptoAlgebra {
+class NoOpCrypto(val config: Config) extends CryptoAlgebra {
   def encrypt(value: String): String = value
   def decrypt(value: String): String = value
 }
