@@ -182,4 +182,19 @@ class MonitorSpec
       verifyZeroInteractions(mockErrors)
     }
   }
+
+  "Monitor logEntry" should {
+    "return a log entry for success" in {
+      val result = Monitor.logEntry("foo", 100, success = true)
+      result should include("monitor='foo'")
+      result should include("millis=100")
+      result should include("fail=0")
+    }
+    "return a log entry for failure" in {
+      val result = Monitor.logEntry("foo", 100, success = false)
+      result should include("monitor='foo'")
+      result should include("millis=100")
+      result should include("fail=1")
+    }
+  }
 }
