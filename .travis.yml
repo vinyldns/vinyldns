@@ -24,10 +24,6 @@ install:
   - wget https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz
   - tar -xzvf protobuf-2.6.1.tar.gz
   - pushd protobuf-2.6.1 && ./configure --prefix=/usr && make && sudo make install && popd
-  - rvm use 2.2.8 --install --fuzzy
-  - gem update --system
-  - gem install sass
-  - gem install jekyll -v 3.2.1
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
@@ -49,7 +45,6 @@ jobs:
       script: sbt ++$TRAVIS_SCALA_VERSION "verify" && bash <(curl -s https://codecov.io/bash)
     - stage: "Post-validate/verify tasks"
       name: "Publish documentation changes (gh-pages)"
-      script: if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
-                sbt 'project docs' 'publishMicrosite';
-              fi
-      install: skip
+      script: rvm use 2.2.8 --install --fuzzy;
+              gem install sass jekyll:3.2.1;
+              sbt ";project docs; publishMicrosite";
