@@ -114,9 +114,7 @@ The portal can be viewed in a browser at `http://localhost:9001`
 Alternatively, you can manually run docker-compose with this config `docker/docker-compose-build.yml`.
 From the root directory run `docker-compose -f ./docker/docker-compose-build.yml up -d`
 
-To stop the local setup, run `./bin/stop-all-docker-containers.sh` from the project root.
-
-> Warning: the `./bin/stop-all-docker-containers.sh` will stop and remove all local docker containers
+To stop the local setup, run `./bin/remove-vinyl-containers.sh` from the project root.
 
 ### Configuration for the vinyldns-api image
 VinylDNS depends on several dependencies including mysql, sqs, dynamodb and a DNS server. These can be passed in as
@@ -260,11 +258,7 @@ The following ports and services are available:
 - sqs - 9324
 - api server (main vinyl backend app) - 9000
 
-To kill the environment, run `bin/stop-all-docker-containers.sh`
-
-### Kill all docker containers
-`bin/stop-all-docker-containers` - sometimes, you can have orphaned docker containers hanging out.  Run this
-script to tear everything down.  Note: It will stop ALL docker containers on the current machine!
+To kill the environment, run `bin/remove-vinyl-containers.sh`
 
 ### Start up a DNS server
 `bin/docker-up-dns-server.sh` - fires up a DNS server.  Sometimes, especially when developing func tests, you want
