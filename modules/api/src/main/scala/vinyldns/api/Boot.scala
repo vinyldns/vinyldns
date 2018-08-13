@@ -40,7 +40,6 @@ import vinyldns.api.repository.mysql.VinylDNSJDBC
 import vinyldns.api.route.{HealthService, VinylDNSService}
 import vinyldns.core.crypto.Crypto
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 
@@ -59,18 +58,7 @@ object Boot extends App {
   }
 
   /* Boot straps the entire application, if anything fails, we all fail! */
-  def runApp(): IO[Future[Http.ServerBinding]] = {
-    def getNSApprovedGroupIds(
-        allGroups: Future[Set[Group]],
-        approved: List[String]): IO[Set[String]] = {
-      val ids = allGroups.map {
-        _.collect {
-          case grp if approved.contains(grp.name) => grp.id
-        }
-      }
-      IO.fromFuture(IO(ids))
-    }
-
+  def runApp(): IO[Future[Http.ServerBinding]] =
     // Use an effect type to lift anything that can fail into the effect type.  This ensures
     // that if anything fails, the app does not start!
     for {
@@ -92,9 +80,6 @@ object Boot extends App {
       processingSignal <- fs2.async.signalOf[IO, Boolean](processingDisabled)
       restHost <- IO(VinylDNSConfig.restConfig.getString("host"))
       restPort <- IO(VinylDNSConfig.restConfig.getInt("port"))
-      approvedNsGroupNames <- IO(
-        VinylDNSConfig.vinyldnsConfig.getStringList("approved-ns-groups").asScala.toList)
-      approvedNsGroupIds <- getNSApprovedGroupIds(groupRepo.getAllGroups(), approvedNsGroupNames)
       batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
       _ <- fs2.async.start(
@@ -109,8 +94,7 @@ object Boot extends App {
           sqsConfig))
     } yield {
       val zoneValidations = new ZoneValidations(syncDelay)
-      val accessValidations = new AccessValidations(approvedNsGroupIds)
-      val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, accessValidations)
+      val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
       val commandBus = new SqsCommandBus(sqsConnection)
       val membershipService =
         new MembershipService(groupRepo, userRepo, membershipRepo, zoneRepo, groupChangeRepo)
@@ -122,7 +106,7 @@ object Boot extends App {
         recordChangeRepo,
         userRepo,
         commandBus,
-        accessValidations)
+        AccessValidations)
       val zoneService = new ZoneService(
         zoneRepo,
         groupRepo,
@@ -131,7 +115,7 @@ object Boot extends App {
         connectionValidator,
         commandBus,
         zoneValidations,
-        accessValidations)
+        AccessValidations)
       val healthService = new HealthService(zoneRepo)
       val batchChangeConverter = new BatchChangeConverter(batchChangeRepo, commandBus)
       val batchChangeService = new BatchChangeService(
@@ -176,7 +160,6 @@ object Boot extends App {
       // Starts up our http server
       Http().bindAndHandle(vinyldnsService.routes, restHost, restPort)
     }
-  }
 
   // runApp gives us a Task, we actually have to run it!  Running it will yield a Future, which is our app!
   runApp().unsafeRunAsync {

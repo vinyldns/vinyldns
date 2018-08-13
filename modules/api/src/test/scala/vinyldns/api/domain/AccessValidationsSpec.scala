@@ -48,8 +48,7 @@ class AccessValidationsSpec
   private val badGroupReadAcl =
     ACLRule(AccessLevel.Read, userId = None, groupId = Some("bad-group"))
 
-  private val approvedGroup = Group("can-manage-NS", "email")
-  private val accessValidationTest = new AccessValidations(Set(approvedGroup.id))
+  private val accessValidationTest = AccessValidations
 
   private val groupIds = Seq(okGroup.id, twoUserGroup.id)
   private val userAccessNone = okUser.copy(id = "NoAccess")
@@ -145,12 +144,6 @@ class AccessValidationsSpec
         zoneInDelete) should be(right)
     }
 
-    "return a NotAuthorizedError if recordset is NS and user is not a superuser nor in the approved group" in {
-      val error =
-        leftValue(accessValidationTest.canAddRecordSet(okAuth, ns.name, ns.typ, zoneAuthorized))
-      error shouldBe a[NotAuthorizedError]
-    }
-
     "return true if recordset is NS and user is a superuser" in {
       val auth = okAuth.copy(
         signedInUser = okGroupAuth.signedInUser.copy(isSuper = true),
@@ -159,16 +152,20 @@ class AccessValidationsSpec
         right)
     }
 
-    "return true if recordset is NS and user is in the approved NS groups list" in {
-      val zone = okZone.copy(adminGroupId = approvedGroup.id)
-      val auth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSuper = false),
-        memberGroupIds = List(approvedGroup.id))
-
+    "return true if recordset is NS and user is in the admin group" in {
+      val zone = okZone
+      val auth = okAuth
       accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zone) should be(right)
     }
-  }
 
+    "return true if recordset is NS and the user has ACL access " in {
+      accessValidationTest.canAddRecordSet(
+        userAuthWrite,
+        "someRecordName",
+        RecordType.NS,
+        zoneInWrite) should be(right)
+    }
+  }
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val mockRecordSet = mock[RecordSet]
