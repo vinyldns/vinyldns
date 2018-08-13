@@ -19,7 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import nl.grons.metrics.scala.{Histogram, Meter, MetricName}
-import org.slf4j.Logger
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Instrumented
 
 import scala.collection._
@@ -34,9 +34,10 @@ trait Monitored {
     // invoke the function yielding a new future
     f.andThen {
       case Success(ok) =>
-        getMonitor(name).capture(System.currentTimeMillis() - startTime, success = true); ok
+        getMonitor(name).capture(System.currentTimeMillis() - startTime, success = true)
+        ok
       case Failure(error) =>
-        getMonitor(name).capture(System.currentTimeMillis() - startTime, success = false);
+        getMonitor(name).capture(System.currentTimeMillis() - startTime, success = false)
         throw error
     }
   }
@@ -72,6 +73,14 @@ object Monitor {
   lazy val monitors: mutable.Map[String, Monitor] = concurrent.TrieMap.empty
 
   def apply(name: String): Monitor = monitors.getOrElseUpdate(name, new Monitor(name))
+
+  def logEntry(monitorName: String, durationMillis: Long, success: Boolean): String = {
+    val sb = new StringBuilder
+    sb.append("monitor='").append(monitorName).append("'")
+    sb.append(" millis=").append(durationMillis)
+    sb.append(" fail=").append(if (success) 0 else 1)
+    sb.toString
+  }
 }
 
 /**
@@ -84,6 +93,7 @@ class Monitor(val name: String) extends Instrumented {
 
   val latency: Histogram = metrics.histogram(name, "latency")
   val errors: Meter = metrics.meter(name, "errorRate")
+  val logger: Logger = LoggerFactory.getLogger(classOf[Monitor])
 
   def duration(startTimeInMillis: Long): Long = System.currentTimeMillis() - startTimeInMillis
 
@@ -118,11 +128,13 @@ class Monitor(val name: String) extends Instrumented {
   }
 
   def capture(duration: Long, success: Boolean): Unit = {
+    logger.info(Monitor.logEntry(name, duration, success))
     latency += duration
     if (!success) errors.mark()
   }
 
   def fail(duration: Long): Unit = {
+    logger.info(Monitor.logEntry(name, duration, success = false))
     latency += duration
     errors.mark()
   }
