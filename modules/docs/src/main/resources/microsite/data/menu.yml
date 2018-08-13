@@ -9,25 +9,43 @@ options:
     menu_type: portal_menu
     menu_section: portal_section
 
+  - title: Access the Portal
+    url: portal/access
+    menu_type: portal_menu
+    menu_section: portal_section
+
+  - title: Zones
+    url: portal/connecting-to-zone
+    menu_type: portal_menu
+    menu_section: portal_section
+
     nested_options:
-    - title: Credentials
-      url: portal/credentials.html
+    - title: Connecting to your Zone
+      url: portal/connecting-to-zone
       menu_section: portal_section
     - title: Managing Records
-      url: portal/managing-records.html
-      menu_section: portal_section
-    - title: Connecting to your Zone
-      url: portal/connecting-to-zone.html
-      menu_section: portal_section
+      url: portal/managing-records
     - title: Understanding Connections
-      url: portal/connections.html
-      menu_section: portal_section
+      url: portal/connections
+
+  - title: Groups
+    url: portal/groups
+    menu_type: portal_menu
+    menu_section: portal_section
+
+    nested_options:
     - title: Managing Access
       url: portal/managing-access.html
-      menu_section: portal_section
-    - title: Batch Changes
-      url: portal/batch-changes.html
-      menu_section: portal_section
+
+  - title: Batch Changes
+    url: portal/batch-changes.html
+    menu_type: portal_menu
+    menu_section: portal_section
+
+  - title: Credentials
+    url: portal/credentials.html
+    menu_type: portal_menu
+    menu_section: portal_section
 
   - title: Operator Guide
     url: operator/index.html
