@@ -36,20 +36,20 @@ before_cache:
 
 jobs:
   include:
-    - stage: "Verify core and API modules"
-      script: sbt ++$TRAVIS_SCALA_VERSION ";validate-api; validate-core"
+    - stage: "Validate and verify modules"
       name: "Validate and verify API"
-    - script: ./bin/func-test-api-travis.sh
-      name: "Run API functional tests"
-    - script: sbt ++$TRAVIS_SCALA_VERSION "validate-portal"
-      name: "Validate portal"
-    - script: ./bin/func-test-portal.sh
-      name: "Run portal functional tests"
-    - script: sbt ++$TRAVIS_SCALA_VERSION "verify"
-      name: "Verify and run coverage on API and portal"
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
-  - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
-      sbt 'project docs' 'publishMicrosite';
-    fi
+      script: sbt ++$TRAVIS_SCALA_VERSION ";validate-api; validate-core"
+    - name: "Run API functional tests"
+      script: ./bin/func-test-api-travis.sh
+    - name: "Validate portal"
+      script: sbt ++$TRAVIS_SCALA_VERSION "validate-portal"
+    - name: "Run portal functional tests"
+      script: ./bin/func-test-portal.sh
+    - name: "Verify and run coverage on API and portal"
+      script: sbt ++$TRAVIS_SCALA_VERSION "verify" && bash <(curl -s https://codecov.io/bash)
+    - stage: "Post-validate/verify tasks"
+      name: "Publish documentation changes (gh-pages)"
+      script: if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
+                sbt 'project docs' 'publishMicrosite';
+              fi
+      install: skip
