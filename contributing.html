@@ -168,26 +168,30 @@ it takes to run functional tests (which is in minutes).</li>
 <p>VinylDNS is configured with <a href="https://github.com/sbt/sbt-header">sbt-header</a>. All existing scala files have the appropriate
 header. You can check for headers in <code class="highlighter-rouge">sbt</code> with:</p>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> <span class="p">;</span>headerCheck<span class="p">;</span><span class="nb">test</span>:headerCheck<span class="p">;</span>it:headerCheck
-</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">&gt; </span>;headerCheck;test:headerCheck;it:headerCheck
+</code></pre>
+</div>
 
 <p>If you add a new file, you can add the appropriate header in <code class="highlighter-rouge">sbt</code> with:</p>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;</span> <span class="p">;</span>headerCreate<span class="p">;</span><span class="nb">test</span>:headerCreate<span class="p">;</span>it:headerCreate
-</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">&gt; </span>;headerCreate;test:headerCreate;it:headerCreate
+</code></pre>
+</div>
 
 <h3 id="portal">Portal</h3>
 <blockquote>
   <p>You can check for headers in <code class="highlighter-rouge">sbt</code> with:</p>
-  <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>project portal
+  <div class="highlighter-rouge"><pre class="highlight"><code>project portal
 ;headerCheck;test:headerCheck;checkJsHeaders
-</code></pre></div>  </div>
+</code></pre>
+  </div>
 </blockquote>
 
 <blockquote>
   <p>You can create headers in <code class="highlighter-rouge">sbt</code> with:</p>
-  <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>project portal
+  <div class="highlighter-rouge"><pre class="highlight"><code>project portal
 ;headerCreate;test:headerCreate;createJsHeaders
-</code></pre></div>  </div>
+</code></pre>
+  </div>
 </blockquote>
 
 <h2 id="release-management">Release Management</h2>
