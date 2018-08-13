@@ -60,7 +60,6 @@ class VinylDNSJDBC(config: Config) {
     ds
   }
 
-  // Only run migrations if we are using embedded db as embedded requires initialization
   logger.info("Running migrations to ready the databases")
 
   val migration = new Flyway()
@@ -71,7 +70,7 @@ class VinylDNSJDBC(config: Config) {
   migration.setPlaceholders(placeholders.asJava)
   migration.setSchemas(dbName)
 
-  // Runs ALL flyway migrations including SQL and scala, assumes empty databases
+  // Runs flyway migrations
   migration.migrate()
   logger.info("migrations complete")
 
