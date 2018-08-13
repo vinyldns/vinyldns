@@ -58,11 +58,12 @@ class Module(environment: Environment, configuration: Configuration) extends Abs
       val dynamoAKID = configuration.get[String]("dynamo.key")
       val dynamoSecret = configuration.get[String]("dynamo.secret")
       val dynamoEndpoint = configuration.get[String]("dynamo.endpoint")
+      val region = configuration.get[String]("dynamo.region")
       val credentials = new BasicAWSCredentials(dynamoAKID, dynamoSecret)
       val dynamoClient = AmazonDynamoDBClientBuilder
         .standard()
         .withCredentials(new AWSStaticCredentialsProvider(credentials))
-        .withEndpointConfiguration(new EndpointConfiguration(dynamoEndpoint, "us-east-1"))
+        .withEndpointConfiguration(new EndpointConfiguration(dynamoEndpoint, region))
         .build()
         .asInstanceOf[AmazonDynamoDBClient]
       new DynamoDBUserAccountStore(dynamoClient, configuration, crypto)
@@ -77,11 +78,12 @@ class Module(environment: Environment, configuration: Configuration) extends Abs
       val dynamoAKID = configuration.get[String]("dynamo.key")
       val dynamoSecret = configuration.get[String]("dynamo.secret")
       val dynamoEndpoint = configuration.get[String]("dynamo.endpoint")
+      val region = configuration.get[String]("dynamo.region")
       val credentials = new BasicAWSCredentials(dynamoAKID, dynamoSecret)
       val dynamoClient = AmazonDynamoDBClientBuilder
         .standard()
         .withCredentials(new AWSStaticCredentialsProvider(credentials))
-        .withEndpointConfiguration(new EndpointConfiguration(dynamoEndpoint, "us-east-1"))
+        .withEndpointConfiguration(new EndpointConfiguration(dynamoEndpoint, region))
         .build()
         .asInstanceOf[AmazonDynamoDBClient]
       new DynamoDBChangeLogStore(dynamoClient, configuration, crypto)
