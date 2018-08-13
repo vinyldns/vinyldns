@@ -46,7 +46,7 @@ docker logs vinyldns-dynamodb > $DIR/../target/vinyldns-dynamodb.log 2>/dev/null
 docker logs vinyldns-functest > $DIR/../target/vinyldns-functest.log 2>/dev/null
 
 echo "Cleaning up docker containers..."
-$DIR/./stop-all-docker-containers.sh
+$DIR/./remove-vinyl-containers.sh
 
 echo "Func tests returned result: ${test_result}"
 exit ${test_result}
