@@ -16,11 +16,8 @@
 
 package vinyldns.api
 
-import java.util.concurrent.TimeUnit
-
-import com.codahale.metrics.{JmxReporter, MetricRegistry, Slf4jReporter}
+import com.codahale.metrics.{JmxReporter, MetricRegistry}
 import nl.grons.metrics.scala.InstrumentedBuilder
-import org.slf4j.LoggerFactory
 
 object VinylDNSMetrics {
 
@@ -32,18 +29,6 @@ object VinylDNSMetrics {
     .inDomain("vinyldns.api")
     .build()
     .start()
-
-  val logReporter: Slf4jReporter =
-    Slf4jReporter
-      .forRegistry(metricsRegistry)
-      .outputTo(LoggerFactory.getLogger("vinyldns.api.metrics"))
-      .build()
-
-  val logMetrics = VinylDNSConfig.vinyldnsConfig.getBoolean("metrics.log-to-console")
-  if (logMetrics) {
-    // Record metrics once per minute
-    logReporter.start(1, TimeUnit.MINUTES)
-  }
 }
 
 /**
