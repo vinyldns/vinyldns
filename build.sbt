@@ -53,6 +53,7 @@ lazy val sharedSettings = Seq(
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   scalacOptions += "-target:jvm-1.8",
   scalacOptions ++= scalacOptionsByV(scalaVersion.value),
+  scalacOptions in (Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
   wartremoverErrors ++= Seq(
     Wart.ArrayEquals,
