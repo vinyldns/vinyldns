@@ -44,9 +44,6 @@ do
     fi
 done
 
-echo "Running migrations..."
-java -Dconfig.resource=db-migrations.conf -cp /app/vinyldns-server.jar db.migration.MigrationRunner
-
 echo "Starting up Vinyl..."
 sleep 2
 java -Djava.net.preferIPv4Stack=true -Dconfig.file=/app/docker.conf -Dakka.loglevel=INFO -Dlogback.configurationFile=test/logback.xml -jar /app/vinyldns-server.jar vinyldns.api.Boot
