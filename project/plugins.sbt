@@ -8,8 +8,6 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
 
 addSbtPlugin("io.spray" % "sbt-revolver" % "0.9.1")
 
-addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.3")
-
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0")
 
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.0.0")
