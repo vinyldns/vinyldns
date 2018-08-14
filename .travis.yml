@@ -37,7 +37,7 @@ jobs:
     - stage: "Validate and verify modules"
       name: "Validate and verify API"
       script: sbt ++$TRAVIS_SCALA_VERSION ";validate; verify" && bash <(curl -s https://codecov.io/bash)
-      name: "Run API and portal functional tests"
+    - name: "Run API and portal functional tests"
       script: /bin/func-test-portal.sh && ./bin/func-test-api-travis.sh
 
 after_sucess:
