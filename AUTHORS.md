@@ -23,6 +23,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Tommy Barker
 - Robert Barrimond
 - Charles Bitter
+- Annelise Box
 - Maulon Byron
 - Peter Cline
 - Kemar Cockburn
