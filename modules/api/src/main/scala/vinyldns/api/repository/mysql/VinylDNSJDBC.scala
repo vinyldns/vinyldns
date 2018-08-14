@@ -57,6 +57,10 @@ class VinylDNSJDBC(config: Config) {
     ds.setJdbcUrl(config.getString("default.migrationUrl"))
     ds.setUsername(config.getString("default.user"))
     ds.setPassword(config.getString("default.password"))
+    // migrations happen once on startup; without these settings the default number of connections
+    // will be created and maintained even though this datasource is no longer needed post-migration
+    ds.setMaximumPoolSize(3)
+    ds.setMinimumIdle(0)
     ds
   }
 
