@@ -24,10 +24,8 @@ import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.{RecordSet, RecordType}
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.matching.Regex
 
 trait ZoneConnectionValidatorAlgebra {
   def validateZoneConnections(zone: Zone): Result[Unit]
@@ -41,16 +39,10 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection, scheduler: Sche
 
   val futureTimeout: FiniteDuration = 6.seconds
 
-  val approvedNameServers: List[Regex] = {
-    val ns = VinylDNSConfig.vinyldnsConfig.getStringList("approved-name-servers").asScala.toList
-
-    ns.map(n => n.r)
-  }
-
   def loadDns(zone: Zone): Future[ZoneView] = DnsZoneViewLoader(zone).load()
 
   def runZoneChecks(zoneView: ZoneView): Result[ZoneView] =
-    validateDnsZone(approvedNameServers, zoneView.recordSetsMap.values.toList)
+    validateDnsZone(VinylDNSConfig.approvedNameServers, zoneView.recordSetsMap.values.toList)
       .map(_ => zoneView)
       .leftMap(
         nel =>
