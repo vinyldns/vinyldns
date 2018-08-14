@@ -13,4 +13,4 @@ The login page is where you provide your account username and password to access
 ### Logout
 To logout of VinylDNS select your username in the top right of the portal to reveal the dropdown menu containing the *Logout* link.
 
-![Logout link](../img/portal/login.png){: .screenshot}
+![Logout link](../img/portal/logout.png){: .screenshot}

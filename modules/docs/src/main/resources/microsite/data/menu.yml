@@ -5,7 +5,7 @@ options:
   #############################
 
   - title: Portal Guide
-    url: portal/index.html
+    url: portal
     menu_type: portal_menu
     menu_section: portal_section
 
@@ -20,30 +20,35 @@ options:
     menu_section: portal_section
 
     nested_options:
-    - title: Connecting to your Zone
+    - title: Connect to your Zone
       url: portal/connecting-to-zone
       menu_section: portal_section
-    - title: Managing Records
-      url: portal/managing-records
+    - title: Manage Records
+      url: portal/manage-records
+    - title: Manage Access
+      url: portal/manage-access
+      menu_section: portal_section
     - title: Understanding Connections
       url: portal/connections
 
   - title: Groups
-    url: portal/groups
+    url: portal/create-a-group
     menu_type: portal_menu
     menu_section: portal_section
 
     nested_options:
-    - title: Managing Access
-      url: portal/managing-access.html
+    - title: Create a Group
+      url: portal/create-a-group
+    - title: Manage Membership
+      url: portal/manage-membership
 
   - title: Batch Changes
-    url: portal/batch-changes.html
+    url: portal/batch-changes
     menu_type: portal_menu
     menu_section: portal_section
 
   - title: Credentials
-    url: portal/credentials.html
+    url: portal/credentials
     menu_type: portal_menu
     menu_section: portal_section
 

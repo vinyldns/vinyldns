@@ -4,7 +4,6 @@ title:  "Portal Guide"
 section: "portal_menu"
 position: 2
 ---
-
 # Portal Guide
 
 The VinylDNS portal is the primary user interface for interacting with VinylDNS. Users can retrieve their credentials and manage zones, records, and user groups. This guide covers the functionality of the portal.
@@ -17,7 +16,7 @@ The account information and URL used to access VinylDNS may vary by instance, bu
 [Learn More](access)
 
 ### Credentials
-While there are other [tools](tools) that you can use to work with VinylDNS, at this time all users must go through the VinylDNS portal to retrieve their credentials.
+While there are other [tools](/tools) that you can use to work with VinylDNS, at this time all users must go through the VinylDNS portal to retrieve their credentials.
 
 [Learn More](credentials)
 
