@@ -1626,6 +1626,47 @@ def test_ns_update_passes(shared_zone_test_context):
             client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
 
 
+def test_ns_update_for_unapproved_server_fails(shared_zone_test_context):
+    """
+    Tests that an ns update fails if one of the servers isnt approved
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+    ns_rs = None
+
+    try:
+        new_rs = {
+            'zoneId': zone['id'],
+            'name': 'badNSupdate',
+            'type': 'NS',
+            'ttl': 38400,
+            'records': [
+                {
+                    'nsdname': 'ns1.parent.com.'
+                }
+            ]
+        }
+        result = client.create_recordset(new_rs, status=202)
+        ns_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        changed_rs = ns_rs
+
+        bad_records = [
+            {
+                'nsdname': 'ns1.parent.com.'
+            },
+            {
+                'nsdname': 'this.is.bad.'
+            }
+        ]
+        changed_rs['records'] = bad_records
+
+        client.update_recordset(changed_rs, status=422)
+    finally:
+        if ns_rs:
+            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
+            client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
+
 def test_update_to_dotted_host_fails(shared_zone_test_context):
     """
     Tests that a dotted host record set update fails

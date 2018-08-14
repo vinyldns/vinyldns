@@ -21,7 +21,6 @@ import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.membership.Group
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone.{AccessLevel, NotAuthorizedError, RecordSetInfo, _}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
