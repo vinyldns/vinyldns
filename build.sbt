@@ -185,7 +185,7 @@ lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
   scalaStyleSettings
 
 lazy val api = (project in file("modules/api"))
-  .enablePlugins(JavaAppPackaging, DockerComposePlugin, AutomateHeaderPlugin, ProtocPlugin)
+  .enablePlugins(JavaAppPackaging, DockerComposePlugin, AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
