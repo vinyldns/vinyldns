@@ -2,7 +2,6 @@
 layout: docs
 title:  "Create a Group"
 section: "portal_menu"
-position: 2
 ---
 ## Create a group
 1. In the Groups area of the site select the *New Group* button. This will bring up a form.

@@ -28,7 +28,7 @@ The Zones section of the portal is for managing DNS zones and records. This area
 ### Groups
 The Groups section of the portal is for managing high level user access and abilities. To access Groups in the portal select the Groups link in the left column navigation.
 
-[Learn More](managing-access)
+[Learn More](groups)
 
 ### Batch Changes
 The Batch Changes section of the portal allows users to implement multiple record changes simultaneously and across different zones. To access Batch Changes in the portal select the Batch Changes link in the left column navigation.

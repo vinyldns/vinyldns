@@ -32,7 +32,7 @@ options:
       url: portal/connections
 
   - title: Groups
-    url: portal/create-a-group
+    url: portal/groups
     menu_type: portal_menu
     menu_section: portal_section
 
