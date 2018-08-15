@@ -39,8 +39,6 @@ jobs:
       script: sbt ++$TRAVIS_SCALA_VERSION ";validate; verify" && bash <(curl -s https://codecov.io/bash)
     - name: "Run API and portal functional tests"
       script: ./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh
-
-after_sucess:
-  - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_TEST_RESULT" = "0" ]; then
-      sbt 'project docs' 'publishMicrosite';
-    fi
+    - stage: "Post-build tasks"
+      name: "Publish microsite"
+      script: sbt ";project docs; publishMicrosite";
