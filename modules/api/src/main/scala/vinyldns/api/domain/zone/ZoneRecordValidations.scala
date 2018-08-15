@@ -38,13 +38,8 @@ object ZoneRecordValidations {
       approvedServerList: List[Regex],
       nsRecordSet: RecordSet): ValidatedNel[String, RecordSet] = {
     val validations: List[ValidatedNel[String, NSData]] = nsRecordSet.records
-      .map {
-        case ns: NSData => ns.validNel[String]
-        case x => s"Error: $x is not NSData".invalidNel[NSData]
-      }
-      .map {
-        _.andThen(ns => isApprovedNameServer(approvedServerList, ns))
-      }
+      .collect { case ns: NSData => ns }
+      .map(isApprovedNameServer(approvedServerList, _))
 
     validations.sequence.map(_ => nsRecordSet)
   }

@@ -185,7 +185,7 @@ object RecordSetValidations {
       .containsApprovedNameServers(VinylDNSConfig.approvedNameServers, nsRecordSet)
       .toEither
       .map(_ => ())
-      .leftMap(errors => InvalidRequest(errors.head))
+      .leftMap(errors => InvalidRequest(errors.toList.mkString(", ")))
 
   private def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
