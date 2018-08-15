@@ -5,6 +5,7 @@ import com.typesafe.sbt.packager.docker._
 import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 import org.scalafmt.sbt.ScalafmtPlugin._
 import microsites._
+import ReleaseTransformations._
 
 resolvers ++= additionalResolvers
 
@@ -42,10 +43,12 @@ def scalaStyleCompile: Seq[Def.Setting[_]] = Seq(
 
 def scalaStyleSettings: Seq[Def.Setting[_]] = scalaStyleCompile ++ scalaStyleTest ++ scalaStyleIntegrationTest
 
+// comcast, public-release, or public-snapshot
+val releaseType = System.getenv().getOrDefault("VINYLDNS_RELEASE_TYPE", "public-snapshot")
+
 // settings that should be inherited by all projects
 lazy val sharedSettings = Seq(
   organization := "vinyldns",
-  version := "0.8.0-SNAPSHOT",
   scalaVersion := "2.12.6",
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
@@ -121,7 +124,7 @@ lazy val apiDockerSettings = Seq(
   bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""", // adds logback
   bashScriptExtraDefines += "(cd ${app_home} && ./wait-for-dependencies.sh && cd -)",
-  credentials in Docker := Seq(Credentials(Path.userHome / ".iv2" / ".dockerCredentials")),
+  credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials")),
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
     ExecCmd("RUN", "apt-get", "update"),
@@ -146,7 +149,7 @@ lazy val portalDockerSettings = Seq(
   // adds config file to mount
   bashScriptExtraDefines += """addJava "-Dconfig.file=/opt/docker/conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"""",
-  credentials in Docker := Seq(Credentials(Path.userHome / ".iv2" / ".dockerCredentials"))
+  credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
 )
 
 lazy val noPublishSettings = Seq(
@@ -216,7 +219,6 @@ lazy val corePublishSettings = Seq(
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
   autoAPIMappings := true,
-  credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   publish in Docker := {},
   mainClass := None,
   publishTo := {
@@ -241,10 +243,7 @@ lazy val corePublishSettings = Seq(
     Developer(id="britneywright", name="Britney Wright", email="blw06g@gmail.com", url=url("https://github.com/britneywright")),
   ),
   sonatypeProfileName := "io.vinyldns",
-
-  // gpg credentials are used to sign sonatype artifacts
-  // sonatype credentials live in ~/.sbt/1.0/sonatype.sbt
-  credentials += Credentials(Path.userHome / ".iv2" / ".gpgCredentials")
+  useGpg := true
 )
 
 lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPlugin)
@@ -333,8 +332,64 @@ lazy val docSettings = Seq(
   fork in tut := true
 )
 
-lazy val docs = (project in file("modules/docs")).enablePlugins(MicrositesPlugin)
+lazy val docs = (project in file("modules/docs"))
+  .enablePlugins(MicrositesPlugin)
   .settings(docSettings)
+
+// release stages
+
+lazy val initReleaseStage = Seq[ReleaseStep](
+  releaseStepCommand("project root"), // use version.sbt file from root
+  inquireVersions, // have a developer confirm versions
+  setReleaseVersion // set version in context
+)
+
+lazy val validateVerifyReleaseStage = Seq[ReleaseStep](
+  releaseStepCommand("project root"), // use version.sbt file from root
+  releaseStepCommandAndRemaining("validate"),
+  releaseStepCommandAndRemaining("verify"),
+)
+
+lazy val dockerReleaseStage = Seq[ReleaseStep](
+  releaseStepCommandAndRemaining(";project api;docker:publish"),
+  releaseStepCommandAndRemaining(";project portal;docker:publish"),
+)
+
+lazy val sonatypePublishStage = Seq[ReleaseStep] (
+  releaseStepCommandAndRemaining(";project core;publishSigned") // only releases to sonatype staging repo
+)
+
+lazy val sonatypeReleaseStage = Seq[ReleaseStep] (
+  releaseStepCommandAndRemaining(";project core;sonatypeRelease") // closes staging repo and promotes
+)
+
+lazy val finalReleaseStage = Seq[ReleaseStep] (
+  releaseStepCommand("project root"), // use version.sbt file from root
+  tagRelease, // tag latest commit with published version
+  setNextVersion,
+  commitNextVersion // commit new version.sbt
+)
+
+// set release process based off env var, default is public-snapshot
+releaseType match {
+    // comcast internal release to artifactory
+  case "comcast" => releaseProcess := initReleaseStage ++
+    validateVerifyReleaseStage ++
+    finalReleaseStage // TODO: add artifactoryReleaseStage to comcast release
+    // public release of docker images and core module
+  case "public-release" => releaseProcess := initReleaseStage ++
+    validateVerifyReleaseStage ++
+    dockerReleaseStage ++ // publish api and portal images to Docker Hub, tagged with version
+    sonatypePublishStage ++ // deploys artifact to sonatype staging repository
+    sonatypeReleaseStage ++ // closes staging artifact, and promotes to maven central
+    finalReleaseStage
+    // public snapshot release of docker images
+  case _ => releaseProcess := initReleaseStage ++
+    validateVerifyReleaseStage ++
+    dockerReleaseStage ++ // publish api and portal images to Docker Hub, tagged with version
+    sonatypePublishStage ++ // deploys artifact to sonatype staging repository
+    finalReleaseStage
+}
 
 // Validate runs static checks and compile to make sure we can go
 addCommandAlias("validate-api",
