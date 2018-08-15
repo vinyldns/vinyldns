@@ -76,8 +76,8 @@ database with their LDAP information.
 
 ## Quickstart
 Depending on your operating system, please see the requirements:
-- [Quickstart Requirements for Mac](quickstart-requirements-for-mac)
-- [Quickstart Requirements for Windows 10](quickstart-requirements-for-windows-10)
+- [Quickstart Requirements for Mac](#quickstart-requirements-for-mac)
+- [Quickstart Requirements for Windows 10](#quickstart-requirements-for-windows-10)
 
 Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
 To start up a local instance of VinylDNS on your machine with docker:
