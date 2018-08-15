@@ -58,7 +58,7 @@ VinylDNS is currently used in Production managing millions of DNS records.
 Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
 To start up a local instance of VinylDNS on your machine with docker:
 
-If you are running VinylDNS on a Windows 10 machine, please see the [Requirements for Windows 10](#requirements-for-windows-10)
+If you are running VinylDNS on a Windows 10 machine, please see the [Quickstart Requirements for Windows 10](#quickstart-requirements-for-windows-10)
 
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
