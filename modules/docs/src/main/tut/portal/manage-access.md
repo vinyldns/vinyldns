@@ -6,7 +6,7 @@ section: "portal_menu"
 ## Manage Access to Zones and Records <a id="access"></a>
 ### Full Access
 Members of a zone admin group have *full* access
-to all records and permissions in the zone.  Typically, this should be a limited set of
+to all records and permissions in the zone.  Each zone is limited to one admin group.  Typically, this should be a limited set of
 users. If you wish to add other users to a group you can do so in the [Groups](manage-membership) section of the portal.
 
 ### Limited Access
