@@ -180,25 +180,12 @@ object RecordSetValidations {
       !isOriginRecord(recordSet.name, omitTrailingDot(zone.name))
     )
 
-  private def containsApprovedNameServers(nsRecordSet: RecordSet): Either[Throwable, Unit] = {
-    val nsData = nsRecordSet.records.collect {
-      case ns: NSData => ns
-    }
-
-    val badNs = nsData.find { nameServer =>
-      ZoneRecordValidations
-        .isApprovedNameServer(VinylDNSConfig.approvedNameServers, nameServer)
-        .isInvalid
-    }
-
-    badNs match {
-      case Some(unapproved) =>
-        InvalidRequest(
-          s"Nsdname ${unapproved.nsdname} is not an approved name server. " +
-            s"Contact vinyldns-support for assistance.").asLeft
-      case None => ().asRight
-    }
-  }
+  private def containsApprovedNameServers(nsRecordSet: RecordSet): Either[Throwable, Unit] =
+    ZoneRecordValidations
+      .containsApprovedNameServers(VinylDNSConfig.approvedNameServers, nsRecordSet)
+      .toEither
+      .map(_ => ())
+      .leftMap(errors => InvalidRequest(errors.head))
 
   private def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
