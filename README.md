@@ -58,8 +58,11 @@ VinylDNS is currently used in Production managing millions of DNS records.
 Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
 To start up a local instance of VinylDNS on your machine with docker:
 
-If you are running VinylDNS on a Windows 10 machine, please see the [Quickstart Requirements for Windows 10](#quickstart-requirements-for-windows-10)
+Depending on your operating system, please see the requirements:
+- [Quickstart Requirements for Mac](DEVELOPER_GUIDE.md#quickstart-requirements-for-mac)
+- [Quickstart Requirements for Windows 10](DEVELOPER_GUIDE.md#quickstart-requirements-for-windows-10)
 
+Then follow these steps:
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
 1. Run `bin/docker-up-vinyldns.sh`
@@ -100,35 +103,7 @@ This project and everyone participating in it are governed by the [VinylDNS Code
 participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
 
 ## Developer Guide
-### Requirements
-- sbt
-- Java 8
-- Python 2.7
-- virtualenv
-- docker
-- wget
-- Protobuf 2.6.1
-
-See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up VinylDNS locally.
-
-### Quickstart Requirements for Windows 10
-The following applications are required for the Quickstart of the application on Windows 10 
-
-* git ( for Windows ) - https://git-scm.com/download/win
-* JDK 8 - Win64 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-* scala sbt ( for Windows ) - https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Windows.html
-* Docker ( for Windows ) - https://docs.docker.com/docker-for-windows/install/
-* Wget ( for Windows ) - http://gnuwin32.sourceforge.net/packages/wget.htm
-
-```
-Note: Your machine may restart several times while installing these applications
-
-Note: Wget binaries must be moved to a location that is accessible to Git Bash.
-* From : C:\Program Files (x86)\GnuWin32\Wget\bin\
-* To   : C:\Program Files\Git\mingw64\bin
-```
-
-Return to [Quickstart](#quickstart)
+See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for full instructions on setting up VinylDNS locally.
 
 ## Project Layout
 * [API](modules/api): the API is the main engine for all of VinylDNS.  This is the most active area of the codebase, as everything else typically just funnels through

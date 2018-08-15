@@ -75,6 +75,40 @@ The features that the Portal provides that are not in the API include:
 database with their LDAP information.
 
 ## Developer Requirements
+
+### Quickstart Requirements for Mac
+The following applications are required for the Quickstart of the application on a Mac
+
+* git - https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+* JDK 8 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+* scala sbt - https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Mac.html
+* Docker - https://docs.docker.com/docker-for-mac/install/
+* Wget - https://www.gnu.org/software/wget/
+
+Return to [Quickstart](README.md#quickstart)
+
+### Quickstart Requirements for Windows 10
+The following applications are required for the Quickstart of the application on Windows 10 
+
+* git ( for Windows ) - https://git-scm.com/download/win
+* JDK 8 - Win64 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+* scala sbt ( for Windows ) - https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Windows.html
+* Docker ( for Windows ) - https://docs.docker.com/docker-for-windows/install/
+* Wget ( for Windows ) - http://gnuwin32.sourceforge.net/packages/wget.htm
+
+```
+Note: Your machine may restart several times while installing these applications
+
+Note: Wget binaries must be moved to a location that is accessible to Git Bash.
+* From : C:\Program Files (x86)\GnuWin32\Wget\bin\
+* To   : C:\Program Files\Git\mingw64\bin
+```
+
+Return to [Quickstart](README.md#quickstart)
+
+### Full Requirements
+
+- git
 - sbt
 - Java 8
 - Python 2.7
