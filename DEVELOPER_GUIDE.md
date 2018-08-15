@@ -74,7 +74,81 @@ The features that the Portal provides that are not in the API include:
 * Creation of users - when a user logs in for the first time, VinylDNS automatically creates a user for them in the
 database with their LDAP information.
 
+## Quickstart
+Depending on your operating system, please see the requirements:
+- [Quickstart Requirements for Mac](#quickstart-requirements-for-mac)
+- [Quickstart Requirements for Windows 10](#quickstart-requirements-for-windows-10)
+
+Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
+To start up a local instance of VinylDNS on your machine with docker:
+
+1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
+1. Navigate to repo: `cd vinyldns`
+1. Run `bin/docker-up-vinyldns.sh`
+1. This will start up the api at `localhost:9000`, and the portal at `localhost:9001`
+
+Things to try after VinylDNS is running:
+
+1. View the portal at <http://localhost:9001> in a web browser
+1. Login with the credentials ***testuser*** and ***testpassword***
+1. Navigate to the `groups` tab: <http://localhost:9001/groups>
+1. Click on the **New Group** button and create a new group
+1. Navigate to the `zones` tab: <http://localhost:9001/zones>
+1. Click on the **Connect** button to connect to zone, the `bin/docker-up-vinyldns.sh` started up a local bind9 DNS server 
+with a few test zones preloaded, 
+connect to `Zone Name = dummy.`, `Email = sometest@vinyldns.com`, `Admin Group = the group you just created`. The DNS
+Server and Zone Transfer Server can be left blank as the test zones use the defaults 
+1. This is async, so refresh the zones page to view the newly created zone
+1. Click the **View** button under the **Actions** column for the `dummy.` zone
+1. You will see that some records are preloaded already, this is because these records existed in the bind9 server 
+and VinylDNS automatically syncs records with the backend DNS server upon zone connection
+1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
+in the **Manage Zone** tab
+1. To try creating a DNS record, click on the **Create Record Set** button under Records, `Record Type = A, Record Name = my-test-a,
+TTL = 300, IP Addressess = 1.1.1.1`
+1. Click on the **Refresh** button under Records, you should see your new record created
+
+Things to note: 
+
+1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
+1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
+1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
+
 ## Developer Requirements
+
+### Quickstart Requirements for Mac
+The following applications are required for the Quickstart of the application on a Mac
+
+* git - https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+* JDK 8 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+* scala sbt - https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Mac.html
+* Docker - https://docs.docker.com/docker-for-mac/install/
+* Wget - https://www.gnu.org/software/wget/
+
+Return to [Quickstart](#quickstart)
+
+### Quickstart Requirements for Windows 10
+The following applications are required for the Quickstart of the application on Windows 10 
+
+* git - https://git-scm.com/download/win
+* JDK 8 (Win64) - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+* scala sbt - https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Windows.html
+* Docker - https://docs.docker.com/docker-for-windows/install/
+* Wget - http://gnuwin32.sourceforge.net/packages/wget.htm
+
+```
+Note: Your machine may restart several times while installing these applications
+
+Note: Wget binaries must be moved to a location that is accessible to Git Bash.
+* From : C:\Program Files (x86)\GnuWin32\Wget\bin\
+* To   : C:\Program Files\Git\mingw64\bin
+```
+
+Return to [Quickstart](#quickstart)
+
+### Full Requirements
+
+- git
 - sbt
 - Java 8
 - Python 2.7
