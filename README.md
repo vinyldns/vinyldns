@@ -58,7 +58,7 @@ VinylDNS is currently used in Production managing millions of DNS records.
 Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
 To start up a local instance of VinylDNS on your machine with docker:
 
-If you are running VinylDNS on a Windows 10 machine, please see the [Requirements for Windows 10] #requirements-for-windows-10
+If you are running VinylDNS on a Windows 10 machine, please see the [Requirements for Windows 10](#requirements-for-windows-10)
 
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
@@ -115,7 +115,7 @@ See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up Viny
 The following applications are required for the Quickstart of the application on Windows 10 
 
 * git ( for Windows ) - https://git-scm.com/download/win
-* Java SE Development Kit 8 - Windows x64 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+* JDK 8 - Win64 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 * scala sbt ( for Windows ) - https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Windows.html
 * Docker ( for Windows ) - https://docs.docker.com/docker-for-windows/install/
 * Wget ( for Windows ) - http://gnuwin32.sourceforge.net/packages/wget.htm
@@ -138,25 +138,6 @@ _only_ feature in the portal not found in the API is creation of users and user 
 * [Documentation](modules/docs): The documentation is primarily in support of the API.
 
 For more details see the [project structure](DEVELOPER_GUIDE.md#project-structure) in the Developer Guide.
-
-## Quickstart Requirements for Windows 10
-The following applications are required for the Quickstart of the application on Windows 10 
-
-* git ( for Windows ) - https://git-scm.com/download/win
-* Java SE Development Kit 8 - Windows x64 - http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-* scala sbt ( for Windows ) - https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Windows.html
-* Docker ( for Windows ) - https://docs.docker.com/docker-for-windows/install/
-* Wget ( for Windows ) - http://gnuwin32.sourceforge.net/packages/wget.htm
-
-```
-Note: Your machine may restart several times while installing these applications
-
-Note: Wget binaries must be moved to a location that is accessible to Git Bash.
-* From : C:\Program Files (x86)\GnuWin32\Wget\bin\
-* To   : C:\Program Files\Git\mingw64\bin
-```
-
-Return to [Quickstart](#quickstart)
 
 ## Contributing
 See the [Contributing Guide](CONTRIBUTING.md).
