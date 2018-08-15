@@ -25,9 +25,7 @@ install:
   - tar -xzvf protobuf-2.6.1.tar.gz
   - pushd protobuf-2.6.1 && ./configure --prefix=/usr && make && sudo make install && popd
   - rvm use 2.2.8 --install --fuzzy
-  - gem update --system
-  - gem install sass
-  - gem install jekyll -v 3.2.1
+  - gem install sass jekyll:3.2.1
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
@@ -36,20 +34,11 @@ before_cache:
 
 jobs:
   include:
-    - stage: "Verify core and API modules"
-      script: sbt ++$TRAVIS_SCALA_VERSION ";validate-api; validate-core"
+    - stage: "Validate and verify modules"
       name: "Validate and verify API"
-    - script: ./bin/func-test-api-travis.sh
-      name: "Run API functional tests"
-    - script: sbt ++$TRAVIS_SCALA_VERSION "validate-portal"
-      name: "Validate portal"
-    - script: ./bin/func-test-portal.sh
-      name: "Run portal functional tests"
-    - script: sbt ++$TRAVIS_SCALA_VERSION "verify"
-      name: "Verify and run coverage on API and portal"
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
-  - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
-      sbt 'project docs' 'publishMicrosite';
-    fi
+      script: sbt ++$TRAVIS_SCALA_VERSION ";validate; verify" && bash <(curl -s https://codecov.io/bash)
+    - name: "Run API and portal functional tests"
+      script: ./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh
+    - stage: "Post-build tasks"
+      name: "Publish microsite"
+      script: sbt ";project docs; publishMicrosite";
