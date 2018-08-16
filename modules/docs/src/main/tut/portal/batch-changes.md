@@ -18,6 +18,6 @@ Batch changes are also susceptible to the following restrictions:
 * The maximum number of single changes within a batch change varies by instance of VinylDNS. Contact your VinylDNS administrators to find the batch change limit for your instance.
 * Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name, zone and record type combination) requires **Write** access.
 
-![Batch change main page screenshot](../img/portal/batch-change-main.png){: .screenshot}
-![New batch change form screenshot](../img/portal/batch-change-new.png){: .screenshot}
-![Submitted batch change screenshot](../img/portal/batch-change-details.png){: .screenshot}
+[![Batch change main page screenshot](../img/portal/batch-change-main.png){: .screenshot}](../img/portal/batch-change-main.png)
+[![New batch change form screenshot](../img/portal/batch-change-new.png){: .screenshot}](../img/portal/batch-change-new.png)
+[![Submitted batch change screenshot](../img/portal/batch-change-details.png){: .screenshot}](../img/portal/batch-change-details.png)

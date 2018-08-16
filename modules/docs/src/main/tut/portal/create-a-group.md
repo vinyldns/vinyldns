@@ -9,6 +9,6 @@ section: "portal_menu"
 1. Select the *Create* button to submit the group information.
 1. If all fields are valid you'll see the group listed in the table on the screen when the form closes.
 
-![Groups main screenshot](../img/portal/groups-main.png){: .screenshot}
-![Groups form screenshot](../img/portal/create-group.png){: .screenshot}
-![Created group listed screenshot](../img/portal/groups-listed.png){: .screenshot}
+[![Groups main screenshot](../img/portal/groups-main.png){: .screenshot}](../img/portal/groups-main.png)
+[![Groups form screenshot](../img/portal/create-group.png){: .screenshot}](../img/portal/create-group.png)
+[![Created group listed screenshot](../img/portal/groups-listed.png){: .screenshot}](../img/portal/groups-listed.png)

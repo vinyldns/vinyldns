@@ -15,13 +15,13 @@ options:
     menu_section: portal_section
 
   - title: Zones
-    url: portal/connecting-to-zone
+    url: portal/zones
     menu_type: portal_menu
     menu_section: portal_section
 
     nested_options:
     - title: Connect to your Zone
-      url: portal/connecting-to-zone
+      url: portal/connect-to-zone
       menu_section: portal_section
     - title: Manage Records
       url: portal/manage-records

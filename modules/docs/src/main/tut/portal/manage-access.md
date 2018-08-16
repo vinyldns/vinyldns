@@ -16,4 +16,4 @@ If you don't want a user to have full access to a zone you can use ACL rules, in
 1. Fill in the form
 1. Submit the form
 
-![ACL rule form screenshot](../img/portal/create-acl-rule.png){:.screenshot}
+[![ACL rule form screenshot](../img/portal/create-acl-rule.png){:.screenshot}](../img/portal/create-acl-rule.png)

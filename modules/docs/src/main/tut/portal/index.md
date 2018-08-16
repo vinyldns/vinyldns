@@ -10,7 +10,7 @@ The VinylDNS portal is the primary user interface for interacting with VinylDNS.
 
 ## Navigating the Portal
 
-![Portal screenshot](../img/portal/logout.png)
+[![Portal screenshot](../img/portal/logout.png){:.screenshot}](../img/portal/logout.png)
 
 ### User Menu
 The user menu is located in the top right corner of the portal and accessed by selecting your username. It contains a *Logout* link to sign out of the portal and the *Download Credentials* link.
@@ -23,7 +23,7 @@ While there are other [tools](/tools) that you can use to work with VinylDNS, at
 ### Zones
 The Zones section of the portal is for managing DNS zones and records. This area also includes more granular management of user abilities. To access Zones in the portal select the Zones link in the left column navigation.
 
-[Learn More](connecting-to-zone)
+[Learn More](zones)
 
 ### Groups
 The Groups section of the portal is for managing high level user access and abilities. To access Groups in the portal select the Groups link in the left column navigation.
