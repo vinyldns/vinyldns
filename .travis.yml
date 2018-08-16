@@ -36,5 +36,6 @@ jobs:
     - name: "Run API and portal functional tests"
       script: ./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh
     - stage: Deploy
+      if: branch = master AND type = push
       name: "Deploy doc site"
       script: sbt ";project docs; publishMicrosite";
