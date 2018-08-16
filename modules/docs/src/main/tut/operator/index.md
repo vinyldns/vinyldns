@@ -5,4 +5,8 @@ section: "operator_menu"
 position: 3
 ---
 
-## Operator Guide
+#Operator Guide
+
+1. [Setup the pre-requisite systems](pre) - VinylDNS has several external dependencies that are required in order to operate.
+2. [Install the VinylDNS API server](install-api)
+3. [Install the VinylDNS Portal server](install-portal)

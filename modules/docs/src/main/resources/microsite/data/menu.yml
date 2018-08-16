@@ -57,6 +57,36 @@ options:
     menu_type: operator_menu
     menu_section: operator_section
 
+  - title: Pre-requsites
+    url: operator/pre
+    menu_type: operator_menu
+    menu_section: operator_section
+    nested_options:
+    - title: Setup AWS DynamoDB
+      url: operator/setup-dynamodb
+    - title: Setup AWS SQS
+      url: operator/setup-sqs
+    - title: Setup MySQL
+      url: operator/setup-mysql
+    - title: Setup LDAP
+      url: operator/setup-ldap
+
+  - title: Installing the API Server
+    url: operator/install-api
+    menu_type: operator_menu
+    menu_section: operator_section
+    nested_options:
+    - title: API Configuration
+      url: operator/api-config
+
+  - title: Installing the Portal Server
+    url: operator/install-portal
+    menu_type: operator_menu
+    menu_section: operator_section
+    nested_options:
+    - title: Portal Configuration
+      url: operator/portal-config
+
   - title: API documentation
     url: api/index
     menu_type: api
