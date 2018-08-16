@@ -13,7 +13,7 @@ The VinylDNS portal is the primary user interface for interacting with VinylDNS.
 [![Portal screenshot](../img/portal/main-annotated.png){:.screenshot}](../img/portal/main-annotated.png)
 
 ### User Menu
-The user menu is located in the top right corner of the portal and accessed by selecting your username. It contains a *Logout* link to sign out of the portal and the *Download Credentials* link.
+The User Menu is located in the top right corner of the portal and accessed by selecting your username. It contains a *Logout* link to sign out of the portal and the *Download Credentials* link.
 
 #### Credentials
 While there are other [tools](/tools) that you can use to work with VinylDNS, at this time all users must go through the VinylDNS portal to retrieve their credentials.

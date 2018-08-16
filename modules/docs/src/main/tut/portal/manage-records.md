@@ -6,6 +6,8 @@ section: "portal_menu"
 ## Manage Records <a id="managingRecords"></a>
 There are currently two ways to manage records in the VinylDNS portal. This covers managing individual records through their associated zone. To manage multiple records, possibly across zones, you can use the [Batch Change](batch-changes) area of the portal.
 
+Current supported record types in Zones are: **A**, **AAAA**, **CNAME**, **MX***, **PTR**, **NS**, **TXT**, **SPF**, **SRV**,  and **SSHFP**.
+
 To manage records in a zone go to the *Zones* section of the portal and select the *View* button that corresponds with the zone you want to manage. The *Manage Records* tab will be the active tab by default. Once you are in the *Manage Records* tab of the zone, you can create new records sets or update or delete existing record sets.
 
 [![Zone Records in Manage Records tab screenshot](../img/portal/zone-records.png){: .screenshot}](../img/portal/zone-records.png)

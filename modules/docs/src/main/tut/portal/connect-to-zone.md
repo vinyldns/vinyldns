@@ -7,7 +7,7 @@ section: "portal_menu"
 Once your zone is setup for use with VinylDNS, you can use the VinylDNS portal to connect to it.
 
 1. If you don't already have an admin group in VinylDNS for your zone select the Groups link in the navigation and [create an admin group](create-a-group) for your zone. Members of the group will have full access to the zone. See [Manage Access](manage-access) for more details.
-1. Select the Zones link from the navigation, then click the *Connect* button.  This will show the zone connect
+1. Select the Zones link from the navigation, then click the *Connect* button.  This will show the *Connect to a Zone*
   form. [![Zones main screenshot](../img/portal/zone-main.png){: .screenshot}](../img/portal/zone-main.png) [![Connect to zone form screenshot](../img/portal/connect-to-zone.png){: .screenshot}](../img/portal/connect-to-zone.png)
 1. Enter the full name of the zone, example "test.sys.example.com"
 1. Enter the email distribution list for the zone.  This is typically a distribution list
