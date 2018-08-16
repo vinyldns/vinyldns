@@ -104,7 +104,6 @@ participating, you agree to this Code.  Please report any violations to the code
 - Python 2.7
 - virtualenv
 - docker
-- wget
 
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up VinylDNS locally.
 

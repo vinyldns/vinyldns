@@ -80,7 +80,6 @@ database with their LDAP information.
 - Python 2.7
 - virtualenv
 - docker
-- wget
 
 ## Docker
 Be sure to install the latest version of [docker](https://docs.docker.com/).  You must have docker running in order to work with VinylDNS on your machine.
