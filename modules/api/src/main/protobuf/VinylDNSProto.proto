@@ -1,4 +1,5 @@
 // VinylDNSProto.proto
+syntax = "proto2";
 option java_package = "vinyldns.proto";
 option optimize_for = SPEED;
 

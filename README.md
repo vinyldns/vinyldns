@@ -105,7 +105,6 @@ participating, you agree to this Code.  Please report any violations to the code
 - virtualenv
 - docker
 - wget
-- Protobuf 2.6.1
 
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up VinylDNS locally.
 
