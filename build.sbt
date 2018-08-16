@@ -1,4 +1,3 @@
-import sbtprotobuf.{ProtobufPlugin => PB}
 import Resolvers._
 import Dependencies._
 import CompilerOptions._
@@ -169,7 +168,10 @@ lazy val portalPublishSettings = Seq(
 )
 
 lazy val pbSettings = Seq(
-  version in ProtobufConfig := "2.6.1"
+  PB.targets in Compile := Seq(
+    PB.gens.java("2.6.1") -> (sourceManaged in Compile).value
+  ),
+  PB.protocVersion := "-v261"
 )
 
 lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
@@ -183,14 +185,14 @@ lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
   scalaStyleSettings
 
 lazy val api = (project in file("modules/api"))
-  .enablePlugins(JavaAppPackaging, DockerComposePlugin, AutomateHeaderPlugin, ProtobufPlugin)
+  .enablePlugins(JavaAppPackaging, DockerComposePlugin, AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
   .dependsOn(core)
 
-lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin, ProtobufPlugin)
+lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(headerSettings(IntegrationTest))
   .settings(sharedSettings)

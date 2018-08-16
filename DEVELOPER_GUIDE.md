@@ -81,25 +81,6 @@ database with their LDAP information.
 - virtualenv
 - docker
 - wget
-- Protobuf 2.6.1
-
-### Installing Protobuf on a Mac
-The protocol buffer library is located at `https://github.com/sbt/sbt-protobuf`, we currently have it set to v0.5.2, which can only support up to protobuf v2.6.1
-
-Run `protoc --version`, if it is not 2.6.1, then
-
-1. Note that on Mac OS, `brew install protobuf` will install a version too new to use with this project, if you have protobuf installed through brew, then run `brew uninstall protobuf`
-1. To install protobuf v2.6.1, go to https://github.com/google/protobuf/releases/tag/v2.6.1, and download `protobuf-2.6.1.tar.gz`
-1. Run the following commands to extract the tar, cd into it, and configure/install:
- ```
- $ cd ~/Downloads; tar -zxvf protobuf-2.6.1.tar.gz; cd protobuf-2.6.1
- $ ./configure
- $ make
- $ make check
- $ sudo make install
-
- ```
-1. Finally, run `protoc --version` to confirm you are on v2.6.1
 
 ## Docker
 Be sure to install the latest version of [docker](https://docs.docker.com/).  You must have docker running in order to work with VinylDNS on your machine.
