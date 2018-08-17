@@ -69,7 +69,7 @@ class VinylDNSJDBC(config: Config) {
   val migration = new Flyway()
   migration.setDataSource(migrationDataSource)
   // flyway changed the default schema table name in v5.0.0; this allows to revert to an old naming convention if needed
-  if(config.hasPath("default.migrationSchemaTable")) {
+  if (config.hasPath("default.migrationSchemaTable")) {
     migration.setTable(config.getString("default.migrationSchemaTable"))
   }
 

@@ -234,7 +234,9 @@ class RecordSetValidationsSpec
 
     "NSValidations" should {
       "return ok if the record is an NS record but not origin" in {
-        val valid = invalidNsRecordToOrigin.copy(name = "this-is-not-origin-mate")
+        val valid = invalidNsRecordToOrigin.copy(
+          name = "this-is-not-origin-mate",
+          records = List(NSData("some.test.ns.")))
 
         nsValidations(valid, okZone) should be(right)
       }
@@ -253,6 +255,12 @@ class RecordSetValidationsSpec
       "return an InvalidRequest if the NS record being updated is '@'" in {
         val valid = invalidNsRecordToOrigin.copy(name = "this-is-not-origin-mate")
         val error = leftValue(nsValidations(valid, okZone, Some(invalidNsRecordToOrigin)))
+        error shouldBe a[InvalidRequest]
+      }
+
+      "return an InvalidRequest if an NS record data is not in the approved server list" in {
+        val ns = invalidNsRecordToOrigin.copy(records = List(NSData("not.approved.")))
+        val error = leftValue(nsValidations(ns, okZone))
         error shouldBe a[InvalidRequest]
       }
     }
