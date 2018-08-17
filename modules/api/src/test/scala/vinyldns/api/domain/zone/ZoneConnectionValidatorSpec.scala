@@ -93,8 +93,8 @@ class ZoneConnectionValidatorSpec
   )
 
   private val successSoa = RecordSet(
-    ptrIp4.name,
-    "vinyldns.",
+    testZone.id,
+    testZone.name,
     RecordType.SOA,
     200,
     RecordSetStatus.Active,
@@ -102,12 +102,32 @@ class ZoneConnectionValidatorSpec
     None,
     List(SOAData("something", "other", 1, 2, 3, 5, 6)))
 
+  private val successNS = RecordSet(
+    testZone.id,
+    testZone.name,
+    RecordType.NS,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NSData("some.test.ns.")))
+
+  private val failureNs = RecordSet(
+    testZone.id,
+    testZone.name,
+    RecordType.NS,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NSData("some.test.ns."), NSData("not.approved.")))
+
   private val mockRecordSet = mock[RecordSet]
 
   "ConnectionValidator" should {
     "respond with a success if the connection is resolved" in {
       doReturn(testZone).when(mockZoneView).zone
-      doReturn(generateZoneView(testZone, successSoa).recordSetsMap)
+      doReturn(generateZoneView(testZone, successSoa, successNS).recordSetsMap)
         .when(mockZoneView)
         .recordSetsMap
       doReturn(List(successSoa).toResult)
@@ -116,6 +136,19 @@ class ZoneConnectionValidatorSpec
 
       val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
       result should be(right)
+    }
+
+    "respond with a failure if NS records are not in the approved server list" in {
+      doReturn(testZone).when(mockZoneView).zone
+      doReturn(generateZoneView(testZone, successSoa, failureNs).recordSetsMap)
+        .when(mockZoneView)
+        .recordSetsMap
+      doReturn(List(successSoa).toResult)
+        .when(mockDnsConnection)
+        .resolve(testZone.name, testZone.name, RecordType.SOA)
+
+      val result = leftResultOf(underTest.validateZoneConnections(testZone).value)
+      result shouldBe a[ZoneValidationFailed]
     }
 
     "respond with a failure if no records are returned from the backend" in {
