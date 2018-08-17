@@ -110,7 +110,7 @@ lazy val apiDockerSettings = Seq(
   packageName in Docker := "api",
   dockerUpdateLatest := true,
   dockerExposedPorts := Seq(9000),
-  dockerEntrypoint := Seq("/opt/docker/bin/boot"),
+  dockerEntrypoint := Seq("/opt/docker/bin/api"),
   dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
   dockerExposedVolumes := Seq("/opt/docker/conf"), // mount extra config to the classpath
 

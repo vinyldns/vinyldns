@@ -1,4 +1,4 @@
-[![Join the chat at https://gitter.im/vinyldns/Lobby](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns/Lobby)
+[![Join the chat at https://gitter.im/vinyldns](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns)
 [![Travis build](https://api.travis-ci.com/vinyldns/vinyldns.svg?branch=master)](https://travis-ci.com/vinyldns/vinyldns)
 [![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
 
@@ -121,7 +121,7 @@ For more details see the [project structure](DEVELOPER_GUIDE.md#project-structur
 See the [Contributing Guide](CONTRIBUTING.md).
 
 ## Contact
-- [Gitter](https://gitter.im/vinyldns/Lobby)
+- [Gitter](https://gitter.im/vinyldns)
 - [Mailing List](https://groups.google.com/forum/#!forum/vinyldns)
 - If you have any security concerns please contact the maintainers directly vinyldns-core@googlegroups.com
 
