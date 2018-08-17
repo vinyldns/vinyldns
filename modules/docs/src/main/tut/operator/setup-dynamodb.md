@@ -128,7 +128,11 @@ encryted by default using the configured `Crypto` implementation.  It is also en
 
 **Note: there is no way to programatically set the super flag, as it has a tremendous amount of power.  We are looking
 for ideas and ways that we can provide super type access with some additional checks.  To set this flag, you would need
-to hand-roll your own script at this point.**
+to hand-roll your own script at this point and set this attribute.**
+
+**Table Keys**
+* HASH = `userid`
+* SORT = `<none>`
 
 **Indexes**
 * `username_index` - Global Secondary Index
@@ -138,19 +142,116 @@ to hand-roll your own script at this point.**
 * `access_key_index` - Global Secondary Index
     * HASH = `accesskey`
     * SORT = `<none>`
-    * Projection Type = `ALL`    
+    * Projection Type = `ALL`
 
 ### Group Table
+The Group table holds group information, including group name, email, and ids of members.
+
+**Usage**
 Very low writes, very small data, high read rate (every API call looks up the user groups)
 
+**Attributes**
+* `group_id` - String(UUID) - unique identifier for the group
+* `name` - String - the name of the group
+* `email` - String - the email (usually distribution list) of the gruop
+* `desc` - String - the description of the group
+* `status` - String - the group status (Active | Deleted)
+* `member_ids` - String Set - the ids of all members (users) of the group
+* `admin_ids` - String Set - the ids of all members who are group managers
+
+**Table Keys**
+* HASH = `group_id`
+* SORT = `<none>`
+
+**Indexes**
+* `group_name_index` - Global Secondary Index
+    * HASH = `name`
+    * SORT = `<none>`
+    * Projection Type = `ALL`
+
 ### Membership Table
-Very low writes, very small data, high read rate (every API call looks up the user membership)
+The Membership table is a "join" table linking users and groups.  It supports fast look ups for all groups that
+a user is a member of.
+
+**Usage**
+Very low writes, very small data, high read rate (every API call looks up the user groups)
+
+**Attributes**
+* `user_id` - String(UUID)
+* `group_id` - String(UUID)
+
+**Table Keys**
+* HASH = `user_id`
+* SORT = `group_id`
+
+**Indexes**
+*none*
 
 ### GroupChange Table
+Group changes are required anytime groups are created, modified, or deleted.  This includes changes in group ownership
+and group membership.
+
+**Usage**
 Very low writes, very small data, very low read
+
+**Attributes**
+* `group_change_id` - String(UUID) - the unique identifier for the group change
+* `group_id` - String(UUID) - the unique identifier for the group
+* `created` - Number - the date / time in EPOCH millis
+* `group_change_blob` - Binary - protobuf of the group change
+
+**Table Keys**
+* HASH = `group_id`
+* SORT = `created`
+
+**Indexes**
+* `GROUP_ID_AND_CREATED_INDEX` - Global Secondary Index
+    * HASH = `group_id`
+    * SORT = `created`
+    * Projection Type = `ALL`
 
 ### UserChange Table
+UserChange holds information of when new users are created in VinylDNS.  It is different as it does not serialize
+the change data as protobuf.
+
+**Usage**
 Very low writes, very small data, very low read
 
+**Attributes**
+* `timestamp` - String - the datetime the change was made
+* `userId` - String(UUID) - the unique identifier for the user being changed
+* `username` - String - the username for the user being changed
+* `changeType` - String - created | updated | deleted
+* `updateUser` - Map - a map of the attributes being updated
+* `previousUser` - Map - a map of the new attributes
+
 ### ZoneChange Table
-Very low writes, medium amount of data, very low read
+Anytime an update is made to a zone, the event is stored here.  This includes changes to the admin group or ACL rules.
+
+**Usage**
+Very low writes, small data, high read
+
+**Attributes**
+* `zone_id` - String(UUID) - unique identifier for the zone
+* `change_id` - String(UUID) - the unique identifier for this zone change
+* `status` - String - the status of the zone change (Active, Deleted, PendingUpdate, PendingDelete, Syncing)
+* `blob` - Binary - the protobuf serialized bytes for this zone change
+* `created` - Number - the date/time in EPOCH milliseconds
+
+**Table Keys**
+* HASH = `zone_id`
+* SORT = `change_id`
+
+**Indexes**
+* `zone_id_status_index` - Global Secondary Index
+    * HASH = `zone_id`
+    * SORT = `status`
+    * Projection Type = `ALL`
+* `status_zone_id_index` - Global Secondary Index
+    * HASH = `status`
+    * SORT = `zone_id`
+    * Projection Type = `ALL`
+* `zone_id_created_index` - Global Secondary Index
+    * HASH = `zone_id`
+    * SORT = `created`
+    * Projection Type = `ALL`
