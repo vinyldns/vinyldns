@@ -120,7 +120,7 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
       mock[ZoneConnectionValidator],
       TestSqsService,
       new ZoneValidations(1000),
-      new AccessValidations()
+      AccessValidations
     )
   }
 
