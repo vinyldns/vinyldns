@@ -28,8 +28,6 @@ Besides those issues, you can sort the issue list by number of comments to find 
 _not_ have to limit yourself to _only_ "beginner" or "help-wanted" issues.
 
 Before choosing an issue, see if anyone is assigned or has indicated they are working on it (either in comment or via PR).
-You can work on the issue by reviewing the PR or asking where they are at; otherwise, it doesn't make sense to duplicate
-work that is already in-progress.
 
 ## Submitting an issue
 When submitting an issue you will notice there are three issue templates to choose from. Before making any issue, please
@@ -104,9 +102,17 @@ Before Comcast merges your code into the project you must sign the [Comcast Cont
 If you haven't previously signed a Comcast CLA, you'll automatically be asked to when you open a pull request. 
 Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request a PDF version of the CLA.
 
-### Merging your Pull Request
-Once your PR is approved, one of the maintainers will merge your request for you.  If you are a maintainer, you can
-merge your PR once you have the approval of at least 2 other maintainers.
+### PR Approval
+Things your PR needs before it is approved:
+
+* An indication that you signed the [Comcast Contributor License Agreement (CLA)](https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a)
+* Its most recent build in Travis must pass
+* Cannot have conflicts with the master branch, Github will indicate if it does
+
+Afterwards, if your PR is approved, a maintainer of the project will merge it for you.
+If you are a maintainer, you can merge your PR once you have the approval of at least 2 other maintainers.
+
+> Note: The first time you make a PR, add yourself to the authors list [here]AUTHORS.md) as part of the PR
 
 ## Style Guides
 ### Python Style Guide
