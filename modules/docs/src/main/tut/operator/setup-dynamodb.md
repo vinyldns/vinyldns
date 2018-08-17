@@ -36,6 +36,9 @@ If your installation does not have large zones (100,000s of records), and takes 
 the throughput very low and operate in the "almost" free-tier.  The following guides help you tune your settings...
 
 ### RecordSet Table
+Each row in the RecordSet table is a `RRSet`, which means it comprises one or more "Records" inside of it.
+
+**Usage**
 This table (and recordSetChange) require the highest throughput.  If you have large zones, the first time
 you load a zone, all records will be loaded into the `recordSet` table.  If the settings are too low, it can take a long time
 for the records to be loaded, and worst case scenario the operation will fail.
@@ -50,7 +53,7 @@ for the records to be loaded, and worst case scenario the operation will fail.
 
 **Table Keys**
 * HASH = `record_set_id`
-* SORT = <none>
+* SORT = `<none>`
 
 **Indexes**
 * `zone_id_record_set_name_index` - Global Secondary Index
@@ -63,11 +66,79 @@ for the records to be loaded, and worst case scenario the operation will fail.
     * Projection Type = `ALL`
 
 ### RecordSetChange Table
+Each record set change could potentially live inside a `ChangeSet`.  A `ChangeSet` being one or more individual
+`RecordSetChange` instances.  Each _record_ in the `RecordSetChange` table corresponds to an individual change
+such as "Create a new record set".
+
+**Usage**
 Every time any record is updated, the audit trail is inserted into the `recordSetChange` table.  This
 also should have higher settings, as usage, especially on writes, can be rather high.
 
+**Attributes**
+* `change_set_id` - String(UUID) - id for the change set this change belongs to
+* `record_set_change_id` - String(UUID) - the id for the record set change
+* `zone_id` - String(UUID) the zone this record change was made for
+* `status` - Number - a number representing the status of the change (Pending = 0 | Processing = 1 | Complete = 2 | Applied = 100)
+* `created_timestamp` - String - a string representing the GMT formatted date/time when the change set was created
+* `record_set_change_created_timestamp` - Number - a number in EPOCH millis when the change was created
+* `processing_timestamp` - String - a string representing the GMT formatted date/time when the record set change was processed
+* `record_set_change_blob` - Binary - the protobuf serialized bytes that represent the entire record set change
+
+**Table Keys**
+* HASH = `record_set_change_id`
+* SORT = `<none>`
+
+**Indexes**
+* `zone_id_change_status_index` - Global Secondary Index
+    * HASH = `zone_id`
+    * SORT = `change_set_status`
+    * Projection Type = `ALL`
+* `zone_id_record_set_change_id_index` - Global Secondary Index
+    * HASH = `zone_id`
+    * SORT = `record_set_change_id`
+    * Projection Type = `ALL`
+* `change_status_index` - Global Secondary Index
+    * HASH = `change_set_status`
+    * SORT = `zone_id`
+    * Projection Type = `ALL`
+* `zone_id_created_index` - Global Secondary Index
+    * HASH = `zone_id`
+    * SORT = `record_set_change_created_timestamp`
+    * Projection Type = `ALL`
+
 ### User Table
+The User Table holds user specific information.  Each row in the table is a separate distinct user.
+To enable encryption at rest, the user table should be encrypted.
+**Encryption can only be enabled when the table is first created.**
+
+**Usage**
 Very low writes, very small data, high read rate (every API call looks up the user info)
+
+**Attributes**
+* `userid` - String(UUID) - a unique identifier for this user
+* `username` - String - LDAP user name for this user
+* `firstname` - String - user first name
+* `lastname` - String - user last name
+* `email` - String - user's email address
+* `created` - Number - EPOCH time in millis when the user was created in VinylDNS
+* `accesskey` - String - The access key (public) for the user to interact with the VinylDNS API
+* `secretkey` - String - the secret key (private) for the user to interact with the VinylDNS API.  This secret is
+encryted by default using the configured `Crypto` implementation.  It is also encrypted at rest.
+* `super` - Boolean - an indicator that the user is a VinylDNS Admin user (can access all data and operations)
+
+**Note: there is no way to programatically set the super flag, as it has a tremendous amount of power.  We are looking
+for ideas and ways that we can provide super type access with some additional checks.  To set this flag, you would need
+to hand-roll your own script at this point.**
+
+**Indexes**
+* `username_index` - Global Secondary Index
+    * HASH = `username`
+    * SORT = `<none>`
+    * Projection Type = `ALL`
+* `access_key_index` - Global Secondary Index
+    * HASH = `accesskey`
+    * SORT = `<none>`
+    * Projection Type = `ALL`    
 
 ### Group Table
 Very low writes, very small data, high read rate (every API call looks up the user groups)
