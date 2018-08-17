@@ -43,7 +43,7 @@ class BatchChangeValidationsSpec
   import vinyldns.api.IpAddressGenerator._
 
   private val maxChanges = 10
-  private val underTest = new BatchChangeValidations(maxChanges, new AccessValidations())
+  private val underTest = new BatchChangeValidations(maxChanges, AccessValidations)
 
   import underTest._
 

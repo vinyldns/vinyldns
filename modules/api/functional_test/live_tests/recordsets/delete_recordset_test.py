@@ -536,43 +536,9 @@ def test_user_can_delete_record_via_group_acl_rule(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_ns_delete_for_non_approved_group_fails(shared_zone_test_context):
+def test_ns_delete_for_admin_group_passes(shared_zone_test_context):
     """
-    Tests that someone not in the approved group could not delete a ns record
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    not_approved_client = shared_zone_test_context.dummy_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-
-    ns_rs = None
-    try:
-        new_rs = {
-            'zoneId': zone['id'],
-            'name': 'someNS',
-            'type': 'NS',
-            'ttl': 38400,
-            'records': [
-                {
-                    'nsdname': 'ns1.parent.com.'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-        ns_rs = result['recordSet']
-
-        assert_that(client.wait_until_recordset_exists(ns_rs['zoneId'], ns_rs['id']))
-
-        error = not_approved_client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=403)
-        assert_that(error, is_('Do not have permissions to manage NS recordsets, please contact vinyldns-support'))
-
-    finally:
-        if ns_rs:
-            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
-            client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
-
-def test_ns_delete_for_approved_group_passes(shared_zone_test_context):
-    """
-    Tests that an ns delete on a group whose admin group is approved passes (only ok group is approved)
+    Tests that an ns delete passes
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone

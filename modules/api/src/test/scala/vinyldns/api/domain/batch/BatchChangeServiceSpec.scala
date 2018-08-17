@@ -50,7 +50,7 @@ class BatchChangeServiceSpec
     with EitherValues
     with ValidatedMatchers {
 
-  private val validations = new BatchChangeValidations(10, new AccessValidations())
+  private val validations = new BatchChangeValidations(10, AccessValidations)
 
   private val apexAddA = AddChangeInput("apex.test.com.", RecordType.A, 100, AData("1.1.1.1"))
   private val nonApexAddA =
