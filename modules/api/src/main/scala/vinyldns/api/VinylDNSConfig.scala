@@ -27,6 +27,8 @@ object VinylDNSConfig {
   lazy val config: Config = ConfigFactory.load()
   lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
   lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamo")
+  lazy val dataStoreConfig: List[Config] =
+    vinyldnsConfig.getConfigList("data-stores").asScala.toList
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
   lazy val accountStoreConfig: Config = vinyldnsConfig.getConfig("accounts")
