@@ -4,9 +4,9 @@ VINYLDNS_URL="http://vinyldns-api:9000"
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=40
-while [ $RETRY -gt 0 ]
+while [ "$RETRY" -gt 0 ]
 do
-    DATA=$(wget -O - -q -t 1 "${VINYLDNS_URL}/ping")
+    DATA=$(curl -I -s "${VINYLDNS_URL}/ping" -o /dev/null -w "%{http_code}")
     if [ $? -eq 0 ]
     then
         break
@@ -16,9 +16,9 @@ do
         let RETRY-=1
         sleep 1
 
-        if [ $RETRY -eq 0 ]
+        if [ "$RETRY" -eq 0 ]
         then
-          echo "Exceeded retries waiting for VINYLDNS to be ready, failing"
+          echo "Exceeded retries waiting for VinylDNS API to be ready, failing"
           exit 1
         fi
     fi
