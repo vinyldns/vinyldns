@@ -16,7 +16,7 @@ cp -af "$DIR"/../docker "$WORK_DIR"/
 
 echo "Copy the vinyldns.jar to the API Docker folder so it is in context..."
 if [[ ! -f "$DIR"/../modules/api/target/scala-2.12/vinyldns.jar ]]; then
-    echo "vinyldns jar not found, building..."
+    echo "vinyldns.jar not found, building..."
     cd "$DIR"/../
     sbt api/clean api/assembly
     cd "$DIR"

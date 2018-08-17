@@ -18,7 +18,7 @@ do
 
         if [ "$RETRY" -eq 0 ]
         then
-          echo "Exceeded retries waiting for VINYLDNS to be ready, failing"
+          echo "Exceeded retries waiting for VinylDNS API to be ready, failing"
           exit 1
         fi
     fi
