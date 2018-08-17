@@ -20,8 +20,20 @@ import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.api.repository.DataAccessor
 
 import scala.concurrent.ExecutionContext
+
+object MembershipService {
+  def apply(repositories: DataAccessor)(implicit ec: ExecutionContext): MembershipService =
+    new MembershipService(
+      repositories.groupRepository,
+      repositories.userRepository,
+      repositories.membershipRepository,
+      repositories.zoneRepository,
+      repositories.groupChangeRepository
+    )
+}
 
 class MembershipService(
     groupRepo: GroupRepository,

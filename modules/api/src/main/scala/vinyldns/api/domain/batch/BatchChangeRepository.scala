@@ -16,8 +16,6 @@
 
 package vinyldns.api.domain.batch
 
-import vinyldns.api.repository.mysql.VinylDNSJDBC
-
 import scala.concurrent.Future
 
 // $COVERAGE-OFF$
@@ -37,9 +35,5 @@ trait BatchChangeRepository {
 
   def getSingleChanges(singleChangeIds: List[String]): Future[List[SingleChange]]
 
-}
-
-object BatchChangeRepository {
-  def apply(): BatchChangeRepository = VinylDNSJDBC.instance.batchChangeRepository
 }
 // $COVERAGE-ON$

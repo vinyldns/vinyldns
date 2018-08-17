@@ -27,8 +27,6 @@ object VinylDNSConfig {
   lazy val config: Config = ConfigFactory.load()
   lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
   lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamo")
-  lazy val dataStoreConfig: List[Config] =
-    vinyldnsConfig.getConfigList("data-stores").asScala.toList
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
   lazy val accountStoreConfig: Config = vinyldnsConfig.getConfig("accounts")
@@ -39,7 +37,8 @@ object VinylDNSConfig {
   lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("groups")
   lazy val groupChangesStoreConfig: Config = vinyldnsConfig.getConfig("groupChanges")
   lazy val membershipStoreConfig: Config = vinyldnsConfig.getConfig("membership")
-  lazy val dbConfig: Config = vinyldnsConfig.getConfig("db")
+  lazy val dataStoreConfig: List[Config] =
+    vinyldnsConfig.getConfigList("data-stores").asScala.toList
   lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)

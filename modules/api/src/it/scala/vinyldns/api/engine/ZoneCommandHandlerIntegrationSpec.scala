@@ -34,7 +34,7 @@ import vinyldns.api.repository.dynamodb.{
   DynamoDBRecordSetRepository,
   DynamoDBZoneChangeRepository
 }
-import vinyldns.api.repository.mysql.VinylDNSJDBC
+import vinyldns.api.repository.mysql.VinylDNSJDBCTestDb
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -148,8 +148,9 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
     recordChangeRepo = new DynamoDBRecordChangeRepository(recordChangeStoreConfig, dynamoDBHelper)
     recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
     zoneChangeRepo = new DynamoDBZoneChangeRepository(zoneChangeStoreConfig, dynamoDBHelper)
-    zoneRepo = VinylDNSJDBC.instance.zoneRepository
-    batchChangeRepo = VinylDNSJDBC.instance.batchChangeRepository
+
+    zoneRepo = VinylDNSJDBCTestDb.instance.zoneRepository
+    batchChangeRepo = VinylDNSJDBCTestDb.instance.batchChangeRepository
     sqsConn = SqsConnection()
 
     //seed items database

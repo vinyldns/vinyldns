@@ -24,13 +24,6 @@ import org.slf4j.LoggerFactory
 import scala.collection.JavaConverters._
 import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
-import vinyldns.api.VinylDNSConfig
-
-object VinylDNSJDBC {
-
-  val config: Config = VinylDNSConfig.dbConfig
-  lazy val instance: VinylDNSJDBC = new VinylDNSJDBC(config)
-}
 
 /* Loads and initializes the MySQL database.  Unsafe, will fail if there are any issues and the app won't start */
 class VinylDNSJDBC(config: Config) {

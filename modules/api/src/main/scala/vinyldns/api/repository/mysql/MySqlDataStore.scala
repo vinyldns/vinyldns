@@ -17,83 +17,22 @@
 package vinyldns.api.repository.mysql
 
 import com.typesafe.config.Config
-import com.zaxxer.hikari.HikariDataSource
-import javax.sql.DataSource
-import org.flywaydb.core.Flyway
-import org.slf4j.LoggerFactory
-import scalikejdbc.config.DBs
-import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import vinyldns.api.domain.batch.BatchChangeRepository
-import vinyldns.api.domain.membership.{GroupChangeRepository, GroupRepository, MembershipRepository, UserRepository}
+import vinyldns.api.domain.membership.{
+  GroupChangeRepository,
+  GroupRepository,
+  MembershipRepository,
+  UserRepository
+}
 import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.api.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.api.repository.DataStore
 
-import scala.collection.JavaConverters._
-
-
-/* Loads and initializes the MySQL database.  Unsafe, will fail if there are any issues and the app won't start */
+// TODO placeholder for mysql loader
 class MySqlDataStore(config: Config) extends DataStore {
 
-  private val logger = LoggerFactory.getLogger("VinylDNSJDBC")
-
-  val dataSource: DataSource = {
-    val ds = new HikariDataSource()
-    ds.setDriverClassName(config.getString("default.driver"))
-    ds.setJdbcUrl(config.getString("default.url"))
-    ds.setUsername(config.getString("default.user"))
-    ds.setPassword(config.getString("default.password"))
-    ds.setConnectionTimeout(config.getLong("default.connectionTimeoutMillis"))
-    ds.setMaximumPoolSize(config.getInt("default.poolMaxSize"))
-    ds.setMaxLifetime(config.getLong("default.maxLifeTime"))
-    ds.setRegisterMbeans(true)
-    ds
-  }
-
-  // Migration needs to happen on the base URL, not the table URL, thus the separate source
-  lazy val migrationDataSource: DataSource = {
-    val ds = new HikariDataSource()
-    ds.setDriverClassName(config.getString("default.driver"))
-    ds.setJdbcUrl(config.getString("default.migrationUrl"))
-    ds.setUsername(config.getString("default.user"))
-    ds.setPassword(config.getString("default.password"))
-    // migrations happen once on startup; without these settings the default number of connections
-    // will be created and maintained even though this datasource is no longer needed post-migration
-    ds.setMaximumPoolSize(3)
-    ds.setMinimumIdle(0)
-    ds
-  }
-
-  logger.info("Running migrations to ready the databases")
-
-  val migration = new Flyway()
-  migration.setDataSource(migrationDataSource)
-  // flyway changed the default schema table name in v5.0.0; this allows to revert to an old naming convention if needed
-  if (config.hasPath("default.migrationSchemaTable")) {
-    migration.setTable(config.getString("default.migrationSchemaTable"))
-  }
-
-  val dbName = config.getString("name")
-  val placeholders = Map("dbName" -> dbName)
-  migration.setPlaceholders(placeholders.asJava)
-  migration.setSchemas(dbName)
-
-  // Runs flyway migrations
-  migration.migrate()
-  logger.info("migrations complete")
-
-  logger.info("configuring connection pool")
-
-  // Configure the connection pool
-  ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
-
-  logger.info("setting up databases")
-
-  // Sets up all databases with scalikejdbc
-  DBs.setupAll()
-
-  logger.info("database init complete")
-
+  val settings = config.getConfig("settings")
+  val instance = new VinylDNSJDBC(settings)
 
   // TODO need to load these dynamically based on the config
   val userRepository: Option[UserRepository] = None
@@ -101,8 +40,9 @@ class MySqlDataStore(config: Config) extends DataStore {
   val membershipRepository: Option[MembershipRepository] = None
   val groupChangeRepository: Option[GroupChangeRepository] = None
   val recordSetRepository: Option[RecordSetRepository] = None
-  val recordChangeRepository: Option[RecordChangeRepository] =  None
+  val recordChangeRepository: Option[RecordChangeRepository] = None
   val zoneChangeRepository: Option[ZoneChangeRepository] = None
-  val zoneRepository: Option[ZoneRepository] = Some(new JdbcZoneRepository())
-  val batchChangeRepository: Option[BatchChangeRepository] = Some(new JdbcBatchChangeRepository())
+  val zoneRepository: Option[ZoneRepository] = Some(instance.zoneRepository)
+  val batchChangeRepository: Option[BatchChangeRepository] = Some(instance.batchChangeRepository)
+
 }

@@ -32,25 +32,39 @@ import vinyldns.api.domain.zone.ZoneRepository
 object DataStoreProvider {
 
   // TODO actually dynamically load
-  def load(config: Config): IO[DataStore] = for {
-    className <- IO(config.getString("type"))
-    dataStore <- IO(className match {
-      case "vinyldns.api.repository.mysql.MySqlDataStore" => new MySqlDataStore(config)
-      case _ => new DynamoDbDataStore()
-    })
-  } yield dataStore
+  def load(config: Config): IO[DataStore] =
+    for {
+      className <- IO(config.getString("type"))
+      dataStore <- IO(className match {
+        case "vinyldns.api.repository.mysql.MySqlDataStore" => new MySqlDataStore(config)
+        case _ => new DynamoDbDataStore()
+      })
+    } yield dataStore
 
   def loadAll(configs: List[Config]): IO[DataAccessor] = {
     val dataStores = configs.map(load).parSequence
     dataStores.flatMap { stores =>
       val userRepos = stores.flatMap(_.userRepository)
       val groupRepos = stores.flatMap(_.groupRepository)
+      val membershipRepos = stores.flatMap(_.membershipRepository)
+      val groupChangeRepos = stores.flatMap(_.groupChangeRepository)
+      val recordSetRepos = stores.flatMap(_.recordSetRepository)
+      val recordChangeRepos = stores.flatMap(_.recordChangeRepository)
+      val zoneChangeRepos = stores.flatMap(_.zoneChangeRepository)
       val zoneRepos = stores.flatMap(_.zoneRepository)
+      val batchChangeRepos = stores.flatMap(_.batchChangeRepository)
 
       val accessor: ValidatedNel[String, DataAccessor] =
-        (extractRepo(userRepos, "userRepository"),
-          extractRepo(groupRepos, "groupRepository"),
-          extractRepo(zoneRepos, "zoneRepository")).mapN(DataAccessor)
+        (
+          extractRepo(userRepos, "user"),
+          extractRepo(groupRepos, "group"),
+          extractRepo(membershipRepos, "membership"),
+          extractRepo(groupChangeRepos, "groupChange"),
+          extractRepo(recordSetRepos, "recordSet"),
+          extractRepo(recordChangeRepos, "recorhange"),
+          extractRepo(zoneChangeRepos, "zoneChange"),
+          extractRepo(zoneRepos, "zone"),
+          extractRepo(batchChangeRepos, "batchChange")).mapN(DataAccessor)
 
       val asEither =
         accessor.leftMap(err => new RuntimeException(err.toList.mkString(", "))).toEither
@@ -69,15 +83,16 @@ object DataStoreProvider {
     }
 }
 
-case class DataAccessor(userRepository: UserRepository,
-                        groupRepository: GroupRepository,
-                        membershipRepository: MembershipRepository,
-                        groupChangeRepository: GroupChangeRepository,
-                        recordSetRepository: RecordSetRepository,
-                        recordChangeRepository: RecordChangeRepository,
-                        zoneChangeRepository: ZoneChangeRepository,
-                        zoneRepository: ZoneRepository,
-                        batchChangeRepository: BatchChangeRepository)
+case class DataAccessor(
+    userRepository: UserRepository,
+    groupRepository: GroupRepository,
+    membershipRepository: MembershipRepository,
+    groupChangeRepository: GroupChangeRepository,
+    recordSetRepository: RecordSetRepository,
+    recordChangeRepository: RecordChangeRepository,
+    zoneChangeRepository: ZoneChangeRepository,
+    zoneRepository: ZoneRepository,
+    batchChangeRepository: BatchChangeRepository)
 
 trait DataStore {
   def userRepository: Option[UserRepository]
