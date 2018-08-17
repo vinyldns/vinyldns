@@ -7,7 +7,7 @@ position: 7
 # Getting Help
 
 - Gitter community:
-  <https://gitter.im/vinyldns/Lobby>
+  <https://gitter.im/vinyldns>
 
 - Contact the VinylDNS Core Team:
   vinyldns-core@googlegroups.com
