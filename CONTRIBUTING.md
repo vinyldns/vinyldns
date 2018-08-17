@@ -3,7 +3,8 @@ The following are a set of guidelines for contributing to VinylDNS and its assoc
 
 ## Table of Contents
 - [Code of Conduct](#code-of-conduct)
-- [Issues](#issues)
+- [Finding things to work on](#finding-things-to-work-on)
+- [Submitting an issue](#submitting-an-issue)
 - [Making Contributions](#making-contributions)
 - [Style Guides](#style-guides)
 - [Testing](#testing)
@@ -14,7 +15,7 @@ The following are a set of guidelines for contributing to VinylDNS and its assoc
 This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
 participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
 
-## Issues
+## Finding things to work on
 If you would like to contribute to VinylDNS, you can look through `beginner` and `help-wanted` issues.  We keep a list
 of these issues around to encourage participation in building the platform.  In the issue list, you can chose "Labels" and
 choose a specific label to narrow down the issues to review.
@@ -30,23 +31,51 @@ Before choosing an issue, see if anyone is assigned or has indicated they are wo
 You can work on the issue by reviewing the PR or asking where they are at; otherwise, it doesn't make sense to duplicate
 work that is already in-progress.
 
+## Submitting an issue
+When submitting an issue you will notice there are three issue templates to choose from. Before making any issue, please
+go through the issue list and check to see if a similar issue has been made. If so, we ask that you do not duplicate an
+issue, but feel free to comment on the existing issue with additional details.  
+
+* **Bug report**: If you find a bug in the project you can report it with this template and the Vinyl team will take a
+look at it. Please be as detailed as possible as it will help us recreate the bug and figure out what exactly is going on.
+If you are unsure whether what you found is a bug, we encourage you to first pop in our [dev gitter](https://gitter.im/vinyldns/vinyldns), and we can
+help determine if what you're seeing is unexpected behavior, and if it is we will direct to make the bug report. 
+* **Feature request**: Use this template if you have something you wish to be added to the project. Please be detailed 
+when describing why you are requesting the feature, what you want it to do, and alternative solutions you have considered.
+If the feature is a substantial change to VinylDNS, it may be better suited as an RFC, through our [RFC process](https://github.com/vinyldns/rfcs).
+* **Maintenance request**: This template is for suggesting upgrades to the existing code base. This could include 
+code refactoring, new libraries, additional testing, among other things. Please be detailed when describing the 
+reason for the maintenance, and what benefits will come out of it. Please describe the scope of the change, and 
+what parts of the system will be impacted. 
+
+### Discussion process
+When an issue is submitted the Vinyl team will give time for maintainers and the rest of the community to discuss it. 
+This discussion phase will officially start when a maintainer has added the **discussion** label to the issue, but
+people can still comment on it at any time. After this phase, the team will decide whether it is something 
+that is suited for our backlog, in which case it will be prioritized eventually depending on the VinylDNS roadmap. 
+
 ## Making Contributions
 ### Submitting a Code Contribution
 We follow the standard *GitHub Flow* for taking code contributions.  The following is the process typically followed:
 
 1. Create a fork of the repository that you want to contribute code to
 1. Clone your forked repository to your local machine
-1. In your local machine, add a remote to the "main" repository, we call this "upstream" by running `git remote add upstream https://github.com/vinyldns/vinyldns.git`.  Note: you can also use `ssh` instead of `https`
+1. In your local machine, add a remote to the "main" repository, we call this "upstream" by running 
+`git remote add upstream https://github.com/vinyldns/vinyldns.git`.  Note: you can also use `ssh` instead of `https`
 1. Create a local branch for your work `git checkout -b your-user-name/user-branch-name`.  Add whatever your GitHub
 user name is before whatever you want your branch to be.
 1. Begin working on your local branch
+1. Be sure to add necessary unit, integration, and functional tests, see the [Testing](DEVELOPER_GUIDE.md#testing) section of the Developer Guide.
 1. Make sure you run all builds before posting a PR!  It's faster to run everything locally rather than waiting for
 the build server to complete its job.  See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for information on local development
 1. When you are ready to contribute your code, run `git push origin your-user-name/user-branch-name` to push your changes
 to your _own fork_.
 1. Go to the [VinylDNS main repository](https://github.com/vinyldns/vinyldns.git) (or whatever repo you are contributing to)
-and you will see your change waiting and a link to "Create a PR".  Click the link to create a PR.
-1. You will receive comments on your PR.  Use the PR as a dialog on your changes.
+and you will see your change waiting and a link to "Create a PR".  Click the link to create a PR (Pull Request).
+1. Be as detailed as possible in the description of your pr. Describe what you changed, why you changed it, and 
+give a detailed list of changes and impacted files. If your PR is related to an existing issue, be sure to link the 
+issue in the PR itself, in addition to the PR description. 
+1. You will receive comments on your PR.  Use the PR as a dialog on your changes. 
 
 ### Commit Messages
 * Limit the first line to 72 characters or fewer.
@@ -58,12 +87,13 @@ to link your PR to other issues.  _Note: This is essential, otherwise we may not
 
 ### Modifying your Pull Requests
 Often times, you will need to make revisions to your PRs that you submit.  This is part of the standard process of code
-review.  There are different ways that you can make revisions, but the following process is pretty standard.
+review. There are different ways that you can make revisions, but the following process is pretty standard.
 
 1. Sync with upstream first.  `git checkout master && git fetch upstream && git rebase upstream master && git push origin master`
 1. Checkout your branch on your local `git checkout your-user-name/user-branch-name`
 1. Sync your branch with latest `git rebase master`.  Note: If you have merge conflicts, you will have to resolve them
 1. Revise your PR, making changes recommended in the comments / code review
+1. Stage and commit these changes on top of your existing commits
 1. When all tests pass, `git push origin your-user-name/user-branch-name` to revise your commit.  GitHub automatically
 recognizes the update and will re-run verification on your PR!
 
@@ -71,7 +101,8 @@ recognizes the update and will re-run verification on your PR!
 
 Before Comcast merges your code into the project you must sign the [Comcast Contributor License Agreement (CLA)](https://gist.github.com/ComcastOSS/a7b8933dd8e368535378cda25c92d19a).
 
-If you haven't previously signed a Comcast CLA, you'll automatically be asked to when you open a pull request. Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request a PDF version of the CLA.
+If you haven't previously signed a Comcast CLA, you'll automatically be asked to when you open a pull request. 
+Alternatively, we can send you a PDF that you can sign and scan back to us. Please create a new GitHub issue to request a PDF version of the CLA.
 
 ### Merging your Pull Request
 Once your PR is approved, one of the maintainers will merge your request for you.  If you are a maintainer, you can
@@ -82,92 +113,37 @@ merge your PR once you have the approval of at least 2 other maintainers.
 * Use snake case for everything except classes.  `this_is_snake_case`; `thisIsNotSnakeCaseDoNotDoThis`
 
 ## Testing
-For specific steps to run the tests see the [Testing](BUILDING.md#testing) section of the Building guide.
-
-### Python for Testing
-We use [pytest](https://docs.pytest.org/en/latest/) for python tests.  It is helpful that you browse the documentation
-so that you are familiar with pytest and how our functional tests operate.
-
-We also use [PyHamcrest](https://pyhamcrest.readthedocs.io/en/release-1.8/) for matchers in order to write easy
-to read tests.  Please browse that documentation as well so that you are familiar with the different matchers
-for PyHamcrest.  There aren't a lot, so it should be quick.
-
-Want to become a super star?  [Write custom matchers!](https://pyhamcrest.readthedocs.io/en/release-1.8/custom_matchers/)
-
-### Python Setup
-We use python for our functional tests exclusively in this project.  You can find all python code under the
-`functional_test` directory.
-
-In that directory are a few important files for you to be familiar with:
-
-* vinyl_client.py - this provides the interface to the VinylDNS api.  It handles signing the request for you, as well
-as building and executing the requests, and giving you back valid responses.  For all new API endpoints, there should
-be a corresponding function in the vinyl_client
-* utils.py - provides general use functions that can be used anywhere in your tests.  Feel free to contribute new
-functions here when you see repetition in the code
-
-Functional tests run on every build, and are designed to work _in every environment_.  That means locally, in docker,
-and in production environments.
-
-The functional tests that we run live in `functional_test/live_tests` directory.  In there, we have directories / modules
-for different areas of the application.
-
-* membership - for managing groups and users
-* recordsets - for managing record sets
-* zones - for managing zones
-* internal - for internal endpoints (not intended for public consumption)
-* batch - for managing batch updates
-
-### Functional Test Context
-Our func tests use pytest contexts.  There is a main test context that lives in `shared_zone_test_context.py`
-that creates and tears down a shared test context used by many functional tests.  The
-beauty of pytest is that it will ensure that the test context is stood up exactly once, then all individual tests
-that use the context are called using that same context.
-
-The shared test context sets up several things that can be reused:
-
-1. An ok user and group
-1. A dummy user and group - a separate user and group helpful for tesing access controls and authorization
-1. An ok zone accessible only by the ok user and ok group
-1. A dummy zone accessible only by the dummy user and dummy group
-1. An IPv6 reverse zone
-1. A normal IPv4 reverse zone
-1. A classless IPv4 reverse zone
-1. A parent zone that has child zones - used for testing NS record management and zone delegations
-
-### Really Important Test Context Rules!
-
-1. Try to use the `shared_zone_test_context` whenever possible!  This reduces the time
-it takes to run functional tests (which is in minutes).
-1. Limit changes to users, groups, and zones in the shared test context, as doing so could impact downstream tests
-1. If you do modify any entities in the shared zone context, roll those back when your function completes!
+When making changes to the VinylDNS codebase, be sure to add necessary unit, integration, and functional tests.
+For specifics on our tests, see the [Testing](DEVELOPER_GUIDE.md#testing) section of the Developer Guide.
 
 ## License Header Check
+VinylDNS is configured with [sbt-header](https://github.com/sbt/sbt-header). All existing scala files have the appropriate
+header. To add or check for headers, follow these steps: 
 
 ### API
-VinylDNS is configured with [sbt-header](https://github.com/sbt/sbt-header). All existing scala files have the appropriate
-header. You can check for headers in `sbt` with:
+You can check for headers in the API in `sbt` with:
 
-```bash
-> ;headerCheck;test:headerCheck;it:headerCheck
+```
+> ;project api;headerCheck;test:headerCheck;it:headerCheck
 ```
 
 If you add a new file, you can add the appropriate header in `sbt` with:
-```bash
-> ;headerCreate;test:headerCreate;it:headerCreate
+
+```
+> ;project api;headerCreate;test:headerCreate;it:headerCreate
 ```
 
 ### Portal
->You can check for headers in `sbt` with:
+You can check for headers in the Portal `sbt` with:
+
 ```
-project portal
-;headerCheck;test:headerCheck;checkJsHeaders
+> ;project portal;headerCheck;test:headerCheck;checkJsHeaders
 ```
 
->You can create headers in `sbt` with:
+If you add a new file, you can add the appropriate header in `sbt` with:
+
 ```
-project portal
-;headerCreate;test:headerCreate;createJsHeaders
+> ;project portal;headerCreate;test:headerCreate;createJsHeaders
 ```
 
 ## Release Management
