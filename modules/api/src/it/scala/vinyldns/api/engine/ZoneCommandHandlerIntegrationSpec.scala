@@ -148,7 +148,6 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
     recordChangeRepo = new DynamoDBRecordChangeRepository(recordChangeStoreConfig, dynamoDBHelper)
     recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
     zoneChangeRepo = new DynamoDBZoneChangeRepository(zoneChangeStoreConfig, dynamoDBHelper)
-
     zoneRepo = VinylDNSJDBCTestDb.instance.zoneRepository
     batchChangeRepo = VinylDNSJDBCTestDb.instance.batchChangeRepository
     sqsConn = SqsConnection()

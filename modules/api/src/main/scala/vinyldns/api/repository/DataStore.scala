@@ -31,7 +31,7 @@ import vinyldns.api.domain.zone.ZoneRepository
 
 object DataStoreProvider {
 
-  // TODO actually dynamically load
+  // TODO placeholder, need to actually dynamically load
   def load(config: Config): IO[DataStore] =
     for {
       className <- IO(config.getString("type"))
@@ -61,7 +61,7 @@ object DataStoreProvider {
           extractRepo(membershipRepos, "membership"),
           extractRepo(groupChangeRepos, "groupChange"),
           extractRepo(recordSetRepos, "recordSet"),
-          extractRepo(recordChangeRepos, "recorhange"),
+          extractRepo(recordChangeRepos, "recordChange"),
           extractRepo(zoneChangeRepos, "zoneChange"),
           extractRepo(zoneRepos, "zone"),
           extractRepo(batchChangeRepos, "batchChange")).mapN(DataAccessor)
