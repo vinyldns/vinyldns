@@ -1499,31 +1499,9 @@ def test_dotted_host_create_fails(shared_zone_test_context):
     assert_that(error, is_('Record with name record-with.dot is a dotted host which is illegal in this zone ok.'))
 
 
-def test_ns_create_for_non_approved_group_fails(shared_zone_test_context):
+def test_ns_create_for_admin_group_succeeds(shared_zone_test_context):
     """
-    Tests that an ns change on a group whose admin group is not approved fails (only ok group is approved)
-    """
-    client = shared_zone_test_context.dummy_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-
-    new_rs = {
-        'zoneId': zone['id'],
-        'name': 'someNS',
-        'type': 'NS',
-        'ttl': 38400,
-        'records': [
-            {
-                'nsdname': 'ns1.parent.com.'
-            }
-        ]
-    }
-    error = client.create_recordset(new_rs, status=403)
-    assert_that(error, is_('Do not have permissions to manage NS recordsets, please contact vinyldns-support'))
-
-
-def test_ns_create_for_approved_group_passes(shared_zone_test_context):
-    """
-    Tests that an ns change on a group whose admin group is approved passes (only ok group is approved)
+    Tests that an ns change passes
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
@@ -1548,6 +1526,30 @@ def test_ns_create_for_approved_group_passes(shared_zone_test_context):
         if result_rs:
             client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
+
+
+def test_ns_create_for_unapproved_server_fails(shared_zone_test_context):
+    """
+    Tests that an ns change fails if one of the servers isnt approved
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+
+    new_rs = {
+        'zoneId': zone['id'],
+        'name': 'someNS',
+        'type': 'NS',
+        'ttl': 38400,
+        'records': [
+            {
+                'nsdname': 'ns1.parent.com.'
+            },
+            {
+                'nsdname': 'this.is.bad.'
+            }
+        ]
+    }
+    client.create_recordset(new_rs, status=422)
 
 
 def test_ns_create_for_origin_fails(shared_zone_test_context):

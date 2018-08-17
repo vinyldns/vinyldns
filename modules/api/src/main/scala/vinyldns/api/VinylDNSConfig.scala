@@ -18,6 +18,8 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import scala.collection.JavaConverters._
+import scala.util.matching.Regex
 import vinyldns.api.domain.zone.ZoneConnection
 
 object VinylDNSConfig {
@@ -40,6 +42,8 @@ object VinylDNSConfig {
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
   lazy val encryptUserSecrets: Boolean = vinyldnsConfig.getBoolean("encrypt-user-secrets")
+  lazy val approvedNameServers: List[Regex] =
+    vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)
 
   lazy val defaultZoneConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")

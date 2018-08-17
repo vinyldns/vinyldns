@@ -176,7 +176,7 @@ class RecordSetServiceIntegrationSpec
       mock[RecordChangeRepository],
       mock[UserRepository],
       TestSqsService,
-      new AccessValidations())
+      AccessValidations)
   }
 
   def tearDown(): Unit = ()

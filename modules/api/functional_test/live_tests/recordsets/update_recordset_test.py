@@ -1591,46 +1591,9 @@ def test_user_rule_over_mask_prioritized(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_ns_update_for_non_approved_group_fails(shared_zone_test_context):
+def test_ns_update_passes(shared_zone_test_context):
     """
-    Tests that someone not in the approved admin group cannot update ns record (only ok group is approved for tests)
-    """
-
-    client = shared_zone_test_context.ok_vinyldns_client
-    not_approved_client = shared_zone_test_context.dummy_vinyldns_client
-    zone = shared_zone_test_context.parent_zone
-
-    ns_rs = None
-    try:
-        new_rs = {
-            'zoneId': zone['id'],
-            'name': 'someNS',
-            'type': 'NS',
-            'ttl': 38400,
-            'records': [
-                {
-                    'nsdname': 'ns1.parent.com.'
-                }
-            ]
-        }
-        result = client.create_recordset(new_rs, status=202)
-        ns_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
-
-        changed_rs = ns_rs
-        changed_rs['ttl'] = changed_rs['ttl'] + 100
-
-        error = not_approved_client.update_recordset(changed_rs, status=403)
-        assert_that(error, is_('Do not have permissions to manage NS recordsets, please contact vinyldns-support'))
-
-    finally:
-        if ns_rs:
-            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
-            client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
-
-
-def test_ns_update_for_approved_group_passes(shared_zone_test_context):
-    """
-    Tests that someone in the approved admin group ok-group can update ns record (only ok group is approved for tests)
+    Tests that someone in the admin group can update ns record
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
@@ -1662,6 +1625,47 @@ def test_ns_update_for_approved_group_passes(shared_zone_test_context):
             client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
             client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
 
+
+def test_ns_update_for_unapproved_server_fails(shared_zone_test_context):
+    """
+    Tests that an ns update fails if one of the servers isnt approved
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+    ns_rs = None
+
+    try:
+        new_rs = {
+            'zoneId': zone['id'],
+            'name': 'badNSupdate',
+            'type': 'NS',
+            'ttl': 38400,
+            'records': [
+                {
+                    'nsdname': 'ns1.parent.com.'
+                }
+            ]
+        }
+        result = client.create_recordset(new_rs, status=202)
+        ns_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        changed_rs = ns_rs
+
+        bad_records = [
+            {
+                'nsdname': 'ns1.parent.com.'
+            },
+            {
+                'nsdname': 'this.is.bad.'
+            }
+        ]
+        changed_rs['records'] = bad_records
+
+        client.update_recordset(changed_rs, status=422)
+    finally:
+        if ns_rs:
+            client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
+            client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
 
 def test_update_to_dotted_host_fails(shared_zone_test_context):
     """

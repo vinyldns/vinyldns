@@ -66,7 +66,7 @@ class ZoneServiceSpec
     TestConnectionValidator,
     TestSqsService,
     new ZoneValidations(1000),
-    new AccessValidations())
+    AccessValidations)
 
   override protected def beforeEach(): Unit = {
     reset(mockGroupRepo, mockZoneRepo, mockUserRepo)

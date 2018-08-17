@@ -18,10 +18,11 @@ package vinyldns.api.domain.record
 
 import cats.syntax.either._
 import vinyldns.api.Interfaces._
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
 import vinyldns.api.domain.dns.DnsConversions.omitTrailingDot
 import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.zone.{InvalidRequest, PendingUpdateError, RecordSetAlreadyExists, Zone}
+import vinyldns.api.domain.zone._
 
 object RecordSetValidations {
 
@@ -154,6 +155,7 @@ object RecordSetValidations {
         newRecordSet,
         zone,
         s"Record with name ${newRecordSet.name} is an NS record at apex and cannot be added")
+      _ <- containsApprovedNameServers(newRecordSet)
       _ <- oldRecordSet
         .map { rs =>
           isNotOrigin(
@@ -177,6 +179,13 @@ object RecordSetValidations {
     ensuring(InvalidRequest(err))(
       !isOriginRecord(recordSet.name, omitTrailingDot(zone.name))
     )
+
+  private def containsApprovedNameServers(nsRecordSet: RecordSet): Either[Throwable, Unit] =
+    ZoneRecordValidations
+      .containsApprovedNameServers(VinylDNSConfig.approvedNameServers, nsRecordSet)
+      .toEither
+      .map(_ => ())
+      .leftMap(errors => InvalidRequest(errors.toList.mkString(", ")))
 
   private def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)

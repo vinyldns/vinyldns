@@ -37,10 +37,9 @@ object ZoneRecordValidations {
   def containsApprovedNameServers(
       approvedServerList: List[Regex],
       nsRecordSet: RecordSet): ValidatedNel[String, RecordSet] = {
-    val validations: List[ValidatedNel[String, NSData]] =
-      nsRecordSet.records
-        .map(_.asInstanceOf[NSData])
-        .map(isApprovedNameServer(approvedServerList, _))
+    val validations: List[ValidatedNel[String, NSData]] = nsRecordSet.records
+      .collect { case ns: NSData => ns }
+      .map(isApprovedNameServer(approvedServerList, _))
 
     validations.sequence.map(_ => nsRecordSet)
   }
