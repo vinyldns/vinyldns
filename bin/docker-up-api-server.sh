@@ -11,10 +11,10 @@ DIR=$( cd $(dirname $0) ; pwd -P )
 WORK_DIR="$DIR"/../target/scala-2.12
 mkdir -p "$WORK_DIR"
 
-echo "Copy all docker to the target directory so we can start up properly and the docker context is small..."
+echo "Copy all Docker to the target directory so we can start up properly and the Docker context is small..."
 cp -af "$DIR"/../docker "$WORK_DIR"/
 
-echo "Copy the vinyldns.jar to the api docker folder so it is in context..."
+echo "Copy the vinyldns.jar to the API Docker folder so it is in context..."
 if [[ ! -f "$DIR"/../modules/api/target/scala-2.12/vinyldns.jar ]]; then
     echo "vinyldns jar not found, building..."
     cd "$DIR"/../
@@ -23,7 +23,7 @@ if [[ ! -f "$DIR"/../modules/api/target/scala-2.12/vinyldns.jar ]]; then
 fi
 cp -f "$DIR"/../modules/api/target/scala-2.12/vinyldns.jar "$WORK_DIR"/docker/api
 
-echo "Starting api server and all dependencies in the background..."
+echo "Starting API server and all dependencies in the background..."
 docker-compose -f "$WORK_DIR"/docker/docker-compose-func-test.yml --project-directory "$WORK_DIR"/docker up --build -d api
 
 VINYLDNS_URL="http://localhost:9000"
@@ -35,7 +35,7 @@ do
     DATA=$(curl -I -s "${VINYLDNS_URL}/ping" -o /dev/null -w "%{http_code}")
     if [ $? -eq 0 ]
     then
-        echo "Succeeded in connecting to VINYLDNS!"
+        echo "Succeeded in connecting to VinylDNS API!"
         break
     else
         echo "Retrying Again" >&2
@@ -45,7 +45,7 @@ do
 
         if [ "$RETRY" -eq 0 ]
         then
-          echo "Exceeded retries waiting for VINYLDNS to be ready, failing"
+          echo "Exceeded retries waiting for VinylDNS API to be ready, failing"
           exit 1
         fi
     fi
