@@ -2,7 +2,6 @@
 layout: docs
 title:  "AWS DynamoDB Setup Guide"
 section: "operator_menu"
-position: 3
 ---
 
 # AWS DynamoDB Setup Guide

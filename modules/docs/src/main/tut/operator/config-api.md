@@ -1,12 +1,23 @@
 ---
 layout: docs
-title: "Configuration Guide"
-section: "operator"
+title: "API Configuration Guide"
+section: "operator_menu"
 ---
+
+# API Configuration Guide
 
 **Note: ALL configuration assumes a `vinyldns` namespace.  For example, sqs settings would be under `vinyldns.sqs`.**
 
-# Configuration Guide
+## Configuration
+- [Configuration Overview](#configuration-overview)
+- [Configuration API Server](#configuring-api-server)
+- [AWS SQS](#aws-sqs)
+- [AWS DynamoDB](#aws-dynamodb)
+- [MySQL](#mysql)
+- [Cryptography](#cryptography-settings)
+- [Additional Configuration Settings](#additional-configuration-settings)
+- [Full Example Config](#full-example-config)
+
 There are a lot of configuration settings in VinylDNS.  So much so that it may seem overwhelming to configure
 vinyldns to your environment.  This document describes the configuration settings, high-lighting the settings
 you are _most likely to change_.  All of the configuration settings are captured at the end.
@@ -14,7 +25,9 @@ you are _most likely to change_.  All of the configuration settings are captured
 It is important to note that the `api` and `portal` have _different_ configuration.  We will review the configuration
 for each separately.
 
-## How do we config?
+## Configuration Overview
+
+### How do we config?
 All configuration is done using [Typesafe Config](https://github.com/lightbend/config).  It provides a means to
 specifying default configurations, and overriding the configured values in a number of ways:
 
@@ -30,7 +43,24 @@ For example, you can specify `-Dmy.config.value=42`, and that will override _bot
 syntax that allows you to use environment variables.  You can make the environment variable optional (meaning use it if it is there)
 or required (fail to start up without the environment variable).  We will illustrate use of environment variables in this guide.
 
-## API Configuration
+### Using Environment Variables
+We _strongly_ recommend that you use environment variables in particular for secrets.  Laying down environment variables
+in a flat file is a security vulnerability for your installation.  To demonstrate environment variable usage, here is a following
+snippet...
+
+```yaml
+  sqs {
+    access-key = ${AWS_ACCESS_KEY}
+    secret-key = ${AWS_SECRET_ACCESS_KEY}
+    signing-region = ${SQS_REGION}
+    service-endpoint = ${SQS_ENDPOINT}
+    queue-url = ${SQS_QUEUE_URL}
+  }
+```
+
+In the example, if any of the values in `${xxx}` are not found in the environment, the application will not start up!
+
+## Configuring API Server
 The API configuration has a lot of values, the important ones reviewed here.  There are several configuration
 settings that are specific to _your_ environment.
 
@@ -41,32 +71,7 @@ The most important configuration is around your system dependencies. Presently, 
 
 **We are actively working on supporting different message queues and data stores.  Look for those to become available shortly**
 
-### AWS SQS
-SQS is used to provide high-availability and failover in the event that a node crashes mid-stream while processing a message.
-The backend processing for VinylDNS is built to be idempotent so changes can be fully re-applied.  The SQS queue
-also provides a mechanism to _throttle_ updates, in the event that an out-of-control client submits thousands or
-millions of concurrent requests, they will all be throttled through SQS.
-
-You must setup an SQS queue before you can start working with VinylDNS.  An [AWS SQS Getting Started Guide](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-getting-started.html)
-provides the information you need to setup your queue.
-
-#### Setting up AWS SQS
-The traffic with AWS SQS is rather low.  Presently, Comcast operates multiple SQS queues across multiple environments (dev, staging, prod),
-and incur a cost of less than $10 USD per month.  SQS allows up to 1MM requests per month in the _free_ tier.  It is possible
-to operate VinylDNS entirely in the "free" tier.  You can "tune down" your usage by increasing your polling interval.
-
-The following SQS Queue Attributes are recommended (these are in AWS when you create an SQS Queue):
-
-* `Queue Type` - Standard
-* `Delivery Delay` - 0 seconds
-* `Default Visibility Timeout` - 1 minute (how long it takes a record change to complete, usually a second)
-* `Message Retention Period` - 4 days
-* `Maximum Message Size` - 256KB
-* `Receive Message Wait Time` - 0 seconds
-* `Maximum Receives` - 100 (how many times a message will be retried before failing.  Note: if any messages retry more than 100 times, there is likely a problem requiring immediate attention)
-* `Dead Letter Queue` - use a dead letter queue for all queues
-
-The following configuration elements are provided...
+## AWS SQS
 ```yaml
 vinyldns {
 
@@ -94,50 +99,7 @@ vinyldns {
 }
 ```
 
-### AWS DYNAMODB
-[AWS DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html) is the default database
-for _most_ of the data that is stored in VinylDNS.  The following tables are used in VinylDNS:
-
-* `RecordSet` - holds record data
-* `RecordSetChange` - audit history of all changes made to records
-* `User` - holds user information, including access keys and secrets
-* `Group` - group information, including name, email and description
-* `Membership` - connects users to groups
-* `GroupChange` - holds audit history for groups
-* `UserChange` - holds audit history for all users (only used in the portal currently)
-* `ZoneChange` - audit history for changes to zones (not record related)
-
-AWS DYNAMODB connection information is configured one time, and the same connection is used across all tables.  Therefore,
-you must ensure that all tables live inside the _same_ AWS region accessible by the _same_ credentials.
-
-#### Setting up DYNAMODB
-**If the tables do not yet exist, starting up the application will _automatically_ create the tables for you.  Starting
-up the application for the first time is often the best way to setup the tables, as they do require keys and indexes to be setup.**
-
-[Provisioned Throughput](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ProvisionedThroughput.html)
-is a mechanism that controls how many reads and writes can happen concurrently against your tables and indexes.  You can
-configure *Auto Scaling* for your tables, so you do not have to worry about these settings.
-
-The most _important_ thing to remember for Provisioned Throughput is that you pay more for _writes_ than _reads_.  To manage,
-costs, it is important to use Auto-Scaling, or turn down your provisioned throughput settings to be really low.
-
-If your installation does not have large zones (100,000s of records), and takes relatively low throughput, you can turn
-the throughput very low and operate in the "almost" free-tier.  The following guides help you tune your settings:
-
-* `recordSet` - this table (and recordSetChange) require the highest throughput.  If you have large zones, the first time
-you load a zone, all records will be loaded into the `recordSet` table.  If the settings are too low, it can take a long time
-for the records to be loaded, and worst case scenario the operation will fail.
-* `recordSetChange` - every time any record is updated, the audit trail is inserted into the `recordSetChange` table.  This
-also should have higher settings, as usage, especially on writes, can be rather high.
-* `user` - very low writes, very small data, high read rate (every API call looks up the user info)
-* `group` - very low writes, very small data, high read rate (every API call looks up the user groups)
-* `membership` - very low writes, very small data, high read rate (every API call looks up the user membership)
-* `groupChange` - very low writes, very small data, very low read
-* `userChange` - very low writes, very small data, very low read
-* `zoneChange` - very low writes, medium amount of data, very low read
-
-The following represents the configuration for dynamodb...
-
+## AWS DynamoDB
 ```yaml
 vinyldns {
 
@@ -217,33 +179,7 @@ vinyldns {
 }
 ```
 
-### MYSQL Configuration
-VinylDNS uses MySQL to house zone and batch change data.  The decision to use MySQL was due to query patterns that
-were just not possible in DynamoDB (or easily possible).  The following data is housed in MySQL:
-
-* `Zone` - zone level metadata and access control rules
-* `Zone Access` - determines users and groups that have access to zones
-* `Batch Change` - batch change meta data
-* `Single Change` - individual changes with a batch change
-
-VinylDNS uses [HikariCP](https://github.com/brettwooldridge/HikariCP#configuration-knobs-baby) for a high-speed connection
-pool.  **Note: not all settings are available in VinylDNS config.  Additional settings beyond those mentioned will require a small code change.**
-
-#### Setting up MYSQL
-Any MySQL server will work with VinylDNS.  You can use AWS RDS, but you do not have to.
-
-**NOTE: This will be updated shortly.  Running flyway migrations out-of-band is not ideal, and cumbersome**
-
-VinylDNS uses [Flyway](https://flywaydb.org/) for database migrations.
-Flyway migrations are located in `modules/api/src/main/resources/db/migration`.  To run migrations:
-
-1. Download the Flyway client https://flywaydb.org/documentation/commandline/
-2. Configure flyway to point to _your_ MySQL database
-3. Configure flyway to point to the VinylDNS migration scripts
-4. Run `flyway migrate` to update the schema to current
-
-The following configuration settings are used for MySQL...
-
+## MySQL
 ```yaml
   db {
     # the name of the database, recommend to leave this as is
@@ -283,7 +219,7 @@ The following configuration settings are used for MySQL...
   }
 ```
 
-### Cryptography Settings
+## Cryptography Settings
 VinylDNS uses symmetric cryptography in order to encrypt/decrypt sensitive information in the system.  This includes
 TSIG keys and user secrets.  Cryptography is used in _both_ the portal as well as the api.
 
@@ -306,32 +242,6 @@ vinyldns {
   }
 }
 ```
-
-**API Docker Image**
-You can create your own docker image, pulling from the officially signed docker images.  Or, you can use the official
-VinylDNS docker image, and add your jars to the mount.
-
-* /opt/docker/lib_extra - place here additional jar files that need to be loaded into the classpath when the application starts up.
-* /opt/docker/conf - place an application.conf file here with your own custom settings. This can be easier than passing in environment variables.
-
-For example...
-
-```yaml
-  vinyldns-api:
-    image: "vinyldns/api:8.0.0"
-    container_name: "vinyldns-api"
-    volumes:
-      - ./my/lib:/opt/docker/lib_extra
-      - ./my/conf:/opt/docker/conf
-```
-
-**Portal Docker Image**
-The portal docker image also allows you to bring your own jars.
-
-* /opt/docker/lib_extra - place here additional jar files that need to be loaded into the classpath when the application starts up.
-* /opt/docker/conf/application.conf - to override default configuration settings
-* /opt/docker/conf/application.ini - to pass additional JVM options
-* /opt/docker/conf/trustStore.jks - to make available a custom trustStore for your own SSL, which has to be set in /opt/docker/conf/application.ini as -Djavax.net.ssl.trustStore=/opt/docker/conf/trustStore.jks
 
 ## Default Zone Connections
 VinylDNS allows you to specify zone connection information _for each zone_.
@@ -426,8 +336,7 @@ _that_ zone.
 sync-delay = 10000
 ```
 
-
-
+### Full Example Config
 ```yaml
 # The default application.conf is not intended to be used in production.  It assumes a docker-compose
 # setup for all of the services.  Provide your own application.conf on the docker mount with your

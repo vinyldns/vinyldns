@@ -71,21 +71,21 @@ options:
     - title: Setup LDAP
       url: operator/setup-ldap
 
-  - title: Installing the API Server
-    url: operator/install-api
+  - title: Setup the API Server
+    url: operator/setup-api
     menu_type: operator_menu
     menu_section: operator_section
     nested_options:
-    - title: API Configuration
-      url: operator/api-config
+    - title: API Configuration Guide
+      url: operator/config-api
 
-  - title: Installing the Portal Server
-    url: operator/install-portal
+  - title: Setup the Portal Server
+    url: operator/setup-portal
     menu_type: operator_menu
     menu_section: operator_section
     nested_options:
-    - title: Portal Configuration
-      url: operator/portal-config
+    - title: Portal Configuration Guide
+      url: operator/config-portal
 
   - title: API documentation
     url: api/index

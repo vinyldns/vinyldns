@@ -2,7 +2,6 @@
 layout: docs
 title:  "Pre-requsites"
 section: "operator_menu"
-position: 3
 ---
 
 # VinylDNS Pre-requisites
@@ -45,8 +44,8 @@ The `BatchChangeRepository` holds the batch itself and all individual changes th
 **Note: The UserChangeRepository is currently only used in the portal, and lives outside of the api.  This will be moved
 alongside the other repositories in the near future**
 
-### Database Types
-#### AWS DynamoDB
+## Database Types
+### AWS DynamoDB
 VinylDNS has gone through several architecture evolutions.  Along the way, DynamoDB was chosen as the data store due to
 the volume of data at Comcast.  It is an excellent key-value store with extremely high performance characteristics.
 
@@ -63,7 +62,7 @@ VinylDNS uses DynamoDB presently for the following repositories:
 
 Review the [Setup AWS DynamoDB Guide](setup-dynamodb) for more information.
 
-#### MySQL
+### MySQL
 VinylDNS currently uses MySQL only for the following repositories.
 
 1. ZoneRepository
@@ -81,8 +80,8 @@ with retry, and throttling.  The message queue supports these characteristics in
 Some operations do not use the message queue, these include user and group changes as they do not carry the same
 fault-tolerance and throttling requirements.
 
-### Message Queue Types
-#### AWS SQS
+## Message Queue Types
+### AWS SQS
 VinylDNS uses AWS SQS as its message queue.  SQS has the following characteristics:
 
 1. High-Availability
