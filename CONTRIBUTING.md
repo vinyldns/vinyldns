@@ -12,6 +12,7 @@ The following are a set of guidelines for contributing to VinylDNS and its assoc
     * [Pull request requirements](#pull-request-requirements)
         * [Commit messages](#commit-messages)
         * [Testing](#testing)
+        * [Documentation edits](#documentation-edits)
         * [Style guides](#style-guides)
         * [License header checks](#license-header-checks)
         * [Contributor license agreement](#contributor-license-agreement)
@@ -109,6 +110,12 @@ to link your Pull Request to other issues.  _Note: This is essential, otherwise 
 #### Testing
 When making changes to the VinylDNS codebase, be sure to add necessary unit, integration, and functional tests.
 For specifics on our tests, see the [Testing](DEVELOPER_GUIDE.md#testing) section of the Developer Guide.
+
+#### Documentation edits
+Documentation for the VinylDNS project lives in files such as this one in the root of the project directory, as well
+as in `modules/docs/src/main/tut` for the docs you see on <www.vinyldns.io>. Many changes, such as those that impact
+an API endpoint, config, portal usage, etc, will also need corresponding documentation edited to prevent it from going stale.
+Include those changes in the Pull Request. 
 
 #### Style Guides
 * For Scala code we use [Scalastyle](http://www.scalastyle.org/). The configs are `scalastyle-config.xml` and 
