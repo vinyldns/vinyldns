@@ -10,7 +10,7 @@ Batch change is an alternative to submitting individual RecordSet changes and pr
 * The ability to include records of multiple record types across multiple zones.
 * Input names are entered as fully-qualified domain names (or IP addresses for **PTR** records), so users don't have to think in record/zone context.
 
-To update an existing record, you must delete the record first and add the record again with the updated changes. A delete and add of the same recordset within a batch change request will be processed as an update.
+To update an existing record, you must delete the record first and add all expected records within the same batch; a delete and add of the same recordset within a batch change request will be processed as an update.
 
 Batch changes are also susceptible to the following restrictions:
 * Current supported record types for batch change are: **A**, **AAAA**, **CNAME**, **PTR**, **TXT**, and **MX**.
