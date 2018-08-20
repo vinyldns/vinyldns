@@ -4,7 +4,7 @@ title:  "Connect to your Zone"
 section: "portal_menu"
 ---
 ## Connect to your Zone <a id="connectingZone"></a>
-Once your zone is setup for use with VinylDNS, you can use the VinylDNS portal to connect to it.
+Once your zone is [setup for use with VinylDNS](../faq#1), you can use the VinylDNS portal to connect to it.
 
 1. If you don't already have an admin group in VinylDNS for your zone select the Groups link in the navigation and [create an admin group](create-a-group) for your zone. Members of the group will have full access to the zone. See [Manage Access](manage-access) for more details.
 1. Select the Zones link from the navigation, then click the *Connect* button.  This will show the *Connect to a Zone*

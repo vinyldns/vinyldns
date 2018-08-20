@@ -15,8 +15,7 @@ To manage records in a zone go to the *Zones* section of the portal and select t
 The *Records* pane, below the *Recent Record Changes* pane, lists record sets. Record sets are records that have the same
 name but different record data.  Not all record types support record sets.
 
-When you make any change, it will be issued *immediately* upon confirming
-the change to the DNS backend.
+When you make any change, it will be immediately queued for processing. Typically processing happens in a second or two. You may need to select the *Refresh* button if you don't see the change reflected in the portal.
 
 If for any reason the change failed, you can view the change in the *Recent Record Changes* pane
 at the top of the screen, or look at the *Change History* tab to see what went wrong.
