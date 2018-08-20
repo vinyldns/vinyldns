@@ -9,6 +9,7 @@ The Portal Server is the web UI for VinylDNS.  To setup the Portal server, follo
 
 1. [Setup API Server](setup-api)
 1. [Setup LDAP](setup-ldap)
+1. [Configure Portal Server](config-portal)
 1. [Using the Portal Docker Image](#using-the-portal-docker-image)
 
 Once you have you pre-requisites ready, review the [Portal Configuration Guide](config-portal) for how to build out
@@ -16,6 +17,9 @@ your configuration file.
 
 # Using the Portal Docker Image
 The Portal server is provided as a [VinylDNS Portal Image](https://hub.docker.com/r/vinyldns/portal/).
+
+The API server is _stateless_, allowing you to run multiple instances in multiple data centers for high-availability
+purposes.
 
 ## Volume mounts
 * `/opt/docker/lib_extra` - place here additional jar files that need to be loaded into the classpath when the application starts up.

@@ -19,7 +19,7 @@ section: "operator_menu"
 - [Full Example Config](#full-example-config)
 
 There are a lot of configuration settings in VinylDNS.  So much so that it may seem overwhelming to configure
-vinyldns to your environment.  This document describes the configuration settings, high-lighting the settings
+vinyldns to your environment.  This document describes the configuration settings, highlighting the settings
 you are _most likely to change_.  All of the configuration settings are captured at the end.
 
 It is important to note that the `api` and `portal` have _different_ configuration.  We will review the configuration
@@ -72,6 +72,8 @@ The most important configuration is around your system dependencies. Presently, 
 **We are actively working on supporting different message queues and data stores.  Look for those to become available shortly**
 
 ## AWS SQS
+Be sure to follow the [AWS SQS Setup Guide](setup-sqs) first to get the values you need to configure here.
+
 ```yaml
 vinyldns {
 
@@ -100,6 +102,8 @@ vinyldns {
 ```
 
 ## AWS DynamoDB
+Be sure to follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
+
 ```yaml
 vinyldns {
 
@@ -180,6 +184,8 @@ vinyldns {
 ```
 
 ## MySQL
+Be sure to follow the [MySQL Setup Guide](setup-mysql) first to get the values you need to configure here.
+
 ```yaml
   db {
     # the name of the database, recommend to leave this as is
@@ -204,9 +210,6 @@ vinyldns {
       # the password to connect to MySQL
       password = "pass"
 
-      # the number of connections that will be acquired in the connection pool for this vinyldns instance
-      poolInitialSize = 10
-
       # the maximum number of connections to scale the connection pool to
       poolMaxSize = 20
 
@@ -226,6 +229,8 @@ TSIG keys and user secrets.  Cryptography is used in _both_ the portal as well a
 Cryptography is _pluggable_, meaning you can bring your own crypto with you.  All that is required is to provide an
 implementation of [CryptoAlgebra](https://github.com/vinyldns/vinyldns/blob/master/modules/core/src/main/scala/vinyldns/core/crypto/CryptoAlgebra.scala)
 using a crypto library of choice.  The default implementation is `NoOpCrypto`, which does not do any encryption (not recommended for production).
+VinylDNS provides a cryptography implementation called `JavaCrypto` that you can use for production.  The example that follows illustrates
+using the provided `JavaCrypto`.
 
 If you create your own implementation, you have to build your jar and make it (and all dependencies) available to the VinylDNS API
 and the VinylDNS portal.
@@ -289,7 +294,7 @@ of problems when not done properly.  Also, allowing delegation to untrusted DNS 
 
 To "lock down" zone delegation, you can configure name servers that you trust, so zone delegation is controlled.
 
-The entries in the list can be host names, IP addresses, or regular expressions...
+The entries in the list can be host names, IP addresses, or regular expressions.
 
 ```yaml
 approved-name-servers = [
@@ -318,7 +323,7 @@ Version of the application that is deployed.  Currently, this is a configuration
 **Note: You can get installation information including color, version, and processing-disabled by hitting the _status_ endpoint GET /status**
 
 ### HTTP Host and Port
-To specify what host and port to bind to when starting up the API server, default is 9000...
+To specify what host and port to bind to when starting up the API server, default is 9000.
 
 ```yaml
 rest {
@@ -379,7 +384,6 @@ vinyldns {
       url = "jdbc:mariadb://vinyldns-mysql:3306/vinyldns?user=root&password=pass"
       user = "root"
       password = "pass"
-      poolInitialSize = 10
       poolMaxSize = 20
       connectionTimeoutMillis = 1000
       maxLifeTime = 600000

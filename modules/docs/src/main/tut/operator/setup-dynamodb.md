@@ -43,16 +43,20 @@ you load a zone, all records will be loaded into the `recordSet` table.  If the 
 for the records to be loaded, and worst case scenario the operation will fail.
 
 **Attributes**
-* `zone_id` - String(UUID) - the id of the zone the record set belongs to
-* `record_set_id` - String(UUID) - the unique id for this record set
-* `record_set_name` - String - the record set name
-* `record_set_type` - String - the RRType of record set, for example A, AAAA, CNAME
-* `record_set_sort` - String - the case in-sensitive name for the record set, used for sort purposes
-* `record_set_blob` - Binary - hold a binary array representing the record set.  Currently protocol buffer byte array
+
+| name | type | description |
+| `zone_id` | String(UUID) | the id of the zone the record set belongs to |
+| `record_set_id` | String(UUID) |  the unique id for this record set |
+| `record_set_name` |  String |  the record set name |
+| `record_set_type` |  String |  the RRType of record set, for example A, AAAA, CNAME |
+| `record_set_sort` |  String |  the case in-sensitive name for the record set, used for sort purposes |
+| `record_set_blob` |  Binary |  hold a binary array representing the record set.  Currently protocol buffer byte array |
 
 **Table Keys**
-* HASH = `record_set_id`
-* SORT = `<none>`
+
+| type | attribute name |
+| HASH | `record_set_id` |
+| SORT |  `<none>` |
 
 **Indexes**
 * `zone_id_record_set_name_index` - Global Secondary Index
@@ -74,18 +78,22 @@ Every time any record is updated, the audit trail is inserted into the `recordSe
 also should have higher settings, as usage, especially on writes, can be rather high.
 
 **Attributes**
-* `change_set_id` - String(UUID) - id for the change set this change belongs to
-* `record_set_change_id` - String(UUID) - the id for the record set change
-* `zone_id` - String(UUID) the zone this record change was made for
-* `status` - Number - a number representing the status of the change (Pending = 0 | Processing = 1 | Complete = 2 | Applied = 100)
-* `created_timestamp` - String - a string representing the GMT formatted date/time when the change set was created
-* `record_set_change_created_timestamp` - Number - a number in EPOCH millis when the change was created
-* `processing_timestamp` - String - a string representing the GMT formatted date/time when the record set change was processed
-* `record_set_change_blob` - Binary - the protobuf serialized bytes that represent the entire record set change
+
+| name | type | description |
+| `change_set_id` | String(UUID) | id for the change set this change belongs to |
+| `record_set_change_id` | String(UUID) | the id for the record set change |
+| `zone_id` | String(UUID) | the zone this record change was made for |
+| `change_set_status` | Number | a number representing the status of the change (Pending = 0 ; Processing = 1 ; Complete = 2 ; Applied = 100) |
+| `created_timestamp` | String | a string representing the GMT formatted date/time when the change set was created |
+| `record_set_change_created_timestamp` | Number | a number in EPOCH millis when the change was created |
+| `processing_timestamp` | String | a string representing the GMT formatted date/time when the record set change was processed |
+| `record_set_change_blob` | Binary |  the protobuf serialized bytes that represent the entire record set change |
 
 **Table Keys**
-* HASH = `record_set_change_id`
-* SORT = `<none>`
+
+| type | attribute name |
+| HASH | `record_set_change_id` |
+| SORT | `<none>` |
 
 **Indexes**
 * `zone_id_change_status_index` - Global Secondary Index
@@ -114,24 +122,27 @@ To enable encryption at rest, the user table should be encrypted.
 Very low writes, very small data, high read rate (every API call looks up the user info)
 
 **Attributes**
-* `userid` - String(UUID) - a unique identifier for this user
-* `username` - String - LDAP user name for this user
-* `firstname` - String - user first name
-* `lastname` - String - user last name
-* `email` - String - user's email address
-* `created` - Number - EPOCH time in millis when the user was created in VinylDNS
-* `accesskey` - String - The access key (public) for the user to interact with the VinylDNS API
-* `secretkey` - String - the secret key (private) for the user to interact with the VinylDNS API.  This secret is
-encryted by default using the configured `Crypto` implementation.  It is also encrypted at rest.
-* `super` - Boolean - an indicator that the user is a VinylDNS Admin user (can access all data and operations)
 
-**Note: there is no way to programatically set the super flag, as it has a tremendous amount of power.  We are looking
+| name | type | description |
+| `userid` | String(UUID) | a unique identifier for this user |
+| `username` | String | LDAP user name for this user |
+| `firstname` | String | user first name |
+| `lastname` | String | user last name |
+| `email` | String | user's email address |
+| `created` | Number | EPOCH time in millis when the user was created in VinylDNS |
+| `accesskey` | String | The access key (public) for the user to interact with the VinylDNS API |
+| `secretkey` | String | the secret key (private) for the user to interact with the VinylDNS API.  This secret is encrypted by default using the configured `Crypto` implementation.  It is also encrypted at rest. |
+|  `super` | Boolean | an indicator that the user is a VinylDNS Admin user (can access all data and operations) |
+
+**Note: there is no way to programmatically set the super flag, as it has a tremendous amount of power.  We are looking
 for ideas and ways that we can provide super type access with some additional checks.  To set this flag, you would need
 to hand-roll your own script at this point and set this attribute.**
 
 **Table Keys**
-* HASH = `userid`
-* SORT = `<none>`
+
+| type | attribute name |
+| HASH | `userid` |
+| SORT | `<none>` |
 
 **Indexes**
 * `username_index` - Global Secondary Index
@@ -147,20 +158,25 @@ to hand-roll your own script at this point and set this attribute.**
 The Group table holds group information, including group name, email, and ids of members.
 
 **Usage**
-Very low writes, very small data, high read rate (every API call looks up the user groups)
+Very low writes, very small data, moderate read rate
 
 **Attributes**
-* `group_id` - String(UUID) - unique identifier for the group
-* `name` - String - the name of the group
-* `email` - String - the email (usually distribution list) of the gruop
-* `desc` - String - the description of the group
-* `status` - String - the group status (Active | Deleted)
-* `member_ids` - String Set - the ids of all members (users) of the group
-* `admin_ids` - String Set - the ids of all members who are group managers
+
+| name | type | description |
+| `group_id` | String(UUID) | unique identifier for the group |
+| `name` | String | the name of the group |
+| `email` | String | the email (usually distribution list) of the group |
+| `desc` | String | the description of the group |
+| `status` | String | the group status (Active, Deleted) |
+| `created` | Number | the date-time in EPOCH millis when the group was created |
+| `member_ids` | String Set | the ids of all members (users) of the group |
+| `admin_ids` | String Set | the ids of all members who are group managers |
 
 **Table Keys**
-* HASH = `group_id`
-* SORT = `<none>`
+
+| type | attribute name |
+| HASH | `group_id` |
+| SORT | `<none>` |
 
 **Indexes**
 * `group_name_index` - Global Secondary Index
@@ -176,12 +192,16 @@ a user is a member of.
 Very low writes, very small data, high read rate (every API call looks up the user groups)
 
 **Attributes**
-* `user_id` - String(UUID)
-* `group_id` - String(UUID)
+
+| name | type | description |
+| `user_id` | String(UUID) | the unique id for the user |
+| `group_id` | String(UUID) | the unique id for the group |
 
 **Table Keys**
-* HASH = `user_id`
-* SORT = `group_id`
+
+| type | attribute name |
+| HASH | `user_id` |
+| SORT | `group_id` |
 
 **Indexes**
 *none*
@@ -194,14 +214,18 @@ and group membership.
 Very low writes, very small data, very low read
 
 **Attributes**
-* `group_change_id` - String(UUID) - the unique identifier for the group change
-* `group_id` - String(UUID) - the unique identifier for the group
-* `created` - Number - the date / time in EPOCH millis
-* `group_change_blob` - Binary - protobuf of the group change
+
+| name | type | description |
+| `group_change_id` | String(UUID) | the unique identifier for the group change
+| `group_id` | String(UUID) | the unique identifier for the group |
+| `created` | Number | the date / time in EPOCH millis |
+| `group_change_blob` | Binary | protobuf of the group change |
 
 **Table Keys**
-* HASH = `group_id`
-* SORT = `created`
+
+| type | attribute name |
+| HASH | `group_id` |
+| SORT | `created` |
 
 **Indexes**
 * `GROUP_ID_AND_CREATED_INDEX` - Global Secondary Index
@@ -217,29 +241,35 @@ the change data as protobuf.
 Very low writes, very small data, very low read
 
 **Attributes**
-* `timestamp` - String - the datetime the change was made
-* `userId` - String(UUID) - the unique identifier for the user being changed
-* `username` - String - the username for the user being changed
-* `changeType` - String - created | updated | deleted
-* `updateUser` - Map - a map of the attributes being updated
-* `previousUser` - Map - a map of the new attributes
+
+| name | type | description |
+| `timestamp` | String | the datetime the change was made |
+| `userId` | String(UUID) | the unique identifier for the user being changed |
+| `username` | String | the username for the user being changed |
+| `changeType` | String | (created ; updated ; deleted) |
+| `updateUser` | Map | a map of the attributes being updated |
+| `previousUser` | Map | a map of the new attributes |
 
 ### ZoneChange Table
 Anytime an update is made to a zone, the event is stored here.  This includes changes to the admin group or ACL rules.
 
 **Usage**
-Very low writes, small data, high read
+Very low writes, small data, low read
 
 **Attributes**
-* `zone_id` - String(UUID) - unique identifier for the zone
-* `change_id` - String(UUID) - the unique identifier for this zone change
-* `status` - String - the status of the zone change (Active, Deleted, PendingUpdate, PendingDelete, Syncing)
-* `blob` - Binary - the protobuf serialized bytes for this zone change
-* `created` - Number - the date/time in EPOCH milliseconds
+
+| name | type | description |
+| `zone_id` | String(UUID) | unique identifier for the zone |
+| `change_id` | String(UUID) | the unique identifier for this zone change |
+| `status` | String | the status of the zone change (Active, Deleted, PendingUpdate, PendingDelete, Syncing) |
+| `blob` | Binary | the protobuf serialized bytes for this zone change |
+| `created` | Number | the date/time in EPOCH milliseconds |
 
 **Table Keys**
-* HASH = `zone_id`
-* SORT = `change_id`
+
+| type | attribute name |
+| HASH |  `zone_id` |
+| SORT | `change_id` |
 
 **Indexes**
 * `zone_id_status_index` - Global Secondary Index
@@ -254,3 +284,10 @@ Very low writes, small data, high read
     * HASH = `zone_id`
     * SORT = `created`
     * Projection Type = `ALL`
+
+## Configuring DynamoDB
+Before you can configure DynamoDB, make note of the AWS account (access key and secret access key) as well as the
+DynamoDB endpoint (region) that you will be using.  Follow the [DynamoDB API Configuration](config-api#aws-dynamodb)
+to complete the setup for the API.
+
+You also need to configure DynamoDB for the portal [DynamoDB Portal Configuration](config-portal#dynamodb)

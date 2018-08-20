@@ -9,16 +9,17 @@ The API Server is the main run-time for VinylDNS.  To setup the API server, foll
 
 1. [Pre-requisites](pre)
 1. [Setup AWS DynamoB](setup-dynamodb)
-1. [Setup Mysql](setup-mysql)
+1. [Setup MySQL](setup-mysql)
 1. [Setup AWS SQS](setup-sqs)
-1. [Using the API Docker Image(#using-the-api-docker-image)
-
-Once you have you pre-requisites ready, review the [API Configuration Guide](config-api) for how to build out
-your configuration file.
+1. [Configure API Server](config-api)
+1. [Using the API Docker Image](#using-the-api-docker-image)
 
 ## Using the API Docker Image
 The API server is provided via the [VinylDNS API Image](https://hub.docker.com/r/vinyldns/api/).
 The docker image allows you to mount your own config, as well as your own external dependency jars.
+
+The API server is _stateless_, allowing you to run multiple instances in multiple data centers for high-availability
+purposes.
 
 **Note: If using VinylDNS Java Crypto and the pre-requisites defined here, no additional jars need to be loaded.**
 

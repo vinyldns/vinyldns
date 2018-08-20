@@ -13,7 +13,7 @@ millions of concurrent requests, they will all be throttled through SQS.
 You must setup an SQS queue before you can start working with VinylDNS.  An [AWS SQS Getting Started Guide](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-getting-started.html)
 provides the information you need to setup your queue.
 
-#### Setting up AWS SQS
+## Setting up AWS SQS
 As opposed to DynamoDB and MySQL where everything is created when the application starts up, the SQS queue needs to be setup by hand.
 This section goes through those settings that are required.
 
@@ -31,3 +31,7 @@ The following SQS Queue Attributes are recommended (these are in AWS when you cr
 * `Receive Message Wait Time` - 0 seconds
 * `Maximum Receives` - 100 (how many times a message will be retried before failing.  Note: if any messages retry more than 100 times, there is likely a problem requiring immediate attention)
 * `Dead Letter Queue` - use a dead letter queue for all queues
+
+## Configuring SQS
+Before you can configure SQS, make note of the AWS account (access key and secret access key) as well as the
+SQS Queue Url that you will be using.  Follow the [SQS Configuration](config-api#aws-sqs) to complete the setup.

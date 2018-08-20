@@ -18,6 +18,8 @@ The portal configuration is much smaller than the API Server.
 - [Full Example Config](#full-example-config)
 
 ## AWS DynamoDB
+Be sure to follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
+
 The Portal uses the following tables:
 
 * `user`
@@ -50,6 +52,8 @@ changelog {
 ```
 
 ## LDAP
+Be sure to follow the [LDAP Setup Guide](setup-ldap) first to get the values you need to configure here.
+
 LDAP configuration connects VinylDNS to your Directory where user information is stored.
 
 ```yaml
@@ -137,7 +141,8 @@ play.http.secret.key = "vinyldnsportal-change-this-for-production"
 
 ### Test Login
 The test login should not be used for production environments.  It is useful to tinker with VinylDNS.  If this
-setting is true, then you can login with `testuser` and `testpassword`.
+setting is true, then you can login with `testuser` and `testpassword`.  Logging in using the `testuser` will _not_
+contact LDAP.
 
 `portal.test_login = false`
 

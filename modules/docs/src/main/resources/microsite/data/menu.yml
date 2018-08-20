@@ -57,17 +57,17 @@ options:
     menu_type: operator_menu
     menu_section: operator_section
 
-  - title: Pre-requsites
+  - title: Pre-requisites
     url: operator/pre
     menu_type: operator_menu
     menu_section: operator_section
     nested_options:
     - title: Setup AWS DynamoDB
       url: operator/setup-dynamodb
-    - title: Setup AWS SQS
-      url: operator/setup-sqs
     - title: Setup MySQL
       url: operator/setup-mysql
+    - title: Setup AWS SQS
+      url: operator/setup-sqs
     - title: Setup LDAP
       url: operator/setup-ldap
 

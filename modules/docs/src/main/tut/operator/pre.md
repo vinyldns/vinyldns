@@ -7,18 +7,18 @@ section: "operator_menu"
 # VinylDNS Pre-requisites
 VinylDNS has the following external requirements that need to be setup so that VinylDNS can operate.  Those include:
 
-1. [Database](database) - the database houses all of VinylDNS information including history, records, zones, and users
-1. [Message Queue](message-queue) - the message queue supports high-availability and throttling of commands to DNS backend servers
-1. [LDAP](ldap) - ldap supports both authentication as well as the source of truth for users that are managed inside the VinylDNS database
+1. [Database](#database) - the database houses all of VinylDNS information including history, records, zones, and users
+1. [Message Queue](#message-queues) - the message queue supports high-availability and throttling of commands to DNS backend servers
+1. [LDAP](#ldap) - ldap supports both authentication as well as the source of truth for users that are managed inside the VinylDNS database
 
 ## Database
 [database]: #database
 
 The VinylDNS database has a `NoSQL` / non-relational design to it.  Instead of having a heavily normalized set of SQL tables
-that surface in the system, instead VinylDNS relies on `Repositories` where each `Repository` is independent of each one another.
+that surface in the system, VinylDNS relies on `Repositories` where each `Repository` is independent of each one another.
 This allows implementers to best map each `Repository` into the data-store of choice.
 
-As `Repositories` are independent, there are no "transactions" that take _across_ repositories.  Each `Repository` implementation
+As `Repositories` are independent, there are no "transactions" that span repositories.  Each `Repository` implementation
 can choose to use transactions if it maps to multiple tables within itself.
 
 There are **links** across repositories, for example the `RecordSet.id` would be referenced in a `RecordSetChangeRepository`.
