@@ -43,7 +43,7 @@ backlog but not necessarily in the current development stream.
 Besides those issues, you can sort the issue list by number of comments to find one that may be of interest.  You do
 _not_ have to limit yourself to _only_ "beginner" or "help-wanted" issues.
 
-When resolving an issue, you generally will do so by making a [Pull Request](#making-contributions), and adding a link to the issue.
+When resolving an issue, you generally will do so by making a [Pull Request](#pull-requests), and adding a link to the issue.
 
 Before choosing an issue, see if anyone is assigned or has indicated they are working on it (either in comment or via Pull Request).
 If that is the case, then instead of making a Pull Request of your own, you can help out by reviewing their Pull Request. 
