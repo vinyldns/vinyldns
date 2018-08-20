@@ -172,7 +172,7 @@ review. There are different ways that you can make revisions, but the following 
 recognizes the update and will re-run verification on your Pull Request!
 
 ### Pull Request Approval
-A pull request satisfy our [pull request requirements](#pull-request-requirements)
+A pull request must satisfy our [pull request requirements](#pull-request-requirements)
 
 Afterwards, if a Pull Request is approved, a maintainer of the project will merge it.
 If you are a maintainer, you can merge your Pull Request once you have the approval of at least 2 other maintainers.
