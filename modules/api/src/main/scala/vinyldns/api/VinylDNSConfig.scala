@@ -29,16 +29,20 @@ object VinylDNSConfig {
   lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamo")
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
-  lazy val accountStoreConfig: Config = vinyldnsConfig.getConfig("accounts")
-  lazy val zoneChangeStoreConfig: Config = vinyldnsConfig.getConfig("zoneChanges")
-  lazy val recordSetStoreConfig: Config = vinyldnsConfig.getConfig("recordSet")
-  lazy val recordChangeStoreConfig: Config = vinyldnsConfig.getConfig("recordChange")
-  lazy val usersStoreConfig: Config = vinyldnsConfig.getConfig("users")
-  lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("groups")
-  lazy val groupChangesStoreConfig: Config = vinyldnsConfig.getConfig("groupChanges")
-  lazy val membershipStoreConfig: Config = vinyldnsConfig.getConfig("membership")
   lazy val dataStoreConfig: List[Config] =
     vinyldnsConfig.getConfigList("data-stores").asScala.toList
+
+  // dynamo configs - will change with pluggable repos work completion
+  val repositoryConfigs =
+    VinylDNSConfig.dataStoreConfig.map(_.getConfig("repositories")).reduce(_.withFallback(_))
+  lazy val zoneChangeStoreConfig: Config = repositoryConfigs.getConfig("zoneChange")
+  lazy val recordSetStoreConfig: Config = repositoryConfigs.getConfig("recordSet")
+  lazy val recordChangeStoreConfig: Config = repositoryConfigs.getConfig("recordChange")
+  lazy val usersStoreConfig: Config = repositoryConfigs.getConfig("user")
+  lazy val groupsStoreConfig: Config = repositoryConfigs.getConfig("group")
+  lazy val groupChangesStoreConfig: Config = repositoryConfigs.getConfig("groupChange")
+  lazy val membershipStoreConfig: Config = repositoryConfigs.getConfig("membership")
+
   lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
