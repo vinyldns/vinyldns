@@ -9,6 +9,7 @@ The Portal Server is the web UI for VinylDNS.  To setup the Portal server, follo
 
 1. [Setup API Server](setup-api)
 1. [Setup LDAP](setup-ldap)
+1. [Using the Portal Docker Image](#using-the-portal-docker-image)
 
 Once you have you pre-requisites ready, review the [Portal Configuration Guide](config-portal) for how to build out
 your configuration file.
@@ -27,5 +28,5 @@ This is used for "plugins" that are proprietary or not part of the standard buil
 To add a custom Java trustStore for LDAP certs, add the trustStore to `/opt/docker/conf/trustStore.jks`.
  Then add `-Djavax.net.ssl.trustStore=/opt/docker/conf/trustStore.jks` to `/opt/docker/conf/application.ini`.
 
-# Additional JVM parameters
+## Additional JVM parameters
 Additional JVM parameters can be added to `/opt/docker/conf/application.ini`

@@ -11,6 +11,7 @@ The API Server is the main run-time for VinylDNS.  To setup the API server, foll
 1. [Setup AWS DynamoB](setup-dynamodb)
 1. [Setup Mysql](setup-mysql)
 1. [Setup AWS SQS](setup-sqs)
+1. [Using the API Docker Image(#using-the-api-docker-image)
 
 Once you have you pre-requisites ready, review the [API Configuration Guide](config-api) for how to build out
 your configuration file.
