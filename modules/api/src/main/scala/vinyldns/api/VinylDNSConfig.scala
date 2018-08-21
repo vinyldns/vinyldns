@@ -26,15 +26,15 @@ object VinylDNSConfig {
 
   lazy val config: Config = ConfigFactory.load()
   lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
-  lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamo")
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
   lazy val dataStoreConfig: List[Config] =
-    vinyldnsConfig.getConfigList("data-stores").asScala.toList
+    vinyldnsConfig.getStringList("data-stores").asScala.toList.map(vinyldnsConfig.getConfig)
 
-  // dynamo configs - will change with pluggable repos work completion
-  val repositoryConfigs =
-    VinylDNSConfig.dataStoreConfig.map(_.getConfig("repositories")).reduce(_.withFallback(_))
+  // TODO dynamo config direct access like this will be removed with pluggable repos work completion
+  lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamodb").getConfig("settings")
+  lazy val repositoryConfigs: Config =
+    vinyldnsConfig.getConfig("dynamodb").getConfig("repositories")
   lazy val zoneChangeStoreConfig: Config = repositoryConfigs.getConfig("zoneChange")
   lazy val recordSetStoreConfig: Config = repositoryConfigs.getConfig("recordSet")
   lazy val recordChangeStoreConfig: Config = repositoryConfigs.getConfig("recordChange")
