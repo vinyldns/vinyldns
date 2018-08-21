@@ -71,7 +71,7 @@ options:
     - title: Setup LDAP
       url: operator/setup-ldap
 
-  - title: Setup the API Server
+  - title: Setup API Server
     url: operator/setup-api
     menu_type: operator_menu
     menu_section: operator_section

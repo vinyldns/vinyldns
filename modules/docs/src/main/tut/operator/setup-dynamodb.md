@@ -1,21 +1,21 @@
 ---
 layout: docs
-title:  "AWS DynamoDB Setup Guide"
+title:  "Setup AWS DynamoDB"
 section: "operator_menu"
 ---
 
-# AWS DynamoDB Setup Guide
+# Setup AWS DynamoDB
 [AWS DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html) is the default database
 for _most_ of the data that is stored in VinylDNS.  The following tables are used in VinylDNS:
 
-* `RecordSet` - holds record data
-* `RecordSetChange` - audit history of all changes made to records
-* `User` - holds user information, including access keys and secrets
-* `Group` - group information, including name, email and description
-* `Membership` - connects users to groups
-* `GroupChange` - holds audit history for groups
-* `UserChange` - holds audit history for all users (only used in the portal currently)
-* `ZoneChange` - audit history for changes to zones (not record related)
+* [RecordSet](#recordset-table) - holds record data
+* [RecordSetChange](#recordsetchange-table) - audit history of all changes made to records
+* [User](#user-table) - holds user information, including access keys and secrets
+* [Group](#group-table) - group information, including name, email and description
+* [Membership](#membership-table) - connects users to groups
+* [GroupChange](#groupchange-table) - holds audit history for groups
+* [UserChange](#userchange-table) - holds audit history for all users (only used in the portal currently)
+* [ZoneChange](#zonechange-table) - audit history for changes to zones (not record related)
 
 AWS DynamoDB connection information is configured one time, and the same connection is used across all tables.  Therefore,
 you must ensure that all tables live inside the _same_ AWS region accessible by the _same_ credentials.
@@ -31,8 +31,15 @@ configure *Auto Scaling* for your tables, so you do not have to worry about thes
 The most _important_ thing to remember for Provisioned Throughput is that you pay more for _writes_ than _reads_.  To manage,
 costs, it is important to use Auto-Scaling, or turn down your provisioned throughput settings to be really low.
 
-If your installation does not have large zones (100,000s of records), and takes relatively low throughput, you can turn
-the throughput very low and operate in the "almost" free-tier.  The following guides help you tune your settings...
+If your installation does not have large zones (100,000 records), and takes relatively low throughput, you can turn
+the throughput very low and operate in the "almost" free-tier.
+
+## Configuring DynamoDB
+Before you can configure DynamoDB, make note of the AWS account (access key and secret access key) as well as the
+DynamoDB endpoint (region) that you will be using.  Follow the [DynamoDB API Configuration](config-api#aws-dynamodb)
+to complete the setup for the API.
+
+You also need to configure DynamoDB for the portal [DynamoDB Portal Configuration](config-portal#dynamodb)
 
 ### RecordSet Table
 Each row in the RecordSet table is a `RRSet`, which means it comprises one or more "Records" inside of it.
@@ -69,8 +76,8 @@ for the records to be loaded, and worst case scenario the operation will fail.
     * Projection Type = `ALL`
 
 ### RecordSetChange Table
-Each record set change could potentially live inside a `ChangeSet`.  A `ChangeSet` being one or more individual
-`RecordSetChange` instances.  Each _record_ in the `RecordSetChange` table corresponds to an individual change
+Each record set change could potentially live inside a `ChangeSet`.  A `ChangeSet` contains one or more individual
+`RecordSetChange` instances that are processed together.  Each _record_ in the `RecordSetChange` table corresponds to an individual change
 such as "Create a new record set".
 
 **Usage**
@@ -284,10 +291,3 @@ Very low writes, small data, low read
     * HASH = `zone_id`
     * SORT = `created`
     * Projection Type = `ALL`
-
-## Configuring DynamoDB
-Before you can configure DynamoDB, make note of the AWS account (access key and secret access key) as well as the
-DynamoDB endpoint (region) that you will be using.  Follow the [DynamoDB API Configuration](config-api#aws-dynamodb)
-to complete the setup for the API.
-
-You also need to configure DynamoDB for the portal [DynamoDB Portal Configuration](config-portal#dynamodb)

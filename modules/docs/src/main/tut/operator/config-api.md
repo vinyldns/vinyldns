@@ -320,7 +320,7 @@ Version of the application that is deployed.  Currently, this is a configuration
 
 `version = "0.8.0"`
 
-**Note: You can get installation information including color, version, and processing-disabled by hitting the _status_ endpoint GET /status**
+**Note: You can get installation information including color, version, default key name, and processing-disabled by hitting the _status_ endpoint GET /status**
 
 ### HTTP Host and Port
 To specify what host and port to bind to when starting up the API server, default is 9000.

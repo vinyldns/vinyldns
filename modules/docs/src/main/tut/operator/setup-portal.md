@@ -1,10 +1,10 @@
 ---
 layout: docs
-title:  "Setup Portal Server"
+title:  "Setup the Portal Server"
 section: "operator_menu"
 ---
 
-# Setup Portal Server
+# Setup the Portal Server
 The Portal Server is the web UI for VinylDNS.  To setup the Portal server, follow these steps:
 
 1. [Setup API Server](setup-api)

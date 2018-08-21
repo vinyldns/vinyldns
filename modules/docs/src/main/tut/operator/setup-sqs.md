@@ -1,10 +1,10 @@
 ---
 layout: docs
-title:  "AWS SQS Setup Guide"
+title:  "Setup AWS SQS"
 section: "operator_menu"
 ---
 
-# AWS SQS Setup Guide
+# Setup AWS SQS
 SQS is used to provide high-availability and failover in the event that a node crashes mid-stream while processing a message.
 The backend processing for VinylDNS is built to be idempotent so changes can be fully re-applied.  The SQS queue
 also provides a mechanism to _throttle_ updates, in the event that an out-of-control client submits thousands or

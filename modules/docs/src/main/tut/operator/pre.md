@@ -1,6 +1,6 @@
 ---
 layout: docs
-title:  "Pre-requsites"
+title:  "Pre-requisites"
 section: "operator_menu"
 ---
 

@@ -1,10 +1,10 @@
 ---
 layout: docs
-title:  "AWS SQS Setup Guide"
+title:  "Setup LDAP"
 section: "operator_menu"
 ---
 
-# LDAP Setup Guide
+# Setup LDAP
 VinylDNS uses LDAP for authenticating users in the portal as well as the source of user information loaded into
 VinylDNS.  VinylDNS does support service accounts, which are useful for automation.
 

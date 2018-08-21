@@ -1,10 +1,10 @@
 ---
 layout: docs
-title:  "MySQL Setup Guide"
+title:  "Setup MySQL"
 section: "operator_menu"
 ---
 
-# MySQL Setup Guide
+# Setup MySQL
 VinylDNS stores some tables in MySQL.  The motivation to split databases was due to the Query limitations avaiable
 in AWS DynamoDB.  Currently, the following tables are present in MySQL
 
@@ -17,7 +17,7 @@ in AWS DynamoDB.  Currently, the following tables are present in MySQL
 VinylDNS uses [Flyway](https://flywaydb.org/) to manage SQL migrations.  This means that any database changes, including
 creating the database, adding tables, etc. are all _automatically applied_ when VinylDNS starts up.  You do not need
 to do anything other than giving access to VinylDNS API from your MySQL server instance.  You can view the database
-schema and migrations at https://github.com/vinyldns/vinyldns/tree/master/modules/api/src/main/resources/db/migration.
+schema and migrations in the api module [db/migration folder](https://github.com/vinyldns/vinyldns/tree/master/modules/api/src/main/resources/db/migration)
 
 VinylDNS uses [HikariCP](https://github.com/brettwooldridge/HikariCP#configuration-knobs-baby) for a high-speed connection
 pool.
