@@ -18,6 +18,19 @@ Batch changes are also susceptible to the following restrictions:
 * The maximum number of single changes within a batch change varies by instance of VinylDNS. Contact your VinylDNS administrators to find the batch change limit for your instance.
 * Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name, zone and record type combination) requires **Write** access.
 
-[![Batch change main page screenshot](../img/portal/batch-change-main.png){: .screenshot}](../img/portal/batch-change-main.png)
-[![New batch change form screenshot](../img/portal/batch-change-new.png){: .screenshot}](../img/portal/batch-change-new.png)
-[![Submitted batch change screenshot](../img/portal/batch-change-details.png){: .screenshot}](../img/portal/batch-change-details.png)
+### Create a Batch Change
+1. Go to the Batch Changes section of the site.
+1. Select the *New Batch Change* button.
+1. Add a description and record changes. Select the *Add a Change* button to add additional rows for data entry as needed.
+1. Select the submit button. Confirm your submission.
+ - If your submission was successful you'll redirect to the batch change summary page where you will see the status of the batch change request overall and of the individual records in the batch change.
+ - If there are errors in the batch change you will remain on the form with prompts to correct errors before you attempt to submit again.
+
+[![Batch change main page screenshot](../img/portal/batch-change-main-annotated.png){: .screenshot}](../img/portal/batch-change-main-annotated.png)
+[![New batch change form screenshot](../img/portal/batch-change-new-annotated.png){: .screenshot}](../img/portal/batch-change-new-annotated.png)
+[![Submitted batch change screenshot](../img/portal/batch-change-summary.png){: .screenshot}](../img/portal/batch-change-summary.png)
+
+### Review a Batch Change
+You can review your submitted batch change requests by selecting the linked Batch ID or View button for the batch change on the main page of the Batch Change section in the portal.
+
+[![List of batch change requests screenshot](../img/portal/batch-change-list-annotated.png){: .screenshot}](../img/portal/batch-change-annotated.png)
