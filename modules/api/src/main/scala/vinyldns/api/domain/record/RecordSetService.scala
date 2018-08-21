@@ -23,9 +23,25 @@ import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.membership.{User, UserRepository}
 import vinyldns.api.domain.zone._
+import vinyldns.api.repository.DataAccessor
 import vinyldns.api.route.ListRecordSetsResponse
 
 import scala.concurrent.ExecutionContext
+
+object RecordSetService {
+  def apply(
+      repositories: DataAccessor,
+      commandBus: EngineCommandBus,
+      accessValidation: AccessValidationAlgebra)(implicit ec: ExecutionContext): RecordSetService =
+    new RecordSetService(
+      repositories.zoneRepository,
+      repositories.recordSetRepository,
+      repositories.recordChangeRepository,
+      repositories.userRepository,
+      commandBus,
+      accessValidation
+    )
+}
 
 class RecordSetService(
     zoneRepository: ZoneRepository,

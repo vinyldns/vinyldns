@@ -26,18 +26,23 @@ object VinylDNSConfig {
 
   lazy val config: Config = ConfigFactory.load()
   lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
-  lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamo")
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
-  lazy val accountStoreConfig: Config = vinyldnsConfig.getConfig("accounts")
-  lazy val zoneChangeStoreConfig: Config = vinyldnsConfig.getConfig("zoneChanges")
-  lazy val recordSetStoreConfig: Config = vinyldnsConfig.getConfig("recordSet")
-  lazy val recordChangeStoreConfig: Config = vinyldnsConfig.getConfig("recordChange")
-  lazy val usersStoreConfig: Config = vinyldnsConfig.getConfig("users")
-  lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("groups")
-  lazy val groupChangesStoreConfig: Config = vinyldnsConfig.getConfig("groupChanges")
-  lazy val membershipStoreConfig: Config = vinyldnsConfig.getConfig("membership")
-  lazy val dbConfig: Config = vinyldnsConfig.getConfig("db")
+  lazy val dataStoreConfig: List[Config] =
+    vinyldnsConfig.getStringList("data-stores").asScala.toList.map(vinyldnsConfig.getConfig)
+
+  // TODO dynamo config direct access like this will be removed with pluggable repos work completion
+  lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamodb").getConfig("settings")
+  lazy val repositoryConfigs: Config =
+    vinyldnsConfig.getConfig("dynamodb").getConfig("repositories")
+  lazy val zoneChangeStoreConfig: Config = repositoryConfigs.getConfig("zoneChange")
+  lazy val recordSetStoreConfig: Config = repositoryConfigs.getConfig("recordSet")
+  lazy val recordChangeStoreConfig: Config = repositoryConfigs.getConfig("recordChange")
+  lazy val usersStoreConfig: Config = repositoryConfigs.getConfig("user")
+  lazy val groupsStoreConfig: Config = repositoryConfigs.getConfig("group")
+  lazy val groupChangesStoreConfig: Config = repositoryConfigs.getConfig("groupChange")
+  lazy val membershipStoreConfig: Config = repositoryConfigs.getConfig("membership")
+
   lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
