@@ -7,9 +7,31 @@ section: "operator_menu"
 # VinylDNS Pre-requisites
 VinylDNS has the following external requirements that need to be setup so that VinylDNS can operate.  Those include:
 
+1. [DNS](#dns) - your DNS servers VinylDNS will interact with
 1. [Database](#database) - the database houses all of VinylDNS information including history, records, zones, and users
 1. [Message Queue](#message-queues) - the message queue supports high-availability and throttling of commands to DNS backend servers
 1. [LDAP](#ldap) - ldap supports both authentication as well as the source of truth for users that are managed inside the VinylDNS database
+
+## DNS
+VinylDNS is **not a DNS**, rather it integrates with your existing DNS installations to enable DNS self-service and streamline
+DNS operations.
+
+VinylDNS communicates to your DNS via:
+* `DDNS` - DDNS is used for all record updates
+* `AXFR` - Zone Transfers are used to load DNS records into the VinylDNS database.
+
+VinylDNS communicates to your DNS using "connections".  A connection allows you to specify:
+1. The TSIG key name
+1. The TSIG key secret
+1. The server (and optionally port) to communicate to DNS with
+
+There are **2** connections, one for DDNS and another for zone transfers.  This allows you to use a different DNS server / key
+for zone transfers.
+
+Connections (DDNS and Transfer) can be setup
+* `per zone` - every zone can override the global default by specifying its own connections.
+* `global default` - assuming you are managing a primary system, you can [configure default zone connections](config-api#default-zone-connections).
+When no zone connection is specified on a zone, the global defaults will be used.
 
 ## Database
 [database]: #database
@@ -23,7 +45,7 @@ can choose to use transactions if it maps to multiple tables within itself.
 
 There are **links** across repositories, for example the `RecordSet.id` would be referenced in a `RecordSetChangeRepository`.
 
-The following are the repositories presently used by VinylDNS...
+The following are the repositories presently used by VinylDNS:
 
 * `RecordSetRepository` - Instead of individual DNS records, VinylDNS works at the `RRSet`.  The unique key for RecordSet is
 the `record name` + `record type`
@@ -42,7 +64,7 @@ The `BatchChangeRepository` holds the batch itself and all individual changes th
 * `UserChangeRepository` - Holds changes to users
 
 **Note: The UserChangeRepository is currently only used in the portal, and lives outside of the api.  This will be moved
-alongside the other repositories in the near future**
+alongside the other repositories in the near future.**
 
 ## Database Types
 ### AWS DynamoDB
@@ -63,7 +85,7 @@ VinylDNS uses DynamoDB presently for the following repositories:
 Review the [Setup AWS DynamoDB Guide](setup-dynamodb) for more information.
 
 ### MySQL
-VinylDNS currently uses MySQL only for the following repositories.
+VinylDNS currently uses MySQL only for the following repositories:
 
 1. ZoneRepository
 1. BatchChangeRepository

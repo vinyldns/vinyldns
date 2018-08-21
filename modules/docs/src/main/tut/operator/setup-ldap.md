@@ -13,7 +13,7 @@ with LDAP at the present time.  The only way for a user to be created is to logi
 choose to out-of-band manage the VinylDNS repositories.**
 
 There are no steps necessary for setup than having a Directory that can communicate via LDAP, and a user (account) that
-can read data from the Directory.  Once you have that information, proceed to the [Portal Configuration](config-portal)
+can read data from the Directory.  Once you have that information, proceed to the [Portal Configuration](config-portal).
 
 **Considerations**
 You _should_ communicate to your Directory over LDAP using TLS.  To do so, the SSL certs should be installed
