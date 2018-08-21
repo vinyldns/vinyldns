@@ -14,7 +14,7 @@ Once your zone is [setup for use with VinylDNS](../faq#1), you can use the Vinyl
   email for the team that owns the zone.
 1. Select the admin group for the zone.
 1. If you do not have any custom TSIG keys, you can leave the connection information empty.
-1. If you do have custom TSIG keys, read the section on [Understanding Connections](connections).
+1. If you do have custom TSIG keys, read the section on [Understand Connections](connections).
 1. Click the *Connect* button at the bottom of the form.
 1. You may have to click the <i>Refresh</i> button from the zone list to see your new zone.
 [![Created zone listed screenshot](../img/portal/zone-list.png){: .screenshot}](../img/portal/zone-list.png)

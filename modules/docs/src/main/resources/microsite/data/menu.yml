@@ -28,7 +28,7 @@ options:
     - title: Manage Access
       url: portal/manage-access
       menu_section: portal_section
-    - title: Understanding Connections
+    - title: Understand Connections
       url: portal/connections
 
   - title: Groups
