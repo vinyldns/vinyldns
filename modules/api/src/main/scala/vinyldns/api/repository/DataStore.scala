@@ -35,10 +35,14 @@ object DataStoreProvider {
   def load(config: Config): IO[DataStore] =
     for {
       className <- IO(config.getString("type"))
-      dataStore <- IO(className match {
-        case "vinyldns.api.repository.mysql.MySqlDataStore" => new MySqlDataStore(config)
-        case _ => new DynamoDbDataStore()
-      })
+      // TODO this will be dynamic next PR
+      dataStore <- className match {
+        case "vinyldns.api.repository.mysql.MySqlDataStore" => IO(new MySqlDataStore(config))
+        case "vinyldns.api.repository.dynamodb.DynamoDbDataStore" => IO(new DynamoDbDataStore())
+        case unknown =>
+          IO.raiseError[DataStore](
+            DatabaseInitializationError(s"Cannot find class for database type: $unknown"))
+      }
     } yield dataStore
 
   def loadAll(configs: List[Config]): IO[DataAccessor] = {
@@ -105,3 +109,5 @@ trait DataStore {
   def zoneRepository: Option[ZoneRepository]
   def batchChangeRepository: Option[BatchChangeRepository]
 }
+
+case class DatabaseInitializationError(msg: String) extends Throwable(msg)
