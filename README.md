@@ -1,5 +1,5 @@
 [![Join the chat at https://gitter.im/vinyldns](https://badges.gitter.im/vinyldns/vinyldns.svg)](https://gitter.im/vinyldns)
-[![Travis build](https://api.travis-ci.com/vinyldns/vinyldns.svg?branch=master)](https://travis-ci.com/vinyldns/vinyldns)
+[![Travis build](https://api.travis-ci.org/vinyldns/vinyldns.svg?branch=master)](https://travis-ci.org/vinyldns/vinyldns)
 [![CodeCov ](https://codecov.io/gh/vinyldns/vinyldns/branch/master/graph/badge.svg)](https://codecov.io/gh/vinyldns/vinyldns)
 
 <p align="left">
