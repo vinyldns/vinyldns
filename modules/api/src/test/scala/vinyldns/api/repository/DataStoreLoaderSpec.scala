@@ -18,7 +18,7 @@ package vinyldns.api.repository
 
 import cats.effect.IO
 import cats.scalatest.{EitherMatchers, EitherValues}
-import com.typesafe.config.{ConfigException, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
 import vinyldns.api.domain.batch.BatchChangeRepository
@@ -76,7 +76,7 @@ class DataStoreLoaderSpec
   class LoaderWithOverrides(
       loadOverride: DataStoreConfig => IO[DataStore] = baseLoader.load,
       getValidatedConfigsOverride: List[DataStoreConfig] => Either[
-        ConfigException,
+        DataStoreInitializationError,
         List[DataStoreConfig]] = baseLoader.getValidatedConfigs,
       generateAccessorOverride: List[DataStore] => Either[
         DataStoreInitializationError,
@@ -85,8 +85,8 @@ class DataStoreLoaderSpec
 
     override def load(config: DataStoreConfig): IO[DataStore] = loadOverride(config)
 
-    override def getValidatedConfigs(
-        configs: List[DataStoreConfig]): Either[ConfigException, List[DataStoreConfig]] =
+    override def getValidatedConfigs(configs: List[DataStoreConfig])
+      : Either[DataStoreInitializationError, List[DataStoreConfig]] =
       getValidatedConfigsOverride(configs)
 
     override def generateAccessor(
@@ -116,12 +116,12 @@ class DataStoreLoaderSpec
     }
 
     "throw an exception if getValidatedConfigs fails" in {
-      val error: ConfigException = new ConfigException.Generic("oh no!")
+      val error: DataStoreInitializationError = DataStoreInitializationError("oh no!")
       val loaderWithOverrides =
         new LoaderWithOverrides(getValidatedConfigsOverride = _ => Left(error))
 
       val loadCall = loaderWithOverrides.loadAll(List(goodConfig))
-      val thrown = the[ConfigException] thrownBy loadCall.unsafeRunSync()
+      val thrown = the[DataStoreInitializationError] thrownBy loadCall.unsafeRunSync()
       thrown shouldBe error
     }
 
@@ -174,7 +174,7 @@ class DataStoreLoaderSpec
 
       val outcome = baseLoader.getValidatedConfigs(List(config))
       val message = outcome.leftValue.getMessage
-      message shouldBe "Must have one repo of type user"
+      message shouldBe "Config error: Must have one repo of type user"
     }
   }
 

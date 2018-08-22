@@ -19,7 +19,7 @@ package vinyldns.api.repository
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import com.typesafe.config.{Config, ConfigException}
+import com.typesafe.config.Config
 
 class DataStoreLoader {
 
@@ -41,8 +41,8 @@ class DataStoreLoader {
    * Validates that there's exactly one repo defined across all datastore configs. Returns only
    * DataStoreConfigs with at least one defined repo if valid
    */
-  def getValidatedConfigs(
-      configs: List[DataStoreConfig]): Either[ConfigException, List[DataStoreConfig]] = {
+  def getValidatedConfigs(configs: List[DataStoreConfig])
+    : Either[DataStoreInitializationError, List[DataStoreConfig]] = {
 
     val activeConfigs = configs.filter(_.repositories.containsActiveRepo)
     val repoConfigs = activeConfigs.map(_.repositories)
@@ -60,7 +60,10 @@ class DataStoreLoader {
 
     validated.toEither
       .map(_ => activeConfigs)
-      .leftMap(errors => new ConfigException.Generic(errors.toList.mkString(", ")))
+      .leftMap { errors =>
+        val errorString = errors.toList.mkString(", ")
+        DataStoreInitializationError(s"Config error: $errorString")
+      }
   }
 
   def generateAccessor(
