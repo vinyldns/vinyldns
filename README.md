@@ -13,20 +13,11 @@
 </p>
 
 # VinylDNS
-**(we are in the midst of setting up our projects, backlog, and everything else.  Will be in tip top shape in the coming days)**
-
-VinylDNS is a vendor agnostic front-end for managing self-service DNS across your DNS systems.
+VinylDNS is a vendor agnostic front-end for enabling self-service DNS and streamlining DNS operations.
+VinylDNS manages millions of DNS records supporting thousands of engineers in production at [Comcast](http://www.comcast.com).
 The platform provides fine-grained access controls, auditing of all changes, a self-service user interface,
-secure REST based API, and integration with infrastructure automation tools like Ansible and Terraform.
+secure RESTful API, and integration with infrastructure automation tools like Ansible and Terraform.
 It is designed to integrate with your existing DNS infrastructure, and provides extensibility to fit your installation.
-
-Currently, VinylDNS supports:
-* Connecting to existing DNS Zones
-* Creating, updating, deleting DNS Records
-* Working with forward and reverse zones
-* Working with IP4 and IP6 records
-* Governing access with fine-grained controls at the record and zone level
-* Bulk updating of DNS records across zones
 
 VinylDNS helps secure DNS management via:
 * AWS Sig4 signing of all messages to ensure that the message that was sent was not altered in transit
@@ -39,8 +30,6 @@ Integration is simple with first-class language support including:
 * ruby
 * python
 * go-lang
-
-VinylDNS is currently used in Production managing millions of DNS records.
 
 ## Table of Contents
 - [Quickstart](#quickstart)
