@@ -1,9 +1,9 @@
 ---
 layout: docs
-title:  "Understanding Connections"
+title:  "Understand Connections"
 section: "portal_menu"
 ---
-## Understanding Connections <a id="understandingConnections"></a>
+## Understand Connections <a id="understandConnections"></a>
 VinylDNS provides the ability to specify two different connections to the backend DNS servers.
 
 - The primary connection is used for issuing DNS updates
