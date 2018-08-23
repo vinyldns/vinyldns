@@ -25,8 +25,6 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 
-// turn on coverage once we start implementing these
-// $COVERAGE-OFF$
 trait BatchChangeValidationsAlgebra {
 
   def validateBatchChangeInputSize(input: BatchChangeInput): Either[BatchChangeErrorResponse, Unit]
@@ -335,4 +333,3 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       UserNotAuthorizedError(batchChange.id).asLeft
     }
 }
-// $COVERAGE-ON$
