@@ -2,23 +2,23 @@
 The following are a set of guidelines for contributing to VinylDNS and its associated repositories.
 
 ## Table of Contents
-* [Code of conduct](#code-of-conduct)
+* [Code of Conduct](#code-of-conduct)
 * [Issues](#issues)
-    * [Working on an issue](#working-on-an-issue)
-    * [Submitting an issue](#submitting-an-issue)
-    * [Discussion process](#discussion-process)
-* [Pull requests](#pull-requests)
-    * [General flow](#general-flow)
-    * [Pull request requirements](#pull-request-requirements)
-        * [Commit messages](#commit-messages)
+    * [Working on an Issue](#working-on-an-issue)
+    * [Submitting an Issue](#submitting-an-issue)
+    * [Discussion Process](#discussion-process)
+* [Pull Requests](#pull-requests)
+    * [General Flow](#general-flow)
+    * [Pull Request Requirements](#pull-request-requirements)
+        * [Commit Messages](#commit-messages)
         * [Testing](#testing)
-        * [Documentation edits](#documentation-edits)
-        * [Style guides](#style-guides)
-        * [License header checks](#license-header-checks)
-        * [Contributor license agreement](#contributor-license-agreement)
-    * [Modifying your pull request](#modifying-your-pull-requests)
-    * [Pull request approval](#pull-request-approval)
-* [Release management](#release-management)
+        * [Documentation Edits](#documentation-edits)
+        * [Style Guides](#style-guides)
+        * [License Header Checks](#license-header-checks)
+        * [Contributor License Agreement](#contributor-license-agreement)
+    * [Modifying your Pull Request](#modifying-your-pull-requests)
+    * [Pull Request Approval](#pull-request-approval)
+* [Release Management](#release-management)
 
 ## Code of Conduct
 This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
@@ -30,7 +30,7 @@ Work on VinylDNS is tracked by [Github Issues](https://guides.github.com/feature
 you can join the discussion on an issue, submit a Pull Request to resolve the issue, or make an issue of your own.
 VinylDNS issues are generally labeled as bug reports, feature requests, or maintenance requests.  
 
-### Working on an issue
+### Working on an Issue
 If you would like to contribute to VinylDNS, you can look through `beginner` and `help-wanted` issues.  We keep a list
 of these issues around to encourage participation in building the platform.  In the issue list, you can chose "Labels" and
 choose a specific label to narrow down the issues to review.
@@ -48,7 +48,7 @@ When resolving an issue, you generally will do so by making a [Pull Request](#pu
 Before choosing an issue, see if anyone is assigned or has indicated they are working on it (either in comment or via Pull Request).
 If that is the case, then instead of making a Pull Request of your own, you can help out by reviewing their Pull Request. 
 
-### Submitting an issue
+### Submitting an Issue
 When submitting an issue you will notice there are three issue templates to choose from. Before making any issue, please
 go search the issue list (open and closed issues) and check to see if a similar issue has been made. If so, we ask that you do not duplicate an
 issue, but feel free to comment on the existing issue with additional details.  
@@ -65,11 +65,11 @@ code refactoring, new libraries, additional testing, among other things. Please 
 reason for the maintenance, and what benefits will come out of it. Please describe the scope of the change, and 
 what parts of the system will be impacted. 
 
-### Discussion process
-When an issue is submitted the VinylDNS team will give time for maintainers and the rest of the community to discuss it. 
-This discussion phase will officially start when a maintainer has added the **discussion** label to the issue, but
-people can still comment on it at any time. After this phase, the team will decide whether it is something 
-that is suited for our backlog, in which case it will be prioritized eventually depending on the VinylDNS roadmap. 
+### Discussion Process
+
+Some issues may require discussion with the community before proceeding to implementation. This can happen if the issue is a larger change, for example a big refactoring or new feature. The VinylDNS maintainers may label an issue for **Discussion** in order to solicit more detail before proceeding. If the issue is straightforward and/or well documented, it can be implemented immediately by the submitter. If the submitter is unable to make the changes required to address the issue, the VinylDNS maintainers will prioritize the work in our backlog.
+
+If warranted, some issues may be moved to our [RFC process](https://github.com/vinyldns/rfcs) instead, depending on its size and impact.
 
 ## Pull Requests
 Contributions to VinylDNS are generally made via [Github Pull Requests](https://help.github.com/articles/about-pull-requests/).
@@ -104,22 +104,23 @@ issue in the Pull Request itself, in addition to the Pull Request description.
 * Use the present tense ("Add validation" not "Added validation").
 * Use the imperative mood ("Move database call" not "Moves database call").
 * Reference issues and other pull requests liberally after the first line.  Use [GitHub Auto Linking](https://help.github.com/articles/autolinked-references-and-urls/)
-to link your Pull Request to other issues.  _Note: This is essential, otherwise we may not know what issue a Pull Request is created for_
+to link your Pull Request to other issues.  
 * Use markdown syntax as much as you want
 
 #### Testing
 When making changes to the VinylDNS codebase, be sure to add necessary unit, integration, and functional tests.
 For specifics on our tests, see the [Testing](DEVELOPER_GUIDE.md#testing) section of the Developer Guide.
 
-#### Documentation edits
+#### Documentation Edits
 Documentation for the VinylDNS project lives in files such as this one in the root of the project directory, as well
-as in `modules/docs/src/main/tut` for the docs you see on <www.vinyldns.io>. Many changes, such as those that impact
+as in `modules/docs/src/main/tut` for the docs you see on [vinyldns.io](https://vinyldns.io). Many changes, such as those that impact
 an API endpoint, config, portal usage, etc, will also need corresponding documentation edited to prevent it from going stale.
 Include those changes in the Pull Request. 
 
 #### Style Guides
-* For Scala code we use [Scalastyle](http://www.scalastyle.org/). The configs are `scalastyle-config.xml` and 
-`scalastyle-test-config.xml` for source code and testing
+* For Scala code we use [Scalastyle](https://www.scalastyle.org/). The configs are `scalastyle-config.xml` and 
+`scalastyle-test-config.xml` for source code and test code respectively
+    * We have it set to fail builds if the styling rules are not followed. For example, one of our rules is that all lines must be <= 120 characters, and a build will fail if that is violated. 
 * For our python code that we use for functional testing, we generally try to follow [PEP 8](https://www.python.org/dev/peps/pep-0008/)
 
 #### License Header Checks
@@ -168,7 +169,7 @@ review. There are different ways that you can make revisions, but the following 
 1. Sync your branch with latest `git rebase master`.  Note: If you have merge conflicts, you will have to resolve them
 1. Revise your Pull Request, making changes recommended in the comments / code review
 1. Stage and commit these changes on top of your existing commits
-1. When all tests pass, `git push origin your-user-name/user-branch-name` to revise your commit.  GitHub automatically
+1. When all tests pass, `git push origin your-user-name/user-branch-name` to revise your commit. _Note: If you rebased or altered the commit history, you will have to force push with a `-f` flag._ GitHub automatically
 recognizes the update and will re-run verification on your Pull Request!
 
 ### Pull Request Approval
@@ -180,8 +181,9 @@ If you are a maintainer, you can merge your Pull Request once you have the appro
 > Note: The first time you make a Pull Request, add yourself to the authors list [here](AUTHORS.md) as part of the Pull Request
 
 ## Release Management
-As an overview, we release on a regular schedule roughly once per month.  At any time, you can see the following releases scheduled using Milestones in GitHub.
+As an overview, we release on a regular schedule roughly once per month.
 
-* <current release> - for example, 0.9.8.  This constitutes the current work that is in-flight
-* <next release> - for example, 0.9.9.  These are the issues pegged for the _next_ release to be worked on
-* Backlog - These are the issues designated to be worked on in the not too distant future.
+* **current release** - For example, 0.8.0.  This constitutes the current work that is in-flight
+* **next release** - For example, 0.8.1.  These are the issues pegged for the _next_ release to be worked on
+* **maintenance release** - We will have maintenance releases once we bump MINOR. For example, we will have `0.8.x` once we move to `0.9.0-SNAPSHOT`
+
