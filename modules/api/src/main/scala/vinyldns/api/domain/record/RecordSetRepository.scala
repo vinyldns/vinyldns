@@ -17,6 +17,7 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.domain.record.RecordType.RecordType
+import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBRecordSetRepository
 
 import scala.concurrent.Future
@@ -28,7 +29,7 @@ case class ListRecordSetResults(
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None)
 
-trait RecordSetRepository {
+trait RecordSetRepository extends Repository {
 
   def apply(changeSet: ChangeSet): Future[ChangeSet]
 

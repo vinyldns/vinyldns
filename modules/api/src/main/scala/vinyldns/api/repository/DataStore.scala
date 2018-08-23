@@ -22,6 +22,7 @@ import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.api.domain.zone.ZoneChangeRepository
 import vinyldns.api.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.api.repository.RepositoryName.RepositoryName
 
 case class DataStore(
     userRepository: Option[UserRepository] = None,
@@ -33,7 +34,20 @@ case class DataStore(
     zoneChangeRepository: Option[ZoneChangeRepository] = None,
     zoneRepository: Option[ZoneRepository] = None,
     batchChangeRepository: Option[BatchChangeRepository] = None
-)
+) {
+  def asMap: Map[RepositoryName, Repository] =
+    List(
+      userRepository.map(x => RepositoryName.user -> x),
+      groupRepository.map(x => RepositoryName.group -> x),
+      membershipRepository.map(x => RepositoryName.membership -> x),
+      groupChangeRepository.map(x => RepositoryName.groupChange -> x),
+      recordSetRepository.map(x => RepositoryName.recordSet -> x),
+      recordChangeRepository.map(x => RepositoryName.recordChange -> x),
+      zoneChangeRepository.map(x => RepositoryName.zoneChange -> x),
+      zoneRepository.map(x => RepositoryName.zone -> x),
+      batchChangeRepository.map(x => RepositoryName.batchChange -> x)
+    ).flatten.toMap
+}
 
 case class DataAccessor(
     userRepository: UserRepository,

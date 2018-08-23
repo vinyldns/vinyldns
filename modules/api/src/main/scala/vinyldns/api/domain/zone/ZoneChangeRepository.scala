@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.zone
 
+import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBZoneChangeRepository
 
 import scala.concurrent.Future
@@ -26,7 +27,7 @@ case class ListZoneChangesResults(
     startFrom: Option[String] = None,
     maxItems: Int = 100)
 
-trait ZoneChangeRepository {
+trait ZoneChangeRepository extends Repository {
 
   def save(zoneChange: ZoneChange): Future[ZoneChange]
 

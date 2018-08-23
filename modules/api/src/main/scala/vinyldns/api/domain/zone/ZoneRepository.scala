@@ -17,11 +17,12 @@
 package vinyldns.api.domain.zone
 
 import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.api.repository.Repository
 import vinyldns.api.repository.mysql.VinylDNSJDBC
 
 import scala.concurrent.Future
 
-trait ZoneRepository {
+trait ZoneRepository extends Repository {
 
   def save(zone: Zone): Future[Zone]
 

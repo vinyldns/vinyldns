@@ -19,118 +19,106 @@ package vinyldns.api.repository
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import com.typesafe.config.Config
 
 class DataStoreLoader {
-
   def loadAll(configs: List[DataStoreConfig]): IO[DataAccessor] =
     for {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs))
       dataStores <- activeConfigs.map(load).parSequence
-      accessor <- IO.fromEither(generateAccessor(dataStores))
+      accessor <- IO.fromEither(getAccessor(activeConfigs, dataStores.toMap))
     } yield accessor
 
-  def load(config: DataStoreConfig): IO[DataStore] =
+  def load(config: DataStoreConfig): IO[(String, DataStore)] =
     for {
       className <- IO.pure(config.className)
       provider <- IO(Class.forName(className).newInstance.asInstanceOf[DataStoreProvider])
       dataStore <- provider.load(config)
       _ <- IO.fromEither(validateLoadResponse(config.repositories, dataStore))
-    } yield dataStore
-
+    } yield (className, dataStore)
 
   // Ensures that if a datastore is configured on, load returned it, and if configured off, load did not
-  def validateLoadResponse(repos: RepositoriesConfig, dataStore: DataStore): Either[DataStoreStartupError, Unit] = {
-    def optionsAgree(opt1: Option[Config], opt2: Option[Any], name: String): Either[DataStoreStartupError, Unit] = {
-      (opt1, opt2) match {
-        case (Some(_), Some(_)) => Right(())
-        case (None, None) => Right(())
-        case _ => Left(DataStoreStartupError(s"Unexpected response from loading repo: $name"))
-      }
-    }
+  def validateLoadResponse(
+      reposConfig: RepositoriesConfig,
+      dataStore: DataStore): Either[DataStoreStartupError, Unit] = {
+    val dataStoreMap = dataStore.asMap.keySet
+    val configMap = reposConfig.asMap.keySet
 
-    for {
-      _ <- optionsAgree(repos.user, dataStore.userRepository, "user")
-      _ <- optionsAgree(repos.group, dataStore.groupRepository, "user")
-      _ <- optionsAgree(repos.membership, dataStore.membershipRepository, "user")
-      _ <- optionsAgree(repos.groupChange, dataStore.groupChangeRepository, "user")
-      _ <- optionsAgree(repos.recordSet, dataStore.recordSetRepository, "user")
-      _ <- optionsAgree(repos.recordChange, dataStore.recordChangeRepository, "user")
-      _ <- optionsAgree(repos.zoneChange, dataStore.zoneChangeRepository, "user")
-      _ <- optionsAgree(repos.zone, dataStore.zoneRepository, "user")
-      valid <- optionsAgree(repos.batchChange, dataStore.batchChangeRepository, "user")
-    } yield valid
+    val differingValues = dataStoreMap.diff(configMap)
+
+    if (differingValues.isEmpty) {
+      Right((): Unit)
+    } else {
+      Left(
+        DataStoreStartupError(s"Unexpected response loading the following repos: $differingValues"))
+    }
   }
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only
    * DataStoreConfigs with at least one defined repo if valid
    */
-  def getValidatedConfigs(configs: List[DataStoreConfig])
-    : Either[DataStoreStartupError, List[DataStoreConfig]] = {
+  def getValidatedConfigs(
+      configs: List[DataStoreConfig]): Either[DataStoreStartupError, List[DataStoreConfig]] = {
 
-    val activeConfigs = configs.filter(_.repositories.containsActiveRepo)
-    val repoConfigs = activeConfigs.map(_.repositories)
+    val activeConfigMaps = configs.map(_.repositories.asMap).filter(_.nonEmpty)
 
-    val validated: ValidatedNel[String, Unit] =
-      listContainsSingleConfig(repoConfigs.flatMap(_.user), "user") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.group), "group") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.membership), "membership") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.groupChange), "groupChange") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.recordSet), "recordSet") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.recordChange), "recordChange") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.zoneChange), "zoneChange") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.zone), "zone") |+|
-        listContainsSingleConfig(repoConfigs.flatMap(_.batchChange), "batchChange")
+    val validated = RepositoryName.values.map { repoName =>
+      val definedRepos = activeConfigMaps.flatMap(conf => conf.get(repoName))
+      definedRepos match {
+        case _ :: Nil => ().validNel[String]
+        case Nil => s"Must have one repo of type $repoName".invalidNel[Unit]
+        case _ =>
+          s"May not have more than one repo of type $repoName"
+            .invalidNel[Unit]
+      }
+    }
 
-    validated.toEither
-      .map(_ => activeConfigs)
+    val combinedValidations = validated.fold(().validNel)(_ |+| _)
+    combinedValidations.toEither
+      .map(_ => configs.filter(_.repositories.asMap.nonEmpty))
       .leftMap { errors =>
         val errorString = errors.toList.mkString(", ")
         DataStoreStartupError(s"Config error: $errorString")
       }
   }
 
-  def generateAccessor(
-      dataStores: List[DataStore]): Either[DataStoreStartupError, DataAccessor] = {
-    // Note: headOption is fine here only because we've already validated the config has a single
-    // instance defined for each repo across datastores
-    val accessor = for {
-      userRepo <- dataStores.flatMap(_.userRepository).headOption
-      groupRepo <- dataStores.flatMap(_.groupRepository).headOption
-      membershipRepo <- dataStores.flatMap(_.membershipRepository).headOption
-      groupChangeRepo <- dataStores.flatMap(_.groupChangeRepository).headOption
-      recordSetRepo <- dataStores.flatMap(_.recordSetRepository).headOption
-      recordChangeRepo <- dataStores.flatMap(_.recordChangeRepository).headOption
-      zoneChangeRepo <- dataStores.flatMap(_.zoneChangeRepository).headOption
-      zoneRepo <- dataStores.flatMap(_.zoneRepository).headOption
-      batchChangeRepo <- dataStores.flatMap(_.batchChangeRepository).headOption
-    } yield
-      DataAccessor(
-        userRepo,
-        groupRepo,
-        membershipRepo,
-        groupChangeRepo,
-        recordSetRepo,
-        recordChangeRepo,
-        zoneChangeRepo,
-        zoneRepo,
-        batchChangeRepo
-      )
+  def getAccessor(
+                   configs: List[DataStoreConfig],
+                   stringToStore: Map[String, DataStore]): Either[DataStoreStartupError, DataAccessor] = {
 
-    Either.fromOption(
-      accessor,
-      DataStoreStartupError("error pulling repositories from databases"))
+    val reposByType = RepositoryName.values.flatMap { repoName =>
+      val matchingName = configs.find(_.repositories.asMap.contains(repoName)).map(_.className)
+      matchingName.flatMap(stringToStore.get).map(repoName -> _)
+    }.toMap
+
+    val userRepo = reposByType.get(RepositoryName.user).flatMap(_.userRepository)
+    val groupRepo = reposByType.get(RepositoryName.group).flatMap(_.groupRepository)
+    val membershipRepo = reposByType.get(RepositoryName.membership).flatMap(_.membershipRepository)
+    val groupChangeRepo =
+      reposByType.get(RepositoryName.groupChange).flatMap(_.groupChangeRepository)
+    val recordSetRepo = reposByType.get(RepositoryName.recordSet).flatMap(_.recordSetRepository)
+    val recordChangeRepo =
+      reposByType.get(RepositoryName.recordChange).flatMap(_.recordChangeRepository)
+    val zoneChangeRepo = reposByType.get(RepositoryName.zoneChange).flatMap(_.zoneChangeRepository)
+    val zoneRepo = reposByType.get(RepositoryName.zone).flatMap(_.zoneRepository)
+    val batchChangeRepo =
+      reposByType.get(RepositoryName.batchChange).flatMap(_.batchChangeRepository)
+
+    // TODO change messages
+    val accessor: ValidatedNel[String, DataAccessor] =
+      (
+        Validated.fromOption(userRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(groupRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(membershipRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(groupChangeRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(recordSetRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(recordChangeRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(zoneChangeRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(zoneRepo, "Error initializing repo").toValidatedNel,
+        Validated.fromOption(batchChangeRepo, "Error initializing repo").toValidatedNel)
+        .mapN(DataAccessor)
+
+    accessor.toEither.leftMap(errors => DataStoreStartupError(errors.toList.mkString(", ")))
   }
 
-  private def listContainsSingleConfig(
-      configs: List[Config],
-      name: String): ValidatedNel[String, Unit] =
-    configs match {
-      case _ :: Nil => ().validNel[String]
-      case Nil => s"Must have one repo of type $name".invalidNel[Unit]
-      case _ =>
-        s"May not have more than one repo of type $name"
-          .invalidNel[Unit]
-    }
 }

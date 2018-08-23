@@ -16,8 +16,4 @@
 
 package vinyldns.api.repository
 
-import cats.effect.IO
-
-trait DataStoreProvider {
-  def load(config: DataStoreConfig): IO[DataStore]
-}
+trait Repository

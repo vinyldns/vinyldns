@@ -17,8 +17,15 @@
 package vinyldns.api.repository
 
 import com.typesafe.config.Config
+import vinyldns.api.repository.RepositoryName.RepositoryName
 
 case class DataStoreConfig(className: String, settings: Config, repositories: RepositoriesConfig)
+
+object RepositoryName extends Enumeration {
+  type RepositoryName = Value
+  val user, group, membership, groupChange, recordSet, recordChange, zoneChange, zone, batchChange =
+    Value
+}
 
 case class RepositoriesConfig(
     user: Option[Config],
@@ -31,16 +38,17 @@ case class RepositoriesConfig(
     zone: Option[Config],
     batchChange: Option[Config]
 ) {
-  def containsActiveRepo: Boolean =
+
+  def asMap: Map[RepositoryName, Config] =
     List(
-      user,
-      group,
-      membership,
-      groupChange,
-      recordSet,
-      recordChange,
-      zoneChange,
-      zone,
-      batchChange)
-      .exists(_.isDefined)
+      user.map(x => RepositoryName.user -> x),
+      group.map(x => RepositoryName.group -> x),
+      membership.map(x => RepositoryName.membership -> x),
+      groupChange.map(x => RepositoryName.groupChange -> x),
+      recordSet.map(x => RepositoryName.recordSet -> x),
+      recordChange.map(x => RepositoryName.recordChange -> x),
+      zoneChange.map(x => RepositoryName.zoneChange -> x),
+      zone.map(x => RepositoryName.zone -> x),
+      batchChange.map(x => RepositoryName.batchChange -> x)
+    ).flatten.toMap
 }
