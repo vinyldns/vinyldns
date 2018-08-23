@@ -19,7 +19,10 @@ package vinyldns.api.repository
 import com.typesafe.config.Config
 import vinyldns.api.repository.RepositoryName.RepositoryName
 
-case class DataStoreConfig(className: String, settings: Config, repositories: RepositoriesConfig)
+final case class DataStoreConfig(
+    className: String,
+    settings: Config,
+    repositories: RepositoriesConfig)
 
 object RepositoryName extends Enumeration {
   type RepositoryName = Value
@@ -27,7 +30,7 @@ object RepositoryName extends Enumeration {
     Value
 }
 
-case class RepositoriesConfig(
+final case class RepositoriesConfig(
     user: Option[Config],
     group: Option[Config],
     membership: Option[Config],
@@ -36,8 +39,7 @@ case class RepositoriesConfig(
     recordChange: Option[Config],
     zoneChange: Option[Config],
     zone: Option[Config],
-    batchChange: Option[Config]
-) {
+    batchChange: Option[Config]) {
 
   def asMap: Map[RepositoryName, Config] =
     List(

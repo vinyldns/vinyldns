@@ -24,16 +24,16 @@ import vinyldns.api.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.api.domain.zone.ZoneRepository
 import vinyldns.api.repository.RepositoryName.RepositoryName
 
-case class DataStore(
-    userRepository: Option[UserRepository] = None,
-    groupRepository: Option[GroupRepository] = None,
-    membershipRepository: Option[MembershipRepository] = None,
-    groupChangeRepository: Option[GroupChangeRepository] = None,
-    recordSetRepository: Option[RecordSetRepository] = None,
-    recordChangeRepository: Option[RecordChangeRepository] = None,
-    zoneChangeRepository: Option[ZoneChangeRepository] = None,
-    zoneRepository: Option[ZoneRepository] = None,
-    batchChangeRepository: Option[BatchChangeRepository] = None
+class DataStore(
+    val userRepository: Option[UserRepository] = None,
+    val groupRepository: Option[GroupRepository] = None,
+    val membershipRepository: Option[MembershipRepository] = None,
+    val groupChangeRepository: Option[GroupChangeRepository] = None,
+    val recordSetRepository: Option[RecordSetRepository] = None,
+    val recordChangeRepository: Option[RecordChangeRepository] = None,
+    val zoneChangeRepository: Option[ZoneChangeRepository] = None,
+    val zoneRepository: Option[ZoneRepository] = None,
+    val batchChangeRepository: Option[BatchChangeRepository] = None
 ) {
   def asMap: Map[RepositoryName, Repository] =
     List(
@@ -49,7 +49,7 @@ case class DataStore(
     ).flatten.toMap
 }
 
-case class DataAccessor(
+final case class DataAccessor(
     userRepository: UserRepository,
     groupRepository: GroupRepository,
     membershipRepository: MembershipRepository,
@@ -58,7 +58,6 @@ case class DataAccessor(
     recordChangeRepository: RecordChangeRepository,
     zoneChangeRepository: ZoneChangeRepository,
     zoneRepository: ZoneRepository,
-    batchChangeRepository: BatchChangeRepository
-)
+    batchChangeRepository: BatchChangeRepository)
 
 case class DataStoreStartupError(msg: String) extends Throwable(msg)

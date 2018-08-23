@@ -16,7 +16,6 @@
 
 package vinyldns.api.repository
 
-import cats.effect.IO
 import cats.scalatest.{EitherMatchers, EitherValues}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpec}
@@ -71,32 +70,9 @@ class DataStoreLoaderSpec
     placeholderConfig,
     allEnabledReposConfig)
 
-  val baseLoader = new DataStoreLoader()
-
-  class LoaderWithOverrides(
-      loadOverride: DataStoreConfig => IO[DataStore] = baseLoader.load,
-      getValidatedConfigsOverride: List[DataStoreConfig] => Either[
-        DataStoreStartupError,
-        List[DataStoreConfig]] = baseLoader.getValidatedConfigs,
-      generateAccessorOverride: List[DataStore] => Either[
-        DataStoreStartupError,
-        DataAccessor] = baseLoader.generateAccessor)
-      extends DataStoreLoader {
-
-    override def load(config: DataStoreConfig): IO[DataStore] = loadOverride(config)
-
-    override def getValidatedConfigs(configs: List[DataStoreConfig])
-      : Either[DataStoreStartupError, List[DataStoreConfig]] =
-      getValidatedConfigsOverride(configs)
-
-    override def generateAccessor(
-        dataStores: List[DataStore]): Either[DataStoreStartupError, DataAccessor] =
-      generateAccessorOverride(dataStores)
-  }
-
   "loadAll" should {
     "return a data accessor for valid config for one datastore" in {
-      val loadCall = baseLoader.loadAll(List(goodConfig))
+      val loadCall = DataStoreLoader.loadAll(List(goodConfig))
       noException should be thrownBy loadCall.unsafeRunSync()
     }
 
@@ -111,38 +87,22 @@ class DataStoreLoaderSpec
         placeholderConfig,
         allDisabledReposConfig.copy(user = Some(placeholderConfig)))
 
-      val loadCall = baseLoader.loadAll(List(config1, config2))
+      val loadCall = DataStoreLoader.loadAll(List(config1, config2))
       noException should be thrownBy loadCall.unsafeRunSync()
     }
 
     "throw an exception if getValidatedConfigs fails" in {
-      val error: DataStoreStartupError = DataStoreStartupError("oh no!")
-      val loaderWithOverrides =
-        new LoaderWithOverrides(getValidatedConfigsOverride = _ => Left(error))
-
-      val loadCall = loaderWithOverrides.loadAll(List(goodConfig))
+      val loadCall =
+        DataStoreLoader.loadAll(List(goodConfig.copy(repositories = allDisabledReposConfig)))
       val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
-      thrown shouldBe error
+      thrown.msg should include("Config validation error")
     }
 
     "throw an exception if load fails" in {
-      val error = new RuntimeException("this is bad!")
-      val loaderWithOverrides =
-        new LoaderWithOverrides(loadOverride = _ => IO.raiseError(error))
-
-      val loadCall = loaderWithOverrides.loadAll(List(goodConfig))
-      val thrown = the[Exception] thrownBy loadCall.unsafeRunSync()
-      thrown shouldBe error
-    }
-
-    "throw an exception if generateAccessor fails" in {
-      val error = DataStoreStartupError("wuut!")
-      val loaderWithOverrides =
-        new LoaderWithOverrides(generateAccessorOverride = _ => Left(error))
-
-      val loadCall = loaderWithOverrides.loadAll(List(goodConfig))
-      val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
-      thrown shouldBe error
+      val loadCall = DataStoreLoader.loadAll(
+        List(goodConfig.copy(className = "vinyldns.api.repository.FailDataStoreProvider")))
+      val thrown = the[RuntimeException] thrownBy loadCall.unsafeRunSync()
+      thrown.getMessage should include("ruh roh")
     }
   }
 
@@ -153,7 +113,7 @@ class DataStoreLoaderSpec
         goodConfig.copy(repositories = allDisabledReposConfig.copy(zone = Some(placeholderConfig)))
       val emptyConfig = goodConfig.copy(repositories = allDisabledReposConfig)
 
-      val outcome = baseLoader.getValidatedConfigs(List(config1, config2, emptyConfig))
+      val outcome = DataStoreLoader.getValidatedConfigs(List(config1, config2, emptyConfig))
       outcome.value should contain(config1)
       outcome.value should contain(config2)
       outcome.value should not contain (emptyConfig)
@@ -164,7 +124,7 @@ class DataStoreLoaderSpec
         repositories = allDisabledReposConfig
           .copy(membership = Some(placeholderConfig), group = Some(placeholderConfig)))
 
-      val outcome = baseLoader.getValidatedConfigs(List(config1, config2))
+      val outcome = DataStoreLoader.getValidatedConfigs(List(config1, config2))
       val message = outcome.leftValue.getMessage
       message should include("May not have more than one repo of type membership")
       message should include("May not have more than one repo of type group")
@@ -172,34 +132,34 @@ class DataStoreLoaderSpec
     "fail if any config is defined zero times" in {
       val config = goodConfig.copy(repositories = allEnabledReposConfig.copy(user = None))
 
-      val outcome = baseLoader.getValidatedConfigs(List(config))
+      val outcome = DataStoreLoader.getValidatedConfigs(List(config))
       val message = outcome.leftValue.getMessage
-      message shouldBe "Config error: Must have one repo of type user"
+      message shouldBe "Config validation error: Must have one repo of type user"
     }
   }
 
   "load" should {
     "succeed if properly configured" in {
-      noException should be thrownBy baseLoader.load(goodConfig).unsafeRunSync()
+      noException should be thrownBy DataStoreLoader.load(goodConfig).unsafeRunSync()
     }
     "fail if it cant find the class defined" in {
       val config = goodConfig.copy(className = "something.undefined")
 
-      val call = baseLoader.load(config)
+      val call = DataStoreLoader.load(config)
       a[java.lang.ClassNotFoundException] should be thrownBy call.unsafeRunSync()
     }
     "fail the defined class is not a DataStoreProvider" in {
       val config =
         goodConfig.copy(className = "vinyldns.api.repository.DataStoreLoaderSpec")
 
-      val call = baseLoader.load(config)
+      val call = DataStoreLoader.load(config)
       a[java.lang.ClassCastException] should be thrownBy call.unsafeRunSync()
     }
     "fail if the providers load method fails" in {
       val config =
         goodConfig.copy(className = "vinyldns.api.repository.FailDataStoreProvider")
 
-      val call = baseLoader.load(config)
+      val call = DataStoreLoader.load(config)
       a[RuntimeException] should be thrownBy call.unsafeRunSync()
     }
   }
@@ -216,8 +176,25 @@ class DataStoreLoaderSpec
     val batchChange = mock[BatchChangeRepository]
 
     "combine DataStores into a single accessor" in {
-      val store1 = DataStore(Some(user), Some(group), None, Some(groupChange))
-      val store2 = DataStore(
+      val enabled = Some(placeholderConfig)
+      val config1 = DataStoreConfig(
+        "store1",
+        placeholderConfig,
+        allDisabledReposConfig.copy(user = enabled, group = enabled, groupChange = enabled))
+      val store1 = new DataStore(Some(user), Some(group), None, Some(groupChange))
+
+      val config2 = DataStoreConfig(
+        "store2",
+        placeholderConfig,
+        allDisabledReposConfig.copy(
+          membership = enabled,
+          recordSet = enabled,
+          recordChange = enabled,
+          zoneChange = enabled,
+          zone = enabled,
+          batchChange = enabled)
+      )
+      val store2 = new DataStore(
         None,
         None,
         Some(membership),
@@ -228,7 +205,9 @@ class DataStoreLoaderSpec
         Some(zone),
         Some(batchChange))
 
-      val outcome = baseLoader.generateAccessor(List(store1, store2))
+      val outcome = DataStoreLoader.generateAccessor(
+        List(config1, config2),
+        Map(config1.className -> store1, config2.className -> store2))
       outcome.value shouldBe DataAccessor(
         user,
         group,
@@ -241,11 +220,11 @@ class DataStoreLoaderSpec
         batchChange)
     }
 
-    "return an DataStoreInitializationError if a datastore is undefined" in {
-      val store1 = DataStore(Some(user), Some(group), None, Some(groupChange))
-      val store2 = DataStore(None, None, Some(membership))
+    "return an DataStoreInitializationError if a repository is undefined" in {
+      val store = new DataStore(Some(user), Some(group), None, Some(groupChange))
 
-      val outcome = baseLoader.generateAccessor(List(store1, store2))
+      val outcome =
+        DataStoreLoader.generateAccessor(List(goodConfig), Map(goodConfig.className -> store))
       outcome.leftValue shouldBe a[DataStoreStartupError]
     }
   }

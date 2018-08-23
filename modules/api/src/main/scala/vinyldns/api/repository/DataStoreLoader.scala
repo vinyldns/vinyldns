@@ -20,12 +20,14 @@ import cats.data._
 import cats.effect.IO
 import cats.implicits._
 
-class DataStoreLoader {
+import vinyldns.api.repository.RepositoryName._
+
+object DataStoreLoader {
   def loadAll(configs: List[DataStoreConfig]): IO[DataAccessor] =
     for {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs))
       dataStores <- activeConfigs.map(load).parSequence
-      accessor <- IO.fromEither(getAccessor(activeConfigs, dataStores.toMap))
+      accessor <- IO.fromEither(generateAccessor(activeConfigs, dataStores.toMap))
     } yield accessor
 
   def load(config: DataStoreConfig): IO[(String, DataStore)] =
@@ -78,17 +80,23 @@ class DataStoreLoader {
       .map(_ => configs.filter(_.repositories.asMap.nonEmpty))
       .leftMap { errors =>
         val errorString = errors.toList.mkString(", ")
-        DataStoreStartupError(s"Config error: $errorString")
+        DataStoreStartupError(s"Config validation error: $errorString")
       }
   }
 
-  def getAccessor(
-                   configs: List[DataStoreConfig],
-                   stringToStore: Map[String, DataStore]): Either[DataStoreStartupError, DataAccessor] = {
+  def generateAccessor(
+      configs: List[DataStoreConfig],
+      stringToStore: Map[String, DataStore]): Either[DataStoreStartupError, DataAccessor] = {
 
-    val reposByType = RepositoryName.values.flatMap { repoName =>
-      val matchingName = configs.find(_.repositories.asMap.contains(repoName)).map(_.className)
-      matchingName.flatMap(stringToStore.get).map(repoName -> _)
+    // maps RepositoryName to the DataStore that should hold that repo based on config
+    val reposByType = RepositoryName.values.toList.flatMap { repoName =>
+      val store = for {
+        matchingDbConfig <- configs.find(_.repositories.asMap.contains(repoName))
+        matchingDbName = matchingDbConfig.className
+        matchingDataStore <- stringToStore.get(matchingDbName)
+      } yield matchingDataStore
+
+      store.map(s => repoName -> s)
     }.toMap
 
     val userRepo = reposByType.get(RepositoryName.user).flatMap(_.userRepository)
@@ -104,21 +112,22 @@ class DataStoreLoader {
     val batchChangeRepo =
       reposByType.get(RepositoryName.batchChange).flatMap(_.batchChangeRepository)
 
-    // TODO change messages
     val accessor: ValidatedNel[String, DataAccessor] =
       (
-        Validated.fromOption(userRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(groupRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(membershipRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(groupChangeRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(recordSetRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(recordChangeRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(zoneChangeRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(zoneRepo, "Error initializing repo").toValidatedNel,
-        Validated.fromOption(batchChangeRepo, "Error initializing repo").toValidatedNel)
+        getExistingRepo(userRepo, user),
+        getExistingRepo(groupRepo, group),
+        getExistingRepo(membershipRepo, membership),
+        getExistingRepo(groupChangeRepo, groupChange),
+        getExistingRepo(recordSetRepo, recordSet),
+        getExistingRepo(recordChangeRepo, recordChange),
+        getExistingRepo(zoneChangeRepo, zoneChange),
+        getExistingRepo(zoneRepo, zone),
+        getExistingRepo(batchChangeRepo, batchChange))
         .mapN(DataAccessor)
 
     accessor.toEither.leftMap(errors => DataStoreStartupError(errors.toList.mkString(", ")))
   }
 
+  def getExistingRepo[A](a: Option[A], name: RepositoryName): ValidatedNel[String, A] =
+    Validated.fromOption(a, s"Repo $name does not exist in configured database").toValidatedNel
 }

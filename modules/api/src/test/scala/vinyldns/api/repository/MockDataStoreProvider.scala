@@ -43,7 +43,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
     val batchChange = repoConfig.batchChange.map(_ => mock[BatchChangeRepository])
 
     IO.pure(
-      DataStore(
+      new DataStore(
         user,
         group,
         membership,
@@ -60,7 +60,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 
 class AlternateMockDataStoreProvider extends MockDataStoreProvider
 
-class FailDataStoreProvider extends DataStoreProvider {repos
+class FailDataStoreProvider extends DataStoreProvider {
   def load(config: DataStoreConfig): IO[DataStore] =
     IO.raiseError(new RuntimeException("ruh roh"))
 }
