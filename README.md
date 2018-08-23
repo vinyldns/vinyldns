@@ -33,11 +33,10 @@ Integration is simple with first-class language support including:
 
 ## Table of Contents
 - [Quickstart](#quickstart)
-- [Roadmap](#roadmap)
 - [Code of Conduct](#code-of-conduct)
 - [Developer Guide](#developer-guide)
-- [Project Layout](#project-layout)
 - [Contributing](#contributing)
+- [Roadmap](#roadmap)
 - [Contact](#contact)
 - [Maintainers and Contributors](#maintainers-and-contributors)
 - [Credits](#credits)
@@ -46,11 +45,12 @@ Integration is simple with first-class language support including:
 Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
 To start up a local instance of VinylDNS on your machine with docker:
 
-1. Ensure that you have docker and docker-compose
+1. Ensure that you have [docker](https://docs.docker.com/install/) and [docker-compose](https://docs.docker.com/compose/install/)
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
-1. Run `bin/docker-up-vinyldns.sh`
-1. This will start up the api at `localhost:9000`, and the portal at `localhost:9001`
+1. Run `bin/docker-up-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001` along with their
+dependencies, ping the API on `http://localhost:9000/ping` and the portal on `http://localhost:9001`, and notify you if either failed to start.
+1. To stop the local setup, run `./bin/remove-vinyl-containers.sh` from the project root.
 
 Things to try after VinylDNS is running:
 
@@ -79,35 +79,20 @@ Things to note:
 1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
 1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
 
-## Roadmap
-See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
+For details regarding setup and configuration of the dev environment, see the [Developer Guide](DEVELOPER_GUIDE.md).
 
 ## Code of Conduct
 This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
 participating, you agree to this Code.  Please report any violations to the code of conduct to vinyldns-core@googlegroups.com.
 
 ## Developer Guide
-### Requirements
-- sbt
-- Java 8
-- Python 2.7
-- virtualenv
-- docker
-- curl
-
 See [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) for instructions on setting up VinylDNS locally.
-
-## Project Layout
-* [API](modules/api): the API is the main engine for all of VinylDNS.  This is the most active area of the codebase, as everything else typically just funnels through
-the API.  More detail on the API can be provided below.
-* [Portal](modules/portal): The portal is a user interface wrapper around the API.  Most of the business rules, logic, and processing can be found in the API.  The
-_only_ feature in the portal not found in the API is creation of users and user authentication.
-* [Documentation](modules/docs): The documentation is primarily in support of the API.
-
-For more details see the [project structure](DEVELOPER_GUIDE.md#project-structure) in the Developer Guide.
 
 ## Contributing
 See the [Contributing Guide](CONTRIBUTING.md).
+
+## Roadmap
+See [ROADMAP.md](ROADMAP.md) for the future plans for VinylDNS.
 
 ## Contact
 - [Gitter](https://gitter.im/vinyldns)
