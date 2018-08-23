@@ -31,9 +31,6 @@ trait BatchChangeValidationsAlgebra {
 
   def validateInputChanges(input: List[ChangeInput]): ValidatedBatch[ChangeInput]
 
-  // Note: once we add cnames, deletes in,
-  // this will also want the prior request context (all requests before the current)
-  // so the caller will likely have to do some kinda funky fold. Will deal with that later
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
