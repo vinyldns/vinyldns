@@ -35,14 +35,39 @@ class DataStoreLoader {
       className <- IO.pure(config.className)
       provider <- IO(Class.forName(className).newInstance.asInstanceOf[DataStoreProvider])
       dataStore <- provider.load(config)
+      _ <- IO.fromEither(validateLoadResponse(config.repositories, dataStore))
     } yield dataStore
+
+
+  // Ensures that if a datastore is configured on, load returned it, and if configured off, load did not
+  def validateLoadResponse(repos: RepositoriesConfig, dataStore: DataStore): Either[DataStoreStartupError, Unit] = {
+    def optionsAgree(opt1: Option[Config], opt2: Option[Any], name: String): Either[DataStoreStartupError, Unit] = {
+      (opt1, opt2) match {
+        case (Some(_), Some(_)) => Right(())
+        case (None, None) => Right(())
+        case _ => Left(DataStoreStartupError(s"Unexpected response from loading repo: $name"))
+      }
+    }
+
+    for {
+      _ <- optionsAgree(repos.user, dataStore.userRepository, "user")
+      _ <- optionsAgree(repos.group, dataStore.groupRepository, "user")
+      _ <- optionsAgree(repos.membership, dataStore.membershipRepository, "user")
+      _ <- optionsAgree(repos.groupChange, dataStore.groupChangeRepository, "user")
+      _ <- optionsAgree(repos.recordSet, dataStore.recordSetRepository, "user")
+      _ <- optionsAgree(repos.recordChange, dataStore.recordChangeRepository, "user")
+      _ <- optionsAgree(repos.zoneChange, dataStore.zoneChangeRepository, "user")
+      _ <- optionsAgree(repos.zone, dataStore.zoneRepository, "user")
+      valid <- optionsAgree(repos.batchChange, dataStore.batchChangeRepository, "user")
+    } yield valid
+  }
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only
    * DataStoreConfigs with at least one defined repo if valid
    */
   def getValidatedConfigs(configs: List[DataStoreConfig])
-    : Either[DataStoreInitializationError, List[DataStoreConfig]] = {
+    : Either[DataStoreStartupError, List[DataStoreConfig]] = {
 
     val activeConfigs = configs.filter(_.repositories.containsActiveRepo)
     val repoConfigs = activeConfigs.map(_.repositories)
@@ -62,12 +87,12 @@ class DataStoreLoader {
       .map(_ => activeConfigs)
       .leftMap { errors =>
         val errorString = errors.toList.mkString(", ")
-        DataStoreInitializationError(s"Config error: $errorString")
+        DataStoreStartupError(s"Config error: $errorString")
       }
   }
 
   def generateAccessor(
-      dataStores: List[DataStore]): Either[DataStoreInitializationError, DataAccessor] = {
+      dataStores: List[DataStore]): Either[DataStoreStartupError, DataAccessor] = {
     // Note: headOption is fine here only because we've already validated the config has a single
     // instance defined for each repo across datastores
     val accessor = for {
@@ -95,7 +120,7 @@ class DataStoreLoader {
 
     Either.fromOption(
       accessor,
-      DataStoreInitializationError("error pulling repositories from databases"))
+      DataStoreStartupError("error pulling repositories from databases"))
   }
 
   private def listContainsSingleConfig(

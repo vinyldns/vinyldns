@@ -60,7 +60,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 
 class AlternateMockDataStoreProvider extends MockDataStoreProvider
 
-class FailDataStoreProvider extends DataStoreProvider {
+class FailDataStoreProvider extends DataStoreProvider {repos
   def load(config: DataStoreConfig): IO[DataStore] =
     IO.raiseError(new RuntimeException("ruh roh"))
 }

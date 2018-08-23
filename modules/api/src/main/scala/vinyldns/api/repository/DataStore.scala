@@ -47,4 +47,4 @@ case class DataAccessor(
     batchChangeRepository: BatchChangeRepository
 )
 
-case class DataStoreInitializationError(msg: String) extends Throwable(msg)
+case class DataStoreStartupError(msg: String) extends Throwable(msg)

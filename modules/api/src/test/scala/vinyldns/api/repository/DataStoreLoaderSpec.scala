@@ -76,21 +76,21 @@ class DataStoreLoaderSpec
   class LoaderWithOverrides(
       loadOverride: DataStoreConfig => IO[DataStore] = baseLoader.load,
       getValidatedConfigsOverride: List[DataStoreConfig] => Either[
-        DataStoreInitializationError,
+        DataStoreStartupError,
         List[DataStoreConfig]] = baseLoader.getValidatedConfigs,
       generateAccessorOverride: List[DataStore] => Either[
-        DataStoreInitializationError,
+        DataStoreStartupError,
         DataAccessor] = baseLoader.generateAccessor)
       extends DataStoreLoader {
 
     override def load(config: DataStoreConfig): IO[DataStore] = loadOverride(config)
 
     override def getValidatedConfigs(configs: List[DataStoreConfig])
-      : Either[DataStoreInitializationError, List[DataStoreConfig]] =
+      : Either[DataStoreStartupError, List[DataStoreConfig]] =
       getValidatedConfigsOverride(configs)
 
     override def generateAccessor(
-        dataStores: List[DataStore]): Either[DataStoreInitializationError, DataAccessor] =
+        dataStores: List[DataStore]): Either[DataStoreStartupError, DataAccessor] =
       generateAccessorOverride(dataStores)
   }
 
@@ -116,12 +116,12 @@ class DataStoreLoaderSpec
     }
 
     "throw an exception if getValidatedConfigs fails" in {
-      val error: DataStoreInitializationError = DataStoreInitializationError("oh no!")
+      val error: DataStoreStartupError = DataStoreStartupError("oh no!")
       val loaderWithOverrides =
         new LoaderWithOverrides(getValidatedConfigsOverride = _ => Left(error))
 
       val loadCall = loaderWithOverrides.loadAll(List(goodConfig))
-      val thrown = the[DataStoreInitializationError] thrownBy loadCall.unsafeRunSync()
+      val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
       thrown shouldBe error
     }
 
@@ -136,12 +136,12 @@ class DataStoreLoaderSpec
     }
 
     "throw an exception if generateAccessor fails" in {
-      val error = DataStoreInitializationError("wuut!")
+      val error = DataStoreStartupError("wuut!")
       val loaderWithOverrides =
         new LoaderWithOverrides(generateAccessorOverride = _ => Left(error))
 
       val loadCall = loaderWithOverrides.loadAll(List(goodConfig))
-      val thrown = the[DataStoreInitializationError] thrownBy loadCall.unsafeRunSync()
+      val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
       thrown shouldBe error
     }
   }
@@ -246,7 +246,7 @@ class DataStoreLoaderSpec
       val store2 = DataStore(None, None, Some(membership))
 
       val outcome = baseLoader.generateAccessor(List(store1, store2))
-      outcome.leftValue shouldBe a[DataStoreInitializationError]
+      outcome.leftValue shouldBe a[DataStoreStartupError]
     }
   }
 }
