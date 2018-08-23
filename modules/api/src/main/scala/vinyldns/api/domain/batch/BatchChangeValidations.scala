@@ -25,17 +25,12 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 
-// turn on coverage once we start implementing these
-// $COVERAGE-OFF$
 trait BatchChangeValidationsAlgebra {
 
   def validateBatchChangeInputSize(input: BatchChangeInput): Either[BatchChangeErrorResponse, Unit]
 
   def validateInputChanges(input: List[ChangeInput]): ValidatedBatch[ChangeInput]
 
-  // Note: once we add cnames, deletes in,
-  // this will also want the prior request context (all requests before the current)
-  // so the caller will likely have to do some kinda funky fold. Will deal with that later
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
@@ -335,4 +330,3 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       UserNotAuthorizedError(batchChange.id).asLeft
     }
 }
-// $COVERAGE-ON$
