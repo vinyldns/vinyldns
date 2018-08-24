@@ -185,13 +185,13 @@ for PyHamcrest.  There aren't a lot, so it should be quick.
 
 In the `modules/api/functional_test` directory are a few important files for you to be familiar with:
 
-* vinyl_client.py - this provides the interface to the VinylDNS api.  It handles signing the request for you, as well
+* vinyl_client.py - this provides the interface to the VinylDNS API.  It handles signing the request for you, as well
 as building and executing the requests, and giving you back valid responses.  For all new API endpoints, there should
 be a corresponding function in the vinyl_client
 * utils.py - provides general use functions that can be used anywhere in your tests.  Feel free to contribute new
 functions here when you see repetition in the code
 
-Functional tests run on every build, and are designed to work _in every environment_.  That means locally, in docker,
+Functional tests run on every build, and are designed to work _in every environment_.  That means locally, in Docker,
 and in production environments.
 
 In the `modules/api/functional_test/live_tests` directory, we have directories / modules for different areas of the application.
@@ -210,10 +210,10 @@ that use the context are called using that same context.
 
 The shared test context sets up several things that can be reused:
 
-1. An ok user and group
-1. A dummy user and group - a separate user and group helpful for tesing access controls and authorization
-1. An ok zone accessible only by the ok user and ok group
-1. A dummy zone accessible only by the dummy user and dummy group
+1. An `ok` user and group
+1. A `dummy` user and group - a separate user and group helpful for tesing access controls and authorization
+1. An `ok.` zone accessible only by the `ok` user and `ok` group
+1. A `dummy.` zone accessible only by the `dummy` user and `dummy` group
 1. An IPv6 reverse zone
 1. A normal IPv4 reverse zone
 1. A classless IPv4 reverse zone
