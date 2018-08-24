@@ -245,6 +245,33 @@ class VinylDNS @Inject()(
     }
   }
 
+  def regenerateCreds(): Action[AnyContent] = Action.async { implicit request =>
+    withAuthenticatedUser { username =>
+      Future
+        .fromTry {
+          for {
+            userDetails <- userAccountAccessor.get(username)
+            updatedDetails = UserAccount.regenerateCredentials(userDetails.get)
+            updatedUser <- userAccountAccessor.put(updatedDetails)
+          } yield {
+            auditLogAccessor.log(
+              UserChangeMessage(
+                updatedUser.userId,
+                updatedUser.username,
+                DateTime.now(),
+                ChangeType("updated"),
+                updatedUser,
+                userDetails))
+            Logger.info(s"Credentials successfully regenerated for ${updatedDetails.username}")
+            Status(200)("Successfully regenerated credentials")
+              .withSession(
+                "username" -> updatedDetails.username,
+                "accessKey" -> updatedDetails.accessKey)
+          }
+        }
+    }
+  }
+
   private def createNewUser(details: UserDetails): Try[UserAccount] = {
     val newAccount =
       UserAccount(details.username, details.firstName, details.lastName, details.email)

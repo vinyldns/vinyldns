@@ -61,4 +61,7 @@ object UserAccount {
 
     UserAccount(userId, username, firstName, lastName, email, createdTime, key, secret, false)
   }
+
+  def regenerateCredentials(oldUser: UserAccount): UserAccount =
+    oldUser.copy(accessKey = generateKey, accessSecret = generateKey)
 }

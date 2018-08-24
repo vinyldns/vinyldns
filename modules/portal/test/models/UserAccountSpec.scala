@@ -40,5 +40,26 @@ class UserAccountSpec extends Specification with Mockito {
       result.accessKey.length must beEqualTo(20)
       result.accessSecret.length must beEqualTo(20)
     }
+
+    "Copy an existing UserAccount with different accessKey and accessSecret" in {
+      val username = "fbaggins"
+      val fname = Some("Frodo")
+      val lname = Some("Baggins")
+      val email = Some("fb@hobbitmail.me")
+
+      val result = UserAccount(username, fname, lname, email)
+      val newResult = UserAccount.regenerateCredentials(result)
+
+      newResult must beAnInstanceOf[UserAccount]
+      UUID.fromString(newResult.userId) must beAnInstanceOf[UUID]
+      newResult.username must beEqualTo(username)
+      newResult.firstName must beEqualTo(fname)
+      newResult.lastName must beEqualTo(lname)
+      newResult.email must beEqualTo(email)
+      newResult.accessKey.length must beEqualTo(20)
+      newResult.accessSecret.length must beEqualTo(20)
+      newResult.accessKey mustNotEqual result.accessKey
+      newResult.accessSecret mustNotEqual result.accessSecret
+    }
   }
 }
