@@ -51,7 +51,7 @@
                             @for(link <- customLinks.links) {
                                 @if(link.displayOnLoginScreen) {
                                 <li>
-                                    <a href='@{link.href}' target="_blank">@{link.title}</a>
+                                    <a rel="noopener noreferrer" href='@{link.href}' target="_blank">@{link.title}</a>
                                 </li>
                                 }
                             }
