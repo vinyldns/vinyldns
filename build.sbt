@@ -210,6 +210,7 @@ lazy val coreBuildSettings = Seq(
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
 ) ++ pbSettings
 
+import xerial.sbt.Sonatype._
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -217,7 +218,33 @@ lazy val corePublishSettings = Seq(
   autoAPIMappings := true,
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   publish in Docker := {},
-  mainClass := None
+  mainClass := None,
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  },
+  homepage := Some(url("http://vinyldns.io")),
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/vinyldns/vinyldns"),
+      "scm:git@github.com:vinyldns/vinyldns.git"
+    )
+  ),
+  developers := List(
+    Developer(id="pauljamescleary", name="Paul James Cleary", email="pauljamescleary@gmail.com", url=url("https://github.com/pauljamescleary")),
+    Developer(id="rebstar6", name="Rebecca Star", email="rebstar6@gmail.com", url=url("https://github.com/rebstar6")),
+    Developer(id="nimaeskandary", name="Nima Eskandary", email="nimaesk1@gmail.com", url=url("https://github.com/nimaeskandary")),
+    Developer(id="mitruly", name="Michael Ly", email="michaeltrulyng@gmail.com", url=url("https://github.com/mitruly")),
+    Developer(id="britneywright", name="Britney Wright", email="blw06g@gmail.com", url=url("https://github.com/britneywright")),
+  ),
+  sonatypeProfileName := "io.vinyldns",
+
+  // gpg credentials are used to sign sonatype artifacts
+  // sonatype credentials live in ~/.sbt/1.0/sonatype.sbt
+  credentials += Credentials(Path.userHome / ".iv2" / ".gpgCredentials")
 )
 
 lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPlugin)
@@ -228,6 +255,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(libraryDependencies ++= coreDependencies ++ coreTestDependencies.map(_ % "test"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
+    organization := "io.vinyldns",
     coverageMinimum := 85,
     coverageFailOnMinimum := true,
     coverageHighlighting := true
