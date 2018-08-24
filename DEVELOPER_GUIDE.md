@@ -154,14 +154,79 @@ backend services for integration test development.
 1. Run an individual integration test by typing `it:testOnly *MyIntegrationSpec`
 1. You can background compile as well if working on a single spec by using `~it:testOnly *MyIntegrationSpec`
 
+#### Running both
+
+You can run all unit and integration tests for the api and portal by running `sbt verify`
+
 ### Functional Tests
 When adding new features, you will often need to write new functional tests that black box / regression test the
 API.  We have over 350 (and growing) automated regression tests.  The API functional tests are written in Python
 and live under `modules/api/functional_test`.
 
-To run functional tests, make sure that you have started the API server (directions above).  Then outside of sbt, `cd modules/api/functional_test`.
+#### Running functional tests
+To run functional tests, make sure that you have started the API server (directions above).  
+Then in another terminal session:
 
-### Managing Test Zone Files
+1. `cd modules/api/functional_test`
+1. `./run.py live_tests -v`
+
+You can run a specific test by name by running `./run.py live_tests -v -k <name of test function>`
+
+You run specific tests for a portion of the project, say recordsets, by running `./run.py live_tests/recordsets -v`
+
+#### Our Setup
+We use [pytest](https://docs.pytest.org/en/latest/) for python tests.  It is helpful that you browse the documentation
+so that you are familiar with pytest and how our functional tests operate.
+
+We also use [PyHamcrest](https://pyhamcrest.readthedocs.io/en/release-1.8/) for matchers in order to write easy
+to read tests.  Please browse that documentation as well so that you are familiar with the different matchers
+for PyHamcrest.  There aren't a lot, so it should be quick.
+
+
+In the `modules/api/functional_test` directory are a few important files for you to be familiar with:
+
+* vinyl_client.py - this provides the interface to the VinylDNS api.  It handles signing the request for you, as well
+as building and executing the requests, and giving you back valid responses.  For all new API endpoints, there should
+be a corresponding function in the vinyl_client
+* utils.py - provides general use functions that can be used anywhere in your tests.  Feel free to contribute new
+functions here when you see repetition in the code
+
+Functional tests run on every build, and are designed to work _in every environment_.  That means locally, in docker,
+and in production environments.
+
+In the `modules/api/functional_test/live_tests` directory, we have directories / modules for different areas of the application.
+
+* membership - for managing groups and users
+* recordsets - for managing record sets
+* zones - for managing zones
+* internal - for internal endpoints (not intended for public consumption)
+* batch - for managing batch updates
+
+##### Functional Test Context
+Our func tests use pytest contexts.  There is a main test context that lives in `shared_zone_test_context.py`
+that creates and tears down a shared test context used by many functional tests.  The
+beauty of pytest is that it will ensure that the test context is stood up exactly once, then all individual tests
+that use the context are called using that same context.
+
+The shared test context sets up several things that can be reused:
+
+1. An ok user and group
+1. A dummy user and group - a separate user and group helpful for tesing access controls and authorization
+1. An ok zone accessible only by the ok user and ok group
+1. A dummy zone accessible only by the dummy user and dummy group
+1. An IPv6 reverse zone
+1. A normal IPv4 reverse zone
+1. A classless IPv4 reverse zone
+1. A parent zone that has child zones - used for testing NS record management and zone delegations
+
+##### Really Important Test Context Rules!
+
+1. Try to use the `shared_zone_test_context` whenever possible!  This reduces the time
+it takes to run functional tests (which is in minutes).
+1. Limit changes to users, groups, and zones in the shared test context, as doing so could impact downstream tests
+1. If you do modify any entities in the shared zone context, roll those back when your function completes!
+
+##### Managing Test Zone Files
 When functional tests are run, we spin up several Docker containers.  One of the Docker containers is a Bind9 DNS
 server.  If you need to add or modify the test DNS zone files, you can find them in
 `docker/bind9/zones`
