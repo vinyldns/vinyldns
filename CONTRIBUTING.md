@@ -31,7 +31,7 @@ you can join the discussion on an issue, submit a Pull Request to resolve the is
 VinylDNS issues are generally labeled as bug reports, feature requests, or maintenance requests.  
 
 ### Working on an Issue
-If you would like to contribute to VinylDNS, you can look through `beginner` and `help-wanted` issues.  We keep a list
+If you would like to contribute to VinylDNS, you can look through `good first issue` and `help wanted` issues.  We keep a list
 of these issues around to encourage participation in building the platform.  In the issue list, you can chose "Labels" and
 choose a specific label to narrow down the issues to review.
 
@@ -41,7 +41,7 @@ to get through changing and testing your code, and meet everyone!
 backlog but not necessarily in the current development stream.
 
 Besides those issues, you can sort the issue list by number of comments to find one that may be of interest.  You do
-_not_ have to limit yourself to _only_ "beginner" or "help-wanted" issues.
+_not_ have to limit yourself to _only_ `good first issue` or `help wanted` issues.
 
 When resolving an issue, you generally will do so by making a [Pull Request](#pull-requests), and adding a link to the issue.
 
