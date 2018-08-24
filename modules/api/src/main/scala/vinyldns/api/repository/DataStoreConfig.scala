@@ -24,12 +24,6 @@ final case class DataStoreConfig(
     settings: Config,
     repositories: RepositoriesConfig)
 
-object RepositoryName extends Enumeration {
-  type RepositoryName = Value
-  val user, group, membership, groupChange, recordSet, recordChange, zoneChange, zone, batchChange =
-    Value
-}
-
 final case class RepositoriesConfig(
     user: Option[Config],
     group: Option[Config],
