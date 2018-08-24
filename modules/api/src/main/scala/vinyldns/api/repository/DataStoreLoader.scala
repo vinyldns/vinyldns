@@ -35,23 +35,36 @@ object DataStoreLoader {
       className <- IO.pure(config.className)
       provider <- IO(Class.forName(className).newInstance.asInstanceOf[DataStoreProvider])
       dataStore <- provider.load(config)
-      _ <- IO.fromEither(validateLoadResponse(config.repositories, dataStore))
+      _ <- IO.fromEither(validateLoadResponse(config, dataStore))
     } yield (className, dataStore)
 
   // Ensures that if a datastore is configured on, load returned it, and if configured off, load did not
   def validateLoadResponse(
-      reposConfig: RepositoriesConfig,
+      config: DataStoreConfig,
       dataStore: DataStore): Either[DataStoreStartupError, Unit] = {
     val dataStoreMap = dataStore.asMap.keySet
-    val configMap = reposConfig.asMap.keySet
+    val configMap = config.repositories.asMap.keySet
 
-    val differingValues = dataStoreMap.diff(configMap)
+    val loadedNotConfigured = dataStoreMap.diff(configMap)
+    val configuredNotLoaded = configMap.diff(dataStoreMap)
 
-    if (differingValues.isEmpty) {
-      Right((): Unit)
-    } else {
-      Left(
-        DataStoreStartupError(s"Unexpected response loading the following repos: $differingValues"))
+    (loadedNotConfigured.isEmpty, configuredNotLoaded.isEmpty) match {
+      case (true, true) => Right((): Unit)
+      case (false, true) =>
+        Left(
+          DataStoreStartupError(
+            s"""Loaded repos were configured off for ${config.className}: ${loadedNotConfigured
+              .mkString(", ")}"""))
+      case (true, false) =>
+        Left(
+          DataStoreStartupError(
+            s"""Configured repos were not loaded by ${config.className}: ${configuredNotLoaded
+              .mkString(", ")}"""))
+      case _ =>
+        Left(
+          DataStoreStartupError(
+            s"""Error on load by ${config.className}: configuration does not match load for repos:
+           | ${(loadedNotConfigured ++ configuredNotLoaded).mkString(", ")}""".stripMargin))
     }
   }
 

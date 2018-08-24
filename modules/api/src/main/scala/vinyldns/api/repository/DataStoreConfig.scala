@@ -43,14 +43,14 @@ final case class RepositoriesConfig(
 
   def asMap: Map[RepositoryName, Config] =
     List(
-      user.map(x => RepositoryName.user -> x),
-      group.map(x => RepositoryName.group -> x),
-      membership.map(x => RepositoryName.membership -> x),
-      groupChange.map(x => RepositoryName.groupChange -> x),
-      recordSet.map(x => RepositoryName.recordSet -> x),
-      recordChange.map(x => RepositoryName.recordChange -> x),
-      zoneChange.map(x => RepositoryName.zoneChange -> x),
-      zone.map(x => RepositoryName.zone -> x),
-      batchChange.map(x => RepositoryName.batchChange -> x)
+      user.map(RepositoryName.user -> _),
+      group.map(RepositoryName.group -> _),
+      membership.map(RepositoryName.membership -> _),
+      groupChange.map(RepositoryName.groupChange -> _),
+      recordSet.map(RepositoryName.recordSet -> _),
+      recordChange.map(RepositoryName.recordChange -> _),
+      zoneChange.map(RepositoryName.zoneChange -> _),
+      zone.map(RepositoryName.zone -> _),
+      batchChange.map(RepositoryName.batchChange -> _)
     ).flatten.toMap
 }

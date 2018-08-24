@@ -37,15 +37,15 @@ class DataStore(
 ) {
   def asMap: Map[RepositoryName, Repository] =
     List(
-      userRepository.map(x => RepositoryName.user -> x),
-      groupRepository.map(x => RepositoryName.group -> x),
-      membershipRepository.map(x => RepositoryName.membership -> x),
-      groupChangeRepository.map(x => RepositoryName.groupChange -> x),
-      recordSetRepository.map(x => RepositoryName.recordSet -> x),
-      recordChangeRepository.map(x => RepositoryName.recordChange -> x),
-      zoneChangeRepository.map(x => RepositoryName.zoneChange -> x),
-      zoneRepository.map(x => RepositoryName.zone -> x),
-      batchChangeRepository.map(x => RepositoryName.batchChange -> x)
+      userRepository.map(RepositoryName.user -> _),
+      groupRepository.map(RepositoryName.group -> _),
+      membershipRepository.map(RepositoryName.membership -> _),
+      groupChangeRepository.map(RepositoryName.groupChange -> _),
+      recordSetRepository.map(RepositoryName.recordSet -> _),
+      recordChangeRepository.map(RepositoryName.recordChange -> _),
+      zoneChangeRepository.map(RepositoryName.zoneChange -> _),
+      zoneRepository.map(RepositoryName.zone -> _),
+      batchChangeRepository.map(RepositoryName.batchChange -> _)
     ).flatten.toMap
 }
 

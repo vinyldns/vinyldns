@@ -16,7 +16,7 @@
 
 package vinyldns.api.repository
 
-import cats.scalatest.{EitherMatchers, EitherValues}
+import cats.scalatest.EitherValues
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
@@ -32,12 +32,7 @@ import vinyldns.api.domain.zone.{ZoneChangeRepository, ZoneRepository}
 
 import scala.collection.JavaConverters._
 
-class DataStoreLoaderSpec
-    extends WordSpec
-    with Matchers
-    with MockitoSugar
-    with EitherMatchers
-    with EitherValues {
+class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with EitherValues {
 
   val placeholderConfig = ConfigFactory.parseMap(Map[String, String]().asJava)
 
@@ -161,6 +156,47 @@ class DataStoreLoaderSpec
 
       val call = DataStoreLoader.load(config)
       a[RuntimeException] should be thrownBy call.unsafeRunSync()
+    }
+    "fail if a datastore returned by external load was not configured on" in {
+      val config = DataStoreConfig(
+        "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider",
+        placeholderConfig,
+        allDisabledReposConfig.copy(group = Some(placeholderConfig)))
+
+      val call = DataStoreLoader.load(config)
+      val thrown = the[DataStoreStartupError] thrownBy call.unsafeRunSync()
+      thrown.msg shouldBe
+        "Loaded repos were configured off for vinyldns.api.repository.UserGroupAlwaysDataStoreProvider: user"
+    }
+    "fail if datastores configured on are not returned by external load" in {
+      val config =
+        goodConfig.copy(className = "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider")
+
+      val call = DataStoreLoader.load(config)
+      val thrown = the[DataStoreStartupError] thrownBy call.unsafeRunSync()
+      thrown.msg should include(
+        "Configured repos were not loaded by vinyldns.api.repository.UserGroupAlwaysDataStoreProvider")
+      thrown.msg should
+        include("membership")
+          .and(include("groupChange"))
+          .and(include("recordSet"))
+          .and(include("recordChange"))
+          .and(include("zoneChange"))
+          .and(include("zone"))
+          .and(include("batchChange"))
+    }
+    "fail if datastore load and config are both wrong" in {
+      val config = DataStoreConfig(
+        "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider",
+        placeholderConfig,
+        allDisabledReposConfig
+          .copy(group = Some(placeholderConfig), membership = Some(placeholderConfig))
+      )
+
+      val call = DataStoreLoader.load(config)
+      val thrown = the[DataStoreStartupError] thrownBy call.unsafeRunSync()
+      thrown.msg should include(
+        "Error on load by vinyldns.api.repository.UserGroupAlwaysDataStoreProvider")
     }
   }
 
