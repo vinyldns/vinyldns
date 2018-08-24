@@ -38,7 +38,7 @@ object DataStoreLoader {
       _ <- IO.fromEither(validateLoadResponse(config, dataStore))
     } yield (className, dataStore)
 
-  // Ensures that if a datastore is configured on, load returned it, and if configured off, load did not
+  // Ensures that if a repository is configured on, load returned it, and if configured off, load did not
   def validateLoadResponse(
       config: DataStoreConfig,
       dataStore: DataStore): Either[DataStoreStartupError, Unit] = {

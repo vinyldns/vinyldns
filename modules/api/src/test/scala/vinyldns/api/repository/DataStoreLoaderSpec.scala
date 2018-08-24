@@ -35,17 +35,18 @@ import scala.collection.JavaConverters._
 class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with EitherValues {
 
   val placeholderConfig = ConfigFactory.parseMap(Map[String, String]().asJava)
+  val enabled = Some(placeholderConfig)
 
   val allEnabledReposConfig = RepositoriesConfig(
-    Some(placeholderConfig),
-    Some(placeholderConfig),
-    Some(placeholderConfig),
-    Some(placeholderConfig),
-    Some(placeholderConfig),
-    Some(placeholderConfig),
-    Some(placeholderConfig),
-    Some(placeholderConfig),
-    Some(placeholderConfig)
+    enabled,
+    enabled,
+    enabled,
+    enabled,
+    enabled,
+    enabled,
+    enabled,
+    enabled,
+    enabled
   )
 
   val allDisabledReposConfig = RepositoriesConfig(
@@ -80,7 +81,7 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
       val config2 = DataStoreConfig(
         "vinyldns.api.repository.AlternateMockDataStoreProvider",
         placeholderConfig,
-        allDisabledReposConfig.copy(user = Some(placeholderConfig)))
+        allDisabledReposConfig.copy(user = enabled))
 
       val loadCall = DataStoreLoader.loadAll(List(config1, config2))
       noException should be thrownBy loadCall.unsafeRunSync()
@@ -105,7 +106,7 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
     "return all non-empty configs if all repos are defined once" in {
       val config1 = goodConfig.copy(repositories = allEnabledReposConfig.copy(zone = None))
       val config2 =
-        goodConfig.copy(repositories = allDisabledReposConfig.copy(zone = Some(placeholderConfig)))
+        goodConfig.copy(repositories = allDisabledReposConfig.copy(zone = enabled))
       val emptyConfig = goodConfig.copy(repositories = allDisabledReposConfig)
 
       val outcome = DataStoreLoader.getValidatedConfigs(List(config1, config2, emptyConfig))
@@ -117,7 +118,7 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
       val config1 = goodConfig.copy(repositories = allEnabledReposConfig)
       val config2 = goodConfig.copy(
         repositories = allDisabledReposConfig
-          .copy(membership = Some(placeholderConfig), group = Some(placeholderConfig)))
+          .copy(membership = enabled, group = enabled))
 
       val outcome = DataStoreLoader.getValidatedConfigs(List(config1, config2))
       val message = outcome.leftValue.getMessage
@@ -161,7 +162,7 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
       val config = DataStoreConfig(
         "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider",
         placeholderConfig,
-        allDisabledReposConfig.copy(group = Some(placeholderConfig)))
+        allDisabledReposConfig.copy(group = enabled))
 
       val call = DataStoreLoader.load(config)
       val thrown = the[DataStoreStartupError] thrownBy call.unsafeRunSync()
@@ -190,7 +191,7 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
         "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider",
         placeholderConfig,
         allDisabledReposConfig
-          .copy(group = Some(placeholderConfig), membership = Some(placeholderConfig))
+          .copy(group = enabled, membership = enabled)
       )
 
       val call = DataStoreLoader.load(config)
@@ -212,7 +213,6 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
     val batchChange = mock[BatchChangeRepository]
 
     "combine DataStores into a single accessor" in {
-      val enabled = Some(placeholderConfig)
       val config1 = DataStoreConfig(
         "store1",
         placeholderConfig,
