@@ -16,12 +16,12 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect._
 import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, GroupRepository, User, UserRepository}
@@ -30,9 +30,9 @@ import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository.dynamodb.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
 import vinyldns.api.repository.mysql.VinylDNSJDBC
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSugar {
 
@@ -132,18 +132,19 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
         testZoneService
           .deleteZone(zone.id, badAuth)
           .value
-          .mapTo[Either[Throwable, ZoneCommandResult]]
-      whenReady(result, timeout) { _ =>
-        val error = leftResultOf(result)
-        error shouldBe a[NotAuthorizedError]
-      }
+      val error = leftResultOf(result)
+      error shouldBe a[NotAuthorizedError]
     }
     "accept a DeleteZone" in {
       val removeARecord = ChangeSet(RecordSetChange.forDelete(testRecordA, zone))
       waitForSuccess(recordSetRepo.apply(removeARecord))
 
       val result =
-        testZoneService.deleteZone(zone.id, auth).value.mapTo[Either[Throwable, ZoneChange]]
+        testZoneService
+          .deleteZone(zone.id, auth)
+          .value
+          .unsafeToFuture()
+          .mapTo[Either[Throwable, ZoneChange]]
       whenReady(result, timeout) { out =>
         out.isRight shouldBe true
         val change = out.toOption.get
@@ -154,7 +155,7 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
   }
 
   private def waitForSuccess[T](f: => IO[T]): T = {
-    val waiting = f.recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
+    val waiting = f.unsafeToFuture().recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
     Await.result[T](waiting, 15.seconds)
   }
 }

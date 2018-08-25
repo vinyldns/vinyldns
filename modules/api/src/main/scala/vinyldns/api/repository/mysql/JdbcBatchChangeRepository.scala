@@ -98,8 +98,10 @@ class JdbcBatchChangeRepository
 
   def save(batch: BatchChange): IO[BatchChange] =
     monitor("repo.BatchChangeJDBC.save") {
-      DB.localTx { implicit s =>
-        saveBatchChange(batch)
+      IO {
+        DB.localTx { implicit s =>
+          saveBatchChange(batch)
+        }
       }
     }
 
@@ -233,45 +235,44 @@ class JdbcBatchChangeRepository
     }
 
   private def saveBatchChange(batchChange: BatchChange)(
-      implicit session: DBSession): IO[BatchChange] =
-    IO {
-      PUT_BATCH_CHANGE
-        .bindByName(
-          Seq(
-            'id -> batchChange.id,
-            'userId -> batchChange.userId,
-            'userName -> batchChange.userName,
-            'createdTime -> batchChange.createdTimestamp,
-            'comments -> batchChange.comments
-          ): _*
-        )
-        .update()
-        .apply()
+      implicit session: DBSession): BatchChange = {
+    PUT_BATCH_CHANGE
+      .bindByName(
+        Seq(
+          'id -> batchChange.id,
+          'userId -> batchChange.userId,
+          'userName -> batchChange.userName,
+          'createdTime -> batchChange.createdTimestamp,
+          'comments -> batchChange.comments
+        ): _*
+      )
+      .update()
+      .apply()
 
-      val singleChangesParams = batchChange.changes.zipWithIndex.map {
-        case (singleChange, seqNum) =>
-          toPB(singleChange) match {
-            case Right(data) =>
-              val changeType = SingleChangeType.from(singleChange)
-              Seq(
-                'id -> singleChange.id,
-                'seqNum -> seqNum,
-                'inputName -> singleChange.inputName,
-                'changeType -> changeType.toString,
-                'data -> data.toByteArray,
-                'status -> singleChange.status.toString,
-                'batchChangeId -> batchChange.id,
-                'recordSetChangeId -> singleChange.recordChangeId,
-                'recordSetId -> singleChange.recordSetId,
-                'zoneId -> singleChange.zoneId
-              )
-            case Left(e) => throw e
-          }
-      }
-
-      PUT_SINGLE_CHANGE.batchByName(singleChangesParams: _*).apply()
-      batchChange
+    val singleChangesParams = batchChange.changes.zipWithIndex.map {
+      case (singleChange, seqNum) =>
+        toPB(singleChange) match {
+          case Right(data) =>
+            val changeType = SingleChangeType.from(singleChange)
+            Seq(
+              'id -> singleChange.id,
+              'seqNum -> seqNum,
+              'inputName -> singleChange.inputName,
+              'changeType -> changeType.toString,
+              'data -> data.toByteArray,
+              'status -> singleChange.status.toString,
+              'batchChangeId -> batchChange.id,
+              'recordSetChangeId -> singleChange.recordChangeId,
+              'recordSetId -> singleChange.recordSetId,
+              'zoneId -> singleChange.zoneId
+            )
+          case Left(e) => throw e
+        }
     }
+
+    PUT_SINGLE_CHANGE.batchByName(singleChangesParams: _*).apply()
+    batchChange
+  }
 
   private def getSingleChangesByBatchChangeId(bcId: String): IO[List[SingleChange]] =
     monitor("repo.BatchChangeJDBC.getSingleChangesByBatchChangeId") {

@@ -113,22 +113,31 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     * If the zone is not deleted, we have to save both the zone itself, as well as the zone access entries.
     */
   def save(zone: Zone): IO[Zone] =
-    DB.localTx { implicit s =>
-      zone.status match {
-        case ZoneStatus.Deleted =>
-          monitor("repo.ZoneJDBC.delete") {
-            deleteZone(zone)
+    zone.status match {
+      case ZoneStatus.Deleted =>
+        monitor("repo.ZoneJDBC.delete") {
+          IO {
+            DB.localTx { implicit s =>
+              deleteZone(zone)
+            }
           }
+        }
 
-        case _ =>
-          monitor("repo.ZoneJDBC.save") {
-            for {
-              _ <- deleteZoneAccess(zone)
-              _ <- putZone(zone)
-              _ <- putZoneAccess(zone)
-            } yield zone
+      case _ =>
+        monitor("repo.ZoneJDBC.save") {
+          IO {
+            DB.localTx { implicit s =>
+              for {
+                _ <- Either.catchNonFatal(deleteZoneAccess(zone))
+                _ <- Either.catchNonFatal(putZone(zone))
+                _ <- Either.catchNonFatal(putZoneAccess(zone))
+              } yield zone
+            }
+          }.flatMap {
+            case Right(ok) => IO(ok)
+            case Left(e) => IO.raiseError(e)
           }
-      }
+        }
     }
 
   def getZone(zoneId: String): IO[Option[Zone]] =
@@ -296,22 +305,21 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
   }
 
-  private def putZone(zone: Zone)(implicit session: DBSession): IO[Zone] =
-    IO {
-      PUT_ZONE
-        .bindByName(
-          Seq(
-            'id -> zone.id,
-            'name -> zone.name,
-            'adminGroupId -> zone.adminGroupId,
-            'data -> toPB(zone).toByteArray
-          ): _*
-        )
-        .update()
-        .apply()
+  private def putZone(zone: Zone)(implicit session: DBSession): Zone = {
+    PUT_ZONE
+      .bindByName(
+        Seq(
+          'id -> zone.id,
+          'name -> zone.name,
+          'adminGroupId -> zone.adminGroupId,
+          'data -> toPB(zone).toByteArray
+        ): _*
+      )
+      .update()
+      .apply()
 
-      zone
-    }
+    zone
+  }
 
   /**
     * The zone_access table holds a pair of accessor_id -> zone_id
@@ -323,7 +331,7 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     * - All group ids for any ACL rules on the zone
     * - The adminGroupId on the zone - this is important!  We have to do this as a separate step when we do our insert
     */
-  private def putZoneAccess(zone: Zone)(implicit session: DBSession): IO[Zone] = {
+  private def putZoneAccess(zone: Zone)(implicit session: DBSession): Zone = {
 
     // generates the batch parameters, we create an entry per user and group mentioned in the acl rules
     val sqlParameters: Seq[Seq[(Symbol, Any)]] =
@@ -334,24 +342,20 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     // we MUST make sure that we put the admin group id as an accessor to this zone
     val allAccessors = sqlParameters :+ Seq('accessorId -> zone.adminGroupId, 'zoneId -> zone.id)
 
-    IO {
-      // make sure that we do a distinct, so that we don't generate unnecessary inserts
-      PUT_ZONE_ACCESS.batchByName(allAccessors.distinct: _*).apply()
-      zone
-    }
+    // make sure that we do a distinct, so that we don't generate unnecessary inserts
+    PUT_ZONE_ACCESS.batchByName(allAccessors.distinct: _*).apply()
+    zone
   }
 
-  private def deleteZone(zone: Zone)(implicit session: DBSession): IO[Zone] =
-    IO {
-      DELETE_ZONE.bind(zone.id).update().apply()
-      zone
-    }
+  private def deleteZone(zone: Zone)(implicit session: DBSession): Zone = {
+    DELETE_ZONE.bind(zone.id).update().apply()
+    zone
+  }
 
-  private def deleteZoneAccess(zone: Zone)(implicit session: DBSession): IO[Zone] =
-    IO {
-      DELETE_ZONE_ACCESS.bind(zone.id).update().apply()
-      zone
-    }
+  private def deleteZoneAccess(zone: Zone)(implicit session: DBSession): Zone = {
+    DELETE_ZONE_ACCESS.bind(zone.id).update().apply()
+    zone
+  }
 
   private def extractZone(columnIndex: Int): WrappedResultSet => Zone = res => {
     fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))
