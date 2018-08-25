@@ -16,28 +16,24 @@
 
 package vinyldns.api.engine.sqs
 
+import cats.effect._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.record.RecordSetChange
 import vinyldns.api.domain.zone.{ZoneCommand, ZoneCommandResult}
 
-import scala.concurrent.{ExecutionContext, Future}
-
-class SqsCommandBus(sqsConnection: SqsConnection)(implicit ec: ExecutionContext)
-    extends EngineCommandBus {
+class SqsCommandBus(sqsConnection: SqsConnection) extends EngineCommandBus {
   import SqsConverters._
 
   def sendZoneCommand(cmd: ZoneCommand): Result[ZoneCommandResult] =
     sendCommand(cmd, sqsConnection)
-      .unsafeToFuture()
       .map(c => c.asInstanceOf[ZoneCommandResult])
       .toResult
 
-  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[Future[RecordSetChange]] =
+  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]] =
     // TODO - do this smarter, shouldnt put on one by one
     cmds.map { cmd =>
       sendCommand(cmd, sqsConnection)
-        .unsafeToFuture()
         .map(c => c.asInstanceOf[RecordSetChange])
     }
 }

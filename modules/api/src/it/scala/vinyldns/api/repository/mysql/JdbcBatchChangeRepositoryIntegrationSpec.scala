@@ -254,7 +254,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
             .map { r =>
               repo.getSingleChanges(r.changes.map(_.id).reverse)
             }
-            .getOrElse(Future.successful[List[SingleChange]](Nil))
+            .getOrElse(IO.pure[List[SingleChange]](Nil))
         } yield (retrieved, singleChanges)
 
       whenReady(f, timeout) {

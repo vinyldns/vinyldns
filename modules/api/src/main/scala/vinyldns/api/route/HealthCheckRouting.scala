@@ -39,7 +39,7 @@ trait HealthCheckRoute extends Directives {
   // perform a query against, fail with an ok if we can get zones from the zone manager
   val healthCheckRoute =
     (get & path("health")) {
-      onSuccess(checkStatus.value) {
+      onSuccess(checkStatus.value.unsafeToFuture()) {
         case Right(_) =>
           complete(StatusCodes.OK)
         case Left(e) => failWith(e)

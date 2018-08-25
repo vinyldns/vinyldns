@@ -32,7 +32,7 @@ import javax.inject.{Inject, Singleton}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 import scala.util.{Failure, Success, Try}
 
 object VinylDNS {

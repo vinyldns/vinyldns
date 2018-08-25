@@ -30,21 +30,21 @@ trait CatsHelpers {
 
   implicit val baseTimeout: Timeout = new Timeout(2.seconds)
 
-  def await[T](f: => Future[T], duration: FiniteDuration = 1.second): T =
+  def await[T](f: => IO[T], duration: FiniteDuration = 1.second): T =
     Await.ready(f, duration).value.get.get
 
   // Waits for the future to complete, then returns the value as a Throwable \/ T
   def awaitResultOf[E, T](
-      f: => Future[Either[E, T]],
+      f: => IO[Either[E, T]],
       duration: FiniteDuration = 1.second): Either[E, T] =
     Await.ready(f.mapTo[Either[E, T]], duration).value.get.get
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
-  def rightResultOf[E, T](f: => Future[Either[E, T]], duration: FiniteDuration = 1.second): T =
+  def rightResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 1.second): T =
     rightValue(awaitResultOf[E, T](f, duration))
 
   // Assumes that the result of the future operation will fail, this will error on a right disjunction
-  def leftResultOf[E, T](f: => Future[Either[E, T]], duration: FiniteDuration = 1.second): E =
+  def leftResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 1.second): E =
     leftValue(awaitResultOf(f, duration))
 
   def leftValue[E, T](t: Either[E, T]): E = t match {

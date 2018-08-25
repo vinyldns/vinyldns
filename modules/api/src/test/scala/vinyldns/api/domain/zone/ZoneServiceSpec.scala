@@ -29,7 +29,7 @@ import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 import scala.concurrent.duration._
 
 class ZoneServiceSpec
@@ -70,12 +70,12 @@ class ZoneServiceSpec
 
   override protected def beforeEach(): Unit = {
     reset(mockGroupRepo, mockZoneRepo, mockUserRepo)
-    doReturn(Future.successful(Some(grp))).when(mockGroupRepo).getGroup(anyString)
+    doReturn(IO.pure(Some(grp))).when(mockGroupRepo).getGroup(anyString)
   }
 
   "Creating Zones" should {
     "return an appropriate zone change response" in {
-      doReturn(Future.successful(None)).when(mockZoneRepo).getZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
         underTest.connectToZone(zoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
@@ -94,7 +94,7 @@ class ZoneServiceSpec
     }
 
     "returns a ZoneAlreadyExists error if the zone exists" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZoneByName(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZoneByName(anyString)
 
       val error = leftResultOf(underTest.connectToZone(zoneAuthorized, okAuth).value)
 
@@ -102,8 +102,8 @@ class ZoneServiceSpec
     }
 
     "returns a InvalidZoneAdminError error if the zone admin group does not exist" in {
-      doReturn(Future.successful(None)).when(mockZoneRepo).getZoneByName(anyString)
-      doReturn(Future.successful(None)).when(mockGroupRepo).getGroup(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
 
       val error = leftResultOf(underTest.connectToZone(zoneAuthorized, okAuth).value)
 
@@ -111,7 +111,7 @@ class ZoneServiceSpec
     }
 
     "allow the zone to be created if it exists and the zone is deleted" in {
-      doReturn(Future.successful(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
+      doReturn(IO.pure(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
         underTest.connectToZone(zoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
@@ -129,7 +129,7 @@ class ZoneServiceSpec
 
   "Updating Zones" should {
     "return an update zone change response" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val doubleAuth = AuthPrincipal(UserRepository.okUser, Seq(grp.id, okGroup.id))
       val newZone = zoneAuthorized.copy(adminGroupId = okGroup.id)
@@ -145,7 +145,7 @@ class ZoneServiceSpec
 
     "not validate connection if unchanged" in {
       val oldZone = zoneAuthorized.copy(connection = Some(badConnection))
-      doReturn(Future.successful(Some(oldZone))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(oldZone))).when(mockZoneRepo).getZone(anyString)
 
       val doubleAuth = AuthPrincipal(UserRepository.okUser, Seq(grp.id, okGroup.id))
       val newZone = oldZone.copy(adminGroupId = okGroup.id)
@@ -157,7 +157,7 @@ class ZoneServiceSpec
     }
 
     "validate connection and fail if changed to bad" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val newZone = zoneAuthorized.copy(connection = Some(badConnection))
 
@@ -166,7 +166,7 @@ class ZoneServiceSpec
     }
 
     "return an error if the user is not authorized for the zone" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
       val newZone = zoneAuthorized.copy(adminGroupId = okGroup.id)
@@ -176,7 +176,7 @@ class ZoneServiceSpec
     }
 
     "return an error if the zone update adds a bad acl rule" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val badAcl = ACLRule(baseAclRuleInfo.copy(recordMask = Some("x{5,-3}")))
       val newZone = zoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
@@ -188,7 +188,7 @@ class ZoneServiceSpec
 
   "Deleting Zones" should {
     "return an delete zone change response" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
         underTest.deleteZone(zoneAuthorized.id, okAuth).map(_.asInstanceOf[ZoneChange]).value)
@@ -198,7 +198,7 @@ class ZoneServiceSpec
     }
 
     "return an error if the user is not authorized for the zone" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
 
@@ -209,7 +209,7 @@ class ZoneServiceSpec
 
   "Syncing a zone" should {
     "return a sync zone response" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
         underTest.syncZone(zoneAuthorized.id, okAuth).map(_.asInstanceOf[ZoneChange]).value)
@@ -220,7 +220,7 @@ class ZoneServiceSpec
     }
 
     "return an error if the user is not authorized for the zone" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
 
@@ -231,14 +231,14 @@ class ZoneServiceSpec
 
   "Getting a Zone" should {
     "not fail with no zone returned" in {
-      doReturn(Future.successful(None)).when(mockZoneRepo).getZone("notAZoneId")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notAZoneId")
 
       val error = leftResultOf(underTest.getZone("notAZoneId", okAuth).value)
       error shouldBe a[ZoneNotFoundError]
     }
 
     "return an error if the user is not authorized for the zone" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
 
@@ -247,12 +247,12 @@ class ZoneServiceSpec
     }
 
     "return the appropriate zone as a ZoneInfo" in {
-      doReturn(Future.successful(Some(abcZone))).when(mockZoneRepo).getZone(abcZone.id)
-      doReturn(Future.successful(ListUsersResults(Seq(), None)))
+      doReturn(IO.pure(Some(abcZone))).when(mockZoneRepo).getZone(abcZone.id)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
-      doReturn(Future.successful(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
-      doReturn(Future.successful(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
 
       val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), abcGroup.name)
       val result: ZoneInfo = rightResultOf(underTest.getZone(abcZone.id, abcAuth).value)
@@ -276,12 +276,12 @@ class ZoneServiceSpec
       val acl = ZoneACL(Set(goodUserRule, badUserRule, goodGroupRule, badGroupRule, goodAllRule))
       val zoneWithRules = abcZone.copy(acl = acl)
 
-      doReturn(Future.successful(Some(zoneWithRules))).when(mockZoneRepo).getZone(zoneWithRules.id)
-      doReturn(Future.successful(ListUsersResults(Seq(goodUser), None)))
+      doReturn(IO.pure(Some(zoneWithRules))).when(mockZoneRepo).getZone(zoneWithRules.id)
+      doReturn(IO.pure(ListUsersResults(Seq(goodUser), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
-      doReturn(Future.successful(Set(goodGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
-      doReturn(Future.successful(Some(goodGroup))).when(mockGroupRepo).getGroup(anyString)
+      doReturn(IO.pure(Set(goodGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Some(goodGroup))).when(mockGroupRepo).getGroup(anyString)
 
       val expectedZoneInfo = ZoneInfo(
         zoneWithRules,
@@ -292,12 +292,12 @@ class ZoneServiceSpec
     }
 
     "return Unknown group name if zone admin group cannot be found" in {
-      doReturn(Future.successful(Some(abcZone))).when(mockZoneRepo).getZone(abcZone.id)
-      doReturn(Future.successful(ListUsersResults(Seq(), None)))
+      doReturn(IO.pure(Some(abcZone))).when(mockZoneRepo).getZone(abcZone.id)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
-      doReturn(Future.successful(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
-      doReturn(Future.successful(None)).when(mockGroupRepo).getGroup(anyString)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
 
       val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), "Unknown group name")
       val result: ZoneInfo = rightResultOf(underTest.getZone(abcZone.id, abcAuth).value)
@@ -307,8 +307,8 @@ class ZoneServiceSpec
 
   "ListZones" should {
     "not fail with no zones returned" in {
-      doReturn(Future.successful(List())).when(mockZoneRepo).listZones(abcAuth, None, None, 100)
-      doReturn(Future.successful(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(List())).when(mockZoneRepo).listZones(abcAuth, None, None, 100)
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
       result.zones shouldBe List()
@@ -319,10 +319,10 @@ class ZoneServiceSpec
     }
 
     "return the appropriate zones" in {
-      doReturn(Future.successful(List(abcZone, xyzZone)))
+      doReturn(IO.pure(List(abcZone, xyzZone)))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 100)
-      doReturn(Future.successful(Set(abcGroup, xyzGroup)))
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
 
@@ -335,10 +335,10 @@ class ZoneServiceSpec
     }
 
     "return Unknown group name if zone admin group cannot be found" in {
-      doReturn(Future.successful(List(abcZone, xyzZone)))
+      doReturn(IO.pure(List(abcZone, xyzZone)))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 100)
-      doReturn(Future.successful(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
       val expectedZones =
@@ -351,10 +351,10 @@ class ZoneServiceSpec
     }
 
     "set the nextId appropriately" in {
-      doReturn(Future.successful(List(abcZone, xyzZone)))
+      doReturn(IO.pure(List(abcZone, xyzZone)))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 2)
-      doReturn(Future.successful(Set(abcGroup, xyzGroup)))
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
 
@@ -368,10 +368,10 @@ class ZoneServiceSpec
     }
 
     "set the nameFilter when provided" in {
-      doReturn(Future.successful(List(abcZone, xyzZone)))
+      doReturn(IO.pure(List(abcZone, xyzZone)))
         .when(mockZoneRepo)
         .listZones(abcAuth, Some("foo"), None, 2)
-      doReturn(Future.successful(Set(abcGroup, xyzGroup)))
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
 
@@ -384,10 +384,10 @@ class ZoneServiceSpec
     }
 
     "set the startFrom when provided" in {
-      doReturn(Future.successful(List(abcZone, xyzZone)))
+      doReturn(IO.pure(List(abcZone, xyzZone)))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, Some(4), 2)
-      doReturn(Future.successful(Set(abcGroup, xyzGroup)))
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
 
@@ -398,10 +398,10 @@ class ZoneServiceSpec
     }
 
     "set the nextId to be the current result set size plus the start from" in {
-      doReturn(Future.successful(List(abcZone, xyzZone)))
+      doReturn(IO.pure(List(abcZone, xyzZone)))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, Some(4), 2)
-      doReturn(Future.successful(Set(abcGroup, xyzGroup)))
+      doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
 
@@ -414,10 +414,10 @@ class ZoneServiceSpec
 
   "listZoneChanges" should {
     "retrieve the zone changes" in {
-      doReturn(Future.successful(Some(zoneAuthorized)))
+      doReturn(IO.pure(Some(zoneAuthorized)))
         .when(mockZoneRepo)
         .getZone(zoneAuthorized.id)
-      doReturn(Future.successful(ListZoneChangesResults(List(zoneUpdate, zoneCreate))))
+      doReturn(IO.pure(ListZoneChangesResults(List(zoneUpdate, zoneCreate))))
         .when(mockZoneChangeRepo)
         .listZoneChanges(zoneAuthorized.id, startFrom = None, maxItems = 100)
 
@@ -429,10 +429,10 @@ class ZoneServiceSpec
     }
 
     "return a zone with no changes if no changes exist" in {
-      doReturn(Future.successful(Some(zoneAuthorized)))
+      doReturn(IO.pure(Some(zoneAuthorized)))
         .when(mockZoneRepo)
         .getZone(zoneAuthorized.id)
-      doReturn(Future.successful(ListZoneChangesResults(items = Nil)))
+      doReturn(IO.pure(ListZoneChangesResults(items = Nil)))
         .when(mockZoneChangeRepo)
         .listZoneChanges(zoneAuthorized.id, startFrom = None, maxItems = 100)
 
@@ -444,7 +444,7 @@ class ZoneServiceSpec
     }
 
     "return a NotAuthorizedError" in {
-      doReturn(Future.successful(Some(zoneNotAuthorized)))
+      doReturn(IO.pure(Some(zoneNotAuthorized)))
         .when(mockZoneRepo)
         .getZone(zoneNotAuthorized.id)
 
@@ -454,11 +454,11 @@ class ZoneServiceSpec
 
     "return the zone changes sorted by created date desc" in {
       // zone change 2 is later than zone change 1 and should come first
-      doReturn(Future.successful(Some(zoneAuthorized)))
+      doReturn(IO.pure(Some(zoneAuthorized)))
         .when(mockZoneRepo)
         .getZone(zoneAuthorized.id)
 
-      doReturn(Future.successful(ListZoneChangesResults(List(zoneUpdate, zoneCreate))))
+      doReturn(IO.pure(ListZoneChangesResults(List(zoneUpdate, zoneCreate))))
         .when(mockZoneChangeRepo)
         .listZoneChanges(zoneId = zoneAuthorized.id, startFrom = None, maxItems = 100)
 
@@ -472,7 +472,7 @@ class ZoneServiceSpec
 
   "AddAclRule" should {
     "fail if the user is not authorized for the zone" in {
-      doReturn(Future.successful(Some(notAuthorizedZone))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(notAuthorizedZone))).when(mockZoneRepo).getZone(anyString)
 
       val error =
         leftResultOf(underTest.addACLRule(notAuthorizedZone.id, userAclRuleInfo, okAuth).value)
@@ -480,7 +480,7 @@ class ZoneServiceSpec
     }
 
     "generate a zone update if the request is valid" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val result: ZoneChange = rightResultOf(
         underTest
@@ -494,7 +494,7 @@ class ZoneServiceSpec
     }
 
     "fail if mask is an invalid regex" in {
-      doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val invalidRegexMaskRuleInfo = baseAclRuleInfo.copy(recordMask = Some("x{5,-3}"))
       val error =
@@ -506,7 +506,7 @@ class ZoneServiceSpec
 
   "DeleteAclRule" should {
     "fail if the user is not authorized for the zone" in {
-      doReturn(Future.successful(Some(notAuthorizedZone))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(notAuthorizedZone))).when(mockZoneRepo).getZone(anyString)
 
       val error =
         leftResultOf(underTest.deleteACLRule(notAuthorizedZone.id, userAclRuleInfo, okAuth).value)
@@ -516,7 +516,7 @@ class ZoneServiceSpec
     "generate a zone update if the request is valid" in {
       val acl = ZoneACL(Set(userAclRule))
       val zone = zoneAuthorized.copy(acl = acl)
-      doReturn(Future.successful(Some(zone))).when(mockZoneRepo).getZone(anyString)
+      doReturn(IO.pure(Some(zone))).when(mockZoneRepo).getZone(anyString)
 
       val result: ZoneChange = rightResultOf(
         underTest

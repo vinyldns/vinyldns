@@ -17,14 +17,15 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
+import cats.implicits._
 import fs2._
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.api.domain.dns.DnsProtocol.NoError
 import vinyldns.api.domain.record._
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object RecordSetChangeHandler {
 
@@ -34,8 +35,7 @@ object RecordSetChangeHandler {
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository)(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler): (DnsConnector, RecordSetChange) => IO[RecordSetChange] =
+      implicit scheduler: Scheduler): (DnsConnector, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
@@ -50,19 +50,17 @@ object RecordSetChangeHandler {
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository,
       conn: DnsConnector,
-      recordSetChange: RecordSetChange)(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler): IO[RecordSetChange] =
+      recordSetChange: RecordSetChange)(implicit scheduler: Scheduler): IO[RecordSetChange] =
     for {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
       completedState <- fsm(Pending(recordSetChange), conn, wildCardExists)
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
-      _ <- IO.fromFuture(IO(recordChangeRepository.save(changeSet)))
-      _ <- IO.fromFuture(IO(recordSetRepository.apply(changeSet)))
-      singleBatchChanges <- IO.fromFuture(
-        IO(batchChangeRepository.getSingleChanges(recordSetChange.singleBatchChangeIds)))
+      _ <- recordChangeRepository.save(changeSet)
+      _ <- recordSetRepository.apply(changeSet)
+      singleBatchChanges <- batchChangeRepository.getSingleChanges(
+        recordSetChange.singleBatchChangeIds)
       singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
-      _ <- IO.fromFuture(IO(batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)))
+      _ <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
     } yield completedState.change
 
   def updateBatchStatuses(
@@ -105,8 +103,9 @@ object RecordSetChangeHandler {
   // at which point the response will be returned.
   final case class ReadyToApply(change: RecordSetChange) extends ProcessingStatus
 
-  def getProcessingStatus(change: RecordSetChange, dnsConnector: DnsConnector)(
-      implicit executionContext: ExecutionContext): IO[ProcessingStatus] = {
+  def getProcessingStatus(
+      change: RecordSetChange,
+      dnsConnector: DnsConnector): IO[ProcessingStatus] = {
     def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
       dnsResult.exists(_.matches(recordSet, zoneName))
 
@@ -145,7 +144,7 @@ object RecordSetChangeHandler {
   }
 
   private def fsm(state: ProcessorState, conn: DnsConnector, wildcardExists: Boolean)(
-      implicit executionContext: ExecutionContext,
+      implicit
       scheduler: Scheduler): IO[ProcessorState] = {
 
     /**
@@ -202,8 +201,7 @@ object RecordSetChangeHandler {
   }
 
   /* Step 1: Validate the change hasn't already been applied */
-  private def validate(change: RecordSetChange, dnsConnector: DnsConnector)(
-      implicit executionContext: ExecutionContext): IO[ProcessorState] =
+  private def validate(change: RecordSetChange, dnsConnector: DnsConnector): IO[ProcessorState] =
     getProcessingStatus(change, dnsConnector).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
@@ -223,16 +221,15 @@ object RecordSetChangeHandler {
     }
 
   /* Step 3: Verify the record was created.  We attempt 12 times over 6 seconds */
-  private def verify(change: RecordSetChange, dnsConnector: DnsConnector)(
-      implicit executionContext: ExecutionContext,
-      scheduler: Scheduler): IO[ProcessorState] = {
+  private def verify(change: RecordSetChange, dnsConnector: DnsConnector): IO[ProcessorState] = {
     def loop(retries: Int = 11): IO[ProcessorState] =
       getProcessingStatus(change, dnsConnector).flatMap {
         case AlreadyApplied(_) => IO.pure(Completed(change.successful))
         case ReadyToApply(_) if retries <= 0 =>
           IO.pure(Completed(change.failed(s"""Failed verifying update to DNS for
                |change ${change.id}:${change.recordSet.name}: Verify out of retries.""".stripMargin)))
-        case ReadyToApply(_) => scheduler.effect.delay(loop(retries - 1), 500.milliseconds)
+        case ReadyToApply(_) =>
+          IO.sleep(500.milliseconds) *> loop(retries - 1)
         case Failure(_, message) =>
           IO.pure(Completed(change.failed(
             s"Failed verifying update to DNS for change ${change.id}:${change.recordSet.name}: $message")))
@@ -243,7 +240,6 @@ object RecordSetChangeHandler {
 
   private def wildCardExistsForRecord(
       recordSet: RecordSet,
-      recordSetRepository: RecordSetRepository)(implicit ec: ExecutionContext): IO[Boolean] =
-    IO.fromFuture(
-      IO(recordSetRepository.getRecordSets(recordSet.zoneId, "*", recordSet.typ).map(_.nonEmpty)))
+      recordSetRepository: RecordSetRepository): IO[Boolean] =
+    recordSetRepository.getRecordSets(recordSet.zoneId, "*", recordSet.typ).map(_.nonEmpty)
 }

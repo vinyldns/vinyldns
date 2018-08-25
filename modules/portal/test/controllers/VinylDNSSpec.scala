@@ -32,7 +32,7 @@ import play.api.test._
 import play.core.server.{Server, ServerConfig}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 /* these verbs are renamed to avoid collisions with the verb identifiers in the standard values library file */
 import play.api.routing.sird.{

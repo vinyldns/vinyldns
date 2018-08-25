@@ -27,7 +27,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 import scala.concurrent.duration.FiniteDuration
 
 class DynamoDBMembershipRepositorySpec
@@ -46,7 +46,7 @@ class DynamoDBMembershipRepositorySpec
   private val dynamoDBHelper = mock[DynamoDBHelper]
   class TestDynamoDBMembershipRepository
       extends DynamoDBMembershipRepository(membershipStoreConfig, dynamoDBHelper) {
-    override def loadData: Future[Set[Set[String]]] = Future.successful(Set(Set()))
+    override def loadData: IO[Set[Set[String]]] = IO.pure(Set(Set()))
   }
 
   private val underTest = new TestDynamoDBMembershipRepository
@@ -80,7 +80,7 @@ class DynamoDBMembershipRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoDBMembershipRepository
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
@@ -111,7 +111,7 @@ class DynamoDBMembershipRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoDBMembershipRepository
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
@@ -136,7 +136,7 @@ class DynamoDBMembershipRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoDBMembershipRepository
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .doThrow(new RuntimeException("failed"))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
@@ -156,7 +156,7 @@ class DynamoDBMembershipRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoDBMembershipRepository
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
@@ -187,7 +187,7 @@ class DynamoDBMembershipRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoDBMembershipRepository
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
@@ -212,7 +212,7 @@ class DynamoDBMembershipRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoDBMembershipRepository
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .doThrow(new RuntimeException("failed"))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
@@ -227,7 +227,7 @@ class DynamoDBMembershipRepositorySpec
       val dynamoResponse = mock[QueryResult]
       when(dynamoResponse.getItems)
         .thenReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
-      when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(Future.successful(dynamoResponse))
+      when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
       val store = new TestDynamoDBMembershipRepository
       val response = await[Set[String]](store.getGroupsForUser(okUser.id))
@@ -240,7 +240,7 @@ class DynamoDBMembershipRepositorySpec
       val expected = for (i <- 1 to 30) yield s"group-$i"
       val resultList = expected.map(underTest.toItem(okUser.id, _)).asJava
       when(dynamoResponse.getItems).thenReturn(resultList)
-      when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(Future.successful(dynamoResponse))
+      when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
       val store = new TestDynamoDBMembershipRepository
       val response = await[Set[String]](store.getGroupsForUser(okUser.id))

@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.record
 
-import cats.implicits._
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.api.domain.auth.AuthPrincipal
@@ -25,15 +24,13 @@ import vinyldns.api.domain.membership.{User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
 
-import scala.concurrent.ExecutionContext
-
 class RecordSetService(
     zoneRepository: ZoneRepository,
     recordSetRepository: RecordSetRepository,
     recordChangeRepository: RecordChangeRepository,
     userRepository: UserRepository,
     commandBus: EngineCommandBus,
-    accessValidation: AccessValidationAlgebra)(implicit ec: ExecutionContext)
+    accessValidation: AccessValidationAlgebra)
     extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._

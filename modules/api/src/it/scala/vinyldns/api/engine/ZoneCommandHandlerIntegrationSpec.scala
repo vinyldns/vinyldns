@@ -231,7 +231,7 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
     }
   }
 
-  private def waitForSuccess[T](f: => Future[T]): T = {
+  private def waitForSuccess[T](f: => IO[T]): T = {
     val waiting = f.recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
     Await.result[T](waiting, 15.seconds)
   }

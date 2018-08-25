@@ -33,7 +33,7 @@ import vinyldns.api.domain.record._
 
 import scala.collection.JavaConverters._
 import scala.collection._
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class ZoneViewLoaderSpec
     extends WordSpec
@@ -87,7 +87,7 @@ class ZoneViewLoaderSpec
     "load the DNS Zones" in {
       val mockRecordSetRepo = mock[RecordSetRepository]
 
-      doReturn(Future(ListRecordSetResults(records)))
+      doReturn(IO(ListRecordSetResults(records)))
         .when(mockRecordSetRepo)
         .listRecordSets(anyString(), any[Option[String]], any[Option[Int]], any[Option[String]])
 

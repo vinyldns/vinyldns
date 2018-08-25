@@ -26,7 +26,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.api.domain.zone.ZoneRepository
 
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class HealthCheckRoutingSpec
     extends WordSpec
@@ -44,7 +44,7 @@ class HealthCheckRoutingSpec
 
   "GET on the healthcheck" should {
     "return OK when the zone manager returns a positive result" in {
-      doReturn(Future.successful(None)).when(mockZoneRepo).getZone("notFound")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notFound")
 
       Get("/health") ~> healthCheckRoute ~> check {
         status shouldBe StatusCodes.OK
@@ -52,7 +52,7 @@ class HealthCheckRoutingSpec
     }
 
     "return a 500 when the zone manager returns any error" in {
-      doReturn(Future.failed(new IOException("fail"))).when(mockZoneRepo).getZone("notFound")
+      doReturn(IO.raiseError(new IOException("fail"))).when(mockZoneRepo).getZone("notFound")
 
       Get("/health") ~> healthCheckRoute ~> check {
         status shouldBe StatusCodes.InternalServerError

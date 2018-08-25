@@ -18,6 +18,7 @@ package vinyldns.api.repository.dynamodb
 
 import java.util.{Collections, HashMap}
 
+import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
@@ -26,9 +27,6 @@ import vinyldns.api.domain.membership.MembershipRepository
 import vinyldns.api.route.Monitored
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 object DynamoDBMembershipRepository {
 
@@ -73,11 +71,13 @@ class DynamoDBMembershipRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
 
-  def loadData: Future[Set[Set[String]]] =
-    Await.ready(MembershipRepository.loadTestData(this), 100.seconds)
-  loadData
+  // TODO: These laoders should be taken out of the repositories
+  def loadData: IO[Set[Set[String]]] =
+    MembershipRepository.loadTestData(this)
 
-  def getGroupsForUser(userId: String): Future[Set[String]] =
+  loadData.unsafeRunSync()
+
+  def getGroupsForUser(userId: String): IO[Set[String]] =
     monitor("repo.Membership.getGroupsForUser") {
       log.info(s"Getting groups by user id $userId")
       val expressionAttributeValues = new HashMap[String, AttributeValue]
@@ -97,7 +97,7 @@ class DynamoDBMembershipRepository(
       dynamoDBHelper.query(queryRequest).map(result => result.getItems.asScala.map(fromItem).toSet)
     }
 
-  def addMembers(groupId: String, memberUserIds: Set[String]): Future[Set[String]] =
+  def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
     monitor("repo.Membership.addMembers") {
       log.info(s"Saving members for group $groupId")
 
@@ -112,7 +112,7 @@ class DynamoDBMembershipRepository(
       result.map(_ => memberUserIds)
     }
 
-  def removeMembers(groupId: String, memberUserIds: Set[String]): Future[Set[String]] =
+  def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
     monitor("repo.Membership.removeMembers") {
       log.info(s"Removing members for group $groupId")
 
@@ -128,8 +128,7 @@ class DynamoDBMembershipRepository(
     }
 
   private def executeBatch(items: Iterable[java.util.Map[String, AttributeValue]])(
-      f: java.util.Map[String, AttributeValue] => WriteRequest)
-    : Future[List[BatchWriteItemResult]] = {
+      f: java.util.Map[String, AttributeValue] => WriteRequest): IO[List[BatchWriteItemResult]] = {
     val MaxDynamoBatchWriteSize = 25
     val batchWrites =
       items.toList
@@ -142,7 +141,7 @@ class DynamoDBMembershipRepository(
               .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL))
 
     // Fold left will attempt each batch sequentially, and fail fast on error
-    batchWrites.foldLeft(Future.successful(List.empty[BatchWriteItemResult])) {
+    batchWrites.foldLeft(IO.pure(List.empty[BatchWriteItemResult])) {
       case (acc, batch) =>
         acc.flatMap { lst =>
           dynamoDBHelper.batchWriteItem(membershipTable, batch).map(result => result :: lst)

@@ -30,7 +30,7 @@ import vinyldns.api.domain.membership.{ListUsersResults, User}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class DynamoDBUserRepositorySpec
     extends WordSpec
@@ -45,7 +45,7 @@ class DynamoDBUserRepositorySpec
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
   private val dynamoDBHelper = mock[DynamoDBHelper]
   private val mockPutItemResult = mock[PutItemResult] // User repo is initialized with dummy users
-  doReturn(Future.successful(mockPutItemResult)).when(dynamoDBHelper).putItem(any[PutItemRequest])
+  doReturn(IO.pure(mockPutItemResult)).when(dynamoDBHelper).putItem(any[PutItemRequest])
   private val usersStoreConfig = VinylDNSConfig.usersStoreConfig
   private val userTable = VinylDNSConfig.usersStoreConfig.getString("dynamo.tableName")
 
@@ -61,7 +61,7 @@ class DynamoDBUserRepositorySpec
   "DynamoDBUserRepository constructor" should {
     "call setuptable when it is built" in {
       val mockPutItemResult = mock[PutItemResult] // User repo is initialized with dummy users
-      doReturn(Future.successful(mockPutItemResult))
+      doReturn(IO.pure(mockPutItemResult))
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
@@ -191,7 +191,7 @@ class DynamoDBUserRepositorySpec
 
       val expected = underTest.toItem(okUser)
       doReturn(expected).when(dynamoResponse).getItem
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
       val response = await[Option[User]](underTest.getUser(okUser.id))
 
@@ -200,7 +200,7 @@ class DynamoDBUserRepositorySpec
       response shouldBe Some(okUser)
     }
     "throw exception when get returns an unexpected response" in {
-      doReturn(Future.failed(new ResourceNotFoundException("bar does not exist")))
+      doReturn(IO.raiseError(new ResourceNotFoundException("bar does not exist")))
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
@@ -212,7 +212,7 @@ class DynamoDBUserRepositorySpec
     "return None if not found" in {
       val dynamoResponse = mock[GetItemResult]
       doReturn(null).when(dynamoResponse).getItem
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
       val response = await[Option[User]](underTest.getUser(okUser.id))
 
@@ -237,8 +237,8 @@ class DynamoDBUserRepositorySpec
           .asJava).asJava
       doReturn(secondPage).when(secondResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
-        .doReturn(Future.successful(secondResponse))
+      doReturn(IO.pure(firstResponse))
+        .doReturn(IO.pure(secondResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -255,7 +255,7 @@ class DynamoDBUserRepositorySpec
       val firstPage = Map(underTest.USER_TABLE -> List().asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
+      doReturn(IO.pure(firstResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -271,7 +271,7 @@ class DynamoDBUserRepositorySpec
       val firstPage = Map().asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
+      doReturn(IO.pure(firstResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -308,7 +308,7 @@ class DynamoDBUserRepositorySpec
           .asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
+      doReturn(IO.pure(firstResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -333,7 +333,7 @@ class DynamoDBUserRepositorySpec
         underTest.USER_TABLE -> listOfDummyUsers.slice(0, 50).map(underTest.toItem).asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
+      doReturn(IO.pure(firstResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -346,7 +346,7 @@ class DynamoDBUserRepositorySpec
       response.lastEvaluatedId shouldBe Some(listOfDummyUsers(49).id)
     }
     "throw exception when get returns an unexpected response" in {
-      doReturn(Future.failed(new ResourceNotFoundException("bar does not exist")))
+      doReturn(IO.raiseError(new ResourceNotFoundException("bar does not exist")))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -362,7 +362,7 @@ class DynamoDBUserRepositorySpec
 
       val expected = List(underTest.toItem(okUser)).asJava
       doReturn(expected).when(dynamoResponse).getItems
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[Option[User]](underTest.getUserByAccessKey(okUser.accessKey))
 
@@ -371,7 +371,7 @@ class DynamoDBUserRepositorySpec
       response shouldBe Some(okUser)
     }
     "throw exception when get returns an unexpected response" in {
-      doReturn(Future.failed(new ResourceNotFoundException("bar does not exist")))
+      doReturn(IO.raiseError(new ResourceNotFoundException("bar does not exist")))
         .when(dynamoDBHelper)
         .query(any[QueryRequest])
 
@@ -383,7 +383,7 @@ class DynamoDBUserRepositorySpec
     "return None if not found" in {
       val dynamoResponse = mock[QueryResult]
       doReturn(List().asJava).when(dynamoResponse).getItems
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[Option[User]](underTest.getUserByAccessKey(okUser.accessKey))
 
@@ -396,7 +396,7 @@ class DynamoDBUserRepositorySpec
     "return the user when saved" in {
       val mockPutItemResult = mock[PutItemResult]
 
-      doReturn(Future.successful(mockPutItemResult))
+      doReturn(IO.pure(mockPutItemResult))
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 

@@ -27,7 +27,7 @@ import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.api.domain.record._
 import vinyldns.api.{AkkaTestJawn, ResultHelpers, VinylDNSTestData}
 
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 import scala.concurrent.duration._
 
 class ZoneConnectionValidatorSpec
@@ -56,14 +56,14 @@ class ZoneConnectionValidatorSpec
     }
 
   private def testLoadDns(zone: Zone) = zone.name match {
-    case "error." => Future.failed(new RuntimeException("transfer connection failure!"))
+    case "error." => IO.raiseError(new RuntimeException("transfer connection failure!"))
     case "timeout." =>
-      Future {
+      IO {
         Thread.sleep(100)
         mockZoneView
       }
     case _ =>
-      Future.successful(mockZoneView)
+      IO.pure(mockZoneView)
   }
 
   private def testDefaultConnection = mock[ZoneConnection]
@@ -78,7 +78,7 @@ class ZoneConnectionValidatorSpec
       extends ZoneConnectionValidator(testDefaultConnection, system.scheduler) {
     override val futureTimeout: FiniteDuration = 10.milliseconds
     override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
-    override def loadDns(zone: Zone): Future[ZoneView] = testLoadDns(zone)
+    override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
   }
 
   private val underTest = new TestConnectionValidator()

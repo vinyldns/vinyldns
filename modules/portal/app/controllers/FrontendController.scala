@@ -24,7 +24,7 @@ import play.api.mvc._
 import play.api.Configuration
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 /*
  * Controller for specific pages - sends requests along to views

@@ -79,7 +79,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(Future.successful(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okUserAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -101,7 +101,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(Future.successful(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okUserAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -197,7 +197,7 @@ class VinylDNSAuthenticatorSpec
         .extractAccessKey(any[String])
 
       // No User found
-      doReturn(Future.successful(None))
+      doReturn(IO.pure(None))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -224,7 +224,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(Future.successful(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okUserAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 

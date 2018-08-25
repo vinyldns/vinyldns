@@ -27,7 +27,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class QueryHelperSpec
     extends WordSpec
@@ -62,7 +62,7 @@ class QueryHelperSpec
 
       doReturn(expectedItems).when(dynamoResponse).getItems
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, None, None, Some(3))(
@@ -84,7 +84,7 @@ class QueryHelperSpec
       val key = makeJavaItem("item3")
       doReturn(key).when(dynamoResponse).getLastEvaluatedKey
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, None, None, Some(3))(
@@ -125,8 +125,8 @@ class QueryHelperSpec
       items2.add(makeJavaItem("item6"))
       doReturn(items2).when(secondResponse).getItems
 
-      doReturn(Future.successful(firstResponse)).when(dynamoDBHelper).query(firstQuery)
-      doReturn(Future.successful(secondResponse)).when(dynamoDBHelper).query(secondQuery)
+      doReturn(IO.pure(firstResponse)).when(dynamoDBHelper).query(firstQuery)
+      doReturn(IO.pure(secondResponse)).when(dynamoDBHelper).query(secondQuery)
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, filterExpression, None, Some(4))(
@@ -168,8 +168,8 @@ class QueryHelperSpec
       doReturn(items2).when(secondResponse).getItems
       doReturn(null).when(secondResponse).getLastEvaluatedKey
 
-      doReturn(Future.successful(firstResponse)).when(dynamoDBHelper).query(firstQuery)
-      doReturn(Future.successful(secondResponse)).when(dynamoDBHelper).query(secondQuery)
+      doReturn(IO.pure(firstResponse)).when(dynamoDBHelper).query(firstQuery)
+      doReturn(IO.pure(secondResponse)).when(dynamoDBHelper).query(secondQuery)
 
       val result = await[QueryResponseItems](
         underTest.doQuery("testName", "testIndex", keyConditions, filterExpression, None, Some(6))(
@@ -185,7 +185,7 @@ class QueryHelperSpec
 
       doReturn(5).when(dynamoResponse).getCount
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val result = await[QueryResponseCount](
         underTest
@@ -206,8 +206,8 @@ class QueryHelperSpec
       doReturn(null).when(dynamoResponse2).getLastEvaluatedKey
       doReturn(2).when(dynamoResponse2).getCount
 
-      doReturn(Future.successful(dynamoResponse1))
-        .doReturn(Future.successful(dynamoResponse2))
+      doReturn(IO.pure(dynamoResponse1))
+        .doReturn(IO.pure(dynamoResponse2))
         .when(dynamoDBHelper)
         .query(any[QueryRequest])
 

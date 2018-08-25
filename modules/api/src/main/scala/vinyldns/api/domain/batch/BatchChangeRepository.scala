@@ -16,27 +16,26 @@
 
 package vinyldns.api.domain.batch
 
+import cats.effect._
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.mysql.VinylDNSJDBC
-
-import scala.concurrent.Future
 
 // $COVERAGE-OFF$
 trait BatchChangeRepository extends Repository {
 
-  def save(batch: BatchChange): Future[BatchChange]
+  def save(batch: BatchChange): IO[BatchChange]
 
-  def getBatchChange(batchChangeId: String): Future[Option[BatchChange]]
+  def getBatchChange(batchChangeId: String): IO[Option[BatchChange]]
 
   def getBatchChangeSummariesByUserId(
       userId: String,
       startFrom: Option[Int] = None,
-      maxItems: Int = 100): Future[BatchChangeSummaryList]
+      maxItems: Int = 100): IO[BatchChangeSummaryList]
 
   // updateSingleChanges updates status, recordSetId, recordChangeId and systemMessage (in data).
-  def updateSingleChanges(singleChanges: List[SingleChange]): Future[List[SingleChange]]
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]]
 
-  def getSingleChanges(singleChangeIds: List[String]): Future[List[SingleChange]]
+  def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]]
 
 }
 

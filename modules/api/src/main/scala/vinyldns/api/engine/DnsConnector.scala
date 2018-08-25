@@ -25,16 +25,16 @@ import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.record.{RecordSet, RecordSetChange}
 import vinyldns.api.domain.zone.Zone
 
-import scala.concurrent.ExecutionContext
-
 /* Wraps DnsConnection things in IO */
 case class DnsConnector(conn: DnsConnection) extends DnsConversions {
-  def dnsResolve(name: String, zoneName: String, typ: RecordType)(
-      implicit ec: ExecutionContext): IO[Either[Throwable, List[RecordSet]]] =
-    IO.fromFuture(IO(conn.resolve(name, zoneName, typ).value))
+  def dnsResolve(
+      name: String,
+      zoneName: String,
+      typ: RecordType): IO[Either[Throwable, List[RecordSet]]] =
+    conn.resolve(name, zoneName, typ).value
 
   def dnsUpdate(change: RecordSetChange): IO[Either[Throwable, DnsResponse]] =
-    IO.fromFuture(IO(conn.applyChange(change).value))
+    conn.applyChange(change).value
 }
 
 object DnsConnector {

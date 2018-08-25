@@ -16,13 +16,12 @@
 
 package vinyldns.api.domain.engine
 
+import cats.effect._
 import vinyldns.api.Interfaces.Result
 import vinyldns.api.domain.record.RecordSetChange
 import vinyldns.api.domain.zone.{ZoneCommand, ZoneCommandResult}
 
-import scala.concurrent.Future
-
 trait EngineCommandBus {
   def sendZoneCommand(cmd: ZoneCommand): Result[ZoneCommandResult]
-  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[Future[RecordSetChange]]
+  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]]
 }

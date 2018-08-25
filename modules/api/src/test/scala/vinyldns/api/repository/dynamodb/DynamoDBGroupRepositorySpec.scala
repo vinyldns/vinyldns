@@ -28,7 +28,7 @@ import vinyldns.api.domain.membership.Group
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class DynamoDBGroupRepositorySpec
     extends WordSpec
@@ -46,11 +46,11 @@ class DynamoDBGroupRepositorySpec
   private val membershipTable = VinylDNSConfig.groupsStoreConfig.getString("dynamo.tableName")
   class TestDynamoDBGroupRepository
       extends DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper) {
-    override def loadData: Future[List[Group]] = Future.successful(List())
+    override def loadData: IO[List[Group]] = IO.pure(List())
   }
 
   private val underTest = new DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper) {
-    override def loadData: Future[List[Group]] = Future.successful(List())
+    override def loadData: IO[List[Group]] = IO.pure(List())
   }
 
   override def beforeEach(): Unit = {
@@ -128,7 +128,7 @@ class DynamoDBGroupRepositorySpec
     "return the group when saved" in {
       val mockPutItemResult = mock[PutItemResult]
 
-      doReturn(Future.successful(mockPutItemResult))
+      doReturn(IO.pure(mockPutItemResult))
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
@@ -144,7 +144,7 @@ class DynamoDBGroupRepositorySpec
 
       val expected = underTest.toItem(okGroup)
       doReturn(List(expected).asJava).when(mockQueryResult).getItems
-      doReturn(Future.successful(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[Option[Group]](underTest.getGroupByName(okGroup.id))
 
@@ -157,7 +157,7 @@ class DynamoDBGroupRepositorySpec
       doReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
         .when(mockQueryResult)
         .getItems
-      doReturn(Future.successful(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[Option[Group]](underTest.getGroupByName(okGroup.id))
 
@@ -169,7 +169,7 @@ class DynamoDBGroupRepositorySpec
 
       val expected = underTest.toItem(deletedGroup)
       doReturn(List(expected).asJava).when(mockQueryResult).getItems
-      doReturn(Future.successful(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[Option[Group]](underTest.getGroupByName(deletedGroup.id))
 
@@ -183,7 +183,7 @@ class DynamoDBGroupRepositorySpec
 
       val expected = underTest.toItem(okGroup)
       doReturn(expected).when(dynamoResponse).getItem
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
       val response = await[Option[Group]](underTest.getGroup(okGroup.id))
 
@@ -192,7 +192,7 @@ class DynamoDBGroupRepositorySpec
       response shouldBe Some(okGroup)
     }
     "throw exception when get returns an unexpected response" in {
-      doReturn(Future.failed(new ResourceNotFoundException("bar does not exist")))
+      doReturn(IO.raiseError(new ResourceNotFoundException("bar does not exist")))
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
@@ -204,7 +204,7 @@ class DynamoDBGroupRepositorySpec
     "return None if not found" in {
       val dynamoResponse = mock[GetItemResult]
       doReturn(null).when(dynamoResponse).getItem
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
       val response = await[Option[Group]](underTest.getGroup(okGroup.id))
 
@@ -217,7 +217,7 @@ class DynamoDBGroupRepositorySpec
 
       val expected = underTest.toItem(deletedGroup)
       doReturn(expected).when(dynamoResponse).getItem
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
       val response = await[Option[Group]](underTest.getGroup(deletedGroup.id))
 
@@ -245,8 +245,8 @@ class DynamoDBGroupRepositorySpec
           .asJava).asJava
       doReturn(secondPage).when(secondResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
-        .doReturn(Future.successful(secondResponse))
+      doReturn(IO.pure(firstResponse))
+        .doReturn(IO.pure(secondResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -263,7 +263,7 @@ class DynamoDBGroupRepositorySpec
       val firstPage = Map(underTest.GROUP_TABLE -> List(expected).asJava).asJava
 
       doReturn(firstPage).when(dynamoResponse).getResponses
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -277,7 +277,7 @@ class DynamoDBGroupRepositorySpec
       val firstPage = Map(underTest.GROUP_TABLE -> List().asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
+      doReturn(IO.pure(firstResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -292,7 +292,7 @@ class DynamoDBGroupRepositorySpec
       val firstPage = Map().asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
-      doReturn(Future.successful(firstResponse))
+      doReturn(IO.pure(firstResponse))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
@@ -303,7 +303,7 @@ class DynamoDBGroupRepositorySpec
       response should contain theSameElementsAs Set()
     }
     "throw exception when get returns an unexpected response" in {
-      doReturn(Future.failed(new ResourceNotFoundException("bar does not exist")))
+      doReturn(IO.raiseError(new ResourceNotFoundException("bar does not exist")))
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 

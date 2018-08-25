@@ -173,14 +173,15 @@ trait MembershipRoute extends Directives {
     }
     .result()
 
-  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.value) {
-    case Right(a) => rt(a)
-    case Left(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-    case Left(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
-    case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case Left(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case Left(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case Left(e) => failWith(e)
-  }
+  private def execute[A](f: => Result[A])(rt: A => Route): Route =
+    onSuccess(f.value.unsafeToFuture()) {
+      case Right(a) => rt(a)
+      case Left(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+      case Left(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(e) => failWith(e)
+    }
 }

@@ -108,8 +108,8 @@ class JdbcZoneRepositoryIntegrationSpec
   private def testZone(name: String, adminGroupId: String = testZoneAdminGroupId) =
     okZone.copy(name = name, id = UUID.randomUUID().toString, adminGroupId = adminGroupId)
 
-  private def saveZones(zones: Seq[Zone]): Future[Unit] =
-    zones.foldLeft(Future.successful(())) {
+  private def saveZones(zones: Seq[Zone]): IO[Unit] =
+    zones.foldLeft(IO.pure(())) {
       case (acc, cur) =>
         acc.flatMap { _ =>
           repo.save(cur).map(_ => ())

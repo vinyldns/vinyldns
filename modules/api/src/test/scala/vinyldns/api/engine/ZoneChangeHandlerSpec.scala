@@ -36,8 +36,8 @@ class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar wit
       val mockChangeRepo = mock[ZoneChangeRepository]
       val change = zoneChangePending
 
-      doReturn(Future.successful(change.zone)).when(mockZoneRepo).save(change.zone)
-      doReturn(Future.successful(change)).when(mockChangeRepo).save(any[ZoneChange])
+      doReturn(IO.pure(change.zone)).when(mockZoneRepo).save(change.zone)
+      doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
 
       val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo)
       test(change).unsafeRunSync()

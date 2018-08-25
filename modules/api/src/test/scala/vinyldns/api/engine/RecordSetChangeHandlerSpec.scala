@@ -103,7 +103,7 @@ class RecordSetChangeHandlerSpec
     // seed the linked batch change in the DB
     await(batchRepo.save(batchChange))
 
-    doReturn(Future.successful(Nil))
+    doReturn(IO.pure(Nil))
       .when(mockRsRepo)
       .getRecordSets(anyString, anyString, any(classOf[RecordType]))
   }
@@ -113,8 +113,8 @@ class RecordSetChangeHandlerSpec
       doReturn(IO.pure(Right(List(rs))))
         .when(mockConn)
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -150,8 +150,8 @@ class RecordSetChangeHandlerSpec
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(rsChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -191,8 +191,8 @@ class RecordSetChangeHandlerSpec
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(Left(Refused("dns failure")))).when(mockConn).dnsUpdate(rsChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -237,8 +237,8 @@ class RecordSetChangeHandlerSpec
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(rsChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -278,8 +278,8 @@ class RecordSetChangeHandlerSpec
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(rsChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -321,8 +321,8 @@ class RecordSetChangeHandlerSpec
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(rsChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -362,8 +362,8 @@ class RecordSetChangeHandlerSpec
         .when(mockConn)
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
 
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -400,8 +400,8 @@ class RecordSetChangeHandlerSpec
         .when(mockConn)
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
       doReturn(IO.pure(Left(Refused("dns-fail")))).when(mockConn).dnsUpdate(rsChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       test.unsafeRunSync()
@@ -435,7 +435,7 @@ class RecordSetChangeHandlerSpec
 
     "bypass the validate and verify steps if a wildcard record exists" in {
       // Return a wildcard record
-      doReturn(Future.successful(List(rsChange.recordSet)))
+      doReturn(IO.pure(List(rsChange.recordSet)))
         .when(mockRsRepo)
         .getRecordSets(anyString, anyString, any(classOf[RecordType]))
 
@@ -446,8 +446,8 @@ class RecordSetChangeHandlerSpec
         .dnsResolve(rs.name, rsChange.zone.name, rs.typ)
 
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(rsChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChange)
       val res = test.unsafeRunSync()
@@ -490,7 +490,7 @@ class RecordSetChangeHandlerSpec
       val csNs = ChangeSet(rsChangeNs)
 
       // Return a ns record
-      doReturn(Future.successful(List(rsChangeNs.recordSet)))
+      doReturn(IO.pure(List(rsChangeNs.recordSet)))
         .when(mockRsRepo)
         .getRecordSets(anyString, anyString, any(classOf[RecordType]))
 
@@ -501,8 +501,8 @@ class RecordSetChangeHandlerSpec
         .dnsResolve(rsNs.name, rsChangeNs.zone.name, rsNs.typ)
 
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(rsChangeNs)
-      doReturn(Future.successful(csNs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(csNs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(csNs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(csNs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, rsChangeNs)
       val res = test.unsafeRunSync()
@@ -537,8 +537,8 @@ class RecordSetChangeHandlerSpec
         .when(mockConn)
         .dnsResolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(updateChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, updateChange)
       test.unsafeRunSync()
@@ -574,8 +574,8 @@ class RecordSetChangeHandlerSpec
         .when(mockConn)
         .dnsResolve(rsChange.recordSet.name, rsChange.zone.name, rsChange.recordSet.typ)
       doReturn(IO.pure(Right(NoError(mockDnsMessage)))).when(mockConn).dnsUpdate(updateChange)
-      doReturn(Future.successful(cs)).when(mockChangeRepo).save(any[ChangeSet])
-      doReturn(Future.successful(cs)).when(mockRsRepo).apply(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
 
       val test = underTest.apply(mockConn, updateChange)
       test.unsafeRunSync()

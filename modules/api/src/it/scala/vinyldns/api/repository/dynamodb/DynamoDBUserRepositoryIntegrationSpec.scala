@@ -24,6 +24,7 @@ import vinyldns.api.domain.membership.User
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 

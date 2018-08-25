@@ -29,7 +29,7 @@ import vinyldns.api.repository._
 import vinyldns.api.{domain, _}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class BatchChangeConverterSpec
     extends WordSpec
@@ -203,10 +203,10 @@ class BatchChangeConverterSpec
         mxToDelete))
 
   object SqsWithFail extends TestSqsService {
-    override def sendRecordSetChanges(cmds: List[RecordSetChange]): List[Future[RecordSetChange]] =
+    override def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]] =
       cmds.map {
-        case ch if ch.recordSet.name == "bad" => Future.failed(new RuntimeException("BOO"))
-        case ch => Future.successful(ch)
+        case ch if ch.recordSet.name == "bad" => IO.raiseError(new RuntimeException("BOO"))
+        case ch => IO.pure(ch)
       }
   }
 

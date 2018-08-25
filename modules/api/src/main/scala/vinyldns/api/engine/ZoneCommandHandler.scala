@@ -30,7 +30,7 @@ import vinyldns.api.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeTyp
 import vinyldns.api.engine.sqs.SqsConnection
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object ZoneCommandHandler {
@@ -68,9 +68,7 @@ object ZoneCommandHandler {
       batchChangeRepository: BatchChangeRepository,
       sqsConnection: SqsConnection,
       pollingInterval: FiniteDuration,
-      pauseSignal: Signal[IO, Boolean])(
-      implicit ec: ExecutionContext,
-      scheduler: Scheduler): Stream[IO, Unit] = {
+      pauseSignal: Signal[IO, Boolean])(implicit scheduler: Scheduler): Stream[IO, Unit] = {
 
     // Polls SQS for message batches, connected to the signal which is toggled in the status endpoint
     val sqsMessageSource = startPolling(sqsConnection, pollingInterval).pauseWhen(pauseSignal)
@@ -111,8 +109,7 @@ object ZoneCommandHandler {
 
   /* Polls SQS for messages */
   def startPolling(sqsConnection: SqsConnection, pollingInterval: FiniteDuration)(
-      implicit ec: ExecutionContext,
-      scheduler: Scheduler): Stream[IO, ReceiveMessageResult] = {
+      implicit scheduler: Scheduler): Stream[IO, ReceiveMessageResult] = {
 
     def pollingStream(): Stream[IO, ReceiveMessageResult] =
       scheduler
@@ -243,7 +240,6 @@ object ProductionZoneCommandHandler {
       recordSetRepository: RecordSetRepository,
       batchChangeRepository: BatchChangeRepository,
       config: Config): IO[Unit] = {
-    implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
     implicit val scheduler: Scheduler =
       Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
 

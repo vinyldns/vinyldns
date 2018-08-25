@@ -20,14 +20,11 @@ import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.zone.ZoneRepository
 
-import scala.concurrent.ExecutionContext
-
-class HealthService(zoneRepository: ZoneRepository)(implicit ec: ExecutionContext) {
+class HealthService(zoneRepository: ZoneRepository) {
 
   def checkHealth(): Result[Unit] =
     zoneRepository
       .getZone("notFound")
       .map(_ => ().asRight)
-      .recover { case e: Throwable => e.asLeft }
       .toResult
 }

@@ -22,7 +22,7 @@ import vinyldns.api.domain.batch
 import vinyldns.api.domain.batch._
 
 import scala.collection.concurrent
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 object InMemoryBatchChangeRepository extends BatchChangeRepository {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,7 +51,7 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
   private val singleChangesMap = new concurrent.TrieMap[String, SingleChange]
   val logger: Logger = LoggerFactory.getLogger("BatchChangeRepo")
 
-  def save(batch: BatchChange): Future[BatchChange] =
+  def save(batch: BatchChange): IO[BatchChange] =
     Future
       .successful {
         batches.put(batch.id, StoredBatchChange(batch))
@@ -59,8 +59,8 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
       }
       .map(_ => batch)
 
-  def getBatchChange(batchChangeId: String): Future[Option[BatchChange]] =
-    Future.successful {
+  def getBatchChange(batchChangeId: String): IO[Option[BatchChange]] =
+    IO.pure {
       val storedChange = batches.get(batchChangeId)
       val singleChangesFromRepo = for {
         sc <- storedChange.toList
@@ -79,14 +79,14 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
       }
     }
 
-  def updateSingleChanges(singleChanges: List[SingleChange]): Future[List[SingleChange]] =
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]] =
     Future
       .successful {
         singleChanges.foreach(ch => singleChangesMap.put(ch.id, ch))
       }
       .map(_ => singleChanges)
 
-  def getSingleChanges(singleChangeIds: List[String]): Future[List[SingleChange]] = {
+  def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] = {
     val changes = singleChangeIds.flatMap(singleChangesMap.get)
 
     val notFound = singleChangeIds.toSet -- changes.map(_.id).toSet
@@ -96,13 +96,13 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
         s"!!! Could not find all SingleChangeIds in DB call; missing IDs: ${notFound.take(5)} !!!")
     }
 
-    Future.successful(changes)
+    IO.pure(changes)
   }
 
   def getBatchChangeSummariesByUserId(
       userId: String,
       startFrom: Option[Int] = None,
-      maxItems: Int = 100): Future[BatchChangeSummaryList] = {
+      maxItems: Int = 100): IO[BatchChangeSummaryList] = {
     val userBatchChanges = batches.values.toList.filter(_.userId == userId)
     val batchChangeSummaries = for {
       sc <- userBatchChanges
@@ -121,7 +121,7 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
     val until = maxItems + start
     val limited = sorted.slice(start, until)
     val nextId = if (limited.size < maxItems) None else Some(start + limited.size)
-    Future.successful(
+    IO.pure(
       BatchChangeSummaryList(limited, startFrom = startFrom, nextId = nextId, maxItems = maxItems))
   }
 

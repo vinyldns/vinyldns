@@ -20,10 +20,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
 import cats.data.EitherT
+import cats.effect._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
-
-import scala.concurrent.Future
 
 trait BatchChangeRoute extends Directives {
   this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
@@ -77,15 +76,16 @@ trait BatchChangeRoute extends Directives {
     }
     .result()
 
-  private def execute[A](f: => EitherT[Future, BatchChangeErrorResponse, A])(
-      rt: A => Route): Route = onSuccess(f.value) {
-    case Right(a) => rt(a)
-    case Left(cle: ChangeLimitExceeded) => complete(StatusCodes.RequestEntityTooLarge, cle.message)
-    case Left(bie: BatchChangeIsEmpty) => complete(StatusCodes.UnprocessableEntity, bie.message)
-    case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
-    case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
-    case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
-    case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
-    case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
-  }
+  private def execute[A](f: => EitherT[IO, BatchChangeErrorResponse, A])(rt: A => Route): Route =
+    onSuccess(f.value.unsafeToFuture()) {
+      case Right(a) => rt(a)
+      case Left(cle: ChangeLimitExceeded) =>
+        complete(StatusCodes.RequestEntityTooLarge, cle.message)
+      case Left(bie: BatchChangeIsEmpty) => complete(StatusCodes.UnprocessableEntity, bie.message)
+      case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
+      case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
+      case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
+      case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
+      case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
+    }
 }

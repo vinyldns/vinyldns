@@ -19,7 +19,7 @@ import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import org.slf4j.Logger
 
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 import scala.util.Try
 
 /* Overrides the send method so that it is synchronous, avoids goofy future timing issues in unit tests */
@@ -28,6 +28,6 @@ class TestDynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger)
 
   override private[repository] def send[In <: AmazonWebServiceRequest, Out](
       aws: In,
-      func: (In) => Out)(implicit d: Describe[_ >: In]): Future[Out] =
+      func: (In) => Out)(implicit d: Describe[_ >: In]): IO[Out] =
     Future.fromTry(Try(func(aws)))
 }

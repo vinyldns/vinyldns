@@ -16,30 +16,29 @@
 
 package vinyldns.api.domain.membership
 
+import cats.effect._
+import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBUserRepository
 import vinyldns.core.crypto.Crypto
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 final case class ListUsersResults(users: Seq[User], lastEvaluatedId: Option[String])
 
 trait UserRepository extends Repository {
 
   /*Looks up a user.  If the user is not found, or if the user's status is Deleted, will return None */
-  def getUser(userId: String): Future[Option[User]]
+  def getUser(userId: String): IO[Option[User]]
 
   def getUsers(
       userIds: Set[String],
       exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): Future[ListUsersResults]
+      pageSize: Option[Int]): IO[ListUsersResults]
 
-  def getUserByAccessKey(accessKey: String): Future[Option[User]]
+  def getUserByAccessKey(accessKey: String): IO[Option[User]]
 
-  def save(user: User): Future[User]
+  def save(user: User): IO[User]
 }
 
 object UserRepository {
@@ -137,15 +136,13 @@ object UserRepository {
     email = Some("test@test.com")
   )
 
-  def loadTestData(repository: UserRepository): Future[List[User]] = Future.sequence {
+  def loadTestData(repository: UserRepository): IO[List[User]] =
     (testUser :: okUser :: dummyUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
-      listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers)
-      .map { user =>
-        val encrypted =
-          if (VinylDNSConfig.encryptUserSecrets)
-            user.copy(secretKey = Crypto.encrypt(user.secretKey))
-          else user
-        repository.save(encrypted)
-      }
-  }
+      listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map { user =>
+      val encrypted =
+        if (VinylDNSConfig.encryptUserSecrets)
+          user.copy(secretKey = Crypto.encrypt(user.secretKey))
+        else user
+      repository.save(encrypted)
+    }.parSequence
 }

@@ -23,7 +23,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.api.domain.membership.{MembershipRepository, UserRepository}
 
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class MembershipAuthPrincipalProviderSpec
     extends WordSpec
@@ -42,11 +42,11 @@ class MembershipAuthPrincipalProviderSpec
       val user = okUser
       val accessKey = user.accessKey
 
-      doReturn(Future.successful(Option(okUser)))
+      doReturn(IO.pure(Option(okUser)))
         .when(mockUserRepo)
         .getUserByAccessKey(any[String])
 
-      doReturn(Future.successful(Set(okGroup.id, dummyGroup.id)))
+      doReturn(IO.pure(Set(okGroup.id, dummyGroup.id)))
         .when(mockMembershipRepo)
         .getGroupsForUser(any[String])
 
@@ -61,7 +61,7 @@ class MembershipAuthPrincipalProviderSpec
       val mockMembershipRepo = mock[MembershipRepository]
       val underTest = new MembershipAuthPrincipalProvider(mockUserRepo, mockMembershipRepo)
 
-      doReturn(Future.successful(None))
+      doReturn(IO.pure(None))
         .when(mockUserRepo)
         .getUserByAccessKey(any[String])
 
@@ -75,11 +75,11 @@ class MembershipAuthPrincipalProviderSpec
       val mockMembershipRepo = mock[MembershipRepository]
       val underTest = new MembershipAuthPrincipalProvider(mockUserRepo, mockMembershipRepo)
 
-      doReturn(Future.successful(Option(okUser)))
+      doReturn(IO.pure(Option(okUser)))
         .when(mockUserRepo)
         .getUserByAccessKey(any[String])
 
-      doReturn(Future.successful(Set()))
+      doReturn(IO.pure(Set()))
         .when(mockMembershipRepo)
         .getGroupsForUser(any[String])
 

@@ -33,17 +33,17 @@ trait ResultHelpers {
 
   implicit val baseTimeout: Timeout = new Timeout(2.seconds)
 
-  def await[T](f: => Future[_], duration: FiniteDuration = 1.second)(implicit tag: ClassTag[T]): T =
+  def await[T](f: => IO[_], duration: FiniteDuration = 1.second)(implicit tag: ClassTag[T]): T =
     Await.ready(f, duration).mapTo[T].value.get.get
 
   // Waits for the future to complete, then returns the value as a Throwable \/ T
   def awaitResultOf[T](
-      f: => Future[Either[Throwable, T]],
+      f: => IO[Either[Throwable, T]],
       duration: FiniteDuration = 1.second): Either[Throwable, T] =
     Await.ready(f.mapTo[Either[Throwable, T]], duration).value.get.get
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
-  def rightResultOf[T](f: => Future[Either[Throwable, T]], duration: FiniteDuration = 1.second): T =
+  def rightResultOf[T](f: => IO[Either[Throwable, T]], duration: FiniteDuration = 1.second): T =
     awaitResultOf[T](f, duration) match {
       case Right(result) => result
       case Left(error) => throw error
@@ -51,7 +51,7 @@ trait ResultHelpers {
 
   // Assumes that the result of the future operation will fail, this will error on a right disjunction
   def leftResultOf[T](
-      f: => Future[Either[Throwable, T]],
+      f: => IO[Either[Throwable, T]],
       duration: FiniteDuration = 1.second): Throwable = awaitResultOf(f, duration).swap.toOption.get
 
   def leftValue[T](t: Either[Throwable, T]): Throwable = t.swap.toOption.get

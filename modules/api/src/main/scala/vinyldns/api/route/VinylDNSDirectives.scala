@@ -18,18 +18,18 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
-import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.directives.BasicDirectives
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
+import cats.effect._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import vinyldns.api.domain.auth.AuthPrincipal
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Failure
 import scala.util.control.NonFatal
-import vinyldns.api.domain.auth.AuthPrincipal
 
 trait VinylDNSDirectives extends Directives {
 
@@ -38,26 +38,28 @@ trait VinylDNSDirectives extends Directives {
     * that holds a Left - Rejection, or Right - AuthPrincipal.
     * @return an Authentication with the AuthPrincipal as looked up from the request, or a Left(Rejection)
     */
-  def vinyldnsAuthenticator(ctx: RequestContext, content: String)(
-      implicit ec: ExecutionContext): Future[Either[Cause, AuthPrincipal]] =
+  def vinyldnsAuthenticator(
+      ctx: RequestContext,
+      content: String): IO[Either[Cause, AuthPrincipal]] =
     VinylDNSAuthenticator(ctx, content)
 
   def authenticate: Directive1[AuthPrincipal] =
     extractExecutionContext.flatMap { implicit ec ⇒
       extractRequestContext.flatMap { ctx =>
         extractStrictEntity(10.seconds).flatMap { strictEntity =>
-          onSuccess(vinyldnsAuthenticator(ctx, strictEntity.data.utf8String)).flatMap {
-            case Right(authPrincipal) ⇒
-              provide(authPrincipal)
-            case Left(cause) ⇒
-              // we need to finish the result, rejections will proceed and ultimately
-              // we can fail with a different rejection
-              complete(
-                HttpResponse(
-                  status = StatusCodes.Unauthorized,
-                  entity = HttpEntity(s"Authentication Failed: $cause")
-                ))
-          }
+          onSuccess(vinyldnsAuthenticator(ctx, strictEntity.data.utf8String).unsafeToFuture())
+            .flatMap {
+              case Right(authPrincipal) ⇒
+                provide(authPrincipal)
+              case Left(cause) ⇒
+                // we need to finish the result, rejections will proceed and ultimately
+                // we can fail with a different rejection
+                complete(
+                  HttpResponse(
+                    status = StatusCodes.Unauthorized,
+                    entity = HttpEntity(s"Authentication Failed: $cause")
+                  ))
+            }
         }
       }
     }

@@ -482,9 +482,8 @@ class RecordSetRoutingSpec
 
   val recordSetService: RecordSetServiceAlgebra = new TestService
 
-  override def vinyldnsAuthenticator(ctx: RequestContext, content: String)(
-      implicit ec: ExecutionContext): Future[Either[Cause, AuthPrincipal]] =
-    Future.successful(Right(okAuth))
+  override def vinyldnsAuthenticator(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
+    IO.pure(Right(okAuth))
 
   private def rsJson(recordSet: RecordSet): String =
     compact(render(Extraction.decompose(recordSet)))

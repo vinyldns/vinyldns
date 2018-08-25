@@ -331,9 +331,8 @@ class ZoneRoutingSpec
 
   val zoneService: ZoneServiceAlgebra = TestZoneService
 
-  override def vinyldnsAuthenticator(ctx: RequestContext, content: String)(
-      implicit ec: ExecutionContext): Future[Either[Cause, AuthPrincipal]] =
-    Future.successful(Right(okAuth))
+  override def vinyldnsAuthenticator(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
+    IO.pure(Right(okAuth))
 
   def zoneJson(name: String, email: String): String =
     zoneJson(Zone(name, email, connection = null, created = null, status = null, id = null))

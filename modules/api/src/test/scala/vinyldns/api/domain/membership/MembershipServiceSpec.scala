@@ -27,7 +27,7 @@ import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.{NotAuthorizedError, ZoneRepository, _}
 
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 
 class MembershipServiceSpec
     extends WordSpec
@@ -92,14 +92,14 @@ class MembershipServiceSpec
   "MembershipService" should {
     "create a new group" should {
       "save the group and add the members when the group is valid" in {
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
-        doReturn(Future.successful(okGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.successful(Set(okUser.id)))
+        doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(Set(okUser.id)))
           .when(mockMembershipRepo)
           .addMembers(anyString, any[Set[String]])
-        doReturn(Future.successful(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
+        doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(groupInfo, okGroupAuth).value)
         result shouldBe groupInfo
@@ -118,14 +118,14 @@ class MembershipServiceSpec
       }
 
       "save the groupChange in the groupChangeRepo" in {
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
-        doReturn(Future.successful(okGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.successful(Set(okUser.id)))
+        doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(Set(okUser.id)))
           .when(mockMembershipRepo)
           .addMembers(anyString, any[Set[String]])
-        doReturn(Future.successful(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
+        doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(groupInfo, okGroupAuth).value)
         result shouldBe groupInfo
@@ -140,7 +140,7 @@ class MembershipServiceSpec
       }
 
       "add the admins as members of the group" in {
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         val info = groupInfo.copy(
           memberIds = Set(okUserInfo.id, dummyUserInfo.id),
           adminUserIds = Set(okUserInfo.id, dummyUserInfo.id))
@@ -148,11 +148,11 @@ class MembershipServiceSpec
 
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
-        doReturn(Future.successful(okGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.successful(Set(okUser.id)))
+        doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(Set(okUser.id)))
           .when(mockMembershipRepo)
           .addMembers(anyString, any[Set[String]])
-        doReturn(Future.successful(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
+        doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(info, okGroupAuth).value)
         result shouldBe info
@@ -166,21 +166,21 @@ class MembershipServiceSpec
 
       "set the current user as a member" in {
         val info = groupInfo.copy(memberIds = Set.empty, adminUserIds = Set.empty)
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(info.name)
         doReturn(().toResult).when(underTest).usersExist(Set(okGroupAuth.userId))
-        doReturn(Future.successful(okGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.successful(Set(okUser.id)))
+        doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(Set(okUser.id)))
           .when(mockMembershipRepo)
           .addMembers(anyString, any[Set[String]])
-        doReturn(Future.successful(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
+        doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val result: Group = rightResultOf(underTest.createGroup(info, okGroupAuth).value)
         result.memberIds should contain(okGroupAuth.userId)
       }
 
       "return an error if a group with the same name exists" in {
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(result(GroupAlreadyExistsError("fail")))
           .when(underTest)
           .groupWithSameNameDoesNotExist(groupInfo.name)
@@ -193,7 +193,7 @@ class MembershipServiceSpec
       }
 
       "return an error if users do not exist" in {
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(result(UserNotFoundError("fail")))
           .when(underTest)
@@ -207,11 +207,11 @@ class MembershipServiceSpec
       }
 
       "return an error if fail while saving the group" in {
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
-        doReturn(Future.failed(new RuntimeException("fail"))).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.successful(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
+        doReturn(IO.raiseError(new RuntimeException("fail"))).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val error = leftResultOf(underTest.createGroup(groupInfo, okGroupAuth).value)
         error shouldBe a[RuntimeException]
@@ -220,14 +220,14 @@ class MembershipServiceSpec
       }
 
       "return an error if fail while adding the members" in {
-        doReturn(Future.successful(Some(okUser))).when(mockUserRepo).getUser("ok")
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser("ok")
         doReturn(().toResult).when(underTest).groupWithSameNameDoesNotExist(groupInfo.name)
         doReturn(().toResult).when(underTest).usersExist(groupInfo.memberIds)
-        doReturn(Future.successful(okGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.failed(new RuntimeException("fail")))
+        doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.raiseError(new RuntimeException("fail")))
           .when(mockMembershipRepo)
           .addMembers(anyString, any[Set[String]])
-        doReturn(Future.successful(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
+        doReturn(IO.pure(okGroupChange)).when(mockGroupChangeRepo).save(any[GroupChange])
 
         val error = leftResultOf(underTest.createGroup(groupInfo, okGroupAuth).value)
         error shouldBe a[RuntimeException]
@@ -236,19 +236,19 @@ class MembershipServiceSpec
 
     "update an existing group" should {
       "save the update and add new members and remove deleted members" in {
-        doReturn(Future.successful(Some(existingGroup))).when(mockGroupRepo).getGroup(any[String])
+        doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(any[String])
         doReturn(().toResult)
           .when(underTest)
           .differentGroupWithSameNameDoesNotExist(any[String], any[String])
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
-        doReturn(Future.successful(modifiedGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.successful(Set()))
+        doReturn(IO.pure(modifiedGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(Set()))
           .when(mockMembershipRepo)
           .addMembers(anyString, any[Set[String]])
-        doReturn(Future.successful(Set()))
+        doReturn(IO.pure(Set()))
           .when(mockMembershipRepo)
           .removeMembers(anyString, any[Set[String]])
-        doReturn(Future.successful(okGroupChangeUpdate))
+        doReturn(IO.pure(okGroupChangeUpdate))
           .when(mockGroupChangeRepo)
           .save(any[GroupChange])
 
@@ -301,7 +301,7 @@ class MembershipServiceSpec
       }
 
       "return an error if the user is not an admin" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
 
         val error = leftResultOf(
           underTest
@@ -319,7 +319,7 @@ class MembershipServiceSpec
       }
 
       "return an error if a group with the same name already exists" in {
-        doReturn(Future.successful(Some(existingGroup)))
+        doReturn(IO.pure(Some(existingGroup)))
           .when(mockGroupRepo)
           .getGroup(existingGroup.id)
         doReturn(().toResult).when(underTest).usersExist(any[Set[String]])
@@ -342,7 +342,7 @@ class MembershipServiceSpec
       }
 
       "return an error if the group is not found" in {
-        doReturn(Future.successful(None)).when(mockGroupRepo).getGroup(existingGroup.id)
+        doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(existingGroup.id)
 
         val error = leftResultOf(
           underTest
@@ -359,7 +359,7 @@ class MembershipServiceSpec
       }
 
       "return an error if the users do not exist" in {
-        doReturn(Future.successful(Some(existingGroup)))
+        doReturn(IO.pure(Some(existingGroup)))
           .when(mockGroupRepo)
           .getGroup(existingGroup.id)
         doReturn(result(()))
@@ -384,7 +384,7 @@ class MembershipServiceSpec
       }
 
       "return an error if the group has no members or admins" in {
-        doReturn(Future.successful(Some(existingGroup)))
+        doReturn(IO.pure(Some(existingGroup)))
           .when(mockGroupRepo)
           .getGroup(existingGroup.id)
 
@@ -405,13 +405,13 @@ class MembershipServiceSpec
 
     "delete a group" should {
       "return the deleted group with a status of Deleted" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        doReturn(Future.successful(okGroup)).when(mockGroupRepo).save(any[Group])
-        doReturn(Future.successful(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
-        doReturn(Future.successful(okGroupChangeDelete))
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
+        doReturn(IO.pure(okGroupChangeDelete))
           .when(mockGroupChangeRepo)
           .save(any[GroupChange])
-        doReturn(Future.successful(Set[String]()))
+        doReturn(IO.pure(Set[String]()))
           .when(mockMembershipRepo)
           .removeMembers(anyString, any[Set[String]])
 
@@ -434,7 +434,7 @@ class MembershipServiceSpec
       }
 
       "return an error if the user is not an admin" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
 
         val error = leftResultOf(underTest.deleteGroup("ok", dummyUserAuth).value)
 
@@ -442,8 +442,8 @@ class MembershipServiceSpec
       }
 
       "return an error if the group is not found" in {
-        doReturn(Future.successful(None)).when(mockGroupRepo).getGroup(anyString)
-        doReturn(Future.successful(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
+        doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
 
         val error = leftResultOf(underTest.deleteGroup("ok", okGroupAuth).value)
 
@@ -451,8 +451,8 @@ class MembershipServiceSpec
       }
 
       "return an error if the group is the admin group of a zone" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        doReturn(Future.successful(List(mock[Zone])))
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List(mock[Zone])))
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(anyString)
 
@@ -464,19 +464,19 @@ class MembershipServiceSpec
 
     "get a group" should {
       "return the group" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
         val result: Group = rightResultOf(underTest.getGroup(okGroup.id, okUserAuth).value)
         result shouldBe okGroup
       }
 
       "return an error if not authorized" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
         val error = leftResultOf(underTest.getGroup(okGroup.id, dummyUserAuth).value)
         error shouldBe a[NotAuthorizedError]
       }
 
       "return an error if the group is not found" in {
-        doReturn(Future.successful(None)).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
         val error = leftResultOf(underTest.getGroup("notfound", okUserAuth).value)
         error shouldBe a[GroupNotFoundError]
       }
@@ -484,7 +484,7 @@ class MembershipServiceSpec
 
     "get my groups" should {
       "return all the groups where user is a member when no optional parameters are used" in {
-        doReturn(Future.successful(listOfDummyGroups.toSet))
+        doReturn(IO.pure(listOfDummyGroups.toSet))
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
         val result: ListMyGroupsResponse =
@@ -498,7 +498,7 @@ class MembershipServiceSpec
           maxItems = 100)
       }
       "return only return groups whose name matches the filter" in {
-        doReturn(Future.successful(listOfDummyGroups.toSet))
+        doReturn(IO.pure(listOfDummyGroups.toSet))
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
         val result: ListMyGroupsResponse = rightResultOf(
@@ -517,7 +517,7 @@ class MembershipServiceSpec
           maxItems = 100)
       }
       "return only return groups after startFrom" in {
-        doReturn(Future.successful(listOfDummyGroups.toSet))
+        doReturn(IO.pure(listOfDummyGroups.toSet))
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
         val result: ListMyGroupsResponse = rightResultOf(
@@ -536,7 +536,7 @@ class MembershipServiceSpec
           maxItems = 100)
       }
       "return only return maxItems groups" in {
-        doReturn(Future.successful(listOfDummyGroups.toSet))
+        doReturn(IO.pure(listOfDummyGroups.toSet))
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
         val result: ListMyGroupsResponse = rightResultOf(
@@ -555,14 +555,14 @@ class MembershipServiceSpec
           maxItems = 10)
       }
       "return an empty set if the user is not a member of any groups" in {
-        doReturn(Future.successful(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
+        doReturn(IO.pure(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
         val result: ListMyGroupsResponse =
           rightResultOf(underTest.listMyGroups(None, None, 100, noGroupsUserAuth).value)
         result shouldBe ListMyGroupsResponse(Seq(), None, None, None, 100)
       }
       "return groups from the database for super users" in {
         val superAuth = AuthPrincipal(okUser.copy(isSuper = true), Seq())
-        doReturn(Future.successful(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
+        doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
           rightResultOf(underTest.listMyGroups(None, None, 100, superAuth).value)
         verify(mockGroupRepo).getAllGroups()
@@ -571,7 +571,7 @@ class MembershipServiceSpec
           GroupInfo(okGroup))
       }
       "do not return deleted groups" in {
-        doReturn(Future.successful(Set(deletedGroup)))
+        doReturn(IO.pure(Set(deletedGroup)))
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
         val result: ListMyGroupsResponse =
@@ -585,7 +585,7 @@ class MembershipServiceSpec
         val groupChangeRepoResponse = ListGroupChangesResults(
           listOfDummyGroupChanges.take(100),
           Some(listOfDummyGroupChanges(100).id))
-        doReturn(Future.successful(groupChangeRepoResponse))
+        doReturn(IO.pure(groupChangeRepoResponse))
           .when(mockGroupChangeRepo)
           .getGroupChanges(anyString, any[Option[String]], anyInt)
 
@@ -610,8 +610,8 @@ class MembershipServiceSpec
         val testListUsersResult = ListUsersResults(Seq(okUser), Some("1"))
         val expectedAdmins = List(UserInfo(okUser))
 
-        doReturn(Future.successful(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
-        doReturn(Future.successful(testListUsersResult))
+        doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
+        doReturn(IO.pure(testListUsersResult))
           .when(mockUserRepo)
           .getUsers(testGroup.adminUserIds, None, None)
 
@@ -621,7 +621,7 @@ class MembershipServiceSpec
       }
 
       "return an error if the user is not authorized" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
         val error = leftResultOf(underTest.listAdmins("notFound", okGroupAuth).value)
         error shouldBe a[NotAuthorizedError]
       }
@@ -637,8 +637,8 @@ class MembershipServiceSpec
         val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
         val testAuth = AuthPrincipal(okUser, Seq(testGroup.id))
 
-        doReturn(Future.successful(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
-        doReturn(Future.successful(testListUsersResult))
+        doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
+        doReturn(IO.pure(testListUsersResult))
           .when(mockUserRepo)
           .getUsers(testGroup.memberIds, None, Some(100))
 
@@ -652,7 +652,7 @@ class MembershipServiceSpec
       }
 
       "return an error if the user is not authorized" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
         val error = leftResultOf(underTest.listMembers("notFound", None, 100, okGroupAuth).value)
         error shouldBe a[NotAuthorizedError]
       }
@@ -660,21 +660,21 @@ class MembershipServiceSpec
 
     "groupWithSameNameDoesNotExist" should {
       "return true when a group with the same name does not exist" in {
-        doReturn(Future.successful(None)).when(mockGroupRepo).getGroupByName("foo")
+        doReturn(IO.pure(None)).when(mockGroupRepo).getGroupByName("foo")
 
         val result = awaitResultOf(underTest.groupWithSameNameDoesNotExist("foo").value)
         result should be(right)
       }
 
       "return a GroupAlreadyExistsError if a group with the same name already exists" in {
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroupByName("foo")
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroupByName("foo")
 
         val result = leftResultOf(underTest.groupWithSameNameDoesNotExist("foo").value)
         result shouldBe a[GroupAlreadyExistsError]
       }
 
       "return true if a group with the same name exists but is deleted" in {
-        doReturn(Future.successful(Some(deletedGroup))).when(mockGroupRepo).getGroupByName("foo")
+        doReturn(IO.pure(Some(deletedGroup))).when(mockGroupRepo).getGroupByName("foo")
 
         val result = awaitResultOf(underTest.groupWithSameNameDoesNotExist("foo").value)
         result should be(right)
@@ -683,7 +683,7 @@ class MembershipServiceSpec
 
     "usersExist" should {
       "return a () if all users exist" in {
-        doReturn(Future.successful(ListUsersResults(Seq(okUser), None)))
+        doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
           .when(mockUserRepo)
           .getUsers(okGroup.memberIds, None, None)
 
@@ -692,7 +692,7 @@ class MembershipServiceSpec
       }
 
       "return UserNotFoundError if any of the requested users were not found" in {
-        doReturn(Future.successful(ListUsersResults(Seq(okUser), None)))
+        doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
           .when(mockUserRepo)
           .getUsers(Set(okUser.id, dummyUser.id), None, None)
 
@@ -705,7 +705,7 @@ class MembershipServiceSpec
       "return GroupAlreadyExistsError if a different group with the same name already exists" in {
         val existingGroup = okGroup.copy(id = "something else")
 
-        doReturn(Future.successful(Some(existingGroup))).when(mockGroupRepo).getGroupByName("foo")
+        doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroupByName("foo")
 
         val error =
           leftResultOf(underTest.differentGroupWithSameNameDoesNotExist("foo", "bar").value)
@@ -714,7 +714,7 @@ class MembershipServiceSpec
 
       "return true if the same group exists with the same name" in {
 
-        doReturn(Future.successful(Some(okGroup))).when(mockGroupRepo).getGroupByName(okGroup.name)
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroupByName(okGroup.name)
 
         val result = awaitResultOf(
           underTest.differentGroupWithSameNameDoesNotExist(okGroup.name, okGroup.id).value)
@@ -724,7 +724,7 @@ class MembershipServiceSpec
       "return true if the a different group exists but is deleted" in {
         val existingGroup = okGroup.copy(id = "something else", status = GroupStatus.Deleted)
 
-        doReturn(Future.successful(Some(existingGroup)))
+        doReturn(IO.pure(Some(existingGroup)))
           .when(mockGroupRepo)
           .getGroupByName(okGroup.name)
 
@@ -736,14 +736,14 @@ class MembershipServiceSpec
 
     "groupCanBeDeleted" should {
       "return true when a group for deletion is not the admin of a zone" in {
-        doReturn(Future.successful(List())).when(mockZoneRepo).getZonesByAdminGroupId(okGroup.id)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(okGroup.id)
 
         val result = awaitResultOf(underTest.groupCanBeDeleted(okGroup).value)
         result should be(right)
       }
 
       "return a InvalidGroupRequestError when a group for deletion is admin of a zone" in {
-        doReturn(Future.successful(List(mock[Zone])))
+        doReturn(IO.pure(List(mock[Zone])))
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(okGroup.id)
 

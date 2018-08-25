@@ -19,11 +19,10 @@ package vinyldns.api.repository.dynamodb
 import java.util
 import java.util.HashMap
 
+import cats.effect._
 import com.amazonaws.services.dynamodbv2.model.{AttributeValue, QueryRequest, QueryResult, Select}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 trait ResponseItems {
   def addResult(newResult: QueryResult): ResponseItems
@@ -171,7 +170,7 @@ trait QueryHelper {
       filter: Option[FilterType] = None,
       startKey: Option[Map[String, String]] = None,
       maxItems: Option[Int] = None,
-      isCountQuery: Boolean = false): DynamoDBHelper => Future[ResponseItems] = dynamoDbHelper => {
+      isCountQuery: Boolean = false): DynamoDBHelper => IO[ResponseItems] = dynamoDbHelper => {
     // do not limit items when there is a filter - filters are applied after limits
     val itemsToRetrieve = filter match {
       case Some(_) => None
@@ -191,11 +190,11 @@ trait QueryHelper {
       dynamoDbHelper: DynamoDBHelper,
       dynamoQuery: QueryManager,
       acc: ResponseItems,
-      limit: Option[Int]): Future[ResponseItems] =
+      limit: Option[Int]): IO[ResponseItems] =
     dynamoDbHelper.query(dynamoQuery.build()).flatMap { queryResult =>
       val accumulatedResults = acc.addResult(queryResult)
       if (accumulatedResults.isComplete(limit))
-        Future.successful(accumulatedResults.trimTo(limit))
+        IO.pure(accumulatedResults.trimTo(limit))
       else
         completeQuery(
           dynamoDbHelper,

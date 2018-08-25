@@ -30,7 +30,7 @@ import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import org.slf4j.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._, cats.effect.implicits._, cats.instances.future._
 import scala.util.Failure
 
 class MonitorSpec
@@ -59,20 +59,20 @@ class MonitorSpec
 
   class TestMonitoring extends TestMonitored {
 
-    def doSomethingGood(): Future[String] = monitor("doSomethingGood") {
-      Future { "good" }
+    def doSomethingGood(): IO[String] = monitor("doSomethingGood") {
+      IO { "good" }
     }
 
-    def doSomethingBad(): Future[String] = monitor("doSomethingBad") {
-      Future { throw new RuntimeException("bad") }
+    def doSomethingBad(): IO[String] = monitor("doSomethingBad") {
+      IO { throw new RuntimeException("bad") }
     }
 
-    def timeSomethingGood(): Future[String] = time("timeSomethingGood") {
-      Future { "good" }
+    def timeSomethingGood(): IO[String] = time("timeSomethingGood") {
+      IO { "good" }
     }
 
-    def timeSomethingBad(): Future[String] = time("timeSomethingBad") {
-      Future { throw new RuntimeException("bad") }
+    def timeSomethingBad(): IO[String] = time("timeSomethingBad") {
+      IO { throw new RuntimeException("bad") }
     }
   }
 

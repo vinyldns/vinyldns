@@ -17,15 +17,13 @@
 package vinyldns.api.repository.mysql
 
 import cats.data._
-import cats.instances.future._
+import cats.effect._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.api.domain.batch._
 import vinyldns.api.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
-
-import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /**
   * JdbcBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
@@ -41,7 +39,6 @@ class JdbcBatchChangeRepository
     with BatchChangeProtobufConversions
     with Monitored {
 
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private final val logger = LoggerFactory.getLogger(classOf[JdbcBatchChangeRepository])
 
   private final val PUT_BATCH_CHANGE =
@@ -99,19 +96,19 @@ class JdbcBatchChangeRepository
          | WHERE id={id}
         """.stripMargin
 
-  def save(batch: BatchChange): Future[BatchChange] =
+  def save(batch: BatchChange): IO[BatchChange] =
     monitor("repo.BatchChangeJDBC.save") {
-      DB.futureLocalTx { implicit s =>
+      DB.localTx { implicit s =>
         saveBatchChange(batch)
       }
     }
 
   /* get a batchchange with its singlechanges from the batchchange and singlechange tables */
-  def getBatchChange(batchChangeId: String): Future[Option[BatchChange]] =
+  def getBatchChange(batchChangeId: String): IO[Option[BatchChange]] =
     monitor("repo.BatchChangeJDBC.getBatchChange") {
       val batchChangeFuture = for {
-        batchChangeMeta <- OptionT[Future, BatchChange](getBatchChangeMetadata(batchChangeId))
-        singleChanges <- OptionT.liftF[Future, List[SingleChange]](
+        batchChangeMeta <- OptionT[IO, BatchChange](getBatchChangeMetadata(batchChangeId))
+        singleChanges <- OptionT.liftF[IO, List[SingleChange]](
           getSingleChangesByBatchChangeId(batchChangeId))
       } yield {
         batchChangeMeta.copy(changes = singleChanges)
@@ -119,58 +116,54 @@ class JdbcBatchChangeRepository
       batchChangeFuture.value
     }
 
-  def updateSingleChanges(singleChanges: List[SingleChange]): Future[List[SingleChange]] =
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]] =
     monitor("repo.BatchChangeJDBC.updateSingleChanges") {
       logger.info(
         s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}")
-      DB.futureLocalTx { implicit s =>
-        Future {
-          blocking {
-            val batchParams = singleChanges.map { singleChange =>
-              toPB(singleChange) match {
-                case Right(data) =>
-                  val changeType = SingleChangeType.from(singleChange)
-                  Seq(
-                    'inputName -> singleChange.inputName,
-                    'changeType -> changeType.toString,
-                    'data -> data.toByteArray,
-                    'status -> singleChange.status.toString,
-                    'recordSetChangeId -> singleChange.recordChangeId,
-                    'recordSetId -> singleChange.recordSetId,
-                    'zoneId -> singleChange.zoneId,
-                    'id -> singleChange.id
-                  )
-                case Left(e) => throw e
-              }
+      IO {
+        DB.localTx { implicit s =>
+          val batchParams = singleChanges.map { singleChange =>
+            toPB(singleChange) match {
+              case Right(data) =>
+                val changeType = SingleChangeType.from(singleChange)
+                Seq(
+                  'inputName -> singleChange.inputName,
+                  'changeType -> changeType.toString,
+                  'data -> data.toByteArray,
+                  'status -> singleChange.status.toString,
+                  'recordSetChangeId -> singleChange.recordChangeId,
+                  'recordSetId -> singleChange.recordSetId,
+                  'zoneId -> singleChange.zoneId,
+                  'id -> singleChange.id
+                )
+              case Left(e) => throw e
             }
-            UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
-            singleChanges
           }
+          UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
+          singleChanges
         }
       }
     }
 
-  def getSingleChanges(singleChangeIds: List[String]): Future[List[SingleChange]] =
+  def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] =
     if (singleChangeIds.isEmpty) {
-      Future.successful(List())
+      IO.pure(List())
     } else {
       monitor("repo.BatchChangeJDBC.getSingleChanges") {
-        val dbCall = Future {
-          blocking {
-            DB.readOnly { implicit s =>
-              sql"""
-                   |SELECT sc.data
-                   |  FROM single_change sc
-                   | WHERE sc.id IN ($singleChangeIds)
-                   | ORDER BY sc.seq_num ASC
-             """.stripMargin
-                .map(extractSingleChange(1))
-                .list()
-                .apply()
-            }
+        val dbCall = IO {
+          DB.readOnly { implicit s =>
+            sql"""
+                 |SELECT sc.data
+                 |  FROM single_change sc
+                 | WHERE sc.id IN ($singleChangeIds)
+                 | ORDER BY sc.seq_num ASC
+           """.stripMargin
+              .map(extractSingleChange(1))
+              .list()
+              .apply()
           }
         }
-        dbCall.foreach { inDbChanges =>
+        dbCall.map { inDbChanges =>
           val notFound = singleChangeIds.toSet -- inDbChanges.map(_.id).toSet
           if (notFound.nonEmpty) {
             // log 1st 5; we shouldnt need all, and if theres a ton it could get long
@@ -178,125 +171,117 @@ class JdbcBatchChangeRepository
               s"!!! Could not find all SingleChangeIds in getSingleChanges call; missing IDs: ${notFound
                 .take(5)} !!!")
           }
+          inDbChanges
         }
-        dbCall
       }
     }
 
   def getBatchChangeSummariesByUserId(
       userId: String,
       startFrom: Option[Int] = None,
-      maxItems: Int = 100): Future[BatchChangeSummaryList] =
+      maxItems: Int = 100): IO[BatchChangeSummaryList] =
     monitor("repo.BatchChangeJDBC.getBatchChangeSummariesByUserId") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            val startValue = startFrom.getOrElse(0)
-            val queryResult = GET_BATCH_CHANGE_SUMMARY
-              .bindByName('userId -> userId, 'startFrom -> startValue, 'maxItems -> (maxItems + 1))
-              .map { res =>
-                val pending = res.int("pending_count")
-                val failed = res.int("fail_count")
-                val complete = res.int("complete_count")
-                BatchChangeSummary(
-                  userId,
-                  res.string("user_name"),
-                  Option(res.string("comments")),
-                  new org.joda.time.DateTime(res.timestamp("created_time")),
-                  pending + failed + complete,
-                  BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
-                  res.string("id")
-                )
-              }
-              .list()
-              .apply()
-            val maxQueries = queryResult.take(maxItems)
-            val nextId = if (queryResult.size <= maxItems) None else Some(startValue + maxItems)
-            BatchChangeSummaryList(maxQueries, startFrom, nextId, maxItems)
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          val startValue = startFrom.getOrElse(0)
+          val queryResult = GET_BATCH_CHANGE_SUMMARY
+            .bindByName('userId -> userId, 'startFrom -> startValue, 'maxItems -> (maxItems + 1))
+            .map { res =>
+              val pending = res.int("pending_count")
+              val failed = res.int("fail_count")
+              val complete = res.int("complete_count")
+              BatchChangeSummary(
+                userId,
+                res.string("user_name"),
+                Option(res.string("comments")),
+                new org.joda.time.DateTime(res.timestamp("created_time")),
+                pending + failed + complete,
+                BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
+                res.string("id")
+              )
+            }
+            .list()
+            .apply()
+          val maxQueries = queryResult.take(maxItems)
+          val nextId = if (queryResult.size <= maxItems) None else Some(startValue + maxItems)
+          BatchChangeSummaryList(maxQueries, startFrom, nextId, maxItems)
         }
       }
     }
 
   /* getBatchChangeMetadata loads the batch change metadata from the database. It doesn't load the single changes */
-  private def getBatchChangeMetadata(batchChangeId: String): Future[Option[BatchChange]] =
+  private def getBatchChangeMetadata(batchChangeId: String): IO[Option[BatchChange]] =
     monitor("repo.BatchChangeJDBC.getBatchChangeMetadata") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            GET_BATCH_CHANGE_METADATA
-              .bind(batchChangeId)
-              .map { result =>
-                BatchChange(
-                  result.string("user_id"),
-                  result.string("user_name"),
-                  Option(result.string("comments")),
-                  new org.joda.time.DateTime(result.timestamp("created_time")),
-                  Nil,
-                  batchChangeId
-                )
-              }
-              .first
-              .apply()
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          GET_BATCH_CHANGE_METADATA
+            .bind(batchChangeId)
+            .map { result =>
+              BatchChange(
+                result.string("user_id"),
+                result.string("user_name"),
+                Option(result.string("comments")),
+                new org.joda.time.DateTime(result.timestamp("created_time")),
+                Nil,
+                batchChangeId
+              )
+            }
+            .first
+            .apply()
         }
       }
     }
 
   private def saveBatchChange(batchChange: BatchChange)(
-      implicit session: DBSession): Future[BatchChange] =
-    Future {
-      blocking {
-        PUT_BATCH_CHANGE
-          .bindByName(
-            Seq(
-              'id -> batchChange.id,
-              'userId -> batchChange.userId,
-              'userName -> batchChange.userName,
-              'createdTime -> batchChange.createdTimestamp,
-              'comments -> batchChange.comments
-            ): _*
-          )
-          .update()
-          .apply()
+      implicit session: DBSession): IO[BatchChange] =
+    IO {
+      PUT_BATCH_CHANGE
+        .bindByName(
+          Seq(
+            'id -> batchChange.id,
+            'userId -> batchChange.userId,
+            'userName -> batchChange.userName,
+            'createdTime -> batchChange.createdTimestamp,
+            'comments -> batchChange.comments
+          ): _*
+        )
+        .update()
+        .apply()
 
-        val singleChangesParams = batchChange.changes.zipWithIndex.map {
-          case (singleChange, seqNum) =>
-            toPB(singleChange) match {
-              case Right(data) =>
-                val changeType = SingleChangeType.from(singleChange)
-                Seq(
-                  'id -> singleChange.id,
-                  'seqNum -> seqNum,
-                  'inputName -> singleChange.inputName,
-                  'changeType -> changeType.toString,
-                  'data -> data.toByteArray,
-                  'status -> singleChange.status.toString,
-                  'batchChangeId -> batchChange.id,
-                  'recordSetChangeId -> singleChange.recordChangeId,
-                  'recordSetId -> singleChange.recordSetId,
-                  'zoneId -> singleChange.zoneId
-                )
-              case Left(e) => throw e
-            }
-        }
-
-        PUT_SINGLE_CHANGE.batchByName(singleChangesParams: _*).apply()
-        batchChange
+      val singleChangesParams = batchChange.changes.zipWithIndex.map {
+        case (singleChange, seqNum) =>
+          toPB(singleChange) match {
+            case Right(data) =>
+              val changeType = SingleChangeType.from(singleChange)
+              Seq(
+                'id -> singleChange.id,
+                'seqNum -> seqNum,
+                'inputName -> singleChange.inputName,
+                'changeType -> changeType.toString,
+                'data -> data.toByteArray,
+                'status -> singleChange.status.toString,
+                'batchChangeId -> batchChange.id,
+                'recordSetChangeId -> singleChange.recordChangeId,
+                'recordSetId -> singleChange.recordSetId,
+                'zoneId -> singleChange.zoneId
+              )
+            case Left(e) => throw e
+          }
       }
+
+      PUT_SINGLE_CHANGE.batchByName(singleChangesParams: _*).apply()
+      batchChange
     }
 
-  private def getSingleChangesByBatchChangeId(bcId: String): Future[List[SingleChange]] =
+  private def getSingleChangesByBatchChangeId(bcId: String): IO[List[SingleChange]] =
     monitor("repo.BatchChangeJDBC.getSingleChangesByBatchChangeId") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            GET_SINGLE_CHANGES_BY_BCID
-              .bind(bcId)
-              .map(extractSingleChange(1))
-              .list()
-              .apply()
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          GET_SINGLE_CHANGES_BY_BCID
+            .bind(bcId)
+            .map(extractSingleChange(1))
+            .list()
+            .apply()
         }
       }
     }
