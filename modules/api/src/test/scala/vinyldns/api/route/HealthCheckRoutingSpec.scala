@@ -26,7 +26,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.api.domain.zone.ZoneRepository
 
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class HealthCheckRoutingSpec
     extends WordSpec

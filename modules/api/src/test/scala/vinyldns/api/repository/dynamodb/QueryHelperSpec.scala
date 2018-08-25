@@ -27,7 +27,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 
 import scala.collection.JavaConverters._
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class QueryHelperSpec
     extends WordSpec

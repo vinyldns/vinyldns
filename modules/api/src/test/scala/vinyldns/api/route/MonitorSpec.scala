@@ -29,8 +29,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import org.slf4j.Logger
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 import scala.util.Failure
 
 class MonitorSpec
@@ -82,7 +81,7 @@ class MonitorSpec
     "record successful futures" in {
       val traitTest = new TestMonitoring
 
-      whenReady(traitTest.doSomethingGood()) { result =>
+      whenReady(traitTest.doSomethingGood().unsafeToFuture()) { result =>
         verify(mockLatency).+=(anyLong)
         verifyZeroInteractions(mockErrors)
       }
@@ -91,7 +90,7 @@ class MonitorSpec
     "record failed futures" in {
       val traitTest = new TestMonitoring
 
-      whenReady(traitTest.doSomethingBad().failed) { result =>
+      whenReady(traitTest.doSomethingBad().unsafeToFuture().failed) { result =>
         result shouldBe a[RuntimeException]
         verify(mockLatency).+=(anyLong)
         verify(mockErrors).mark()
@@ -101,7 +100,7 @@ class MonitorSpec
     "record start and end when timing a successful future" in {
       val traitTest = new TestMonitoring
 
-      whenReady(traitTest.timeSomethingGood()) { _ =>
+      whenReady(traitTest.timeSomethingGood().unsafeToFuture()) { _ =>
         val msgCaptor = ArgumentCaptor.forClass(classOf[String])
         verify(traitTest.logger, times(2)).info(msgCaptor.capture())
         verify(traitTest.logger, never()).error(anyString, any(classOf[Throwable]))
@@ -117,7 +116,7 @@ class MonitorSpec
     "record start and end when timing a failed future" in {
       val traitTest = new TestMonitoring
 
-      whenReady(traitTest.timeSomethingBad().failed) { _ =>
+      whenReady(traitTest.timeSomethingBad().unsafeToFuture().failed) { _ =>
         val msgCaptor = ArgumentCaptor.forClass(classOf[String])
         val errorCaptor = ArgumentCaptor.forClass(classOf[String])
         verify(traitTest.logger, times(1)).info(msgCaptor.capture())

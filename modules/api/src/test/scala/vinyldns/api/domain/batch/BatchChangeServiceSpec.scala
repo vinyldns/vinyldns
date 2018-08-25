@@ -35,8 +35,7 @@ import vinyldns.api.domain.zone.Zone
 import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.api.repository.{EmptyRecordSetRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class BatchChangeServiceSpec
     extends WordSpec

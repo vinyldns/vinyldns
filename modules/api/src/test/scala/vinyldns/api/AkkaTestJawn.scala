@@ -22,25 +22,44 @@ import akka.testkit.{EventFilter, TestKit}
 import akka.util.Timeout
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
+import cats.effect._
+import cats.implicits._
 import cats.scalatest.ValidatedMatchers
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec, Suite}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
+
+final case class TimeoutException(message: String) extends Throwable(message)
 
 trait ResultHelpers {
 
   implicit val baseTimeout: Timeout = new Timeout(2.seconds)
 
-  def await[T](f: => IO[_], duration: FiniteDuration = 1.second)(implicit tag: ClassTag[T]): T =
-    Await.ready(f, duration).mapTo[T].value.get.get
+  def await[T](f: => IO[_], duration: FiniteDuration = 1.second): T =
+    awaitResultOf[T](f.map(_.asInstanceOf[T]).attempt, duration).toOption.get
 
-  // Waits for the future to complete, then returns the value as a Throwable \/ T
+  // Waits for the future to complete, then returns the value as an Either[Throwable, T]
   def awaitResultOf[T](
       f: => IO[Either[Throwable, T]],
-      duration: FiniteDuration = 1.second): Either[Throwable, T] =
-    Await.ready(f.mapTo[Either[Throwable, T]], duration).value.get.get
+      duration: FiniteDuration = 1.second): Either[Throwable, T] = {
+
+    val timeOut = IO.sleep(duration) *> IO(TimeoutException("Timed out waiting for result"))
+
+    IO.race(timeOut, f)
+      .map {
+        case Left(TimeoutException(e)) =>
+          Left(TimeoutException(e))
+        case Right(ok) =>
+          ok
+      }
+      .handleError { e =>
+        e.printStackTrace()
+        Left(e)
+      }
+      .unsafeRunSync()
+  }
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
   def rightResultOf[T](f: => IO[Either[Throwable, T]], duration: FiniteDuration = 1.second): T =

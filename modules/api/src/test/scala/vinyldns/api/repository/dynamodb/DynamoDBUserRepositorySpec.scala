@@ -30,7 +30,7 @@ import vinyldns.api.domain.membership.{ListUsersResults, User}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class DynamoDBUserRepositorySpec
     extends WordSpec
@@ -204,7 +204,7 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
-      val result = underTest.getUser(okUser.id)
+      val result = underTest.getUser(okUser.id).unsafeToFuture()
       whenReady(result.failed) { failed =>
         failed shouldBe a[ResourceNotFoundException]
       }
@@ -350,7 +350,7 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val result = underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, None)
+      val result = underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, None).unsafeToFuture()
       whenReady(result.failed) { failed =>
         failed shouldBe a[ResourceNotFoundException]
       }
@@ -375,7 +375,7 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .query(any[QueryRequest])
 
-      val result = underTest.getUserByAccessKey(okUser.accessKey)
+      val result = underTest.getUserByAccessKey(okUser.accessKey).unsafeToFuture()
       whenReady(result.failed) { failed =>
         failed shouldBe a[ResourceNotFoundException]
       }

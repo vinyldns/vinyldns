@@ -21,7 +21,6 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import cats.implicits._
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.membership.{ListUsersResults, UserRepository}
 import vinyldns.api.domain.zone._
@@ -29,8 +28,7 @@ import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class RecordSetServiceSpec
     extends WordSpec

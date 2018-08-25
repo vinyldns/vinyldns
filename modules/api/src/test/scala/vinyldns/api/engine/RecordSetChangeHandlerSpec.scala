@@ -36,7 +36,7 @@ import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, Read
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.{CatsHelpers, VinylDNSTestData}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class RecordSetChangeHandlerSpec
     extends WordSpec

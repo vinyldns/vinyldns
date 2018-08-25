@@ -23,7 +23,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.api.domain.membership.{MembershipRepository, UserRepository}
 
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class MembershipAuthPrincipalProviderSpec
     extends WordSpec

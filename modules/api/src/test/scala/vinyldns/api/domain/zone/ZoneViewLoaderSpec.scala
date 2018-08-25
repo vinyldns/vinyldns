@@ -33,7 +33,7 @@ import vinyldns.api.domain.record._
 
 import scala.collection.JavaConverters._
 import scala.collection._
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class ZoneViewLoaderSpec
     extends WordSpec
@@ -42,7 +42,6 @@ class ZoneViewLoaderSpec
     with MockitoSugar
     with DnsConversions {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
   private implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
@@ -95,11 +94,9 @@ class ZoneViewLoaderSpec
 
       val expected = ZoneView(testZone, records)
 
-      val actual = underTest.load()
+      val actual = underTest.load().unsafeRunSync()
 
-      whenReady(actual) { result =>
-        result shouldBe expected
-      }
+      actual shouldBe expected
     }
   }
 
@@ -191,7 +188,7 @@ class ZoneViewLoaderSpec
 
       val underTest = DnsZoneViewLoader(testZone, mockTransferFunc)
 
-      val actual = underTest.load()
+      val actual = underTest.load().unsafeToFuture()
 
       val expected = ZoneView(testZone, expectedRecords)
 
@@ -317,7 +314,7 @@ class ZoneViewLoaderSpec
 
       val underTest = DnsZoneViewLoader(testZone, mockTransferFunc)
 
-      val actual = underTest.load()
+      val actual = underTest.load().unsafeToFuture()
 
       val expected = ZoneView(testZone, expectedRecords)
 

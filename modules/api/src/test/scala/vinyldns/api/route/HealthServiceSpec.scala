@@ -23,8 +23,7 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.zone.ZoneRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class HealthServiceSpec
     extends WordSpec

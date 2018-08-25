@@ -26,7 +26,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.zone.{ListZoneChangesResults, ZoneChange}
 import vinyldns.api.{ResultHelpers, VinylDNSConfig, VinylDNSTestData}
 
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class DynamoDBZoneChangeRepositorySpec
     extends WordSpec

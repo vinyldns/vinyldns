@@ -22,8 +22,8 @@ import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.repository.dynamodb.DynamoDBRetriesExhaustedException
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
+import cats.implicits._
 
 class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers {
 

@@ -16,17 +16,16 @@
 
 package vinyldns.api.engine
 
-import vinyldns.api.VinylDNSTestData
+import cats.effect._
 import org.joda.time.DateTime
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers.{any, anyString}
 import org.mockito.Mockito.{doReturn, reset, times, verify}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone._
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class ZoneSyncHandlerSpec
     extends WordSpec
@@ -49,8 +48,6 @@ class ZoneSyncHandlerSpec
   private val dnsKeyName = "vinyldns."
   private val dnsTsig = "nzisn+4G2ldMn0q1CV3vsg=="
   private val dnsServerAddress = s"$dnsServer:$dnsPort"
-
-  private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private val testZone = Zone(
     zoneName,

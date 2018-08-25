@@ -27,7 +27,7 @@ import vinyldns.api.domain.record.{ChangeSet, RecordSetChange}
 import vinyldns.api.domain.zone.Zone
 import vinyldns.api.{ResultHelpers, VinylDNSConfig, VinylDNSTestData}
 
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 import scala.concurrent.duration.FiniteDuration
 
 class DynamoDBRecordChangeRepositorySpec
@@ -124,7 +124,7 @@ class DynamoDBRecordChangeRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val result = store.save(changeSet)
+      val result = store.save(changeSet).unsafeToFuture()
       whenReady(result.failed)(_ shouldBe a[RuntimeException])
     }
 
@@ -145,7 +145,7 @@ class DynamoDBRecordChangeRepositorySpec
         .thenReturn(IO.pure(dynamoResponse))
         .thenThrow(new RuntimeException("failed")) //fail on the second batch
 
-      val result = store.save(changeSet)
+      val result = store.save(changeSet).unsafeToFuture()
       whenReady(result.failed)(_ shouldBe a[RuntimeException])
     }
   }

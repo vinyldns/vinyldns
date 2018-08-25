@@ -21,7 +21,7 @@ import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.api.domain.zone.{Zone, ZoneRepository}
 
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 // Empty implementations let our other test classes just edit with the methods they need
 

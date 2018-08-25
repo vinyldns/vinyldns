@@ -28,8 +28,7 @@ import vinyldns.api.domain.membership._
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 import scala.concurrent.duration._
 
 class ZoneServiceSpec

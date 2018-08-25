@@ -27,7 +27,7 @@ import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.{NotAuthorizedError, ZoneRepository, _}
 
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class MembershipServiceSpec
     extends WordSpec
@@ -43,8 +43,6 @@ class MembershipServiceSpec
   private val mockMembershipRepo = mock[MembershipRepository]
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
-
-  private implicit val ec = scala.concurrent.ExecutionContext.global
 
   private val backingService = new MembershipService(
     mockGroupRepo,

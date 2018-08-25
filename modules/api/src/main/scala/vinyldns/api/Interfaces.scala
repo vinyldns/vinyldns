@@ -56,11 +56,10 @@ object Interfaces {
         .handleError(e => Left(e))
     )
 
-  def withTimeout[A](theIo: => IO[A], duration: FiniteDuration, error: Throwable): Result[A] =
-    result[A] {
-      val timeOut = IO.sleep(duration) *> IO.raiseError(error)
-      IO.race(theIo, timeOut)
-    }
+  def withTimeout[A](theIo: => IO[A], duration: FiniteDuration, error: Throwable): Result[A] = {
+    val timeOut = IO.sleep(duration) *> IO(error)
+    EitherT(IO.race(timeOut, theIo).handleError(e => Left(e)))
+  }
 
   /* Enhances futures to easily lift the io to a Result */
   implicit class IOResultImprovements(io: IO[_]) {

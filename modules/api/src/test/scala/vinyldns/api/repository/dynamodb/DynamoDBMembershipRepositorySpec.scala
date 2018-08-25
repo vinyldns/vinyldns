@@ -27,7 +27,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 import scala.concurrent.duration.FiniteDuration
 
 class DynamoDBMembershipRepositorySpec
@@ -141,7 +141,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = store.addMembers(okGroup.id, members)
+      val response = store.addMembers(okGroup.id, members).unsafeToFuture()
       whenReady(response.failed)(_ shouldBe a[RuntimeException])
     }
   }
@@ -217,7 +217,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = store.removeMembers(okGroup.id, members)
+      val response = store.removeMembers(okGroup.id, members).unsafeToFuture()
       whenReady(response.failed)(_ shouldBe a[RuntimeException])
     }
   }

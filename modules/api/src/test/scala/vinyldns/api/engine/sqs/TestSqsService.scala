@@ -21,7 +21,7 @@ import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.record.RecordSetChange
 import vinyldns.api.domain.zone.{ZoneCommand, ZoneCommandResult}
 
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 // Test SQS service that returns what it's given always
 trait TestSqsService extends EngineCommandBus {

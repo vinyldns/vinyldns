@@ -22,10 +22,9 @@ import vinyldns.api.domain.batch
 import vinyldns.api.domain.batch._
 
 import scala.collection.concurrent
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 object InMemoryBatchChangeRepository extends BatchChangeRepository {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isAfter(_))
 
@@ -52,8 +51,7 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
   val logger: Logger = LoggerFactory.getLogger("BatchChangeRepo")
 
   def save(batch: BatchChange): IO[BatchChange] =
-    Future
-      .successful {
+    IO.pure {
         batches.put(batch.id, StoredBatchChange(batch))
         batch.changes.foreach(ch => singleChangesMap.put(ch.id, ch))
       }
@@ -80,8 +78,7 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
     }
 
   def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]] =
-    Future
-      .successful {
+    IO.pure {
         singleChanges.foreach(ch => singleChangesMap.put(ch.id, ch))
       }
       .map(_ => singleChanges)

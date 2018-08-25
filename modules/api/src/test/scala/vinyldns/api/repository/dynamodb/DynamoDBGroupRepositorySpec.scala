@@ -28,7 +28,7 @@ import vinyldns.api.domain.membership.Group
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
-import cats.effect._, cats.effect.implicits._, cats.instances.future._
+import cats.effect._
 
 class DynamoDBGroupRepositorySpec
     extends WordSpec
@@ -196,7 +196,7 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
-      val result = underTest.getGroup(okGroup.id)
+      val result = underTest.getGroup(okGroup.id).unsafeToFuture()
       whenReady(result.failed) { failed =>
         failed shouldBe a[ResourceNotFoundException]
       }
@@ -307,7 +307,7 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val result = underTest.getGroups(listOfDummyGroups.map(_.id).toSet)
+      val result = underTest.getGroups(listOfDummyGroups.map(_.id).toSet).unsafeToFuture()
       whenReady(result.failed) { failed =>
         failed shouldBe a[ResourceNotFoundException]
       }

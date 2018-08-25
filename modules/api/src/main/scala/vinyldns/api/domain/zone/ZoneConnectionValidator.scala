@@ -34,7 +34,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
 
   import ZoneRecordValidations._
 
-  val futureTimeout: FiniteDuration = 6.seconds
+  val opTimeout: FiniteDuration = 6.seconds
 
   def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
@@ -56,7 +56,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(
       loadDns(zone),
-      futureTimeout,
+      opTimeout,
       ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid"))
 
   def hasSOA(records: List[RecordSet], zone: Zone): Result[Unit] = {
