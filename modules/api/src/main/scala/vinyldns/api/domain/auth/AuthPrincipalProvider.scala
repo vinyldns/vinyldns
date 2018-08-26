@@ -31,7 +31,7 @@ class MembershipAuthPrincipalProvider(
 
   def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]] =
     getUserByAccessKey(accessKey).flatMap {
-      case None => IO.pure(None)
+      case None => IO(None)
       case Some(user) =>
         getGroupsForUser(user.id).map { memberships =>
           Option(AuthPrincipal(user, memberships.toSeq))

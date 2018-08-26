@@ -61,7 +61,7 @@ object Interfaces {
     EitherT(IO.race(timeOut, theIo).handleError(e => Left(e)))
   }
 
-  /* Enhances futures to easily lift the io to a Result */
+  /* Enhances IO to easily lift the io to a Result */
   implicit class IOResultImprovements(io: IO[_]) {
 
     /* Lifts a io into a Result */

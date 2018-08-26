@@ -28,13 +28,13 @@ object BatchChangeInterfaces {
   type ValidatedBatch[A] = List[ValidatedNel[DomainValidationError, A]]
   type BatchResult[A] = EitherT[IO, BatchChangeErrorResponse, A]
 
-  implicit class IOBatchResultImprovements[A](fut: IO[A]) {
-    def toBatchResult: BatchResult[A] = EitherT.liftF(fut)
+  implicit class IOBatchResultImprovements[A](theIo: IO[A]) {
+    def toBatchResult: BatchResult[A] = EitherT.liftF(theIo)
   }
 
-  implicit class FutureEitherBatchResultImprovements[A](fut: IO[Either[_, A]]) {
+  implicit class IOEitherBatchResultImprovements[A](theIo: IO[Either[_, A]]) {
     def toBatchResult: BatchResult[A] = EitherT {
-      fut.map {
+      theIo.map {
         case Right(r) => Right(r)
         case Left(err: BatchChangeErrorResponse) => Left(err)
         case Left(x) =>
@@ -73,7 +73,7 @@ object BatchChangeInterfaces {
       validation.map(_ => ())
   }
 
-  implicit class FutureCollectionImprovements[A](value: List[IO[A]]) {
+  implicit class IOCollectionImprovements[A](value: List[IO[A]]) {
     // Pulls out the successful IO from the list; drops IO failures
     def collectSuccesses(): IO[List[A]] = {
       val asSuccessfulOpt: List[IO[Option[A]]] = value.map { f =>
