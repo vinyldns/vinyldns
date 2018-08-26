@@ -21,6 +21,7 @@ import cats.implicits._
 import fs2._
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.{BatchChangeRepository, SingleChange}
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.NoError
 import vinyldns.api.domain.record._
 
@@ -35,7 +36,7 @@ object RecordSetChangeHandler {
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository)(
-      implicit scheduler: Scheduler): (DnsConnector, RecordSetChange) => IO[RecordSetChange] =
+      implicit scheduler: Scheduler): (DnsConnection, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
@@ -49,7 +50,7 @@ object RecordSetChangeHandler {
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository,
-      conn: DnsConnector,
+      conn: DnsConnection,
       recordSetChange: RecordSetChange)(implicit scheduler: Scheduler): IO[RecordSetChange] =
     for {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
@@ -103,13 +104,11 @@ object RecordSetChangeHandler {
   // at which point the response will be returned.
   final case class ReadyToApply(change: RecordSetChange) extends ProcessingStatus
 
-  def getProcessingStatus(
-      change: RecordSetChange,
-      dnsConnector: DnsConnector): IO[ProcessingStatus] = {
+  def getProcessingStatus(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessingStatus] = {
     def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
       dnsResult.exists(_.matches(recordSet, zoneName))
 
-    dnsConnector.dnsResolve(change.recordSet.name, change.zone.name, change.recordSet.typ).map {
+    dnsConn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).value.map {
       case Right(existingRecords) =>
         change.changeType match {
           case RecordSetChangeType.Create =>
@@ -143,7 +142,7 @@ object RecordSetChangeHandler {
     }
   }
 
-  private def fsm(state: ProcessorState, conn: DnsConnector, wildcardExists: Boolean)(
+  private def fsm(state: ProcessorState, conn: DnsConnection, wildcardExists: Boolean)(
       implicit
       scheduler: Scheduler): IO[ProcessorState] = {
 
@@ -201,8 +200,8 @@ object RecordSetChangeHandler {
   }
 
   /* Step 1: Validate the change hasn't already been applied */
-  private def validate(change: RecordSetChange, dnsConnector: DnsConnector): IO[ProcessorState] =
-    getProcessingStatus(change, dnsConnector).map {
+  private def validate(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
+    getProcessingStatus(change, dnsConn).map {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
@@ -211,8 +210,8 @@ object RecordSetChangeHandler {
     }
 
   /* Step 2: Apply the change to the dns backend */
-  private def apply(change: RecordSetChange, dnsConnector: DnsConnector): IO[ProcessorState] =
-    dnsConnector.dnsUpdate(change).map {
+  private def apply(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] =
+    dnsConn.applyChange(change).value.map {
       case Right(_: NoError) =>
         Applied(change)
       case Left(error) =>
@@ -221,9 +220,9 @@ object RecordSetChangeHandler {
     }
 
   /* Step 3: Verify the record was created.  We attempt 12 times over 6 seconds */
-  private def verify(change: RecordSetChange, dnsConnector: DnsConnector): IO[ProcessorState] = {
+  private def verify(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessorState] = {
     def loop(retries: Int = 11): IO[ProcessorState] =
-      getProcessingStatus(change, dnsConnector).flatMap {
+      getProcessingStatus(change, dnsConn).flatMap {
         case AlreadyApplied(_) => IO.pure(Completed(change.successful))
         case ReadyToApply(_) if retries <= 0 =>
           IO.pure(Completed(change.failed(s"""Failed verifying update to DNS for

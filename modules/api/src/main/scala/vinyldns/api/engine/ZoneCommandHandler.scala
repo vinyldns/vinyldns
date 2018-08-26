@@ -24,7 +24,9 @@ import com.typesafe.config.Config
 import fs2._
 import fs2.async.mutable.Signal
 import org.slf4j.LoggerFactory
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.batch.BatchChangeRepository
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.api.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeType, ZoneRepository}
 import vinyldns.api.engine.sqs.SqsConnection
@@ -173,7 +175,7 @@ object ZoneCommandHandler {
   /* Actually processes a change request */
   def processChangeRequests(
       zoneChangeProcessor: ZoneChange => IO[ZoneChange],
-      recordChangeProcessor: (DnsConnector, RecordSetChange) => IO[RecordSetChange],
+      recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange]): Pipe[IO, ChangeRequest, MessageOutcome] =
     _.evalMap[MessageOutcome] {
       case zsr @ ZoneSyncRequest(_, _) =>
@@ -190,8 +192,9 @@ object ZoneCommandHandler {
         outcomeOf(zcr)(zoneChangeProcessor(zcr.zoneChange))
 
       case rcr @ RecordChangeRequest(_, _) =>
-        val dnsConnector = DnsConnector(rcr.recordSetChange.zone)
-        outcomeOf(rcr)(recordChangeProcessor(dnsConnector, rcr.recordSetChange))
+        val dnsConn = DnsConnection(
+          rcr.recordSetChange.zone.connection.getOrElse(VinylDNSConfig.defaultZoneConnection))
+        outcomeOf(rcr)(recordChangeProcessor(dnsConn, rcr.recordSetChange))
     }
 
   private def outcomeOf[A](changeRequest: ChangeRequest)(p: => IO[A]): IO[MessageOutcome] =
