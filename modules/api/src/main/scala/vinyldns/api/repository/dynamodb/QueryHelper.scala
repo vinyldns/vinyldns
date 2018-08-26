@@ -194,7 +194,7 @@ trait QueryHelper {
     dynamoDbHelper.query(dynamoQuery.build()).flatMap { queryResult =>
       val accumulatedResults = acc.addResult(queryResult)
       if (accumulatedResults.isComplete(limit))
-        IO.pure(accumulatedResults.trimTo(limit))
+        IO(accumulatedResults.trimTo(limit))
       else
         completeQuery(
           dynamoDbHelper,

@@ -127,15 +127,11 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
         monitor("repo.ZoneJDBC.save") {
           IO {
             DB.localTx { implicit s =>
-              for {
-                _ <- Either.catchNonFatal(deleteZoneAccess(zone))
-                _ <- Either.catchNonFatal(putZone(zone))
-                _ <- Either.catchNonFatal(putZoneAccess(zone))
-              } yield zone
+              deleteZoneAccess(zone)
+              putZone(zone)
+              putZoneAccess(zone)
+              zone
             }
-          }.flatMap {
-            case Right(ok) => IO(ok)
-            case Left(e) => IO.raiseError(e)
           }
         }
     }
