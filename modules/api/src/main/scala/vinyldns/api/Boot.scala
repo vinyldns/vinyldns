@@ -59,7 +59,7 @@ object Boot extends App {
     for {
       banner <- vinyldnsBanner()
       _ <- Crypto.loadCrypto(VinylDNSConfig.cryptoConfig) // load crypto
-      repositories <- new DataStoreLoader().loadAll(VinylDNSConfig.dataStoreConfig)
+      repositories <- DataStoreLoader.loadAll(VinylDNSConfig.dataStoreConfig)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))

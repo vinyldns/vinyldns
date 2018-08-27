@@ -23,7 +23,7 @@ import vinyldns.api.repository.{DataStore, DataStoreConfig, DataStoreProvider}
 class MySqlDataStoreProvider extends DataStoreProvider {
   def load(config: DataStoreConfig): IO[DataStore] =
     IO(new VinylDNSJDBC(config.settings)).map { instance =>
-      DataStore(
+      new DataStore(
         zoneRepository = Some(instance.zoneRepository),
         batchChangeRepository = Some(instance.batchChangeRepository))
     }

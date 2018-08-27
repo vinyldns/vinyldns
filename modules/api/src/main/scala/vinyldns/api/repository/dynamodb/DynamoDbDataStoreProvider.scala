@@ -40,7 +40,7 @@ class DynamoDbDataStoreProvider extends DataStoreProvider {
       recordChangeRepo <- IO(RecordChangeRepository())
       zoneChangeRepo <- IO(ZoneChangeRepository())
     } yield
-      DataStore(
+      new DataStore(
         Some(userRepo),
         Some(groupRepo),
         Some(membershipRepo),
