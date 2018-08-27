@@ -61,13 +61,6 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
       config.getInt("dynamo.provisionedWrites") shouldBe 30
     }
 
-    "load the account store config" in {
-      val config = VinylDNSConfig.accountStoreConfig
-      config.getString("dynamo.key") shouldBe "dynamoKey"
-      config.getString("dynamo.secret") shouldBe "dynamoSecret"
-      config.getString("dynamo.endpoint") shouldBe "dynamoEndpoint"
-    }
-
     "load the group repository config" in {
       val config = VinylDNSConfig.groupsStoreConfig
       config.getString("dynamo.tableName") shouldBe "groups"

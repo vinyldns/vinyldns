@@ -17,11 +17,11 @@
 package vinyldns.api.domain.zone
 
 import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.repository.mysql.VinylDNSJDBC
+import vinyldns.api.repository.Repository
 
 import scala.concurrent.Future
 
-trait ZoneRepository {
+trait ZoneRepository extends Repository {
 
   def save(zone: Zone): Future[Zone]
 
@@ -41,8 +41,4 @@ trait ZoneRepository {
 
   def getZonesByAdminGroupId(adminGroupId: String): Future[List[Zone]]
 
-}
-
-object ZoneRepository {
-  def apply(): ZoneRepository = VinylDNSJDBC.instance.zoneRepository
 }

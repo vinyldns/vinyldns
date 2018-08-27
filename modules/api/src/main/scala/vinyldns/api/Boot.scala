@@ -25,18 +25,13 @@ import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.batch.{
-  BatchChangeConverter,
-  BatchChangeRepository,
-  BatchChangeService,
-  BatchChangeValidations
-}
+import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
-import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository, RecordSetService}
+import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
-import vinyldns.api.repository.mysql.VinylDNSJDBC
+import vinyldns.api.repository.DataStoreLoader
 import vinyldns.api.route.{HealthService, VinylDNSService}
 import vinyldns.core.crypto.Crypto
 
@@ -64,16 +59,7 @@ object Boot extends App {
     for {
       banner <- vinyldnsBanner()
       _ <- Crypto.loadCrypto(VinylDNSConfig.cryptoConfig) // load crypto
-      _ <- IO(VinylDNSJDBC.instance) // initializes our JDBC repositories
-      userRepo <- IO(UserRepository())
-      groupRepo <- IO(GroupRepository())
-      membershipRepo <- IO(MembershipRepository())
-      zoneRepo <- IO(ZoneRepository())
-      groupChangeRepo <- IO(GroupChangeRepository())
-      recordSetRepo <- IO(RecordSetRepository())
-      recordChangeRepo <- IO(RecordChangeRepository())
-      zoneChangeRepo <- IO(ZoneChangeRepository())
-      batchChangeRepo <- IO(BatchChangeRepository())
+      repositories <- DataStoreLoader.loadAll(VinylDNSConfig.dataStoreConfig)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))
@@ -86,44 +72,32 @@ object Boot extends App {
         ProductionZoneCommandHandler.run(
           sqsConnection,
           processingSignal,
-          zoneRepo,
-          zoneChangeRepo,
-          recordChangeRepo,
-          recordSetRepo,
-          batchChangeRepo,
-          sqsConfig))
+          repositories.zoneRepository,
+          repositories.zoneChangeRepository,
+          repositories.recordChangeRepository,
+          repositories.recordSetRepository,
+          repositories.batchChangeRepository,
+          sqsConfig
+        ))
     } yield {
       val zoneValidations = new ZoneValidations(syncDelay)
       val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
       val commandBus = new SqsCommandBus(sqsConnection)
-      val membershipService =
-        new MembershipService(groupRepo, userRepo, membershipRepo, zoneRepo, groupChangeRepo)
+      val membershipService = MembershipService(repositories)
       val connectionValidator =
         new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection, system.scheduler)
-      val recordSetService = new RecordSetService(
-        zoneRepo,
-        recordSetRepo,
-        recordChangeRepo,
-        userRepo,
-        commandBus,
-        AccessValidations)
-      val zoneService = new ZoneService(
-        zoneRepo,
-        groupRepo,
-        userRepo,
-        zoneChangeRepo,
+      val recordSetService = RecordSetService(repositories, commandBus, AccessValidations)
+      val zoneService = ZoneService(
+        repositories,
         connectionValidator,
         commandBus,
         zoneValidations,
         AccessValidations)
-      val healthService = new HealthService(zoneRepo)
-      val batchChangeConverter = new BatchChangeConverter(batchChangeRepo, commandBus)
-      val batchChangeService = new BatchChangeService(
-        zoneRepo,
-        recordSetRepo,
-        batchChangeValidations,
-        batchChangeRepo,
-        batchChangeConverter)
+      val healthService = new HealthService(repositories.zoneRepository)
+      val batchChangeConverter =
+        new BatchChangeConverter(repositories.batchChangeRepository, commandBus)
+      val batchChangeService =
+        BatchChangeService(repositories, batchChangeValidations, batchChangeConverter)
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
         membershipService,

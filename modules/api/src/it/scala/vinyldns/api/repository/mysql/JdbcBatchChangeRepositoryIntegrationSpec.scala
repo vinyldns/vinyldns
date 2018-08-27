@@ -150,7 +150,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
   import TestData._
 
   override protected def beforeAll(): Unit =
-    repo = VinylDNSJDBC.instance.batchChangeRepository
+    repo = VinylDNSJDBCTestDb.instance.batchChangeRepository
 
   override protected def beforeEach(): Unit =
     DB.localTx { s =>

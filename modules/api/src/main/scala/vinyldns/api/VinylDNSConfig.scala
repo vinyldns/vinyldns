@@ -18,26 +18,42 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
 import vinyldns.api.domain.zone.ZoneConnection
+import vinyldns.api.repository.DataStoreConfig
 
 object VinylDNSConfig {
 
   lazy val config: Config = ConfigFactory.load()
   lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
-  lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamo")
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
-  lazy val accountStoreConfig: Config = vinyldnsConfig.getConfig("accounts")
-  lazy val zoneChangeStoreConfig: Config = vinyldnsConfig.getConfig("zoneChanges")
-  lazy val recordSetStoreConfig: Config = vinyldnsConfig.getConfig("recordSet")
-  lazy val recordChangeStoreConfig: Config = vinyldnsConfig.getConfig("recordChange")
-  lazy val usersStoreConfig: Config = vinyldnsConfig.getConfig("users")
-  lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("groups")
-  lazy val groupChangesStoreConfig: Config = vinyldnsConfig.getConfig("groupChanges")
-  lazy val membershipStoreConfig: Config = vinyldnsConfig.getConfig("membership")
-  lazy val dbConfig: Config = vinyldnsConfig.getConfig("db")
+  lazy val dataStoreConfig: List[DataStoreConfig] =
+    vinyldnsConfig.getStringList("data-stores").asScala.toList.map { configKey =>
+      pureconfig.loadConfigOrThrow[DataStoreConfig](vinyldnsConfig, configKey)
+    }
+
+  // TODO dynamo config direct access like this will be removed with pluggable repos work completion
+  val dynamoConfigBase: DataStoreConfig =
+    pureconfig.loadConfigOrThrow[DataStoreConfig]("vinyldns.dynamodb")
+  lazy val dynamoConfig: Config = dynamoConfigBase.settings
+
+  // TODO these throws will be removed once dynamo dynamically loading
+  lazy val zoneChangeStoreConfig: Config =
+    vinyldnsConfig.getConfig("dynamodb.repositories.zone-change")
+  lazy val recordSetStoreConfig: Config =
+    vinyldnsConfig.getConfig("dynamodb.repositories.record-set")
+  lazy val recordChangeStoreConfig: Config =
+    vinyldnsConfig.getConfig("dynamodb.repositories.record-change")
+  lazy val usersStoreConfig: Config = vinyldnsConfig.getConfig("dynamodb.repositories.user")
+  lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("dynamodb.repositories.group")
+  lazy val groupChangesStoreConfig: Config =
+    vinyldnsConfig.getConfig("dynamodb.repositories.group-change")
+  lazy val membershipStoreConfig: Config =
+    vinyldnsConfig.getConfig("dynamodb.repositories.membership")
+
   lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
