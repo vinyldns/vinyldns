@@ -45,9 +45,13 @@ trait ResultHelpers {
       f: => IO[Either[Throwable, T]],
       duration: FiniteDuration = 1.second): Either[Throwable, T] = {
 
-    val timeOut = IO.sleep(duration) *> IO(TimeoutException("Timed out waiting for result").asInstanceOf[Throwable])
+    val timeOut = IO.sleep(duration) *> IO(
+      TimeoutException("Timed out waiting for result").asInstanceOf[Throwable])
 
-    IO.race(timeOut, f.handleError(e => Left(e))).unsafeRunSync()
+    IO.race(timeOut, f.handleError(e => Left(e))).unsafeRunSync() match {
+      case Left(e) => Left(e)
+      case Right(ok) => ok
+    }
   }
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
