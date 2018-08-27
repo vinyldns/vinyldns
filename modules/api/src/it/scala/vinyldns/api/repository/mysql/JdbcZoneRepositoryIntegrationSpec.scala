@@ -47,7 +47,7 @@ class JdbcZoneRepositoryIntegrationSpec
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   override protected def beforeAll(): Unit =
-    repo = VinylDNSJDBC.instance.zoneRepository
+    repo = VinylDNSJDBCTestDb.instance.zoneRepository
 
   override protected def beforeEach(): Unit =
     DB.localTx { s =>

@@ -28,8 +28,23 @@ import vinyldns.api.domain.record.RecordSetRepository
 import vinyldns.api.domain.record.RecordType._
 import vinyldns.api.domain.zone.ZoneRepository
 import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
+import vinyldns.api.repository.DataAccessor
 
 import scala.concurrent.{ExecutionContext, Future}
+
+object BatchChangeService {
+  def apply(
+      repositories: DataAccessor,
+      batchChangeValidations: BatchChangeValidations,
+      batchChangeConverter: BatchChangeConverterAlgebra)(
+      implicit ec: ExecutionContext): BatchChangeService =
+    new BatchChangeService(
+      repositories.zoneRepository,
+      repositories.recordSetRepository,
+      batchChangeValidations,
+      repositories.batchChangeRepository,
+      batchChangeConverter)
+}
 
 class BatchChangeService(
     zoneRepository: ZoneRepository,
