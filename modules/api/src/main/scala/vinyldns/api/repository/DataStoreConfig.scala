@@ -35,16 +35,17 @@ final case class RepositoriesConfig(
     zone: Option[Config],
     batchChange: Option[Config]) {
 
-  def asMap: Map[RepositoryName, Config] =
-    List(
-      user.map(RepositoryName.user -> _),
-      group.map(RepositoryName.group -> _),
-      membership.map(RepositoryName.membership -> _),
-      groupChange.map(RepositoryName.groupChange -> _),
-      recordSet.map(RepositoryName.recordSet -> _),
-      recordChange.map(RepositoryName.recordChange -> _),
-      zoneChange.map(RepositoryName.zoneChange -> _),
-      zone.map(RepositoryName.zone -> _),
-      batchChange.map(RepositoryName.batchChange -> _)
-    ).flatten.toMap
+  lazy val configMap: Map[RepositoryName, Config] = List(
+    user.map(RepositoryName.user -> _),
+    group.map(RepositoryName.group -> _),
+    membership.map(RepositoryName.membership -> _),
+    groupChange.map(RepositoryName.groupChange -> _),
+    recordSet.map(RepositoryName.recordSet -> _),
+    recordChange.map(RepositoryName.recordChange -> _),
+    zoneChange.map(RepositoryName.zoneChange -> _),
+    zone.map(RepositoryName.zone -> _),
+    batchChange.map(RepositoryName.batchChange -> _)
+  ).flatten.toMap
+
+  def asMap: Map[RepositoryName, Config] = configMap
 }

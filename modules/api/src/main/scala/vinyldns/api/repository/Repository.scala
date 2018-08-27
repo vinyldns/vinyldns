@@ -23,4 +23,3 @@ object RepositoryName extends Enumeration {
   val user, group, membership, groupChange, recordSet, recordChange, zoneChange, zone, batchChange =
     Value
 }
-

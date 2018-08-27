@@ -35,7 +35,8 @@ class DataStore(
     val zoneRepository: Option[ZoneRepository] = None,
     val batchChangeRepository: Option[BatchChangeRepository] = None
 ) {
-  def asMap: Map[RepositoryName, Repository] =
+
+  lazy val dataStoreMap: Map[RepositoryName, Repository] =
     List(
       userRepository.map(RepositoryName.user -> _),
       groupRepository.map(RepositoryName.group -> _),
@@ -47,6 +48,8 @@ class DataStore(
       zoneRepository.map(RepositoryName.zone -> _),
       batchChangeRepository.map(RepositoryName.batchChange -> _)
     ).flatten.toMap
+
+  def asMap: Map[RepositoryName, Repository] = dataStoreMap
 }
 
 final case class DataAccessor(

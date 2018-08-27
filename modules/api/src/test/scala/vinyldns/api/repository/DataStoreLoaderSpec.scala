@@ -17,7 +17,7 @@
 package vinyldns.api.repository
 
 import cats.scalatest.EitherValues
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
 import vinyldns.api.domain.batch.BatchChangeRepository
@@ -34,7 +34,7 @@ import scala.collection.JavaConverters._
 
 class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with EitherValues {
 
-  val placeholderConfig = ConfigFactory.parseMap(Map[String, String]().asJava)
+  val placeholderConfig: Config = ConfigFactory.parseMap(Map[String, String]().asJava)
   val enabled = Some(placeholderConfig)
 
   val allEnabledReposConfig = RepositoriesConfig(
@@ -112,7 +112,7 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
       val outcome = DataStoreLoader.getValidatedConfigs(List(config1, config2, emptyConfig))
       outcome.value should contain(config1)
       outcome.value should contain(config2)
-      outcome.value should not contain (emptyConfig)
+      outcome.value should not contain emptyConfig
     }
     "fail if any config is defined multiple times" in {
       val config1 = goodConfig.copy(repositories = allEnabledReposConfig)
