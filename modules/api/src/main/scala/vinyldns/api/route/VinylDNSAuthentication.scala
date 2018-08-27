@@ -91,7 +91,7 @@ trait VinylDNSAuthentication extends Monitored {
       content: String): IO[Unit] =
     authHeaderRegex match {
       case auth if authenticator.authenticateReq(req, auth.subgroups, secretKey, content) =>
-        IO.pure(())
+        IO.unit
       case _ =>
         IO.raiseError(AuthRejected(s"Request signature could not be validated"))
     }

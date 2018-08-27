@@ -145,7 +145,7 @@ object ZoneCommandHandler {
         )
 
       case _ =>
-        IO.pure(())
+        IO.unit
     }.map(_ => ())
 
   /* Converts a Stream of RMR to a Stream of Streams, each containing a finite list of Messages */
@@ -227,7 +227,7 @@ object ZoneCommandHandler {
         // sqs queues are setup to retry 100 times before dead-lettering the change
         logger.error(
           s"Message failed, not deleting so it can be retried; messageId=${msg.getReceiptHandle}")
-        IO.pure(())
+        IO.unit
     }.map(_ => ())
 
 }

@@ -107,7 +107,7 @@ class JdbcZoneRepositoryIntegrationSpec
     okZone.copy(name = name, id = UUID.randomUUID().toString, adminGroupId = adminGroupId)
 
   private def saveZones(zones: Seq[Zone]): IO[Unit] =
-    zones.foldLeft(IO.pure(())) {
+    zones.foldLeft(IO.unit) {
       case (acc, cur) =>
         acc.flatMap { _ =>
           repo.save(cur).map(_ => ())
