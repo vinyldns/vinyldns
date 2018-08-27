@@ -124,6 +124,33 @@ class VinylDNSSpec extends Specification with Mockito {
       }
     }
 
+    ".regenerateCreds" should {
+      "change the access key and secret for the current user" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        userAccessor.get(anyString).returns(Success(Some(frodoAccount)))
+        userAccessor.get("frodo").returns(Success(Some(frodoAccount)))
+
+        val vinyldnsPortal =
+          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+        val result = vinyldnsPortal
+          .regenerateCreds()
+          .apply(
+            FakeRequest(POST, "/regenerate-creds").withSession(
+              "username" -> frodoAccount.username,
+              "accessKey" -> frodoAccount.accessKey))
+
+        status(result) must beEqualTo(200)
+
+        session(result).get("username") must beSome(frodoAccount.username)
+        (session(result).get("accessKey") must not).beSome(frodoAccount.accessKey)
+      }
+    }
+
     ".login" should {
       "if login is correct with a valid key" should {
         "call the authenticator and the account accessor" in new WithApplication(app) {

@@ -247,29 +247,29 @@ class VinylDNS @Inject()(
 
   def regenerateCreds(): Action[AnyContent] = Action.async { implicit request =>
     withAuthenticatedUser { username =>
-      Future
-        .fromTry {
-          for {
-            userDetails <- userAccountAccessor.get(username)
-            updatedDetails = UserAccount.regenerateCredentials(userDetails.get)
-            updatedUser <- userAccountAccessor.put(updatedDetails)
-          } yield {
-            auditLogAccessor.log(
-              UserChangeMessage(
-                updatedUser.userId,
-                updatedUser.username,
-                DateTime.now(),
-                ChangeType("updated"),
-                updatedUser,
-                userDetails))
-            Logger.info(s"Credentials successfully regenerated for ${updatedDetails.username}")
-            Status(200)("Successfully regenerated credentials")
-              .withSession(
-                "username" -> updatedDetails.username,
-                "accessKey" -> updatedDetails.accessKey)
-          }
-        }
+      userAccountAccessor.get(username) match {
+        case Success(Some(account)) => Future(processRegenerate(account))
+        case Success(None) =>
+          throw new UnsupportedOperationException(s"Error - User account for $username not found")
+        case Failure(ex) => throw ex
+      }
     }
+  }
+
+  def processRegenerate(oldAccount: UserAccount): Result = {
+    val account = oldAccount.regenerateCredentials()
+    userAccountAccessor.put(account)
+    auditLogAccessor.log(
+      UserChangeMessage(
+        account.userId,
+        account.username,
+        DateTime.now(),
+        ChangeType("updated"),
+        account,
+        Some(oldAccount)))
+    Logger.info(s"Credentials successfully regenerated for ${account.username}")
+    Status(200)("Successfully regenerated credentials")
+      .withSession("username" -> account.username, "accessKey" -> account.accessKey)
   }
 
   private def createNewUser(details: UserDetails): Try[UserAccount] = {

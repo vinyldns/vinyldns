@@ -48,7 +48,7 @@ class UserAccountSpec extends Specification with Mockito {
       val email = Some("fb@hobbitmail.me")
 
       val result = UserAccount(username, fname, lname, email)
-      val newResult = UserAccount.regenerateCredentials(result)
+      val newResult = result.regenerateCredentials()
 
       newResult must beAnInstanceOf[UserAccount]
       UUID.fromString(newResult.userId) must beAnInstanceOf[UUID]
