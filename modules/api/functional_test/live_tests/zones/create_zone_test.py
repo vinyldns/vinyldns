@@ -33,9 +33,12 @@ records_in_dns = [
      'records': [{u'address': u'5.5.5.5'}]},
     {'name': u'already-exists',
      'type': u'A',
-     'records': [{u'address': u'6.6.6.6'}]}]
+     'records': [{u'address': u'6.6.6.6'}]},
+    {'name': u'vinyldns-test',
+     'type': u'TXT',
+     'records': [{u'text': u'random existing text'}]}]
 
-def test_create_zone_success(shared_zone_test_context):
+def test_create_zone_success_with_existing_test_ddns_record(shared_zone_test_context):
     """
     Test successfully creating a zone
     """
@@ -77,15 +80,40 @@ def test_create_zone_success(shared_zone_test_context):
         # confirm that the recordsets in DNS have been saved in vinyldns
         recordsets = client.list_recordsets(result_zone['id'])['recordSets']
 
-        assert_that(len(recordsets), is_(7))
+        assert_that(len(recordsets), is_(len(records_in_dns)))
         for rs in recordsets:
             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
             small_rs['records'] = sorted(small_rs['records'])
-            assert_that(records_in_dns, has_item(small_rs))
+            if small_rs['type'] == 'SOA':
+                assert_that(small_rs['name'], is_('one-time.'))
+            else:
+                assert_that(records_in_dns, has_item(small_rs))
 
     finally:
         if result_zone:
             client.abandon_zones([result_zone['id']], status=202)
+
+def test_create_zone_with_unauthorized_tsig_key_fails(shared_zone_test_context):
+    """
+    Test that creating a zone with a TSIG key that is not primed for allowing updates fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone_name = 'one-time'
+
+    zone = {
+        'name': zone_name,
+        'email': 'test@test.com',
+        'adminGroupId': shared_zone_test_context.ok_group['id'],
+        'connection': {
+            'name': 'vinyldns-no-updates',
+            'keyName': VinylDNSTestContext.dns_no_updates_key_name,
+            'key': VinylDNSTestContext.dns_no_updates_key,
+            'primaryServer': VinylDNSTestContext.dns_ip
+        }
+    }
+    error = client.create_zone(zone, status=400)
+    assert_that(error, starts_with('Unable to test DDNS connectivity to zone'))
 
 
 @pytest.mark.skip_production

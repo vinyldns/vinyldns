@@ -5,6 +5,8 @@ class VinylDNSTestContext:
     dns_rev_v6_zone_name = '1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.'
     dns_key_name = 'vinyldns.'
     dns_key = 'nzisn+4G2ldMn0q1CV3vsg=='
+    dns_no_updates_key_name = 'vinyldns-no-updates'
+    dns_no_updates_key = 'BjI47RjxzSQyOktSnmbD4A=='
     vinyldns_url = 'http://localhost:9000'
 
     @staticmethod

@@ -11,6 +11,11 @@ key "vinyldns." {
   secret "nzisn+4G2ldMn0q1CV3vsg==";
 };
 
+key "vinyldns-no-updates" {
+	algorithm hmac-md5;
+	secret "BjI47RjxzSQyOktSnmbD4A==";
+};
+
 // Consider adding the 1918 zones here, if they are not used in your
 // organization
 //include "/etc/bind/zones.rfc1918";
