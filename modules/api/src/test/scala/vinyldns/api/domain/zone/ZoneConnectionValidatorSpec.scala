@@ -76,6 +76,12 @@ class ZoneConnectionValidatorSpec
     override val opTimeout: FiniteDuration = 10.milliseconds
     override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
+    override def testDdnsConnectivity(dnsConnection: DnsConnection, zone: Zone): Result[Unit] =
+      if (zone == testZone) {
+        ().toResult
+      } else {
+        Left(ConnectionFailed(zone, s"DDNS connection failed").asInstanceOf[Throwable]).toResult
+      }
   }
 
   private val underTest = new TestConnectionValidator()
@@ -133,6 +139,20 @@ class ZoneConnectionValidatorSpec
 
       val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
       result should be(right)
+    }
+
+    "respond with a failure if DDNS connectivity fails" in {
+      val failedDdnsConnectionZone = testZone.copy(name = "failed DDNS connection")
+      doReturn(failedDdnsConnectionZone).when(mockZoneView).zone
+      doReturn(generateZoneView(failedDdnsConnectionZone, successSoa, successNS).recordSetsMap)
+        .when(mockZoneView)
+        .recordSetsMap
+      doReturn(List(successSoa).toResult)
+        .when(mockDnsConnection)
+        .resolve(failedDdnsConnectionZone.name, failedDdnsConnectionZone.name, RecordType.SOA)
+
+      val result = awaitResultOf(underTest.validateZoneConnections(failedDdnsConnectionZone).value)
+      result shouldBe Left(ConnectionFailed(failedDdnsConnectionZone, "DDNS connection failed"))
     }
 
     "respond with a failure if NS records are not in the approved server list" in {
