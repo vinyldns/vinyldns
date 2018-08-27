@@ -7,7 +7,14 @@ section: "api"
 # Create Zone
 
 Connects user to an existing zone. User must be a member of the group that has access to the zone. Connection info is optional,
-if no info is provided the default VinylDNS connections will be used
+if no info is provided the default VinylDNS connections will be used. 
+
+When attempting a zone connection, VinylDNS will attempt to perform a DDNS delete and add of a `TXT` record with name 
+`vinyldns-ddns-connectivity-test` in the zone. Upon success, the record will be kept in the zone; upon failure, zone connection
+will fail and an appropriate response will be returned to the user.
+
+Note: if there are any changes that are made to this `vinyldns-ddns-connectivity-test` record, they will be discarded the next time 
+a user connects to the zone since VinylDNS will perform the DDNS delete and add of the record. 
 
 #### HTTP REQUEST
 
