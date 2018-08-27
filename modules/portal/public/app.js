@@ -15,7 +15,7 @@ angular.module('vinyldns', [
         //turning off $log
         $logProvider.debugEnabled(false);
     })
-    .controller('AppController', function ($scope, profileService, utilityService) {
+    .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
         document.body.style.cursor = 'default';
         $scope.alerts = [];
 
@@ -27,12 +27,19 @@ angular.module('vinyldns', [
                     document.body.style.cursor = 'default';
                     $("#mb-creds").modal('hide');
                     $scope.alerts.push(alert);
+                    $timeout(function(){
+                        location.reload();
+                     }, 2000);
                 })
                 .catch(function(error){
                     var alert = utilityService.failure(error, 'profileService::regenerateCredentials-failure');
                     document.body.style.cursor = 'default';
                     $("#mb-creds").modal('hide');
+                    location.reload();
                     $scope.alerts.push(alert);
+                    $timeout(function(){
+                        location.reload();
+                     }, 2000);
                 });
         };
     });
