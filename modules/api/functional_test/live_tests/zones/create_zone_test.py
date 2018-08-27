@@ -34,9 +34,9 @@ records_in_dns = [
     {'name': u'already-exists',
      'type': u'A',
      'records': [{u'address': u'6.6.6.6'}]},
-    {'name': u'vinyldns-test',
+    {'name': u'vinyldns-ddns-connectivity-test',
      'type': u'TXT',
-     'records': [{u'text': u'random existing text'}]}]
+     'records': [{u'text': u'connection test'}]}]
 
 def test_create_zone_success_with_existing_test_ddns_record(shared_zone_test_context):
     """

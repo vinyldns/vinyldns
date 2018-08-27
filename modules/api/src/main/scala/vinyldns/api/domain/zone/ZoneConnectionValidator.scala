@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.domain.dns.DnsProtocol.{NameNotFound, RecordSetNotFound}
 import vinyldns.api.domain.record.{RecordSet, RecordSetChange, RecordSetStatus, RecordType, TXTData}
 
 import scala.concurrent.duration._
@@ -71,31 +72,21 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
   def testDdnsConnectivity(dnsConnection: DnsConnection, zone: Zone): Result[Unit] = {
     val rs = RecordSet(
       zone.id,
-      "vinyldns-test",
+      "vinyldns-ddns-connectivity-test",
       RecordType.TXT,
-      30,
+      86400,
       RecordSetStatus.Pending,
       DateTime.now,
       records = List(TXTData("connection test")))
 
-    def performDdnsChecks(rsList: List[RecordSet]): Result[Unit] =
-      if (rsList.isEmpty) {
-        // Perform add then delete of test record
-        for {
-          _ <- dnsConnection.applyChange(RecordSetChange.forAdd(rs, zone))
-          _ <- dnsConnection.applyChange(RecordSetChange.forDelete(rs, zone))
-        } yield ()
-      } else {
-        // Perform delete then add of existing record
-        for {
-          _ <- dnsConnection.applyChange(RecordSetChange.forDelete(rs, zone))
-          _ <- dnsConnection.applyChange(RecordSetChange.forAdd(rsList.head, zone))
-        } yield ()
-      }
-
     val result = for {
-      existingRs <- dnsConnection.resolve(rs.name, zone.name, RecordType.TXT) // Resolve record sets
-      _ <- performDdnsChecks(existingRs)
+      _ <- dnsConnection
+        .applyChange(RecordSetChange.forDelete(rs, zone))
+        .map(_ => ())
+        .recover {
+          case _: RecordSetNotFound | _: NameNotFound => ()
+        }
+      _ <- dnsConnection.applyChange(RecordSetChange.forAdd(rs, zone))
     } yield ()
 
     result.leftMap {

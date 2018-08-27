@@ -21,6 +21,10 @@ def pytest_addoption(parser):
                      help="The name of the key used to sign updates for the zone")
     parser.addoption("--dns-key", dest="dns_key", action="store", default="nzisn+4G2ldMn0q1CV3vsg==",
                      help="The tsig key")
+    parser.addoption("--dns-no-updates-key-name", dest="dns_no_updates_key_name", action="store",
+                     default="vinyldns-no-updates", help="DDNS test TSIG key name")
+    parser.addoption("--dns-no-updates-key", dest="dns_no_updates_key", action="store",
+                     default="BjI47RjxzSQyOktSnmbD4A==", help="DDNS test TSIG key")
 
     # optional
     parser.addoption("--basic-auth", dest="basic_auth_creds",

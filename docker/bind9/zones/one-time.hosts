@@ -12,4 +12,4 @@ test             IN  A   3.3.3.3
 test             IN  A   4.4.4.4
 @                IN  A   5.5.5.5
 already-exists   IN  A   6.6.6.6
-vinyldns-test    IN  TXT "random existing text"
+vinyldns-ddns-connectivity-test    IN  TXT "random existing text"

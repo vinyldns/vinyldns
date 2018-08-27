@@ -19,11 +19,13 @@ package vinyldns.api.domain.zone
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.xbill.DNS.Message
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
+import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.api.domain.record._
 import vinyldns.api.{AkkaTestJawn, ResultHelpers, VinylDNSTestData}
 
@@ -80,7 +82,7 @@ class ZoneConnectionValidatorSpec
       if (zone == testZone) {
         ().toResult
       } else {
-        Left(ConnectionFailed(zone, s"DDNS connection failed").asInstanceOf[Throwable]).toResult
+        Left(ConnectionFailed(zone, Refused("refused").getMessage)).toResult
       }
   }
 
@@ -136,6 +138,43 @@ class ZoneConnectionValidatorSpec
       doReturn(List(successSoa).toResult)
         .when(mockDnsConnection)
         .resolve(testZone.name, testZone.name, RecordType.SOA)
+      doReturn(NoError(mock[Message]).toResult)
+        .when(mockDnsConnection)
+        .applyChange(any[RecordSetChange])
+
+      val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
+      result should be(right)
+    }
+
+    "respond with a success if DDNS connectivity test returns NXDOMAIN on delete" in {
+      doReturn(testZone).when(mockZoneView).zone
+      doReturn(generateZoneView(testZone, successSoa, successNS).recordSetsMap)
+        .when(mockZoneView)
+        .recordSetsMap
+      doReturn(List(successSoa).toResult)
+        .when(mockDnsConnection)
+        .resolve(testZone.name, testZone.name, RecordType.SOA)
+      doReturn(Left(NameNotFound("Non-existent zone.")).toResult)
+        .doReturn(NoError(mock[Message]).toResult)
+        .when(mockDnsConnection)
+        .applyChange(any[RecordSetChange])
+
+      val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
+      result should be(right)
+    }
+
+    "respond with a success if DDNS connectivity test returns NXRRSET on delete" in {
+      doReturn(testZone).when(mockZoneView).zone
+      doReturn(generateZoneView(testZone, successSoa, successNS).recordSetsMap)
+        .when(mockZoneView)
+        .recordSetsMap
+      doReturn(List(successSoa).toResult)
+        .when(mockDnsConnection)
+        .resolve(testZone.name, testZone.name, RecordType.SOA)
+      doReturn(Left(RecordSetNotFound("vinyldns-ddns-connectivity-test")).toResult)
+        .doReturn(NoError(mock[Message]).toResult)
+        .when(mockDnsConnection)
+        .applyChange(any[RecordSetChange])
 
       val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
       result should be(right)
@@ -150,9 +189,13 @@ class ZoneConnectionValidatorSpec
       doReturn(List(successSoa).toResult)
         .when(mockDnsConnection)
         .resolve(failedDdnsConnectionZone.name, failedDdnsConnectionZone.name, RecordType.SOA)
+      doReturn(Left(Refused("refused")).toResult)
+        .when(mockDnsConnection)
+        .applyChange(any[RecordSetChange])
 
       val result = awaitResultOf(underTest.validateZoneConnections(failedDdnsConnectionZone).value)
-      result shouldBe Left(ConnectionFailed(failedDdnsConnectionZone, "DDNS connection failed"))
+      result shouldBe Left(
+        ConnectionFailed(failedDdnsConnectionZone, s"${Refused("refused").getMessage}"))
     }
 
     "respond with a failure if NS records are not in the approved server list" in {
