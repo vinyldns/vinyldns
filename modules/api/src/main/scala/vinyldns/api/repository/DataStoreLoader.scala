@@ -19,8 +19,18 @@ package vinyldns.api.repository
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-
+import vinyldns.api.domain.batch.BatchChangeRepository
+import vinyldns.api.domain.membership.{
+  GroupChangeRepository,
+  GroupRepository,
+  MembershipRepository,
+  UserRepository
+}
+import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository}
+import vinyldns.api.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.api.repository.RepositoryName._
+
+import scala.reflect.ClassTag
 
 object DataStoreLoader {
   def loadAll(configs: List[DataStoreConfig]): IO[DataAccessor] =
@@ -42,8 +52,8 @@ object DataStoreLoader {
   def validateLoadResponse(
       config: DataStoreConfig,
       dataStore: DataStore): Either[DataStoreStartupError, Unit] = {
-    val dataStoreMap = dataStore.asMap.keySet
-    val configMap = config.repositories.asMap.keySet
+    val dataStoreMap = dataStore.keys
+    val configMap = config.repositories.keys
 
     val loadedNotConfigured = dataStoreMap.diff(configMap)
     val configuredNotLoaded = configMap.diff(dataStoreMap)
@@ -75,10 +85,10 @@ object DataStoreLoader {
   def getValidatedConfigs(
       configs: List[DataStoreConfig]): Either[DataStoreStartupError, List[DataStoreConfig]] = {
 
-    val activeConfigMaps = configs.map(_.repositories.asMap).filter(_.nonEmpty)
+    val repoConfigs = configs.map(_.repositories)
 
-    val validated = RepositoryName.values.map { repoName =>
-      val definedRepos = activeConfigMaps.flatMap(conf => conf.get(repoName))
+    def existsOnce(repoName: RepositoryName): ValidatedNel[String, Unit] = {
+      val definedRepos = repoConfigs.flatMap(_.get(repoName))
       definedRepos match {
         case _ :: Nil => ().validNel[String]
         case Nil => s"Must have one repo of type $repoName".invalidNel[Unit]
@@ -88,9 +98,10 @@ object DataStoreLoader {
       }
     }
 
-    val combinedValidations = validated.fold(().validNel)(_ |+| _)
+    val combinedValidations = RepositoryName.values.map(existsOnce).reduce(_ |+| _)
+
     combinedValidations.toEither
-      .map(_ => configs.filter(_.repositories.asMap.nonEmpty))
+      .map(_ => configs.filter(_.repositories.nonEmpty))
       .leftMap { errors =>
         val errorString = errors.toList.mkString(", ")
         DataStoreStartupError(s"Config validation error: $errorString")
@@ -99,48 +110,35 @@ object DataStoreLoader {
 
   def generateAccessor(
       configs: List[DataStoreConfig],
-      stringToStore: Map[String, DataStore]): Either[DataStoreStartupError, DataAccessor] = {
+      dataStores: Map[String, DataStore]): Either[DataStoreStartupError, DataAccessor] = {
 
-    // maps RepositoryName to the DataStore that should hold that repo based on config
-    val reposByType = RepositoryName.values.toList.flatMap { repoName =>
-      val store = for {
-        matchingDbConfig <- configs.find(_.repositories.asMap.contains(repoName))
+    def getRepoOf[A <: Repository: ClassTag](repoName: RepositoryName): ValidatedNel[String, A] = {
+      val repository = for {
+        matchingDbConfig <- configs.find(_.repositories.hasKey(repoName))
         matchingDbName = matchingDbConfig.className
-        matchingDataStore <- stringToStore.get(matchingDbName)
-      } yield matchingDataStore
+        matchingDataStore <- dataStores.get(matchingDbName)
+        repo <- matchingDataStore.get[A](repoName)
+      } yield repo
 
-      store.map(s => repoName -> s)
-    }.toMap
-
-    val userRepo = reposByType.get(RepositoryName.user).flatMap(_.userRepository)
-    val groupRepo = reposByType.get(RepositoryName.group).flatMap(_.groupRepository)
-    val membershipRepo = reposByType.get(RepositoryName.membership).flatMap(_.membershipRepository)
-    val groupChangeRepo =
-      reposByType.get(RepositoryName.groupChange).flatMap(_.groupChangeRepository)
-    val recordSetRepo = reposByType.get(RepositoryName.recordSet).flatMap(_.recordSetRepository)
-    val recordChangeRepo =
-      reposByType.get(RepositoryName.recordChange).flatMap(_.recordChangeRepository)
-    val zoneChangeRepo = reposByType.get(RepositoryName.zoneChange).flatMap(_.zoneChangeRepository)
-    val zoneRepo = reposByType.get(RepositoryName.zone).flatMap(_.zoneRepository)
-    val batchChangeRepo =
-      reposByType.get(RepositoryName.batchChange).flatMap(_.batchChangeRepository)
+      repository match {
+        case Some(repo) => repo.validNel
+        case None => s"Could not pull repo $repoName from configured database".invalidNel
+      }
+    }
 
     val accessor: ValidatedNel[String, DataAccessor] =
       (
-        getExistingRepo(userRepo, user),
-        getExistingRepo(groupRepo, group),
-        getExistingRepo(membershipRepo, membership),
-        getExistingRepo(groupChangeRepo, groupChange),
-        getExistingRepo(recordSetRepo, recordSet),
-        getExistingRepo(recordChangeRepo, recordChange),
-        getExistingRepo(zoneChangeRepo, zoneChange),
-        getExistingRepo(zoneRepo, zone),
-        getExistingRepo(batchChangeRepo, batchChange))
+        getRepoOf[UserRepository](user),
+        getRepoOf[GroupRepository](group),
+        getRepoOf[MembershipRepository](membership),
+        getRepoOf[GroupChangeRepository](groupChange),
+        getRepoOf[RecordSetRepository](recordSet),
+        getRepoOf[RecordChangeRepository](recordChange),
+        getRepoOf[ZoneChangeRepository](zoneChange),
+        getRepoOf[ZoneRepository](zone),
+        getRepoOf[BatchChangeRepository](batchChange))
         .mapN(DataAccessor)
 
     accessor.toEither.leftMap(errors => DataStoreStartupError(errors.toList.mkString(", ")))
   }
-
-  def getExistingRepo[A](a: Option[A], name: RepositoryName): ValidatedNel[String, A] =
-    Validated.fromOption(a, s"Repo $name does not exist in configured database").toValidatedNel
 }

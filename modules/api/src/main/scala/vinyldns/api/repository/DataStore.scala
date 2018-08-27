@@ -24,6 +24,8 @@ import vinyldns.api.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.api.domain.zone.ZoneRepository
 import vinyldns.api.repository.RepositoryName.RepositoryName
 
+import scala.reflect.ClassTag
+
 class DataStore(
     val userRepository: Option[UserRepository] = None,
     val groupRepository: Option[GroupRepository] = None,
@@ -49,7 +51,13 @@ class DataStore(
       batchChangeRepository.map(RepositoryName.batchChange -> _)
     ).flatten.toMap
 
-  def asMap: Map[RepositoryName, Repository] = dataStoreMap
+  def keys: Set[RepositoryName] = dataStoreMap.keySet
+
+  def get[A <: Repository: ClassTag](name: RepositoryName): Option[A] =
+    dataStoreMap.get(name).flatMap {
+      case a: A => Some(a)
+      case _ => None
+    }
 }
 
 final case class DataAccessor(

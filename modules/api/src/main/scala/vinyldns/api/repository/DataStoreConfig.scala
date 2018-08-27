@@ -47,5 +47,11 @@ final case class RepositoriesConfig(
     batchChange.map(RepositoryName.batchChange -> _)
   ).flatten.toMap
 
-  def asMap: Map[RepositoryName, Config] = configMap
+  def hasKey(name: RepositoryName): Boolean = configMap.contains(name)
+
+  def get(name: RepositoryName): Option[Config] = configMap.get(name)
+
+  def nonEmpty: Boolean = configMap.nonEmpty
+
+  def keys: Set[RepositoryName] = configMap.keySet
 }
