@@ -27,7 +27,6 @@ import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import vinyldns.api.repository._
 
-
 class MySqlDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
