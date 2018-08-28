@@ -1308,6 +1308,293 @@ class VinylDNSSpec extends Specification with Mockito {
         header("Expires", result) must beNone
       }
     }
+
+    ".getZones" should {
+      "return the list of zones when requested - Ok(200)" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones") =>
+            defaultActionBuilder {
+              Results.Ok(frodoZoneList)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.getZones()(
+              FakeRequest(GET, s"/api/zones")
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(OK)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+            contentAsJson(result) must beEqualTo(frodoZoneList)
+          }
+        }
+      }
+
+      "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones") =>
+            defaultActionBuilder {
+              Results.Unauthorized("The supplied authentication is invalid")
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.getZones()(
+              FakeRequest(GET, s"/api/zones")
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(UNAUTHORIZED)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+          }
+        }
+      }
+    }
+    ".getZone" should {
+      "return the zone if it is found - status ok (200)" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/${hobbitZoneId}") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.getZone(hobbitZoneId)(
+              FakeRequest(GET, s"/zones/$hobbitZoneId")
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(OK)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+            contentAsJson(result) must beEqualTo(hobbitZone)
+          }
+        }
+      }
+      "return authentication failed (401) when auth fails in the backend" in new WithApplication(
+        app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Unauthorized("Invalid credentials")
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.getZone(hobbitZoneId)(
+              FakeRequest(GET, s"/zones/$hobbitZoneId")
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(UNAUTHORIZED)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+          }
+        }
+      }
+      "return a not found (404) if the zone does not exist" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/not-hobbits") =>
+            defaultActionBuilder {
+              Results.NotFound
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.getZone("not-hobbits")(
+              FakeRequest(GET, "/zones/not-hobbits")
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(NOT_FOUND)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+          }
+        }
+      }
+    }
+    ".addZone" should {
+      "return the group description on create - status ok (200)" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.addZone()(
+              FakeRequest(POST, "/zones")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(OK)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+            contentAsJson(result) must beEqualTo(hobbitZone)
+          }
+        }
+      }
+      "return bad request (400) if the request is not properly made" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones") =>
+            defaultActionBuilder {
+              Results.BadRequest("user id not found")
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.addZone()(
+              FakeRequest(POST, "/zones")
+                .withJsonBody(invalidHobbitZoneRequest)
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(BAD_REQUEST)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+          }
+        }
+      }
+      "return authentication failed (401) when auth fails in the backend" in new WithApplication(
+        app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones") =>
+            defaultActionBuilder {
+              Results.Unauthorized("Invalid credentials")
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.addZone()(
+              FakeRequest(POST, s"/zones")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(UNAUTHORIZED)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+          }
+        }
+      }
+      "return conflict (409) when the zone exists already" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones") =>
+            defaultActionBuilder {
+              Results.Conflict("A zone named 'hobbits' already exists")
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              mockAuditLog,
+              client,
+              components)
+            val result = underTest.addZone()(
+              FakeRequest(POST, "/zones")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> frodoAccount.username,
+                  "accessKey" -> frodoAccount.accessKey))
+
+            status(result) must beEqualTo(CONFLICT)
+            header("Pragma", result) must beSome("no-cache")
+            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+            header("Expires", result) must beSome("0")
+          }
+        }
+      }
+    }
   }
 
   val frodoDetails = UserDetails(
@@ -1433,8 +1720,46 @@ class VinylDNSSpec extends Specification with Mockito {
      """.stripMargin
   )
 
+  val hobbitZoneId = "uuid-abcdef-12345"
+  val hobbitZone: JsValue = Json.parse(s"""{
+    | "id":             "${hobbitZoneId}",
+    | "name":           "hobbits",
+    | "email":          "hobbitAdmin@shire.me",
+    | "status":         "Active",
+    | "account":        "system",
+    | "shared":         false,
+    | "adminGroupName": "hobbits",
+    | "adminGroupId":   "${hobbitGroupId}"
+    | }
+    """.stripMargin)
+
+  val hobbitZoneRequest: JsValue = Json.parse(s"""{
+    | "name":           "hobbits",
+    | "email":          "hobbitAdmin@shire.me",
+    | "status":         "Active",
+    | "account":        "system",
+    | "shared":         false,
+    | "adminGroupName": "hobbits",
+    | "adminGroupId":   "${hobbitGroupId}"
+    | }
+    """.stripMargin)
+
+  val invalidHobbitZoneRequest: JsValue = Json.parse(s"""{
+    | "name":           "hobbits",
+    | "email":          "hobbitAdmin@shire.me",
+    | "status":         "Active",
+    | "account":        "system",
+    | "shared":         false,
+    | "adminGroupName": "hobbits",
+    | "adminGroupId":   "not-hobbit"
+    | }
+    """.stripMargin)
+
   val groupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup))
   val emptyGroupList: JsObject = Json.obj("groups" -> Json.arr())
 
   val frodoGroupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup, ringbearerGroup))
+
+  val frodoZoneList: JsObject = Json.obj("zones" -> Json.arr(hobbitZone))
+  val emptyZoneList: JsObject = Json.obj("zones" -> Json.arr())
 }
