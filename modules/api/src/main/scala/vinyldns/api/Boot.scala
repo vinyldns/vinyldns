@@ -25,13 +25,18 @@ import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
+import vinyldns.api.domain.batch.{
+  BatchChangeConverter,
+  BatchChangeRepository,
+  BatchChangeService,
+  BatchChangeValidations
+}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository, RecordSetService}
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
-import vinyldns.api.repository.DataStoreStartupError
+import vinyldns.api.repository.{DataStoreStartupError, RepositoryName}
 import vinyldns.api.repository.mysql.MySqlDataStoreProvider
 import vinyldns.api.route.{HealthService, VinylDNSService}
 import vinyldns.core.crypto.Crypto
@@ -62,19 +67,21 @@ object Boot extends App {
       _ <- Crypto.loadCrypto(VinylDNSConfig.cryptoConfig) // load crypto
       // TODO datastore loading will not be hardcoded by type here
       mySqlDataStore <- new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig)
+      zoneRepo <- IO.fromEither(
+        mySqlDataStore
+          .get[ZoneRepository](RepositoryName.zone)
+          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
+      batchChangeRepo <- IO.fromEither(
+        mySqlDataStore
+          .get[BatchChangeRepository](RepositoryName.batchChange)
+          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
       userRepo <- IO(UserRepository())
       groupRepo <- IO(GroupRepository())
       membershipRepo <- IO(MembershipRepository())
-      zoneRepo <- IO.fromEither(
-        mySqlDataStore.zoneRepository
-          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
       groupChangeRepo <- IO(GroupChangeRepository())
       recordSetRepo <- IO(RecordSetRepository())
       recordChangeRepo <- IO(RecordChangeRepository())
       zoneChangeRepo <- IO(ZoneChangeRepository())
-      batchChangeRepo <- IO.fromEither(
-        mySqlDataStore.batchChangeRepository
-          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))

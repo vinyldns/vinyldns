@@ -17,7 +17,6 @@
 package vinyldns.api.repository.mysql
 
 import cats.effect.IO
-import com.typesafe.config.Config
 import com.zaxxer.hikari.HikariDataSource
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
@@ -28,10 +27,17 @@ import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import vinyldns.api.repository._
 
-case class MySqlDataStoreSettings(name: String, driver: String, migrationUrl: String, url: String,
-                                          user: String, password: String, poolMaxSize: Int,
-                                          connectionTimeoutMillis: Long,
-                                          maxLifeTime: Long, migrationSchemaTable: Option[String])
+case class MySqlDataStoreSettings(
+    name: String,
+    driver: String,
+    migrationUrl: String,
+    url: String,
+    user: String,
+    password: String,
+    poolMaxSize: Int,
+    connectionTimeoutMillis: Long,
+    maxLifeTime: Long,
+    migrationSchemaTable: Option[String])
 
 class MySqlDataStoreProvider extends DataStoreProvider {
 
@@ -43,11 +49,11 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       settingsConfig <- IO(pureconfig.loadConfigOrThrow[MySqlDataStoreSettings](config.settings))
       _ <- validateRepos(config.repositories)
       _ <- initializeDb(settingsConfig)
-      store <- initializeDataStores(config.repositories)
+      store <- initializeRepos()
     } yield store
 
   def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
-    val invalid = reposConfig.asMap.keySet.diff(implementedRepositories)
+    val invalid = reposConfig.keys.diff(implementedRepositories)
 
     if (invalid.isEmpty) {
       IO.unit
@@ -58,17 +64,9 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     }
   }
 
-  def initializeDataStores(reposConfig: RepositoriesConfig): IO[DataStore] = IO {
-    val zones = reposConfig.zone match {
-      case Some(_) => Some(new JdbcZoneRepository())
-      case None => None
-    }
-
-    val batchChanges = reposConfig.batchChange match {
-      case Some(_) => Some(new JdbcBatchChangeRepository())
-      case None => None
-    }
-
+  def initializeRepos(): IO[DataStore] = IO {
+    val zones = Some(new JdbcZoneRepository())
+    val batchChanges = Some(new JdbcBatchChangeRepository())
     new DataStore(zoneRepository = zones, batchChangeRepository = batchChanges)
   }
 
