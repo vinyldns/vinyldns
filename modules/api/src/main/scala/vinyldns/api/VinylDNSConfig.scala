@@ -18,9 +18,11 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
 import vinyldns.api.domain.zone.ZoneConnection
+import vinyldns.api.repository.DataStoreConfig
 
 object VinylDNSConfig {
 
@@ -37,7 +39,8 @@ object VinylDNSConfig {
   lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("groups")
   lazy val groupChangesStoreConfig: Config = vinyldnsConfig.getConfig("groupChanges")
   lazy val membershipStoreConfig: Config = vinyldnsConfig.getConfig("membership")
-  lazy val dbConfig: Config = vinyldnsConfig.getConfig("db")
+  lazy val mySqlConfig: DataStoreConfig =
+    pureconfig.loadConfigOrThrow[DataStoreConfig](vinyldnsConfig, "mysql")
   lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)

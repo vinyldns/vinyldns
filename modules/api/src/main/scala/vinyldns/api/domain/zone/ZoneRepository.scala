@@ -19,7 +19,6 @@ package vinyldns.api.domain.zone
 import cats.effect._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.repository.Repository
-import vinyldns.api.repository.mysql.VinylDNSJDBC
 
 trait ZoneRepository extends Repository {
 
@@ -41,8 +40,4 @@ trait ZoneRepository extends Repository {
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 
-}
-
-object ZoneRepository {
-  def apply(): ZoneRepository = VinylDNSJDBC.instance.zoneRepository
 }
