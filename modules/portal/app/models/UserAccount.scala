@@ -32,6 +32,8 @@ case class UserAccount(
     accessSecret: String,
     isSuper: Boolean = false) {
 
+  private def generateKey: String = RandomStringUtils.randomAlphanumeric(20)
+
   override def toString() = {
     val sb = new StringBuilder
     sb.append("UserAccount: [")
@@ -44,6 +46,9 @@ case class UserAccount(
     sb.append("]")
     sb.toString
   }
+
+  def regenerateCredentials(): UserAccount =
+    copy(accessKey = generateKey, accessSecret = generateKey)
 }
 
 object UserAccount {

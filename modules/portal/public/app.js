@@ -15,7 +15,33 @@ angular.module('vinyldns', [
         //turning off $log
         $logProvider.debugEnabled(false);
     })
-    .controller('AppController', function ($scope) {
+    .controller('AppController', function ($scope, $timeout, profileService, utilityService) {
+        document.body.style.cursor = 'default';
+        $scope.alerts = [];
+
+        $scope.regenerateCredentials = function() {
+            document.body.style.cursor = 'wait';
+            profileService.regenerateCredentials()
+                .then(function(success) {
+                    var alert = utilityService.success(success.data, success, 'profileService::regenerateCredentials-success');
+                    document.body.style.cursor = 'default';
+                    $("#mb-creds").modal('hide');
+                    $scope.alerts.push(alert);
+                    $timeout(function(){
+                        location.reload();
+                     }, 2000);
+                })
+                .catch(function(error){
+                    var alert = utilityService.failure(error, 'profileService::regenerateCredentials-failure');
+                    document.body.style.cursor = 'default';
+                    $("#mb-creds").modal('hide');
+                    location.reload();
+                    $scope.alerts.push(alert);
+                    $timeout(function(){
+                        location.reload();
+                     }, 2000);
+                });
+        };
     });
 
 var regexIso8601 = /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;

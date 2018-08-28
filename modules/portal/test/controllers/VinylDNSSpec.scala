@@ -124,6 +124,64 @@ class VinylDNSSpec extends Specification with Mockito {
       }
     }
 
+    ".regenerateCreds" should {
+      "change the access key and secret for the current user" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        userAccessor.get("fbaggins").returns(Success(Some(frodoAccount)))
+        userAccessor.put(any[UserAccount]).returns(Success(frodoAccount))
+        mockAuditLog.log(any[ChangeLogMessage]).returns(Success(newFrodoLog))
+
+        val vinyldnsPortal =
+          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+        val result = vinyldnsPortal
+          .regenerateCreds()
+          .apply(
+            FakeRequest(POST, "/regenerate-creds").withSession(
+              "username" -> frodoAccount.username,
+              "accessKey" -> frodoAccount.accessKey))
+
+        status(result) must beEqualTo(200)
+        header("Pragma", result) must beSome("no-cache")
+        header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+        header("Expires", result) must beSome("0")
+
+        session(result).get("username") must beSome(frodoAccount.username)
+        (session(result).get("accessKey") must not).beSome(frodoAccount.accessKey)
+      }
+
+      "fail if user is not found" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        userAccessor
+          .get("fbaggins")
+          .returns(
+            Failure(new UserDoesNotExistException(s"Error - User account for frodo not found")))
+
+        val vinyldnsPortal =
+          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+        val result = vinyldnsPortal
+          .regenerateCreds()
+          .apply(
+            FakeRequest(POST, "/regenerate-creds").withSession(
+              "username" -> frodoAccount.username,
+              "accessKey" -> frodoAccount.accessKey))
+
+        status(result) must beEqualTo(404)
+        header("Pragma", result) must beSome("no-cache")
+        header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+        header("Expires", result) must beSome("0")
+      }
+    }
+
     ".login" should {
       "if login is correct with a valid key" should {
         "call the authenticator and the account accessor" in new WithApplication(app) {
@@ -1316,6 +1374,7 @@ class VinylDNSSpec extends Specification with Mockito {
     Some("fbaggins@hobbitmail.me"),
     Some("Frodo"),
     Some("Baggins"))
+
   val frodoAccount = UserAccount(
     "frodo-uuid",
     "fbaggins",
@@ -1325,6 +1384,15 @@ class VinylDNSSpec extends Specification with Mockito {
     DateTime.now,
     "key",
     "secret")
+
+  val newFrodoLog = UserChangeMessage(
+    "frodo-uuid",
+    "fbaggins",
+    DateTime.now,
+    ChangeType("updated"),
+    frodoAccount,
+    Some(frodoAccount)
+  )
 
   val serviceAccountDetails =
     UserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)

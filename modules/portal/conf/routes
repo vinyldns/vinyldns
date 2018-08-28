@@ -19,6 +19,7 @@ GET           /batchchanges/:id                  @controllers.FrontendController
 ### Routes to process requests, get data ###
 POST          /login                             @controllers.VinylDNS.login
 GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCredsFile(fileName)
+POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/:id                     @controllers.VinylDNS.getZone(id: String)

@@ -245,6 +245,45 @@ class VinylDNS @Inject()(
     }
   }
 
+  def regenerateCreds(): Action[AnyContent] = Action.async { implicit request =>
+    withAuthenticatedUser { username =>
+      Future
+        .fromTry(processRegenerate(username))
+        .map(response => {
+          Status(200)("Successfully regenerated credentials")
+            .withHeaders(cacheHeaders: _*)
+            .withSession("username" -> response.username, "accessKey" -> response.accessKey)
+        })
+        .recover {
+          case _: UserDoesNotExistException =>
+            NotFound(s"User $username was not found").withHeaders(cacheHeaders: _*)
+        }
+    }
+  }
+
+  private def processRegenerate(oldAccountName: String): Try[UserAccount] =
+    for {
+      oldAccount <- userAccountAccessor.get(oldAccountName).flatMap {
+        case Some(account) => Success(account)
+        case None =>
+          Failure(
+            new UserDoesNotExistException(s"Error - User account for $oldAccountName not found"))
+      }
+      account = oldAccount.regenerateCredentials()
+      _ <- userAccountAccessor.put(account)
+      _ <- auditLogAccessor.log(
+        UserChangeMessage(
+          account.userId,
+          account.username,
+          DateTime.now(),
+          ChangeType("updated"),
+          account,
+          Some(oldAccount)))
+    } yield {
+      Logger.info(s"Credentials successfully regenerated for ${account.username}")
+      account
+    }
+
   private def createNewUser(details: UserDetails): Try[UserAccount] = {
     val newAccount =
       UserAccount(details.username, details.firstName, details.lastName, details.email)
