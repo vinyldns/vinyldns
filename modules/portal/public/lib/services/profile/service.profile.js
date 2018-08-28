@@ -17,12 +17,16 @@
 'use strict';
 
 angular.module('service.profile', [])
-    .service('profileService', function ($http) {
+    .service('profileService', function ($http, utilityService) {
         this.getAuthenticatedUserData = function () {
             return $http.get('/api/users/currentuser');
         };
 
         this.getUserDataByUsername = function(username){
             return $http.get('/api/users/lookupuser/' + username);
+        }
+
+        this.regenerateCredentials = function(){
+            return $http.post('/regenerate-creds', '', {headers: utilityService.getCsrfHeader()});
         }
     });

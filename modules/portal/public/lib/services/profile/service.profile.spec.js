@@ -15,13 +15,18 @@
  */
 
 describe('Service: profileService', function () {
-    beforeEach(module('ngMock'));
-    beforeEach(module('service.profile'));
-    beforeEach(inject(function ($rootScope, $httpBackend, profileService) {
+    beforeEach(function () {
+        module('ngMock'),
+        module('service.utility'),
+        module('service.profile')
+    });
+
+    beforeEach(inject(function ($rootScope, $httpBackend, profileService, utilityService) {
         this.$rootScope = $rootScope;
         this.scope = this.$rootScope.$new();
         this.$httpBackend = $httpBackend;
         this.profileService = profileService;
+        this.utilityService = utilityService;
 
         jasmine.getJSONFixtures().fixturesPath='base/mocks';
     }));
@@ -37,8 +42,12 @@ describe('Service: profileService', function () {
     it('should have getUserDataByUsername method', function () {
         expect(this.profileService.getUserDataByUsername).toBeDefined();
     });
-    
-    it('getUserData method should return 200 with valid user', function (done) {
+
+    it('should have regenerateCredentials method', function () {
+        expect(this.profileService.regenerateCredentials()).toBeDefined();
+    });
+
+    it('getAuthenticatedUserData method should return 200 with valid user', function (done) {
         var url = '/api/users/currentuser';
         this.$httpBackend.whenRoute('GET', url).respond(200, getJSONFixture('mockUserData.json'));
         this.profileService.getAuthenticatedUserData()
@@ -51,7 +60,7 @@ describe('Service: profileService', function () {
             });
         this.$httpBackend.flush();
     });
-    it('getUserData method should return 400 with invalid user', function (done) {
+    it('getAuthenticatedUserData method should return 400 with invalid user', function (done) {
         var url = '/api/users/currentuser';
         this.$httpBackend.whenRoute('GET', url).respond(400);
         this.profileService.getAuthenticatedUserData()
@@ -88,6 +97,34 @@ describe('Service: profileService', function () {
         this.profileService.getUserDataByUsername('badUsername')
             .then(function (response) {
                 fail('lookupUserAccount expected 400, but got ' + response.status.toString());
+                done();
+            }, function (error) {
+                expect(error.status).toBe(400);
+                done();
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('regenerateCredentials method should return 200 with valid user', function (done) {
+        var url = '/regenerate-creds';
+        this.$httpBackend.whenRoute('POST', url).respond(200, getJSONFixture('mockUserData.json'));
+        this.profileService.regenerateCredentials()
+            .then(function (response) {
+                expect(response.status).toBe(200);
+                done();
+            }, function (error) {
+                fail('regenerateCredentials expected 200, but got ' + error.status.toString());
+                done();
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('regenerateCredentials method should return 400 with invalid user', function (done) {
+        var url = '/regenerate-creds';
+        this.$httpBackend.whenRoute('POST', url).respond(400);
+        this.profileService.regenerateCredentials()
+            .then(function (response) {
+                fail('regenerateCredentials expected 400, but got ' + response.status.toString());
                 done();
             }, function (error) {
                 expect(error.status).toBe(400);
