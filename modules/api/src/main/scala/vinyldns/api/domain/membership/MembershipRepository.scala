@@ -16,12 +16,13 @@
 
 package vinyldns.api.domain.membership
 
+import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBMembershipRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait MembershipRepository {
+trait MembershipRepository extends Repository {
 
   def addMembers(groupId: String, memberUserIds: Set[String]): Future[Set[String]]
 

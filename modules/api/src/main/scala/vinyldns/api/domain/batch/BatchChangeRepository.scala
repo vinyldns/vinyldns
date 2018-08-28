@@ -16,12 +16,13 @@
 
 package vinyldns.api.domain.batch
 
+import vinyldns.api.repository.Repository
 import vinyldns.api.repository.mysql.VinylDNSJDBC
 
 import scala.concurrent.Future
 
 // $COVERAGE-OFF$
-trait BatchChangeRepository {
+trait BatchChangeRepository extends Repository {
 
   def save(batch: BatchChange): Future[BatchChange]
 

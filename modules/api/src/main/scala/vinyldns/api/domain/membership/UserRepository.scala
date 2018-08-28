@@ -18,6 +18,7 @@ package vinyldns.api.domain.membership
 
 import org.joda.time.DateTime
 import vinyldns.api.VinylDNSConfig
+import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBUserRepository
 import vinyldns.core.crypto.Crypto
 
@@ -26,7 +27,7 @@ import scala.concurrent.Future
 
 final case class ListUsersResults(users: Seq[User], lastEvaluatedId: Option[String])
 
-trait UserRepository {
+trait UserRepository extends Repository {
 
   /*Looks up a user.  If the user is not found, or if the user's status is Deleted, will return None */
   def getUser(userId: String): Future[Option[User]]
