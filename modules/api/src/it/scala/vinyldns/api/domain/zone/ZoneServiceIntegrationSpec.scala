@@ -132,8 +132,10 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
         testZoneService
           .deleteZone(zone.id, badAuth)
           .value
-      val error = leftResultOf(result)
-      error shouldBe a[NotAuthorizedError]
+          .unsafeToFuture()
+      whenReady(result) { out =>
+        leftValue(out) shouldBe a[NotAuthorizedError]
+      }
     }
     "accept a DeleteZone" in {
       val removeARecord = ChangeSet(RecordSetChange.forDelete(testRecordA, zone))
