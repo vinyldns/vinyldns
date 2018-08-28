@@ -16,7 +16,7 @@
 
 package vinyldns.api.repository
 
-import cats.scalatest.EitherValues
+import cats.scalatest.{EitherMatchers, EitherValues}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
@@ -32,7 +32,12 @@ import vinyldns.api.domain.zone.{ZoneChangeRepository, ZoneRepository}
 
 import scala.collection.JavaConverters._
 
-class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with EitherValues {
+class DataStoreLoaderSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with EitherValues
+    with EitherMatchers {
 
   val placeholderConfig: Config = ConfigFactory.parseMap(Map[String, String]().asJava)
   val enabled = Some(placeholderConfig)
@@ -158,47 +163,6 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
       val call = DataStoreLoader.load(config)
       a[RuntimeException] should be thrownBy call.unsafeRunSync()
     }
-    "fail if a datastore returned by external load was not configured on" in {
-      val config = DataStoreConfig(
-        "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider",
-        placeholderConfig,
-        allDisabledReposConfig.copy(group = enabled))
-
-      val call = DataStoreLoader.load(config)
-      val thrown = the[DataStoreStartupError] thrownBy call.unsafeRunSync()
-      thrown.msg shouldBe
-        "Loaded repos were configured off for vinyldns.api.repository.UserGroupAlwaysDataStoreProvider: user"
-    }
-    "fail if datastores configured on are not returned by external load" in {
-      val config =
-        goodConfig.copy(className = "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider")
-
-      val call = DataStoreLoader.load(config)
-      val thrown = the[DataStoreStartupError] thrownBy call.unsafeRunSync()
-      thrown.msg should include(
-        "Configured repos were not loaded by vinyldns.api.repository.UserGroupAlwaysDataStoreProvider")
-      thrown.msg should
-        include("membership")
-          .and(include("groupChange"))
-          .and(include("recordSet"))
-          .and(include("recordChange"))
-          .and(include("zoneChange"))
-          .and(include("zone"))
-          .and(include("batchChange"))
-    }
-    "fail if datastore load and config are both wrong" in {
-      val config = DataStoreConfig(
-        "vinyldns.api.repository.UserGroupAlwaysDataStoreProvider",
-        placeholderConfig,
-        allDisabledReposConfig
-          .copy(group = enabled, membership = enabled)
-      )
-
-      val call = DataStoreLoader.load(config)
-      val thrown = the[DataStoreStartupError] thrownBy call.unsafeRunSync()
-      thrown.msg should include(
-        "Error on load by vinyldns.api.repository.UserGroupAlwaysDataStoreProvider")
-    }
   }
 
   "generateAccessor" should {
@@ -212,38 +176,37 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
     val zone = mock[ZoneRepository]
     val batchChange = mock[BatchChangeRepository]
 
+    val config1 = DataStoreConfig(
+      "store1",
+      placeholderConfig,
+      allDisabledReposConfig.copy(user = enabled, group = enabled, groupChange = enabled))
+
+    val config2 = DataStoreConfig(
+      "store2",
+      placeholderConfig,
+      allDisabledReposConfig.copy(
+        membership = enabled,
+        recordSet = enabled,
+        recordChange = enabled,
+        zoneChange = enabled,
+        zone = enabled,
+        batchChange = enabled)
+    )
+    val store1 = new DataStore(Some(user), Some(group), None, Some(groupChange))
+
+    val store2 = new DataStore(
+      None,
+      None,
+      Some(membership),
+      None,
+      Some(recordSet),
+      Some(recordChange),
+      Some(zoneChange),
+      Some(zone),
+      Some(batchChange))
+
     "combine DataStores into a single accessor" in {
-      val config1 = DataStoreConfig(
-        "store1",
-        placeholderConfig,
-        allDisabledReposConfig.copy(user = enabled, group = enabled, groupChange = enabled))
-      val store1 = new DataStore(Some(user), Some(group), None, Some(groupChange))
-
-      val config2 = DataStoreConfig(
-        "store2",
-        placeholderConfig,
-        allDisabledReposConfig.copy(
-          membership = enabled,
-          recordSet = enabled,
-          recordChange = enabled,
-          zoneChange = enabled,
-          zone = enabled,
-          batchChange = enabled)
-      )
-      val store2 = new DataStore(
-        None,
-        None,
-        Some(membership),
-        None,
-        Some(recordSet),
-        Some(recordChange),
-        Some(zoneChange),
-        Some(zone),
-        Some(batchChange))
-
-      val outcome = DataStoreLoader.generateAccessor(
-        List(config1, config2),
-        Map(config1.className -> store1, config2.className -> store2))
+      val outcome = DataStoreLoader.generateAccessor(List((config1, store1), (config2, store2)))
       outcome.value shouldBe DataAccessor(
         user,
         group,
@@ -256,11 +219,41 @@ class DataStoreLoaderSpec extends WordSpec with Matchers with MockitoSugar with 
         batchChange)
     }
 
+    "allow DataStores to return extra repos" in {
+      val dataStore = new DataStore(
+        Some(user),
+        Some(group),
+        Some(membership),
+        Some(groupChange),
+        Some(recordSet),
+        Some(recordChange),
+        Some(zoneChange),
+        Some(zone),
+        Some(batchChange))
+
+      val outcome =
+        DataStoreLoader.generateAccessor(List((config1, dataStore), (config2, dataStore)))
+      outcome should be(right)
+    }
+    "fail if repositories configured on are not returned by external load" in {
+      val empty = new DataStore()
+      val outcome =
+        DataStoreLoader.generateAccessor(List((config1, empty), (config2, store2)))
+      outcome.leftValue shouldBe a[DataStoreStartupError]
+
+      val message = outcome.leftValue.msg
+      List("user", "group", "groupChange").foreach { repo =>
+        message should include(s"Repo $repo was not returned by configured database: store1")
+      }
+      List("membership", "recordSet", "recordChange", "zone", "batchChange").foreach { repo =>
+        (message should not).include(s"Repo $repo was not returned by configured database: store1")
+      }
+    }
     "return an DataStoreInitializationError if a repository is undefined" in {
       val store = new DataStore(Some(user), Some(group), None, Some(groupChange))
 
       val outcome =
-        DataStoreLoader.generateAccessor(List(goodConfig), Map(goodConfig.className -> store))
+        DataStoreLoader.generateAccessor(List((goodConfig, store)))
       outcome.leftValue shouldBe a[DataStoreStartupError]
     }
   }

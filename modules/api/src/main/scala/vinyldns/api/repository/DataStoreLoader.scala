@@ -37,46 +37,15 @@ object DataStoreLoader {
     for {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs))
       dataStores <- activeConfigs.map(load).parSequence
-      accessor <- IO.fromEither(generateAccessor(activeConfigs, dataStores.toMap))
+      accessor <- IO.fromEither(generateAccessor(dataStores))
     } yield accessor
 
-  def load(config: DataStoreConfig): IO[(String, DataStore)] =
+  def load(config: DataStoreConfig): IO[(DataStoreConfig, DataStore)] =
     for {
       className <- IO.pure(config.className)
       provider <- IO(Class.forName(className).newInstance.asInstanceOf[DataStoreProvider])
       dataStore <- provider.load(config)
-      _ <- IO.fromEither(validateLoadResponse(config, dataStore))
-    } yield (className, dataStore)
-
-  // Ensures that if a repository is configured on, load returned it, and if configured off, load did not
-  def validateLoadResponse(
-      config: DataStoreConfig,
-      dataStore: DataStore): Either[DataStoreStartupError, Unit] = {
-    val dataStoreMap = dataStore.keys
-    val configMap = config.repositories.keys
-
-    val loadedNotConfigured = dataStoreMap.diff(configMap)
-    val configuredNotLoaded = configMap.diff(dataStoreMap)
-
-    (loadedNotConfigured.isEmpty, configuredNotLoaded.isEmpty) match {
-      case (true, true) => Right((): Unit)
-      case (false, true) =>
-        Left(
-          DataStoreStartupError(
-            s"""Loaded repos were configured off for ${config.className}: ${loadedNotConfigured
-              .mkString(", ")}"""))
-      case (true, false) =>
-        Left(
-          DataStoreStartupError(
-            s"""Configured repos were not loaded by ${config.className}: ${configuredNotLoaded
-              .mkString(", ")}"""))
-      case _ =>
-        Left(
-          DataStoreStartupError(
-            s"""Error on load by ${config.className}: configuration does not match load for repos:
-           | ${(loadedNotConfigured ++ configuredNotLoaded).mkString(", ")}""".stripMargin))
-    }
-  }
+    } yield (config, dataStore)
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only
@@ -108,21 +77,29 @@ object DataStoreLoader {
       }
   }
 
-  def generateAccessor(
-      configs: List[DataStoreConfig],
-      dataStores: Map[String, DataStore]): Either[DataStoreStartupError, DataAccessor] = {
+  def generateAccessor(responses: List[(DataStoreConfig, DataStore)])
+    : Either[DataStoreStartupError, DataAccessor] = {
 
     def getRepoOf[A <: Repository: ClassTag](repoName: RepositoryName): ValidatedNel[String, A] = {
-      val repository = for {
-        matchingDbConfig <- configs.find(_.repositories.hasKey(repoName))
-        matchingDbName = matchingDbConfig.className
-        matchingDataStore <- dataStores.get(matchingDbName)
-        repo <- matchingDataStore.get[A](repoName)
-      } yield repo
+
+      val matched = responses.find {
+        case (c, _) => c.repositories.hasKey(repoName)
+      }
+
+      val repository = matched.flatMap {
+        case (_, store) => store.get[A](repoName)
+      }
 
       repository match {
         case Some(repo) => repo.validNel
-        case None => s"Could not pull repo $repoName from configured database".invalidNel
+        case None =>
+          val dataStoreName = matched
+            .map {
+              case (c, _) => c.className
+            }
+            .getOrElse("Unknown Configured Database")
+
+          s"Repo $repoName was not returned by configured database: $dataStoreName".invalidNel
       }
     }
 

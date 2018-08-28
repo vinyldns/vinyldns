@@ -64,19 +64,3 @@ class FailDataStoreProvider extends DataStoreProvider {
   def load(config: DataStoreConfig): IO[DataStore] =
     IO.raiseError(new RuntimeException("ruh roh"))
 }
-
-class UserGroupAlwaysDataStoreProvider extends DataStoreProvider with MockitoSugar {
-  def load(config: DataStoreConfig): IO[DataStore] =
-    IO.pure(
-      new DataStore(
-        Some(mock[UserRepository]),
-        Some(mock[GroupRepository]),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None)
-    )
-}
