@@ -43,7 +43,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
     with Inspectors
     with OptionValues {
 
-  private var repo: JdbcBatchChangeRepository = _
+  private var repo: BatchChangeRepository = _
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   import SingleChangeStatus._
@@ -148,7 +148,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
   import TestData._
 
   override protected def beforeAll(): Unit =
-    repo = VinylDNSJDBC.instance.batchChangeRepository
+    repo = TestMySqlInstance.batchChangeRepository
 
   override protected def beforeEach(): Unit =
     DB.localTx { s =>
