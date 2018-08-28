@@ -27,17 +27,6 @@ import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import vinyldns.api.repository._
 
-case class MySqlDataStoreSettings(
-    name: String,
-    driver: String,
-    migrationUrl: String,
-    url: String,
-    user: String,
-    password: String,
-    poolMaxSize: Int,
-    connectionTimeoutMillis: Long,
-    maxLifeTime: Long,
-    migrationSchemaTable: Option[String])
 
 class MySqlDataStoreProvider extends DataStoreProvider {
 
