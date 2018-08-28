@@ -247,30 +247,46 @@ class VinylDNS @Inject()(
 
   def regenerateCreds(): Action[AnyContent] = Action.async { implicit request =>
     withAuthenticatedUser { username =>
-      userAccountAccessor.get(username) match {
-        case Success(Some(account)) => Future(processRegenerate(account))
-        case Success(None) =>
-          throw new UnsupportedOperationException(s"Error - User account for $username not found")
-        case Failure(ex) => throw ex
-      }
+      Future
+        .fromTry {
+          for {
+            newAccount <- processRegenerate(username)
+          } yield newAccount
+        }
+        .map(response => {
+          Status(200)("Successfully regenerated credentials")
+            .withHeaders(cacheHeaders: _*)
+            .withSession("username" -> response.username, "accessKey" -> response.accessKey)
+        })
+        .recover {
+          case _: UserDoesNotExistException =>
+            NotFound(s"User $username was not found").withHeaders(cacheHeaders: _*)
+        }
     }
   }
 
-  def processRegenerate(oldAccount: UserAccount): Result = {
-    val account = oldAccount.regenerateCredentials()
-    userAccountAccessor.put(account)
-    auditLogAccessor.log(
-      UserChangeMessage(
-        account.userId,
-        account.username,
-        DateTime.now(),
-        ChangeType("updated"),
-        account,
-        Some(oldAccount)))
-    Logger.info(s"Credentials successfully regenerated for ${account.username}")
-    Status(200)("Successfully regenerated credentials")
-      .withSession("username" -> account.username, "accessKey" -> account.accessKey)
-  }
+  private def processRegenerate(oldAccountName: String): Try[UserAccount] =
+    for {
+      oldAccount <- userAccountAccessor.get(oldAccountName).flatMap {
+        case Some(account) => Success(account)
+        case None =>
+          Failure(
+            new UserDoesNotExistException(s"Error - User account for $oldAccountName not found"))
+      }
+      account = oldAccount.regenerateCredentials()
+      _ <- userAccountAccessor.put(account)
+      _ <- auditLogAccessor.log(
+        UserChangeMessage(
+          account.userId,
+          account.username,
+          DateTime.now(),
+          ChangeType("updated"),
+          account,
+          Some(oldAccount)))
+    } yield {
+      Logger.info(s"Credentials successfully regenerated for ${account.username}")
+      account
+    }
 
   private def createNewUser(details: UserDetails): Try[UserAccount] = {
     val newAccount =

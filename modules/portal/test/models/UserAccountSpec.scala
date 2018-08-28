@@ -51,7 +51,7 @@ class UserAccountSpec extends Specification with Mockito {
       val newResult = result.regenerateCredentials()
 
       newResult must beAnInstanceOf[UserAccount]
-      UUID.fromString(newResult.userId) must beAnInstanceOf[UUID]
+      UUID.fromString(newResult.userId) must beEqualTo(result.userId)
       newResult.username must beEqualTo(username)
       newResult.firstName must beEqualTo(fname)
       newResult.lastName must beEqualTo(lname)

@@ -80,7 +80,10 @@ in the zone are in a list of approved name servers.  If your zone is hosted on
 name servers that are not in this list, you will not be able to use VinylDNS to manage your zone.
 
 ### 8. How do I get API credentials? <a id="8"></a>
-After logging in to the portal, click your username at the top right and select *Download API Credentials*. If you need new API credentials select *Regenerate Credentials*. This will invalidate your previous credentials.
+After logging in to the portal, click your username at the top right and select *Download API Credentials*.
+
+If you need new API credentials select *Regenerate Credentials*. This will invalidate your previous credentials.
+If you use any VinylDNS tools beyond the portal you will need to provide those tools with your new credentials.
 
 ### 9. How are requests authenticated to the VinylDNS API? <a id="9"></a>
 Refer to [API Authentication](../api/auth-mechanism).
