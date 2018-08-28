@@ -248,11 +248,7 @@ class VinylDNS @Inject()(
   def regenerateCreds(): Action[AnyContent] = Action.async { implicit request =>
     withAuthenticatedUser { username =>
       Future
-        .fromTry {
-          for {
-            newAccount <- processRegenerate(username)
-          } yield newAccount
-        }
+        .fromTry(processRegenerate(username))
         .map(response => {
           Status(200)("Successfully regenerated credentials")
             .withHeaders(cacheHeaders: _*)
