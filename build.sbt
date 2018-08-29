@@ -43,8 +43,8 @@ def scalaStyleCompile: Seq[Def.Setting[_]] = Seq(
 
 def scalaStyleSettings: Seq[Def.Setting[_]] = scalaStyleCompile ++ scalaStyleTest ++ scalaStyleIntegrationTest
 
-// comcast, public-release, or public-snapshot
-val releaseType = System.getenv().getOrDefault("VINYLDNS_RELEASE_TYPE", "public-snapshot")
+// artifactory, docker-sonatype-release, or docker-sonatype-snapshot
+val releaseType = sys.env.get("VINYLDNS_RELEASE_TYPE")
 
 // settings that should be inherited by all projects
 lazy val sharedSettings = Seq(
@@ -345,13 +345,13 @@ lazy val initReleaseStage = Seq[ReleaseStep](
 )
 
 lazy val validateVerifyReleaseStage = Seq[ReleaseStep](
-  releaseStepCommand("project root"), // use version.sbt file from root
+  releaseStepCommand("project root"),
   releaseStepCommandAndRemaining("validate"),
   releaseStepCommandAndRemaining("verify"),
 )
 
 lazy val dockerReleaseStage = Seq[ReleaseStep](
-  releaseStepCommandAndRemaining(";project api;docker:publish"),
+  releaseStepCommandAndRemaining(";project api;docker:publish"), // publish api and portal images to Docker Hub
   releaseStepCommandAndRemaining(";project portal;docker:publish"),
 )
 
@@ -370,25 +370,30 @@ lazy val finalReleaseStage = Seq[ReleaseStep] (
   commitNextVersion // commit new version.sbt
 )
 
-// set release process based off env var, default is public-snapshot
 releaseType match {
-    // comcast internal release to artifactory
-  case "comcast" => releaseProcess := initReleaseStage ++
-    validateVerifyReleaseStage ++
-    finalReleaseStage // TODO: add artifactoryReleaseStage to comcast release
-    // public release of docker images and core module
-  case "public-release" => releaseProcess := initReleaseStage ++
-    validateVerifyReleaseStage ++
-    dockerReleaseStage ++ // publish api and portal images to Docker Hub, tagged with version
-    sonatypePublishStage ++ // deploys artifact to sonatype staging repository
-    sonatypeReleaseStage ++ // closes staging artifact, and promotes to maven central
-    finalReleaseStage
-    // public snapshot release of docker images
-  case _ => releaseProcess := initReleaseStage ++
-    validateVerifyReleaseStage ++
-    dockerReleaseStage ++ // publish api and portal images to Docker Hub, tagged with version
-    sonatypePublishStage ++ // deploys artifact to sonatype staging repository
-    finalReleaseStage
+  case Some("artifactory") =>
+    releaseProcess :=
+      initReleaseStage ++
+      validateVerifyReleaseStage ++
+      finalReleaseStage // TODO: add artifactoryReleaseStage before final
+  case Some("docker-sonatype-release") =>
+    releaseProcess :=
+      initReleaseStage ++
+      validateVerifyReleaseStage ++
+      dockerReleaseStage ++
+      sonatypePublishStage ++
+      sonatypeReleaseStage ++
+      finalReleaseStage
+  case Some("docker-sonatype-snapshot") =>
+    releaseProcess :=
+      initReleaseStage ++
+      validateVerifyReleaseStage ++
+      dockerReleaseStage ++
+      sonatypePublishStage ++
+      finalReleaseStage
+  case None =>
+    releaseProcess :=
+      Seq[ReleaseStep]()
 }
 
 // Validate runs static checks and compile to make sure we can go
