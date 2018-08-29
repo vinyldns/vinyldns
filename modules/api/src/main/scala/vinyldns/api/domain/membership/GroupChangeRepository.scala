@@ -25,7 +25,7 @@ final case class ListGroupChangesResults(
     changes: Seq[GroupChange],
     lastEvaluatedTimeStamp: Option[String])
 
-trait GroupChangeRepository extends Repository  {
+trait GroupChangeRepository extends Repository {
   def save(groupChange: GroupChange): IO[GroupChange]
   def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] // For testing
   def getGroupChanges(

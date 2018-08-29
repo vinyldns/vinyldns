@@ -36,7 +36,8 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     for {
       settingsConfig <- IO(pureconfig.loadConfigOrThrow[MySqlDataStoreSettings](config.settings))
       _ <- validateRepos(config.repositories)
-      _ <- initializeDb(settingsConfig)
+      _ <- runDBMigrations(settingsConfig)
+      _ <- setupDBConnection(settingsConfig)
       store <- initializeRepos()
     } yield store
 
@@ -46,8 +47,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     if (invalid.isEmpty) {
       IO.unit
     } else {
-      val error = s"""Invalid config provided to mysql; unimplemented repos included: ${invalid
-        .mkString(", ")}"""
+      val error = s"Invalid config provided to mysql; unimplemented repos included: $invalid"
       IO.raiseError(DataStoreStartupError(error))
     }
   }
@@ -58,20 +58,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     new DataStore(zoneRepository = zones, batchChangeRepository = batchChanges)
   }
 
-  def initializeDb(settings: MySqlDataStoreSettings): IO[Unit] = IO {
-    val dataSource: DataSource = {
-      val ds = new HikariDataSource()
-      ds.setDriverClassName(settings.driver)
-      ds.setJdbcUrl(settings.url)
-      ds.setUsername(settings.user)
-      ds.setPassword(settings.password)
-      ds.setConnectionTimeout(settings.connectionTimeoutMillis)
-      ds.setMaximumPoolSize(settings.poolMaxSize)
-      ds.setMaxLifetime(settings.maxLifeTime)
-      ds.setRegisterMbeans(true)
-      ds
-    }
-
+  def runDBMigrations(settings: MySqlDataStoreSettings): IO[Unit] = IO {
     // Migration needs to happen on the base URL, not the table URL, thus the separate source
     lazy val migrationDataSource: DataSource = {
       val ds = new HikariDataSource()
@@ -103,6 +90,21 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     // Runs flyway migrations
     migration.migrate()
     logger.info("migrations complete")
+  }
+
+  def setupDBConnection(settings: MySqlDataStoreSettings): IO[Unit] = IO {
+    val dataSource: DataSource = {
+      val ds = new HikariDataSource()
+      ds.setDriverClassName(settings.driver)
+      ds.setJdbcUrl(settings.url)
+      ds.setUsername(settings.user)
+      ds.setPassword(settings.password)
+      ds.setConnectionTimeout(settings.connectionTimeoutMillis)
+      ds.setMaximumPoolSize(settings.poolMaxSize)
+      ds.setMaxLifetime(settings.maxLifeTime)
+      ds.setRegisterMbeans(true)
+      ds
+    }
 
     logger.info("configuring connection pool")
 
@@ -116,4 +118,5 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
     logger.info("database init complete")
   }
+
 }
