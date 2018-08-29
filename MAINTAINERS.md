@@ -146,6 +146,8 @@ We are using sbt-release to run our release steps and auto-bump the version in `
 script will first run functional tests, then kick off `sbt release`, which also runs unit and integration tests before
 running the release
 
+1. Export `VINYLDNS_RELEASE` as either true or false, with false being a snapshot and not a full release. Note: a snapshot
+will not update docker latest, and will only publish core module to sonatype staging repo
 1. Follow [Docker Content Trust](#docker-content-trust) to setup a notary delegation for yourself
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
 1. Note: the release is set to fail if you have uncommitted changes
@@ -154,5 +156,3 @@ running the release
 1. When it comes to the sonatype stage, you will need the passphrase handy for the signing key, [Sonatype Credentials](#sonatype-credentials)
 1. Assuming things were successful, make a pr since sbt release auto-bumped `version.sbt` and made a commit for you
 
-> Note: If the version suffix ends is SNAPSHOT, then the core module will only be released to the sonatype staging repo, 
-and sbt release will skip the sonatypeRelease stage
