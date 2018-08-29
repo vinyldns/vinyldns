@@ -42,8 +42,6 @@ class DnsConnectionSpec
     with ResultHelpers
     with BeforeAndAfterEach {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   private val zoneConnection =
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
   private val testZone = Zone("vinyldns", "test@test.com")

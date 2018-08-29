@@ -18,18 +18,18 @@ package vinyldns.api.repository.dynamodb
 
 import java.util.Collections
 
-import akka.actor.Scheduler
-import akka.pattern.after
+import cats.effect._
+import cats.syntax.all._
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodbv2.model._
 import com.amazonaws.services.dynamodbv2.util.TableUtils
 import org.slf4j.Logger
-import vinyldns.api.{VinylDNSConfig, VinylDNSMetrics}
+import vinyldns.api.VinylDNSMetrics
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
 
 private class RetryStateHolder(var retries: Int = 10, var backoff: FiniteDuration = 1.millis)
 
@@ -45,10 +45,6 @@ trait DynamoUtils {
 
 /* Used to provide an exponential backoff in the event of a Provisioned Throughput Exception */
 class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
-
-  private val dynamoActorSystem = VinylDNSConfig.system
-  private implicit val ec: ExecutionContext = dynamoActorSystem.dispatcher
-  private val scheduler: Scheduler = dynamoActorSystem.scheduler
 
   private[repository] val retryCount: Int = 10
   private val retryBackoff: FiniteDuration = 1.millis
@@ -71,31 +67,31 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
   def shutdown(): Unit = dynamoDB.shutdown()
 
   private[repository] def send[In <: AmazonWebServiceRequest, Out](aws: In, func: In => Out)(
-      implicit d: Describe[_ >: In]): Future[Out] = {
+      implicit d: Describe[_ >: In]): IO[Out] = {
 
     def name = d.desc(aws)
 
-    def sendSingle(retryState: RetryStateHolder): Future[Out] =
-      Future {
+    def sendSingle(retryState: RetryStateHolder): IO[Out] =
+      IO {
         callRateMeter.mark()
         func(aws)
-      }.recoverWith {
+      }.handleErrorWith {
         case _: ProvisionedThroughputExceededException if retryState.retries > 0 =>
           provisionedThroughputMeter.mark()
           val backoff = retryState.backoff
           retryState.retries -= 1
           retryState.backoff *= 2
           log.warn(s"provisioned throughput exceeded for aws request $name")
-          after(backoff, scheduler)(sendSingle(retryState))
+          IO.sleep(backoff) *> sendSingle(retryState)
         case _: ProvisionedThroughputExceededException if retryState.retries == 0 =>
           retriesExceededMeter.mark()
           log.error(s"exhausted retries for aws request $name")
-          Future.failed(DynamoDBRetriesExhaustedException(s"Exhausted retries for $name"))
+          IO.raiseError(DynamoDBRetriesExhaustedException(s"Exhausted retries for $name"))
         case other =>
           dynamoUnexpectedFailuresMeter.mark()
           val n = name
           log.error(s"failure while executing $n", other)
-          Future.failed(other)
+          IO.raiseError(other)
       }
 
     val state = new RetryStateHolder(retryCount, retryBackoff)
@@ -153,51 +149,51 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
     dynamoUtils.waitUntilActive(dynamoDB, createTableRequest.getTableName())
   }
 
-  def listTables(aws: ListTablesRequest): Future[ListTablesResult] =
+  def listTables(aws: ListTablesRequest): IO[ListTablesResult] =
     send[ListTablesRequest, ListTablesResult](aws, dynamoDB.listTables)
 
-  def describeTable(aws: DescribeTableRequest): Future[DescribeTableResult] =
+  def describeTable(aws: DescribeTableRequest): IO[DescribeTableResult] =
     send[DescribeTableRequest, DescribeTableResult](aws, dynamoDB.describeTable)
 
-  def createTable(aws: CreateTableRequest): Future[CreateTableResult] =
+  def createTable(aws: CreateTableRequest): IO[CreateTableResult] =
     send[CreateTableRequest, CreateTableResult](aws, dynamoDB.createTable)
 
-  def updateTable(aws: UpdateTableRequest): Future[UpdateTableResult] =
+  def updateTable(aws: UpdateTableRequest): IO[UpdateTableResult] =
     send[UpdateTableRequest, UpdateTableResult](aws, dynamoDB.updateTable)
 
-  def deleteTable(aws: DeleteTableRequest): Future[DeleteTableResult] =
+  def deleteTable(aws: DeleteTableRequest): IO[DeleteTableResult] =
     send[DeleteTableRequest, DeleteTableResult](aws, dynamoDB.deleteTable)
 
-  def query(aws: QueryRequest): Future[QueryResult] =
+  def query(aws: QueryRequest): IO[QueryResult] =
     send[QueryRequest, QueryResult](aws, dynamoDB.query)
 
-  def scan(aws: ScanRequest): Future[ScanResult] =
+  def scan(aws: ScanRequest): IO[ScanResult] =
     send[ScanRequest, ScanResult](aws, dynamoDB.scan)
 
-  def putItem(aws: PutItemRequest): Future[PutItemResult] =
+  def putItem(aws: PutItemRequest): IO[PutItemResult] =
     send[PutItemRequest, PutItemResult](aws, dynamoDB.putItem)
 
-  def getItem(aws: GetItemRequest): Future[GetItemResult] =
+  def getItem(aws: GetItemRequest): IO[GetItemResult] =
     send[GetItemRequest, GetItemResult](aws, dynamoDB.getItem)
 
-  def updateItem(aws: UpdateItemRequest): Future[UpdateItemResult] =
+  def updateItem(aws: UpdateItemRequest): IO[UpdateItemResult] =
     send[UpdateItemRequest, UpdateItemResult](aws, dynamoDB.updateItem)
 
-  def deleteItem(aws: DeleteItemRequest): Future[DeleteItemResult] =
+  def deleteItem(aws: DeleteItemRequest): IO[DeleteItemResult] =
     send[DeleteItemRequest, DeleteItemResult](aws, dynamoDB.deleteItem)
 
-  def scanAll(aws: ScanRequest): Future[List[ScanResult]] =
+  def scanAll(aws: ScanRequest): IO[List[ScanResult]] =
     scan(aws).flatMap(result => continueScanning(aws, result, List(result)))
 
   private def continueScanning(
       request: ScanRequest,
       result: ScanResult,
-      acc: List[ScanResult]): Future[List[ScanResult]] =
+      acc: List[ScanResult]): IO[List[ScanResult]] =
     result.getLastEvaluatedKey match {
 
       case lastEvaluatedKey if lastEvaluatedKey == null || lastEvaluatedKey.isEmpty =>
         // there is no last evaluated key, that means we are done querying
-        Future.successful(acc)
+        IO.pure(acc)
 
       case lastEvaluatedKey =>
         // set the exclusive start key to the last evaluated key
@@ -210,14 +206,14 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
             continueScanning(continuedQuery, continuedResult, acc :+ continuedResult))
     }
 
-  def queryAll(aws: QueryRequest): Future[List[QueryResult]] =
+  def queryAll(aws: QueryRequest): IO[List[QueryResult]] =
     query(aws).flatMap(result => continueQuerying(aws, result, List(result)))
 
   /* Supports query all by continuing to query until there is no last evaluated key */
   private def continueQuerying(
       request: QueryRequest,
       result: QueryResult,
-      acc: List[QueryResult]): Future[List[QueryResult]] = {
+      acc: List[QueryResult]): IO[List[QueryResult]] = {
 
     val lastCount = result.getCount
     val limit =
@@ -227,11 +223,11 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
       case lastEvaluatedKey if lastEvaluatedKey == null || lastEvaluatedKey.isEmpty =>
         // there is no last evaluated key, that means we are done querying
-        Future.successful(acc)
+        IO.pure(acc)
 
       case _ if limit.exists(_ <= lastCount) =>
         //maxItems from limit has been achieved
-        Future.successful(acc)
+        IO.pure(acc)
 
       case lastEvaluatedKey =>
         // set the exclusive start key to the last evaluated key
@@ -255,7 +251,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
       table: String,
       aws: BatchWriteItemRequest,
       retries: Int = 10,
-      backoff: FiniteDuration = 1.millis): Future[BatchWriteItemResult] =
+      backoff: FiniteDuration = 1.millis): IO[BatchWriteItemResult] =
     send[BatchWriteItemRequest, BatchWriteItemResult](aws, dynamoDB.batchWriteItem)
       .flatMap(r => sendUnprocessedBatchWriteItems(table, r, retries, backoff))
 
@@ -268,7 +264,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
       .withRequestItems(writes)
       .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
 
-  def batchGetItem(aws: BatchGetItemRequest): Future[BatchGetItemResult] =
+  def batchGetItem(aws: BatchGetItemRequest): IO[BatchGetItemResult] =
     send[BatchGetItemRequest, BatchGetItemResult](aws, dynamoDB.batchGetItem)
 
   /* sends unprocessed items back to dynamo in a retry loop with backoff */
@@ -277,7 +273,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
       result: BatchWriteItemResult,
       retriesRemaining: Int,
       backoff: FiniteDuration
-  ): Future[BatchWriteItemResult] = {
+  ): IO[BatchWriteItemResult] = {
 
     // calculate how many items were not processed yet, we need to re-submit those
     val unprocessed: Int = result.getUnprocessedItems.get(tableName) match {
@@ -287,7 +283,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
     if (unprocessed == 0) {
       // if there are no items left to process, let's indicate that we are good!
-      Future.successful(result)
+      IO.pure(result)
     } else if (retriesRemaining == 0) {
       // there are unprocessed items still remaining, but we have exhausted our retries, consider this FAILED
       log.error("Exhausted retries while sending batch write")
@@ -299,29 +295,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
         s"Unable to process all items in batch for table $tableName, resubmitting new batch with $unprocessed " +
           s"items remaining")
       val nextBatch = toBatchWriteItemRequest(result.getUnprocessedItems)
-      after(backoff, scheduler)(
-        batchWriteItem(tableName, nextBatch, retriesRemaining - 1, backoff * 2))
-    }
-  }
-
-  def lazyScanAll(request: ScanRequest)
-    : scala.collection.immutable.Stream[java.util.Map[java.lang.String, AttributeValue]] = {
-    // returns a stream of scanned items so all results are not loaded into memory at once
-    log.info("retrieving record sets...")
-
-    val scanResults = Await.result(scan(request), 20.seconds)
-
-    val items = scanResults.getItems.asScala.toStream
-
-    scanResults.getLastEvaluatedKey match {
-      case lastEvaluatedKey if lastEvaluatedKey == null || lastEvaluatedKey.isEmpty => {
-        log.info("Stream Done")
-        items
-      }
-      case lastEvaluatedKey => {
-        request.withExclusiveStartKey(lastEvaluatedKey)
-        items #::: lazyScanAll(request)
-      }
+      IO.sleep(backoff) *> batchWriteItem(tableName, nextBatch, retriesRemaining - 1, backoff * 2)
     }
   }
 }

@@ -21,14 +21,12 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.ZoneRepository
 
-import scala.concurrent.ExecutionContext
-
 class MembershipService(
     groupRepo: GroupRepository,
     userRepo: UserRepository,
     membershipRepo: MembershipRepository,
     zoneRepo: ZoneRepository,
-    groupChangeRepo: GroupChangeRepository)(implicit ec: ExecutionContext)
+    groupChangeRepo: GroupChangeRepository)
     extends MembershipServiceAlgebra {
 
   import MembershipValidations._

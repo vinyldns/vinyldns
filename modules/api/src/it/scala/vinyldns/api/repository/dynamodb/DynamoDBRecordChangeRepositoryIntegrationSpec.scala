@@ -29,13 +29,12 @@ import vinyldns.api.domain.zone.{Zone, ZoneStatus}
 import vinyldns.api.domain.{record, zone}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.Await
 
 class DynamoDBRecordChangeRepositoryIntegrationSpec
     extends DynamoDBIntegrationSpec
     with Eventually {
 
-  private implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.global
   private val recordChangeTable = "record-change-live"
 
   private val tableConfig = ConfigFactory.parseString(s"""
@@ -211,7 +210,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
     var notReady = true
     while (notReady) {
-      val result = Await.ready(repo.getRecordSetChange("any", "any"), 5.seconds)
+      val result = Await.ready(repo.getRecordSetChange("any", "any").unsafeToFuture(), 5.seconds)
       notReady = result.value.get.isFailure
     }
 
@@ -223,7 +222,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       val savedChangeSet = repo.save(changeSet)
 
       // Wait until all of the change sets are saved
-      Await.result(savedChangeSet, 5.minutes)
+      Await.result(savedChangeSet.unsafeToFuture(), 5.minutes)
     }
 
     changeSetsC.foreach { changeSet =>
@@ -231,7 +230,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       val savedChangeSet = repo.save(changeSet)
 
       // Wait until all of the change sets are saved
-      Await.result(savedChangeSet, 5.minutes)
+      Await.result(savedChangeSet.unsafeToFuture(), 5.minutes)
     }
   }
 
@@ -275,14 +274,14 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
           retrieved <- repo.getRecordSetChange(saved.zoneId, testRecordSetChange.id)
         } yield retrieved
 
-      whenReady(f, timeout) { result =>
+      whenReady(f.unsafeToFuture(), timeout) { result =>
         result shouldBe Some(testRecordSetChange)
       }
     }
 
     "get changes by zone id" in {
       val f = repo.getChanges(zoneA.id)
-      whenReady(f, timeout) { result =>
+      whenReady(f.unsafeToFuture(), timeout) { result =>
         val sortedResults = result.map { changeSet =>
           changeSet.copy(changes = changeSet.changes.sortBy(_.id))
         }
@@ -295,7 +294,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
     "get pending changes by zone id are sorted by earliest created timestamp" in {
       val f = repo.getPendingChangeSets(zoneA.id)
-      whenReady(f, timeout) { result =>
+      whenReady(f.unsafeToFuture(), timeout) { result =>
         val sortedResults = result.map { changeSet =>
           changeSet.copy(changes = changeSet.changes.sortBy(_.id))
         }
@@ -311,7 +310,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     "list all record set changes in zone C" in {
       eventually {
         val testFuture = repo.listRecordSetChanges(zoneC.id)
-        whenReady(testFuture, timeout) { result =>
+        whenReady(testFuture.unsafeToFuture(), timeout) { result =>
           result.items shouldBe recordSetChanges
         }
       }
@@ -319,7 +318,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
     "list record set changes with a page size of one" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 1)
-      whenReady(testFuture, timeout) { result =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
         {
           result.items shouldBe recordSetChanges.take(1)
         }
@@ -328,11 +327,11 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
     "list record set changes with page size of one and reuse key to get another page with size of two" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 1)
-      whenReady(testFuture, timeout) { result =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
         {
           val key = result.nextId
           val testFuture2 = repo.listRecordSetChanges(zoneC.id, startFrom = key, maxItems = 2)
-          whenReady(testFuture2, timeout) { result =>
+          whenReady(testFuture2.unsafeToFuture(), timeout) { result =>
             {
               val page2 = result.items
               page2 shouldBe recordSetChanges.slice(1, 3)
@@ -344,11 +343,11 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
     "return an empty list and nextId of None when passing last record as start" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 9)
-      whenReady(testFuture, timeout) { result =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
         {
           val key = result.nextId
           val testFuture2 = repo.listRecordSetChanges(zoneC.id, startFrom = key)
-          whenReady(testFuture2, timeout) { result =>
+          whenReady(testFuture2.unsafeToFuture(), timeout) { result =>
             {
               result.nextId shouldBe None
               result.items shouldBe List()
@@ -360,14 +359,14 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
     "have nextId of None when exhausting record changes" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 10)
-      whenReady(testFuture, timeout) { result =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
         result.nextId shouldBe None
       }
     }
 
     "return empty list with startFrom of zero" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, startFrom = Some("0"))
-      whenReady(testFuture, timeout) { result =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
         {
           result.nextId shouldBe None
           result.items shouldBe List()

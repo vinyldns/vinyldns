@@ -33,7 +33,7 @@ import vinyldns.api.domain.batch._
 import vinyldns.api.domain.record.RecordType._
 import vinyldns.api.domain.record._
 
-import scala.concurrent.Future
+import cats.effect._
 
 class BatchChangeRoutingSpec
     extends WordSpec
@@ -144,42 +144,41 @@ class BatchChangeRoutingSpec
   object TestBatchChangeService extends BatchChangeServiceAlgebra {
     def applyBatchChange(
         batchChangeInput: BatchChangeInput,
-        auth: AuthPrincipal): EitherT[Future, BatchChangeErrorResponse, BatchChange] =
+        auth: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       batchChangeInput.comments match {
         case Some("validChangeWithComments") =>
-          EitherT[Future, BatchChangeErrorResponse, BatchChange](
-            Future.successful(Right(validResponseWithComments)))
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Right(validResponseWithComments)))
         case None =>
-          EitherT[Future, BatchChangeErrorResponse, BatchChange](
-            Future.successful(Right(validResponseWithoutComments)))
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Right(validResponseWithoutComments)))
         case Some("runtimeException") =>
           throw new RuntimeException("Unexpected run-time exception has occurred!")
         case Some("batchChangeIsEmpty") =>
-          EitherT[Future, BatchChangeErrorResponse, BatchChange](
-            Future.successful(Left(BatchChangeIsEmpty(batchChangeLimit))))
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Left(BatchChangeIsEmpty(batchChangeLimit))))
         case Some("changeLimitExceeded") =>
-          EitherT[Future, BatchChangeErrorResponse, BatchChange](
-            Future.successful(Left(ChangeLimitExceeded(batchChangeLimit))))
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Left(ChangeLimitExceeded(batchChangeLimit))))
         case Some(_) =>
-          EitherT[Future, BatchChangeErrorResponse, BatchChange](
-            Future.successful(Right(genericValidResponse)))
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))
       }
 
     def getBatchChange(
         id: String,
-        auth: AuthPrincipal): EitherT[Future, BatchChangeErrorResponse, BatchChange] =
+        auth: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       id match {
-        case "batchId" => EitherT(Future.successful(genericValidResponse.asRight))
+        case "batchId" => EitherT(IO.pure(genericValidResponse.asRight))
         case "nonexistentID" =>
-          EitherT(Future.successful(BatchChangeNotFound("nonexistentID").asLeft))
+          EitherT(IO.pure(BatchChangeNotFound("nonexistentID").asLeft))
         case "notAuthedID" =>
-          EitherT(Future.successful(UserNotAuthorizedError("notAuthedID").asLeft))
+          EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
       }
 
     def listBatchChangeSummaries(
         auth: AuthPrincipal,
         startFrom: Option[Int],
-        maxItems: Int): EitherT[Future, BatchChangeErrorResponse, BatchChangeSummaryList] =
+        maxItems: Int): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
         (auth, startFrom, maxItems) match {
           case (_, None, 100) =>

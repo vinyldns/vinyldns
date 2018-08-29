@@ -23,8 +23,7 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.zone.ZoneRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._
 
 class HealthServiceSpec
     extends WordSpec
@@ -38,13 +37,13 @@ class HealthServiceSpec
 
   "Checking Status" should {
     "return an error if the zone repository could not be reached" in {
-      doReturn(Future.failed(new RuntimeException("fail"))).when(mockZoneRepo).getZone("notFound")
+      doReturn(IO.raiseError(new RuntimeException("fail"))).when(mockZoneRepo).getZone("notFound")
       val result = leftResultOf(underTest.checkHealth().value)
       result shouldBe a[RuntimeException]
     }
 
     "return success if the zone repository returns appropriately" in {
-      doReturn(Future.successful(None)).when(mockZoneRepo).getZone("notFound")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notFound")
       val result = awaitResultOf(underTest.checkHealth().value)
       result should be(right)
     }

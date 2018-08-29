@@ -18,6 +18,7 @@ package vinyldns.api.repository.mysql
 
 import java.util.UUID
 
+import cats.effect._
 import org.joda.time.DateTime
 import org.scalatest._
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
@@ -28,8 +29,6 @@ import vinyldns.api.domain.batch._
 import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.record.{AAAAData, AData}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class JdbcBatchChangeRepositoryIntegrationSpec
     extends WordSpec
@@ -44,7 +43,6 @@ class JdbcBatchChangeRepositoryIntegrationSpec
     with Inspectors
     with OptionValues {
 
-  private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private var repo: JdbcBatchChangeRepository = _
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
@@ -200,7 +198,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
 
   "JdbcBatchChangeRepository" should {
     "save batch changes and single changes" in {
-      val f = repo.save(bcARecords)
+      val f = repo.save(bcARecords).unsafeToFuture()
       whenReady(f, timeout) { saved =>
         saved shouldBe bcARecords
       }
@@ -213,13 +211,13 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChange(bcARecords.id)
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         areSame(retrieved, Some(bcARecords))
       }
     }
 
     "return none if a batchchange is not found by id" in {
-      whenReady(repo.getBatchChange("doesnotexist"), timeout) { retrieved =>
+      whenReady(repo.getBatchChange("doesnotexist").unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe empty
       }
     }
@@ -231,7 +229,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getSingleChanges(bcARecords.changes.map(_.id))
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe bcARecords.changes
       }
     }
@@ -239,7 +237,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
     "not fail on get empty list of singlechanges" in {
       val f = repo.getSingleChanges(List())
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe List()
       }
     }
@@ -254,10 +252,10 @@ class JdbcBatchChangeRepositoryIntegrationSpec
             .map { r =>
               repo.getSingleChanges(r.changes.map(_.id).reverse)
             }
-            .getOrElse(Future.successful[List[SingleChange]](Nil))
+            .getOrElse(IO.pure[List[SingleChange]](Nil))
         } yield (retrieved, singleChanges)
 
-      whenReady(f, timeout) {
+      whenReady(f.unsafeToFuture(), timeout) {
         case (maybeBatchChange, singleChanges) =>
           maybeBatchChange.value.changes shouldBe singleChanges
       }
@@ -273,7 +271,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getSingleChanges(completed.map(_.id))
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe completed
       }
     }
@@ -281,7 +279,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
     "not fail on empty update singlechanges" in {
       val f = repo.updateSingleChanges(List())
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe List()
       }
     }
@@ -297,7 +295,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getSingleChanges(batchChange.changes.map(_.id))
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe completed ++ incomplete
       }
     }
@@ -331,7 +329,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           BatchChangeSummary(change_one))
       )
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         areSame(retrieved, expectedChanges)
       }
     }
@@ -367,7 +365,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
         3
       )
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         areSame(retrieved, expectedChanges)
       }
     }
@@ -408,7 +406,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
         3
       )
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         areSame(retrieved, expectedChanges)
       }
     }
@@ -442,7 +440,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
       val expectedChanges =
         BatchChangeSummaryList(List(BatchChangeSummary(change_three)), Some(1), Some(2), 1)
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         areSame(retrieved, expectedChanges)
       }
     }
@@ -485,15 +483,16 @@ class JdbcBatchChangeRepositoryIntegrationSpec
         100
       )
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         areSame(retrieved._1, expectedChanges)
         areSame(retrieved._2, secondPageExpectedChanges)
       }
     }
 
     "return empty list if a batchchange summary is not found by user id" in {
-      whenReady(repo.getBatchChangeSummariesByUserId("doesnotexist"), timeout) { retrieved =>
-        retrieved.batchChanges shouldBe empty
+      whenReady(repo.getBatchChangeSummariesByUserId("doesnotexist").unsafeToFuture(), timeout) {
+        retrieved =>
+          retrieved.batchChanges shouldBe empty
       }
     }
   }

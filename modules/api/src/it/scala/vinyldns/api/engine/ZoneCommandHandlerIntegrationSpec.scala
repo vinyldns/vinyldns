@@ -37,7 +37,7 @@ import vinyldns.api.repository.dynamodb.{
 import vinyldns.api.repository.mysql.VinylDNSJDBC
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext}
 
 class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eventually {
 
@@ -188,7 +188,7 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
 
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {
-        val getZone = zoneRepo.getZone(testZone.id)
+        val getZone = zoneRepo.getZone(testZone.id).unsafeToFuture()
         whenReady(getZone) { zn =>
           zn.get.email shouldBe "updated@test.com"
         }
@@ -200,7 +200,7 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
         RecordSetChange.forUpdate(inDbRecordSet, inDbRecordSet.copy(ttl = 1234), testZone)
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {
-        val getRs = recordSetRepo.getRecordSet(testZone.id, inDbRecordSet.id)
+        val getRs = recordSetRepo.getRecordSet(testZone.id, inDbRecordSet.id).unsafeToFuture()
         whenReady(getRs) { rs =>
           rs.get.ttl shouldBe 1234
         }
@@ -216,7 +216,7 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
           ch <- recordChangeRepo.listRecordSetChanges(testZone.id)
         } yield (rs, ch)
 
-        whenReady(validatingQueries) { data =>
+        whenReady(validatingQueries.unsafeToFuture()) { data =>
           val rs = data._1
           rs.get.name shouldBe "vinyldns."
 
@@ -231,8 +231,8 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
     }
   }
 
-  private def waitForSuccess[T](f: => Future[T]): T = {
-    val waiting = f.recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
+  private def waitForSuccess[T](f: => IO[T]): T = {
+    val waiting = f.unsafeToFuture().recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
     Await.result[T](waiting, 15.seconds)
   }
 }

@@ -55,7 +55,7 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
     // wait until the repo is ready, could take time if the table has to be created
     var notReady = true
     while (notReady) {
-      val result = Await.ready(repo.getGroupChange("any"), 5.seconds)
+      val result = Await.ready(repo.getGroupChange("any").unsafeToFuture(), 5.seconds)
       notReady = result.value.get.isFailure
       Thread.sleep(2000)
     }
@@ -63,7 +63,7 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
     clearGroupChanges()
 
     // Create all the changes
-    val savedGroupChanges = Future.sequence(groupChanges.map(repo.save))
+    val savedGroupChanges = Future.sequence(groupChanges.map(repo.save(_).unsafeToFuture()))
 
     // Wait until all of the changes are done
     Await.result(savedGroupChanges, 5.minutes)
@@ -73,7 +73,7 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
 
     val request = new DeleteTableRequest().withTableName(GROUP_CHANGES_TABLE)
     val deleteTables = dynamoDBHelper.deleteTable(request)
-    Await.ready(deleteTables, 100.seconds)
+    Await.ready(deleteTables.unsafeToFuture(), 100.seconds)
   }
 
   private def clearGroupChanges(): Unit = {
@@ -105,13 +105,13 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
   "DynamoDBGroupChangeRepository" should {
     "get a group change by id" in {
       val targetGroupChange = okGroupChange
-      whenReady(repo.getGroupChange(targetGroupChange.id), timeout) { retrieved =>
+      whenReady(repo.getGroupChange(targetGroupChange.id).unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe Some(targetGroupChange)
       }
     }
 
     "return none when no matching id is found" in {
-      whenReady(repo.getGroupChange("NotFound"), timeout) { retrieved =>
+      whenReady(repo.getGroupChange("NotFound").unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe None
       }
     }
@@ -125,7 +125,7 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
           retrieved <- repo.getGroupChange(saved.id)
         } yield retrieved
 
-      whenReady(test, timeout) { saved =>
+      whenReady(test.unsafeToFuture(), timeout) { saved =>
         saved shouldBe Some(targetGroupChange)
       }
     }
@@ -139,25 +139,28 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
           retrieved <- repo.getGroupChange(saved.id)
         } yield retrieved
 
-      whenReady(test, timeout) { saved =>
+      whenReady(test.unsafeToFuture(), timeout) { saved =>
         saved shouldBe Some(targetGroupChange)
       }
     }
 
     "getGroupChanges should return the recent changes and the correct last key" in {
-      whenReady(repo.getGroupChanges(oneUserDummyGroup.id, None, 100), timeout) { retrieved =>
-        retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 100)
-        retrieved.lastEvaluatedTimeStamp shouldBe Some(
-          listOfDummyGroupChanges(99).created.getMillis.toString)
+      whenReady(repo.getGroupChanges(oneUserDummyGroup.id, None, 100).unsafeToFuture(), timeout) {
+        retrieved =>
+          retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 100)
+          retrieved.lastEvaluatedTimeStamp shouldBe Some(
+            listOfDummyGroupChanges(99).created.getMillis.toString)
       }
     }
 
     "getGroupChanges should start using the time startFrom" in {
       whenReady(
-        repo.getGroupChanges(
-          oneUserDummyGroup.id,
-          Some(listOfDummyGroupChanges(50).created.getMillis.toString),
-          100),
+        repo
+          .getGroupChanges(
+            oneUserDummyGroup.id,
+            Some(listOfDummyGroupChanges(50).created.getMillis.toString),
+            100)
+          .unsafeToFuture(),
         timeout) { retrieved =>
         retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(51, 151)
         retrieved.lastEvaluatedTimeStamp shouldBe Some(
@@ -167,10 +170,12 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
 
     "getGroupChanges returns entire page and nextId = None if there are less than maxItems left" in {
       whenReady(
-        repo.getGroupChanges(
-          oneUserDummyGroup.id,
-          Some(listOfDummyGroupChanges(200).created.getMillis.toString),
-          100),
+        repo
+          .getGroupChanges(
+            oneUserDummyGroup.id,
+            Some(listOfDummyGroupChanges(200).created.getMillis.toString),
+            100)
+          .unsafeToFuture(),
         timeout) { retrieved =>
         retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(201, 300)
         retrieved.lastEvaluatedTimeStamp shouldBe None
@@ -185,7 +190,7 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
           page3 <- repo.getGroupChanges(oneUserDummyGroup.id, page2.lastEvaluatedTimeStamp, 100)
           page4 <- repo.getGroupChanges(oneUserDummyGroup.id, page3.lastEvaluatedTimeStamp, 100)
         } yield (page1, page2, page3, page4)
-      whenReady(test, timeout) { retrieved =>
+      whenReady(test.unsafeToFuture(), timeout) { retrieved =>
         retrieved._1.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 100)
         retrieved._1.lastEvaluatedTimeStamp shouldBe Some(
           listOfDummyGroupChanges(99).created.getMillis.toString)
@@ -205,20 +210,22 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
     }
 
     "getGroupChanges should return `maxItem` items" in {
-      whenReady(repo.getGroupChanges(oneUserDummyGroup.id, None, 5), timeout) { retrieved =>
-        retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 5)
-        retrieved.lastEvaluatedTimeStamp shouldBe Some(
-          listOfDummyGroupChanges(4).created.getMillis.toString)
+      whenReady(repo.getGroupChanges(oneUserDummyGroup.id, None, 5).unsafeToFuture(), timeout) {
+        retrieved =>
+          retrieved.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(0, 5)
+          retrieved.lastEvaluatedTimeStamp shouldBe Some(
+            listOfDummyGroupChanges(4).created.getMillis.toString)
       }
     }
 
     "getGroupChanges should handle changes inserted in random order" in {
       // group changes have a random time stamp and inserted in random order
       eventually(timeout) {
-        whenReady(repo.getGroupChanges(randomTimeGroup.id, None, 100), timeout) { retrieved =>
-          val sorted = listOfRandomTimeGroupChanges.sortBy(_.created)
-          retrieved.changes should contain theSameElementsAs sorted.slice(0, 100)
-          retrieved.lastEvaluatedTimeStamp shouldBe Some(sorted(99).created.getMillis.toString)
+        whenReady(repo.getGroupChanges(randomTimeGroup.id, None, 100).unsafeToFuture(), timeout) {
+          retrieved =>
+            val sorted = listOfRandomTimeGroupChanges.sortBy(_.created)
+            retrieved.changes should contain theSameElementsAs sorted.slice(0, 100)
+            retrieved.lastEvaluatedTimeStamp shouldBe Some(sorted(99).created.getMillis.toString)
         }
       }
     }

@@ -16,19 +16,18 @@
 
 package vinyldns.api.domain.zone
 
-import vinyldns.api.route.Monitored
+import cats.effect._
 import org.xbill.DNS
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.record.RecordSetRepository
+import vinyldns.api.route.Monitored
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 
 trait ZoneViewLoader {
-  def load: () => Future[ZoneView]
+  def load: () => IO[ZoneView]
 }
 
 object DnsZoneViewLoader extends DnsConversions {
@@ -58,10 +57,10 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
     with DnsConversions
     with Monitored {
 
-  def load: () => Future[ZoneView] =
+  def load: () => IO[ZoneView] =
     () =>
       monitor("dns.loadZoneView") {
-        Future {
+        IO {
           val xfr = zoneTransfer(zone)
           xfr.run()
 
@@ -79,7 +78,7 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
 case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepository)
     extends ZoneViewLoader
     with Monitored {
-  def load: () => Future[ZoneView] =
+  def load: () => IO[ZoneView] =
     () =>
       monitor("vinyldns.loadZoneView") {
         recordSetRepository

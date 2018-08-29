@@ -16,26 +16,24 @@
 
 package vinyldns.api.domain.membership
 
+import cats.effect._
+import cats.implicits._
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBMembershipRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 trait MembershipRepository extends Repository {
 
-  def addMembers(groupId: String, memberUserIds: Set[String]): Future[Set[String]]
+  def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
 
-  def removeMembers(groupId: String, memberUserIds: Set[String]): Future[Set[String]]
+  def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
 
-  def getGroupsForUser(userId: String): Future[Set[String]]
+  def getGroupsForUser(userId: String): IO[Set[String]]
 }
 
 object MembershipRepository {
   def apply(): MembershipRepository =
     DynamoDBMembershipRepository()
 
-  def loadTestData(repository: MembershipRepository): Future[Set[Set[String]]] = Future.sequence {
-    Set("ok-group", "ok").map(repository.addMembers(_, Set("ok")))
-  }
+  def loadTestData(repository: MembershipRepository): IO[Set[Set[String]]] =
+    List("ok-group", "ok").map(repository.addMembers(_, Set("ok"))).parSequence.map(_.toSet)
 }

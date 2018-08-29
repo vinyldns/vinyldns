@@ -91,11 +91,13 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
     var notReady = true
     while (notReady) {
       val result = Await.ready(
-        repo.listRecordSets(
-          zoneId = "any",
-          startFrom = None,
-          maxItems = None,
-          recordNameFilter = None),
+        repo
+          .listRecordSets(
+            zoneId = "any",
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = None)
+          .unsafeToFuture(),
         5.seconds)
       notReady = result.value.get.isFailure
       Thread.sleep(1000)
@@ -105,7 +107,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
     clearTable()
 
     // Create all the zones
-    val savedRecordSets = Future.sequence(recordSets.map(repo.putRecordSet))
+    val savedRecordSets = Future.sequence(recordSets.map(repo.putRecordSet(_).unsafeToFuture()))
 
     // Wait until all of the zones are done
     Await.result(savedRecordSets, 5.minutes)
@@ -159,7 +161,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = None,
         recordNameFilter = None)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet.recordSets should contain(testRecordSet)
       }
     }
@@ -168,7 +170,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.head
       val expected = 6
       val testFuture = repo.getRecordSetCount(testRecordSet.zoneId)
-      whenReady(testFuture, timeout) { foundRecordSetCount =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSetCount =>
         foundRecordSetCount shouldBe expected
       }
     }
@@ -176,7 +178,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
     "get a record set by record set id and zone id" in {
       val testRecordSet = recordSets.head
       val testFuture = repo.getRecordSet(testRecordSet.zoneId, testRecordSet.id)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe Some(testRecordSet)
       }
     }
@@ -185,7 +187,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.head
       val testFuture =
         repo.getRecordSets(testRecordSet.zoneId, testRecordSet.name, testRecordSet.typ)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -196,7 +198,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         testRecordSet.zoneId,
         testRecordSet.name.toUpperCase(),
         testRecordSet.typ)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -205,7 +207,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.find(_.name.endsWith(".")).get
       val testFuture =
         repo.getRecordSets(testRecordSet.zoneId, testRecordSet.name.dropRight(1), testRecordSet.typ)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -214,7 +216,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.find(_.name.endsWith("dotless")).get
       val testFuture =
         repo.getRecordSets(testRecordSet.zoneId, testRecordSet.name.concat("."), testRecordSet.typ)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -222,7 +224,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
     "get a record set by zone id, name" in {
       val testRecordSet = recordSets.head
       val testFuture = repo.getRecordSetsByName(testRecordSet.zoneId, testRecordSet.name)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -231,7 +233,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.head
       val testFuture =
         repo.getRecordSetsByName(testRecordSet.zoneId, testRecordSet.name.toUpperCase())
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -240,7 +242,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.find(_.name.endsWith(".")).get
       val testFuture =
         repo.getRecordSetsByName(testRecordSet.zoneId, testRecordSet.name.dropRight(1))
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -249,7 +251,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val testRecordSet = recordSets.find(_.name.endsWith("dotless")).get
       val testFuture =
         repo.getRecordSetsByName(testRecordSet.zoneId, testRecordSet.name.concat("."))
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         foundRecordSet shouldBe List(testRecordSet)
       }
     }
@@ -261,7 +263,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets should contain(recordSets(0))
           foundRecordSet.recordSets shouldNot contain(recordSets(1))
@@ -277,7 +279,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None)
-      whenReady(testFutureOne, timeout) { foundRecordSet =>
+      whenReady(testFutureOne.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets should contain(recordSets(0))
           foundRecordSet.recordSets shouldNot contain(recordSets(1))
@@ -287,7 +289,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             startFrom = key,
             maxItems = Some(1),
             recordNameFilter = None)
-          whenReady(testFutureTwo, timeout) { foundRecordSet =>
+          whenReady(testFutureTwo.unsafeToFuture(), timeout) { foundRecordSet =>
             {
               foundRecordSet.recordSets shouldNot contain(recordSets(0))
               foundRecordSet.recordSets should contain(recordSets(1))
@@ -306,7 +308,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = Some(1),
         recordNameFilter = None)
-      whenReady(testFutureOne, timeout) { foundRecordSet =>
+      whenReady(testFutureOne.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets should contain(recordSets(0))
           foundRecordSet.recordSets shouldNot contain(recordSets(1))
@@ -316,7 +318,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             startFrom = key,
             maxItems = Some(2),
             recordNameFilter = None)
-          whenReady(testFutureTwo, timeout) { foundRecordSet =>
+          whenReady(testFutureTwo.unsafeToFuture(), timeout) { foundRecordSet =>
             {
               foundRecordSet.recordSets shouldNot contain(recordSets(0))
               foundRecordSet.recordSets should contain(recordSets(1))
@@ -335,7 +337,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = Some(6),
         recordNameFilter = None)
-      whenReady(testFutureOne, timeout) { foundRecordSet =>
+      whenReady(testFutureOne.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets should contain(recordSets(0))
           foundRecordSet.recordSets should contain(recordSets(1))
@@ -349,7 +351,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             startFrom = key,
             maxItems = Some(6),
             recordNameFilter = None)
-          whenReady(testFutureTwo, timeout) { foundRecordSet =>
+          whenReady(testFutureTwo.unsafeToFuture(), timeout) { foundRecordSet =>
             {
               foundRecordSet.recordSets shouldBe List()
               foundRecordSet.nextId shouldBe None
@@ -366,7 +368,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = Some(7),
         recordNameFilter = None)
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets should contain(recordSets(0))
           foundRecordSet.recordSets should contain(recordSets(1))
@@ -386,7 +388,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("AAAA"))
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets shouldNot contain(recordSets(0))
           foundRecordSet.recordSets shouldNot contain(recordSets(1))
@@ -403,7 +405,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("A"))
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets should contain(recordSets(0))
           foundRecordSet.recordSets should contain(recordSets(1))
@@ -422,7 +424,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         startFrom = None,
         maxItems = None,
         recordNameFilter = Some("Dummy"))
-      whenReady(testFuture, timeout) { foundRecordSet =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { foundRecordSet =>
         {
           foundRecordSet.recordSets shouldBe List()
         }
@@ -444,7 +446,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
       try {
         val f = repo.apply(bigPendingChangeSet)
-        Await.result(f, 1500.seconds)
+        Await.result(f.unsafeToFuture(), 1500.seconds)
 
         // let's fail half of them
         val split = pendingChanges.grouped(pendingChanges.length / 2).toSeq
@@ -453,7 +455,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         val halfFailedChangeSet = record.ChangeSet(halfSuccess ++ halfFailed)
 
         val nextUp = repo.apply(halfFailedChangeSet)
-        Await.result(nextUp, 1500.seconds)
+        Await.result(nextUp.unsafeToFuture(), 1500.seconds)
 
         // let's run our query and see how long until we succeed(which will determine
         // how long it takes DYNAMO to update its index)
@@ -467,7 +469,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             startFrom = None,
             maxItems = None,
             recordNameFilter = None)
-          recordSetsResult = Await.result[ListRecordSetResults](rsQuery, 30.seconds).recordSets
+          recordSetsResult =
+            Await.result[ListRecordSetResults](rsQuery.unsafeToFuture(), 30.seconds).recordSets
           querySuccessful = recordSetsResult.length == halfSuccess.length
           retries += 1
           Thread.sleep(100)

@@ -18,6 +18,7 @@ package vinyldns.api.repository.dynamodb
 
 import java.util.HashMap
 
+import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
@@ -27,9 +28,6 @@ import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.api.protobuf.ProtobufConversions
 import vinyldns.api.route.Monitored
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
 
 object DynamoDBRecordSetRepository extends ProtobufConversions {
 
@@ -103,7 +101,7 @@ class DynamoDBRecordSetRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
 
-  def apply(changeSet: ChangeSet): Future[ChangeSet] =
+  def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
       log.info(
         s"Applying change set for zone ${changeSet.zoneId} with size ${changeSet.changes.size}")
@@ -116,7 +114,7 @@ class DynamoDBRecordSetRepository(
         .map(group => dynamoDBHelper.toBatchWriteItemRequest(group, recordSetTableName))
 
       // Fold left will attempt each batch sequentially, and fail fast on error
-      val result = batchWrites.foldLeft(Future.successful(List.empty[BatchWriteItemResult])) {
+      val result = batchWrites.foldLeft(IO.pure(List.empty[BatchWriteItemResult])) {
         case (acc, req) =>
           acc.flatMap { lst =>
             dynamoDBHelper.batchWriteItem(recordSetTableName, req).map(result => result :: lst)
@@ -127,7 +125,7 @@ class DynamoDBRecordSetRepository(
       result.map(_ => changeSet)
     }
 
-  def putRecordSet(recordSet: RecordSet): Future[RecordSet] = { //TODO remove me
+  def putRecordSet(recordSet: RecordSet): IO[RecordSet] = { //TODO remove me
     val item = toItem(recordSet)
     val request = new PutItemRequest().withTableName(recordSetTableName).withItem(item)
     dynamoDBHelper.putItem(request).map(_ => recordSet)
@@ -137,7 +135,7 @@ class DynamoDBRecordSetRepository(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]): Future[ListRecordSetResults] =
+      recordNameFilter: Option[String]): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       log.info(s"Getting recordSets for zone $zoneId")
 
@@ -173,7 +171,7 @@ class DynamoDBRecordSetRepository(
       } yield ListRecordSetResults(rs, nextId, startFrom, maxItems, recordNameFilter)
     }
 
-  def getRecordSetsByName(zoneId: String, name: String): Future[List[RecordSet]] =
+  def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetByName") {
       log.info(s"Getting recordSet $name from zone $zoneId")
 
@@ -189,7 +187,7 @@ class DynamoDBRecordSetRepository(
       } yield rs
     }
 
-  def getRecordSets(zoneId: String, name: String, typ: RecordType): Future[List[RecordSet]] =
+  def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetsByNameAndType") {
       log.info(s"Getting recordSet $name, zone $zoneId, type $typ")
 
@@ -207,7 +205,7 @@ class DynamoDBRecordSetRepository(
       } yield rs
     }
 
-  def getRecordSet(zoneId: String, recordSetId: String): Future[Option[RecordSet]] =
+  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetById") {
       //Do not need ZoneId, recordSetId is unique
       log.info(s"Getting recordSet $recordSetId and Zone $zoneId")
@@ -223,7 +221,7 @@ class DynamoDBRecordSetRepository(
       }
     }
 
-  def getRecordSetCount(zoneId: String): Future[Int] =
+  def getRecordSetCount(zoneId: String): IO[Int] =
     monitor("repo.RecordSet.getRecordSetCount") {
       log.info(s"Getting record set count zone $zoneId")
 

@@ -35,8 +35,7 @@ import vinyldns.api.domain.zone.Zone
 import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.api.repository.{EmptyRecordSetRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._
 
 class BatchChangeServiceSpec
     extends WordSpec
@@ -129,8 +128,8 @@ class BatchChangeServiceSpec
 
   object TestRecordSetRepo extends EmptyRecordSetRepo {
 
-    override def getRecordSetsByName(zoneId: String, name: String): Future[List[RecordSet]] =
-      Future.successful {
+    override def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
+      IO.pure {
         (zoneId, name) match {
           case ("apex", "apex.test.com.") => List(existingApex)
           case ("base", "non-apex") => List(existingNonApex)
@@ -140,9 +139,9 @@ class BatchChangeServiceSpec
   }
 
   object AlwaysExistsZoneRepo extends EmptyZoneRepo {
-    override def getZonesByNames(zoneNames: Set[String]): Future[Set[Zone]] = {
+    override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] = {
       val zones = zoneNames.map(Zone(_, "test@test.com"))
-      Future.successful(zones)
+      IO.pure(zones)
     }
   }
 
@@ -150,16 +149,16 @@ class BatchChangeServiceSpec
     val dbZones: Set[Zone] =
       Set(apexZone, baseZone, onlyApexZone, onlyBaseZone, ptrZone, delegatedPTRZone, otherPTRZone)
 
-    override def getZonesByNames(zoneNames: Set[String]): Future[Set[Zone]] =
-      Future.successful(dbZones.filter(zn => zoneNames.contains(zn.name)))
+    override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] =
+      IO.pure(dbZones.filter(zn => zoneNames.contains(zn.name)))
 
-    override def getZonesByFilters(zoneNames: Set[String]): Future[Set[Zone]] = {
+    override def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = {
       val zones = for {
         zoneInDB <- dbZones
         zoneMatch <- zoneNames
         if zoneInDB.name.endsWith(zoneMatch)
       } yield zoneInDB
-      Future.successful(zones)
+      IO.pure(zones)
     }
   }
 

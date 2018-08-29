@@ -19,6 +19,8 @@ package vinyldns.api.repository.dynamodb
 import java.util
 import java.util.HashMap
 
+import cats.effect._
+import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.{CreateTableRequest, Projection, _}
 import com.typesafe.config.Config
 import org.joda.time.DateTime
@@ -29,9 +31,6 @@ import vinyldns.api.domain.membership.{Group, GroupRepository, GroupStatus}
 import vinyldns.api.route.Monitored
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 object DynamoDBGroupRepository {
 
@@ -89,10 +88,10 @@ class DynamoDBGroupRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
 
-  def loadData: Future[List[Group]] = Await.ready(GroupRepository.loadTestData(this), 100.seconds)
-  loadData
+  def loadData: IO[List[Group]] = GroupRepository.loadTestData(this)
+  loadData.unsafeRunSync()
 
-  def save(group: Group): Future[Group] =
+  def save(group: Group): IO[Group] =
     monitor("repo.Group.save") {
       log.info(s"Saving group ${group.id} ${group.name}.")
       val item = toItem(group)
@@ -101,7 +100,7 @@ class DynamoDBGroupRepository(
     }
 
   /*Looks up a group.  If the group is not found, or if the group's status is Deleted, will return None */
-  def getGroup(groupId: String): Future[Option[Group]] =
+  def getGroup(groupId: String): IO[Option[Group]] =
     monitor("repo.Group.getGroup") {
       log.info(s"Getting group $groupId.")
       val key = new HashMap[String, AttributeValue]()
@@ -117,7 +116,7 @@ class DynamoDBGroupRepository(
         }
     }
 
-  def getGroups(groupIds: Set[String]): Future[Set[Group]] = {
+  def getGroups(groupIds: Set[String]): IO[Set[Group]] = {
 
     def toBatchGetItemRequest(groupIds: Set[String]): BatchGetItemRequest = {
       val allKeys = new util.ArrayList[util.Map[String, AttributeValue]]()
@@ -157,19 +156,19 @@ class DynamoDBGroupRepository(
       val batchGets = batches.map(toBatchGetItemRequest)
 
       // run the batches in parallel
-      val batchGetFutures = batchGets.map(dynamoDBHelper.batchGetItem)
+      val batchGetIo = batchGets.map(dynamoDBHelper.batchGetItem)
 
-      val allBatches = Future.sequence(batchGetFutures)
+      val allBatches: IO[List[BatchGetItemResult]] = batchGetIo.toList.sequence
 
       val allGroups = allBatches.map { batchGetItemResults =>
         batchGetItemResults.flatMap(parseGroups)
       }
 
-      allGroups
+      allGroups.map(_.toSet)
     }
   }
 
-  def getAllGroups(): Future[Set[Group]] =
+  def getAllGroups(): IO[Set[Group]] =
     monitor("repo.Group.getAllGroups") {
       log.info(s"getting all group IDs")
       val scanRequest = new ScanRequest().withTableName(GROUP_TABLE)
@@ -186,7 +185,7 @@ class DynamoDBGroupRepository(
       }
     }
 
-  def getGroupByName(groupName: String): Future[Option[Group]] =
+  def getGroupByName(groupName: String): IO[Option[Group]] =
     monitor("repo.Group.getGroupByName") {
       log.info(s"Getting group by name $groupName")
       val expressionAttributeValues = new HashMap[String, AttributeValue]

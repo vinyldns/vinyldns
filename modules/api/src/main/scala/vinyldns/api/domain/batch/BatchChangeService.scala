@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import cats.effect._
 import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.api.domain.DomainValidations._
@@ -24,19 +25,17 @@ import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
-import vinyldns.api.domain.record.RecordSetRepository
 import vinyldns.api.domain.record.RecordType._
+import vinyldns.api.domain.record.{RecordSet, RecordSetRepository}
 import vinyldns.api.domain.zone.ZoneRepository
 import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class BatchChangeService(
     zoneRepository: ZoneRepository,
     recordSetRepository: RecordSetRepository,
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
-    batchChangeConverter: BatchChangeConverterAlgebra)(implicit ec: ExecutionContext)
+    batchChangeConverter: BatchChangeConverterAlgebra)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -73,7 +72,7 @@ class BatchChangeService(
       }
       .toBatchResult
 
-  def getZonesForRequest(changes: ValidatedBatch[ChangeInput]): Future[ExistingZones] = {
+  def getZonesForRequest(changes: ValidatedBatch[ChangeInput]): IO[ExistingZones] = {
 
     // zone name possibilities for all non-PTR changes
     def getPossibleNonPtrZoneNames(nonPtr: List[ChangeInput]): Set[String] = {
@@ -126,15 +125,17 @@ class BatchChangeService(
   }
 
   def getExistingRecordSets(
-      changes: ValidatedBatch[ChangeForValidation]): Future[ExistingRecordSets] = {
+      changes: ValidatedBatch[ChangeForValidation]): IO[ExistingRecordSets] = {
     // TODO - this implementation may be problematic with many changes. Need to perf test/later change DB
     val uniqueGets = changes.getValid.map(change => (change.zone.id, change.recordName)).toSet
 
-    val allFutures = uniqueGets.map {
+    val allIO = uniqueGets.map {
       case (zoneId, rsName) => recordSetRepository.getRecordSetsByName(zoneId, rsName)
     }
 
-    Future.sequence(allFutures).map(lst => ExistingRecordSets(lst.toList.flatten))
+    val allSeq: IO[List[List[RecordSet]]] = allIO.toList.sequence
+
+    allSeq.map(lst => ExistingRecordSets(lst.flatten))
   }
 
   def zoneDiscovery(

@@ -19,6 +19,8 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
 import akka.http.scaladsl.server.{AuthenticationFailedRejection, RequestContext}
+import cats.effect._
+import cats.syntax.all._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.auth.{
   AuthPrincipal,
@@ -27,8 +29,6 @@ import vinyldns.api.domain.auth.{
 }
 import vinyldns.core.crypto.{Crypto, CryptoAlgebra}
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 import scala.util.matching.Regex
 
 sealed abstract class VinylDNSAuthenticationError(msg: String) extends Throwable(msg)
@@ -45,13 +45,13 @@ trait VinylDNSAuthentication extends Monitored {
     *
     * @return A Future containing the value of the auth header
     */
-  def getAuthHeader(ctx: RequestContext): Future[String] =
+  def getAuthHeader(ctx: RequestContext): IO[String] =
     ctx.request.headers
       .find { header =>
         header.name.compareToIgnoreCase("Authorization") == 0
       }
-      .map(header => Future.successful(header.value))
-      .getOrElse(Future.failed(AuthMissing("Authorization header not found")))
+      .map(header => IO.pure(header.value))
+      .getOrElse(IO.raiseError(AuthMissing("Authorization header not found")))
 
   /**
     * Parses the auth header into an Aws Regex.Match.  If the auth header cannot be parsed, an
@@ -59,27 +59,25 @@ trait VinylDNSAuthentication extends Monitored {
     *
     * @return A Future containing a Regex.Match on the auth header
     */
-  def parseAuthHeader(header: String): Future[Regex.Match] =
+  def parseAuthHeader(header: String): IO[Regex.Match] =
     Aws4Authenticator
       .parseAuthHeader(header)
-      .map(Future.successful)
-      .getOrElse(Future.failed(AuthRejected("Authorization header could not be parsed")))
+      .map(IO.pure)
+      .getOrElse(IO.raiseError(AuthRejected("Authorization header could not be parsed")))
 
   /**
     * Gets the access key from the request.  Normalizes the exceptions coming out of the authenticator
     *
     * @return A Future with the access key in the Authorization Header
     */
-  def getAccessKey(header: String): Future[String] =
-    Future.fromTry {
-      Try(authenticator.extractAccessKey(header))
-        .recover {
-          case mt: MissingAuthenticationTokenException =>
-            throw AuthMissing(mt.msg)
-          case e: Throwable =>
-            throw AuthRejected(e.getMessage)
-        }
-    }
+  def getAccessKey(header: String): IO[String] =
+    IO(authenticator.extractAccessKey(header))
+      .handleErrorWith {
+        case mt: MissingAuthenticationTokenException =>
+          IO.raiseError(AuthMissing(mt.msg))
+        case e: Throwable =>
+          IO.raiseError(AuthRejected(e.getMessage))
+      }
 
   /**
     * Validates the signature on the request
@@ -90,12 +88,12 @@ trait VinylDNSAuthentication extends Monitored {
       req: HttpRequest,
       secretKey: String,
       authHeaderRegex: Regex.Match,
-      content: String): Future[Unit] =
+      content: String): IO[Unit] =
     authHeaderRegex match {
       case auth if authenticator.authenticateReq(req, auth.subgroups, secretKey, content) =>
-        Future.successful(())
+        IO.unit
       case _ =>
-        Future.failed(AuthRejected(s"Request signature could not be validated"))
+        IO.raiseError(AuthRejected(s"Request signature could not be validated"))
     }
 
   /**
@@ -114,8 +112,7 @@ trait VinylDNSAuthentication extends Monitored {
     * @param ctx The Http Request Context
     * @return A Future containing the AuthPrincipal for the request.
     */
-  def authenticate(ctx: RequestContext, content: String)(
-      implicit executionContext: ExecutionContext): Future[AuthPrincipal] =
+  def authenticate(ctx: RequestContext, content: String): IO[AuthPrincipal] =
     for {
       authHeader <- getAuthHeader(ctx)
       regexMatch <- parseAuthHeader(authHeader)
@@ -134,8 +131,7 @@ trait VinylDNSAuthentication extends Monitored {
       crypto: CryptoAlgebra = Crypto.instance): String =
     if (encryptionEnabled) crypto.decrypt(str) else str
 
-  def getAuthPrincipal(accessKey: String)(
-      implicit executionContext: ExecutionContext): Future[AuthPrincipal] =
+  def getAuthPrincipal(accessKey: String): IO[AuthPrincipal] =
     authPrincipalProvider.getAuthPrincipal(accessKey).map {
       _.getOrElse(throw AuthRejected(s"Account with accessKey $accessKey specified was not found"))
     }
@@ -146,19 +142,17 @@ class VinylDNSAuthenticator(
     val authPrincipalProvider: AuthPrincipalProvider)
     extends VinylDNSAuthentication {
 
-  def apply(ctx: RequestContext, content: String)(
-      implicit ec: ExecutionContext): Future[Either[Cause, AuthPrincipal]] =
-    authenticate(ctx, content)
-      .map(authPrincipal => Right(authPrincipal))
-      .recover {
-        case _: AuthMissing =>
-          Left(AuthenticationFailedRejection.CredentialsMissing)
-        case _: AuthRejected =>
-          Left(AuthenticationFailedRejection.CredentialsRejected)
-        case e: Throwable =>
-          // throw here as some unexpected exception occurred
-          throw e
-      }
+  def apply(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
+    authenticate(ctx, content).attempt.map {
+      case Right(ok) => Right(ok)
+      case Left(_: AuthMissing) =>
+        Left(AuthenticationFailedRejection.CredentialsMissing)
+      case Left(_: AuthRejected) =>
+        Left(AuthenticationFailedRejection.CredentialsRejected)
+      case Left(e: Throwable) =>
+        // throw here as some unexpected exception occurred
+        throw e
+    }
 }
 
 object VinylDNSAuthenticator {
@@ -166,7 +160,6 @@ object VinylDNSAuthenticator {
   lazy val authPrincipalProvider = MembershipAuthPrincipalProvider()
   lazy val authenticator = new VinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
 
-  def apply(ctx: RequestContext, content: String)(
-      implicit ec: ExecutionContext): Future[Either[Cause, AuthPrincipal]] =
+  def apply(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
     authenticator.apply(ctx, content)
 }

@@ -23,8 +23,6 @@ import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.membership.{Group, GroupRepository, User, UserRepository}
 
-import scala.concurrent.ExecutionContext
-
 class ZoneService(
     zoneRepository: ZoneRepository,
     groupRepository: GroupRepository,
@@ -33,7 +31,7 @@ class ZoneService(
     connectionValidator: ZoneConnectionValidatorAlgebra,
     commandBus: EngineCommandBus,
     zoneValidations: ZoneValidations,
-    accessValidation: AccessValidationAlgebra)(implicit ec: ExecutionContext)
+    accessValidation: AccessValidationAlgebra)
     extends ZoneServiceAlgebra {
 
   import accessValidation._

@@ -20,12 +20,12 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCo
 import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
 import akka.http.scaladsl.server.{Directives, RequestContext, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.effect._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-
 import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
@@ -34,7 +34,6 @@ import vinyldns.api.domain.record.RecordType._
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone._
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 class RecordSetRoutingSpec
@@ -482,9 +481,10 @@ class RecordSetRoutingSpec
 
   val recordSetService: RecordSetServiceAlgebra = new TestService
 
-  override def vinyldnsAuthenticator(ctx: RequestContext, content: String)(
-      implicit ec: ExecutionContext): Future[Either[Cause, AuthPrincipal]] =
-    Future.successful(Right(okAuth))
+  override def vinyldnsAuthenticator(
+      ctx: RequestContext,
+      content: String): IO[Either[Cause, AuthPrincipal]] =
+    IO.pure(Right(okAuth))
 
   private def rsJson(recordSet: RecordSet): String =
     compact(render(Extraction.decompose(recordSet)))

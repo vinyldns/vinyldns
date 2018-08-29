@@ -16,24 +16,23 @@
 
 package vinyldns.api.domain.membership
 
+import cats.effect._
+import cats.implicits._
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBGroupRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 trait GroupRepository extends Repository {
 
-  def save(group: Group): Future[Group]
+  def save(group: Group): IO[Group]
 
   /*Looks up a group.  If the group is not found, or if the group's status is Deleted, will return None */
-  def getGroup(groupId: String): Future[Option[Group]]
+  def getGroup(groupId: String): IO[Option[Group]]
 
-  def getGroups(groupIds: Set[String]): Future[Set[Group]]
+  def getGroups(groupIds: Set[String]): IO[Set[Group]]
 
-  def getGroupByName(groupName: String): Future[Option[Group]]
+  def getGroupByName(groupName: String): IO[Option[Group]]
 
-  def getAllGroups(): Future[Set[Group]]
+  def getAllGroups(): IO[Set[Group]]
 }
 
 object GroupRepository {
@@ -49,7 +48,6 @@ object GroupRepository {
   final val okGroup2 =
     Group("ok", "test@test.com", memberIds = Set("ok"), adminUserIds = Set("ok"), id = "ok")
 
-  def loadTestData(repository: GroupRepository): Future[List[Group]] = Future.sequence {
-    List(okGroup1, okGroup2).map(repository.save(_))
-  }
+  def loadTestData(repository: GroupRepository): IO[List[Group]] =
+    List(okGroup1, okGroup2).map(repository.save(_)).parSequence
 }

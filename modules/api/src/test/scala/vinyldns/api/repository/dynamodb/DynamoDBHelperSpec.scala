@@ -29,6 +29,7 @@ import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import org.slf4j.Logger
 import vinyldns.api.AkkaTestJawn
+import cats.effect._
 
 class DynamoDBHelperSpec
     extends AkkaTestJawn
@@ -100,7 +101,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).createTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.createTable(req)
+        val testResult = underTest.createTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ => verify(mockCallRateMeter).mark())
       }
@@ -113,7 +114,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(lstTableRes).when(mockDynamo).listTables(lstTableReq)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.listTables(lstTableReq)
+        val testResult = underTest.listTables(lstTableReq).unsafeToFuture()
 
         whenReady(testResult, timeout) { _ =>
           verify(mockProvisionedThroughputMeter, times(2)).mark()
@@ -129,6 +130,7 @@ class DynamoDBHelperSpec
 
         underTest
           .listTables(lstTableReq)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockRetriesExceededMeter).mark()
@@ -140,7 +142,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.listTables(lstTableReq).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .listTables(lstTableReq)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
         verify(mockDynamoUnexpectedFailuresMeter).mark()
       }
     }
@@ -167,7 +173,7 @@ class DynamoDBHelperSpec
         doReturn(lstTableRes).when(mockDynamo).listTables(lstTableReq)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.listTables(lstTableReq)
+        val testResult = underTest.listTables(lstTableReq).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe lstTableRes)
       }
@@ -180,7 +186,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(lstTableRes).when(mockDynamo).listTables(lstTableReq)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.listTables(lstTableReq)
+        val testResult = underTest.listTables(lstTableReq).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe lstTableRes)
       }
@@ -193,6 +199,7 @@ class DynamoDBHelperSpec
 
         underTest
           .listTables(lstTableReq)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).listTables(lstTableReq)
@@ -204,7 +211,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.listTables(lstTableReq).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .listTables(lstTableReq)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -216,7 +227,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).describeTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.describeTable(req)
+        val testResult = underTest.describeTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -228,7 +239,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).describeTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.describeTable(req)
+        val testResult = underTest.describeTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -242,6 +253,7 @@ class DynamoDBHelperSpec
 
         underTest
           .describeTable(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).describeTable(req)
@@ -253,7 +265,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.describeTable(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .describeTable(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -265,7 +281,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).createTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.createTable(req)
+        val testResult = underTest.createTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -277,7 +293,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).createTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.createTable(req)
+        val testResult = underTest.createTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -291,6 +307,7 @@ class DynamoDBHelperSpec
 
         underTest
           .createTable(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).createTable(req)
@@ -303,7 +320,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.createTable(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .createTable(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -315,7 +336,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).updateTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.updateTable(req)
+        val testResult = underTest.updateTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -327,7 +348,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).updateTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.updateTable(req)
+        val testResult = underTest.updateTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -341,6 +362,7 @@ class DynamoDBHelperSpec
 
         underTest
           .updateTable(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).updateTable(req)
@@ -353,7 +375,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.updateTable(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .updateTable(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -365,7 +391,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).deleteTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.deleteTable(req)
+        val testResult = underTest.deleteTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -377,7 +403,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).deleteTable(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.deleteTable(req)
+        val testResult = underTest.deleteTable(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -391,6 +417,7 @@ class DynamoDBHelperSpec
 
         underTest
           .deleteTable(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).deleteTable(req)
@@ -403,7 +430,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.deleteTable(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .deleteTable(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -415,7 +446,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).query(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.query(req)
+        val testResult = underTest.query(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -427,7 +458,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).query(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.query(req)
+        val testResult = underTest.query(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -441,6 +472,7 @@ class DynamoDBHelperSpec
 
         underTest
           .query(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).query(req)
@@ -453,7 +485,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.query(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .query(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -466,7 +502,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).query(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.queryAll(req)
+        val testResult = underTest.queryAll(req).unsafeToFuture()
 
         whenReady(testResult, timeout) { actualResult =>
           actualResult.size shouldBe 1
@@ -484,7 +520,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).query(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.queryAll(req)
+        val testResult = underTest.queryAll(req).unsafeToFuture()
 
         whenReady(testResult, timeout) { actualResult =>
           actualResult.size shouldBe 1
@@ -509,7 +545,7 @@ class DynamoDBHelperSpec
         doReturn(res1).doReturn(res2).doReturn(res3).when(mockDynamo).query(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.queryAll(req)
+        val testResult = underTest.queryAll(req).unsafeToFuture()
 
         whenReady(testResult, timeout) { actualResult =>
           actualResult.size shouldBe 3
@@ -529,7 +565,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).scan(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.scan(req)
+        val testResult = underTest.scan(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -541,7 +577,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).scan(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.scan(req)
+        val testResult = underTest.scan(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -555,6 +591,7 @@ class DynamoDBHelperSpec
 
         underTest
           .scan(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).scan(req)
@@ -567,7 +604,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.scan(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .scan(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -587,7 +628,7 @@ class DynamoDBHelperSpec
           .scan(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.scanAll(req)
+        val testResult = underTest.scanAll(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ should contain theSameElementsAs List(res, res2))
       }
@@ -608,116 +649,9 @@ class DynamoDBHelperSpec
           .scan(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.scanAll(req)
+        val testResult = underTest.scanAll(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(r => (r should contain).only(res))
-      }
-    }
-
-    "Lazy Scan All" should {
-      "evaluate scan once if one item is requested from stream" in {
-        val request = mock[ScanRequest]
-        val result = mock[ScanResult]
-        val items = new java.util.ArrayList[java.util.Map[java.lang.String, AttributeValue]]()
-        val item = new java.util.HashMap[java.lang.String, AttributeValue]()
-        item.put("test", new AttributeValue("test"))
-        items.add(item)
-
-        val lastSeenKey = new util.HashMap[String, AttributeValue]()
-        lastSeenKey.put("foo", new AttributeValue("bar"))
-
-        val result2 = mock[ScanResult]
-        val items2 = new java.util.ArrayList[java.util.Map[java.lang.String, AttributeValue]]()
-        val item2 = new java.util.HashMap[java.lang.String, AttributeValue]()
-        item2.put("test", new AttributeValue("test"))
-        items2.add(item2)
-
-        doReturn(lastSeenKey).when(result).getLastEvaluatedKey
-        doReturn(result).doReturn(result2).when(mockDynamo).scan(request)
-        doReturn(items).when(result).getItems
-        doReturn(items2).when(result2).getItems
-
-        val underTest = new TestDynamoDBHelper
-        underTest.lazyScanAll(request)
-        verify(result2, never()).getItems
-      }
-
-      "evaluate scan twice if two items are requested from stream" in {
-        val request = mock[ScanRequest]
-        val result = mock[ScanResult]
-        val items = new java.util.ArrayList[java.util.Map[java.lang.String, AttributeValue]]()
-        val item = new java.util.HashMap[java.lang.String, AttributeValue]()
-        item.put("test", new AttributeValue("test"))
-        items.add(item)
-
-        val lastSeenKey = new util.HashMap[String, AttributeValue]()
-        lastSeenKey.put("foo", new AttributeValue("bar"))
-
-        val result2 = mock[ScanResult]
-        val items2 = new java.util.ArrayList[java.util.Map[java.lang.String, AttributeValue]]()
-        val item2 = new java.util.HashMap[java.lang.String, AttributeValue]()
-        item2.put("test", new AttributeValue("test"))
-        items2.add(item2)
-
-        doReturn(lastSeenKey).when(result).getLastEvaluatedKey
-        doReturn(result).doReturn(result2).when(mockDynamo).scan(request)
-        doReturn(items).when(result).getItems
-        doReturn(items2).when(result2).getItems
-
-        val underTest = new TestDynamoDBHelper
-        val testResult = underTest.lazyScanAll(request)
-        verify(result2, never()).getItems
-        testResult.force //force stream to evaluate all items
-        verify(result2, times(1)).getItems
-      }
-
-      "evaluate scan one item at a time when iterating grouped stream" in {
-        val request1 = mock[ScanRequest]
-        val result1 = mock[ScanResult]
-        val items1 = new java.util.ArrayList[java.util.Map[java.lang.String, AttributeValue]]()
-        val item1 = new java.util.HashMap[java.lang.String, AttributeValue]()
-        items1.add(item1)
-
-        val lastSeenKey1 = new util.HashMap[String, AttributeValue]()
-        lastSeenKey1.put("foo", new AttributeValue("bar"))
-
-        val result2 = mock[ScanResult]
-        val items2 = new java.util.ArrayList[java.util.Map[java.lang.String, AttributeValue]]()
-        val item2 = new java.util.HashMap[java.lang.String, AttributeValue]()
-        item2.put("test", new AttributeValue("test"))
-        items2.add(item2)
-
-        val lastSeenKey2 = new util.HashMap[String, AttributeValue]()
-        lastSeenKey2.put("foo", new AttributeValue("bar"))
-
-        val result3 = mock[ScanResult]
-        val items3 = new java.util.ArrayList[java.util.Map[java.lang.String, AttributeValue]]()
-        val item3 = new java.util.HashMap[java.lang.String, AttributeValue]()
-        item3.put("test", new AttributeValue("test"))
-        items3.add(item3)
-
-        doReturn(lastSeenKey1).when(result1).getLastEvaluatedKey
-        doReturn(lastSeenKey2).when(result2).getLastEvaluatedKey
-        doReturn(result1).doReturn(result2).doReturn(result3).when(mockDynamo).scan(request1)
-        doReturn(items1).when(result1).getItems
-        doReturn(items2).when(result2).getItems
-        doReturn(items3).when(result3).getItems
-
-        val underTest = new TestDynamoDBHelper
-        val testResult = underTest.lazyScanAll(request1)
-        val groupedItems = testResult.grouped(1)
-
-        groupedItems.next.take(1)
-        verify(result2, never()).getItems
-        verify(result3, never()).getItems
-
-        groupedItems.next.take(1)
-        verify(result2, times(1)).getItems
-        verify(result3, never()).getItems
-
-        groupedItems.next.take(1)
-        verify(result2, times(1)).getItems
-        verify(result3, times(1)).getItems
       }
     }
 
@@ -729,7 +663,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).putItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.putItem(req)
+        val testResult = underTest.putItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -741,7 +675,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).putItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.putItem(req)
+        val testResult = underTest.putItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -755,6 +689,7 @@ class DynamoDBHelperSpec
 
         underTest
           .putItem(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).putItem(req)
@@ -767,7 +702,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.putItem(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .putItem(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -779,7 +718,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).getItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.getItem(req)
+        val testResult = underTest.getItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -791,7 +730,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).getItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.getItem(req)
+        val testResult = underTest.getItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -805,6 +744,7 @@ class DynamoDBHelperSpec
 
         underTest
           .getItem(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).getItem(req)
@@ -817,7 +757,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.getItem(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .getItem(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -829,7 +773,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).updateItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.updateItem(req)
+        val testResult = underTest.updateItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -841,7 +785,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).updateItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.updateItem(req)
+        val testResult = underTest.updateItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -855,6 +799,7 @@ class DynamoDBHelperSpec
 
         underTest
           .updateItem(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).updateItem(req)
@@ -867,7 +812,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.updateItem(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .updateItem(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -879,7 +828,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).deleteItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.deleteItem(req)
+        val testResult = underTest.deleteItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -891,7 +840,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).deleteItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.deleteItem(req)
+        val testResult = underTest.deleteItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -905,6 +854,7 @@ class DynamoDBHelperSpec
 
         underTest
           .deleteItem(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).deleteItem(req)
@@ -917,7 +867,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.deleteItem(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .deleteItem(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -929,7 +883,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).batchGetItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.batchGetItem(req)
+        val testResult = underTest.batchGetItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -941,7 +895,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).batchGetItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.batchGetItem(req)
+        val testResult = underTest.batchGetItem(req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -957,6 +911,7 @@ class DynamoDBHelperSpec
 
         underTest
           .batchGetItem(req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).batchGetItem(req)
@@ -969,7 +924,11 @@ class DynamoDBHelperSpec
 
         val underTest = new TestDynamoDBHelper
 
-        underTest.batchGetItem(req).failed.futureValue(timeout) shouldBe a[RuntimeException]
+        underTest
+          .batchGetItem(req)
+          .unsafeToFuture()
+          .failed
+          .futureValue(timeout) shouldBe a[RuntimeException]
       }
     }
 
@@ -981,7 +940,7 @@ class DynamoDBHelperSpec
         doReturn(res).when(mockDynamo).batchWriteItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.batchWriteItem("table", req)
+        val testResult = underTest.batchWriteItem("table", req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -993,7 +952,7 @@ class DynamoDBHelperSpec
         doThrow(ptee).doThrow(ptee).doReturn(res).when(mockDynamo).batchWriteItem(req)
 
         val underTest = new TestDynamoDBHelper
-        val testResult = underTest.batchWriteItem("table", req)
+        val testResult = underTest.batchWriteItem("table", req).unsafeToFuture()
 
         whenReady(testResult, timeout)(_ shouldBe res)
       }
@@ -1009,6 +968,7 @@ class DynamoDBHelperSpec
 
         underTest
           .batchWriteItem("table", req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
         verify(mockDynamo, times(underTest.retryCount + 1)).batchWriteItem(req)
@@ -1023,6 +983,7 @@ class DynamoDBHelperSpec
 
         underTest
           .batchWriteItem("table", req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[RuntimeException]
       }
@@ -1054,7 +1015,7 @@ class DynamoDBHelperSpec
           .batchWriteItem(any(classOf[BatchWriteItemRequest]))
 
         val underTest = new TestDynamoDBHelper
-        underTest.batchWriteItem("table", req).futureValue(timeout) shouldBe res3
+        underTest.batchWriteItem("table", req).unsafeToFuture().futureValue(timeout) shouldBe res3
       }
 
       "fail if the number of retries for items is exceeded" in {
@@ -1095,6 +1056,7 @@ class DynamoDBHelperSpec
         val underTest = new TestDynamoDBHelper
         underTest
           .batchWriteItem("table", req)
+          .unsafeToFuture()
           .failed
           .futureValue(timeout) shouldBe a[DynamoDBRetriesExhaustedException]
       }

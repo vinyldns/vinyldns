@@ -21,7 +21,6 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import cats.implicits._
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.membership.{ListUsersResults, UserRepository}
 import vinyldns.api.domain.zone._
@@ -29,8 +28,7 @@ import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import cats.effect._
 
 class RecordSetServiceSpec
     extends WordSpec
@@ -47,8 +45,8 @@ class RecordSetServiceSpec
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
 
-  doReturn(Future.successful(Some(zoneAuthorized))).when(mockZoneRepo).getZone(zoneAuthorized.id)
-  doReturn(Future.successful(Some(zoneNotAuthorized)))
+  doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(zoneAuthorized.id)
+  doReturn(IO.pure(Some(zoneNotAuthorized)))
     .when(mockZoneRepo)
     .getZone(zoneNotAuthorized.id)
 
@@ -64,10 +62,10 @@ class RecordSetServiceSpec
     "return the recordSet change as the result" in {
       val record = aaaa.copy(zoneId = zoneAuthorized.id)
 
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSets(zoneAuthorized.id, record.name, record.typ)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
@@ -79,7 +77,7 @@ class RecordSetServiceSpec
       result.status shouldBe RecordSetChangeStatus.Pending
     }
     "fail when the account is not authorized" in {
-      doReturn(Future.successful(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
@@ -89,10 +87,10 @@ class RecordSetServiceSpec
       val record =
         aaaa.copy(name = "new.name", zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
 
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSets(zoneAuthorized.id, record.name, record.typ)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
@@ -103,10 +101,10 @@ class RecordSetServiceSpec
       val record =
         aaaa.copy(name = "new.", zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
 
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSets(zoneAuthorized.id, record.name, record.typ)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
@@ -118,10 +116,10 @@ class RecordSetServiceSpec
       val record =
         aaaa.copy(name = name, zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
 
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSets(zoneAuthorized.id, record.name, record.typ)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
@@ -135,10 +133,10 @@ class RecordSetServiceSpec
       val record =
         aaaa.copy(name = name, zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
 
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSets(zoneAuthorized.id, record.name, record.typ)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
@@ -152,10 +150,10 @@ class RecordSetServiceSpec
       val record =
         aaaa.copy(name = name, zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
 
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSets(zoneAuthorized.id, record.name, record.typ)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, record.name)
 
@@ -171,10 +169,10 @@ class RecordSetServiceSpec
       val oldRecord = aaaa.copy(zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(name = "newName")
 
-      doReturn(Future.successful(Some(oldRecord)))
+      doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, newRecord.id)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
@@ -187,7 +185,7 @@ class RecordSetServiceSpec
       result.status shouldBe RecordSetChangeStatus.Pending
     }
     "fail when the account is not authorized" in {
-      doReturn(Future.successful(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(
@@ -198,10 +196,10 @@ class RecordSetServiceSpec
       val oldRecord = aaaa.copy(zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(name = "new.name")
 
-      doReturn(Future.successful(Some(oldRecord)))
+      doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, newRecord.id)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
@@ -212,10 +210,10 @@ class RecordSetServiceSpec
       val oldRecord = aaaa.copy(zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(name = "new.")
 
-      doReturn(Future.successful(Some(oldRecord)))
+      doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, newRecord.id)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
@@ -227,10 +225,10 @@ class RecordSetServiceSpec
       val oldRecord = aaaa.copy(zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(name = name)
 
-      doReturn(Future.successful(Some(oldRecord)))
+      doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, newRecord.id)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
@@ -244,10 +242,10 @@ class RecordSetServiceSpec
       val oldRecord = aaaa.copy(zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(name = name)
 
-      doReturn(Future.successful(Some(oldRecord)))
+      doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, newRecord.id)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
@@ -261,10 +259,10 @@ class RecordSetServiceSpec
       val oldRecord = aaaa.copy(zoneId = zoneAuthorized.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(name = name)
 
-      doReturn(Future.successful(Some(oldRecord)))
+      doReturn(IO.pure(Some(oldRecord)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, newRecord.id)
-      doReturn(Future.successful(List()))
+      doReturn(IO.pure(List()))
         .when(mockRecordRepo)
         .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
@@ -278,7 +276,7 @@ class RecordSetServiceSpec
   "deleteRecordSet" should {
     "return the recordSet change as the result" in {
       val record = aaaa.copy(status = RecordSetStatus.Active)
-      doReturn(Future.successful(Some(record)))
+      doReturn(IO.pure(Some(record)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, record.id)
 
@@ -293,7 +291,7 @@ class RecordSetServiceSpec
       result.status shouldBe RecordSetChangeStatus.Pending
     }
     "fails when the account is not authorized" in {
-      doReturn(Future.successful(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result =
@@ -304,7 +302,7 @@ class RecordSetServiceSpec
 
   "getRecordSet" should {
     "return the recordSet" in {
-      doReturn(Future.successful(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneAuthorized.id, aaaa.id)
       val result: RecordSet =
@@ -312,7 +310,7 @@ class RecordSetServiceSpec
       result shouldBe aaaa
     }
     "fail when the account is not authorized" in {
-      doReturn(Future.successful(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
@@ -322,7 +320,7 @@ class RecordSetServiceSpec
 
   "listRecordSets" should {
     "return the recordSets" in {
-      doReturn(Future.successful(ListRecordSetResults(List(aaaa))))
+      doReturn(IO.pure(ListRecordSetResults(List(aaaa))))
         .when(mockRecordRepo)
         .listRecordSets(
           zoneId = zoneAuthorized.id,
@@ -357,10 +355,10 @@ class RecordSetServiceSpec
 
   "listRecordSetChanges" should {
     "retrieve the recordset changes" in {
-      doReturn(Future.successful(ListRecordSetChangesResults(completeRecordSetChanges)))
+      doReturn(IO.pure(ListRecordSetChangesResults(completeRecordSetChanges)))
         .when(mockRecordChangeRepo)
         .listRecordSetChanges(zoneId = zoneAuthorized.id, startFrom = None, maxItems = 100)
-      doReturn(Future.successful(ListUsersResults(Seq(okUser), None)))
+      doReturn(IO.pure(ListUsersResults(Seq(okUser), None)))
         .when(mockUserRepo)
         .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
 
@@ -379,7 +377,7 @@ class RecordSetServiceSpec
     }
 
     "return a zone with no changes if no changes exist" in {
-      doReturn(Future.successful(ListRecordSetChangesResults(items = Nil)))
+      doReturn(IO.pure(ListRecordSetChangesResults(items = Nil)))
         .when(mockRecordChangeRepo)
         .listRecordSetChanges(zoneId = zoneAuthorized.id, startFrom = None, maxItems = 100)
 
@@ -405,7 +403,7 @@ class RecordSetServiceSpec
       val rsChange1 = pendingCreateAAAA
       val rsChange2 = pendingCreateCNAME.copy(created = rsChange1.created.plus(10000))
 
-      doReturn(Future.successful(ListRecordSetChangesResults(List(rsChange2, rsChange1))))
+      doReturn(IO.pure(ListRecordSetChangesResults(List(rsChange2, rsChange1))))
         .when(mockRecordChangeRepo)
         .listRecordSetChanges(zoneId = zoneAuthorized.id, startFrom = None, maxItems = 100)
 
@@ -426,7 +424,7 @@ class RecordSetServiceSpec
 
   "getRecordSetChange" should {
     "return the record set change if it is found" in {
-      doReturn(Future.successful(Some(pendingCreateAAAA)))
+      doReturn(IO.pure(Some(pendingCreateAAAA)))
         .when(mockRecordChangeRepo)
         .getRecordSetChange(pendingCreateAAAA.zoneId, pendingCreateAAAA.id)
       val actual: RecordSetChange = rightResultOf(
@@ -435,7 +433,7 @@ class RecordSetServiceSpec
     }
 
     "return a RecordSetChangeNotFoundError if it is not found" in {
-      doReturn(Future.successful(None))
+      doReturn(IO.pure(None))
         .when(mockRecordChangeRepo)
         .getRecordSetChange(pendingCreateAAAA.zoneId, pendingCreateAAAA.id)
       val error = leftResultOf(

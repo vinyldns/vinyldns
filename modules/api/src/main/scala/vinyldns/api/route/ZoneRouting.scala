@@ -137,21 +137,22 @@ trait ZoneRoute extends Directives {
     }
     .result()
 
-  private def execute[A](f: => Result[A])(rt: A => Route): Route = onSuccess(f.value) {
-    case Right(a) => rt(a)
-    case Left(ZoneAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
-    case Left(ConnectionFailed(_, msg)) => complete(StatusCodes.BadRequest, msg)
-    case Left(ZoneValidationFailed(zone, errors, _)) =>
-      complete(StatusCodes.BadRequest, ZoneRejected(zone, errors))
-    case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-    case Left(InvalidZoneAdminError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-    case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
-    case Left(InvalidSyncStateError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
-    case Left(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
-    case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
-    case Left(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
-    case Left(e) => failWith(e)
-  }
+  private def execute[A](f: => Result[A])(rt: A => Route): Route =
+    onSuccess(f.value.unsafeToFuture()) {
+      case Right(a) => rt(a)
+      case Left(ZoneAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(ConnectionFailed(_, msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(ZoneValidationFailed(zone, errors, _)) =>
+        complete(StatusCodes.BadRequest, ZoneRejected(zone, errors))
+      case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+      case Left(InvalidZoneAdminError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(InvalidSyncStateError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
+      case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(e) => failWith(e)
+    }
 }

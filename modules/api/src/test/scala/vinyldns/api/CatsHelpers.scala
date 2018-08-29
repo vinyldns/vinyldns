@@ -17,34 +17,43 @@
 package vinyldns.api
 
 import akka.util.Timeout
-import cats.syntax.all._
+import cats.effect._
+import cats.implicits._
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import org.scalatest.Assertions._
 import org.scalatest.matchers.{MatchResult, Matcher}
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait CatsHelpers {
 
   implicit val baseTimeout: Timeout = new Timeout(2.seconds)
 
-  def await[T](f: => Future[T], duration: FiniteDuration = 1.second): T =
-    Await.ready(f, duration).value.get.get
+  def await[E, T](f: => IO[T], duration: FiniteDuration = 1.second): T = {
+    val i: IO[Either[E, T]] = f.attempt.map {
+      case Right(ok) => Right(ok.asInstanceOf[T])
+      case Left(e) => Left(e.asInstanceOf[E])
+    }
+    awaitResultOf[E, T](i, duration).toOption.get
+  }
 
-  // Waits for the future to complete, then returns the value as a Throwable \/ T
+  // Waits for the future to complete, then returns the value as an Either[Throwable, T]
   def awaitResultOf[E, T](
-      f: => Future[Either[E, T]],
-      duration: FiniteDuration = 1.second): Either[E, T] =
-    Await.ready(f.mapTo[Either[E, T]], duration).value.get.get
+      f: => IO[Either[E, T]],
+      duration: FiniteDuration = 1.second): Either[E, T] = {
+    val timeOut = IO.sleep(duration) *> IO(new RuntimeException("Timed out waiting for result"))
+    IO.race(timeOut, f).unsafeRunSync().toOption.get
+  }
 
   // Assumes that the result of the future operation will be successful, this will fail on a left disjunction
-  def rightResultOf[E, T](f: => Future[Either[E, T]], duration: FiniteDuration = 1.second): T =
+  def rightResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 1.second): T =
     rightValue(awaitResultOf[E, T](f, duration))
 
   // Assumes that the result of the future operation will fail, this will error on a right disjunction
-  def leftResultOf[E, T](f: => Future[Either[E, T]], duration: FiniteDuration = 1.second): E =
+  def leftResultOf[E, T](f: => IO[Either[E, T]], duration: FiniteDuration = 1.second): E =
     leftValue(awaitResultOf(f, duration))
 
   def leftValue[E, T](t: Either[E, T]): E = t match {

@@ -19,20 +19,14 @@ package vinyldns.api.engine
 import cats.effect.IO
 import vinyldns.api.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeStatus, ZoneRepository}
 
-import scala.concurrent.ExecutionContext
-
 object ZoneChangeHandler {
 
-  def apply(zoneRepository: ZoneRepository, zoneChangeRepository: ZoneChangeRepository)(
-      implicit executionContext: ExecutionContext): ZoneChange => IO[ZoneChange] = zoneChange => {
-    IO.fromFuture(
-      IO {
-        for {
-          _ <- zoneRepository.save(zoneChange.zone)
-          savedChange <- zoneChangeRepository.save(
-            zoneChange.copy(status = ZoneChangeStatus.Synced))
-        } yield savedChange
-      }
-    )
+  def apply(
+      zoneRepository: ZoneRepository,
+      zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] = zoneChange => {
+    for {
+      _ <- zoneRepository.save(zoneChange.zone)
+      savedChange <- zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
+    } yield savedChange
   }
 }

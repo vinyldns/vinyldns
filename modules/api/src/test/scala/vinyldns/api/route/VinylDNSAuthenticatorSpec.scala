@@ -23,15 +23,14 @@ import akka.http.scaladsl.server.AuthenticationFailedRejection.{
   CredentialsRejected
 }
 import akka.http.scaladsl.server.RequestContext
+import cats.effect._
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.api.domain.auth.{AuthPrincipal, AuthPrincipalProvider}
+import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.core.crypto.CryptoAlgebra
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class VinylDNSAuthenticatorSpec
     extends WordSpec
@@ -79,7 +78,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(Future.successful(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okUserAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -88,7 +87,7 @@ class VinylDNSAuthenticatorSpec
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
       val result =
-        await[Either[Cause, AuthPrincipal]](underTest.apply(context, "")(ExecutionContext.global))
+        await[Either[Cause, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Right(okUserAuth)
     }
     "fail if missing Authorization header" in {
@@ -101,7 +100,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(Future.successful(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okUserAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -110,7 +109,7 @@ class VinylDNSAuthenticatorSpec
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
       val result =
-        await[Either[Cause, AuthPrincipal]](underTest.apply(context, "")(ExecutionContext.global))
+        await[Either[Cause, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Left(CredentialsMissing)
     }
     "fail if Authorization header can not be parsed" in {
@@ -126,7 +125,7 @@ class VinylDNSAuthenticatorSpec
       doReturn(httpRequest).when(context).request
 
       val result =
-        await[Either[Cause, AuthPrincipal]](underTest.apply(context, "")(ExecutionContext.global))
+        await[Either[Cause, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Left(CredentialsRejected)
     }
     "fail if the access key is missing" in {
@@ -150,7 +149,7 @@ class VinylDNSAuthenticatorSpec
         .extractAccessKey(any[String])
 
       val result =
-        await[Either[Cause, AuthPrincipal]](underTest.apply(context, "")(ExecutionContext.global))
+        await[Either[Cause, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Left(CredentialsMissing)
     }
     "fail if the access key can not be retrieved" in {
@@ -174,7 +173,7 @@ class VinylDNSAuthenticatorSpec
         .extractAccessKey(any[String])
 
       val result =
-        await[Either[Cause, AuthPrincipal]](underTest.apply(context, "")(ExecutionContext.global))
+        await[Either[Cause, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Left(CredentialsRejected)
     }
     "fail if the user can not be found" in {
@@ -197,12 +196,12 @@ class VinylDNSAuthenticatorSpec
         .extractAccessKey(any[String])
 
       // No User found
-      doReturn(Future.successful(None))
+      doReturn(IO.pure(None))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
       val result =
-        await[Either[Cause, AuthPrincipal]](underTest.apply(context, "")(ExecutionContext.global))
+        await[Either[Cause, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Left(CredentialsRejected)
     }
     "fail if signatures can not be validated" in {
@@ -224,7 +223,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(Future.successful(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okUserAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -234,7 +233,7 @@ class VinylDNSAuthenticatorSpec
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
       val result =
-        await[Either[Cause, AuthPrincipal]](underTest.apply(context, "")(ExecutionContext.global))
+        await[Either[Cause, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Left(CredentialsRejected)
     }
   }

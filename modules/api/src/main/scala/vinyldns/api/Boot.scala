@@ -99,7 +99,7 @@ object Boot extends App {
       val membershipService =
         new MembershipService(groupRepo, userRepo, membershipRepo, zoneRepo, groupChangeRepo)
       val connectionValidator =
-        new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection, system.scheduler)
+        new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection)
       val recordSetService = new RecordSetService(
         zoneRepo,
         recordSetRepo,

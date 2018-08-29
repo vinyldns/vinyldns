@@ -16,14 +16,12 @@
 
 package vinyldns.api.domain.auth
 
+import cats.effect._
 import vinyldns.api.domain.membership.{MembershipRepository, User, UserRepository}
 import vinyldns.api.route.Monitored
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 trait AuthPrincipalProvider extends Monitored {
-  def getAuthPrincipal(accessKey: String): Future[Option[AuthPrincipal]]
+  def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]]
 }
 
 class MembershipAuthPrincipalProvider(
@@ -31,21 +29,21 @@ class MembershipAuthPrincipalProvider(
     membershipRepo: MembershipRepository)
     extends AuthPrincipalProvider {
 
-  def getAuthPrincipal(accessKey: String): Future[Option[AuthPrincipal]] =
+  def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]] =
     getUserByAccessKey(accessKey).flatMap {
-      case None => Future.successful(None)
+      case None => IO.pure(None)
       case Some(user) =>
         getGroupsForUser(user.id).map { memberships =>
           Option(AuthPrincipal(user, memberships.toSeq))
         }
     }
 
-  private def getUserByAccessKey(accessKey: String): Future[Option[User]] =
+  private def getUserByAccessKey(accessKey: String): IO[Option[User]] =
     monitor("user.getUserByAccessKey") {
       userRepo.getUserByAccessKey(accessKey)
     }
 
-  private def getGroupsForUser(userId: String): Future[Set[String]] =
+  private def getGroupsForUser(userId: String): IO[Set[String]] =
     monitor("membership.getGroupsForUser") {
       membershipRepo.getGroupsForUser(userId)
     }
