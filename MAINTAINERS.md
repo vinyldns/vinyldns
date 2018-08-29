@@ -10,7 +10,6 @@
         * [Pushing a Signed Image with your Delegation Key](#pushing-a-signed-image-with-your-delegation-key)
 * [Sonatype Credentials](#sonatype-credentials)
 * [Release Process](#release-process)
-    * [Release Type](#release-type)
 
 ## Docker Content Trust
 
@@ -131,35 +130,21 @@ note you will have to generate a strong passphrase and save it in some password 
 1. Run `blackbox_edit_start vinyldns-sonatype-key.asc.gpg` to temporarily decrypt the sonatype signing key
 1. Run `gpg --import vinyldns-sonatype-key.asc` to import the sonatype signing key to your keyring
 1. Run `blackbox_edit_end vinyldns-sonatype-key.asc.gpg` to re-encrypt the sonatype signing key
-1. Run `blackbox_cat vinyldns-sonatype.txt.gpg` to view the passphrase for that key
-1. Create a file `~/.sbt/1.0/pgp.credentials` containing 
-
-``` 
-realm=PGP Secret Key
-host=pgp
-user=sbt
-password=<passphrase viewed from previous step>
-```
+1. Run `blackbox_cat vinyldns-sonatype.txt.gpg` to view the passphrase for that key - you will need this passphrase handy when releasing
 
 ## Release Process
 
 We are using sbt-release to run our release steps and auto-bump the version in `version.sbt`. The `bin/release.sh`
 script will first run functional tests, then kick off `sbt release`, which also runs unit and integration tests before
-running the release. See [Release Type](#release-type)
+running the release
 
 1. Follow [Docker Content Trust](#docker-content-trust) to setup a notary delegation for yourself
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
 1. Note: the release is set to fail if you have uncommitted changes
 1. Export `DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE` in your env with your notary key passphrase 
-1. Export `VINYLDNS_RELEASE_TYPE` with the desired [release type](#release-type)
 1. Run `bin/release.sh`
+1. When it comes to the sonatype stage, you will need the passphrase handy for the signing key, [Sonatype Credentials](#sonatype-credentials)
 1. Assuming things were successful, make a pr since sbt release auto-bumped `version.sbt` and made a commit for you
 
-#### Release Type
-
-The release type is set by the environment variable `VINYLDNS_RELEASE_TYPE`
-
-* **artifactory**: will push docker images and core module to artifactory
-* **docker-sonatype-release**: will push docker images to Docker Hub, and core module to Maven Central
-* **docker-sonatype-snapshot**: will push docker images to Docker Hub, and core module to sonatype staging repo, 
-this is not a full push to Maven Central
+> Note: If the version suffix ends is SNAPSHOT, then the core module will only be released to the sonatype staging repo, 
+and sbt release will skip the sonatypeRelease stage

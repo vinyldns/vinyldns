@@ -43,9 +43,6 @@ def scalaStyleCompile: Seq[Def.Setting[_]] = Seq(
 
 def scalaStyleSettings: Seq[Def.Setting[_]] = scalaStyleCompile ++ scalaStyleTest ++ scalaStyleIntegrationTest
 
-// artifactory, docker-sonatype-release, or docker-sonatype-snapshot
-val releaseType = sys.env.get("VINYLDNS_RELEASE_TYPE")
-
 // settings that should be inherited by all projects
 lazy val sharedSettings = Seq(
   organization := "vinyldns",
@@ -243,7 +240,7 @@ lazy val corePublishSettings = Seq(
     Developer(id="britneywright", name="Britney Wright", email="blw06g@gmail.com", url=url("https://github.com/britneywright")),
   ),
   sonatypeProfileName := "io.vinyldns",
-  useGpg := true
+  credentials += Credentials(Path.userHome / ".sbt" / "1.0" / "vinyldns-gpg-credentials")
 )
 
 lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPlugin)
@@ -356,12 +353,14 @@ lazy val dockerReleaseStage = Seq[ReleaseStep](
 )
 
 lazy val sonatypePublishStage = Seq[ReleaseStep] (
-  releaseStepCommandAndRemaining(";project core;publishSigned") // only releases to sonatype staging repo
+  releaseStepCommandAndRemaining(";project core;publish") // only releases to sonatype staging repo
 )
 
-lazy val sonatypeReleaseStage = Seq[ReleaseStep] (
-  releaseStepCommandAndRemaining(";project core;sonatypeRelease") // closes staging repo and promotes
-)
+lazy val sonatypeReleaseStage = if (versionString.endsWith("SNAPSHOT")) {
+  Seq[ReleaseStep](releaseStepCommandAndRemaining(";project core;sonatypeRelease")) // closes staging repo and promotes
+} else {
+  Seq[ReleaseStep]() // skip stage if snapshot
+}
 
 lazy val finalReleaseStage = Seq[ReleaseStep] (
   releaseStepCommand("project root"), // use version.sbt file from root
@@ -370,31 +369,13 @@ lazy val finalReleaseStage = Seq[ReleaseStep] (
   commitNextVersion // commit new version.sbt
 )
 
-releaseType match {
-  case Some("artifactory") =>
-    releaseProcess :=
-      initReleaseStage ++
-      validateVerifyReleaseStage ++
-      finalReleaseStage // TODO: add artifactoryReleaseStage before final
-  case Some("docker-sonatype-release") =>
-    releaseProcess :=
-      initReleaseStage ++
-      validateVerifyReleaseStage ++
-      dockerReleaseStage ++
-      sonatypePublishStage ++
-      sonatypeReleaseStage ++
-      finalReleaseStage
-  case Some("docker-sonatype-snapshot") =>
-    releaseProcess :=
-      initReleaseStage ++
-      validateVerifyReleaseStage ++
-      dockerReleaseStage ++
-      sonatypePublishStage ++
-      finalReleaseStage
-  case None =>
-    releaseProcess :=
-      Seq[ReleaseStep]()
-}
+releaseProcess :=
+  initReleaseStage ++
+  validateVerifyReleaseStage ++
+  dockerReleaseStage ++
+  sonatypePublishStage ++
+  sonatypeReleaseStage ++
+  finalReleaseStage
 
 // Validate runs static checks and compile to make sure we can go
 addCommandAlias("validate-api",
