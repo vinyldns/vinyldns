@@ -131,6 +131,14 @@ note you will have to generate a strong passphrase and save it in some password 
 1. Run `gpg --import vinyldns-sonatype-key.asc` to import the sonatype signing key to your keyring
 1. Run `blackbox_edit_end vinyldns-sonatype-key.asc.gpg` to re-encrypt the sonatype signing key
 1. Run `blackbox_cat vinyldns-sonatype.txt.gpg` to view the passphrase for that key - you will need this passphrase handy when releasing
+1. Create a file `~/.sbt/1.0/vinyldns-gpg-credentials` with the content
+
+``` 
+realm=GnuPG Key ID
+host=gpg
+user=vinyldns@gmail.com
+password=ignored-must-use-pinentry
+```
 
 ## Release Process
 
