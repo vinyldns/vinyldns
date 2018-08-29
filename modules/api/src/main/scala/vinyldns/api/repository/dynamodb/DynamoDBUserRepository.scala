@@ -19,6 +19,8 @@ package vinyldns.api.repository.dynamodb
 import java.util
 import java.util.HashMap
 
+import cats.effect._
+import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.joda.time.DateTime
@@ -28,9 +30,6 @@ import vinyldns.api.domain.membership.{ListUsersResults, User, UserRepository}
 import vinyldns.api.route.Monitored
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 object DynamoDBUserRepository {
 
@@ -96,9 +95,10 @@ class DynamoDBUserRepository(
       .withGlobalSecondaryIndexes(secondaryIndexes: _*)
   )
 
-  Await.ready(UserRepository.loadTestData(this), 100.seconds)
+  // TODO: Loaders should not be inside these repos
+  UserRepository.loadTestData(this).unsafeRunSync()
 
-  def getUser(userId: String): Future[Option[User]] =
+  def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
       log.info(s"Getting user by id $userId")
 
@@ -112,7 +112,7 @@ class DynamoDBUserRepository(
   def getUsers(
       userIds: Set[String],
       exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): Future[ListUsersResults] = {
+      pageSize: Option[Int]): IO[ListUsersResults] = {
 
     def toBatchGetItemRequest(userIds: List[String]): BatchGetItemRequest = {
       val allKeys = new util.ArrayList[util.Map[String, AttributeValue]]()
@@ -162,9 +162,9 @@ class DynamoDBUserRepository(
       val batchGets = batches.map(toBatchGetItemRequest)
 
       // run the batches in parallel
-      val batchGetFutures = batchGets.map(dynamoDBHelper.batchGetItem)
+      val batchGetIo = batchGets.map(dynamoDBHelper.batchGetItem)
 
-      val allBatches = Future.sequence(batchGetFutures)
+      val allBatches: IO[List[BatchGetItemResult]] = batchGetIo.sequence
 
       val allUsers = allBatches.map { batchGetItemResults =>
         batchGetItemResults.flatMap(parseUsers)
@@ -178,7 +178,7 @@ class DynamoDBUserRepository(
     }
   }
 
-  def getUserByAccessKey(accessKey: String): Future[Option[User]] =
+  def getUserByAccessKey(accessKey: String): IO[Option[User]] =
     monitor("repo.User.getUserByAccessKey") {
       log.info(s"Getting user by access key $accessKey")
       val expressionAttributeValues = new HashMap[String, AttributeValue]
@@ -201,7 +201,7 @@ class DynamoDBUserRepository(
       }
     }
 
-  def save(user: User): Future[User] = //For testing purposes
+  def save(user: User): IO[User] = //For testing purposes
     monitor("repo.User.save") {
       log.info(s"Saving user id: ${user.id} name: ${user.userName}.")
 

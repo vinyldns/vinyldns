@@ -16,30 +16,27 @@
 
 package vinyldns.api.domain.zone
 
-import akka.actor.Scheduler
-
-import cats.implicits._
+import cats.effect._
+import cats.syntax.all._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.{RecordSet, RecordType}
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
 
 trait ZoneConnectionValidatorAlgebra {
   def validateZoneConnections(zone: Zone): Result[Unit]
 }
 
-class ZoneConnectionValidator(defaultConnection: ZoneConnection, scheduler: Scheduler)(
-    implicit ec: ExecutionContext)
+class ZoneConnectionValidator(defaultConnection: ZoneConnection)
     extends ZoneConnectionValidatorAlgebra {
 
   import ZoneRecordValidations._
 
-  val futureTimeout: FiniteDuration = 6.seconds
+  val opTimeout: FiniteDuration = 6.seconds
 
-  def loadDns(zone: Zone): Future[ZoneView] = DnsZoneViewLoader(zone).load()
+  def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
   def runZoneChecks(zoneView: ZoneView): Result[ZoneView] =
     validateDnsZone(VinylDNSConfig.approvedNameServers, zoneView.recordSetsMap.values.toList)
@@ -59,9 +56,8 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection, scheduler: Sche
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(
       loadDns(zone),
-      futureTimeout,
-      ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid"),
-      scheduler)
+      opTimeout,
+      ConnectionFailed(zone, "Unable to connect to zone: Transfer connection invalid"))
 
   def hasSOA(records: List[RecordSet], zone: Zone): Result[Unit] = {
     if (records.isEmpty) {

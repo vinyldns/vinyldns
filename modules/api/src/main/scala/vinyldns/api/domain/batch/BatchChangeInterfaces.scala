@@ -18,47 +18,41 @@ package vinyldns.api.domain.batch
 
 import cats.data.Validated.{Invalid, Valid}
 import cats.data._
+import cats.effect._
 import cats.implicits._
 import vinyldns.api.domain.DomainValidationError
-
-import scala.concurrent.{ExecutionContext, Future}
 
 object BatchChangeInterfaces {
 
   type SingleValidation[A] = ValidatedNel[DomainValidationError, A]
   type ValidatedBatch[A] = List[ValidatedNel[DomainValidationError, A]]
-  type BatchResult[A] = EitherT[Future, BatchChangeErrorResponse, A]
+  type BatchResult[A] = EitherT[IO, BatchChangeErrorResponse, A]
 
-  implicit class FutureBatchResultImprovements[A](fut: Future[A])(implicit ec: ExecutionContext) {
-    def toBatchResult: BatchResult[A] = EitherT {
-      fut.map(_.asRight[BatchChangeErrorResponse])
-    }
+  implicit class IOBatchResultImprovements[A](theIo: IO[A]) {
+    def toBatchResult: BatchResult[A] = EitherT.liftF(theIo)
   }
 
-  implicit class FutureEitherBatchResultImprovements[A](fut: Future[Either[_, A]])(
-      implicit ec: ExecutionContext) {
+  implicit class IOEitherBatchResultImprovements[A](theIo: IO[Either[_, A]]) {
     def toBatchResult: BatchResult[A] = EitherT {
-      fut.map {
-        case Right(r) => r.asRight[BatchChangeErrorResponse]
-        case Left(err: BatchChangeErrorResponse) => err.asLeft[A]
+      theIo.map {
+        case Right(r) => Right(r)
+        case Left(err: BatchChangeErrorResponse) => Left(err)
         case Left(x) =>
-          UnknownConversionError(s"Cannot convert item to BatchResponse: $x").asLeft[A]
+          Left(UnknownConversionError(s"Cannot convert item to BatchResponse: $x"))
       }
     }
   }
 
-  implicit class EitherBatchResultImprovements[A](eth: Either[BatchChangeErrorResponse, A])(
-      implicit ec: ExecutionContext) {
-    def toBatchResult: BatchResult[A] = EitherT.fromEither[Future](eth)
+  implicit class EitherBatchResultImprovements[A](eth: Either[BatchChangeErrorResponse, A]) {
+    def toBatchResult: BatchResult[A] = EitherT.fromEither[IO](eth)
   }
 
-  implicit class BatchResultImprovements[A](a: A)(implicit ec: ExecutionContext) {
-    def toRightBatchResult: BatchResult[A] = EitherT.rightT[Future, BatchChangeErrorResponse](a)
+  implicit class BatchResultImprovements[A](a: A) {
+    def toRightBatchResult: BatchResult[A] = EitherT.rightT[IO, BatchChangeErrorResponse](a)
   }
 
-  implicit class BatchResultErrorImprovements[A](err: BatchChangeErrorResponse)(
-      implicit ec: ExecutionContext) {
-    def toLeftBatchResult: BatchResult[A] = EitherT.leftT[Future, A](err)
+  implicit class BatchResultErrorImprovements[A](err: BatchChangeErrorResponse) {
+    def toLeftBatchResult: BatchResult[A] = EitherT.leftT[IO, A](err)
   }
 
   implicit class ValidatedBatchImprovements[A](batch: ValidatedBatch[A]) {
@@ -79,16 +73,17 @@ object BatchChangeInterfaces {
       validation.map(_ => ())
   }
 
-  implicit class FutureCollectionImprovements[A](futures: List[Future[A]]) {
-    // Pulls out the successful futures from the list; drops future failures
-    def collectSuccesses()(implicit ec: ExecutionContext): Future[List[A]] = {
-      val asSuccessfulOpt = futures.map { f =>
-        f.map(a => Some(a)).recover {
+  implicit class IOCollectionImprovements[A](value: List[IO[A]]) {
+    // Pulls out the successful IO from the list; drops IO failures
+    def collectSuccesses(): IO[List[A]] = {
+      val asSuccessfulOpt: List[IO[Option[A]]] = value.map { f =>
+        f.attempt.map {
+          case Right(a) => Some(a)
           case _ => None
         }
       }
 
-      Future.sequence(asSuccessfulOpt).map { lst =>
+      asSuccessfulOpt.sequence[IO, Option[A]].map { lst =>
         lst.collect {
           case Some(rs) => rs
         }

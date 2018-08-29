@@ -16,10 +16,9 @@
 
 package vinyldns.api.domain.record
 
+import cats.effect._
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBRecordChangeRepository
-
-import scala.concurrent.Future
 
 case class ListRecordSetChangesResults(
     items: List[RecordSetChange] = List[RecordSetChange](),
@@ -29,20 +28,20 @@ case class ListRecordSetChangesResults(
 
 trait RecordChangeRepository extends Repository {
 
-  def save(changeSet: ChangeSet): Future[ChangeSet]
+  def save(changeSet: ChangeSet): IO[ChangeSet]
 
-  def getPendingChangeSets(zoneId: String): Future[List[ChangeSet]]
+  def getPendingChangeSets(zoneId: String): IO[List[ChangeSet]]
 
-  def getChanges(zoneId: String): Future[List[ChangeSet]]
+  def getChanges(zoneId: String): IO[List[ChangeSet]]
 
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): Future[ListRecordSetChangesResults]
+      maxItems: Int = 100): IO[ListRecordSetChangesResults]
 
-  def getRecordSetChange(zoneId: String, changeId: String): Future[Option[RecordSetChange]]
+  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
 
-  def getAllPendingZoneIds(): Future[List[String]]
+  def getAllPendingZoneIds(): IO[List[String]]
 }
 
 object RecordChangeRepository {

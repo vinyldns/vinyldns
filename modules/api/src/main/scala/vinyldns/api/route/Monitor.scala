@@ -18,46 +18,45 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
+import cats.effect._
 import nl.grons.metrics.scala.{Histogram, Meter, MetricName}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Instrumented
 
 import scala.collection._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.Failure
 
 trait Monitored {
 
-  def monitor[T](name: String)(f: => Future[T])(implicit ec: ExecutionContext): Future[T] = {
+  def monitor[T](name: String)(f: => IO[T]): IO[T] = {
     val startTime = System.currentTimeMillis()
 
     // invoke the function yielding a new future
-    f.andThen {
-      case Success(ok) =>
+    f.attempt.flatMap {
+      case Right(ok) =>
         getMonitor(name).capture(System.currentTimeMillis() - startTime, success = true)
-        ok
-      case Failure(error) =>
+        IO(ok)
+      case Left(error) =>
         getMonitor(name).capture(System.currentTimeMillis() - startTime, success = false)
-        throw error
+        IO.raiseError(error)
     }
   }
 
-  def time[T](id: String)(
-      f: => Future[T])(implicit ec: ExecutionContext, logger: Logger): Future[T] = {
+  def time[T](id: String)(f: => IO[T])(implicit logger: Logger): IO[T] = {
     val startTime = System.currentTimeMillis
     def duration: Double = (System.currentTimeMillis - startTime) / 1000.0
 
-    Future
-      .successful(logger.info(s"Starting $id"))
+    IO.pure(logger.info(s"Starting $id"))
       .flatMap(_ => f)
-      .andThen {
-        case Success(t) =>
+      .attempt
+      .flatMap {
+        case Right(t) =>
           logger.info(s"Finished $id; success=true; duration=$duration seconds")
-          t
+          IO(t)
 
-        case Failure(e) =>
+        case Left(e) =>
           logger.error(s"Finished $id; success=false; duration=$duration seconds", e)
-          e
+          IO.raiseError(e)
       }
   }
 

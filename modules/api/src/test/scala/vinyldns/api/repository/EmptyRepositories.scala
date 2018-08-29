@@ -21,51 +21,51 @@ import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.api.domain.zone.{Zone, ZoneRepository}
 
-import scala.concurrent.Future
+import cats.effect._
 
 // Empty implementations let our other test classes just edit with the methods they need
 
 trait EmptyRecordSetRepo extends RecordSetRepository {
 
-  def getRecordSetsByName(zoneId: String, name: String): Future[List[RecordSet]] =
-    Future.successful(List())
+  def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
+    IO.pure(List())
 
-  def apply(changeSet: ChangeSet): Future[ChangeSet] = Future.successful(changeSet)
+  def apply(changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
   def listRecordSets(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]): Future[ListRecordSetResults] =
-    Future.successful(ListRecordSetResults())
+      recordNameFilter: Option[String]): IO[ListRecordSetResults] =
+    IO.pure(ListRecordSetResults())
 
-  def getRecordSets(zoneId: String, name: String, typ: RecordType): Future[List[RecordSet]] =
-    Future.successful(List())
+  def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
+    IO.pure(List())
 
-  def getRecordSet(zoneId: String, recordSetId: String): Future[Option[RecordSet]] =
-    Future.successful(None)
+  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
+    IO.pure(None)
 
-  def getRecordSetCount(zoneId: String): Future[Int] = Future.successful(0)
+  def getRecordSetCount(zoneId: String): IO[Int] = IO.pure(0)
 }
 
 trait EmptyZoneRepo extends ZoneRepository {
 
-  def save(zone: Zone): Future[Zone] = Future.successful(zone)
+  def save(zone: Zone): IO[Zone] = IO.pure(zone)
 
-  def getZone(zoneId: String): Future[Option[Zone]] = Future.successful(None)
+  def getZone(zoneId: String): IO[Option[Zone]] = IO.pure(None)
 
-  def getZoneByName(zoneName: String): Future[Option[Zone]] = Future.successful(None)
+  def getZoneByName(zoneName: String): IO[Option[Zone]] = IO.pure(None)
 
   def listZones(
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
       offset: Option[Int] = None,
-      pageSize: Int = 100): Future[List[Zone]] = Future.successful(List())
+      pageSize: Int = 100): IO[List[Zone]] = IO.pure(List())
 
-  def getZonesByAdminGroupId(adminGroupId: String): Future[List[Zone]] = Future.successful(List())
+  def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] = IO.pure(List())
 
-  def getZonesByNames(zoneNames: Set[String]): Future[Set[Zone]] = Future.successful(Set())
+  def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] = IO.pure(Set())
 
-  def getZonesByFilters(zoneNames: Set[String]): Future[Set[Zone]] = Future.successful(Set())
+  def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = IO.pure(Set())
 
 }

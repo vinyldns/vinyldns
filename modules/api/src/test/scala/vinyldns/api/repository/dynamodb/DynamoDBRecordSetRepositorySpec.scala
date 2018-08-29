@@ -30,7 +30,7 @@ import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet}
 import vinyldns.api.domain.zone.Zone
 import vinyldns.api.{ResultHelpers, VinylDNSConfig, VinylDNSTestData}
 
-import scala.concurrent.Future
+import cats.effect._
 import scala.concurrent.duration.FiniteDuration
 
 class DynamoDBRecordSetRepositorySpec
@@ -90,7 +90,7 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoRecordSetRepo
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
@@ -116,7 +116,7 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(dynamoRequest)
         .when(dynamoDBHelper)
         .toBatchWriteItemRequest(any[Seq[WriteRequest]], anyString)
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
@@ -149,12 +149,12 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(unprocessed).when(dynamoResponse).getUnprocessedItems
 
       val store = new TestDynamoRecordSetRepo
-      doReturn(Future.successful(dynamoResponse))
+      doReturn(IO.pure(dynamoResponse))
         .doThrow(new RuntimeException("failed"))
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val result = store.apply(ChangeSet(changes))
+      val result = store.apply(ChangeSet(changes)).unsafeToFuture()
       whenReady(result.failed)(_ shouldBe a[RuntimeException])
     }
   }
@@ -167,7 +167,7 @@ class DynamoDBRecordSetRepositorySpec
       val expected = store.toItem(rsOk)
       when(dynamoResponse.getItem).thenReturn(expected)
       when(dynamoDBHelper.getItem(any[GetItemRequest]))
-        .thenReturn(Future.successful(dynamoResponse))
+        .thenReturn(IO.pure(dynamoResponse))
 
       val response = await[Option[Zone]](store.getRecordSet(rsOk.zoneId, rsOk.id))
 
@@ -187,7 +187,7 @@ class DynamoDBRecordSetRepositorySpec
       val dynamoResponse = mock[GetItemResult]
       when(dynamoResponse.getItem).thenReturn(null)
       when(dynamoDBHelper.getItem(any[GetItemRequest]))
-        .thenReturn(Future.successful(dynamoResponse))
+        .thenReturn(IO.pure(dynamoResponse))
 
       val store = new DynamoDBRecordSetRepository(recordChangeConfig, dynamoDBHelper)
       val response = await[Option[Zone]](store.getRecordSet(rsOk.zoneId, rsOk.id))
@@ -208,7 +208,7 @@ class DynamoDBRecordSetRepositorySpec
 
       doReturn(expectedItems).when(dynamoResponse).getItems
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[ListRecordSetResults](
         store.listRecordSets(
@@ -233,7 +233,7 @@ class DynamoDBRecordSetRepositorySpec
 
       doReturn(expectedItems).when(dynamoResponse).getItems
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response =
         await[ListRecordSetResults](store.listRecordSets(rsOk.zoneId, None, Some(3), None))
@@ -260,7 +260,7 @@ class DynamoDBRecordSetRepositorySpec
       val dynamoResponse = mock[QueryResult]
       val store = new TestDynamoRecordSetRepo
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
       doReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
         .when(dynamoResponse)
@@ -277,7 +277,7 @@ class DynamoDBRecordSetRepositorySpec
       val resultList = new java.util.ArrayList[java.util.Map[String, AttributeValue]]()
       resultList.add(store.toItem(rsOk))
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
       doReturn(resultList).when(dynamoResponse).getItems
 
@@ -301,7 +301,7 @@ class DynamoDBRecordSetRepositorySpec
       val dynamoResponse = mock[QueryResult]
       val store = new TestDynamoRecordSetRepo
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
       doReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
         .when(dynamoResponse)
@@ -318,7 +318,7 @@ class DynamoDBRecordSetRepositorySpec
       val resultList = new java.util.ArrayList[java.util.Map[String, AttributeValue]]()
       resultList.add(store.toItem(rsOk))
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
       doReturn(resultList).when(dynamoResponse).getItems
 
@@ -345,7 +345,7 @@ class DynamoDBRecordSetRepositorySpec
 
       doReturn(expectedCount).when(dynamoResponse).getCount
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val store = new TestDynamoRecordSetRepo
       val response = await[Int](store.getRecordSetCount(rsOk.zoneId))
@@ -358,7 +358,7 @@ class DynamoDBRecordSetRepositorySpec
       val expectedCount = 10
       doReturn(expectedCount).when(dynamoResponse).getCount
       doReturn(null).when(dynamoResponse).getLastEvaluatedKey
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val store = new TestDynamoRecordSetRepo
       val response = await[Int](store.getRecordSetCount(rsOk.zoneId))
@@ -377,8 +377,8 @@ class DynamoDBRecordSetRepositorySpec
       doReturn(key).when(dynamoResponse1).getLastEvaluatedKey
       doReturn(null).when(dynamoResponse2).getLastEvaluatedKey
 
-      doReturn(Future.successful(dynamoResponse1))
-        .doReturn(Future.successful(dynamoResponse2))
+      doReturn(IO.pure(dynamoResponse1))
+        .doReturn(IO.pure(dynamoResponse2))
         .when(dynamoDBHelper)
         .query(any[QueryRequest])
 

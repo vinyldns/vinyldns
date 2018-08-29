@@ -22,19 +22,17 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
 import akka.http.scaladsl.server.{Directives, RequestContext, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.effect._
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
-
 import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.record.RecordType
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
 import vinyldns.core.crypto.Crypto
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class ZoneRoutingSpec
     extends WordSpec
@@ -331,9 +329,10 @@ class ZoneRoutingSpec
 
   val zoneService: ZoneServiceAlgebra = TestZoneService
 
-  override def vinyldnsAuthenticator(ctx: RequestContext, content: String)(
-      implicit ec: ExecutionContext): Future[Either[Cause, AuthPrincipal]] =
-    Future.successful(Right(okAuth))
+  override def vinyldnsAuthenticator(
+      ctx: RequestContext,
+      content: String): IO[Either[Cause, AuthPrincipal]] =
+    IO.pure(Right(okAuth))
 
   def zoneJson(name: String, email: String): String =
     zoneJson(Zone(name, email, connection = null, created = null, status = null, id = null))

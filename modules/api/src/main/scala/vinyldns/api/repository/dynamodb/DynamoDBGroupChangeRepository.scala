@@ -19,6 +19,7 @@ package vinyldns.api.repository.dynamodb
 import java.nio.ByteBuffer
 import java.util.HashMap
 
+import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.joda.time.DateTime
@@ -30,8 +31,6 @@ import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 object DynamoDBGroupChangeRepository {
 
@@ -90,7 +89,7 @@ class DynamoDBGroupChangeRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
 
-  def save(groupChange: GroupChange): Future[GroupChange] =
+  def save(groupChange: GroupChange): IO[GroupChange] =
     monitor("repo.GroupChange.save") {
       log.info(s"Saving groupChange ${groupChange.id}.")
       val item = toItem(groupChange)
@@ -98,7 +97,7 @@ class DynamoDBGroupChangeRepository(
       dynamoDBHelper.putItem(request).map(_ => groupChange)
     }
 
-  def getGroupChange(groupChangeId: String): Future[Option[GroupChange]] =
+  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] =
     monitor("repo.GroupChange.getGroupChange") {
       log.info(s"Getting groupChange $groupChangeId.")
       val key = new HashMap[String, AttributeValue]()
@@ -113,7 +112,7 @@ class DynamoDBGroupChangeRepository(
   def getGroupChanges(
       groupId: String,
       startFrom: Option[String],
-      maxItems: Int): Future[ListGroupChangesResults] =
+      maxItems: Int): IO[ListGroupChangesResults] =
     monitor("repo.GroupChange.getGroupChanges") {
       log.info("Getting groupChanges")
 

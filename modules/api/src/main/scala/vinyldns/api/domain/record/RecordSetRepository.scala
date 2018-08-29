@@ -16,11 +16,10 @@
 
 package vinyldns.api.domain.record
 
+import cats.effect._
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBRecordSetRepository
-
-import scala.concurrent.Future
 
 case class ListRecordSetResults(
     recordSets: List[RecordSet] = List[RecordSet](),
@@ -31,21 +30,21 @@ case class ListRecordSetResults(
 
 trait RecordSetRepository extends Repository {
 
-  def apply(changeSet: ChangeSet): Future[ChangeSet]
+  def apply(changeSet: ChangeSet): IO[ChangeSet]
 
   def listRecordSets(
       zoneId: String,
       startFrom: Option[String],
       maxItems: Option[Int],
-      recordNameFilter: Option[String]): Future[ListRecordSetResults]
+      recordNameFilter: Option[String]): IO[ListRecordSetResults]
 
-  def getRecordSets(zoneId: String, name: String, typ: RecordType): Future[List[RecordSet]]
+  def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]
 
-  def getRecordSet(zoneId: String, recordSetId: String): Future[Option[RecordSet]]
+  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]]
 
-  def getRecordSetCount(zoneId: String): Future[Int]
+  def getRecordSetCount(zoneId: String): IO[Int]
 
-  def getRecordSetsByName(zoneId: String, name: String): Future[List[RecordSet]]
+  def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]]
 }
 
 object RecordSetRepository {

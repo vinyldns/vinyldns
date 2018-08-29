@@ -75,7 +75,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
     // wait until the repo is ready, could take time if the table has to be created
     var notReady = true
     while (notReady) {
-      val result = Await.ready(repo.getGroup("any"), 5.seconds)
+      val result = Await.ready(repo.getGroup("any").unsafeToFuture(), 5.seconds)
       notReady = result.value.get.isFailure
       Thread.sleep(2000)
     }
@@ -83,7 +83,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
     clearGroups()
 
     // Create all the zones
-    val savedGroups = Future.sequence(groups.map(repo.save))
+    val savedGroups = Future.sequence(groups.map(repo.save(_).unsafeToFuture()))
 
     // Wait until all of the zones are done
     Await.result(savedGroups, 5.minutes)
@@ -92,7 +92,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
   def tearDown(): Unit = {
     val request = new DeleteTableRequest().withTableName(GROUP_TABLE)
     val deleteTables = dynamoDBHelper.deleteTable(request)
-    Await.ready(deleteTables, 100.seconds)
+    Await.ready(deleteTables.unsafeToFuture(), 100.seconds)
   }
 
   private def clearGroups(): Unit = {
@@ -124,13 +124,13 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
   "DynamoDBGroupRepository" should {
     "get a group by id" in {
       val targetGroup = groups.head
-      whenReady(repo.getGroup(targetGroup.id), timeout) { retrieved =>
+      whenReady(repo.getGroup(targetGroup.id).unsafeToFuture(), timeout) { retrieved =>
         retrieved.get shouldBe targetGroup
       }
     }
 
     "get all active groups" in {
-      whenReady(repo.getAllGroups(), timeout) { retrieved =>
+      whenReady(repo.getAllGroups().unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe activeGroups.toSet
       }
     }
@@ -143,7 +143,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
           retrieved <- repo.getGroup(deleted.id)
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe None
       }
     }
@@ -156,14 +156,14 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
           retrieved <- repo.getGroupByName(deleted.name)
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe None
       }
     }
 
     "get groups should omit non existing groups" in {
       val f = repo.getGroups(Set(activeGroups.head.id, "thisdoesnotexist"))
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved.map(_.id) should contain theSameElementsAs Set(activeGroups.head.id)
       }
     }
@@ -171,7 +171,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
     "returns all the groups" in {
       val f = repo.getGroups(groups.map(_.id).toSet)
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved should contain theSameElementsAs activeGroups
       }
     }
@@ -180,7 +180,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       val evenGroups = activeGroups.filter(_.id.takeRight(1).toInt % 2 == 0)
       val f = repo.getGroups(evenGroups.map(_.id).toSet)
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved should contain theSameElementsAs evenGroups
       }
     }
@@ -188,7 +188,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
     "return an Empty set if nothing found" in {
       val f = repo.getGroups(Set("notFound"))
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved should contain theSameElementsAs Set()
       }
     }
@@ -204,14 +204,14 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
           retrieved <- repo.getGroups(Set(deleted.id, groups.head.id))
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved.map(_.id) shouldBe Set(groups.head.id)
       }
     }
 
     "get a group by name" in {
       val targetGroup = groups.head
-      whenReady(repo.getGroupByName(targetGroup.name), timeout) { retrieved =>
+      whenReady(repo.getGroupByName(targetGroup.name).unsafeToFuture(), timeout) { retrieved =>
         retrieved.get shouldBe targetGroup
       }
     }
@@ -230,7 +230,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
           retrieved <- repo.getGroup(saved.id)
         } yield retrieved
 
-      whenReady(test, timeout) { saved =>
+      whenReady(test.unsafeToFuture(), timeout) { saved =>
         saved.get.description shouldBe None
       }
     }

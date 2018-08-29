@@ -77,7 +77,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     // wait until the repo is ready, could take time if the table has to be created
     var notReady = true
     while (notReady) {
-      val result = Await.ready(repo.listZoneChanges("any"), 5.seconds)
+      val result = Await.ready(repo.listZoneChanges("any").unsafeToFuture(), 5.seconds)
       notReady = result.value.get.isFailure
     }
 
@@ -85,7 +85,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     clearChanges()
 
     // Create all the zones
-    val savedChanges = Future.sequence(changes.map(repo.save))
+    val savedChanges = Future.sequence(changes.map(repo.save(_).unsafeToFuture()))
 
     // Wait until all of the zones are done
     Await.result(savedChanges, 5.minutes)
@@ -131,7 +131,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     "get all changes for a zone" in {
       val testFuture = repo.listZoneChanges(okZones(1).id)
-      whenReady(testFuture, timeout) { retrieved =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { retrieved =>
         val expectedChanges = changes.filter(_.zoneId == okZones(1).id).sortBy(_.created)
         retrieved.items should equal(expectedChanges)
       }
@@ -139,7 +139,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     "get pending and complete changes for a zone" in {
       val testFuture = repo.getPending(okZones(1).id)
-      whenReady(testFuture, timeout) { retrieved =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { retrieved =>
         val expectedChangeIds = changes
           .filter(c =>
             c.zoneId == okZones(1).id
@@ -159,7 +159,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     "get zone changes with a page size of one" in {
       val testFuture = repo.listZoneChanges(zoneId = okZones(1).id, startFrom = None, maxItems = 1)
-      whenReady(testFuture, timeout) { retrieved =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { retrieved =>
         {
           val result = retrieved.items
           val expectedChanges = changes.filter(_.zoneId == okZones(1).id)
@@ -171,13 +171,13 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     "get zone changes with page size of one and reuse key to get another page with size of two" in {
       val testFuture = repo.listZoneChanges(zoneId = okZones(1).id, startFrom = None, maxItems = 1)
-      whenReady(testFuture, timeout) { retrieved =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { retrieved =>
         {
           val result1 = retrieved.items.map(_.id).toSet
           val key = retrieved.nextId
           val testFuture2 =
             repo.listZoneChanges(zoneId = okZones(1).id, startFrom = key, maxItems = 2)
-          whenReady(testFuture2, timeout) { retrieved =>
+          whenReady(testFuture2.unsafeToFuture(), timeout) { retrieved =>
             {
               val result2 = retrieved.items
               val expectedChanges =
@@ -194,11 +194,11 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     "return an empty list and nextId of None when passing last record as start" in {
       val testFuture = repo.listZoneChanges(zoneId = okZones(1).id, startFrom = None, maxItems = 4)
-      whenReady(testFuture, timeout) { retrieved =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { retrieved =>
         {
           val key = retrieved.nextId
           val testFuture2 = repo.listZoneChanges(zoneId = okZones(1).id, startFrom = key)
-          whenReady(testFuture2, timeout) { retrieved =>
+          whenReady(testFuture2.unsafeToFuture(), timeout) { retrieved =>
             {
               val result2 = retrieved.items
               result2 shouldBe List()
@@ -211,7 +211,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     "have nextId of None when exhausting record changes" in {
       val testFuture = repo.listZoneChanges(zoneId = okZones(1).id, startFrom = None, maxItems = 10)
-      whenReady(testFuture, timeout) { retrieved =>
+      whenReady(testFuture.unsafeToFuture(), timeout) { retrieved =>
         {
           val result = retrieved.items
           val expectedChanges = changes.filter(_.zoneId == okZones(1).id).sortBy(_.created)

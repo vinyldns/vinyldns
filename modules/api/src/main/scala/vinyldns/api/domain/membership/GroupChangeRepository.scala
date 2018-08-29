@@ -16,23 +16,22 @@
 
 package vinyldns.api.domain.membership
 
+import cats.effect._
 import org.joda.time.DateTime
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.dynamodb.DynamoDBGroupChangeRepository
-
-import scala.concurrent.Future
 
 final case class ListGroupChangesResults(
     changes: Seq[GroupChange],
     lastEvaluatedTimeStamp: Option[String])
 
-trait GroupChangeRepository extends Repository {
-  def save(groupChange: GroupChange): Future[GroupChange]
-  def getGroupChange(groupChangeId: String): Future[Option[GroupChange]] // For testing
+trait GroupChangeRepository extends Repository  {
+  def save(groupChange: GroupChange): IO[GroupChange]
+  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] // For testing
   def getGroupChanges(
       groupId: String,
       startFrom: Option[String],
-      maxItems: Int): Future[ListGroupChangesResults]
+      maxItems: Int): IO[ListGroupChangesResults]
   implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isBefore(_))
 }
 

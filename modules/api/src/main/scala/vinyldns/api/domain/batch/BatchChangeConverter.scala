@@ -17,7 +17,6 @@
 package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
-import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
@@ -31,11 +30,9 @@ import vinyldns.api.domain.record
 import vinyldns.api.domain.record.{RecordData, RecordSet, RecordSetChange, RecordSetStatus}
 import vinyldns.api.domain.zone.Zone
 
-import scala.concurrent.ExecutionContext
-
 class BatchChangeConverter(
     batchChangeRepo: BatchChangeRepository,
-    sqsServiceAlgebra: EngineCommandBus)(implicit ec: ExecutionContext)
+    sqsServiceAlgebra: EngineCommandBus)
     extends BatchChangeConverterAlgebra {
 
   private val logger = LoggerFactory.getLogger("BatchChangeConverter")

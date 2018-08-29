@@ -16,6 +16,7 @@
 
 package vinyldns.api.engine
 
+import cats.effect._
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -24,7 +25,7 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeStatus, ZoneRepository}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar with VinylDNSTestData {
 
@@ -36,8 +37,8 @@ class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar wit
       val mockChangeRepo = mock[ZoneChangeRepository]
       val change = zoneChangePending
 
-      doReturn(Future.successful(change.zone)).when(mockZoneRepo).save(change.zone)
-      doReturn(Future.successful(change)).when(mockChangeRepo).save(any[ZoneChange])
+      doReturn(IO.pure(change.zone)).when(mockZoneRepo).save(change.zone)
+      doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
 
       val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo)
       test(change).unsafeRunSync()

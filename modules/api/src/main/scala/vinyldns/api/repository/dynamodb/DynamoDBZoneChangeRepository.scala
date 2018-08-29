@@ -19,6 +19,7 @@ package vinyldns.api.repository.dynamodb
 import java.nio.ByteBuffer
 import java.util.HashMap
 
+import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.joda.time.DateTime
@@ -35,8 +36,6 @@ import vinyldns.api.protobuf.ProtobufConversions
 import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
 import scala.util.Try
 
 object DynamoDBZoneChangeRepository extends ProtobufConversions {
@@ -119,7 +118,7 @@ class DynamoDBZoneChangeRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
 
-  def save(zoneChange: ZoneChange): Future[ZoneChange] =
+  def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {
       log.info(s"Saving zone change ${zoneChange.id}")
       val item = toItem(zoneChange)
@@ -131,7 +130,7 @@ class DynamoDBZoneChangeRepository(
   def listZoneChanges(
       zoneId: String,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): Future[ListZoneChangesResults] =
+      maxItems: Int = 100): IO[ListZoneChangesResults] =
     monitor("repo.ZoneChange.getChanges") {
       log.info(s"Getting zone changes for zone $zoneId")
 
@@ -167,7 +166,7 @@ class DynamoDBZoneChangeRepository(
       }
     }
 
-  def getPending(zoneId: String): Future[List[ZoneChange]] =
+  def getPending(zoneId: String): IO[List[ZoneChange]] =
     monitor("repo.ZoneChange.getPending") {
       log.info(s"Getting pending zone changes for zone $zoneId")
       for {
@@ -176,7 +175,7 @@ class DynamoDBZoneChangeRepository(
       } yield (pending ++ notSynced).sortBy(_.created)
     }
 
-  def getAllPendingZoneIds: Future[List[String]] = {
+  def getAllPendingZoneIds: IO[List[String]] = {
     val expressionAttributeValues = new HashMap[String, AttributeValue]
     val expressionAttributeNames = new HashMap[String, String]
     expressionAttributeNames.put("#status_attribute", STATUS)
@@ -200,7 +199,7 @@ class DynamoDBZoneChangeRepository(
 
   private def getChangesByStatus(
       zoneId: String,
-      changeStatus: ZoneChangeStatus): Future[List[ZoneChange]] = {
+      changeStatus: ZoneChangeStatus): IO[List[ZoneChange]] = {
     val expressionAttributeValues = new HashMap[String, AttributeValue]
     expressionAttributeValues.put(":status", new AttributeValue(changeStatus.toString))
     expressionAttributeValues.put(":zone_id", new AttributeValue(zoneId))

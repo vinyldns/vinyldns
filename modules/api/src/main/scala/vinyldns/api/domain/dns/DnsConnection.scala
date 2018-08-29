@@ -16,16 +16,14 @@
 
 package vinyldns.api.domain.dns
 
-import cats.implicits._
+import cats.effect._
+import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
-
 import vinyldns.api.Interfaces.{result, _}
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
 import vinyldns.api.domain.zone.{Zone, ZoneConnection}
-
-import scala.concurrent.{ExecutionContext, Future}
 
 object DnsProtocol {
 
@@ -97,9 +95,8 @@ class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
     case RecordSetChangeType.Delete => deleteRecord(change)
   }
 
-  def resolve(name: String, zoneName: String, typ: RecordType)(
-      implicit ec: ExecutionContext): Result[List[RecordSet]] =
-    Future {
+  def resolve(name: String, zoneName: String, typ: RecordType): Result[List[RecordSet]] =
+    IO {
       for {
         query <- toQuery(name, zoneName, typ)
         records <- runQuery(query)

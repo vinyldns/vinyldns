@@ -18,6 +18,7 @@ package vinyldns.api.repository.mysql
 
 import java.util.UUID
 
+import cats.effect._
 import org.scalatest._
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
@@ -27,8 +28,6 @@ import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.membership.User
 import vinyldns.api.domain.zone._
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
-
-import scala.concurrent.{ExecutionContext, Future}
 
 class JdbcZoneRepositoryIntegrationSpec
     extends WordSpec
@@ -42,7 +41,6 @@ class JdbcZoneRepositoryIntegrationSpec
     with ScalaFutures
     with Inspectors {
 
-  private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private var repo: JdbcZoneRepository = _
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
@@ -108,8 +106,8 @@ class JdbcZoneRepositoryIntegrationSpec
   private def testZone(name: String, adminGroupId: String = testZoneAdminGroupId) =
     okZone.copy(name = name, id = UUID.randomUUID().toString, adminGroupId = adminGroupId)
 
-  private def saveZones(zones: Seq[Zone]): Future[Unit] =
-    zones.foldLeft(Future.successful(())) {
+  private def saveZones(zones: Seq[Zone]): IO[Unit] =
+    zones.foldLeft(IO.unit) {
       case (acc, cur) =>
         acc.flatMap { _ =>
           repo.save(cur).map(_ => ())
@@ -118,7 +116,7 @@ class JdbcZoneRepositoryIntegrationSpec
 
   "JdbcZoneRepository" should {
     "return the zone when it is saved" in {
-      whenReady(repo.save(okZone), timeout) { retrieved =>
+      whenReady(repo.save(okZone).unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe okZone
       }
     }
@@ -130,13 +128,13 @@ class JdbcZoneRepositoryIntegrationSpec
           retrieved <- repo.getZone(okZone.id)
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe Some(okZone)
       }
     }
 
     "return none if a zone is not found by id" in {
-      whenReady(repo.getZone("doesnotexist"), timeout) { retrieved =>
+      whenReady(repo.getZone("doesnotexist").unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe empty
       }
     }
@@ -148,13 +146,13 @@ class JdbcZoneRepositoryIntegrationSpec
           retrieved <- repo.getZoneByName(okZone.name)
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe Some(okZone)
       }
     }
 
     "return none if a zone is not found by name" in {
-      whenReady(repo.getZoneByName("doesnotexist"), timeout) { retrieved =>
+      whenReady(repo.getZoneByName("doesnotexist").unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe empty
       }
     }
@@ -166,11 +164,11 @@ class JdbcZoneRepositoryIntegrationSpec
       val names1 = testZonesList1.map(zone => zone.name)
       val names2 = testZonesList2.map(zone => zone.name)
 
-      whenReady(f, timeout) { _ =>
-        whenReady(repo.getZonesByNames(names1.toSet), timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { _ =>
+        whenReady(repo.getZonesByNames(names1.toSet).unsafeToFuture(), timeout) { retrieved =>
           retrieved should contain theSameElementsAs testZonesList1
         }
-        whenReady(repo.getZonesByNames(names2.toSet), timeout) { retrieved =>
+        whenReady(repo.getZonesByNames(names2.toSet).unsafeToFuture(), timeout) { retrieved =>
           retrieved should contain theSameElementsAs testZonesList2
         }
       }
@@ -178,7 +176,9 @@ class JdbcZoneRepositoryIntegrationSpec
 
     "return empty list if zones are not found by names" in {
       whenReady(
-        repo.getZonesByNames(Set("doesnotexist", "doesnotexist2", "reallydoesnotexist")),
+        repo
+          .getZonesByNames(Set("doesnotexist", "doesnotexist2", "reallydoesnotexist"))
+          .unsafeToFuture(),
         timeout) { retrieved =>
         retrieved shouldBe empty
       }
@@ -195,10 +195,11 @@ class JdbcZoneRepositoryIntegrationSpec
       val expectedZones = List(testZones(0), testZones(1), testZones(3))
       val f = saveZones(testZones)
 
-      whenReady(f, timeout) { _ =>
-        whenReady(repo.getZonesByFilters(Set("67.345.12.in-addr.arpa.", "extraZone")), timeout) {
-          retrieved =>
-            retrieved should contain theSameElementsAs expectedZones
+      whenReady(f.unsafeToFuture(), timeout) { _ =>
+        whenReady(
+          repo.getZonesByFilters(Set("67.345.12.in-addr.arpa.", "extraZone")).unsafeToFuture(),
+          timeout) { retrieved =>
+          retrieved should contain theSameElementsAs expectedZones
         }
       }
     }
@@ -214,13 +215,13 @@ class JdbcZoneRepositoryIntegrationSpec
         memberGroupIds = groups.map(_.id)
       )
 
-      whenReady(f, timeout) { _ =>
-        whenReady(repo.listZones(okUserAuth), timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { _ =>
+        whenReady(repo.listZones(okUserAuth).unsafeToFuture(), timeout) { retrieved =>
           retrieved should contain theSameElementsAs testZones
         }
 
         // dummy user only has access to one zone
-        whenReady(repo.listZones(dummyUserAuth), timeout) { dummyZones =>
+        whenReady(repo.listZones(dummyUserAuth).unsafeToFuture(), timeout) { dummyZones =>
           (dummyZones should contain).only(testZones.head)
         }
       }
@@ -258,7 +259,7 @@ class JdbcZoneRepositoryIntegrationSpec
           everyoneZones <- repo.listZones(dummyUserAuth)
         } yield everyoneZones
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         (retrieved should contain).only(allAccess)
       }
     }
@@ -285,7 +286,7 @@ class JdbcZoneRepositoryIntegrationSpec
           retrieved <- repo.getZone(zoneToDelete.id)
         } yield retrieved
 
-      whenReady(f, timeout) { saved =>
+      whenReady(f.unsafeToFuture(), timeout) { saved =>
         // delete the zone, set the status to Deleted
         val deleted = saved.map(_.copy(status = ZoneStatus.Deleted)).get
         val del =
@@ -295,7 +296,7 @@ class JdbcZoneRepositoryIntegrationSpec
           } yield retrieved
 
         // the result should be None
-        whenReady(del, timeout) { retrieved =>
+        whenReady(del.unsafeToFuture(), timeout) { retrieved =>
           retrieved shouldBe empty
         }
       }
@@ -313,7 +314,7 @@ class JdbcZoneRepositoryIntegrationSpec
           zones <- repo.listZones(unauthorized)
         } yield zones
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe empty
       }
     }
@@ -328,13 +329,13 @@ class JdbcZoneRepositoryIntegrationSpec
         memberGroupIds = groups.map(_.id)
       )
 
-      whenReady(addACL, timeout) { _ =>
-        whenReady(repo.listZones(okUserAuth), timeout) { retrieved =>
+      whenReady(addACL.unsafeToFuture(), timeout) { _ =>
+        whenReady(repo.listZones(okUserAuth).unsafeToFuture(), timeout) { retrieved =>
           retrieved should contain theSameElementsAs zones
         }
 
         // dummy user only has access to first zone
-        whenReady(repo.listZones(dummyUserAuth), timeout) { dummyZones =>
+        whenReady(repo.listZones(dummyUserAuth).unsafeToFuture(), timeout) { dummyZones =>
           (dummyZones should contain).only(zones.head)
         }
 
@@ -342,15 +343,15 @@ class JdbcZoneRepositoryIntegrationSpec
         val revoked = zones(0).deleteACLRule(dummyAclRule)
         val revokeACL = repo.save(revoked)
 
-        whenReady(revokeACL, timeout) { _ =>
+        whenReady(revokeACL.unsafeToFuture(), timeout) { _ =>
           // ok user can still access zones
-          whenReady(repo.listZones(okUserAuth), timeout) { retrieved =>
+          whenReady(repo.listZones(okUserAuth).unsafeToFuture(), timeout) { retrieved =>
             val expected = Seq(revoked, zones(1))
             retrieved should contain theSameElementsAs expected
           }
 
           // dummy user can not access the revoked zone
-          whenReady(repo.listZones(dummyUserAuth), timeout) { dummyZones =>
+          whenReady(repo.listZones(dummyUserAuth).unsafeToFuture(), timeout) { dummyZones =>
             dummyZones shouldBe empty
           }
         }
@@ -396,7 +397,7 @@ class JdbcZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(auth)
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         // we should not have more than 29 zones
         retrieved.length shouldBe 29
         retrieved.headOption.map(_.name) shouldBe Some("01.")
@@ -412,7 +413,7 @@ class JdbcZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(superUserAuth)
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved should contain theSameElementsAs testZones
       }
     }
@@ -433,7 +434,7 @@ class JdbcZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(superUserAuth, zoneNameFilter = Some("system"))
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved should contain theSameElementsAs expectedZones
       }
     }
@@ -456,7 +457,7 @@ class JdbcZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(auth, zoneNameFilter = Some("system"))
         } yield retrieved
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         (retrieved should contain).theSameElementsInOrderAs(expectedZones)
       }
     }
@@ -468,20 +469,23 @@ class JdbcZoneRepositoryIntegrationSpec
       val expectedSecondPage = sorted.drop(4).take(4)
       val expectedThirdPage = sorted.drop(8).take(4)
 
-      whenReady(saveZones(testZones), timeout) { _ =>
-        whenReady(repo.listZones(superUserAuth, offset = None, pageSize = 4), timeout) {
-          firstPage =>
-            (firstPage should contain).theSameElementsInOrderAs(expectedFirstPage)
+      whenReady(saveZones(testZones).unsafeToFuture(), timeout) { _ =>
+        whenReady(
+          repo.listZones(superUserAuth, offset = None, pageSize = 4).unsafeToFuture(),
+          timeout) { firstPage =>
+          (firstPage should contain).theSameElementsInOrderAs(expectedFirstPage)
         }
 
-        whenReady(repo.listZones(superUserAuth, offset = Some(4), pageSize = 4), timeout) {
-          secondPage =>
-            (secondPage should contain).theSameElementsInOrderAs(expectedSecondPage)
+        whenReady(
+          repo.listZones(superUserAuth, offset = Some(4), pageSize = 4).unsafeToFuture(),
+          timeout) { secondPage =>
+          (secondPage should contain).theSameElementsInOrderAs(expectedSecondPage)
         }
 
-        whenReady(repo.listZones(superUserAuth, offset = Some(8), pageSize = 4), timeout) {
-          thirdPage =>
-            (thirdPage should contain).theSameElementsInOrderAs(expectedThirdPage)
+        whenReady(
+          repo.listZones(superUserAuth, offset = Some(8), pageSize = 4).unsafeToFuture(),
+          timeout) { thirdPage =>
+          (thirdPage should contain).theSameElementsInOrderAs(expectedThirdPage)
         }
       }
     }
@@ -512,17 +516,20 @@ class JdbcZoneRepositoryIntegrationSpec
       // make sure our auth is a member of the testZoneAdminGroup
       val auth = AuthPrincipal(dummyUser, Seq(testZoneAdminGroupId))
 
-      whenReady(saveZones(testZones), timeout) { _ =>
-        whenReady(repo.listZones(auth, offset = None, pageSize = 2), timeout) { firstPage =>
-          (firstPage should contain).theSameElementsInOrderAs(expectedFirstPage)
+      whenReady(saveZones(testZones).unsafeToFuture(), timeout) { _ =>
+        whenReady(repo.listZones(auth, offset = None, pageSize = 2).unsafeToFuture(), timeout) {
+          firstPage =>
+            (firstPage should contain).theSameElementsInOrderAs(expectedFirstPage)
         }
 
-        whenReady(repo.listZones(auth, offset = Some(2), pageSize = 2), timeout) { secondPage =>
-          (secondPage should contain).theSameElementsInOrderAs(expectedSecondPage)
+        whenReady(repo.listZones(auth, offset = Some(2), pageSize = 2).unsafeToFuture(), timeout) {
+          secondPage =>
+            (secondPage should contain).theSameElementsInOrderAs(expectedSecondPage)
         }
 
-        whenReady(repo.listZones(auth, offset = Some(4), pageSize = 2), timeout) { thirdPage =>
-          (thirdPage should contain).theSameElementsInOrderAs(expectedThirdPage)
+        whenReady(repo.listZones(auth, offset = Some(4), pageSize = 2).unsafeToFuture(), timeout) {
+          thirdPage =>
+            (thirdPage should contain).theSameElementsInOrderAs(expectedThirdPage)
         }
       }
     }
@@ -551,7 +558,7 @@ class JdbcZoneRepositoryIntegrationSpec
           zones <- repo.getZonesByAdminGroupId(differentAdminGroupId)
         } yield zones
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         retrieved should contain theSameElementsAs expectedZones
       }
     }

@@ -21,15 +21,15 @@ import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.record.RecordSetChange
 import vinyldns.api.domain.zone.{ZoneCommand, ZoneCommandResult}
 
-import scala.concurrent.Future
+import cats.effect._
 
 // Test SQS service that returns what it's given always
 trait TestSqsService extends EngineCommandBus {
   def sendZoneCommand(cmd: ZoneCommand): Result[ZoneCommandResult] =
     result(cmd.asInstanceOf[ZoneCommandResult])
 
-  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[Future[RecordSetChange]] =
-    cmds.map(Future.successful(_))
+  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]] =
+    cmds.map(IO.pure(_))
 }
 
 object TestSqsService extends TestSqsService

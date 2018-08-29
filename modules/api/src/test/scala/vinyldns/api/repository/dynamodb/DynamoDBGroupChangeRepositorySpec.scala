@@ -28,7 +28,7 @@ import vinyldns.api.domain.membership.{GroupChange, ListGroupChangesResults}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import cats.effect._
 
 class DynamoDBGroupChangeRepositorySpec
     extends WordSpec
@@ -98,7 +98,7 @@ class DynamoDBGroupChangeRepositorySpec
     "return the group change when saved" in {
       val mockPutItemResult = mock[PutItemResult]
 
-      doReturn(Future.successful(mockPutItemResult))
+      doReturn(IO.pure(mockPutItemResult))
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
@@ -107,11 +107,11 @@ class DynamoDBGroupChangeRepositorySpec
       response shouldBe okGroupChange
     }
     "throw exception when save returns an unexpected response" in {
-      doReturn(Future.failed(new ResourceNotFoundException("bar does not exist")))
+      doReturn(IO.raiseError(new ResourceNotFoundException("bar does not exist")))
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
-      val result = underTest.save(okGroupChange)
+      val result = underTest.save(okGroupChange).unsafeToFuture()
       whenReady(result.failed) { failed =>
         failed shouldBe a[ResourceNotFoundException]
       }
@@ -124,7 +124,7 @@ class DynamoDBGroupChangeRepositorySpec
 
       val expected = underTest.toItem(okGroupChange)
       doReturn(expected).when(dynamoResponse).getItem
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
       val response = await[Option[GroupChange]](underTest.getGroupChange(okGroupChange.id))
 
@@ -133,11 +133,11 @@ class DynamoDBGroupChangeRepositorySpec
       response shouldBe Some(okGroupChange)
     }
     "throw exception when get returns an unexpected response" in {
-      doReturn(Future.failed(new ResourceNotFoundException("bar does not exist")))
+      doReturn(IO.raiseError(new ResourceNotFoundException("bar does not exist")))
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
-      val result = underTest.getGroupChange(okGroupChange.id)
+      val result = underTest.getGroupChange(okGroupChange.id).unsafeToFuture()
       whenReady(result.failed) { failed =>
         failed shouldBe a[ResourceNotFoundException]
       }
@@ -145,7 +145,7 @@ class DynamoDBGroupChangeRepositorySpec
     "return None if not found" in {
       val dynamoResponse = mock[GetItemResult]
       doReturn(null).when(dynamoResponse).getItem
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
       val response = await[Option[GroupChange]](underTest.getGroupChange(okGroupChange.id))
 
@@ -164,7 +164,7 @@ class DynamoDBGroupChangeRepositorySpec
       val lastEvaluatedKey = underTest.toItem(listOfDummyGroupChanges(99))
       doReturn(lastEvaluatedKey).when(dynamoResponse).getLastEvaluatedKey
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response =
         await[ListGroupChangesResults](underTest.getGroupChanges(oneUserDummyGroup.id, None, 100))
@@ -179,7 +179,7 @@ class DynamoDBGroupChangeRepositorySpec
       val expected = List().asJava
       doReturn(expected).when(dynamoResponse).getItems()
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response =
         await[ListGroupChangesResults](underTest.getGroupChanges(oneUserDummyGroup.id, None, 100))
@@ -191,7 +191,7 @@ class DynamoDBGroupChangeRepositorySpec
       val dynamoGetResponse = mock[GetItemResult]
 
       doReturn(underTest.toItem(listOfDummyGroupChanges(50))).when(dynamoGetResponse).getItem
-      doReturn(Future.successful(dynamoGetResponse))
+      doReturn(IO.pure(dynamoGetResponse))
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
@@ -203,7 +203,7 @@ class DynamoDBGroupChangeRepositorySpec
       val lastEvaluatedKey = underTest.toItem(listOfDummyGroupChanges(150))
       doReturn(lastEvaluatedKey).when(dynamoQueryResponse).getLastEvaluatedKey
 
-      doReturn(Future.successful(dynamoQueryResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoQueryResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[ListGroupChangesResults](
         underTest.getGroupChanges(
@@ -224,7 +224,7 @@ class DynamoDBGroupChangeRepositorySpec
       val lastEvaluatedKey = underTest.toItem(listOfDummyGroupChanges(49))
       doReturn(lastEvaluatedKey).when(dynamoResponse).getLastEvaluatedKey
 
-      doReturn(Future.successful(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response =
         await[ListGroupChangesResults](underTest.getGroupChanges(oneUserDummyGroup.id, None, 50))
@@ -238,7 +238,7 @@ class DynamoDBGroupChangeRepositorySpec
       val dynamoGetResponse = mock[GetItemResult]
 
       doReturn(underTest.toItem(listOfDummyGroupChanges(99))).when(dynamoGetResponse).getItem
-      doReturn(Future.successful(dynamoGetResponse))
+      doReturn(IO.pure(dynamoGetResponse))
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
@@ -247,7 +247,7 @@ class DynamoDBGroupChangeRepositorySpec
       val expected = listOfDummyGroupChanges.slice(100, 200).map(underTest.toItem).asJava
       doReturn(expected).when(dynamoQueryResponse).getItems()
 
-      doReturn(Future.successful(dynamoQueryResponse)).when(dynamoDBHelper).query(any[QueryRequest])
+      doReturn(IO.pure(dynamoQueryResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
       val response = await[ListGroupChangesResults](
         underTest.getGroupChanges(oneUserDummyGroup.id, Some(listOfDummyGroupChanges(99).id), 100))

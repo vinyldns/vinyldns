@@ -28,6 +28,7 @@ import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.api.VinylDNSTestData
+import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.RecordSetChange
 import vinyldns.api.domain.zone.{ZoneChange, ZoneChangeType}
 import vinyldns.api.engine.sqs.SqsConnection
@@ -53,7 +54,7 @@ class ZoneCommandHandlerSpec
   private val mockSqs = mock[SqsConnection]
   private val mockMsg = mock[Message]
   private val zcp = mock[ZoneChange => IO[ZoneChange]]
-  private val rcp = mock[(DnsConnector, RecordSetChange) => IO[RecordSetChange]]
+  private val rcp = mock[(DnsConnection, RecordSetChange) => IO[RecordSetChange]]
   private val zsp = mock[ZoneChange => IO[ZoneChange]]
 
   private def rmrIO = IO.pure(mockRmr)
@@ -325,7 +326,7 @@ class ZoneCommandHandlerSpec
     "handle record changes" in {
       doReturn(IO.pure(pendingCreateAAAA))
         .when(rcp)
-        .apply(any[DnsConnector], sameas(pendingCreateAAAA))
+        .apply(any[DnsConnection], sameas(pendingCreateAAAA))
 
       val underTest = processChangeRequests(zcp, rcp, zsp)
       val result = fs2.Stream
@@ -339,7 +340,7 @@ class ZoneCommandHandlerSpec
       result shouldBe a[DeleteMessage]
       result.message shouldBe mockMsg
 
-      verify(rcp).apply(any[DnsConnector], sameas(pendingCreateAAAA))
+      verify(rcp).apply(any[DnsConnection], sameas(pendingCreateAAAA))
     }
 
     "handle zone changes" in {

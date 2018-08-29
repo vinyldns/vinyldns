@@ -16,6 +16,8 @@
 
 package vinyldns.api.repository.mysql
 
+import cats.effect._
+import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.api.domain.auth.AuthPrincipal
@@ -25,11 +27,7 @@ import vinyldns.api.protobuf.ProtobufConversions
 import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-import scala.concurrent.{Future, blocking}
-
 class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
-
-  implicit val ec = scala.concurrent.ExecutionContext.global
 
   private final val logger = LoggerFactory.getLogger(classOf[JdbcZoneRepository])
   private final val MAX_ACCESSORS = 30
@@ -114,97 +112,95 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     *
     * If the zone is not deleted, we have to save both the zone itself, as well as the zone access entries.
     */
-  def save(zone: Zone): Future[Zone] =
-    DB.futureLocalTx { implicit s =>
-      zone.status match {
-        case ZoneStatus.Deleted =>
-          monitor("repo.ZoneJDBC.delete") {
-            deleteZone(zone)
+  def save(zone: Zone): IO[Zone] =
+    zone.status match {
+      case ZoneStatus.Deleted =>
+        monitor("repo.ZoneJDBC.delete") {
+          IO {
+            DB.localTx { implicit s =>
+              deleteZone(zone)
+            }
           }
+        }
 
-        case _ =>
-          monitor("repo.ZoneJDBC.save") {
-            for {
-              _ <- deleteZoneAccess(zone)
-              _ <- putZone(zone)
-              _ <- putZoneAccess(zone)
-            } yield zone
+      case _ =>
+        monitor("repo.ZoneJDBC.save") {
+          IO {
+            DB.localTx { implicit s =>
+              deleteZoneAccess(zone)
+              putZone(zone)
+              putZoneAccess(zone)
+              zone
+            }
           }
-      }
+        }
     }
 
-  def getZone(zoneId: String): Future[Option[Zone]] =
+  def getZone(zoneId: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZone") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            GET_ZONE
-              .bind(zoneId)
-              .map(res => fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(1))))
-              .first()
-              .apply()
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          GET_ZONE
+            .bind(zoneId)
+            .map(res => fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(1))))
+            .first()
+            .apply()
         }
       }
     }
 
-  def getZoneByName(zoneName: String): Future[Option[Zone]] =
+  def getZoneByName(zoneName: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZoneByName") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            GET_ZONE_BY_NAME.bind(zoneName).map(extractZone(1)).first().apply()
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          GET_ZONE_BY_NAME.bind(zoneName).map(extractZone(1)).first().apply()
         }
       }
     }
 
-  private def getZonesByNamesGroup(zoneNames: List[String]): Future[List[Zone]] =
+  private def getZonesByNamesGroup(zoneNames: List[String]): IO[List[Zone]] =
     monitor("repo.ZoneJDBC.getZonesByNames") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            val questionMarks = List.fill(zoneNames.size)("?").mkString(",")
-            SQL(BASE_GET_ZONES_SQL +
-              s"""WHERE name in ($questionMarks)""".stripMargin)
-              .bind(zoneNames: _*)
-              .map(extractZone(1))
-              .list()
-              .apply()
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          val questionMarks = List.fill(zoneNames.size)("?").mkString(",")
+          SQL(BASE_GET_ZONES_SQL +
+            s"""WHERE name in ($questionMarks)""".stripMargin)
+            .bind(zoneNames: _*)
+            .map(extractZone(1))
+            .list()
+            .apply()
         }
       }
     }
 
-  def getZonesByNames(zoneNames: Set[String]): Future[Set[Zone]] = {
+  def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] = {
     val zoneNamesList = zoneNames.toList
     if (zoneNames.isEmpty) {
-      Future.successful(Set())
+      IO.pure(Set())
     } else {
       // TODO Getting 500 at a time max here - should test this at scale
-      val zoneGroups = zoneNamesList.grouped(500)
-      Future.sequence(zoneGroups.map(getZonesByNamesGroup)).map(_.flatten.toSet)
+      val zoneGroups = zoneNamesList.grouped(500).toList
+      val zoneGroupsSeq = zoneGroups.map(getZonesByNamesGroup).parSequence
+      zoneGroupsSeq.map(_.flatten.toSet)
     }
   }
 
-  def getZonesByFilters(zoneNames: Set[String]): Future[Set[Zone]] =
+  def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] =
     if (zoneNames.isEmpty) {
-      Future.successful(Set())
+      IO.pure(Set())
     } else {
       monitor("repo.ZoneJDBC.getZonesByFilters") {
         val zoneNameList = zoneNames.toList
 
-        Future {
-          blocking {
-            DB.readOnly { implicit s =>
-              val clause = for (_ <- zoneNameList) yield s"""name like (?)""".stripMargin
-              val whereClause = clause.mkString(" OR ")
-              val zn = zoneNameList.map(name => s"%$name%")
+        IO {
+          DB.readOnly { implicit s =>
+            val clause = for (_ <- zoneNameList) yield s"""name like (?)""".stripMargin
+            val whereClause = clause.mkString(" OR ")
+            val zn = zoneNameList.map(name => s"%$name%")
 
-              SQL(BASE_GET_ZONES_SQL +
-                " WHERE " + whereClause).bind(zn: _*).map(extractZone(1)).list().apply()
-            }.toSet
-          }
+            SQL(BASE_GET_ZONES_SQL +
+              " WHERE " + whereClause).bind(zn: _*).map(extractZone(1)).list().apply()
+          }.toSet
         }
       }
     }
@@ -213,32 +209,28 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
       offset: Option[Int] = None,
-      pageSize: Int = 100): Future[List[Zone]] =
+      pageSize: Int = 100): IO[List[Zone]] =
     monitor("repo.ZoneJDBC.listZones") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            buildZoneSearch(
-              authPrincipal.signedInUser,
-              authPrincipal.memberGroupIds,
-              zoneNameFilter,
-              offset,
-              pageSize)
-              .map(extractZone(2))
-              .list()
-              .apply()
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          buildZoneSearch(
+            authPrincipal.signedInUser,
+            authPrincipal.memberGroupIds,
+            zoneNameFilter,
+            offset,
+            pageSize)
+            .map(extractZone(2))
+            .list()
+            .apply()
         }
       }
     }
 
-  def getZonesByAdminGroupId(adminGroupId: String): Future[List[Zone]] =
+  def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] =
     monitor("repo.ZoneJDBC.getZonesByAdminGroupId") {
-      Future {
-        blocking {
-          DB.readOnly { implicit s =>
-            GET_ZONES_BY_ADMIN_GROUP_ID.bind(adminGroupId).map(extractZone(2)).list().apply()
-          }
+      IO {
+        DB.readOnly { implicit s =>
+          GET_ZONES_BY_ADMIN_GROUP_ID.bind(adminGroupId).map(extractZone(2)).list().apply()
         }
       }
     }
@@ -309,24 +301,21 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
   }
 
-  private def putZone(zone: Zone)(implicit session: DBSession): Future[Zone] =
-    Future {
-      blocking {
-        PUT_ZONE
-          .bindByName(
-            Seq(
-              'id -> zone.id,
-              'name -> zone.name,
-              'adminGroupId -> zone.adminGroupId,
-              'data -> toPB(zone).toByteArray
-            ): _*
-          )
-          .update()
-          .apply()
+  private def putZone(zone: Zone)(implicit session: DBSession): Zone = {
+    PUT_ZONE
+      .bindByName(
+        Seq(
+          'id -> zone.id,
+          'name -> zone.name,
+          'adminGroupId -> zone.adminGroupId,
+          'data -> toPB(zone).toByteArray
+        ): _*
+      )
+      .update()
+      .apply()
 
-        zone
-      }
-    }
+    zone
+  }
 
   /**
     * The zone_access table holds a pair of accessor_id -> zone_id
@@ -338,7 +327,7 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     * - All group ids for any ACL rules on the zone
     * - The adminGroupId on the zone - this is important!  We have to do this as a separate step when we do our insert
     */
-  private def putZoneAccess(zone: Zone)(implicit session: DBSession): Future[Zone] = {
+  private def putZoneAccess(zone: Zone)(implicit session: DBSession): Zone = {
 
     // generates the batch parameters, we create an entry per user and group mentioned in the acl rules
     val sqlParameters: Seq[Seq[(Symbol, Any)]] =
@@ -349,30 +338,20 @@ class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Mo
     // we MUST make sure that we put the admin group id as an accessor to this zone
     val allAccessors = sqlParameters :+ Seq('accessorId -> zone.adminGroupId, 'zoneId -> zone.id)
 
-    Future {
-      blocking {
-        // make sure that we do a distinct, so that we don't generate unnecessary inserts
-        PUT_ZONE_ACCESS.batchByName(allAccessors.distinct: _*).apply()
-        zone
-      }
-    }
+    // make sure that we do a distinct, so that we don't generate unnecessary inserts
+    PUT_ZONE_ACCESS.batchByName(allAccessors.distinct: _*).apply()
+    zone
   }
 
-  private def deleteZone(zone: Zone)(implicit session: DBSession): Future[Zone] =
-    Future {
-      blocking {
-        DELETE_ZONE.bind(zone.id).update().apply()
-        zone
-      }
-    }
+  private def deleteZone(zone: Zone)(implicit session: DBSession): Zone = {
+    DELETE_ZONE.bind(zone.id).update().apply()
+    zone
+  }
 
-  private def deleteZoneAccess(zone: Zone)(implicit session: DBSession): Future[Zone] =
-    Future {
-      blocking {
-        DELETE_ZONE_ACCESS.bind(zone.id).update().apply()
-        zone
-      }
-    }
+  private def deleteZoneAccess(zone: Zone)(implicit session: DBSession): Zone = {
+    DELETE_ZONE_ACCESS.bind(zone.id).update().apply()
+    zone
+  }
 
   private def extractZone(columnIndex: Int): WrappedResultSet => Zone = res => {
     fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))

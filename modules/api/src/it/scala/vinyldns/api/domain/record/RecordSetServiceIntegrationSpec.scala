@@ -16,13 +16,13 @@
 
 package vinyldns.api.domain.record
 
+import cats.effect._
 import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, User, UserRepository}
@@ -32,9 +32,9 @@ import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository.dynamodb.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
 import vinyldns.api.repository.mysql.VinylDNSJDBC
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 class RecordSetServiceIntegrationSpec
     extends DynamoDBIntegrationSpec
@@ -186,6 +186,7 @@ class RecordSetServiceIntegrationSpec
       val originalRecord = testRecordSetService
         .getRecordSet(apexTestRecordA.id, apexTestRecordA.zoneId, auth)
         .value
+        .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSet]]
       whenReady(originalRecord, timeout) { out =>
         rightValue(out).name shouldBe "live-zone-test"
@@ -208,6 +209,7 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .addRecordSet(newRecord, auth)
           .value
+          .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         rightValue(out).recordSet.name shouldBe "zone-test-add-records."
@@ -219,6 +221,7 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
+        .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
@@ -232,6 +235,7 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
+        .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
@@ -245,6 +249,7 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
+        .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
@@ -258,6 +263,7 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
         .value
+        .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
@@ -272,6 +278,7 @@ class RecordSetServiceIntegrationSpec
       val result = testRecordSetService
         .updateRecordSet(newRecord, superAuth)
         .value
+        .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         val change = rightValue(out)
@@ -286,6 +293,7 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .addRecordSet(newRecord, auth)
           .value
+          .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         leftValue(out) shouldBe a[RecordSetAlreadyExists]
@@ -298,6 +306,7 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .addRecordSet(newRecord, auth)
           .value
+          .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
         leftValue(out) shouldBe a[RecordSetAlreadyExists]
@@ -305,8 +314,8 @@ class RecordSetServiceIntegrationSpec
     }
   }
 
-  private def waitForSuccess[T](f: => Future[T]): T = {
-    val waiting = f.recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
+  private def waitForSuccess[T](f: => IO[T]): T = {
+    val waiting = f.unsafeToFuture().recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
     Await.result[T](waiting, 15.seconds)
   }
 }

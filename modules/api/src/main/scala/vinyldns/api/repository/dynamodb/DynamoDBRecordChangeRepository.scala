@@ -19,6 +19,8 @@ package vinyldns.api.repository.dynamodb
 import java.nio.ByteBuffer
 import java.util.HashMap
 
+import cats.effect._
+import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.joda.time.DateTime
@@ -30,8 +32,6 @@ import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
 import scala.util.Try
 
 object DynamoDBRecordChangeRepository {
@@ -121,7 +121,7 @@ class DynamoDBRecordChangeRepository(
   def toWriteRequest(changeSet: ChangeSet, change: RecordSetChange): WriteRequest =
     new WriteRequest().withPutRequest(new PutRequest().withItem(toItem(changeSet, change)))
 
-  def save(changeSet: ChangeSet): Future[ChangeSet] =
+  def save(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordChange.save") {
       log.info(s"Saving change set ${changeSet.id} with size ${changeSet.changes.size}")
       val MaxBatchWriteGroup = 25
@@ -134,7 +134,7 @@ class DynamoDBRecordChangeRepository(
         .toList
 
       // Fold left will attempt each batch sequentially, and fail fast on error
-      val result = batchWrites.foldLeft(Future.successful(List.empty[BatchWriteItemResult])) {
+      val result = batchWrites.foldLeft(IO.pure(List.empty[BatchWriteItemResult])) {
         case (acc, req) =>
           acc.flatMap { lst =>
             dynamoDBHelper
@@ -146,7 +146,7 @@ class DynamoDBRecordChangeRepository(
       result.map(_ => changeSet)
     }
 
-  def getPendingChangeSets(zoneId: String): Future[List[ChangeSet]] =
+  def getPendingChangeSets(zoneId: String): IO[List[ChangeSet]] =
     monitor("repo.RecordChange.getPendingChangeSets") {
       log.info(s"Getting pending change sets for zone $zoneId")
       val expressionAttributeValues = new HashMap[String, AttributeValue]
@@ -186,7 +186,7 @@ class DynamoDBRecordChangeRepository(
       }
     }
 
-  def getAllPendingZoneIds(): Future[List[String]] =
+  def getAllPendingZoneIds(): IO[List[String]] =
     monitor("repo.RecordChange.getAllPendingZoneIds") {
       log.info(s"Getting all pending zone ids")
       val expressionAttributeValues = new HashMap[String, AttributeValue]
@@ -214,7 +214,7 @@ class DynamoDBRecordChangeRepository(
       }
     }
 
-  def getChanges(zoneId: String): Future[List[ChangeSet]] =
+  def getChanges(zoneId: String): IO[List[ChangeSet]] =
     monitor("repo.RecordChange.getChanges") {
       log.info(s"Getting all change sets for zone $zoneId")
       val expressionAttributeValues = new HashMap[String, AttributeValue]
@@ -251,7 +251,7 @@ class DynamoDBRecordChangeRepository(
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): Future[ListRecordSetChangesResults] =
+      maxItems: Int = 100): IO[ListRecordSetChangesResults] =
     monitor("repo.RecordChange.getRecordSetChanges") {
       log.info(s"Getting record set changes for zone $zoneId")
 
@@ -290,7 +290,7 @@ class DynamoDBRecordChangeRepository(
       }
     }
 
-  def getRecordSetChange(zoneId: String, changeId: String): Future[Option[RecordSetChange]] =
+  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]] =
     monitor("repo.RecordChange.getRecordSetChange") {
       log.info(s"Getting record set change for zone $zoneId and changeId $changeId")
       val expressionAttributeValues = new HashMap[String, AttributeValue]

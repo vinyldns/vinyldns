@@ -16,31 +16,30 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect._
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.repository.Repository
 import vinyldns.api.repository.mysql.VinylDNSJDBC
 
-import scala.concurrent.Future
-
 trait ZoneRepository extends Repository {
 
-  def save(zone: Zone): Future[Zone]
+  def save(zone: Zone): IO[Zone]
 
-  def getZone(zoneId: String): Future[Option[Zone]]
+  def getZone(zoneId: String): IO[Option[Zone]]
 
-  def getZoneByName(zoneName: String): Future[Option[Zone]]
+  def getZoneByName(zoneName: String): IO[Option[Zone]]
 
-  def getZonesByNames(zoneNames: Set[String]): Future[Set[Zone]]
+  def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]]
 
-  def getZonesByFilters(zoneNames: Set[String]): Future[Set[Zone]]
+  def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]]
 
   def listZones(
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
       offset: Option[Int] = None,
-      pageSize: Int = 100): Future[List[Zone]]
+      pageSize: Int = 100): IO[List[Zone]]
 
-  def getZonesByAdminGroupId(adminGroupId: String): Future[List[Zone]]
+  def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 
 }
 

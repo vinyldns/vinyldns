@@ -48,20 +48,22 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     // wait until the repo is ready, could take time if the table has to be created
     var notReady = true
     while (notReady) {
-      val result = Await.ready(repo.getGroupsForUser("any"), 5.seconds)
+      val result = Await.ready(repo.getGroupsForUser("any").unsafeToFuture(), 5.seconds)
       notReady = result.value.get.isFailure
       Thread.sleep(2000)
     }
 
     // Create all the items
-    val results = Future.sequence(testGroupIds.map(repo.addMembers(_, testUserIds.toSet)))
+    val results =
+      Future.sequence(testGroupIds.map(repo.addMembers(_, testUserIds.toSet).unsafeToFuture()))
 
     // Wait until all of the data is stored
     Await.result(results, 5.minutes)
   }
 
   def tearDown(): Unit = {
-    val results = Future.sequence(testGroupIds.map(repo.removeMembers(_, testUserIds.toSet)))
+    val results =
+      Future.sequence(testGroupIds.map(repo.removeMembers(_, testUserIds.toSet).unsafeToFuture()))
 
     // Wait until all of the data is stored
     Await.result(results, 5.minutes)
@@ -72,8 +74,9 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     val user1 = genString
     val user2 = genString
     "add members successfully" in {
-      whenReady(repo.addMembers(groupId, Set(user1, user2)), timeout) { memberIds =>
-        memberIds should contain theSameElementsAs Set(user1, user2)
+      whenReady(repo.addMembers(groupId, Set(user1, user2)).unsafeToFuture(), timeout) {
+        memberIds =>
+          memberIds should contain theSameElementsAs Set(user1, user2)
       }
     }
 
@@ -88,13 +91,13 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
 
-      whenReady(f, timeout) { userGroups =>
+      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
         userGroups should contain theSameElementsAs Set(group1, group2)
       }
     }
 
     "return an empty set when getting groups for a user that does not exist" in {
-      whenReady(repo.getGroupsForUser("notHere"), timeout) { groupIds =>
+      whenReady(repo.getGroupsForUser("notHere").unsafeToFuture(), timeout) { groupIds =>
         groupIds shouldBe empty
       }
     }
@@ -111,7 +114,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
 
-      whenReady(f, timeout) { userGroups =>
+      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
         userGroups should contain theSameElementsAs Set(group2)
       }
     }
@@ -127,7 +130,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user2)
         } yield userGroups
 
-      whenReady(f, timeout) { userGroups =>
+      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
         userGroups shouldBe empty
       }
     }
@@ -148,7 +151,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
 
-      whenReady(f, timeout) { userGroups =>
+      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
         userGroups shouldBe empty
       }
     }
@@ -156,7 +159,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     "retrieve all of the groups for a user" in {
       val f = repo.getGroupsForUser(testUserIds.head)
 
-      whenReady(f, timeout) { retrieved =>
+      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
         testGroupIds.foreach(groupId => retrieved should contain(groupId))
       }
     }
@@ -165,14 +168,16 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       val membersToRemove = testUserIds.toList.sorted.take(2).toSet
       val groupsRemoved = testGroupIds.toList.sorted.take(2)
 
-      val f = Future.sequence(groupsRemoved.map(repo.removeMembers(_, membersToRemove)))
+      val f =
+        Future.sequence(groupsRemoved.map(repo.removeMembers(_, membersToRemove).unsafeToFuture()))
 
       Await.result(f, 5.minutes)
 
-      whenReady(repo.getGroupsForUser(membersToRemove.head), timeout) { groupsRetrieved =>
-        forAll(groupsRetrieved) { groupId =>
-          groupsRemoved should not contain groupId
-        }
+      whenReady(repo.getGroupsForUser(membersToRemove.head).unsafeToFuture(), timeout) {
+        groupsRetrieved =>
+          forAll(groupsRetrieved) { groupId =>
+            groupsRemoved should not contain groupId
+          }
       }
     }
   }
