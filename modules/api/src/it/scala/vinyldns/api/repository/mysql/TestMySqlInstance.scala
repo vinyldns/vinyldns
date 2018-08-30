@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.api.engine.sqs
+package vinyldns.api.repository.mysql
 
-import cats.effect.IO
-import com.typesafe.config.Config
+import vinyldns.api.VinylDNSConfig
+import vinyldns.api.domain.batch.BatchChangeRepository
+import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.api.repository.DataStore
+import vinyldns.api.repository.RepositoryName._
 
-case class SqsCredentials(
-    accessKey: String,
-    secretKey: String,
-    signingRegion: String,
-    serviceEndpoint: String)
-case class SqsConfig(embedded: Boolean, sqsCredentials: SqsCredentials)
+object TestMySqlInstance {
+  lazy val instance: DataStore =
+    new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig).unsafeRunSync()
 
-object SqsConfig {
-  import pureconfig.module.catseffect.loadConfigF
-
-  def apply(config: Config, path: String): IO[SqsConfig] = loadConfigF[IO, SqsConfig](config, path)
+  lazy val zoneRepository: ZoneRepository = instance.get[ZoneRepository](zone).get
+  lazy val batchChangeRepository: BatchChangeRepository =
+    instance.get[BatchChangeRepository](batchChange).get
 }

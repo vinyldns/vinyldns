@@ -36,7 +36,8 @@ import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository, 
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
-import vinyldns.api.repository.mysql.VinylDNSJDBC
+import vinyldns.api.repository.{DataStoreStartupError, RepositoryName}
+import vinyldns.api.repository.mysql.MySqlDataStoreProvider
 import vinyldns.api.route.{HealthService, VinylDNSService}
 import vinyldns.core.crypto.Crypto
 
@@ -64,16 +65,23 @@ object Boot extends App {
     for {
       banner <- vinyldnsBanner()
       _ <- Crypto.loadCrypto(VinylDNSConfig.cryptoConfig) // load crypto
-      _ <- IO(VinylDNSJDBC.instance) // initializes our JDBC repositories
+      // TODO datastore loading will not be hardcoded by type here
+      mySqlDataStore <- new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig)
+      zoneRepo <- IO.fromEither(
+        mySqlDataStore
+          .get[ZoneRepository](RepositoryName.zone)
+          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
+      batchChangeRepo <- IO.fromEither(
+        mySqlDataStore
+          .get[BatchChangeRepository](RepositoryName.batchChange)
+          .toRight[Throwable](DataStoreStartupError("Missing batch change repository")))
       userRepo <- IO(UserRepository())
       groupRepo <- IO(GroupRepository())
       membershipRepo <- IO(MembershipRepository())
-      zoneRepo <- IO(ZoneRepository())
       groupChangeRepo <- IO(GroupChangeRepository())
       recordSetRepo <- IO(RecordSetRepository())
       recordChangeRepo <- IO(RecordChangeRepository())
       zoneChangeRepo <- IO(ZoneChangeRepository())
-      batchChangeRepo <- IO(BatchChangeRepository())
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))

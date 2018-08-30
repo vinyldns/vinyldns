@@ -28,7 +28,7 @@ import vinyldns.api.domain.membership.{Group, GroupRepository, User, UserReposit
 import vinyldns.api.domain.record._
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository.dynamodb.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
-import vinyldns.api.repository.mysql.VinylDNSJDBC
+import vinyldns.api.repository.mysql.TestMySqlInstance
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -104,7 +104,7 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
 
   def setup(): Unit = {
     recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
-    zoneRepo = VinylDNSJDBC.instance.zoneRepository
+    zoneRepo = TestMySqlInstance.zoneRepository
 
     waitForSuccess(zoneRepo.save(zone))
     // Seeding records in DB
