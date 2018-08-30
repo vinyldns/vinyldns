@@ -54,12 +54,12 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     s"live-test-$user.zone-small.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testConnection)
+    connection = testZoneConnectionOption)
   private val zoneB = zone.Zone(
     s"live-test-$user.zone-large.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testConnection)
+    connection = testZoneConnectionOption)
 
   private val recordSetA =
     for {
@@ -136,7 +136,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     s"live-test-$user.record-changes.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testConnection)
+    connection = testZoneConnectionOption)
   private val baseTime = DateTime.now()
   private val timeOrder = List(
     baseTime.minusSeconds(8000),
