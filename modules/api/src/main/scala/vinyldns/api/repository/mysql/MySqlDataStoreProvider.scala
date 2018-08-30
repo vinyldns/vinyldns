@@ -21,6 +21,7 @@ import com.zaxxer.hikari.HikariDataSource
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 import org.slf4j.LoggerFactory
+import pureconfig.module.catseffect.loadConfigF
 
 import scala.collection.JavaConverters._
 import scalikejdbc.config.DBs
@@ -34,7 +35,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   def load(config: DataStoreConfig): IO[DataStore] =
     for {
-      settingsConfig <- IO(pureconfig.loadConfigOrThrow[MySqlDataStoreSettings](config.settings))
+      settingsConfig <- loadConfigF[IO, MySqlDataStoreSettings](config.settings)
       _ <- validateRepos(config.repositories)
       _ <- runDBMigrations(settingsConfig)
       _ <- setupDBConnection(settingsConfig)

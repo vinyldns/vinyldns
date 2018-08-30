@@ -4,7 +4,7 @@ object Dependencies {
   lazy val akkaHttpV = "10.1.3"
   lazy val akkaV = "2.5.12"
   lazy val jettyV = "8.1.12.v20130726"
-  lazy val pureConfigV = "0.9.0"
+  lazy val pureConfigV = "0.9.2"
   lazy val metricsScalaV = "3.5.9"
   lazy val prometheusV = "0.4.0"
   lazy val catsEffectV = "0.10.1"
@@ -44,6 +44,7 @@ object Dependencies {
     "org.slf4j"                 %  "slf4j-api"                      % "1.7.7",
     "co.fs2"                    %% "fs2-core"                       % "0.10.5",
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
+    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
     "io.prometheus"             % "simpleclient_hotspot"            % prometheusV,
     "io.prometheus"             % "simpleclient_dropwizard"         % prometheusV,
     "io.prometheus"             % "simpleclient_common"             % prometheusV,
