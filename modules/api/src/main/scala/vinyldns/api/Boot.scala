@@ -74,7 +74,7 @@ object Boot extends App {
       batchChangeRepo <- IO.fromEither(
         mySqlDataStore
           .get[BatchChangeRepository](RepositoryName.batchChange)
-          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
+          .toRight[Throwable](DataStoreStartupError("Missing batch change repository")))
       userRepo <- IO(UserRepository())
       groupRepo <- IO(GroupRepository())
       membershipRepo <- IO(MembershipRepository())
