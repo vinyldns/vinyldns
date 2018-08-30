@@ -78,12 +78,6 @@ class ZoneConnectionValidatorSpec
     override val opTimeout: FiniteDuration = 10.milliseconds
     override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
-    override def testDdnsConnectivity(dnsConnection: DnsConnection, zone: Zone): Result[Unit] =
-      if (zone == testZone) {
-        ().toResult
-      } else {
-        Left(ConnectionFailed(zone, Refused("refused").getMessage)).toResult
-      }
   }
 
   private val underTest = new TestConnectionValidator()
@@ -91,10 +85,8 @@ class ZoneConnectionValidatorSpec
   private val testZone = Zone(
     "vinyldns.",
     "test@test.com",
-    connection =
-      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
-    transferConnection =
-      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+    connection = testZoneConnectionOption,
+    transferConnection = testZoneConnectionOption
   )
 
   private val successSoa = RecordSet(
@@ -147,55 +139,34 @@ class ZoneConnectionValidatorSpec
     }
 
     "respond with a success if DDNS connectivity test returns NXDOMAIN on delete" in {
-      doReturn(testZone).when(mockZoneView).zone
-      doReturn(generateZoneView(testZone, successSoa, successNS).recordSetsMap)
-        .when(mockZoneView)
-        .recordSetsMap
-      doReturn(List(successSoa).toResult)
-        .when(mockDnsConnection)
-        .resolve(testZone.name, testZone.name, RecordType.SOA)
       doReturn(Left(NameNotFound("Non-existent zone.")).toResult)
-        .doReturn(NoError(mock[Message]).toResult)
         .when(mockDnsConnection)
         .applyChange(any[RecordSetChange])
 
-      val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
+      val result = awaitResultOf(underTest.testDdnsConnectivity(mockDnsConnection, testZone).value)
       result should be(right)
     }
 
     "respond with a success if DDNS connectivity test returns NXRRSET on delete" in {
-      doReturn(testZone).when(mockZoneView).zone
-      doReturn(generateZoneView(testZone, successSoa, successNS).recordSetsMap)
-        .when(mockZoneView)
-        .recordSetsMap
-      doReturn(List(successSoa).toResult)
-        .when(mockDnsConnection)
-        .resolve(testZone.name, testZone.name, RecordType.SOA)
       doReturn(Left(RecordSetNotFound("vinyldns-ddns-connectivity-test")).toResult)
-        .doReturn(NoError(mock[Message]).toResult)
         .when(mockDnsConnection)
         .applyChange(any[RecordSetChange])
 
-      val result = awaitResultOf(underTest.validateZoneConnections(testZone).value)
+      val result = awaitResultOf(underTest.testDdnsConnectivity(mockDnsConnection, testZone).value)
       result should be(right)
     }
 
     "respond with a failure if DDNS connectivity fails" in {
-      val failedDdnsConnectionZone = testZone.copy(name = "failed DDNS connection")
-      doReturn(failedDdnsConnectionZone).when(mockZoneView).zone
-      doReturn(generateZoneView(failedDdnsConnectionZone, successSoa, successNS).recordSetsMap)
-        .when(mockZoneView)
-        .recordSetsMap
-      doReturn(List(successSoa).toResult)
-        .when(mockDnsConnection)
-        .resolve(failedDdnsConnectionZone.name, failedDdnsConnectionZone.name, RecordType.SOA)
       doReturn(Left(Refused("refused")).toResult)
         .when(mockDnsConnection)
         .applyChange(any[RecordSetChange])
 
-      val result = awaitResultOf(underTest.validateZoneConnections(failedDdnsConnectionZone).value)
+      val result = awaitResultOf(underTest.testDdnsConnectivity(mockDnsConnection, testZone).value)
       result shouldBe Left(
-        ConnectionFailed(failedDdnsConnectionZone, s"${Refused("refused").getMessage}"))
+        ConnectionFailed(
+          testZone,
+          s"Unable to apply changes in zone: " +
+            s"${Refused("refused").getMessage}"))
     }
 
     "respond with a failure if NS records are not in the approved server list" in {
@@ -235,10 +206,8 @@ class ZoneConnectionValidatorSpec
       val badZone = Zone(
         "vinyldns.",
         "test@test.com",
-        connection =
-          Some(ZoneConnection("error.", "error.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
-        transferConnection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+        connection = Some(testZoneConnection.copy(name = "error.", keyName = "error.")),
+        transferConnection = testZoneConnectionOption
       )
 
       val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
@@ -250,10 +219,8 @@ class ZoneConnectionValidatorSpec
       val badZone = Zone(
         "error.",
         "test@test.com",
-        connection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
-        transferConnection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+        connection = testZoneConnectionOption,
+        transferConnection = testZoneConnectionOption
       )
 
       doReturn(List(mockRecordSet).toResult)
@@ -269,10 +236,8 @@ class ZoneConnectionValidatorSpec
       val badZone = Zone(
         "timeout.",
         "test@test.com",
-        connection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")),
-        transferConnection =
-          Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
+        connection = testZoneConnectionOption,
+        transferConnection = testZoneConnectionOption
       )
 
       doReturn(List(mockRecordSet).toResult)

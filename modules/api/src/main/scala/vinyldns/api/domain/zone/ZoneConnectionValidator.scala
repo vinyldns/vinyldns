@@ -82,15 +82,14 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
     val result = for {
       _ <- dnsConnection
         .applyChange(RecordSetChange.forDelete(rs, zone))
-        .map(_ => ())
+        .as(())
         .recover {
           case _: RecordSetNotFound | _: NameNotFound => ()
         }
-      _ <- dnsConnection.applyChange(RecordSetChange.forAdd(rs, zone))
     } yield ()
 
     result.leftMap {
-      case e => ConnectionFailed(zone, s"Unable to test DDNS connectivity to zone: ${e.getMessage}")
+      case e => ConnectionFailed(zone, s"Unable to apply changes in zone: ${e.getMessage}")
     }
   }
 

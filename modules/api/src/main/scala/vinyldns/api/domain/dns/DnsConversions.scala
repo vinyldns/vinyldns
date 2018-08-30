@@ -490,7 +490,6 @@ trait DnsConversions {
 
   def toAddRecordMessage(r: DNS.RRset, zoneName: String): Either[Throwable, DNS.Update] = {
     val update = new DNS.Update(zoneDnsName(zoneName))
-    update.absent(r.getName, r.getType)
     update.add(r)
     Right(update)
   }
@@ -512,10 +511,7 @@ trait DnsConversions {
       val addRecords = newRecordList.diff(oldRecordList)
 
       // For DDNS, we pass the exact DNS record for deletion, resulting in a DClass.NONE for each deletion
-      deleteRecords.foreach { r =>
-        update.present(r.getName, r.getType)
-        update.delete(r)
-      }
+      deleteRecords.foreach(update.delete)
       addRecords.foreach(update.add)
     }
     Right(update)

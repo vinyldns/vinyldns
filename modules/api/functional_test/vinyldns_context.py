@@ -10,9 +10,7 @@ class VinylDNSTestContext:
     vinyldns_url = 'http://localhost:9000'
 
     @staticmethod
-    def configure(ip, zone, key_name, key, url):
+    def configure(ip, zone, url):
         VinylDNSTestContext.dns_ip = ip
         VinylDNSTestContext.dns_zone_name = zone
-        VinylDNSTestContext.dns_key_name = key_name
-        VinylDNSTestContext.dns_key = key
         VinylDNSTestContext.vinyldns_url = url

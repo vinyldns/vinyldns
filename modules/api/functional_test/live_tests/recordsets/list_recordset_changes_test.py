@@ -106,11 +106,11 @@ def test_list_recordset_changes_paging(zone_history_context):
     response_2 = client.list_recordset_changes(original_zone['id'], start_from=response_1['nextId'], max_items=3)
     # nextId differs local/in dev where we get exactly the last item
     # Requesting one over the total in the local in memory dynamo will force consistent behavior.
-    response_3 = client.list_recordset_changes(original_zone['id'], start_from=response_2['nextId'], max_items=12)
+    response_3 = client.list_recordset_changes(original_zone['id'], start_from=response_2['nextId'], max_items=11)
 
     check_changes_response(response_1, recordChanges=True, nextId=True, startFrom=False, maxItems=3)
     check_changes_response(response_2, recordChanges=True, nextId=True, startFrom=response_1['nextId'], maxItems=3)
-    check_changes_response(response_3, recordChanges=True, nextId=False, startFrom=response_2['nextId'], maxItems=12)
+    check_changes_response(response_3, recordChanges=True, nextId=False, startFrom=response_2['nextId'], maxItems=11)
 
     for change in response_1['recordSetChanges']:
         assert_that(change['changeType'], is_('Delete'))
@@ -126,8 +126,8 @@ def test_list_recordset_changes_exhausted(zone_history_context):
     """
     client = zone_history_context.client
     original_zone = zone_history_context.results['zone']
-    response = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=18)
-    check_changes_response(response, recordChanges=True, startFrom=False, nextId=False, maxItems=18)
+    response = client.list_recordset_changes(original_zone['id'], start_from=None, max_items=17)
+    check_changes_response(response, recordChanges=True, startFrom=False, nextId=False, maxItems=17)
 
     deleteChanges = response['recordSetChanges'][0:3]
     updateChanges = response['recordSetChanges'][3:6]

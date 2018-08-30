@@ -13,8 +13,7 @@ class ListRecordSetsFixture():
         self.client = shared_zone_test_context.ok_vinyldns_client
         self.new_rs = {}
         existing_records = self.client.list_recordsets(self.test_context['id'])['recordSets']
-        # If there is not already a 'TXT' record for 'vinyldns-ddns-connectivity-test', it will be added
-        assert_that(existing_records, has_length(8))
+        assert_that(existing_records, has_length(7))
         rs_template = {
             'zoneId': self.test_context['id'],
             'name': '00-test-list-recordsets-',
@@ -54,19 +53,6 @@ class ListRecordSetsFixture():
 
         for i in range(7):
             self.all_records[i + 10] = existing_records[i]
-
-        # Adding in DDNS connectivity record
-        self.all_records[17] = {
-            'zoneId': self.test_context['id'],
-            'name': 'vinyldns-ddns-connectivity-test',
-            'type': 'TXT',
-            'ttl': 86400,
-            'records': [
-                {
-                    'text': 'connection test'
-                }
-            ]
-        }
 
     def tear_down(self):
         for key in self.new_rs:
@@ -115,7 +101,7 @@ def test_list_recordsets_no_start(rs_fixture):
     ok_zone = rs_fixture.test_context
 
     list_results = client.list_recordsets(ok_zone['id'], status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results, size=18, offset=0)
+    rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
 
 
 def test_list_recordsets_multiple_pages(rs_fixture):
@@ -139,8 +125,8 @@ def test_list_recordsets_multiple_pages(rs_fixture):
     # nextId differs local/in dev where we get exactly the last item
     # If you put 3 items in local in memory dynamo and request three items, you always get an exclusive start key,
     # but in real dynamo you don't. Requesting something over 4 will force consistent behavior
-    list_results_page = client.list_recordsets(ok_zone['id'], start_from=start, max_items=12, status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=11, offset=7, nextId=False, startFrom=start, maxItems=12)
+    list_results_page = client.list_recordsets(ok_zone['id'], start_from=start, max_items=11, status=200)
+    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=10, offset=7, nextId=False, startFrom=start, maxItems=11)
 
 
 def test_list_recordsets_excess_page_size(rs_fixture):
@@ -151,8 +137,8 @@ def test_list_recordsets_excess_page_size(rs_fixture):
     ok_zone = rs_fixture.test_context
 
     #page of 19 items
-    list_results_page = client.list_recordsets(ok_zone['id'], max_items=20, status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=18, offset=0, maxItems=20, nextId=False)
+    list_results_page = client.list_recordsets(ok_zone['id'], max_items=19, status=200)
+    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=17, offset=0, maxItems=19, nextId=False)
 
 
 def test_list_recordsets_fails_max_items_too_large(rs_fixture):
@@ -183,7 +169,7 @@ def test_list_recordsets_default_size_is_100(rs_fixture):
     ok_zone = rs_fixture.test_context
 
     list_results = client.list_recordsets(ok_zone['id'], status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results, size=18, offset=0, maxItems=100)
+    rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0, maxItems=100)
 
 
 def test_list_recordsets_with_record_name_filter_all(rs_fixture):

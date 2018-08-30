@@ -40,10 +40,7 @@ records_in_dns = [
      'records': [{u'priority': 10, u'weight': 60, u'port': 5060, u'target': u'foo.sync-test.'}]},
     {'name': u'existing.dotted',
      'type': u'A',
-     'records': [{u'address': u'9.9.9.9'}]},
-    {'name': u'vinyldns-ddns-connectivity-test',
-     'type': u'TXT',
-     'records': [{u'text': u'connection test'}]}]
+     'records': [{u'address': u'9.9.9.9'}]}]
 
 records_post_update = [
     {'name': 'sync-test.',
@@ -84,10 +81,7 @@ records_post_update = [
      'records': [{u'address': u'9.9.9.9'}]},
     {'name': u'dott.ed',
      'type': u'A',
-     'records': [{u'address': u'6.7.8.9'}]},
-    {'name': u'vinyldns-ddns-connectivity-test',
-     'type': u'TXT',
-     'records': [{u'text': u'connection test'}]}]
+     'records': [{u'address': u'6.7.8.9'}]}]
 
 
 @pytest.mark.skip_production
@@ -132,8 +126,7 @@ def test_sync_zone_success(shared_zone_test_context):
         # confirm that the recordsets in DNS have been saved in vinyldns
         recordsets = client.list_recordsets(zone['id'])['recordSets']
 
-        # If there is not already a 'TXT' record for 'vinyldns-ddns-connectivity-test', it will be added
-        assert_that(len(recordsets), is_(11))
+        assert_that(len(recordsets), is_(10))
         for rs in recordsets:
             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
             small_rs['records'] = sorted(small_rs['records'])
@@ -172,7 +165,7 @@ def test_sync_zone_success(shared_zone_test_context):
 
         # confirm that the updated recordsets in DNS have been saved in vinyldns
         recordsets = client.list_recordsets(zone['id'])['recordSets']
-        assert_that(len(recordsets), is_(12))
+        assert_that(len(recordsets), is_(11))
         for rs in recordsets:
             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
             small_rs['records'] = sorted(small_rs['records'])

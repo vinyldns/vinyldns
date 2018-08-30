@@ -7,7 +7,7 @@ from vinyldns_context import VinylDNSTestContext
 from utils import *
 
 records_in_dns = [
-    {'name': 'one-time.',
+    {'name': 'vinyldns.',
      'type': 'SOA',
      'records': [{u'mname': u'172.17.42.1.',
                   u'rname': u'admin.test.com.',
@@ -16,7 +16,7 @@ records_in_dns = [
                   u'minimum': 38400,
                   u'expire': 604800,
                   u'serial': 1439234395}]},
-    {'name': u'one-time.',
+    {'name': u'vinyldns.',
      'type': u'NS',
      'records': [{u'nsdname': u'172.17.42.1.'}]},
     {'name': u'jenkins',
@@ -28,15 +28,12 @@ records_in_dns = [
     {'name': u'test',
      'type': u'A',
      'records': [{u'address': u'3.3.3.3'}, {u'address': u'4.4.4.4'}]},
-    {'name': u'one-time.',
+    {'name': u'vinyldns.',
      'type': u'A',
      'records': [{u'address': u'5.5.5.5'}]},
     {'name': u'already-exists',
      'type': u'A',
-     'records': [{u'address': u'6.6.6.6'}]},
-    {'name': u'vinyldns-ddns-connectivity-test',
-     'type': u'TXT',
-     'records': [{u'text': u'connection test'}]}]
+     'records': [{u'address': u'6.6.6.6'}]}]
 
 def test_create_zone_success_with_existing_test_ddns_record(shared_zone_test_context):
     """
@@ -45,7 +42,7 @@ def test_create_zone_success_with_existing_test_ddns_record(shared_zone_test_con
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
-        zone_name = 'one-time'
+        zone_name = 'vinyldns'
 
         zone = {
             'name': zone_name,
@@ -85,12 +82,13 @@ def test_create_zone_success_with_existing_test_ddns_record(shared_zone_test_con
             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
             small_rs['records'] = sorted(small_rs['records'])
             if small_rs['type'] == 'SOA':
-                assert_that(small_rs['name'], is_('one-time.'))
+                assert_that(small_rs['name'], is_('vinyldns.'))
             else:
                 assert_that(records_in_dns, has_item(small_rs))
 
     finally:
         if result_zone:
+            dns_add(result_zone, "vinyldns-ddns-connectivity-test", 86400, "TXT", "random existing text")
             client.abandon_zones([result_zone['id']], status=202)
 
 def test_create_zone_with_unauthorized_tsig_key_fails(shared_zone_test_context):
@@ -98,8 +96,7 @@ def test_create_zone_with_unauthorized_tsig_key_fails(shared_zone_test_context):
     Test that creating a zone with a TSIG key that is not primed for allowing updates fails
     """
     client = shared_zone_test_context.ok_vinyldns_client
-
-    zone_name = 'one-time'
+    zone_name = 'vinyldns'
 
     zone = {
         'name': zone_name,
@@ -113,7 +110,7 @@ def test_create_zone_with_unauthorized_tsig_key_fails(shared_zone_test_context):
         }
     }
     error = client.create_zone(zone, status=400)
-    assert_that(error, starts_with('Unable to test DDNS connectivity to zone'))
+    assert_that(error, starts_with('Unable to apply changes in zone'))
 
 
 @pytest.mark.skip_production
