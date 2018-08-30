@@ -41,11 +41,11 @@ class JdbcZoneRepositoryIntegrationSpec
     with ScalaFutures
     with Inspectors {
 
-  private var repo: JdbcZoneRepository = _
+  private var repo: ZoneRepository = _
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   override protected def beforeAll(): Unit =
-    repo = VinylDNSJDBC.instance.zoneRepository
+    repo = TestMySqlInstance.zoneRepository
 
   override protected def beforeEach(): Unit =
     DB.localTx { s =>

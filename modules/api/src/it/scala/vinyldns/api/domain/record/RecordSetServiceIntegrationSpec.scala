@@ -30,7 +30,7 @@ import vinyldns.api.domain.record.RecordType._
 import vinyldns.api.domain.zone.{RecordSetAlreadyExists, Zone, ZoneRepository, ZoneStatus}
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository.dynamodb.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
-import vinyldns.api.repository.mysql.VinylDNSJDBC
+import vinyldns.api.repository.mysql.TestMySqlInstance
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -155,7 +155,7 @@ class RecordSetServiceIntegrationSpec
 
   def setup(): Unit = {
     recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
-    zoneRepo = VinylDNSJDBC.instance.zoneRepository
+    zoneRepo = TestMySqlInstance.zoneRepository
 
     List(zone, zoneTestNameConflicts, zoneTestAddRecords).map(z => waitForSuccess(zoneRepo.save(z)))
 

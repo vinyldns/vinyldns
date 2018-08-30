@@ -18,7 +18,6 @@ package vinyldns.api.domain.batch
 
 import cats.effect._
 import vinyldns.api.repository.Repository
-import vinyldns.api.repository.mysql.VinylDNSJDBC
 
 // $COVERAGE-OFF$
 trait BatchChangeRepository extends Repository {
@@ -37,9 +36,5 @@ trait BatchChangeRepository extends Repository {
 
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]]
 
-}
-
-object BatchChangeRepository {
-  def apply(): BatchChangeRepository = VinylDNSJDBC.instance.batchChangeRepository
 }
 // $COVERAGE-ON$

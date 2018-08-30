@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package vinyldns.api.engine.sqs
+package vinyldns.api.repository.mysql
 
-import cats.effect.IO
-import com.typesafe.config.Config
-
-case class SqsCredentials(
-    accessKey: String,
-    secretKey: String,
-    signingRegion: String,
-    serviceEndpoint: String)
-case class SqsConfig(embedded: Boolean, sqsCredentials: SqsCredentials)
-
-object SqsConfig {
-  import pureconfig.module.catseffect.loadConfigF
-
-  def apply(config: Config, path: String): IO[SqsConfig] = loadConfigF[IO, SqsConfig](config, path)
-}
+case class MySqlDataStoreSettings(
+    name: String,
+    driver: String,
+    migrationUrl: String,
+    url: String,
+    user: String,
+    password: String,
+    poolMaxSize: Int,
+    connectionTimeoutMillis: Long,
+    maxLifeTime: Long,
+    migrationSchemaTable: Option[String])
