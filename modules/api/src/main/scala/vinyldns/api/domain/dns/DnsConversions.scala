@@ -519,6 +519,7 @@ trait DnsConversions {
 
   def toDeleteRecordMessage(r: DNS.RRset, zoneName: String): Either[Throwable, DNS.Update] = {
     val update = new DNS.Update(zoneDnsName(zoneName))
+    update.present(r.getName, r.getType)
     update.delete(r.getName, r.getType)
     Right(update)
   }
