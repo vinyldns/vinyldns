@@ -7,13 +7,8 @@
 //include "/etc/bind/zones.rfc1918";
 
 key "vinyldns." {
-	algorithm hmac-sha512;
-	secret "wCZZS9lyRr77+jqfnkZ/92L9fD5ilmfrG0sslc3mgmTFsF1fRgmtJ0rj RkFITt8VHQ37wvM/nI9MAIWXYTvMqg==";
-};
-
-key "vinyldns-no-updates" {
-	algorithm hmac-sha512;
-	secret "1GOhWm/nwqlQop1YQ6sl96eVTjULth0E7LonKB6X4uycygaCUQRG2JPQ kHVFgp768cyUuCv4j/tvL8C+cUCkcA==";
+  algorithm hmac-md5;
+  secret "nzisn+4G2ldMn0q1CV3vsg==";
 };
 
 // Consider adding the 1918 zones here, if they are not used in your

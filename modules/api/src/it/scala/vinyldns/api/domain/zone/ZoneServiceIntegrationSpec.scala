@@ -68,7 +68,7 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
     s"live-test-zone.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testZoneConnectionOption,
+    connection = testConnection,
     adminGroupId = group.id)
 
   private val testRecordSOA = RecordSet(

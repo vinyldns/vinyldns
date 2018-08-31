@@ -53,7 +53,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       s"${goodUser.userName}.zone$i.",
       "test@test.com",
       status = ZoneStatus.Active,
-      connection = testZoneConnectionOption)
+      connection = testConnection)
 
   private val zones = okZones
 

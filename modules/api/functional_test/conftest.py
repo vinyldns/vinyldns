@@ -17,6 +17,10 @@ def pytest_addoption(parser):
                      help="The ip address for the dns server to use for the tests")
     parser.addoption("--dns-zone", dest="dns_zone", action="store", default="vinyldns.",
                      help="The zone name that will be used for testing")
+    parser.addoption("--dns-key-name", dest="dns_key_name", action="store", default="vinyldns.",
+                     help="The name of the key used to sign updates for the zone")
+    parser.addoption("--dns-key", dest="dns_key", action="store", default="nzisn+4G2ldMn0q1CV3vsg==",
+                     help="The tsig key")
 
     # optional
     parser.addoption("--basic-auth", dest="basic_auth_creds",
@@ -58,6 +62,8 @@ def pytest_configure(config):
 
     VinylDNSTestContext.configure(config.getoption("dns_ip"),
                                config.getoption("dns_zone"),
+                               config.getoption("dns_key_name"),
+                               config.getoption("dns_key"),
                                config.getoption("url"))
 
 def pytest_report_header(config):
