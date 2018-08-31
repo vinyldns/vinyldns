@@ -62,16 +62,3 @@ class DataStore(
       case _ => None
     }
 }
-
-final case class DataAccessor(
-    userRepository: UserRepository,
-    groupRepository: GroupRepository,
-    membershipRepository: MembershipRepository,
-    groupChangeRepository: GroupChangeRepository,
-    recordSetRepository: RecordSetRepository,
-    recordChangeRepository: RecordChangeRepository,
-    zoneChangeRepository: ZoneChangeRepository,
-    zoneRepository: ZoneRepository,
-    batchChangeRepository: BatchChangeRepository)
-
-case class DataStoreStartupError(msg: String) extends Throwable(msg)

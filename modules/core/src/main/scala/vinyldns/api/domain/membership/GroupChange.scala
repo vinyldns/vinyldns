@@ -20,7 +20,14 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import vinyldns.api.domain.auth.AuthPrincipal
+
+object GroupChangeType extends Enumeration {
+  type GroupChangeType = Value
+  val Create, Update, Delete = Value
+}
+
 import vinyldns.api.domain.membership.GroupChangeType._
+
 case class GroupChange(
     newGroup: Group,
     changeType: GroupChangeType,

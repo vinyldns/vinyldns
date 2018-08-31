@@ -20,13 +20,6 @@ import cats.effect._
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.repository.Repository
 
-case class ListRecordSetResults(
-    recordSets: List[RecordSet] = List[RecordSet](),
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
-    maxItems: Option[Int] = None,
-    recordNameFilter: Option[String] = None)
-
 trait RecordSetRepository extends Repository {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet]

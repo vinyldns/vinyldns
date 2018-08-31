@@ -19,12 +19,6 @@ package vinyldns.api.domain.zone
 import cats.effect._
 import vinyldns.api.repository.Repository
 
-case class ListZoneChangesResults(
-    items: List[ZoneChange] = List[ZoneChange](),
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
-    maxItems: Int = 100)
-
 trait ZoneChangeRepository extends Repository {
 
   def save(zoneChange: ZoneChange): IO[ZoneChange]

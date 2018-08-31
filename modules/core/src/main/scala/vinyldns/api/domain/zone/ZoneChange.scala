@@ -19,7 +19,6 @@ package vinyldns.api.domain.zone
 import java.util.UUID
 
 import org.joda.time.DateTime
-import vinyldns.api.domain.zone
 
 object ZoneChangeStatus extends Enumeration {
   type ZoneChangeStatus = Value
@@ -60,21 +59,4 @@ case class ZoneChange(
     sb.append(" ]")
     sb.toString
   }
-}
-
-case class ListZoneChangesResponse(
-    zoneId: String,
-    zoneChanges: List[ZoneChange] = Nil,
-    nextId: Option[String],
-    startFrom: Option[String],
-    maxItems: Int)
-
-object ListZoneChangesResponse {
-  def apply(zoneId: String, listResults: ListZoneChangesResults): ListZoneChangesResponse =
-    zone.ListZoneChangesResponse(
-      zoneId,
-      listResults.items,
-      listResults.nextId,
-      listResults.startFrom,
-      listResults.maxItems)
 }

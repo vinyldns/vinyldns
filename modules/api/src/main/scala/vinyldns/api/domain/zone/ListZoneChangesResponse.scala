@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.membership
+package vinyldns.api.domain.zone
 
-import cats.effect._
-import vinyldns.api.repository.Repository
+import vinyldns.api.domain.zone
 
-trait UserRepository extends Repository {
+case class ListZoneChangesResponse(
+    zoneId: String,
+    zoneChanges: List[ZoneChange] = Nil,
+    nextId: Option[String],
+    startFrom: Option[String],
+    maxItems: Int)
 
-  /*Looks up a user.  If the user is not found, or if the user's status is Deleted, will return None */
-  def getUser(userId: String): IO[Option[User]]
-
-  def getUsers(
-      userIds: Set[String],
-      exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): IO[ListUsersResults]
-
-  def getUserByAccessKey(accessKey: String): IO[Option[User]]
-
-  def save(user: User): IO[User]
+object ListZoneChangesResponse {
+  def apply(zoneId: String, listResults: ListZoneChangesResults): ListZoneChangesResponse =
+    zone.ListZoneChangesResponse(
+      zoneId,
+      listResults.items,
+      listResults.nextId,
+      listResults.startFrom,
+      listResults.maxItems)
 }

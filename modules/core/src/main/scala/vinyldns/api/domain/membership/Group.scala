@@ -101,8 +101,3 @@ object Group {
     Group(name, email, description, id, memberIds = members ++ admins, adminUserIds = admins)
       .validNel[String]
 }
-
-object GroupChangeType extends Enumeration {
-  type GroupChangeType = Value
-  val Create, Update, Delete = Value
-}

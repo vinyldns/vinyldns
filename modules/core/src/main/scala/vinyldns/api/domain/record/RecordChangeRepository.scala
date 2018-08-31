@@ -19,12 +19,6 @@ package vinyldns.api.domain.record
 import cats.effect._
 import vinyldns.api.repository.Repository
 
-case class ListRecordSetChangesResults(
-    items: List[RecordSetChange] = List[RecordSetChange](),
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
-    maxItems: Int = 100)
-
 trait RecordChangeRepository extends Repository {
 
   def save(changeSet: ChangeSet): IO[ChangeSet]

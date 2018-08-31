@@ -20,35 +20,6 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import vinyldns.api.domain.batch.BatchChangeStatus.BatchChangeStatus
-import vinyldns.api.domain.record.RecordType._
-
-case class BatchChangeSummary(
-    userId: String,
-    userName: String,
-    comments: Option[String],
-    createdTimestamp: DateTime,
-    totalChanges: Int,
-    status: BatchChangeStatus,
-    id: String = UUID.randomUUID().toString) {}
-
-object BatchChangeSummary {
-  def apply(batchchange: BatchChange): BatchChangeSummary =
-    BatchChangeSummary(
-      batchchange.userId,
-      batchchange.userName,
-      batchchange.comments,
-      batchchange.createdTimestamp,
-      batchchange.changes.length,
-      batchchange.status,
-      batchchange.id
-    )
-}
-
-case class BatchChangeSummaryList(
-    batchChanges: List[BatchChangeSummary],
-    startFrom: Option[Int] = None,
-    nextId: Option[Int] = None,
-    maxItems: Int = 100)
 
 case class BatchChange(
     userId: String,
@@ -65,11 +36,6 @@ case class BatchChange(
 
     BatchChangeStatus.fromSingleStatuses(hasPending, hasFailed, hasComplete)
   }
-}
-
-object SupportedBatchChangeRecordTypes {
-  val supportedTypes = Set(A, AAAA, CNAME, PTR, TXT, MX)
-  def get: Set[RecordType] = supportedTypes
 }
 
 /*

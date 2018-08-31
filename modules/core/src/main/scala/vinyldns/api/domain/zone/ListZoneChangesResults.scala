@@ -14,22 +14,10 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.membership
+package vinyldns.api.domain.zone
 
-import cats.effect._
-import vinyldns.api.repository.Repository
-
-trait UserRepository extends Repository {
-
-  /*Looks up a user.  If the user is not found, or if the user's status is Deleted, will return None */
-  def getUser(userId: String): IO[Option[User]]
-
-  def getUsers(
-      userIds: Set[String],
-      exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): IO[ListUsersResults]
-
-  def getUserByAccessKey(accessKey: String): IO[Option[User]]
-
-  def save(user: User): IO[User]
-}
+case class ListZoneChangesResults(
+    items: List[ZoneChange] = List[ZoneChange](),
+    nextId: Option[String] = None,
+    startFrom: Option[String] = None,
+    maxItems: Int = 100)
