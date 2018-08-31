@@ -21,14 +21,15 @@ import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.ReverseZoneHelpers.ptrIsInZone
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
-import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.record.{RecordSet, RecordSetRepository}
-import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
+import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository}
 
 class BatchChangeService(
     zoneRepository: ZoneRepository,

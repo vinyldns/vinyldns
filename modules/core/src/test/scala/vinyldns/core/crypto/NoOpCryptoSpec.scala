@@ -23,7 +23,7 @@ class NoOpCryptoSpec extends WordSpec with Matchers {
 
   private val conf =
     """
-      | type = "vinyldns.api.crypto.NoOpCrypto"
+      | type = "vinyldns.core.crypto.NoOpCrypto"
     """.stripMargin
 
   private val cryptoConf = ConfigFactory.parseString(conf)

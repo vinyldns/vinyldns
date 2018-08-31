@@ -17,9 +17,11 @@
 package vinyldns.api.domain.batch
 
 import vinyldns.api.domain.dns.DnsConversions.{getIPv4NonDelegatedZoneName, getIPv6FullReverseName}
-import vinyldns.api.domain.record.{RecordSet, RecordSetChange}
-import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.zone.Zone
+import vinyldns.core.domain.batch._
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.record.RecordType.RecordType
 
 object SupportedBatchChangeRecordTypes {
   val supportedTypes = Set(A, AAAA, CNAME, PTR, TXT, MX)

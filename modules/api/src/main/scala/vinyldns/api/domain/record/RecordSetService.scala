@@ -18,11 +18,13 @@ package vinyldns.api.domain.record
 
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.engine.EngineCommandBus
-import vinyldns.api.domain.membership.{User, UserRepository}
+import vinyldns.core.domain.membership.{User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{ZoneCommandResult, ZoneRepository}
 
 class RecordSetService(
     zoneRepository: ZoneRepository,

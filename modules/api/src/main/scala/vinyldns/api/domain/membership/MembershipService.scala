@@ -18,8 +18,9 @@ package vinyldns.api.domain.membership
 
 import cats.implicits._
 import vinyldns.api.Interfaces._
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.domain.membership._
 
 class MembershipService(
     groupRepo: GroupRepository,

@@ -26,9 +26,11 @@ import vinyldns.api.domain.batch.BatchTransformations.{
   ExistingZones
 }
 import vinyldns.api.domain.engine.EngineCommandBus
-import vinyldns.api.domain.record
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone.Zone
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.record
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.batch._
 
 class BatchChangeConverter(
     batchChangeRepo: BatchChangeRepository,

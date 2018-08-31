@@ -17,6 +17,7 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.domain.zone.RecordSetChangeInfo
+import vinyldns.core.domain.record.ListRecordSetChangesResults
 
 case class ListRecordSetChangesResponse(
     zoneId: String,

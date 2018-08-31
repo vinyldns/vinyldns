@@ -18,6 +18,7 @@ package vinyldns.api.domain.batch
 
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
+import vinyldns.core.domain.batch.SingleChange
 
 /* Error response options */
 sealed trait BatchChangeErrorResponse
