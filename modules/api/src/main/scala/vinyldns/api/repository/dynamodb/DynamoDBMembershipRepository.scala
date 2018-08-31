@@ -71,12 +71,6 @@ class DynamoDBMembershipRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
 
-  // TODO: These laoders should be taken out of the repositories
-  def loadData: IO[Set[Set[String]]] =
-    MembershipRepository.loadTestData(this)
-
-  loadData.unsafeRunSync()
-
   def getGroupsForUser(userId: String): IO[Set[String]] =
     monitor("repo.Membership.getGroupsForUser") {
       log.info(s"Getting groups by user id $userId")

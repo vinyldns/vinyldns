@@ -53,10 +53,8 @@ class MembershipAuthPrincipalProvider(
 
 object MembershipAuthPrincipalProvider {
   // TODO this has to be dynamic!!!
-  val userRepository: UserRepository =
-    DynamoDBUserRepository(VinylDNSConfig.usersStoreConfig, VinylDNSConfig.dynamoConfig)
-  val membershipRepository: MembershipRepository =
-    DynamoDBMembershipRepository(VinylDNSConfig.membershipStoreConfig, VinylDNSConfig.dynamoConfig)
+  val userRepository: UserRepository = DynamoDBUserRepository()
+  val membershipRepository: MembershipRepository = DynamoDBMembershipRepository()
 
   def apply(): MembershipAuthPrincipalProvider =
     new MembershipAuthPrincipalProvider(userRepository, membershipRepository)

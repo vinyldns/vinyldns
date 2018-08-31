@@ -20,7 +20,7 @@ import java.nio.ByteBuffer
 
 import com.amazonaws.services.dynamodbv2.model._
 import org.slf4j.LoggerFactory
-import vinyldns.api.domain.dns.DnsConversions.omitTrailingDot
+import vinyldns.api.domain.DomainHelpers.omitTrailingDot
 import vinyldns.api.domain.record._
 import vinyldns.api.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto

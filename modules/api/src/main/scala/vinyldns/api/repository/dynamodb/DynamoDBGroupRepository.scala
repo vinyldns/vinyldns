@@ -88,9 +88,6 @@ class DynamoDBGroupRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
 
-  def loadData: IO[List[Group]] = GroupRepository.loadTestData(this)
-  loadData.unsafeRunSync()
-
   def save(group: Group): IO[Group] =
     monitor("repo.Group.save") {
       log.info(s"Saving group ${group.id} ${group.name}.")

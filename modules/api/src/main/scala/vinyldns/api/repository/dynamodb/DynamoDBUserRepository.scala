@@ -95,9 +95,6 @@ class DynamoDBUserRepository(
       .withGlobalSecondaryIndexes(secondaryIndexes: _*)
   )
 
-  // TODO: Loaders should not be inside these repos
-  UserRepository.loadTestData(this).unsafeRunSync()
-
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
       log.info(s"Getting user by id $userId")

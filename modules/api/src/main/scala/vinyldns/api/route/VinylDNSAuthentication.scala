@@ -23,7 +23,11 @@ import cats.effect._
 import cats.syntax.all._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.auth.{AuthPrincipal, AuthPrincipalProvider, MembershipAuthPrincipalProvider}
+import vinyldns.api.domain.auth.{
+  AuthPrincipal,
+  AuthPrincipalProvider,
+  MembershipAuthPrincipalProvider
+}
 import vinyldns.core.crypto.CryptoAlgebra
 
 import scala.util.matching.Regex

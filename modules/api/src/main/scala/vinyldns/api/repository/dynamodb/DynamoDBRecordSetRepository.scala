@@ -23,7 +23,7 @@ import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.dns.DnsConversions.omitTrailingDot
+import vinyldns.api.domain.DomainHelpers.omitTrailingDot
 import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.api.protobuf.ProtobufConversions
