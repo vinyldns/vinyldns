@@ -80,13 +80,13 @@ class ZoneConnectionSpec
     } yield s"$a:$p"
 
   property("ZoneConnection should encrypt clear connections") {
-    val test = testZoneConnection
+    val test = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
 
     test.encrypted(testCrypto).key shouldBe "encrypted!"
   }
 
   property("ZoneConnection should decrypt connections") {
-    val test = testZoneConnection
+    val test = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
     val decrypted = test.decrypted(testCrypto)
 
     decrypted.key shouldBe "decrypted!"

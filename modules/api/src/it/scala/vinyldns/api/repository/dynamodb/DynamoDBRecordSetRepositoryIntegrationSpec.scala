@@ -63,7 +63,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
         s"live-test-${acct.userName}.zone$i.",
         "test@test.com",
         status = ZoneStatus.Active,
-        connection = testZoneConnectionOption)
+        connection = testConnection)
 
   private val rsTemplates = Seq(rsOk, aaaa, cname)
 

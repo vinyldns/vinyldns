@@ -104,7 +104,7 @@ def dns_do_command(zone, record_name, record_type, command, ttl=0, rdata=""):
 
     print "updating " + fqdn + " to have data " + rdata
 
-    update = dns.update.Update(zone['name'], keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
+    update = dns.update.Update(zone['name'], keyring=keyring)
     if (command == 'add'):
         update.add(fqdn, ttl, record_type, rdata)
     elif (command == 'update'):
