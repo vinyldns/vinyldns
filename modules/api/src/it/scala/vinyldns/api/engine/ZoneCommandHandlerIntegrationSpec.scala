@@ -106,18 +106,10 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
     zoneName,
     "test@test.com",
     ZoneStatus.Active,
-    connection = Some(
-      ZoneConnection(
-        "vinyldns.",
-        "vinyldns.",
-        "wCZZS9lyRr77+jqfnkZ/92L9fD5ilmfrG0sslc3mgmTFsF1fRgmtJ0rj RkFITt8VHQ37wvM/nI9MAIWXYTvMqg==",
-        "127.0.0.1:19001")),
-    transferConnection = Some(
-      ZoneConnection(
-        "vinyldns.",
-        "vinyldns.",
-        "wCZZS9lyRr77+jqfnkZ/92L9fD5ilmfrG0sslc3mgmTFsF1fRgmtJ0rj RkFITt8VHQ37wvM/nI9MAIWXYTvMqg==",
-        "127.0.0.1:19001"))
+    connection =
+      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")),
+    transferConnection =
+      Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
   )
   private val inDbRecordSet = RecordSet(
     zoneId = testZone.id,

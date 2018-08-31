@@ -106,8 +106,7 @@ class ZoneViewLoaderSpec
       val dnsPort = "19001"
       val zoneName = "vinyldns."
       val dnsKeyName = "vinyldns."
-      val dnsTsig =
-        "wCZZS9lyRr77+jqfnkZ/92L9fD5ilmfrG0sslc3mgmTFsF1fRgmtJ0rj RkFITt8VHQ37wvM/nI9MAIWXYTvMqg=="
+      val dnsTsig = "nzisn+4G2ldMn0q1CV3vsg=="
       val dnsServerAddress = s"$dnsServer:$dnsPort"
 
       val testZone = Zone(
@@ -217,8 +216,7 @@ class ZoneViewLoaderSpec
       val dnsPort = "19001"
       val zoneName = "vinyldns."
       val dnsKeyName = "vinyldns."
-      val dnsTsig =
-        "wCZZS9lyRr77+jqfnkZ/92L9fD5ilmfrG0sslc3mgmTFsF1fRgmtJ0rj RkFITt8VHQ37wvM/nI9MAIWXYTvMqg=="
+      val dnsTsig = "nzisn+4G2ldMn0q1CV3vsg=="
       val dnsServerAddress = s"$dnsServer:$dnsPort"
 
       val testZone = Zone(

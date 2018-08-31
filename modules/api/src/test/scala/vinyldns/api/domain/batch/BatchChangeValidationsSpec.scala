@@ -51,13 +51,13 @@ class BatchChangeValidationsSpec
     "ok.zone.recordsets.",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testZoneConnectionOption,
+    connection = testConnection,
     adminGroupId = grp.id)
   private val validIp4ReverseZone = Zone(
     "2.0.192.in-addr.arpa",
     "test@test.com",
     status = ZoneStatus.Active,
-    connection = testZoneConnectionOption,
+    connection = testConnection,
     adminGroupId = grp.id)
 
   private val validAChangeGen: Gen[AddChangeInput] = for {
