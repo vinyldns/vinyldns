@@ -21,11 +21,8 @@ import org.scalacheck.Gen._
 import org.scalacheck._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import vinyldns.api.ValidationTestImprovements._
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.DomainValidations._
-import vinyldns.api.domain.zone.ZoneConnection._
-import vinyldns.api.domain.{InvalidDomainName, InvalidIpv4Address, InvalidLength, InvalidPortNumber}
 import vinyldns.core.crypto.CryptoAlgebra
 
 class ZoneConnectionSpec
@@ -71,7 +68,6 @@ class ZoneConnectionSpec
       variableLengthString <- listOfN(numberWithinRange, alphaNumChar).map(_.mkString)
     } yield variableLengthString
   }
-  import ZoneConnectionGenerator._
 
   def buildConnectionCombos(addrs: List[String], ports: List[String]): List[String] =
     for {
@@ -90,70 +86,5 @@ class ZoneConnectionSpec
     val decrypted = test.decrypted(testCrypto)
 
     decrypted.key shouldBe "decrypted!"
-  }
-
-  property("Valid descriptions should pass property-based testing") {
-    forAll(connectionNameGen) { name: String =>
-      validateStringLength(name, Some(ZONE_CONNECTION_MIN), ZONE_CONNECTION_MAX) shouldBe valid
-      name.length should be > 0
-      name.length should be <= HOST_MAX_LENGTH
-    }
-  }
-
-  property("ConnectionName of \"\" should fail with InvalidLength") {
-    validateStringLength("", Some(ZONE_CONNECTION_MIN), ZONE_CONNECTION_MAX).failWith[InvalidLength]
-  }
-
-  property("String exceeding maximum connection name length should fail with InvalidLength") {
-    validateStringLength(invalidName, Some(ZONE_CONNECTION_MIN), ZONE_CONNECTION_MAX)
-      .failWith[InvalidLength]
-  }
-
-  property("Valid connection host servers should pass validations") {
-    validAddrs.foreach {
-      validateHostServer(_) shouldBe valid
-    }
-
-    buildConnectionCombos(validAddrs, validPorts).foreach {
-      validateHostServer(_) shouldBe valid
-    }
-  }
-
-  property("Invalid connection host servers should fail validations") {
-    List(invalidDomain, invalidAddress).foreach { invalid =>
-      val error = validateHostServer(invalid)
-      atLeast(1, error.failures) shouldBe an[InvalidDomainName]
-      atLeast(1, error.failures) shouldBe an[InvalidIpv4Address]
-    }
-
-    buildConnectionCombos(validAddrs, invalidPortNums).foreach(
-      validateHostServer(_).failWith[InvalidPortNumber])
-
-    buildConnectionCombos(validAddrs, invalidPortParams).foreach(
-      validateHostServer(_).failWith[InvalidPortNumber])
-  }
-
-  property("Build should succeed when valid parameters are passed in") {
-    buildConnectionCombos(validAddrs, validPorts).foreach {
-      ZoneConnection.build(validName, keyName, keyValue, _) shouldBe valid
-    }
-  }
-
-  property("Build should fail when invalid parameters are passed in") {
-    buildConnectionCombos(validAddrs, validPorts).foreach { validHost =>
-      ZoneConnection.build(invalidName, keyName, keyValue, validHost).failWith[InvalidLength]
-    }
-
-    buildConnectionCombos(invalidAddrs, validPorts).foreach { invalidHost =>
-      val errors = ZoneConnection.build(validName, keyName, keyValue, invalidHost)
-      atLeast(1, errors.failures) shouldBe an[InvalidDomainName]
-      atLeast(1, errors.failures) shouldBe an[InvalidIpv4Address]
-    }
-
-    buildConnectionCombos(validAddrs, invalidPortNums).foreach(
-      ZoneConnection.build(validName, keyName, keyValue, _).failWith[InvalidPortNumber])
-
-    buildConnectionCombos(validAddrs, invalidPortParams).foreach(
-      ZoneConnection.build(validName, keyName, keyValue, _).failWith[InvalidPortNumber])
   }
 }

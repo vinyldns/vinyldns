@@ -17,23 +17,21 @@
 package vinyldns.api.domain.membership
 
 import cats.effect._
-import cats.implicits._
 import vinyldns.api.repository.Repository
-import vinyldns.api.repository.dynamodb.DynamoDBMembershipRepository
 
-trait MembershipRepository extends Repository {
+final case class ListUsersResults(users: Seq[User], lastEvaluatedId: Option[String])
 
-  def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
+trait UserRepository extends Repository {
 
-  def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
+  /*Looks up a user.  If the user is not found, or if the user's status is Deleted, will return None */
+  def getUser(userId: String): IO[Option[User]]
 
-  def getGroupsForUser(userId: String): IO[Set[String]]
-}
+  def getUsers(
+      userIds: Set[String],
+      exclusiveStartKey: Option[String],
+      pageSize: Option[Int]): IO[ListUsersResults]
 
-object MembershipRepository {
-  def apply(): MembershipRepository =
-    DynamoDBMembershipRepository()
+  def getUserByAccessKey(accessKey: String): IO[Option[User]]
 
-  def loadTestData(repository: MembershipRepository): IO[Set[Set[String]]] =
-    List("ok-group", "ok").map(repository.addMembers(_, Set("ok"))).parSequence.map(_.toSet)
+  def save(user: User): IO[User]
 }

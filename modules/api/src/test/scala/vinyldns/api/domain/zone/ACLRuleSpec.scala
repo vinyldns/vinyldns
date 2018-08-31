@@ -21,9 +21,7 @@ import org.scalacheck.Gen._
 import org.scalacheck._
 import org.scalatest.{Matchers, _}
 import org.scalatest.prop._
-import vinyldns.api.ValidationTestImprovements._
 import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.{InvalidLength, InvalidRecordType}
 
 class ACLSpec
     extends PropSpec
@@ -68,62 +66,6 @@ class ACLSpec
       whenever(validateKnownRecordTypes(rt.toSet).isInvalid) {
         rt.toSet should contain(UNKNOWN)
       }
-    }
-  }
-
-  property("Build should return an ACLRule with valid parameters") {
-    forAll(
-      accessLevelGen,
-      option(validDescGen),
-      option(alphaNumStr),
-      option(alphaNumStr),
-      option(alphaNumStr),
-      validRecordTypeGen) {
-      (
-          al: AccessLevel.Value,
-          desc: Option[String],
-          uId: Option[String],
-          gId: Option[String],
-          mask: Option[String],
-          rt: Seq[RecordType]) =>
-        ACLRule.build(al, desc, uId, gId, mask, rt.toSet) shouldBe valid
-    }
-  }
-
-  property("Build with invalid description should fail with InvalidLength") {
-    val invalidDesc = "a" * 256
-    forAll(
-      accessLevelGen,
-      invalidDesc,
-      option(alphaNumStr),
-      option(alphaNumStr),
-      option(alphaNumStr),
-      validRecordTypeGen) {
-      (
-          al: AccessLevel.Value,
-          desc: String,
-          uId: Option[String],
-          gId: Option[String],
-          mask: Option[String],
-          rt: Seq[RecordType]) =>
-        ACLRule.build(al, Some(desc), uId, gId, mask, rt.toSet).failWith[InvalidLength]
-    }
-  }
-
-  property("Build with invalid record type should fail with InvalidRecordType") {
-    forAll(
-      accessLevelGen,
-      option(validDescGen),
-      option(alphaNumStr),
-      option(alphaNumStr),
-      option(alphaNumStr)) {
-      (
-          al: AccessLevel.Value,
-          desc: Option[String],
-          uId: Option[String],
-          gId: Option[String],
-          mask: Option[String]) =>
-        ACLRule.build(al, desc, uId, gId, mask, Set(UNKNOWN)).failWith[InvalidRecordType]
     }
   }
 }

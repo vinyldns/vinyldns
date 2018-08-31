@@ -21,80 +21,9 @@ import java.util.UUID
 import org.joda.time.DateTime
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.domain.zone.{RecordSetChangeInfo, Zone, ZoneCommand, ZoneCommandResult}
+import vinyldns.api.domain.zone.Zone
 
-object RecordSetChangeStatus extends Enumeration {
-  type RecordSetChangeStatus = Value
-  val Pending, Submitted, Validated, Applied, Verified, Complete, Failed = Value
-
-  def isDone(status: RecordSetChangeStatus): Boolean = (status == Complete || status == Failed)
-}
-
-object RecordSetChangeType extends Enumeration {
-  type RecordSetChangeType = Value
-  val Create, Update, Delete = Value
-}
-import RecordSetChangeStatus._
-import RecordSetChangeType._
-
-case class RecordSetChange(
-    zone: Zone,
-    recordSet: RecordSet,
-    userId: String,
-    changeType: RecordSetChangeType,
-    status: RecordSetChangeStatus = RecordSetChangeStatus.Pending,
-    created: DateTime = DateTime.now,
-    systemMessage: Option[String] = None,
-    updates: Option[RecordSet] = None,
-    id: String = UUID.randomUUID().toString,
-    singleBatchChangeIds: List[String] = List())
-    extends ZoneCommand
-    with ZoneCommandResult {
-
-  val zoneId: String = zone.id
-
-  def successful: RecordSetChange =
-    copy(
-      status = RecordSetChangeStatus.Complete,
-      systemMessage = None,
-      recordSet = recordSet
-        .copy(status = RecordSetStatus.Active, updated = Some(DateTime.now)))
-
-  def failed(message: String): RecordSetChange = failed(Some(message))
-
-  def failed(message: Option[String] = None): RecordSetChange =
-    copy(
-      status = RecordSetChangeStatus.Failed,
-      systemMessage = message,
-      recordSet = recordSet
-        .copy(status = RecordSetStatus.Inactive, updated = Some(DateTime.now)))
-
-  def submitted: RecordSetChange = copy(status = RecordSetChangeStatus.Submitted)
-
-  def isDone: Boolean = RecordSetChangeStatus.isDone(status)
-
-  def isComplete: Boolean = status == RecordSetChangeStatus.Complete
-
-  def withUserId(newUserId: String): RecordSetChange = this.copy(userId = newUserId)
-
-  override def toString: String = {
-    val sb = new StringBuilder
-    sb.append("RecordSetChange: [")
-    sb.append("id=\"").append(id).append("\"; ")
-    sb.append("userId=\"").append(userId).append("\"; ")
-    sb.append("changeType=\"").append(changeType.toString).append("\"; ")
-    sb.append("status=\"").append(status.toString).append("\"; ")
-    sb.append("systemMessage=\"").append(systemMessage.toString).append("\"; ")
-    sb.append("zoneId=\"").append(zone.id).append("\"; ")
-    sb.append("zoneName=\"").append(zone.name).append("\"; ")
-    sb.append(recordSet.toString)
-    sb.append(" ]")
-    sb.append("singleBatchChangeIds=\"").append(singleBatchChangeIds).append("\"; ")
-    sb.toString
-  }
-}
-
-object RecordSetChange extends DnsConversions {
+object RecordSetChangeGenerator extends DnsConversions {
 
   def forAdd(
       recordSet: RecordSet,
@@ -221,24 +150,4 @@ object RecordSetChange extends DnsConversions {
       updates = Some(recordSet),
       systemMessage = Some("Change applied via zone sync")
     )
-}
-
-case class ListRecordSetChangesResponse(
-    zoneId: String,
-    recordSetChanges: List[RecordSetChangeInfo] = Nil,
-    nextId: Option[String],
-    startFrom: Option[String],
-    maxItems: Int)
-
-object ListRecordSetChangesResponse {
-  def apply(
-      zoneId: String,
-      listResults: ListRecordSetChangesResults,
-      info: List[RecordSetChangeInfo]): ListRecordSetChangesResponse =
-    ListRecordSetChangesResponse(
-      zoneId,
-      info,
-      listResults.nextId,
-      listResults.startFrom,
-      listResults.maxItems)
 }

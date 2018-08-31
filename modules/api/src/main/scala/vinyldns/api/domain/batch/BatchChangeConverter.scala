@@ -27,7 +27,7 @@ import vinyldns.api.domain.batch.BatchTransformations.{
 }
 import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.record
-import vinyldns.api.domain.record.{RecordData, RecordSet, RecordSetChange, RecordSetStatus}
+import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone.Zone
 
 class BatchChangeConverter(
@@ -169,7 +169,12 @@ class BatchChangeConverter(
       newRecordSet = combineAddChanges(addChanges, zone)
       changeIds = deleteChanges.map(_.id) ++ addChanges.map(_.id).toList
     } yield
-      RecordSetChange.forUpdate(existingRecordSet, newRecordSet, zone, userId, changeIds.toList)
+      RecordSetChangeGenerator.forUpdate(
+        existingRecordSet,
+        newRecordSet,
+        zone,
+        userId,
+        changeIds.toList)
 
   def generateDeleteChange(
       deleteChanges: NonEmptyList[SingleDeleteChange],
@@ -184,7 +189,11 @@ class BatchChangeConverter(
         deleteChange.recordName,
         deleteChange.typ)
     } yield
-      RecordSetChange.forDelete(existingRecordSet, zone, userId, deleteChanges.map(_.id).toList)
+      RecordSetChangeGenerator.forDelete(
+        existingRecordSet,
+        zone,
+        userId,
+        deleteChanges.map(_.id).toList)
 
   def generateAddChange(
       addChanges: NonEmptyList[SingleAddChange],
@@ -194,7 +203,7 @@ class BatchChangeConverter(
       zone <- existingZones.getByName(addChanges.head.zoneName)
       newRecordSet = combineAddChanges(addChanges, zone)
       ids = addChanges.map(_.id)
-    } yield RecordSetChange.forAdd(newRecordSet, zone, userId, ids.toList)
+    } yield RecordSetChangeGenerator.forAdd(newRecordSet, zone, userId, ids.toList)
 
   // Combines changes where the RecordData can just be appended to list (A, AAAA, CNAME, PTR)
   // NOTE: CNAME & PTR will only have one data field due to validations, so the combination is fine

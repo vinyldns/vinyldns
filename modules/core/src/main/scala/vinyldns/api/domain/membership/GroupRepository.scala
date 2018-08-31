@@ -17,9 +17,7 @@
 package vinyldns.api.domain.membership
 
 import cats.effect._
-import cats.implicits._
 import vinyldns.api.repository.Repository
-import vinyldns.api.repository.dynamodb.DynamoDBGroupRepository
 
 trait GroupRepository extends Repository {
 
@@ -33,21 +31,5 @@ trait GroupRepository extends Repository {
   def getGroupByName(groupName: String): IO[Option[Group]]
 
   def getAllGroups(): IO[Set[Group]]
-}
 
-object GroupRepository {
-  def apply(): GroupRepository =
-    DynamoDBGroupRepository()
-
-  final val okGroup1 = Group(
-    "ok-group",
-    "test@test.com",
-    memberIds = Set("ok"),
-    adminUserIds = Set("ok"),
-    id = "ok-group")
-  final val okGroup2 =
-    Group("ok", "test@test.com", memberIds = Set("ok"), adminUserIds = Set("ok"), id = "ok")
-
-  def loadTestData(repository: GroupRepository): IO[List[Group]] =
-    List(okGroup1, okGroup2).map(repository.save(_)).parSequence
 }

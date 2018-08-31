@@ -17,35 +17,31 @@
 package vinyldns.api.domain.record
 
 import cats.effect._
+import vinyldns.api.domain.record.RecordType.RecordType
 import vinyldns.api.repository.Repository
-import vinyldns.api.repository.dynamodb.DynamoDBRecordChangeRepository
 
-case class ListRecordSetChangesResults(
-    items: List[RecordSetChange] = List[RecordSetChange](),
+case class ListRecordSetResults(
+    recordSets: List[RecordSet] = List[RecordSet](),
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
-    maxItems: Int = 100)
+    maxItems: Option[Int] = None,
+    recordNameFilter: Option[String] = None)
 
-trait RecordChangeRepository extends Repository {
+trait RecordSetRepository extends Repository {
 
-  def save(changeSet: ChangeSet): IO[ChangeSet]
+  def apply(changeSet: ChangeSet): IO[ChangeSet]
 
-  def getPendingChangeSets(zoneId: String): IO[List[ChangeSet]]
-
-  def getChanges(zoneId: String): IO[List[ChangeSet]]
-
-  def listRecordSetChanges(
+  def listRecordSets(
       zoneId: String,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100): IO[ListRecordSetChangesResults]
+      startFrom: Option[String],
+      maxItems: Option[Int],
+      recordNameFilter: Option[String]): IO[ListRecordSetResults]
 
-  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
+  def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]]
 
-  def getAllPendingZoneIds(): IO[List[String]]
-}
+  def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]]
 
-object RecordChangeRepository {
+  def getRecordSetCount(zoneId: String): IO[Int]
 
-  def apply(): RecordChangeRepository =
-    DynamoDBRecordChangeRepository()
+  def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]]
 }

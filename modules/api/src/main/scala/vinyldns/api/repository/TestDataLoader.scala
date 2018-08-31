@@ -14,38 +14,27 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.membership
+package vinyldns.api.repository
 
-import cats.effect._
+import cats.effect.IO
 import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.repository.Repository
-import vinyldns.api.repository.dynamodb.DynamoDBUserRepository
-import vinyldns.core.crypto.Crypto
+import vinyldns.api.crypto.Crypto
+import vinyldns.api.domain.membership._
 
-final case class ListUsersResults(users: Seq[User], lastEvaluatedId: Option[String])
+object TestDataLoader {
 
-trait UserRepository extends Repository {
+  def loadTestData(
+      userRepo: UserRepository,
+      groupRepo: GroupRepository,
+      membershipRepo: MembershipRepository): IO[Unit] =
+    for {
+      _ <- loadUserTestData(userRepo)
+      _ <- loadGroupTestData(groupRepo)
+      _ <- loadMembershipTestData(membershipRepo)
+    } yield ()
 
-  /*Looks up a user.  If the user is not found, or if the user's status is Deleted, will return None */
-  def getUser(userId: String): IO[Option[User]]
-
-  def getUsers(
-      userIds: Set[String],
-      exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): IO[ListUsersResults]
-
-  def getUserByAccessKey(accessKey: String): IO[Option[User]]
-
-  def save(user: User): IO[User]
-}
-
-object UserRepository {
-  def apply(): UserRepository =
-    DynamoDBUserRepository()
-
-  // dummy users used for testing
   final val testUser = User(
     userName = "testuser",
     id = "testuser",
@@ -136,7 +125,19 @@ object UserRepository {
     email = Some("test@test.com")
   )
 
-  def loadTestData(repository: UserRepository): IO[List[User]] =
+  final val okGroup1 = Group(
+    "ok-group",
+    "test@test.com",
+    memberIds = Set("ok"),
+    adminUserIds = Set("ok"),
+    id = "ok-group")
+  final val okGroup2 =
+    Group("ok", "test@test.com", memberIds = Set("ok"), adminUserIds = Set("ok"), id = "ok")
+
+  def loadGroupTestData(repository: GroupRepository): IO[List[Group]] =
+    List(okGroup1, okGroup2).map(repository.save(_)).parSequence
+
+  def loadUserTestData(repository: UserRepository): IO[List[User]] =
     (testUser :: okUser :: dummyUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
       listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map { user =>
       val encrypted =
@@ -145,4 +146,7 @@ object UserRepository {
         else user
       repository.save(encrypted)
     }.parSequence
+
+  def loadMembershipTestData(repository: MembershipRepository): IO[Set[Set[String]]] =
+    List("ok-group", "ok").map(repository.addMembers(_, Set("ok"))).parSequence.map(_.toSet)
 }

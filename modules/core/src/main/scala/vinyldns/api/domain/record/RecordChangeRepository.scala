@@ -14,34 +14,31 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.zone
+package vinyldns.api.domain.record
 
 import cats.effect._
 import vinyldns.api.repository.Repository
-import vinyldns.api.repository.dynamodb.DynamoDBZoneChangeRepository
 
-case class ListZoneChangesResults(
-    items: List[ZoneChange] = List[ZoneChange](),
+case class ListRecordSetChangesResults(
+    items: List[RecordSetChange] = List[RecordSetChange](),
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
     maxItems: Int = 100)
 
-trait ZoneChangeRepository extends Repository {
+trait RecordChangeRepository extends Repository {
 
-  def save(zoneChange: ZoneChange): IO[ZoneChange]
+  def save(changeSet: ChangeSet): IO[ChangeSet]
 
-  def getPending(zoneId: String): IO[List[ZoneChange]]
+  def getPendingChangeSets(zoneId: String): IO[List[ChangeSet]]
 
-  def getAllPendingZoneIds(): IO[List[String]]
+  def getChanges(zoneId: String): IO[List[ChangeSet]]
 
-  def listZoneChanges(
+  def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): IO[ListZoneChangesResults]
-}
+      maxItems: Int = 100): IO[ListRecordSetChangesResults]
 
-object ZoneChangeRepository {
-  def apply(): ZoneChangeRepository =
-    DynamoDBZoneChangeRepository()
+  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]]
 
+  def getAllPendingZoneIds(): IO[List[String]]
 }

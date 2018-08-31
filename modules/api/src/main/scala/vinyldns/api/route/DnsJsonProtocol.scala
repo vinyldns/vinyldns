@@ -22,7 +22,7 @@ import cats.data._, cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import vinyldns.api.domain.dns.DnsConversions._
+import vinyldns.api.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.api.domain.record._
 import vinyldns.api.domain.zone._
 

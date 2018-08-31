@@ -24,7 +24,12 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.record.{ChangeSet, ChangeSetStatus, RecordSetChange}
+import vinyldns.api.domain.record.{
+  ChangeSet,
+  ChangeSetStatus,
+  RecordSetChange,
+  RecordSetChangeGenerator
+}
 import vinyldns.api.domain.zone.{Zone, ZoneStatus}
 import vinyldns.api.domain.{record, zone}
 
@@ -100,26 +105,26 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesA = {
     for {
       rs <- recordSetA
-    } yield RecordSetChange.forAdd(rs, zoneA, auth)
+    } yield RecordSetChangeGenerator.forAdd(rs, zoneA, auth)
   }.sortBy(_.id)
 
   private val recordSetChangesB = {
     for {
       rs <- recordSetB
-    } yield RecordSetChange.forAdd(rs, zoneB, auth)
+    } yield RecordSetChangeGenerator.forAdd(rs, zoneB, auth)
   }.sortBy(_.id)
 
   private val recordSetChangesC = {
     for {
       rs <- recordSetA
-    } yield RecordSetChange.forDelete(rs, zoneA, auth)
+    } yield RecordSetChangeGenerator.forDelete(rs, zoneA, auth)
   }.sortBy(_.id)
 
   private val recordSetChangesD = {
     for {
       rs <- recordSetA
       updateRs <- updateRecordSetA
-    } yield RecordSetChange.forUpdate(rs, updateRs, zoneA)
+    } yield RecordSetChangeGenerator.forUpdate(rs, updateRs, zoneA)
   }.sortBy(_.id)
 
   private val changeSetA = ChangeSet(recordSetChangesA)
@@ -175,14 +180,14 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesCreateC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield RecordSetChange.forAdd(rs, zoneC, auth).copy(created = timeOrder(index))
+    } yield RecordSetChangeGenerator.forAdd(rs, zoneC, auth).copy(created = timeOrder(index))
   }
 
   private val recordSetChangesUpdateC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
     } yield
-      RecordSetChange
+      RecordSetChangeGenerator
         .forUpdate(rs, updateRecordSetsC(index), zoneC)
         .copy(created = timeOrder(index + 3))
   }
@@ -190,7 +195,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesDeleteC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield RecordSetChange.forDelete(rs, zoneC, auth).copy(created = timeOrder(index + 6))
+    } yield RecordSetChangeGenerator.forDelete(rs, zoneC, auth).copy(created = timeOrder(index + 6))
   }
 
   private val changeSetCreateC = record.ChangeSet(recordSetChangesCreateC)

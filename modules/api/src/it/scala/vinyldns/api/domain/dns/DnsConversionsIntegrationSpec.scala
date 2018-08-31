@@ -19,7 +19,7 @@ package vinyldns.api.domain.dns
 import org.scalatest.{Matchers, WordSpec}
 import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
-import vinyldns.api.domain.record.RecordSetChange
+import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 
@@ -45,7 +45,7 @@ class DnsConversionsIntegrationSpec
       val testRecord = aaaa.copy(zoneId = testZone.id)
       val conn = DnsConnection(testZone.connection.get)
       val result: DnsResponse =
-        rightResultOf(conn.addRecord(RecordSetChange.forAdd(testRecord, testZone)).value)
+        rightResultOf(conn.addRecord(RecordSetChangeGenerator.forAdd(testRecord, testZone)).value)
 
       result shouldBe a[NoError]
       val resultingMessage = result.asInstanceOf[NoError].message

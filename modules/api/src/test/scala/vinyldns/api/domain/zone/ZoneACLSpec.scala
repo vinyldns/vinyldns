@@ -58,8 +58,6 @@ class ZoneACLSpec
       } yield aclList
   }
 
-  import ZoneAclGenerator._
-
   property("ZoneACL should add a new ACL rule") {
     val acl = ZoneACL()
     val result = acl.addRule(userAclRule)
@@ -77,15 +75,5 @@ class ZoneACLSpec
     val result = acl.deleteRule(userAclRule)
     (result.rules should contain).only(groupAclRule)
     result shouldBe acl
-  }
-
-  property("Build returns ZoneACL when valid values are passed in") {
-    forAll(validAclRuleSet) { aclRule: List[ACLRule] =>
-      ZoneACL.build(aclRule.toSet).isValid shouldEqual true
-    }
-    import AccessLevel._
-
-    ZoneACL.build(Set(ACLRule(Read))).isValid shouldEqual true
-    ZoneACL.build(Set.empty).isValid shouldEqual true
   }
 }

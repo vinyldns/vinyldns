@@ -18,6 +18,7 @@ package vinyldns.api.domain.record
 
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
+import vinyldns.api.domain.record.RecordSetHelpers._
 
 class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
 
@@ -40,7 +41,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val records = List(CNAMEData("foo."))
       val left = cname.copy(records = records)
       val right = cname.copy(records = records)
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should match eight hextet ipv6 addresses when equal" in {
@@ -48,7 +49,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = records)
       val right = aaaa.copy(records = records)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should not match eight hextet length ipv6 addresses when not equal" in {
@@ -57,7 +58,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = leftRecords)
       val right = aaaa.copy(records = rightRecords)
 
-      left.matches(right, okZone.name) shouldBe false
+      matches(left, right, okZone.name) shouldBe false
     }
 
     "matches should match multiple eight hextet ipv6 addresses when equal" in {
@@ -66,7 +67,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = records)
       val right = aaaa.copy(records = records)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should match abbreviated eight hextet ipv6 addresses when equal" in {
@@ -75,7 +76,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = leftRecords)
       val right = aaaa.copy(records = rightRecords)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should not match abbreviated eight hextet length ipv6 addresses when not equal" in {
@@ -84,7 +85,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = leftRecords)
       val right = aaaa.copy(records = rightRecords)
 
-      left.matches(right, okZone.name) shouldBe false
+      matches(left, right, okZone.name) shouldBe false
     }
 
     "matches should match ipv6 addresses when one uses shorthand" in {
@@ -93,7 +94,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = recordsLeft)
       val right = aaaa.copy(records = recordsRight)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should not match ipv6 addresses when one uses shorthand and not equal" in {
@@ -101,7 +102,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val recordsRight = List(AAAAData("2001:db8:3c4d:15::1a2f:1a2b"))
       val left = aaaa.copy(records = recordsLeft)
       val right = aaaa.copy(records = recordsRight)
-      left.matches(right, okZone.name) shouldBe false
+      matches(left, right, okZone.name) shouldBe false
     }
 
     "matches should match ipv6 addresses when two use shorthand" in {
@@ -109,7 +110,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = records)
       val right = aaaa.copy(records = records)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should not match ipv6 addresses when two use shorthand and not equal" in {
@@ -118,7 +119,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = aaaa.copy(records = recordsLeft)
       val right = aaaa.copy(records = recordsRight)
 
-      left.matches(right, okZone.name) shouldBe false
+      matches(left, right, okZone.name) shouldBe false
     }
 
     "matches should be insensitive to string escaping for TXTdata" in {
@@ -127,7 +128,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = txt.copy(records = recordsLeft)
       val right = txt.copy(records = recordsRight)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should not match if some records are removed and a subset remain" in {
@@ -136,7 +137,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = rsOk.copy(records = recordsLeft)
       val right = rsOk.copy(records = recordsRight)
 
-      left.matches(right, okZone.name) shouldBe false
+      matches(left, right, okZone.name) shouldBe false
     }
 
     "matches should not match if the unique sets of records do not match" in {
@@ -145,7 +146,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = rsOk.copy(records = recordsLeft)
       val right = rsOk.copy(records = recordsRight)
 
-      left.matches(right, okZone.name) shouldBe false
+      matches(left, right, okZone.name) shouldBe false
     }
 
     "matches should match regardless of order" in {
@@ -154,7 +155,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = rsOk.copy(records = recordsLeft)
       val right = rsOk.copy(records = recordsRight)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "matches should match if the unique sets of records match" in {
@@ -163,7 +164,7 @@ class RecordSetSpec extends WordSpec with Matchers with VinylDNSTestData {
       val left = rsOk.copy(records = recordsLeft)
       val right = rsOk.copy(records = recordsRight)
 
-      left.matches(right, okZone.name) shouldBe true
+      matches(left, right, okZone.name) shouldBe true
     }
 
     "ensure trailing dot on CNAME record cname" in {

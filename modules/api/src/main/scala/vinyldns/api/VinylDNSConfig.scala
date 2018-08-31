@@ -18,6 +18,7 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import vinyldns.api.crypto.Crypto
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
@@ -54,7 +55,7 @@ object VinylDNSConfig {
     val keyName = connectionConfig.getString("keyName")
     val key = connectionConfig.getString("key")
     val primaryServer = connectionConfig.getString("primaryServer")
-    ZoneConnection(name, keyName, key, primaryServer).encrypted()
+    ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
 
   lazy val defaultTransferConnection: ZoneConnection = {
@@ -63,6 +64,6 @@ object VinylDNSConfig {
     val keyName = connectionConfig.getString("keyName")
     val key = connectionConfig.getString("key")
     val primaryServer = connectionConfig.getString("primaryServer")
-    ZoneConnection(name, keyName, key, primaryServer).encrypted()
+    ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
 }

@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.batch
+package vinyldns.api.domain.membership
 
 import cats.effect._
 import vinyldns.api.repository.Repository
 
-// $COVERAGE-OFF$
-trait BatchChangeRepository extends Repository {
+trait MembershipRepository extends Repository {
 
-  def save(batch: BatchChange): IO[BatchChange]
+  def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
 
-  def getBatchChange(batchChangeId: String): IO[Option[BatchChange]]
+  def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]]
 
-  def getBatchChangeSummariesByUserId(
-      userId: String,
-      startFrom: Option[Int] = None,
-      maxItems: Int = 100): IO[BatchChangeSummaryList]
-
-  // updateSingleChanges updates status, recordSetId, recordChangeId and systemMessage (in data).
-  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]]
-
-  def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]]
-
+  def getGroupsForUser(userId: String): IO[Set[String]]
 }
-// $COVERAGE-ON$

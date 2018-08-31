@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package vinyldns.core.crypto
+package vinyldns.api.domain.membership
 
-import cats.effect.IO
-import com.typesafe.config.Config
-import vinyldns.api.VinylDNSConfig
+import cats.effect._
+import org.joda.time.DateTime
+import vinyldns.api.repository.Repository
 
-object Crypto {
+trait GroupChangeRepository extends Repository {
+  def save(groupChange: GroupChange): IO[GroupChange]
 
-  lazy val instance: CryptoAlgebra = loadCrypto().unsafeRunSync()
+  def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] // For testing
+  def getGroupChanges(
+      groupId: String,
+      startFrom: Option[String],
+      maxItems: Int): IO[ListGroupChangesResults]
 
-  def loadCrypto(cryptoConfig: Config = VinylDNSConfig.cryptoConfig): IO[CryptoAlgebra] =
-    CryptoAlgebra.load(cryptoConfig)
-
-  def encrypt(value: String): String = instance.encrypt(value)
-
-  def decrypt(value: String): String = instance.decrypt(value)
+  implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isBefore(_))
 }

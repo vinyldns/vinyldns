@@ -25,33 +25,6 @@ import vinyldns.api.domain.record.{RecordData, RecordSet, RecordSetChange}
 import vinyldns.api.domain.zone.AccessLevel.AccessLevel
 import vinyldns.api.domain.zone.ZoneStatus.ZoneStatus
 
-trait ZoneCommand {
-  val zoneId: String
-}
-
-case class ACLRuleInfo(
-    accessLevel: AccessLevel,
-    description: Option[String],
-    userId: Option[String],
-    groupId: Option[String],
-    recordMask: Option[String],
-    recordTypes: Set[RecordType],
-    displayName: Option[String] = None
-)
-
-object ACLRuleInfo {
-  def apply(aCLRule: ACLRule, name: Option[String]): ACLRuleInfo =
-    ACLRuleInfo(
-      accessLevel = aCLRule.accessLevel,
-      description = aCLRule.description,
-      userId = aCLRule.userId,
-      groupId = aCLRule.groupId,
-      recordMask = aCLRule.recordMask,
-      recordTypes = aCLRule.recordTypes,
-      displayName = name
-    )
-}
-
 case class ZoneACLInfo(rules: Set[ACLRuleInfo])
 
 case class ZoneInfo(

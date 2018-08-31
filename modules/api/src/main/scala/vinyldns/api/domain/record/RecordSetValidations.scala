@@ -20,7 +20,7 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
-import vinyldns.api.domain.dns.DnsConversions.omitTrailingDot
+import vinyldns.api.domain.DomainHelpers.omitTrailingDot
 import vinyldns.api.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 

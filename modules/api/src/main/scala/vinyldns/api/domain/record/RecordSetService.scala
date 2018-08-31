@@ -39,7 +39,7 @@ class RecordSetService(
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
-      change <- RecordSetChange.forAdd(recordSet, zone, Some(auth)).toResult
+      change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- recordSetDoesNotExist(rsForValidations, zone)
@@ -58,7 +58,7 @@ class RecordSetService(
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id, zone)
-      change <- RecordSetChange.forUpdate(existing, recordSet, zone, Some(auth)).toResult
+      change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone).toResult
@@ -84,7 +84,7 @@ class RecordSetService(
       _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone).toResult
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult
-      change <- RecordSetChange.forDelete(existing, zone, Some(auth)).toResult
+      change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
       send <- commandBus.sendZoneCommand(change)
     } yield send
 

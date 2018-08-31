@@ -39,30 +39,30 @@ class RecordSetChangeSpec extends WordSpec with Matchers with VinylDNSTestData w
     }
     "forAdd" should {
       "change the record set name if it is @" in {
-        val result = RecordSetChange.forAdd(atRs, okZone)
+        val result = RecordSetChangeGenerator.forAdd(atRs, okZone)
         result.recordSet.name shouldBe okZone.name
       }
       "change the record set name if it is @ with AddRecordSet" in {
-        val result = RecordSetChange.forAdd(atRs, okZone, okAuth)
+        val result = RecordSetChangeGenerator.forAdd(atRs, okZone, okAuth)
         result.recordSet.name shouldBe okZone.name
       }
     }
     "forUpdate" should {
       "change the record set name if it is @" in {
         val newRS = atRs.copy(records = List(AData("2.2.2.2")))
-        val result = RecordSetChange.forUpdate(atRs, newRS, okZone)
+        val result = RecordSetChangeGenerator.forUpdate(atRs, newRS, okZone)
         result.recordSet.name shouldBe okZone.name
       }
       "change the record set name if it is @ with AddRecordSet" in {
         val newRS = atRs.copy(records = List(AData("2.2.2.2")))
-        val result = RecordSetChange.forUpdate(atRs, newRS, okZone, okAuth)
+        val result = RecordSetChangeGenerator.forUpdate(atRs, newRS, okZone, okAuth)
         result.recordSet.name shouldBe okZone.name
       }
       "not copy the account from the record set being replaced when using an UpdateRecordSet" in {
         val replacing = aaaa
         val update = replacing.copy(account = "shouldn't be this account")
 
-        val result = RecordSetChange.forUpdate(replacing, update, okZone, okAuth)
+        val result = RecordSetChangeGenerator.forUpdate(replacing, update, okZone, okAuth)
 
         result.recordSet.account shouldBe update.account
       }
@@ -70,18 +70,18 @@ class RecordSetChangeSpec extends WordSpec with Matchers with VinylDNSTestData w
         val replacing = aaaa
         val update = replacing.copy(account = "shouldn't be this account")
 
-        val result = RecordSetChange.forUpdate(replacing, update, okZone)
+        val result = RecordSetChangeGenerator.forUpdate(replacing, update, okZone)
 
         result.recordSet.account shouldBe update.account
       }
     }
     "forDelete" should {
       "change the record set name if it is @" in {
-        val result = RecordSetChange.forDelete(atRs, okZone)
+        val result = RecordSetChangeGenerator.forDelete(atRs, okZone)
         result.recordSet.name shouldBe okZone.name
       }
       "change the record set name if it is @ with AddRecordSet" in {
-        val result = RecordSetChange.forDelete(atRs, okZone, okAuth)
+        val result = RecordSetChangeGenerator.forDelete(atRs, okZone, okAuth)
         result.recordSet.name shouldBe okZone.name
       }
     }

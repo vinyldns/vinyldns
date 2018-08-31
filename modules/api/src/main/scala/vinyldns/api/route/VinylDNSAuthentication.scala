@@ -22,12 +22,9 @@ import akka.http.scaladsl.server.{AuthenticationFailedRejection, RequestContext}
 import cats.effect._
 import cats.syntax.all._
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.auth.{
-  AuthPrincipal,
-  AuthPrincipalProvider,
-  MembershipAuthPrincipalProvider
-}
-import vinyldns.core.crypto.{Crypto, CryptoAlgebra}
+import vinyldns.api.crypto.Crypto
+import vinyldns.api.domain.auth.{AuthPrincipal, AuthPrincipalProvider, MembershipAuthPrincipalProvider}
+import vinyldns.core.crypto.CryptoAlgebra
 
 import scala.util.matching.Regex
 

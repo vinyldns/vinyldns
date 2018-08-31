@@ -19,9 +19,7 @@ package vinyldns.api.domain.zone
 import cats.scalatest.ValidatedMatchers
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import vinyldns.api.ValidationTestImprovements._
 import vinyldns.api.VinylDNSTestData
-import vinyldns.api.domain.{InvalidDomainName, InvalidEmail}
 
 class ZoneSpec
     extends PropSpec
@@ -64,37 +62,5 @@ class ZoneSpec
     val result = zone2.deleteACLRule(groupAclRule)
 
     (result.acl.rules should contain).only(userAclRule)
-  }
-
-  property("Build should succeed when valid parameters are passed in") {
-    Zone.build(validName, validEmail, adminGroupId, None, None, None) shouldBe valid
-    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, None) shouldBe valid
-    Zone.build(validName, validEmail, adminGroupId, None, Some(validTransfer), None) shouldBe valid
-    Zone.build(validName, validEmail, adminGroupId, None, None, Some(zoneAcl)) shouldBe valid
-    Zone.build(
-      validName,
-      validEmail,
-      adminGroupId,
-      Some(validConnection),
-      Some(validTransfer),
-      None) shouldBe valid
-    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, Some(validZoneACL)) shouldBe valid
-    Zone.build(validName, validEmail, adminGroupId, None, Some(validTransfer), Some(validZoneACL)) shouldBe valid
-    Zone.build(validName, validEmail, adminGroupId, Some(validConnection), None, Some(validZoneACL)) shouldBe valid
-    Zone.build(
-      validName,
-      validEmail,
-      adminGroupId,
-      Some(validConnection),
-      Some(validTransfer),
-      Some(validZoneACL)) shouldBe valid
-  }
-
-  property("Build should fail when invalid parameters are passed in") {
-    val invalidName = "foo.bar"
-    val invalidEmail = "@."
-
-    Zone.build(invalidName, validEmail, adminGroupId, None, None, None).failWith[InvalidDomainName]
-    Zone.build(validName, invalidEmail, adminGroupId, None, None, None).failWith[InvalidEmail]
   }
 }

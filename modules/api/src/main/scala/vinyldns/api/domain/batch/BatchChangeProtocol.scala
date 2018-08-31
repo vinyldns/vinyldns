@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.batch
 
-import vinyldns.api.domain.dns.DnsConversions._
+import vinyldns.api.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.api.domain.record.RecordData
 import vinyldns.api.domain.record.RecordType._
 

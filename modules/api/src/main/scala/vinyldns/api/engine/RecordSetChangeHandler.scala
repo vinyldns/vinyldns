@@ -24,6 +24,7 @@ import vinyldns.api.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.NoError
 import vinyldns.api.domain.record._
+import vinyldns.api.domain.record.RecordSetHelpers._
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -106,7 +107,7 @@ object RecordSetChangeHandler {
 
   def getProcessingStatus(change: RecordSetChange, dnsConn: DnsConnection): IO[ProcessingStatus] = {
     def isDnsMatch(dnsResult: List[RecordSet], recordSet: RecordSet, zoneName: String): Boolean =
-      dnsResult.exists(_.matches(recordSet, zoneName))
+      dnsResult.exists(matches(_, recordSet, zoneName))
 
     dnsConn.resolve(change.recordSet.name, change.zone.name, change.recordSet.typ).value.map {
       case Right(existingRecords) =>

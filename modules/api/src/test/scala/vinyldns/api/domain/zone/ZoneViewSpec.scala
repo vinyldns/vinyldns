@@ -134,8 +134,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
         val diff = vinyldnsView.diff(dnsView)
 
         val expectedRecordSetChanges = Seq(
-          RecordSetChange.forSyncAdd(dnsRecords(1), testZone),
-          RecordSetChange.forSyncAdd(dnsRecords(2), testZone)
+          RecordSetChangeGenerator.forSyncAdd(dnsRecords(1), testZone),
+          RecordSetChangeGenerator.forSyncAdd(dnsRecords(2), testZone)
         )
         val anonymizedDiffRecordSetChanges = diff.map(anonymize)
         val anonymizedExpectedRecordSetChanges = expectedRecordSetChanges.map(anonymize)
@@ -156,8 +156,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
         val diff = vinyldnsView.diff(dnsView)
 
         val expectedRecordSetChanges = Seq(
-          RecordSetChange.forSyncDelete(vinyldnsRecords(1), testZone),
-          RecordSetChange.forSyncDelete(vinyldnsRecords(2), testZone)
+          RecordSetChangeGenerator.forSyncDelete(vinyldnsRecords(1), testZone),
+          RecordSetChangeGenerator.forSyncDelete(vinyldnsRecords(2), testZone)
         )
 
         val anonymizedDiffRecordSetChanges = diff.map(anonymize)
@@ -187,7 +187,7 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
         val diff = vinyldnsView.diff(dnsView)
 
         val expectedRecordSetChanges = Seq(
-          RecordSetChange.forSyncUpdate(vinyldnsRecords(1), dnsRecords(1), testZone)
+          RecordSetChangeGenerator.forSyncUpdate(vinyldnsRecords(1), dnsRecords(1), testZone)
         )
 
         val anonymizedDiffRecordSetChanges = diff.map(anonymize)

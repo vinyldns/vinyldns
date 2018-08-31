@@ -98,9 +98,9 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
     created = DateTime.now,
     records = List(AData("10.1.1.1")))
 
-  private val changeSetSOA = ChangeSet(RecordSetChange.forAdd(testRecordSOA, zone))
-  private val changeSetNS = ChangeSet(RecordSetChange.forAdd(testRecordNS, zone))
-  private val changeSetA = ChangeSet(RecordSetChange.forAdd(testRecordA, zone))
+  private val changeSetSOA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordSOA, zone))
+  private val changeSetNS = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordNS, zone))
+  private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, zone))
 
   def setup(): Unit = {
     recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
@@ -138,7 +138,7 @@ class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSug
       }
     }
     "accept a DeleteZone" in {
-      val removeARecord = ChangeSet(RecordSetChange.forDelete(testRecordA, zone))
+      val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, zone))
       waitForSuccess(recordSetRepo.apply(removeARecord))
 
       val result =

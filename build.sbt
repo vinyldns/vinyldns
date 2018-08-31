@@ -181,7 +181,6 @@ lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
   testSettings ++
   apiPublishSettings ++
   apiDockerSettings ++
-  pbSettings ++
   scalaStyleSettings
 
 lazy val api = (project in file("modules/api"))
@@ -209,7 +208,7 @@ lazy val coreBuildSettings = Seq(
   // do not use unused params as NoOpCrypto ignores its constructor, we should provide a way
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
-)
+) ++ pbSettings
 
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,

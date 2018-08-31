@@ -19,8 +19,6 @@ package vinyldns.api.domain.zone
 import java.util.UUID
 
 import org.joda.time.DateTime
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.record.RecordSetChange
 import vinyldns.api.domain.zone
 
 object ZoneChangeStatus extends Enumeration {
@@ -36,7 +34,6 @@ object ZoneChangeType extends Enumeration {
 import vinyldns.api.domain.zone.ZoneChangeStatus._
 import vinyldns.api.domain.zone.ZoneChangeType._
 
-trait ZoneCommandResult
 case class ZoneChange(
     zone: Zone,
     userId: String,
@@ -64,57 +61,6 @@ case class ZoneChange(
     sb.toString
   }
 }
-
-object ZoneChange {
-  import ZoneChangeStatus._
-
-  def forAdd(
-      zone: Zone,
-      authPrincipal: AuthPrincipal,
-      status: ZoneChangeStatus = Pending): ZoneChange =
-    ZoneChange(
-      zone
-        .copy(id = UUID.randomUUID().toString, created = DateTime.now, status = ZoneStatus.Syncing),
-      authPrincipal.userId,
-      ZoneChangeType.Create,
-      status
-    )
-
-  def forUpdate(newZone: Zone, oldZone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
-    ZoneChange(
-      newZone.copy(updated = Some(DateTime.now), connection = fixConn(oldZone, newZone)),
-      authPrincipal.userId,
-      ZoneChangeType.Update,
-      ZoneChangeStatus.Pending
-    )
-
-  def forSync(zone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
-    ZoneChange(
-      zone.copy(updated = Some(DateTime.now), status = ZoneStatus.Syncing),
-      authPrincipal.userId,
-      ZoneChangeType.Sync,
-      ZoneChangeStatus.Pending
-    )
-
-  def forDelete(zone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
-    ZoneChange(
-      zone.copy(updated = Some(DateTime.now), status = ZoneStatus.Deleted),
-      authPrincipal.userId,
-      ZoneChangeType.Delete,
-      ZoneChangeStatus.Pending
-    )
-
-  private def fixConn(oldZ: Zone, newZ: Zone): Option[ZoneConnection] =
-    newZ.connection.map(newConn => {
-      val oldConn = oldZ.connection.getOrElse(newConn)
-      newConn.copy(key = if (oldConn.key == newConn.decrypted().key) oldConn.key else newConn.key)
-    })
-}
-
-case class ZoneHistory(
-    zoneId: String,
-    zoneChanges: List[ZoneChange] = Nil,
-    recordSetChanges: List[RecordSetChange] = Nil)
 
 case class ListZoneChangesResponse(
     zoneId: String,
