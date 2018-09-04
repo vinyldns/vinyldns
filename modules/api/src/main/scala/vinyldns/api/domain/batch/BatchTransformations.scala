@@ -32,7 +32,7 @@ object SupportedBatchChangeRecordTypes {
 // ALL of these are subject to change as implementation needs
 object BatchTransformations {
 
-  case class ExistingZones(zones: Set[Zone]) {
+  final case class ExistingZones(zones: Set[Zone]) {
     val zoneMap: Map[String, Zone] = zones.map(z => (z.name, z)).toMap
 
     def getByName(name: String): Option[Zone] = zoneMap.get(name)
@@ -50,7 +50,7 @@ object BatchTransformations {
     }
   }
 
-  case class ExistingRecordSets(recordSets: List[RecordSet]) {
+  final case class ExistingRecordSets(recordSets: List[RecordSet]) {
     val recordSetMap: Map[(String, String), List[RecordSet]] =
       recordSets.groupBy(rs => (rs.zoneId, rs.name.toLowerCase))
 
@@ -64,7 +64,7 @@ object BatchTransformations {
       recordSetMap.getOrElse((zoneId, name.toLowerCase), List())
   }
 
-  trait ChangeForValidation {
+  sealed trait ChangeForValidation {
     val zone: Zone
     val recordName: String
     val inputChange: ChangeInput
@@ -82,7 +82,10 @@ object BatchTransformations {
       }
   }
 
-  case class AddChangeForValidation(zone: Zone, recordName: String, inputChange: AddChangeInput)
+  final case class AddChangeForValidation(
+      zone: Zone,
+      recordName: String,
+      inputChange: AddChangeInput)
       extends ChangeForValidation {
     def asNewStoredChange: SingleChange =
       SingleAddChange(
@@ -103,7 +106,7 @@ object BatchTransformations {
     def isDeleteChangeForValidation: Boolean = false
   }
 
-  case class DeleteChangeForValidation(
+  final case class DeleteChangeForValidation(
       zone: Zone,
       recordName: String,
       inputChange: DeleteChangeInput)
@@ -125,11 +128,11 @@ object BatchTransformations {
     def isDeleteChangeForValidation: Boolean = true
   }
 
-  case class BatchConversionOutput(
+  final case class BatchConversionOutput(
       batchChange: BatchChange,
       recordSetChanges: List[RecordSetChange])
 
-  case class ChangeForValidationMap(changes: List[ChangeForValidation]) {
+  final case class ChangeForValidationMap(changes: List[ChangeForValidation]) {
     val innerMap: Map[RecordKey, List[ChangeForValidation]] = changes.groupBy(_.recordKey)
 
     def getList(recordKey: RecordKey): List[ChangeForValidation] =
