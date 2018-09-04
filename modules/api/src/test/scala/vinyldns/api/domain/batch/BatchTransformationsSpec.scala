@@ -16,59 +16,12 @@
 
 package vinyldns.api.domain.batch
 
-import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.ExistingZones
-import vinyldns.core.domain.batch.{
-  BatchChange,
-  BatchChangeStatus,
-  SingleAddChange,
-  SingleChangeStatus
-}
-import vinyldns.core.domain.record.{AData, RecordType}
 import vinyldns.core.domain.zone.Zone
 
-class BatchChangeSpec extends WordSpec with Matchers {
-  private val pendingChange = SingleAddChange(
-    "zoneid",
-    "zonename",
-    "rname",
-    "inputname",
-    RecordType.A,
-    123,
-    AData("2.2.2.2"),
-    SingleChangeStatus.Pending,
-    None,
-    None,
-    None)
-  private val failedChange = pendingChange.copy(status = SingleChangeStatus.Failed)
-  private val completeChange = pendingChange.copy(status = SingleChangeStatus.Complete)
+class BatchTransformationsSpec extends WordSpec with Matchers {
 
-  private val batchChangeBase = BatchChange(
-    "userId",
-    "userName",
-    None,
-    DateTime.now,
-    List(pendingChange, failedChange, completeChange))
-
-  "BatchChange" should {
-    "calculate Pending status based on SingleChanges" in {
-      batchChangeBase.status shouldBe BatchChangeStatus.Pending
-    }
-    "calculate PartialFailure status based on SingleChanges" in {
-      batchChangeBase
-        .copy(changes = List(completeChange, failedChange))
-        .status shouldBe BatchChangeStatus.PartialFailure
-    }
-    "calculate Failed status based on SingleChanges" in {
-      batchChangeBase.copy(changes = List(failedChange)).status shouldBe BatchChangeStatus.Failed
-    }
-    "calculate Complete status based on SingleChanges" in {
-      batchChangeBase
-        .copy(changes = List(completeChange))
-        .status shouldBe BatchChangeStatus.Complete
-    }
-  }
   "ExistingZones" should {
     val ip4base1 = Zone("1.2.3.in-addr.arpa.", "test")
     val ip4del1 = Zone("0/30.1.2.3.in-addr.arpa.", "test")

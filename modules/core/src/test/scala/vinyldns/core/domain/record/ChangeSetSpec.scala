@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.record
+package vinyldns.core.domain.record
 
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.core.domain.record.ChangeSetStatus
 
 class ChangeSetSpec extends WordSpec with Matchers {
 

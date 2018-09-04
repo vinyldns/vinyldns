@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.membership
-
-import vinyldns.api.GroupTestData
+package vinyldns.core.domain.membership
 import org.scalatest.{Matchers, WordSpec}
 
-class GroupSpec extends WordSpec with Matchers with GroupTestData {
+class GroupSpec extends WordSpec with Matchers {
+
+  val okGroup = Group("grpName", "grpEmail")
+  val okUser = User("okName", "okAccess", "okSecret")
+  val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
+
   "Group" should {
     "correctly adds a user as a member" in {
       val newGroup = okGroup.addMember(okUser)

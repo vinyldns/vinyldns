@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.zone
+package vinyldns.core.domain.zone
 
 import cats.scalatest.ValidatedMatchers
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import vinyldns.api.VinylDNSTestData
-import vinyldns.core.domain.zone.{ACLRule, ZoneACL, ZoneConnection}
 
 class ZoneSpec
     extends PropSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
-    with ValidatedMatchers
-    with VinylDNSTestData {
-  import vinyldns.core.domain.zone.AccessLevel._
+    with ValidatedMatchers {
 
-  val validName = "test."
-  val validEmail = "test@email.com"
-  val adminGroupId = "adminGroupId"
   val validConnection =
     ZoneConnection("connectionName", "connectionKeyName", "connectionKey", "127.0.0.1")
-  val validTransfer =
-    ZoneConnection("transferConnectionName", "transferKeyName", "transferKey", "test.com.:900")
-  val validZoneACL = ZoneACL(Set(ACLRule(Read)))
+
+  val zoneActive: Zone = Zone(
+    "some.zone.name.",
+    "test@test.com",
+    status = ZoneStatus.Active,
+    connection = Some(validConnection))
+
+  val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
+
+  val groupAclRule: ACLRule = ACLRule(AccessLevel.Read, groupId = Some("someGroup"))
 
   property("toString should output a zone properly") {
     val result = zoneActive.toString

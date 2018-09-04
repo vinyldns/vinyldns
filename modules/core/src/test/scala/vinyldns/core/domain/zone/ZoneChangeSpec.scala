@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.zone
+package vinyldns.core.domain.zone
 
+import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
 
-class ZoneChangeSpec extends WordSpec with Matchers with VinylDNSTestData {
+class ZoneChangeSpec extends WordSpec with Matchers {
+
+  val zoneCreate: ZoneChange = ZoneChange(
+    Zone("test", "test"),
+    "ok",
+    ZoneChangeType.Create,
+    ZoneChangeStatus.Complete,
+    created = DateTime.now.minus(1000))
 
   "ZoneChange" should {
     "toString" should {
