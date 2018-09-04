@@ -21,6 +21,7 @@ import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop._
 import vinyldns.api.ValidationTestImprovements._
+import vinyldns.core.domain.record.RecordType._
 
 class DomainValidationsSpec
     extends PropSpec
@@ -32,6 +33,11 @@ class DomainValidationsSpec
   import vinyldns.api.domain.DomainValidations._
   import vinyldns.api.DomainGenerator._
   import vinyldns.api.IpAddressGenerator._
+
+  val validRecordTypeGen: Gen[Seq[RecordType]] =
+    Gen.someOf(A, AAAA, CNAME, PTR, MX, NS, SOA, SRV, TXT, SSHFP, SPF)
+  val invalidRecordTypeGen: Gen[Seq[RecordType]] =
+    Gen.someOf(A, AAAA, CNAME, PTR, MX, NS, SOA, SRV, TXT, SSHFP, SPF, UNKNOWN)
 
   property("Email should non-zero length and pass property-based testing") {
     val emailNumAlphaChar: Gen[Char] = frequency((8, alphaNumChar), (1, '-'), (1, '_'))
@@ -149,6 +155,20 @@ class DomainValidationsSpec
   property("Strings missing trailing dots should fail with MissingTrailingDot") {
     forAll(alphaNumComponent) { noTrailingDot: String =>
       validateTrailingDot(noTrailingDot).failWith[InvalidDomainName]
+    }
+  }
+
+  property("Valid record types should pass property-based testing") {
+    forAll(validRecordTypeGen) { rt: Seq[RecordType] =>
+      validateKnownRecordTypes(rt.toSet) shouldBe valid
+    }
+  }
+
+  property("Invalid record types should fail property-based testing") {
+    forAll(invalidRecordTypeGen) { rt: Seq[RecordType] =>
+      whenever(validateKnownRecordTypes(rt.toSet).isInvalid) {
+        rt.toSet should contain(UNKNOWN)
+      }
     }
   }
 }

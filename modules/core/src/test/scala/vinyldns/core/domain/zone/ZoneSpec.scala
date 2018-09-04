@@ -16,52 +16,34 @@
 
 package vinyldns.core.domain.zone
 
-import cats.scalatest.ValidatedMatchers
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.TestZoneData._
 
-class ZoneSpec
-    extends PropSpec
-    with Matchers
-    with GeneratorDrivenPropertyChecks
-    with ValidatedMatchers {
+class ZoneSpec extends WordSpec with Matchers {
 
-  val validConnection =
-    ZoneConnection("connectionName", "connectionKeyName", "connectionKey", "127.0.0.1")
+  "Zone" should {
+    "toString should output a zone properly" in {
+      val result = zoneActive.toString
 
-  val zoneActive: Zone = Zone(
-    "some.zone.name.",
-    "test@test.com",
-    status = ZoneStatus.Active,
-    connection = Some(validConnection))
+      result should include("id=\"" + zoneActive.id + "\"")
+      result should include("name=\"" + zoneActive.name + "\"")
+      result should include("connection=\"" + zoneActive.connection + "\"")
+      result should include("account=\"" + zoneActive.account + "\"")
+      result should include("status=\"" + zoneActive.status + "\"")
+      result should include("shared=\"" + zoneActive.shared + "\"")
+      result should include("reverse=\"" + zoneActive.isReverse + "\"")
+    }
+    "add an ACL rule" in {
+      val result = zoneActive.addACLRule(userAclRule)
 
-  val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
+      result.acl.rules should contain(userAclRule)
+    }
+    "remove an ACL rule" in {
+      val zone1 = zoneActive.addACLRule(userAclRule)
+      val zone2 = zone1.addACLRule(groupAclRule)
+      val result = zone2.deleteACLRule(groupAclRule)
 
-  val groupAclRule: ACLRule = ACLRule(AccessLevel.Read, groupId = Some("someGroup"))
-
-  property("toString should output a zone properly") {
-    val result = zoneActive.toString
-
-    result should include("id=\"" + zoneActive.id + "\"")
-    result should include("name=\"" + zoneActive.name + "\"")
-    result should include("connection=\"" + zoneActive.connection + "\"")
-    result should include("account=\"" + zoneActive.account + "\"")
-    result should include("status=\"" + zoneActive.status + "\"")
-    result should include("shared=\"" + zoneActive.shared + "\"")
-    result should include("reverse=\"" + zoneActive.isReverse + "\"")
-  }
-
-  property("Zone should add an ACL rule") {
-    val result = zoneActive.addACLRule(userAclRule)
-
-    result.acl.rules should contain(userAclRule)
-  }
-
-  property("Zone should remove an ACL rule") {
-    val zone1 = zoneActive.addACLRule(userAclRule)
-    val zone2 = zone1.addACLRule(groupAclRule)
-    val result = zone2.deleteACLRule(groupAclRule)
-
-    (result.acl.rules should contain).only(userAclRule)
+      (result.acl.rules should contain).only(userAclRule)
+    }
   }
 }

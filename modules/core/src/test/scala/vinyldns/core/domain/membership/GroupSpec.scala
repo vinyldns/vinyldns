@@ -16,71 +16,67 @@
 
 package vinyldns.core.domain.membership
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.TestMembershipData._
 
 class GroupSpec extends WordSpec with Matchers {
-
-  val okGroup = Group("grpName", "grpEmail")
-  val okUser = User("okName", "okAccess", "okSecret")
-  val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
-
   "Group" should {
     "correctly adds a user as a member" in {
-      val newGroup = okGroup.addMember(okUser)
+      val newGroup = emptyGroup.addMember(okUser)
       (newGroup.memberIds should contain).only(okUser.id)
     }
     "handles adding a member twice" in {
-      val newGroup = okGroup
+      val newGroup = emptyGroup
         .addMember(okUser)
         .addMember(okUser)
       (newGroup.memberIds should contain).only(okUser.id)
     }
     "correctly removes a member" in {
-      val newGroup = okGroup.addMember(okUser).addMember(dummyUser)
+      val newGroup = emptyGroup.addMember(okUser).addMember(dummyUser)
       val updatedGroup = newGroup.removeMember(okUser)
       (updatedGroup.memberIds should contain).only(dummyUser.id)
     }
     "does not fail when a non member is removed" in {
-      val newGroup = okGroup.addMember(dummyUser)
+      val newGroup = emptyGroup.addMember(dummyUser)
       val updatedGroup = newGroup.removeMember(okUser)
       (updatedGroup.memberIds should contain).only(dummyUser.id)
     }
     "can not remove the last member from the group" in {
-      val group = okGroup.copy(memberIds = Set.empty)
+      val group = emptyGroup.copy(memberIds = Set.empty)
       val newGroup = group.addMember(dummyUser)
       val updatedGroup = newGroup.removeMember(dummyUser)
       updatedGroup.memberIds should contain(dummyUser.id)
     }
     "correctly adds a user as an admin user" in {
-      val group = okGroup.copy(memberIds = Set.empty)
+      val group = emptyGroup.copy(memberIds = Set.empty)
       val newGroup = group.addAdminUser(okUser)
       (newGroup.adminUserIds should contain).only(okUser.id)
       (newGroup.memberIds should contain).only(okUser.id)
     }
     "correctly adds two different users as admin users" in {
-      val group = okGroup.copy(memberIds = Set.empty)
+      val group = emptyGroup.copy(memberIds = Set.empty)
       val newGroup = group
         .addAdminUser(okUser)
         .addAdminUser(dummyUser)
       (newGroup.adminUserIds should contain).only(okUser.id, dummyUser.id)
     }
     "handles adding the same admin user twice" in {
-      val newGroup = okGroup
+      val newGroup = emptyGroup
         .addAdminUser(okUser)
         .addAdminUser(okUser)
       (newGroup.adminUserIds should contain).only(okUser.id)
     }
     "correctly removes an admin user" in {
-      val newGroup = okGroup.addAdminUser(okUser).addAdminUser(dummyUser)
+      val newGroup = emptyGroup.addAdminUser(okUser).addAdminUser(dummyUser)
       val updatedGroup = newGroup.removeAdminUser(okUser)
       (updatedGroup.adminUserIds should contain).only(dummyUser.id)
     }
     "does not fail when a non admin user is removed" in {
-      val newGroup = okGroup.addAdminUser(dummyUser)
+      val newGroup = emptyGroup.addAdminUser(dummyUser)
       val updatedGroup = newGroup.removeAdminUser(okUser)
       (updatedGroup.adminUserIds should contain).only(dummyUser.id)
     }
     "can not remove the last admin user from the group" in {
-      val group = okGroup.copy(adminUserIds = Set.empty)
+      val group = emptyGroup.copy(adminUserIds = Set.empty)
       val newGroup = group.addAdminUser(dummyUser)
       val updatedGroup = newGroup.removeAdminUser(dummyUser)
       (updatedGroup.adminUserIds should contain).only(dummyUser.id)
