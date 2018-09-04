@@ -23,17 +23,21 @@ import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.membership._
 
+// $COVERAGE-OFF$
 object TestDataLoader {
 
   def loadTestData(
       userRepo: UserRepository,
       groupRepo: GroupRepository,
-      membershipRepo: MembershipRepository): IO[Unit] =
-    for {
-      _ <- loadUserTestData(userRepo)
-      _ <- loadGroupTestData(groupRepo)
-      _ <- loadMembershipTestData(membershipRepo)
-    } yield ()
+      membershipRepo: MembershipRepository): IO[Unit] = {
+
+    val loadCalls = List(
+      loadUserTestData(userRepo),
+      loadGroupTestData(groupRepo),
+      loadMembershipTestData(membershipRepo))
+
+    loadCalls.parSequence.as(())
+  }
 
   final val testUser = User(
     userName = "testuser",
@@ -150,3 +154,4 @@ object TestDataLoader {
   def loadMembershipTestData(repository: MembershipRepository): IO[Set[Set[String]]] =
     List("ok-group", "ok").map(repository.addMembers(_, Set("ok"))).parSequence.map(_.toSet)
 }
+// $COVERAGE-ON$
