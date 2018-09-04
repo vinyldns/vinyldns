@@ -31,7 +31,7 @@ class ZoneACLSpec
 
   object ZoneAclGenerator {
     import AccessLevel._
-    import vinyldns.api.domain.record.RecordType._
+    import vinyldns.core.domain.record.RecordType._
 
     val accessLevelGen: Gen[AccessLevel.Value] = Gen.oneOf(NoAccess, Read, Write, Delete)
     val validRecordTypeGen: Gen[Seq[RecordType]] =

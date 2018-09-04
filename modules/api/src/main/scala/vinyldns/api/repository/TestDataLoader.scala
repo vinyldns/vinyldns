@@ -21,7 +21,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.membership._
+import vinyldns.core.domain.membership._
 
 object TestDataLoader {
 

@@ -20,11 +20,11 @@ import cats.effect.IO
 import cats.implicits._
 import fs2._
 import org.slf4j.LoggerFactory
-import vinyldns.api.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.NoError
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record._
 import vinyldns.api.domain.record.RecordSetHelpers._
+import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global

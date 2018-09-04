@@ -21,8 +21,9 @@ import org.xbill.DNS
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.domain.record.RecordSetRepository
-import vinyldns.api.route.Monitored
+import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.domain.zone.Zone
+import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
 

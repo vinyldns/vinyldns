@@ -18,9 +18,11 @@ package vinyldns.api.domain.zone
 
 import vinyldns.api.domain.dns.DnsConversions._
 import vinyldns.api.domain
-import vinyldns.api.domain.record.{RecordSet, RecordSetChange, RecordSetChangeGenerator}
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
 import vinyldns.api.domain.record.RecordSetHelpers._
-import vinyldns.api.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.zone.{Zone, ZoneChange}
 
 object ZoneView {
 

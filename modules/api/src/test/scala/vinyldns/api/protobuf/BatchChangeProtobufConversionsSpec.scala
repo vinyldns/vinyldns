@@ -19,7 +19,7 @@ package vinyldns.api.protobuf
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
 import vinyldns.api.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
-import vinyldns.api.domain.record.{AData, RecordType}
+import vinyldns.core.domain.record.{AData, RecordType}
 
 class BatchChangeProtobufConversionsSpec
     extends WordSpec

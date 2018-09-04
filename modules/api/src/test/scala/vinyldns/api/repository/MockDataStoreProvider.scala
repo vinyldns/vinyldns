@@ -24,8 +24,8 @@ import vinyldns.api.domain.membership.{
   MembershipRepository,
   UserRepository
 }
-import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository}
-import vinyldns.api.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
+import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 
 class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 

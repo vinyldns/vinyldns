@@ -18,7 +18,7 @@ package vinyldns.api.repository.mysql
 
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.batch.BatchChangeRepository
-import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.api.repository.DataStore
 import vinyldns.api.repository.RepositoryName._
 

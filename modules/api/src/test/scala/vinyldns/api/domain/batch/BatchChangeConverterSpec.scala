@@ -20,10 +20,10 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.{ExistingRecordSets, ExistingZones}
-import vinyldns.api.domain.record.RecordSetChangeType.RecordSetChangeType
-import vinyldns.api.domain.record.RecordType.{RecordType, _}
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone.Zone
+import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.record.RecordType.{RecordType, _}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository._
 import vinyldns.api.{domain, _}

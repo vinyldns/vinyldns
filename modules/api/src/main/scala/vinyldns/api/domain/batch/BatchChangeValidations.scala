@@ -22,9 +22,9 @@ import vinyldns.api.domain.DomainValidations._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
-import vinyldns.core.domain.batch.BatchChange
+import vinyldns.core.domain.batch.{BatchChange, RecordKey}
 
 trait BatchChangeValidationsAlgebra {
 

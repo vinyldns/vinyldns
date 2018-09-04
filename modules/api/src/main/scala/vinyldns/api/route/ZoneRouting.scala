@@ -21,8 +21,9 @@ import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, Validatio
 import akka.util.Timeout
 import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.{ACLRuleInfo, Zone}
 
 import scala.concurrent.duration._
 

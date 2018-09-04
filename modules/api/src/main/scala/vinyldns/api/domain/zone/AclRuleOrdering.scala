@@ -17,7 +17,8 @@
 package vinyldns.api.domain.zone
 
 import com.aaronbedra.orchard.CIDR
-import vinyldns.api.domain.record.RecordType
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.zone.ACLRule
 
 trait ACLRuleOrdering extends Ordering[ACLRule] {
   private def sortableUserValue(rule: ACLRule) =

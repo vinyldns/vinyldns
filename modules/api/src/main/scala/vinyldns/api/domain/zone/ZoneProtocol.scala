@@ -17,13 +17,14 @@
 package vinyldns.api.domain.zone
 
 import org.joda.time.DateTime
-import vinyldns.api.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
-import vinyldns.api.domain.record.RecordSetChangeType.RecordSetChangeType
-import vinyldns.api.domain.record.RecordSetStatus.RecordSetStatus
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.record.{RecordData, RecordSet, RecordSetChange}
-import vinyldns.api.domain.zone.AccessLevel.AccessLevel
-import vinyldns.api.domain.zone.ZoneStatus.ZoneStatus
+import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
+import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.zone.{ACLRuleInfo, Zone, ZoneACL, ZoneConnection}
+import vinyldns.core.domain.zone.AccessLevel.AccessLevel
+import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
 case class ZoneACLInfo(rules: Set[ACLRuleInfo])
 

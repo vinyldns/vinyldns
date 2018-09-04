@@ -30,8 +30,8 @@ import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, C
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch.SingleChangeStatus._
 import vinyldns.api.domain.batch._
-import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record._
 
 class BatchChangeJsonProtocolSpec
     extends WordSpec

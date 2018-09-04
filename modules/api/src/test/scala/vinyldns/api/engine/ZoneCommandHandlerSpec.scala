@@ -29,11 +29,11 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.record.RecordSetChange
-import vinyldns.api.domain.zone.{ZoneChange, ZoneChangeType}
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.engine.sqs.SqsConverters.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
-import vinyldns.api.protobuf.ProtobufConversions
+import vinyldns.core.protobuf.ProtobufConversions
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext

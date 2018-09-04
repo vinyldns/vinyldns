@@ -26,8 +26,8 @@ import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.membership.{ListUsersResults, User, UserRepository}
-import vinyldns.api.route.Monitored
+import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
+import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
 

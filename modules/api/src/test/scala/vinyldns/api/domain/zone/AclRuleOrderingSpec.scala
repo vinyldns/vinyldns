@@ -18,8 +18,8 @@ package vinyldns.api.domain.zone
 
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
-import vinyldns.api.domain.record.RecordType
-import vinyldns.api.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 
 class AclRuleOrderingSpec

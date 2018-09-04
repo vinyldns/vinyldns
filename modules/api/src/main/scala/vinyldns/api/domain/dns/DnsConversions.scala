@@ -24,7 +24,7 @@ import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.core.domain.{DomainHelpers, record}
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record._
 
 import scala.collection.JavaConverters._
 import scala.util.Try

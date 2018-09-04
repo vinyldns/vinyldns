@@ -20,7 +20,8 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone._
 
 object ZoneChangeGenerator {
 

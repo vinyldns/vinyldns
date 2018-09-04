@@ -22,8 +22,8 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
-import vinyldns.api.domain.record.RecordSet
-import vinyldns.api.protobuf.ProtobufConversions
+import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._

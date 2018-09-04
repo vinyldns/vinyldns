@@ -29,7 +29,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository, BatchChangeSummaryList}
 
 class BatchChangeService(
     zoneRepository: ZoneRepository,

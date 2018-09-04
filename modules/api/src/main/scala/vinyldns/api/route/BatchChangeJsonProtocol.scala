@@ -16,7 +16,8 @@
 
 package vinyldns.api.route
 
-import cats.data._, cats.implicits._
+import cats.data._
+import cats.implicits._
 import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -24,8 +25,14 @@ import cats.implicits._
 import vinyldns.api.domain.DomainValidationError
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  SingleAddChange,
+  SingleChangeStatus,
+  SingleDeleteChange
+}
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record._
 
 trait BatchChangeJsonProtocol extends JsonValidation {
 

@@ -26,21 +26,20 @@ import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.batch.{
-  BatchChangeConverter,
-  BatchChangeRepository,
-  BatchChangeService,
-  BatchChangeValidations
-}
+import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
 import vinyldns.api.repository.dynamodb._
-import vinyldns.api.repository.{DataStoreStartupError, RepositoryName, TestDataLoader}
+import vinyldns.api.repository.{DataStoreStartupError, TestDataLoader}
 import vinyldns.api.repository.mysql.MySqlDataStoreProvider
 import vinyldns.api.route.{HealthService, VinylDNSService}
+import vinyldns.core.VinylDNSMetrics
+import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.repository.RepositoryName
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}

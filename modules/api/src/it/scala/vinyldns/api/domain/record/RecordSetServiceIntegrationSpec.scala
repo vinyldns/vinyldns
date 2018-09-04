@@ -26,7 +26,7 @@ import org.scalatest.time.{Seconds, Span}
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership.{Group, User, UserRepository}
-import vinyldns.api.domain.record.RecordType._
+import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone.{RecordSetAlreadyExists, Zone, ZoneRepository, ZoneStatus}
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository.dynamodb.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}

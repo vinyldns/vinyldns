@@ -17,11 +17,17 @@
 package vinyldns.api.domain
 
 import vinyldns.api.Interfaces.ensuring
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.record.{RecordSet, RecordType}
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.zone.AccessLevel.AccessLevel
-import vinyldns.api.domain.zone._
+import vinyldns.api.domain.zone.{
+  ACLRuleOrdering,
+  NotAuthorizedError,
+  PTRACLRuleOrdering,
+  RecordSetInfo
+}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.zone.AccessLevel.AccessLevel
+import vinyldns.core.domain.zone._
 
 object AccessValidations extends AccessValidationAlgebra {
 

@@ -23,7 +23,6 @@ import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.record.{RecordSet, RecordType}
 
-
 import scala.concurrent.duration._
 
 trait ZoneConnectionValidatorAlgebra {

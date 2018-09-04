@@ -29,7 +29,7 @@ import org.xbill.DNS
 import org.xbill.DNS.{Name, ZoneTransferIn}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record._
 
 import scala.collection.JavaConverters._
 import scala.collection._

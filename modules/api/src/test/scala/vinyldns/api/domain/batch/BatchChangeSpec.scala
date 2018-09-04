@@ -19,7 +19,7 @@ package vinyldns.api.domain.batch
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.ExistingZones
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 
 class BatchChangeSpec extends WordSpec with Matchers {

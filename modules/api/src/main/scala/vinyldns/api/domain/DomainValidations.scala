@@ -18,7 +18,7 @@ package vinyldns.api.domain
 
 import cats.implicits._, cats.data._
 import vinyldns.api.domain.ValidationImprovements._
-import vinyldns.api.domain.record.RecordType.{RecordType, _}
+import vinyldns.core.domain.record.RecordType.{RecordType, _}
 
 import scala.util.Try
 import scala.util.matching.Regex

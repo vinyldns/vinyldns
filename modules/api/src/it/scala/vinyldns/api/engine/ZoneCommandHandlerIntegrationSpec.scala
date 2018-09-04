@@ -25,7 +25,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 import vinyldns.api.domain.batch.BatchChangeRepository
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.repository.dynamodb.{

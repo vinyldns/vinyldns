@@ -17,8 +17,8 @@
 package vinyldns.api.domain
 
 import vinyldns.api.domain.batch.SupportedBatchChangeRecordTypes
-import vinyldns.api.domain.record.RecordType
-import vinyldns.api.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
 sealed trait DomainValidationError {

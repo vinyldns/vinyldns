@@ -22,8 +22,8 @@ import vinyldns.api.crypto.Crypto
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
-import vinyldns.api.domain.zone.ZoneConnection
-import vinyldns.api.repository.DataStoreConfig
+import vinyldns.core.domain.zone.ZoneConnection
+import vinyldns.core.repository.DataStoreConfig
 
 object VinylDNSConfig {
 

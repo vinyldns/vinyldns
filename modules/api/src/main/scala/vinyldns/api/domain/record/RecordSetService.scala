@@ -24,7 +24,7 @@ import vinyldns.core.domain.membership.{User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{ZoneCommandResult, ZoneRepository}
+import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 
 class RecordSetService(
     zoneRepository: ZoneRepository,

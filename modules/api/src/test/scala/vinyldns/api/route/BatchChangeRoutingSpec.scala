@@ -30,8 +30,8 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.GroupTestData
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
-import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record._
 
 import cats.effect._
 

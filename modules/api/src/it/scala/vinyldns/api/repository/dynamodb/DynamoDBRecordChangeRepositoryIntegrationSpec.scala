@@ -24,13 +24,13 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.record.{
+import vinyldns.core.domain.record.{
   ChangeSet,
   ChangeSetStatus,
   RecordSetChange,
   RecordSetChangeGenerator
 }
-import vinyldns.api.domain.zone.{Zone, ZoneStatus}
+import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 import vinyldns.api.domain.{record, zone}
 
 import scala.concurrent.duration._

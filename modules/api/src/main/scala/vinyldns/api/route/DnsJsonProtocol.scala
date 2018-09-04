@@ -18,16 +18,18 @@ package vinyldns.api.route
 
 import java.util.UUID
 
-import cats.data._, cats.implicits._
+import cats.data._
+import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import vinyldns.api.domain.DomainHelpers.ensureTrailingDot
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.api.domain.zone.RecordSetInfo
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone._
 
 trait DnsJsonProtocol extends JsonValidation {
-  import vinyldns.api.domain.record.RecordType._
+  import vinyldns.core.domain.record.RecordType._
 
   val dnsSerializers = Seq(
     ZoneSerializer,

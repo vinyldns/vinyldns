@@ -19,9 +19,10 @@ package vinyldns.api.domain.zone
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.AccessValidationAlgebra
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.engine.EngineCommandBus
-import vinyldns.api.domain.membership.{Group, GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
+import vinyldns.core.domain.zone._
 
 class ZoneService(
     zoneRepository: ZoneRepository,

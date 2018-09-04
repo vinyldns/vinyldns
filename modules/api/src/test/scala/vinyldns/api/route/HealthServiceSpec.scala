@@ -21,7 +21,7 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
-import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.core.domain.zone.ZoneRepository
 
 import cats.effect._
 

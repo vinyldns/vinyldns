@@ -23,8 +23,8 @@ import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.membership.MembershipRepository
-import vinyldns.api.route.Monitored
+import vinyldns.core.domain.membership.MembershipRepository
+import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
 

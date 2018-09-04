@@ -21,7 +21,7 @@ import org.scalacheck.Gen._
 import org.scalacheck._
 import org.scalatest.{Matchers, _}
 import org.scalatest.prop._
-import vinyldns.api.domain.record.RecordType._
+import vinyldns.core.domain.record.RecordType._
 
 class ACLSpec
     extends PropSpec

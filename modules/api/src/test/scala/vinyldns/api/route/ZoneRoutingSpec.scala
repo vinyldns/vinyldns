@@ -31,7 +31,7 @@ import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.record.RecordType
+import vinyldns.core.domain.record.RecordType
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
 
 class ZoneRoutingSpec

@@ -58,7 +58,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   private val zones = okZones
 
   private val statuses = {
-    import vinyldns.api.domain.zone.ZoneChangeStatus._
+    import vinyldns.core.domain.zone.ZoneChangeStatus._
     Pending :: Complete :: Failed :: Synced :: Nil
   }
   private val changes = for { zone <- zones; status <- statuses } yield

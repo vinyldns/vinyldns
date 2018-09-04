@@ -20,7 +20,7 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.record.RecordType._
+import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone.{InvalidRequest, PendingUpdateError, RecordSetAlreadyExists}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 

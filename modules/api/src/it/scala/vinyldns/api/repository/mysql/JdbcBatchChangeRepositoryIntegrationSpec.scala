@@ -27,7 +27,7 @@ import scalikejdbc.DB
 import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.domain.record.{AAAAData, AData}
+import vinyldns.core.domain.record.{AAAAData, AData}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 
 class JdbcBatchChangeRepositoryIntegrationSpec
@@ -47,7 +47,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   import SingleChangeStatus._
-  import vinyldns.api.domain.record.RecordType._
+  import vinyldns.core.domain.record.RecordType._
 
   object TestData {
 
