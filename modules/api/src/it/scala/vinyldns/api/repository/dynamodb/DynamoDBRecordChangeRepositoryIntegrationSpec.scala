@@ -24,14 +24,9 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.core.domain.record.{
-  ChangeSet,
-  ChangeSetStatus,
-  RecordSetChange,
-  RecordSetChangeGenerator
-}
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.record.{ChangeSet, ChangeSetStatus, RecordSetChange}
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
-import vinyldns.api.domain.{record, zone}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -128,16 +123,15 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   }.sortBy(_.id)
 
   private val changeSetA = ChangeSet(recordSetChangesA)
-  private val changeSetB = record.ChangeSet(recordSetChangesB)
+  private val changeSetB = ChangeSet(recordSetChangesB)
   private val changeSetC =
-    record.ChangeSet(recordSetChangesC).copy(status = ChangeSetStatus.Applied)
-  private val changeSetD = record
-    .ChangeSet(recordSetChangesD)
+    ChangeSet(recordSetChangesC).copy(status = ChangeSetStatus.Applied)
+  private val changeSetD = ChangeSet(recordSetChangesD)
     .copy(createdTimestamp = changeSetA.createdTimestamp + 1000) // make sure D is created AFTER A
   private val changeSets = List(changeSetA, changeSetB, changeSetC, changeSetD)
 
   //This zone is to test listing record changes in correct order
-  private val zoneC = zone.Zone(
+  private val zoneC = Zone(
     s"live-test-$user.record-changes.",
     "test@test.com",
     status = ZoneStatus.Active,
@@ -198,9 +192,9 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     } yield RecordSetChangeGenerator.forDelete(rs, zoneC, auth).copy(created = timeOrder(index + 6))
   }
 
-  private val changeSetCreateC = record.ChangeSet(recordSetChangesCreateC)
-  private val changeSetUpdateC = record.ChangeSet(recordSetChangesUpdateC)
-  private val changeSetDeleteC = record.ChangeSet(recordSetChangesDeleteC)
+  private val changeSetCreateC = ChangeSet(recordSetChangesCreateC)
+  private val changeSetUpdateC = ChangeSet(recordSetChangesUpdateC)
+  private val changeSetDeleteC = ChangeSet(recordSetChangesDeleteC)
   private val changeSetsC = List(changeSetCreateC, changeSetUpdateC, changeSetDeleteC)
   private val recordSetChanges: List[RecordSetChange] =
     (recordSetChangesCreateC ++ recordSetChangesUpdateC ++ recordSetChangesDeleteC)

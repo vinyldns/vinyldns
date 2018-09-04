@@ -23,7 +23,8 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.membership.User
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}

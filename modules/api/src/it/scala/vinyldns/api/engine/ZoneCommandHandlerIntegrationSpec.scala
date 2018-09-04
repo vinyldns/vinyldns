@@ -24,7 +24,8 @@ import fs2.{Scheduler, Stream}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
-import vinyldns.api.domain.batch.BatchChangeRepository
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.SqsConnection
@@ -35,6 +36,7 @@ import vinyldns.api.repository.dynamodb.{
   DynamoDBZoneChangeRepository
 }
 import vinyldns.api.repository.mysql.TestMySqlInstance
+import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
