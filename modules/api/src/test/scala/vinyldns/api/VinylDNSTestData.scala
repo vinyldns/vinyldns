@@ -19,11 +19,13 @@ package vinyldns.api
 import java.util.UUID
 
 import org.joda.time.DateTime
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.membership.{Group, User}
-import vinyldns.core.domain.record._
+import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetChangeGenerator}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.{Group, User}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone._
 
 trait VinylDNSTestData {
 

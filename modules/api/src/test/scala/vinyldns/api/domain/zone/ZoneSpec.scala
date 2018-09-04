@@ -20,6 +20,7 @@ import cats.scalatest.ValidatedMatchers
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 import vinyldns.api.VinylDNSTestData
+import vinyldns.core.domain.zone.{ACLRule, ZoneACL, ZoneConnection}
 
 class ZoneSpec
     extends PropSpec
@@ -27,7 +28,7 @@ class ZoneSpec
     with GeneratorDrivenPropertyChecks
     with ValidatedMatchers
     with VinylDNSTestData {
-  import AccessLevel._
+  import vinyldns.core.domain.zone.AccessLevel._
 
   val validName = "test."
   val validEmail = "test@email.com"

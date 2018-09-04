@@ -20,10 +20,11 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import org.scalatest.Matchers
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.membership._
-import vinyldns.api.domain.zone._
+import vinyldns.api.domain.membership.{GroupChangeInfo, GroupInfo, MemberInfo, UserInfo}
 import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership._
+import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
 import scala.util.Random
 

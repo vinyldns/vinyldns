@@ -28,8 +28,14 @@ import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain._
 import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, ChangeForValidation}
 import vinyldns.api.domain.batch.ChangeInputType._
-import vinyldns.api.domain.batch.SingleChangeStatus._
-import vinyldns.api.domain.batch._
+import vinyldns.api.domain.batch.{
+  AddChangeInput,
+  BatchChangeInput,
+  DeleteChangeInput,
+  InvalidBatchChangeResponses
+}
+import vinyldns.core.domain.batch.SingleChangeStatus._
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 

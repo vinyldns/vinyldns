@@ -22,6 +22,7 @@ import org.scalacheck._
 import org.scalatest.{Matchers, _}
 import org.scalatest.prop._
 import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.zone.AccessLevel
 
 class ACLSpec
     extends PropSpec
@@ -40,7 +41,7 @@ class ACLSpec
       Gen.someOf(A, AAAA, CNAME, PTR, MX, NS, SOA, SRV, TXT, SSHFP, SPF, UNKNOWN)
   }
 
-  import ACLRule._
+  import vinyldns.core.domain.zone.ACLRule._
   import AclGenerator._
   import vinyldns.api.domain.DomainValidations._
 

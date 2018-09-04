@@ -20,15 +20,16 @@ import cats.scalatest.{EitherMatchers, EitherValues}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
-import vinyldns.api.domain.batch.BatchChangeRepository
-import vinyldns.api.domain.membership.{
+import vinyldns.core.domain.membership.{
   GroupChangeRepository,
   GroupRepository,
   MembershipRepository,
   UserRepository
 }
+import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.repository.{DataAccessor, DataStore, DataStoreConfig, RepositoriesConfig}
 
 import scala.collection.JavaConverters._
 

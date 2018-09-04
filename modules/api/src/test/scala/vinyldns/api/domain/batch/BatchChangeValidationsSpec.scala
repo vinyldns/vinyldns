@@ -23,10 +23,10 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone._
 import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
 import scala.util.Random
 

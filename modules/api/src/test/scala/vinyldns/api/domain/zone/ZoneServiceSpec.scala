@@ -23,12 +23,13 @@ import org.scalatest.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.membership._
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import cats.effect._
 import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership._
+import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
 

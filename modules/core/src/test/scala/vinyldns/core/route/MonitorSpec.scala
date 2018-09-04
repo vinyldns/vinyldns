@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.core.route
 
 import java.io.IOException
 
@@ -28,8 +28,8 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import org.slf4j.Logger
-
 import cats.effect._
+
 import scala.util.Failure
 
 class MonitorSpec
@@ -130,7 +130,7 @@ class MonitorSpec
 
   "A Monitor" should {
     "have an overridden base name" in {
-      new Monitor("foo").metricBaseName.name shouldBe "vinyldns.api"
+      new Monitor("foo").metricBaseName.name shouldBe "vinyldns.core"
     }
     "increment the latency and not increment the errors on success" in {
       underTest.capture(1000L, true)

@@ -22,6 +22,7 @@ import org.scalatest._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.DomainValidations.HOST_MAX_LENGTH
+import vinyldns.core.domain.zone.{ACLRule, ACLRuleInfo, AccessLevel, ZoneACL}
 
 class ZoneACLSpec
     extends PropSpec

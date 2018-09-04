@@ -27,7 +27,6 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
-import vinyldns.api.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused}
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -35,6 +34,7 @@ import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSet
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.{CatsHelpers, Interfaces, VinylDNSTestData}
+import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
 
 import scala.concurrent.ExecutionContext
 

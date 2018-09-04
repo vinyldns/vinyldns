@@ -56,8 +56,7 @@ object Dependencies {
     "joda-time"                 %  "joda-time"                      % "2.8.1",
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV,
     "org.slf4j"                 %  "slf4j-api"                      % "1.7.7",
-    "org.scodec"                %% "scodec-bits"                    % scodecV,
-    "org.scalatest"             %% "scalatest"                      % scalaTestV % "test"
+    "org.scodec"                %% "scodec-bits"                    % scodecV
   )
 
   lazy val testDependencies = Seq(
@@ -67,7 +66,7 @@ object Dependencies {
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
     "org.scalacheck"            %% "scalacheck"                     % "1.13.4",
     "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1"
-  ) map (_ % "it, test")
+  )
 
   lazy val portalDependencies = Seq(
     "com.typesafe.play"         %% "play-json"                      % "2.6.9",

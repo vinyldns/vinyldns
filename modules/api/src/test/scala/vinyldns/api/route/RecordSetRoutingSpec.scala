@@ -28,11 +28,13 @@ import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
+import vinyldns.api.domain.zone._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.core.domain.zone._
 
 import scala.util.Random
 

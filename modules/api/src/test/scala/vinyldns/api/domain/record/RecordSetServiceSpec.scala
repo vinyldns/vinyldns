@@ -22,14 +22,15 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.membership.{ListUsersResults, UserRepository}
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
-
 import cats.effect._
+import vinyldns.core.domain.membership.{ListUsersResults, UserRepository}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{AccessLevel, ZoneRepository}
 
 class RecordSetServiceSpec
     extends WordSpec

@@ -21,6 +21,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel}
 
 class AclRuleOrderingSpec
     extends WordSpecLike

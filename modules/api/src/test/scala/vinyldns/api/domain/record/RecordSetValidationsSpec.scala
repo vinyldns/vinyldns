@@ -23,6 +23,7 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone.{InvalidRequest, PendingUpdateError, RecordSetAlreadyExists}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.record.{NSData, RecordSet, RecordSetStatus, SOAData}
 
 class RecordSetValidationsSpec
     extends WordSpec

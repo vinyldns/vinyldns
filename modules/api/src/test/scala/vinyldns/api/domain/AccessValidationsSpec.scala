@@ -20,10 +20,11 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
-import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone.{AccessLevel, NotAuthorizedError, RecordSetInfo, _}
+import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneACL}
 
 class AccessValidationsSpec
     extends WordSpecLike

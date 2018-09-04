@@ -26,8 +26,9 @@ import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.api.domain.record._
 import vinyldns.api.{AkkaTestJawn, ResultHelpers, VinylDNSTestData}
-
 import cats.effect._
+import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+
 import scala.concurrent.duration._
 
 class ZoneConnectionValidatorSpec

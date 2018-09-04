@@ -30,9 +30,10 @@ import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone._
 
 class ZoneRoutingSpec
     extends WordSpec

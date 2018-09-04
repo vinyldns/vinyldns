@@ -20,8 +20,9 @@ import cats.scalatest.EitherMatchers
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import vinyldns.api.{GroupTestData, ResultHelpers}
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError
+import vinyldns.core.domain.membership.User
 
 class MembershipValidationsSpec
     extends WordSpecLike

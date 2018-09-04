@@ -22,6 +22,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{ACLRule, ZoneACL}
 
 class ZoneValidationsSpec
     extends WordSpec

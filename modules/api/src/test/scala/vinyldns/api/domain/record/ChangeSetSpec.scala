@@ -17,6 +17,7 @@
 package vinyldns.api.domain.record
 
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.domain.record.ChangeSetStatus
 
 class ChangeSetSpec extends WordSpec with Matchers {
 

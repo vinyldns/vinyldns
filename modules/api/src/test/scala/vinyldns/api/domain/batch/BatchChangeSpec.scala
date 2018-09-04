@@ -19,8 +19,14 @@ package vinyldns.api.domain.batch
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.ExistingZones
-import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  BatchChangeStatus,
+  SingleAddChange,
+  SingleChangeStatus
+}
+import vinyldns.core.domain.record.{AData, RecordType}
+import vinyldns.core.domain.zone.Zone
 
 class BatchChangeSpec extends WordSpec with Matchers {
   private val pendingChange = SingleAddChange(
