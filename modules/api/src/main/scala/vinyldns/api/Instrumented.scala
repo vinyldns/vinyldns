@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.core
+package vinyldns.api
 
 import com.codahale.metrics.{JmxReporter, MetricRegistry}
 import nl.grons.metrics.scala.InstrumentedBuilder

@@ -24,7 +24,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.route.Monitored
+import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {

@@ -23,7 +23,7 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.VinylDNSMetrics
+import vinyldns.api.VinylDNSMetrics
 
 class PrometheusRoutingSpec
     extends WordSpec

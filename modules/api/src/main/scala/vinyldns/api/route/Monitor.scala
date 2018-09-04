@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package vinyldns.core.route
+package vinyldns.api.route
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import cats.effect._
 import nl.grons.metrics.scala.{Histogram, Meter, MetricName}
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.core.Instrumented
+import vinyldns.api.Instrumented
 
 import scala.collection._
 import scala.util.Failure

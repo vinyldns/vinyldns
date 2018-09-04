@@ -33,7 +33,7 @@ import vinyldns.core.domain.zone.{
   ZoneChangeStatus
 }
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.route.Monitored
+import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 import scala.util.Try

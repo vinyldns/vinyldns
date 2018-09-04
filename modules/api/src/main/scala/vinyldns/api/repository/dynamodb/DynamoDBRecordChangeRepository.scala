@@ -29,7 +29,7 @@ import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordChangeRepository
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.route.Monitored
+import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._

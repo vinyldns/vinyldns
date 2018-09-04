@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.core.route
+package vinyldns.api.route
 
 import java.io.IOException
 

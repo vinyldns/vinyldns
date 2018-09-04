@@ -26,7 +26,6 @@ import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.auth.{AuthPrincipalProvider, MembershipAuthPrincipalProvider}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.route.Monitored
 
 import scala.util.matching.Regex
 

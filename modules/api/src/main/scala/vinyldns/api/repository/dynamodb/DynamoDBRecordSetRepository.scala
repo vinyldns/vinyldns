@@ -27,7 +27,7 @@ import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.route.Monitored
+import vinyldns.api.route.Monitored
 
 object DynamoDBRecordSetRepository extends ProtobufConversions {
 

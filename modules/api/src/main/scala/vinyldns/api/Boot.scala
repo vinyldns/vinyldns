@@ -36,7 +36,6 @@ import vinyldns.api.repository.dynamodb._
 import vinyldns.api.repository.{DataStoreStartupError, TestDataLoader}
 import vinyldns.api.repository.mysql.MySqlDataStoreProvider
 import vinyldns.api.route.{HealthService, VinylDNSService}
-import vinyldns.core.VinylDNSMetrics
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.repository.RepositoryName

@@ -25,7 +25,7 @@ import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import com.typesafe.config.Config
 import vinyldns.api.VinylDNSConfig
-import vinyldns.core.route.Monitor
+import vinyldns.api.route.Monitor
 
 object SqsConnection {
 

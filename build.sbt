@@ -79,7 +79,7 @@ lazy val testSettings = Seq(
 
 lazy val apiSettings = Seq(
   name := "api",
-  libraryDependencies ++= compileDependencies ++ testDependencies.map(_ % "it, test"),
+  libraryDependencies ++= compileDependencies ++ testDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
   coverageMinimum := 85,
@@ -225,7 +225,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(coreBuildSettings)
   .settings(corePublishSettings)
   .settings(testSettings)
-  .settings(libraryDependencies ++= coreDependencies ++ testDependencies.map(_ % "test"))
+  .settings(libraryDependencies ++= coreDependencies ++ coreTestDependencies.map(_ % "test"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     coverageMinimum := 85,
