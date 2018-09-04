@@ -24,6 +24,7 @@ import org.scalatest.{Matchers, PropSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.zone.ZoneConnection
 
 class ZoneConnectionSpec
     extends PropSpec

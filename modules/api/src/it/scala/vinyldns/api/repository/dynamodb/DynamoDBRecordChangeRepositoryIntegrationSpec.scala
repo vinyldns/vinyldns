@@ -55,7 +55,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     "test@test.com",
     status = ZoneStatus.Active,
     connection = testConnection)
-  private val zoneB = zone.Zone(
+  private val zoneB = Zone(
     s"live-test-$user.zone-large.",
     "test@test.com",
     status = ZoneStatus.Active,
