@@ -130,7 +130,7 @@ class MonitorSpec
 
   "A Monitor" should {
     "have an overridden base name" in {
-      new Monitor("foo").metricBaseName.name shouldBe "vinyldns.core"
+      new Monitor("foo").metricBaseName.name shouldBe "vinyldns.api"
     }
     "increment the latency and not increment the errors on success" in {
       underTest.capture(1000L, true)

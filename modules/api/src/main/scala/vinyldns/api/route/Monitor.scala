@@ -88,7 +88,7 @@ object Monitor {
   * @param name The name given to the thing we are monitoring, should be unique in the system
   */
 class Monitor(val name: String) extends Instrumented {
-  override lazy val metricBaseName = MetricName("vinyldns.core")
+  override lazy val metricBaseName = MetricName("vinyldns.api")
 
   val latency: Histogram = metrics.histogram(name, "latency")
   val errors: Meter = metrics.meter(name, "errorRate")
