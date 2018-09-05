@@ -16,17 +16,6 @@ DIR=$( cd $(dirname $0) ; pwd -P )
 export GPG_TTY=$(tty)
 
 ##
-# Checking for uncommitted changes (sbt release will fail if so)
-##
-
-printf "\nchecking for uncommitted changes... \n"
-cd "$DIR" && git add . && git diff-index --quiet HEAD --
-if  [ $? != 0 ]; then
-    printf "\nerror: attempting to release with uncommitted changes\n"
-    exit 1
-fi
-
-##
 # Checking for environment variables
 ##
 

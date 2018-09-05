@@ -75,10 +75,10 @@ you should see tagged images for the VinylDNS API
 
 > Note: you'll pretty much always use the `-s https://notary.docker.io -d ~/.docker/trust` args when running notary,
 it will be easier for you to alias a command like `notarydefault` to `notary -s https://notary.docker.io -d ~/.docker/trust`
-in your bashrc 
+in your `.bashrc` 
 
 #### Generating a Personal Delegation Key
-1. cd to a directory where you will save your delegation keys and certs
+1. `cd` to a directory where you will save your delegation keys and certs
 1. Generate your private key: `openssl genrsa -out delegation.key 2048`
 1. Generate your public key: `openssl req -new -sha256 -key delegation.key -out delegation.csr`, all fields are optional,
 but when it gets to your email it makes sense to add that
@@ -89,14 +89,14 @@ but when it gets to your email it makes sense to add that
 they can upload your delegation key to the repository
 
 #### Adding a Delegation Key to a Repository
-This expects you to have the root keys and passhphrases for the Docker repositories
+This expects you to have the root keys and passphrases for the Docker repositories
 
-1. list current keys: `notary -s https://notary.docker.io -d ~/.docker/trust delegation list docker.io/vinyldns/api`
-1. add team member's public key: `notary delegation add docker.io/vinyldns/api targets/releases <team members delegation crt path> --all-paths`
-1. push key: `notary publish docker.io/vinyldns/api`
+1. List current keys: `notary -s https://notary.docker.io -d ~/.docker/trust delegation list docker.io/vinyldns/api`
+1. Add team member's public key: `notary delegation add docker.io/vinyldns/api targets/releases <team members delegation crt path> --all-paths`
+1. Push key: `notary publish docker.io/vinyldns/api`
 1. Repeat above steps for `docker.io/vinyldns/portal`
 
-Add their key id to the table below, it can be viewed with `notary -s https://notary.docker.io -d ~/.docker/trust delegation list docker.io/vinyldns/api`.
+Add their key ID to the table below, it can be viewed with `notary -s https://notary.docker.io -d ~/.docker/trust delegation list docker.io/vinyldns/api`.
 It will be the one that didn't show up when you ran step one of this section
 
 | Key ID | Name |
@@ -146,11 +146,10 @@ We are using sbt-release to run our release steps and auto-bump the version in `
 script will first run functional tests, then kick off `sbt release`, which also runs unit and integration tests before
 running the release
 
-1. Export `VINYLDNS_RELEASE` as either true or false, with false being a snapshot and not a full release. Note: a snapshot
+1. Export `VINYLDNS_RELEASE` as either "true" or "false", with false being a snapshot and not a full release. Note: a snapshot
 will not update docker latest, and will only publish core module to sonatype staging repo
 1. Follow [Docker Content Trust](#docker-content-trust) to setup a notary delegation for yourself
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
-1. Note: the release is set to fail if you have uncommitted changes
 1. Export `DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE` in your env with your notary key passphrase 
 1. Run `bin/release.sh`
 1. When it comes to the sonatype stage, you will need the passphrase handy for the signing key, [Sonatype Credentials](#sonatype-credentials)
