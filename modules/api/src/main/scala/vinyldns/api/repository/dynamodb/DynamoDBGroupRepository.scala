@@ -28,7 +28,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
 import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus}
-import vinyldns.api.route.Monitored
+import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
 

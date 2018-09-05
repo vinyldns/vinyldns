@@ -24,7 +24,7 @@ import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneChangeStatus, ZoneStatus}
-import vinyldns.api.route.Monitored
+import vinyldns.core.route.Monitored
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 

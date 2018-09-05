@@ -74,17 +74,17 @@ trait VinylDNSDirectives extends Directives {
         try {
           inner(ctx)
             .map { result =>
-              record(Monitor(name), startTime)(result)
+              record(getMonitor(name), startTime)(result)
               result
             }
             .recoverWith {
               case nf @ NonFatal(e) =>
-                record(Monitor(name), startTime)(Failure(e))
+                record(getMonitor(name), startTime)(Failure(e))
                 ctx.fail(nf)
             }
         } catch {
           case nf @ NonFatal(e) =>
-            record(Monitor(name), startTime)(Failure(e))
+            record(getMonitor(name), startTime)(Failure(e))
             ctx.fail(nf)
         }
       }
@@ -119,6 +119,8 @@ trait VinylDNSDirectives extends Directives {
     case x =>
       x
   }
+
+  private[route] def getMonitor(name: String) = Monitor(name)
 
   def ifValid[A](validation: => ValidatedNel[String, A]): Directive1[A] =
     validation match {

@@ -27,7 +27,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.membership.{GroupChange, GroupChangeRepository, ListGroupChangesResults}
 import vinyldns.core.protobuf.GroupProtobufConversions
-import vinyldns.api.route.Monitored
+import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._

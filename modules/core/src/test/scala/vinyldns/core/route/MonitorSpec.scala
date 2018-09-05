@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.core.route
 
-import java.io.IOException
-
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import cats.effect._
 import nl.grons.metrics.scala.{Histogram, Meter}
+import org.scalatest.concurrent.ScalaFutures
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import org.slf4j.Logger
-import cats.effect._
-
-import scala.util.Failure
 
 class MonitorSpec
     extends WordSpec
@@ -41,7 +36,6 @@ class MonitorSpec
 
   private val mockLatency = mock[Histogram]
   private val mockErrors = mock[Meter]
-  private val mockHttpResponse = HttpResponse()
 
   private implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
@@ -149,36 +143,6 @@ class MonitorSpec
 
       verify(mockLatency).+=(1000L)
       verify(mockErrors).mark()
-    }
-    "increment the latency and not errors when recording a successful HttpResponse" in {
-      val result = underTest.record(System.nanoTime())(mockHttpResponse)
-      result shouldBe mockHttpResponse
-
-      verify(mockLatency).+=(anyLong())
-      verifyZeroInteractions(mockErrors)
-    }
-    "increment the latency and the errors when recording a 500 HttpResponse" in {
-      val httpResponse = HttpResponse(StatusCodes.ServiceUnavailable)
-
-      val result = underTest.record(System.nanoTime())(httpResponse)
-      result shouldBe httpResponse
-
-      verify(mockLatency).+=(anyLong())
-      verify(mockErrors).mark()
-    }
-    "increment the latency and the errors when recording an exception" in {
-      an[IOException] should be thrownBy underTest.record(System.nanoTime())(
-        Failure(new IOException("fail")))
-
-      verify(mockLatency).+=(anyLong())
-      verify(mockErrors).mark()
-    }
-    "do nothing if the parameter is unexpected" in {
-      val result = underTest.record(System.nanoTime())(100)
-      result shouldBe 100
-
-      verifyZeroInteractions(mockLatency)
-      verifyZeroInteractions(mockErrors)
     }
   }
 

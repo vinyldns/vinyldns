@@ -24,7 +24,7 @@ import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.Zone
-import vinyldns.api.route.Monitored
+import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
 
