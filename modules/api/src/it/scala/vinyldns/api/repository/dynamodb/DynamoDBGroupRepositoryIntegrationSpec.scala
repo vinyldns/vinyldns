@@ -23,7 +23,7 @@ import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.membership.{Group, GroupStatus}
+import vinyldns.core.domain.membership.{Group, GroupStatus}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}

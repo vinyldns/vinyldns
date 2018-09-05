@@ -19,10 +19,11 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import vinyldns.api.Interfaces.Result
-import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.Group
 
 trait MembershipRoute extends Directives {
   this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
@@ -52,12 +53,17 @@ trait MembershipRoute extends Directives {
         post {
           monitor("Endpoint.createGroup") {
             entity(as[CreateGroupInput]) { input =>
-              ifValid(Group
-                .build(input.name, input.email, input.description, input.members, input.admins)) {
-                inputGroup: Group =>
-                  execute(membershipService.createGroup(inputGroup, authPrincipal)) { group =>
-                    complete(StatusCodes.OK, GroupInfo(group))
-                  }
+              ifValid(
+                Group
+                  .build(
+                    input.name,
+                    input.email,
+                    input.description,
+                    input.members.map(_.id),
+                    input.admins.map(_.id))) { inputGroup: Group =>
+                execute(membershipService.createGroup(inputGroup, authPrincipal)) { group =>
+                  complete(StatusCodes.OK, GroupInfo(group))
+                }
               }
             }
           }
@@ -97,8 +103,8 @@ trait MembershipRoute extends Directives {
                   input.name,
                   input.email,
                   input.description,
-                  input.members,
-                  input.admins)) { inputGroup: Group =>
+                  input.members.map(_.id),
+                  input.admins.map(_.id))) { inputGroup: Group =>
                 execute(
                   membershipService.updateGroup(
                     inputGroup.id,

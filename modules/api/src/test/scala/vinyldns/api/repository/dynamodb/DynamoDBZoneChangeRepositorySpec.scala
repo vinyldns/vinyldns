@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.zone.{ListZoneChangesResults, ZoneChange}
+import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange}
 import vinyldns.api.{ResultHelpers, VinylDNSConfig, VinylDNSTestData}
 
 import cats.effect._

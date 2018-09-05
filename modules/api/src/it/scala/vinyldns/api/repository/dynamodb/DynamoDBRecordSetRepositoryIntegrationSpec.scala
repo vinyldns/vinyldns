@@ -23,10 +23,11 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.membership.User
-import vinyldns.api.domain.record
-import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetChange}
-import vinyldns.api.domain.zone.{Zone, ZoneStatus}
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.record
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -441,7 +442,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
             name = s"$i.apply.test.",
             id = UUID.randomUUID().toString)
 
-      val pendingChanges = newRecordSets.map(RecordSetChange.forAdd(_, zones.head, okAuth))
+      val pendingChanges = newRecordSets.map(RecordSetChangeGenerator.forAdd(_, zones.head, okAuth))
       val bigPendingChangeSet = ChangeSet(pendingChanges)
 
       try {

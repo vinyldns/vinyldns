@@ -17,7 +17,8 @@
 package vinyldns.api.protobuf
 
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.membership.{Group, GroupChange, GroupChangeType}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType}
+import vinyldns.core.protobuf.GroupProtobufConversions
 
 class GroupProtobufConversionsSpec extends WordSpec with Matchers with GroupProtobufConversions {
 

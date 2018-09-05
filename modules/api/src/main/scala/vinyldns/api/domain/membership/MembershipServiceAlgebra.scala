@@ -17,7 +17,8 @@
 package vinyldns.api.domain.membership
 
 import vinyldns.api.Interfaces.Result
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership._
 
 trait MembershipServiceAlgebra {
 

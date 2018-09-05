@@ -29,10 +29,11 @@ import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.record.RecordType
+import vinyldns.api.crypto.Crypto
+import vinyldns.core.domain.record.RecordType
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
-import vinyldns.core.crypto.Crypto
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone._
 
 class ZoneRoutingSpec
     extends WordSpec
@@ -290,7 +291,7 @@ class ZoneRoutingSpec
         case ok.id | connectionOk.id =>
           val newRule = ACLRule(aclRuleInfo)
           Right(
-            ZoneChange
+            ZoneChangeGenerator
               .forUpdate(
                 ok.addACLRule(newRule),
                 ok,
@@ -313,7 +314,7 @@ class ZoneRoutingSpec
         case ok.id | connectionOk.id =>
           val rule = ACLRule(aclRuleInfo)
           Right(
-            ZoneChange
+            ZoneChangeGenerator
               .forUpdate(
                 ok.deleteACLRule(rule),
                 ok,

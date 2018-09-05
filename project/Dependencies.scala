@@ -18,9 +18,9 @@ object Dependencies {
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
     "com.typesafe.akka"         %% "akka-http-spray-json"           % akkaHttpV,
     "de.heikoseeberger"         %% "akka-http-json4s"               % "1.21.0",
-    "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
     "com.typesafe.akka"         %% "akka-remote"                    % akkaV,
     "com.typesafe.akka"         %% "akka-slf4j"                     % akkaV,
+    "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
     "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "com.aaronbedra"            %  "orchard"                        % "0.1.1",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
@@ -31,7 +31,6 @@ object Dependencies {
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
     "com.zaxxer"                %  "HikariCP"                       % "2.5.1",
     "dnsjava"                   %  "dnsjava"                        % "2.1.7",
-    "joda-time"                 %  "joda-time"                      % "2.8.1",
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.3",
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV,
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
@@ -54,20 +53,23 @@ object Dependencies {
   )
 
   lazy val coreDependencies = Seq(
-    "org.typelevel" %% "cats-effect"  % catsEffectV,
-    "com.typesafe"  %  "config"       % configV,
-    "org.scodec"    %% "scodec-bits"  % scodecV,
-    "org.scalatest" %% "scalatest"    % scalaTestV % "test"
+    "org.typelevel"             %% "cats-effect"                    % catsEffectV,
+    "com.typesafe"              %  "config"                         % configV,
+    "joda-time"                 %  "joda-time"                      % "2.8.1",
+    "org.scodec"                %% "scodec-bits"                    % scodecV
   )
 
-  lazy val testDependencies = Seq(
-    "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
-    "junit"                     %  "junit"                          % "4.12",
-    "org.mockito"               %  "mockito-core"                   % "1.10.19",
+  lazy val coreTestDependencies = Seq(
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
     "org.scalacheck"            %% "scalacheck"                     % "1.13.4",
     "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1"
-  ) map (_ % "it, test")
+  )
+
+  lazy val testDependencies = coreTestDependencies ++ Seq(
+    "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
+    "junit"                     %  "junit"                          % "4.12",
+    "org.mockito"               %  "mockito-core"                   % "1.10.19"
+  )
 
   lazy val portalDependencies = Seq(
     "com.typesafe.play"         %% "play-json"                      % "2.6.9",

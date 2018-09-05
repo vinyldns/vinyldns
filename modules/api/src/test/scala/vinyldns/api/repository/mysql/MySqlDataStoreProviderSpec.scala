@@ -18,7 +18,8 @@ package vinyldns.api.repository.mysql
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.repository.{DataStoreConfig, DataStoreStartupError}
+import vinyldns.api.repository.DataStoreStartupError
+import vinyldns.core.repository.DataStoreConfig
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
 

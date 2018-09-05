@@ -18,16 +18,12 @@ package vinyldns.api.domain
 
 import cats.implicits._, cats.data._
 import vinyldns.api.domain.ValidationImprovements._
-import vinyldns.api.domain.record.RecordType.{RecordType, _}
-
-import scala.util.Try
 import scala.util.matching.Regex
 
 /*
   Object to house common domain validations
  */
 object DomainValidations {
-  val validEmailRegex: Regex = """^([0-9a-zA-Z_\-\.]+)@([0-9a-zA-Z_\-\.]+)\.([a-zA-Z]{2,5})$""".r
   val validFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z]{1,63}|[0-9a-zA-Z]{1}[0-9a-zA-Z\-\/]{0,61}[0-9a-zA-Z]{1})\.)*$""".r
   val validIpv4Regex: Regex =
@@ -49,8 +45,6 @@ object DomainValidations {
       #([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]
       #|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])
       #)$""".stripMargin('#').replaceAll("\n", "").r
-  val PORT_MIN_VALUE: Int = 0
-  val PORT_MAX_VALUE: Int = 65535
   val HOST_MIN_LENGTH: Int = 2
   val HOST_MAX_LENGTH: Int = 255
   val TTL_MAX_LENGTH: Int = 2147483647
@@ -59,14 +53,6 @@ object DomainValidations {
   val TXT_TEXT_MAX_LENGTH: Int = 64764
   val MX_PREFERENCE_MIN_VALUE: Int = 0
   val MX_PREFERENCE_MAX_VALUE: Int = 65535
-
-  def validateEmail(email: String): ValidatedNel[DomainValidationError, String] =
-    /*
-     Basic e-mail checking that also blocks some positive e-mails (by RFC standards)
-     (eg. e-mails containing hex and special characters.)
-     */
-    if (validEmailRegex.findFirstIn(email).isDefined) email.validNel
-    else InvalidEmail(email).invalidNel
 
   def validateHostName(name: String): ValidatedNel[DomainValidationError, String] = {
     /*
@@ -103,15 +89,6 @@ object DomainValidations {
       .map(_.validNel)
       .getOrElse(InvalidIpv6Address(address).invalidNel)
 
-  def validatePort(port: String): ValidatedNel[DomainValidationError, String] =
-    Try(port.toInt)
-      .map {
-        case ok if ok >= PORT_MIN_VALUE && ok <= PORT_MAX_VALUE => port.validNel
-        case outOfRange =>
-          InvalidPortNumber(outOfRange.toString, PORT_MIN_VALUE, PORT_MAX_VALUE).invalidNel
-      }
-      .getOrElse(InvalidPortNumber(port, PORT_MIN_VALUE, PORT_MAX_VALUE).invalidNel)
-
   def validateStringLength(
       value: Option[String],
       minInclusive: Option[Int],
@@ -127,22 +104,6 @@ object DomainValidations {
     if (minInclusive.forall(m => value.length >= m) && value.length <= maxInclusive)
       value.validNel
     else InvalidLength(value, minInclusive.getOrElse(0), maxInclusive).invalidNel
-
-  def validateKnownRecordTypes(
-      types: Set[RecordType]): ValidatedNel[DomainValidationError, Set[RecordType]] = {
-    val a: List[ValidatedNel[DomainValidationError, RecordType]] =
-      types.toList.map(validateKnownRecordType)
-    a.sequence.map(_.toSet)
-  }
-
-  def validateKnownRecordType(rType: RecordType): ValidatedNel[DomainValidationError, RecordType] =
-    rType match {
-      case UNKNOWN => InvalidRecordType(rType.toString).invalidNel
-      case _ => rType.validNel
-    }
-
-  def validateTrailingDot(value: String): ValidatedNel[DomainValidationError, String] =
-    if (value.endsWith(".")) value.validNel else InvalidDomainName(value).invalidNel
 
   def validateTTL(ttl: Long): ValidatedNel[DomainValidationError, Long] =
     if (ttl >= TTL_MIN_LENGTH && ttl <= TTL_MAX_LENGTH) ttl.validNel

@@ -16,9 +16,9 @@
 
 package vinyldns.api.domain.batch
 
-import vinyldns.api.domain.dns.DnsConversions._
-import vinyldns.api.domain.record.RecordData
-import vinyldns.api.domain.record.RecordType._
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.record.RecordData
+import vinyldns.core.domain.record.RecordType._
 
 final case class BatchChangeInput(comments: Option[String], changes: List[ChangeInput])
 

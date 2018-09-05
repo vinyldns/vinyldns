@@ -18,8 +18,8 @@ package vinyldns.api.route
 
 import org.json4s.JValue
 import cats.data._, cats.implicits._
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.zone.{ACLRule, ACLRuleInfo, AccessLevel}
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.zone.{ACLRule, ACLRuleInfo, AccessLevel}
 
 trait ACLJsonProtocol extends JsonValidation {
 

@@ -25,7 +25,7 @@ import cats.data.ValidatedNel
 import cats.effect._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 
 import scala.concurrent.duration._
 import scala.util.Failure

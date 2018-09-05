@@ -18,9 +18,10 @@ package vinyldns.api.domain
 
 import cats.implicits._
 import com.aaronbedra.orchard.CIDR
-import vinyldns.api.domain.record.RecordType
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.zone.{InvalidRequest, Zone}
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.api.domain.zone.InvalidRequest
+import vinyldns.core.domain.zone.Zone
 
 import scala.util.Try
 

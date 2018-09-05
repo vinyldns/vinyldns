@@ -21,7 +21,8 @@ import cats.syntax.all._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 

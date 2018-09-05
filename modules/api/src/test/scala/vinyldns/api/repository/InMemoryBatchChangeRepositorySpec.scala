@@ -19,10 +19,10 @@ package vinyldns.api.repository
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.CatsHelpers
-import vinyldns.api.domain.batch.SingleChangeStatus.Pending
-import vinyldns.api.domain.batch._
-import vinyldns.api.domain.record.AData
-import vinyldns.api.domain.record.RecordType._
+import vinyldns.core.domain.batch.SingleChangeStatus.Pending
+import vinyldns.core.domain.batch._
+import vinyldns.core.domain.record.AData
+import vinyldns.core.domain.record.RecordType._
 
 class InMemoryBatchChangeRepositorySpec extends WordSpec with Matchers with CatsHelpers {
 

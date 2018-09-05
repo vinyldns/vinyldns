@@ -19,7 +19,7 @@ package vinyldns.api.domain.zone
 import cats.scalatest.ValidatedMatchers
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.record._
 
 class ZoneRecordValidationsSpec
     extends WordSpec

@@ -18,8 +18,11 @@ package vinyldns.api.domain.zone
 
 import vinyldns.api.domain.dns.DnsConversions._
 import vinyldns.api.domain
-import vinyldns.api.domain.record.{RecordSet, RecordSetChange}
-import vinyldns.api.domain.record.RecordType.RecordType
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
+import vinyldns.api.domain.record.RecordSetHelpers._
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.zone.{Zone, ZoneChange}
 
 object ZoneView {
 
@@ -45,15 +48,15 @@ case class ZoneView(zone: Zone, recordSetsMap: Map[(String, RecordType), RecordS
   def diff(otherView: ZoneView): Seq[RecordSetChange] = {
 
     def toAddRecordSetChange(recordSet: RecordSet): RecordSetChange =
-      RecordSetChange.forSyncAdd(recordSet, zone)
+      RecordSetChangeGenerator.forSyncAdd(recordSet, zone)
 
     def toDeleteRecordSetChange(recordSet: RecordSet): RecordSetChange =
-      RecordSetChange.forSyncDelete(recordSet, zone)
+      RecordSetChangeGenerator.forSyncDelete(recordSet, zone)
 
     def toUpdateRecordSetChange(newRecordSet: RecordSet, oldRecordSet: RecordSet): RecordSetChange =
-      RecordSetChange.forSyncUpdate(oldRecordSet, newRecordSet, zone)
+      RecordSetChangeGenerator.forSyncUpdate(oldRecordSet, newRecordSet, zone)
 
-    def areDifferent(left: RecordSet, right: RecordSet): Boolean = !left.matches(right, zone.name)
+    def areDifferent(left: RecordSet, right: RecordSet): Boolean = !matches(left, right, zone.name)
 
     def includeRecordSetIfChanged(key: (String, RecordType)): Option[RecordSetChange] =
       for {

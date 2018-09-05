@@ -18,8 +18,9 @@ package vinyldns.api.protobuf
 
 import org.joda.time.DateTime
 import org.scalatest.{Assertion, Matchers, OptionValues, WordSpec}
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone._
+import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._

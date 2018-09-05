@@ -18,8 +18,7 @@ package vinyldns.api.repository
 
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.domain.batch
-import vinyldns.api.domain.batch._
+import vinyldns.core.domain.batch._
 
 import scala.collection.concurrent
 import cats.effect._
@@ -67,7 +66,7 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
       } yield changes
 
       storedChange.map { sc =>
-        batch.BatchChange(
+        BatchChange(
           sc.userId,
           sc.userName,
           sc.comments,
@@ -105,7 +104,7 @@ object InMemoryBatchChangeRepository extends BatchChangeRepository {
       sc <- userBatchChanges
       ids = sc.changes
       changes = ids.flatMap(singleChangesMap.get)
-      batchChange = batch.BatchChange(
+      batchChange = BatchChange(
         sc.userId,
         sc.userName,
         sc.comments,

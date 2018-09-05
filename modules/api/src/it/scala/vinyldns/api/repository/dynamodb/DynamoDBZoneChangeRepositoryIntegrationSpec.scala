@@ -23,8 +23,8 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.membership.User
-import vinyldns.api.domain.zone._
+import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -58,7 +58,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   private val zones = okZones
 
   private val statuses = {
-    import vinyldns.api.domain.zone.ZoneChangeStatus._
+    import vinyldns.core.domain.zone.ZoneChangeStatus._
     Pending :: Complete :: Failed :: Synced :: Nil
   }
   private val changes = for { zone <- zones; status <- statuses } yield

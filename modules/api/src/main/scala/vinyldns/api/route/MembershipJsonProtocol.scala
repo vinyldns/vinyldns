@@ -23,6 +23,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s._
 import vinyldns.api.domain.membership._
+import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus}
 
 object MembershipJsonProtocol {
   final case class CreateGroupInput(
