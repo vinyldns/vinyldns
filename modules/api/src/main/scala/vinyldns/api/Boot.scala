@@ -76,13 +76,30 @@ object Boot extends App {
           .get[BatchChangeRepository](RepositoryName.batchChange)
           .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
       // TODO this also will all be removed with dynamic loading
-      userRepo <- IO(DynamoDBUserRepository())
-      groupRepo <- IO(DynamoDBGroupRepository())
-      membershipRepo <- IO(DynamoDBMembershipRepository())
-      groupChangeRepo <- IO(DynamoDBGroupChangeRepository())
-      recordSetRepo <- IO(DynamoDBRecordSetRepository())
-      recordChangeRepo <- IO(DynamoDBRecordChangeRepository())
-      zoneChangeRepo <- IO(DynamoDBZoneChangeRepository())
+      userRepo <- IO(
+        DynamoDBUserRepository(VinylDNSConfig.usersStoreConfig, VinylDNSConfig.dynamoConfig))
+      groupRepo <- IO(
+        DynamoDBGroupRepository(VinylDNSConfig.groupsStoreConfig, VinylDNSConfig.dynamoConfig))
+      membershipRepo <- IO(
+        DynamoDBMembershipRepository(
+          VinylDNSConfig.membershipStoreConfig,
+          VinylDNSConfig.dynamoConfig))
+      groupChangeRepo <- IO(
+        DynamoDBGroupChangeRepository(
+          VinylDNSConfig.groupChangesStoreConfig,
+          VinylDNSConfig.dynamoConfig))
+      recordSetRepo <- IO(
+        DynamoDBRecordSetRepository(
+          VinylDNSConfig.recordSetStoreConfig,
+          VinylDNSConfig.dynamoConfig))
+      recordChangeRepo <- IO(
+        DynamoDBRecordChangeRepository(
+          VinylDNSConfig.recordChangeStoreConfig,
+          VinylDNSConfig.dynamoConfig))
+      zoneChangeRepo <- IO(
+        DynamoDBZoneChangeRepository(
+          VinylDNSConfig.zoneChangeStoreConfig,
+          VinylDNSConfig.dynamoConfig))
       _ <- TestDataLoader.loadTestData(userRepo, groupRepo, membershipRepo)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
