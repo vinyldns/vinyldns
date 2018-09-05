@@ -24,7 +24,7 @@ import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.membership.MembershipRepository
-import vinyldns.api.route.Monitored
+import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
 

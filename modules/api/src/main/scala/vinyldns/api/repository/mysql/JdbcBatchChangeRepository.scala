@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.batch._
 import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
-import vinyldns.api.route.Monitored
+import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 /**

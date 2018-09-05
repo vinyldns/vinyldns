@@ -32,7 +32,6 @@ object Dependencies {
     "com.zaxxer"                %  "HikariCP"                       % "2.5.1",
     "dnsjava"                   %  "dnsjava"                        % "2.1.7",
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.3",
-    "nl.grons"                  %% "metrics-scala"                  % metricsScalaV,
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.json4s"                %% "json4s-ext"                     % "3.5.3",
@@ -56,19 +55,20 @@ object Dependencies {
     "org.typelevel"             %% "cats-effect"                    % catsEffectV,
     "com.typesafe"              %  "config"                         % configV,
     "joda-time"                 %  "joda-time"                      % "2.8.1",
-    "org.scodec"                %% "scodec-bits"                    % scodecV
+    "org.scodec"                %% "scodec-bits"                    % scodecV,
+    "nl.grons"                  %% "metrics-scala"                  % metricsScalaV
   )
 
   lazy val coreTestDependencies = Seq(
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
     "org.scalacheck"            %% "scalacheck"                     % "1.13.4",
-    "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1"
+    "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1",
+    "org.mockito"               %  "mockito-core"                   % "1.10.19"
   )
 
   lazy val testDependencies = coreTestDependencies ++ Seq(
     "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
-    "junit"                     %  "junit"                          % "4.12",
-    "org.mockito"               %  "mockito-core"                   % "1.10.19"
+    "junit"                     %  "junit"                          % "4.12"
   )
 
   lazy val portalDependencies = Seq(
