@@ -64,14 +64,14 @@ object Dependencies {
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
   )
 
-  lazy val coreTestDependencies = Seq(
+  lazy val commonTestDependencies = Seq(
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
     "org.scalacheck"            %% "scalacheck"                     % "1.13.4",
     "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1",
     "org.mockito"               %  "mockito-core"                   % "1.10.19"
   )
 
-  lazy val testDependencies = coreTestDependencies ++ Seq(
+  lazy val apiTestDependencies = commonTestDependencies ++ Seq(
     "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
     "junit"                     %  "junit"                          % "4.12"
   )
