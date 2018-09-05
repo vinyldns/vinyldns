@@ -5,7 +5,6 @@
 #
 # Necessary environment variables:
 #   DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE - passphrase for notary delegation key
-#   VINYLDNS_RELEASE - whether the release is a full release or a snapshot: true or false
 #
 # sbt release will auto-bump version.sbt and make a commit on your local
 #
@@ -18,13 +17,19 @@ DIR=$( cd $(dirname $0) ; pwd -P )
 export GPG_TTY=$(tty)
 
 ##
-# Checking for environment variables
+# Checking for uncommitted changes
 ##
 
-printf "\nchecking for VINYLDNS_RELEASE (true or false)... \n"
-if [[ -z "${VINYLDNS_RELEASE}" ]]; then
-    printf "\nnote: VINYLDNS_RELEASE not found, release will assume it is a snapshot and not a full release...\n"
+printf "\nchecking for uncommitted changes... \n"
+if ! (cd "$DIR" && git add . && git diff-index --quiet HEAD --)
+then
+    printf "\nerror: attempting to release with uncommitted changes\n"
+    exit 1
 fi
+
+##
+# Checking for environment variables
+##
 
 printf "\nchecking for notary key passphrase in env... \n"
 if [[ -z "${DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE}" ]]; then

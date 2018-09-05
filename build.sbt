@@ -11,11 +11,6 @@ resolvers ++= additionalResolvers
 
 lazy val IntegrationTest = config("it") extend(Test)
 
-lazy val isRelease = sys.env.get("VINYLDNS_RELEASE") match {
-  case Some("true") => true
-  case _ => false
-}
-
 // Needed because we want scalastyle for integration tests which is not first class
 val codeStyleIntegrationTest = taskKey[Unit]("enforce code style then integration test")
 def scalaStyleIntegrationTest: Seq[Def.Setting[_]] = {
@@ -113,7 +108,6 @@ lazy val apiDockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jdk",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "api",
-  dockerUpdateLatest := isRelease,
   dockerExposedPorts := Seq(9000),
   dockerEntrypoint := Seq("/opt/docker/bin/api"),
   dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
@@ -140,7 +134,6 @@ lazy val portalDockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jdk",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "portal",
-  dockerUpdateLatest := isRelease,
   dockerExposedPorts := Seq(9001),
   dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
   dockerExposedVolumes := Seq("/opt/docker/conf"), // mount extra config to the classpath
@@ -223,13 +216,6 @@ lazy val corePublishSettings = Seq(
   autoAPIMappings := true,
   publish in Docker := {},
   mainClass := None,
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
-  },
   homepage := Some(url("https://vinyldns.io")),
   scmInfo := Some(
     ScmInfo(
@@ -340,43 +326,72 @@ lazy val docs = (project in file("modules/docs"))
 
 // release stages
 
+val setReleaseSettings = ReleaseStep(action = oldState => {
+  // extract the build state
+  val extracted = Project.extract(oldState)
+  import extracted._
+  val v = extracted.get(Keys.version)
+  val snap = v.endsWith("SNAPSHOT")
+  if (!snap) {
+    // set dockerUpdateLatest to true
+    val stateWithDockerLatest = appendWithSession(Seq(dockerUpdateLatest := true), oldState)
+
+    // set sonatype publish setting
+    val publishToSettings = Some("releases" at "https://oss.sonatype.org/" + "service/local/staging/deploy/maven2")
+    val stateWithPublishTo = appendWithSession(Seq(publishTo := publishToSettings), stateWithDockerLatest)
+
+    // create sonatypeReleaseCommand with releaseSonatype
+    val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
+      "project core" ::
+      "publish" ::
+      "releaseSonatype" ::
+      _
+    }
+    stateWithPublishTo.copy(definedCommands = stateWithPublishTo.definedCommands :+ sonatypeCommand)
+  } else {
+    // set sonatype publish setting
+    val publishToSettings = Some("snapshots" at "https://oss.sonatype.org/" + "content/repositories/snapshots")
+    val stateWithPublishTo = appendWithSession(Seq(publishTo := publishToSettings), oldState)
+
+    // create sonatypeReleaseCommand without releaseSonatype
+    val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
+      "project core" ::
+        "publish" ::
+        _
+    }
+    stateWithPublishTo.copy(definedCommands = stateWithPublishTo.definedCommands :+ sonatypeCommand)
+  }
+})
+
 lazy val initReleaseStage = Seq[ReleaseStep](
   releaseStepCommand("project root"), // use version.sbt file from root
   inquireVersions, // have a developer confirm versions
-  setReleaseVersion // set version in context
+  setReleaseVersion,
+  setReleaseSettings
 )
 
 lazy val validateVerifyReleaseStage = Seq[ReleaseStep](
-  releaseStepCommand("project root"),
-  releaseStepCommandAndRemaining("validate"),
-  releaseStepCommandAndRemaining("verify"),
+  releaseStepCommandAndRemaining(";project root;validate;verify")
 )
 
-lazy val dockerReleaseStage = Seq[ReleaseStep](
-  releaseStepCommandAndRemaining(";project api;docker:publish"), // publish api and portal images to Docker Hub
+lazy val publishStage = Seq[ReleaseStep](
+  releaseStepCommandAndRemaining(";project api;docker:publish"),
   releaseStepCommandAndRemaining(";project portal;docker:publish"),
+  releaseStepCommandAndRemaining(";sonatypeReleaseCommand")
 )
-
-lazy val sonatypeStage = if (isRelease) {
-  Seq[ReleaseStep](
-    releaseStepCommandAndRemaining(";project core;publish"),
-    releaseStepCommandAndRemaining(";project core;sonatypeRelease")
-  )} else {
-    Seq[ReleaseStep](releaseStepCommandAndRemaining(";project core;publish"))
-  }
 
 lazy val finalReleaseStage = Seq[ReleaseStep] (
   releaseStepCommand("project root"), // use version.sbt file from root
-  tagRelease, // tag latest commit with published version
+  commitReleaseVersion,
+  tagRelease,
   setNextVersion,
-  commitNextVersion // commit new version.sbt
+  commitNextVersion
 )
 
 releaseProcess :=
   initReleaseStage ++
   validateVerifyReleaseStage ++
-  dockerReleaseStage ++
-  sonatypeStage ++
+  publishStage ++
   finalReleaseStage
 
 // Validate runs static checks and compile to make sure we can go
