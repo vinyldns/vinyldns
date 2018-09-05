@@ -418,11 +418,13 @@ releaseProcess :=
 addCommandAlias("validate-api",
   ";project api; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
     "it:scalastyle; compile; test:compile; it:compile")
+addCommandAlias("validate-dynamo",
+  ";project dynamo; clean; headerCheck; test:headerCheck; scalastyle; test:scalastyle; compile; test:compile")
 addCommandAlias("validate-core",
   ";project core; clean; headerCheck; test:headerCheck; scalastyle; test:scalastyle; compile; test:compile")
 addCommandAlias("validate-portal",
   ";project portal; clean; headerCheck; test:headerCheck; compile; test:compile; createJsHeaders; checkJsHeaders")
-addCommandAlias("validate", ";validate-core;validate-api;validate-portal")
+addCommandAlias("validate", ";validate-core;validate-dynamo;validate-api;validate-portal")
 
 // Verify runs all tests and code coverage
 addCommandAlias("verify",
