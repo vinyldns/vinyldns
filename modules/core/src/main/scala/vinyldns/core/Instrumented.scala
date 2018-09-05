@@ -23,10 +23,10 @@ object VinylDNSMetrics {
 
   val metricsRegistry: MetricRegistry = new MetricRegistry
 
-  // Output all VinylDNS metrics as jmx under the "vinyldns.api" domain as milliseconds
+  // Output all VinylDNS metrics as jmx under the "vinyldns.core" domain as milliseconds
   JmxReporter
     .forRegistry(metricsRegistry)
-    .inDomain("vinyldns.api")
+    .inDomain("vinyldns.core")
     .build()
     .start()
 }
