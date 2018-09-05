@@ -13,6 +13,8 @@
 printf "\nnote: follow the guides in MAINTAINERS.md to setup notary delegation (Docker) and get sonatype key (Maven) \n"
 
 DIR=$( cd $(dirname $0) ; pwd -P )
+
+# gpg sbt plugin fails if this is not set
 export GPG_TTY=$(tty)
 
 ##
@@ -36,16 +38,16 @@ fi
 
 printf "\nrunning api func tests... \n"
 sh "$DIR"/remove-vinyl-containers.sh
-cd "$DIR" && sh "$DIR"/func-test-api.sh
-if  [ $? != 0 ]; then
+if ! sh "$DIR"/func-test-api.sh
+then
     printf "\nerror: bin/func-test-api.sh failed \n"
     exit 1
 fi
 sh "$DIR"/remove-vinyl-containers.sh
 
 printf "\nrunning portal func tests... \n"
-cd "$DIR" && sh "$DIR"/func-test-portal.sh
-if  [ $? != 0 ]; then
+if ! sh "$DIR"/func-test-portal.sh
+then
     printf "\nerror: bin/func-test-portal.sh failed \n"
     exit 1
 fi
