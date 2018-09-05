@@ -37,16 +37,16 @@ fi
 ##
 
 printf "\nrunning api func tests... \n"
-sh "$DIR"/remove-vinyl-containers.sh
-if ! sh "$DIR"/func-test-api.sh
+"$DIR"/remove-vinyl-containers.sh
+if ! "$DIR"/func-test-api.sh
 then
     printf "\nerror: bin/func-test-api.sh failed \n"
     exit 1
 fi
-sh "$DIR"/remove-vinyl-containers.sh
+"$DIR"/remove-vinyl-containers.sh
 
 printf "\nrunning portal func tests... \n"
-if ! sh "$DIR"/func-test-portal.sh
+if ! "$DIR"/func-test-portal.sh
 then
     printf "\nerror: bin/func-test-portal.sh failed \n"
     exit 1
