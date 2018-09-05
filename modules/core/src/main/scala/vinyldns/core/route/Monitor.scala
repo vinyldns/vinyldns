@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.core.route
 
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import cats.effect._
 import nl.grons.metrics.scala.{Histogram, Meter, MetricName}
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.Instrumented
+import vinyldns.core.Instrumented
 
 import scala.collection._
-import scala.util.Failure
 
 trait Monitored {
 
@@ -88,43 +85,13 @@ object Monitor {
   * @param name The name given to the thing we are monitoring, should be unique in the system
   */
 class Monitor(val name: String) extends Instrumented {
-  override lazy val metricBaseName = MetricName("vinyldns.api")
+  override lazy val metricBaseName = MetricName("vinyldns.core")
 
   val latency: Histogram = metrics.histogram(name, "latency")
   val errors: Meter = metrics.meter(name, "errorRate")
   val logger: Logger = LoggerFactory.getLogger(classOf[Monitor])
 
   def duration(startTimeInMillis: Long): Long = System.currentTimeMillis() - startTimeInMillis
-
-  // used to record stats about an http request / response
-  def record(startTime: Long): Any => Any = {
-    case res: Complete =>
-      capture(duration(startTime), res.response.status.intValue < 500)
-      res
-
-    case rej: Rejected =>
-      capture(duration(startTime), success = true)
-      rej
-
-    case resp: HttpResponse =>
-      capture(duration(startTime), resp.status.intValue < 500)
-      resp
-
-    case Failure(t) =>
-      fail(duration(startTime))
-      throw t
-
-    case f: akka.actor.Status.Failure =>
-      fail(duration(startTime))
-      f
-
-    case e: Throwable =>
-      fail(duration(startTime))
-      throw e
-
-    case x =>
-      x
-  }
 
   def capture(duration: Long, success: Boolean): Unit = {
     logger.info(Monitor.logEntry(name, duration, success))

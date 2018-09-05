@@ -25,7 +25,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodbv2.model._
 import com.amazonaws.services.dynamodbv2.util.TableUtils
 import org.slf4j.Logger
-import vinyldns.api.VinylDNSMetrics
+import vinyldns.core.VinylDNSMetrics
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global

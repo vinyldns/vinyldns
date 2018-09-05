@@ -18,6 +18,7 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
+import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import cats.data.Validated.{Invalid, Valid}
@@ -26,6 +27,7 @@ import cats.effect._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.route.Monitor
 
 import scala.concurrent.duration._
 import scala.util.Failure
@@ -72,21 +74,51 @@ trait VinylDNSDirectives extends Directives {
         try {
           inner(ctx)
             .map { result =>
-              getMonitor(name).record(startTime)(result)
+              record(getMonitor(name), startTime)(result)
               result
             }
             .recoverWith {
               case nf @ NonFatal(e) =>
-                getMonitor(name).record(startTime)(Failure(e))
+                record(getMonitor(name), startTime)(Failure(e))
                 ctx.fail(nf)
             }
         } catch {
           case nf @ NonFatal(e) =>
-            getMonitor(name).record(startTime)(Failure(e))
+            record(getMonitor(name), startTime)(Failure(e))
             ctx.fail(nf)
         }
       }
     }
+
+  // used to record stats about an http request / response
+  def record(monitor: Monitor, startTime: Long): Any => Any = {
+    case res: Complete =>
+      monitor.capture(monitor.duration(startTime), res.response.status.intValue < 500)
+      res
+
+    case rej: Rejected =>
+      monitor.capture(monitor.duration(startTime), success = true)
+      rej
+
+    case resp: HttpResponse =>
+      monitor.capture(monitor.duration(startTime), resp.status.intValue < 500)
+      resp
+
+    case Failure(t) =>
+      monitor.fail(monitor.duration(startTime))
+      throw t
+
+    case f: akka.actor.Status.Failure =>
+      monitor.fail(monitor.duration(startTime))
+      f
+
+    case e: Throwable =>
+      monitor.fail(monitor.duration(startTime))
+      throw e
+
+    case x =>
+      x
+  }
 
   private[route] def getMonitor(name: String) = Monitor(name)
 
