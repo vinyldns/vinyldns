@@ -329,16 +329,13 @@ lazy val docs = (project in file("modules/docs"))
 val setReleaseSettings = ReleaseStep(action = oldState => {
   // extract the build state
   val extracted = Project.extract(oldState)
-  import extracted._
   val v = extracted.get(Keys.version)
   val snap = v.endsWith("SNAPSHOT")
   if (!snap) {
-    // set dockerUpdateLatest to true
-    val stateWithDockerLatest = appendWithSession(Seq(dockerUpdateLatest := true), oldState)
-
-    // set sonatype publish setting
     val publishToSettings = Some("releases" at "https://oss.sonatype.org/" + "service/local/staging/deploy/maven2")
-    val stateWithPublishTo = appendWithSession(Seq(publishTo := publishToSettings), stateWithDockerLatest)
+    val newState = extracted.appendWithSession(Seq(dockerUpdateLatest in api := true,
+      dockerUpdateLatest in portal := true,
+      publishTo in core := publishToSettings), oldState)
 
     // create sonatypeReleaseCommand with releaseSonatype
     val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
@@ -347,11 +344,10 @@ val setReleaseSettings = ReleaseStep(action = oldState => {
       "releaseSonatype" ::
       _
     }
-    stateWithPublishTo.copy(definedCommands = stateWithPublishTo.definedCommands :+ sonatypeCommand)
+    newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
   } else {
-    // set sonatype publish setting
     val publishToSettings = Some("snapshots" at "https://oss.sonatype.org/" + "content/repositories/snapshots")
-    val stateWithPublishTo = appendWithSession(Seq(publishTo := publishToSettings), oldState)
+    val stateWithPublishTo = extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
 
     // create sonatypeReleaseCommand without releaseSonatype
     val sonatypeCommand = Command.command("sonatypeReleaseCommand") {

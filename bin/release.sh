@@ -16,6 +16,9 @@ DIR=$( cd $(dirname $0) ; pwd -P )
 # gpg sbt plugin fails if this is not set
 export GPG_TTY=$(tty)
 
+# force image signing
+export DOCKER_CONTENT_TRUST=1
+
 ##
 # Checking for uncommitted changes
 ##
