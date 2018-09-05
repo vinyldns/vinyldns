@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import com.amazonaws.services.dynamodbv2.model.{BatchWriteItemResult, _}
 import org.mockito.ArgumentCaptor
@@ -22,27 +22,24 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
+import vinyldns.core.TestMembershipData._
 
 import scala.collection.JavaConverters._
 import cats.effect._
+import vinyldns.dynamo.DynamoTestConfig
+
 import scala.concurrent.duration.FiniteDuration
 
 class DynamoDBMembershipRepositorySpec
     extends WordSpec
     with MockitoSugar
     with Matchers
-    with GroupTestData
-    with ResultHelpers
     with ScalaFutures
     with BeforeAndAfterEach {
 
-  private implicit val defaultPatience: PatienceConfig =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
-  private val membershipStoreConfig = VinylDNSConfig.membershipStoreConfig
-  private val membershipTable = VinylDNSConfig.membershipStoreConfig.getString("dynamo.tableName")
+  private val membershipStoreConfig = DynamoTestConfig.membershipStoreConfig
+  private val membershipTable = membershipStoreConfig.getString("dynamo.tableName")
   private val dynamoDBHelper = mock[DynamoDBHelper]
   class TestDynamoDBMembershipRepository
       extends DynamoDBMembershipRepository(membershipStoreConfig, dynamoDBHelper) {}
@@ -82,7 +79,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = await[Set[String]](store.addMembers(okGroup.id, members))
+      val response = store.addMembers(okGroup.id, members).unsafeRunSync()
 
       verify(dynamoDBHelper, times(3)).batchWriteItem(
         any[String],
@@ -113,7 +110,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = await[Set[String]](store.addMembers(okGroup.id, members))
+      val response = store.addMembers(okGroup.id, members).unsafeRunSync()
 
       verify(dynamoDBHelper, times(1)).batchWriteItem(
         any[String],
@@ -139,8 +136,8 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = store.addMembers(okGroup.id, members).unsafeToFuture()
-      whenReady(response.failed)(_ shouldBe a[RuntimeException])
+      val response = store.addMembers(okGroup.id, members)
+      a[RuntimeException] shouldBe thrownBy(response.unsafeRunSync())
     }
   }
 
@@ -158,7 +155,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = await[Set[String]](store.removeMembers(okGroup.id, members))
+      val response = store.removeMembers(okGroup.id, members).unsafeRunSync()
 
       verify(dynamoDBHelper, times(3)).batchWriteItem(
         any[String],
@@ -189,7 +186,7 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = await[Set[String]](store.removeMembers(okGroup.id, members))
+      val response = store.removeMembers(okGroup.id, members).unsafeRunSync()
 
       verify(dynamoDBHelper, times(1)).batchWriteItem(
         any[String],
@@ -215,8 +212,8 @@ class DynamoDBMembershipRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val response = store.removeMembers(okGroup.id, members).unsafeToFuture()
-      whenReady(response.failed)(_ shouldBe a[RuntimeException])
+      val response = store.removeMembers(okGroup.id, members)
+      a[RuntimeException] shouldBe thrownBy(response.unsafeRunSync())
     }
   }
 
@@ -228,7 +225,7 @@ class DynamoDBMembershipRepositorySpec
       when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
       val store = new TestDynamoDBMembershipRepository
-      val response = await[Set[String]](store.getGroupsForUser(okUser.id))
+      val response = store.getGroupsForUser(okUser.id).unsafeRunSync()
       verify(dynamoDBHelper).query(any[QueryRequest])
       response shouldBe empty
     }
@@ -241,7 +238,7 @@ class DynamoDBMembershipRepositorySpec
       when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
       val store = new TestDynamoDBMembershipRepository
-      val response = await[Set[String]](store.getGroupsForUser(okUser.id))
+      val response = store.getGroupsForUser(okUser.id).unsafeRunSync()
       verify(dynamoDBHelper).query(any[QueryRequest])
       response should contain theSameElementsAs expected
     }

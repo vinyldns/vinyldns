@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import com.amazonaws.services.dynamodbv2.model._
 import org.mockito.ArgumentCaptor
@@ -23,27 +23,26 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.domain.record.{ChangeSet, RecordSetChange}
-import vinyldns.core.domain.zone.Zone
-import vinyldns.api.{ResultHelpers, VinylDNSConfig, VinylDNSTestData}
-
+import vinyldns.core.domain.record.ChangeSet
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
 import cats.effect._
+import vinyldns.dynamo.DynamoTestConfig
+
 import scala.concurrent.duration.FiniteDuration
 
 class DynamoDBRecordChangeRepositorySpec
     extends WordSpec
     with MockitoSugar
     with Matchers
-    with VinylDNSTestData
-    with ResultHelpers
     with ScalaFutures
     with BeforeAndAfterEach {
 
   private val dynamoDBHelper = mock[DynamoDBHelper]
-  private val recordSetconfig = VinylDNSConfig.recordChangeStoreConfig
-  private val recordChangeTable = recordSetconfig.getString("dynamo.tableName")
+  private val recordSetConfig = DynamoTestConfig.recordChangeStoreConfig
+  private val recordChangeTable = recordSetConfig.getString("dynamo.tableName")
 
-  class TestRepo extends DynamoDBRecordChangeRepository(recordSetconfig, dynamoDBHelper)
+  class TestRepo extends DynamoDBRecordChangeRepository(recordSetConfig, dynamoDBHelper)
 
   override def beforeEach(): Unit = {
     reset(dynamoDBHelper)
@@ -93,7 +92,7 @@ class DynamoDBRecordChangeRepositorySpec
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
       val store = new TestRepo
-      val response = await[ChangeSet](store.save(changeSet))
+      val response = store.save(changeSet).unsafeRunSync()
 
       verify(dynamoDBHelper, times(3))
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
@@ -124,8 +123,8 @@ class DynamoDBRecordChangeRepositorySpec
         .when(dynamoDBHelper)
         .batchWriteItem(any[String], any[BatchWriteItemRequest], any[Int], any[FiniteDuration])
 
-      val result = store.save(changeSet).unsafeToFuture()
-      whenReady(result.failed)(_ shouldBe a[RuntimeException])
+      val result = store.save(changeSet)
+      a[RuntimeException] shouldBe thrownBy(result.unsafeRunSync())
     }
 
     "returns a future failure if any batch fails" in {
@@ -145,8 +144,8 @@ class DynamoDBRecordChangeRepositorySpec
         .thenReturn(IO.pure(dynamoResponse))
         .thenThrow(new RuntimeException("failed")) //fail on the second batch
 
-      val result = store.save(changeSet).unsafeToFuture()
-      whenReady(result.failed)(_ shouldBe a[RuntimeException])
+      val result = store.save(changeSet)
+      a[RuntimeException] shouldBe thrownBy(result.unsafeRunSync())
     }
   }
 
@@ -160,8 +159,7 @@ class DynamoDBRecordChangeRepositorySpec
       when(dynamoResponse.getItems).thenReturn(expected)
       when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
-      val response = await[Option[RecordSetChange]](
-        store.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id))
+      val response = store.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id).unsafeRunSync()
 
       verify(dynamoDBHelper).query(any[QueryRequest])
 
@@ -182,9 +180,8 @@ class DynamoDBRecordChangeRepositorySpec
         .thenReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
       when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
-      val store = new DynamoDBRecordChangeRepository(recordSetconfig, dynamoDBHelper)
-      val response = await[Option[RecordSetChange]](
-        store.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id))
+      val store = new DynamoDBRecordChangeRepository(recordSetConfig, dynamoDBHelper)
+      val response = store.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id).unsafeRunSync()
 
       verify(dynamoDBHelper).query(any[QueryRequest])
 
@@ -200,7 +197,7 @@ class DynamoDBRecordChangeRepositorySpec
       when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
       val store = new TestRepo
-      val response = await[List[Zone]](store.getChanges(zoneActive.id))
+      val response = store.getChanges(zoneActive.id).unsafeRunSync()
 
       verify(dynamoDBHelper).query(any[QueryRequest])
 
@@ -217,7 +214,7 @@ class DynamoDBRecordChangeRepositorySpec
       when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
       when(dynamoResponse.getItems).thenReturn(resultList)
 
-      val response = await[List[ChangeSet]](store.getChanges(zoneActive.id))
+      val response = store.getChanges(zoneActive.id).unsafeRunSync()
 
       verify(dynamoDBHelper).query(any[QueryRequest])
       response should contain(pendingChangeSet)
@@ -240,7 +237,7 @@ class DynamoDBRecordChangeRepositorySpec
         .thenReturn(IO.pure(List(dynamoResponse)))
 
       val store = new TestRepo
-      val response = await[List[Zone]](store.getPendingChangeSets(zoneActive.id))
+      val response = store.getPendingChangeSets(zoneActive.id).unsafeRunSync()
 
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
 
@@ -258,7 +255,7 @@ class DynamoDBRecordChangeRepositorySpec
         .thenReturn(IO.pure(List(dynamoResponse)))
       when(dynamoResponse.getItems).thenReturn(resultList)
 
-      val response = await[List[ChangeSet]](store.getPendingChangeSets(zoneActive.id))
+      val response = store.getPendingChangeSets(zoneActive.id).unsafeRunSync()
 
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
       response should contain(pendingChangeSet)
@@ -284,7 +281,7 @@ class DynamoDBRecordChangeRepositorySpec
         .thenReturn(IO.pure(List(dynamoResponse)))
       when(dynamoResponse.getItems).thenReturn(resultList)
 
-      val response = await[List[ChangeSet]](store.getPendingChangeSets(zoneActive.id))
+      val response = store.getPendingChangeSets(zoneActive.id).unsafeRunSync()
 
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
       response.size shouldBe 2
@@ -302,7 +299,7 @@ class DynamoDBRecordChangeRepositorySpec
         .thenReturn(IO.pure(List(dynamoResponse)))
 
       val store = new TestRepo
-      val response = await[List[String]](store.getAllPendingZoneIds())
+      val response = store.getAllPendingZoneIds().unsafeRunSync()
 
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
 
@@ -320,7 +317,7 @@ class DynamoDBRecordChangeRepositorySpec
       when(dynamoDBHelper.queryAll(any[QueryRequest]))
         .thenReturn(IO.pure(List(dynamoResponse)))
       when(dynamoResponse.getItems).thenReturn(resultList)
-      val response = await[List[String]](store.getAllPendingZoneIds())
+      val response = store.getAllPendingZoneIds().unsafeRunSync()
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
       response should contain(pendingChangeSet.zoneId)
       response shouldBe List(pendingChangeSet.zoneId)
@@ -337,7 +334,7 @@ class DynamoDBRecordChangeRepositorySpec
       when(dynamoDBHelper.queryAll(any[QueryRequest]))
         .thenReturn(IO.pure(List(dynamoResponse)))
       when(dynamoResponse.getItems).thenReturn(resultList)
-      val response = await[List[String]](store.getAllPendingZoneIds())
+      val response = store.getAllPendingZoneIds().unsafeRunSync()
       response should contain(pendingChangeSet.zoneId)
       response shouldBe List(pendingChangeSet.zoneId)
       response.size shouldBe 1

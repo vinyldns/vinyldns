@@ -36,7 +36,6 @@ trait GroupTestData { this: Matchers =>
 
   val okUserInfo: UserInfo = UserInfo(okUser)
   val dummyUserInfo: UserInfo = UserInfo(dummyUser)
-  val listOfDummyUsersInfo: List[UserInfo] = listOfDummyUsers.map(UserInfo(_))
 
   val okGroup: Group = Group(
     "ok",

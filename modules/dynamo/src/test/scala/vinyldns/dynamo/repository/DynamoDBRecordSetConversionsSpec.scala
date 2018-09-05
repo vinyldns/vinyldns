@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.nio.ByteBuffer
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue
+import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
-import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.record.{
+  RecordSet,
+  RecordSetChange,
+  RecordSetChangeType,
+  RecordSetStatus
+}
 import vinyldns.core.protobuf.ProtobufConversions
+import vinyldns.core.TestMembershipData.okUser
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
@@ -32,7 +40,6 @@ class DynamoDBRecordSetConversionsSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
-    with VinylDNSTestData
     with ProtobufConversions {
 
   import DynamoDBRecordSetRepository._
@@ -90,6 +97,18 @@ class DynamoDBRecordSetConversionsSpec
     }
 
     "toWriteRequest" should {
+
+      val pendingDeleteAAAA = RecordSetChange(
+        zone = zoneActive,
+        recordSet = aaaa.copy(
+          status = RecordSetStatus.PendingDelete,
+          updated = Some(DateTime.now)
+        ),
+        userId = okUser.id,
+        changeType = RecordSetChangeType.Delete,
+        updates = Some(aaaa)
+      )
+
       "convert a failed Add Record Set change" in {
         val failedAdd = pendingCreateAAAA.failed()
         val result = underTest.toWriteRequest(failedAdd)

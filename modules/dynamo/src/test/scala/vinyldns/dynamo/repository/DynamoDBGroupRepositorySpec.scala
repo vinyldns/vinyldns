@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import com.amazonaws.services.dynamodbv2.model.{GetItemRequest, ResourceNotFoundException, _}
 import org.mockito.ArgumentCaptor
@@ -22,28 +22,23 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.domain.membership.Group
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
+import vinyldns.core.TestMembershipData._
 
 import scala.collection.JavaConverters._
 import cats.effect._
+import vinyldns.dynamo.DynamoTestConfig
 
 class DynamoDBGroupRepositorySpec
     extends WordSpec
     with MockitoSugar
     with Matchers
-    with GroupTestData
-    with ResultHelpers
     with ScalaFutures
     with BeforeAndAfterEach {
 
-  private implicit val defaultPatience: PatienceConfig =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
   private val dynamoDBHelper = mock[DynamoDBHelper]
-  private val groupsStoreConfig = VinylDNSConfig.groupsStoreConfig
-  private val membershipTable = VinylDNSConfig.groupsStoreConfig.getString("dynamo.tableName")
+  private val groupsStoreConfig = DynamoTestConfig.groupsStoreConfig
+  private val membershipTable = groupsStoreConfig.getString("dynamo.tableName")
 
   private val underTest = new DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper)
 
@@ -128,7 +123,7 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
-      val response = await[Group](underTest.save(okGroup))
+      val response = underTest.save(okGroup).unsafeRunSync()
 
       response shouldBe okGroup
     }
@@ -142,7 +137,7 @@ class DynamoDBGroupRepositorySpec
       doReturn(List(expected).asJava).when(mockQueryResult).getItems
       doReturn(IO.pure(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = await[Option[Group]](underTest.getGroupByName(okGroup.id))
+      val response = underTest.getGroupByName(okGroup.id).unsafeRunSync()
 
       response shouldBe Some(okGroup)
     }
@@ -155,7 +150,7 @@ class DynamoDBGroupRepositorySpec
         .getItems
       doReturn(IO.pure(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = await[Option[Group]](underTest.getGroupByName(okGroup.id))
+      val response = underTest.getGroupByName(okGroup.id).unsafeRunSync()
 
       response shouldBe None
     }
@@ -167,7 +162,7 @@ class DynamoDBGroupRepositorySpec
       doReturn(List(expected).asJava).when(mockQueryResult).getItems
       doReturn(IO.pure(mockQueryResult)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = await[Option[Group]](underTest.getGroupByName(deletedGroup.id))
+      val response = underTest.getGroupByName(deletedGroup.id).unsafeRunSync()
 
       response shouldBe None
     }
@@ -181,7 +176,7 @@ class DynamoDBGroupRepositorySpec
       doReturn(expected).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
-      val response = await[Option[Group]](underTest.getGroup(okGroup.id))
+      val response = underTest.getGroup(okGroup.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -192,17 +187,15 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
-      val result = underTest.getGroup(okGroup.id).unsafeToFuture()
-      whenReady(result.failed) { failed =>
-        failed shouldBe a[ResourceNotFoundException]
-      }
+      val result = underTest.getGroup(okGroup.id)
+      a[ResourceNotFoundException] shouldBe thrownBy(result.unsafeRunSync())
     }
     "return None if not found" in {
       val dynamoResponse = mock[GetItemResult]
       doReturn(null).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
-      val response = await[Option[Group]](underTest.getGroup(okGroup.id))
+      val response = underTest.getGroup(okGroup.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -215,7 +208,7 @@ class DynamoDBGroupRepositorySpec
       doReturn(expected).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
-      val response = await[Option[Group]](underTest.getGroup(deletedGroup.id))
+      val response = underTest.getGroup(deletedGroup.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -246,7 +239,7 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val response = await[Set[Group]](underTest.getGroups(listOfDummyGroups.map(_.id).toSet))
+      val response = underTest.getGroups(listOfDummyGroups.map(_.id).toSet).unsafeRunSync()
 
       verify(dynamoDBHelper, times(2)).batchGetItem(any[BatchGetItemRequest])
 
@@ -263,7 +256,7 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val response = await[Set[Group]](underTest.getGroups(Set(deletedGroup.id)))
+      val response = underTest.getGroups(Set(deletedGroup.id)).unsafeRunSync()
 
       response shouldBe empty
     }
@@ -277,7 +270,7 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val response = await[Set[Group]](underTest.getGroups(Set("notFound")))
+      val response = underTest.getGroups(Set("notFound")).unsafeRunSync()
 
       verify(dynamoDBHelper).batchGetItem(any[BatchGetItemRequest])
 
@@ -292,7 +285,7 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val response = await[Set[Group]](underTest.getGroups(Set("notFound")))
+      val response = underTest.getGroups(Set("notFound")).unsafeRunSync()
 
       verify(dynamoDBHelper).batchGetItem(any[BatchGetItemRequest])
 
@@ -303,10 +296,8 @@ class DynamoDBGroupRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val result = underTest.getGroups(listOfDummyGroups.map(_.id).toSet).unsafeToFuture()
-      whenReady(result.failed) { failed =>
-        failed shouldBe a[ResourceNotFoundException]
-      }
+      val result = underTest.getGroups(listOfDummyGroups.map(_.id).toSet)
+      a[ResourceNotFoundException] shouldBe thrownBy(result.unsafeRunSync())
     }
   }
 }

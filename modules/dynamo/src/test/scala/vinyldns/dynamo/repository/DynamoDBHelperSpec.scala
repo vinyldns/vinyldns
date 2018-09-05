@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util
 
@@ -28,12 +28,9 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import org.slf4j.Logger
-import vinyldns.api.AkkaTestJawn
-import cats.effect._
 
 class DynamoDBHelperSpec
-    extends AkkaTestJawn
-    with WordSpecLike
+    extends WordSpecLike
     with Matchers
     with MockitoSugar
     with ScalaFutures

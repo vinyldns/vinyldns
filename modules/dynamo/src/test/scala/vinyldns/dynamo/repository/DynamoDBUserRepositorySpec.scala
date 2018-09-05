@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util
 
@@ -24,30 +24,25 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.domain.membership.{ListUsersResults, User}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
+import vinyldns.core.TestMembershipData._
 
 import scala.collection.JavaConverters._
 import cats.effect._
+import vinyldns.dynamo.DynamoTestConfig
 
 class DynamoDBUserRepositorySpec
     extends WordSpec
     with MockitoSugar
     with Matchers
-    with GroupTestData
-    with ResultHelpers
     with ScalaFutures
     with BeforeAndAfterEach {
 
-  private implicit val defaultPatience: PatienceConfig =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
   private val dynamoDBHelper = mock[DynamoDBHelper]
   private val mockPutItemResult = mock[PutItemResult] // User repo is initialized with dummy users
   doReturn(IO.pure(mockPutItemResult)).when(dynamoDBHelper).putItem(any[PutItemRequest])
-  private val usersStoreConfig = VinylDNSConfig.usersStoreConfig
-  private val userTable = VinylDNSConfig.usersStoreConfig.getString("dynamo.tableName")
+  private val usersStoreConfig = DynamoTestConfig.usersStoreConfig
+  private val userTable = usersStoreConfig.getString("dynamo.tableName")
 
   class TestDynamoDBUserRepository extends DynamoDBUserRepository(usersStoreConfig, dynamoDBHelper)
 
@@ -193,7 +188,7 @@ class DynamoDBUserRepositorySpec
       doReturn(expected).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
-      val response = await[Option[User]](underTest.getUser(okUser.id))
+      val response = underTest.getUser(okUser.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -204,17 +199,15 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
-      val result = underTest.getUser(okUser.id).unsafeToFuture()
-      whenReady(result.failed) { failed =>
-        failed shouldBe a[ResourceNotFoundException]
-      }
+      val result = underTest.getUser(okUser.id)
+      a[ResourceNotFoundException] shouldBe thrownBy(result.unsafeRunSync())
     }
     "return None if not found" in {
       val dynamoResponse = mock[GetItemResult]
       doReturn(null).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
-      val response = await[Option[User]](underTest.getUser(okUser.id))
+      val response = underTest.getUser(okUser.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -243,7 +236,7 @@ class DynamoDBUserRepositorySpec
         .batchGetItem(any[BatchGetItemRequest])
 
       val response =
-        await[ListUsersResults](underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, None))
+        underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, None).unsafeRunSync()
 
       verify(dynamoDBHelper, times(2)).batchGetItem(any[BatchGetItemRequest])
 
@@ -259,7 +252,7 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val response = await[ListUsersResults](underTest.getUsers(Set("notFound"), None, None))
+      val response = underTest.getUsers(Set("notFound"), None, None).unsafeRunSync()
 
       verify(dynamoDBHelper).batchGetItem(any[BatchGetItemRequest])
 
@@ -275,7 +268,7 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val response = await[ListUsersResults](underTest.getUsers(Set("notFound"), None, None))
+      val response = underTest.getUsers(Set("notFound"), None, None).unsafeRunSync()
 
       verify(dynamoDBHelper).batchGetItem(any[BatchGetItemRequest])
 
@@ -314,8 +307,8 @@ class DynamoDBUserRepositorySpec
 
       val batchGetCaptor = ArgumentCaptor.forClass(classOf[BatchGetItemRequest])
 
-      val response = await[ListUsersResults](
-        underTest.getUsers(listOfDummyUsers.map(_.id).toSet, Some("dummy150"), None))
+      val response =
+        underTest.getUsers(listOfDummyUsers.map(_.id).toSet, Some("dummy150"), None).unsafeRunSync()
 
       response.users should contain theSameElementsAs listOfDummyUsers.slice(151, 200)
       response.lastEvaluatedId shouldBe None
@@ -337,8 +330,8 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val response = await[ListUsersResults](
-        underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, Some(50)))
+      val response =
+        underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, Some(50)).unsafeRunSync()
 
       verify(dynamoDBHelper).batchGetItem(any[BatchGetItemRequest])
 
@@ -350,10 +343,9 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .batchGetItem(any[BatchGetItemRequest])
 
-      val result = underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, None).unsafeToFuture()
-      whenReady(result.failed) { failed =>
-        failed shouldBe a[ResourceNotFoundException]
-      }
+      a[ResourceNotFoundException] shouldBe thrownBy(
+        underTest.getUsers(listOfDummyUsers.map(_.id).toSet, None, None).unsafeRunSync()
+      )
     }
   }
   "DynamoDBUserRepository.getUserByAccessKey" should {
@@ -364,7 +356,7 @@ class DynamoDBUserRepositorySpec
       doReturn(expected).when(dynamoResponse).getItems
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = await[Option[User]](underTest.getUserByAccessKey(okUser.accessKey))
+      val response = underTest.getUserByAccessKey(okUser.accessKey).unsafeRunSync()
 
       verify(dynamoDBHelper).query(any[QueryRequest])
 
@@ -375,17 +367,15 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .query(any[QueryRequest])
 
-      val result = underTest.getUserByAccessKey(okUser.accessKey).unsafeToFuture()
-      whenReady(result.failed) { failed =>
-        failed shouldBe a[ResourceNotFoundException]
-      }
+      val result = underTest.getUserByAccessKey(okUser.accessKey)
+      a[ResourceNotFoundException] shouldBe thrownBy(result.unsafeRunSync())
     }
     "return None if not found" in {
       val dynamoResponse = mock[QueryResult]
       doReturn(List().asJava).when(dynamoResponse).getItems
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = await[Option[User]](underTest.getUserByAccessKey(okUser.accessKey))
+      val response = underTest.getUserByAccessKey(okUser.accessKey).unsafeRunSync()
 
       verify(dynamoDBHelper).query(any[QueryRequest])
 
@@ -400,7 +390,7 @@ class DynamoDBUserRepositorySpec
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
-      val response = await[User](underTest.save(okUser))
+      val response = underTest.save(okUser).unsafeRunSync()
 
       response shouldBe okUser
     }

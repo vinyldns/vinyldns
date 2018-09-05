@@ -21,6 +21,7 @@ import TestMembershipData._
 
 object TestZoneData {
 
+  /* ZONES */
   val okZone: Zone = Zone("ok.zone.recordsets.", "test@test.com", adminGroupId = okGroup.id)
 
   val validConnection =
@@ -35,5 +36,9 @@ object TestZoneData {
   val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
 
   val groupAclRule: ACLRule = ACLRule(AccessLevel.Read, groupId = Some("someGroup"))
+
+  /* ZONE CHANGES */
+  val zoneChangePending: ZoneChange =
+    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Pending)
 
 }

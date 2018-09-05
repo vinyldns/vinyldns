@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import com.amazonaws.services.dynamodbv2.model._
 import org.mockito.ArgumentCaptor
@@ -23,22 +23,20 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange}
-import vinyldns.api.{ResultHelpers, VinylDNSConfig, VinylDNSTestData}
-
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 import cats.effect._
+import vinyldns.dynamo.DynamoTestConfig
+import vinyldns.core.TestZoneData._
 
 class DynamoDBZoneChangeRepositorySpec
     extends WordSpec
     with MockitoSugar
     with Matchers
-    with VinylDNSTestData
-    with ResultHelpers
     with ScalaFutures
     with BeforeAndAfterEach {
 
   private val dynamoDBHelper = mock[TestDynamoDBHelper]
-  private val zoneChangeStoreConfig = VinylDNSConfig.zoneChangeStoreConfig
+  private val zoneChangeStoreConfig = DynamoTestConfig.zoneChangeStoreConfig
   private val zoneChangeTable = zoneChangeStoreConfig.getString("dynamo.tableName")
 
   class TestDynamoDBZoneChangeRepository
@@ -47,6 +45,13 @@ class DynamoDBZoneChangeRepositorySpec
   private val underTest = new TestDynamoDBZoneChangeRepository
 
   override def beforeEach(): Unit = reset(dynamoDBHelper)
+
+  val zoneChangeComplete: ZoneChange =
+    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Complete)
+  val zoneChangeSynced: ZoneChange =
+    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Synced)
+  val zoneChangeFailed: ZoneChange =
+    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Failed)
 
   "DynamoDBZoneChangeRepository.apply" should {
     "call setuptable when it is built" in {
@@ -79,7 +84,7 @@ class DynamoDBZoneChangeRepositorySpec
       val putItemResult = mock[PutItemResult]
 
       when(dynamoDBHelper.putItem(any[PutItemRequest])).thenReturn(IO.pure(putItemResult))
-      val actual = await[ZoneChange](underTest.save(zoneChangeComplete))
+      val actual = underTest.save(zoneChangeComplete).unsafeRunSync()
 
       verify(dynamoDBHelper).putItem(any[PutItemRequest])
       actual shouldBe zoneChangeComplete
@@ -102,7 +107,7 @@ class DynamoDBZoneChangeRepositorySpec
         .thenReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
       doReturn(IO.pure(dynamoResponses)).when(dynamoDBHelper).queryAll(any[QueryRequest])
 
-      val response = await[ListZoneChangesResults](underTest.listZoneChanges(okZone.id))
+      val response = underTest.listZoneChanges(okZone.id).unsafeRunSync()
 
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
 
@@ -119,7 +124,7 @@ class DynamoDBZoneChangeRepositorySpec
       doReturn(IO.pure(dynamoResponses)).when(dynamoDBHelper).queryAll(any[QueryRequest])
       when(dynamoResponse.getItems).thenReturn(resultList)
 
-      val response = await[ListZoneChangesResults](underTest.listZoneChanges(okZone.id))
+      val response = underTest.listZoneChanges(okZone.id).unsafeRunSync()
 
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
       response.items should contain theSameElementsAs List(zoneChangePending, zoneChangeSynced)
@@ -135,7 +140,7 @@ class DynamoDBZoneChangeRepositorySpec
       doReturn(IO.pure(dynamoResponses)).when(dynamoDBHelper).queryAll(any[QueryRequest])
       when(dynamoResponse.getItems).thenReturn(resultList)
 
-      val response = await[ListZoneChangesResults](underTest.listZoneChanges(okZone.id))
+      val response = underTest.listZoneChanges(okZone.id).unsafeRunSync()
 
       verify(dynamoDBHelper).queryAll(any[QueryRequest])
       response.items shouldBe List(zoneChangeComplete)
@@ -156,7 +161,7 @@ class DynamoDBZoneChangeRepositorySpec
       when(dynamoDBHelper.queryAll(any[QueryRequest]))
         .thenReturn(IO.pure(List(dynamoResponse)))
 
-      val response = await[List[String]](underTest.getAllPendingZoneIds())
+      val response = underTest.getAllPendingZoneIds().unsafeRunSync()
 
       verify(dynamoDBHelper, times(1)).queryAll(any[QueryRequest])
 
@@ -171,7 +176,7 @@ class DynamoDBZoneChangeRepositorySpec
       when(dynamoDBHelper.queryAll(any[QueryRequest]))
         .thenReturn(IO.pure(List(pendingDynamoResponse)))
       when(pendingDynamoResponse.getItems).thenReturn(pendingResultList)
-      val response = await[List[String]](underTest.getAllPendingZoneIds())
+      val response = underTest.getAllPendingZoneIds().unsafeRunSync()
 
       verify(dynamoDBHelper, times(1)).queryAll(any[QueryRequest])
       response should contain(zoneChangePending.zoneId)
@@ -186,7 +191,7 @@ class DynamoDBZoneChangeRepositorySpec
       when(dynamoDBHelper.queryAll(any[QueryRequest]))
         .thenReturn(IO.pure(List(pendingDynamoResponse)))
       when(pendingDynamoResponse.getItems).thenReturn(pendingResultList)
-      val response = await[List[String]](underTest.getAllPendingZoneIds())
+      val response = underTest.getAllPendingZoneIds().unsafeRunSync()
       response.size shouldBe 1
       response shouldBe List(zoneChangePending.zoneId)
     }
@@ -206,7 +211,7 @@ class DynamoDBZoneChangeRepositorySpec
         .thenReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
       when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
 
-      val response = await[List[ZoneChange]](underTest.getPending(okZone.id))
+      val response = underTest.getPending(okZone.id).unsafeRunSync()
 
       verify(dynamoDBHelper, times(2)).query(any[QueryRequest])
 
@@ -227,10 +232,10 @@ class DynamoDBZoneChangeRepositorySpec
       when(pendingDynamoResponse.getItems).thenReturn(pendingResultList)
       when(completedDynamoResponse.getItems).thenReturn(completedResultList)
 
-      val response = await[List[ZoneChange]](underTest.getPending(okZone.id))
+      val response = underTest.getPending(okZone.id).unsafeRunSync()
 
       verify(dynamoDBHelper, times(2)).query(any[QueryRequest])
-      response shouldBe List(zoneChangePending, zoneChangeComplete)
+      response should contain theSameElementsAs List(zoneChangePending, zoneChangeComplete)
     }
     "not return duplicate changes" in {
       val pendingDynamoResponse = mock[QueryResult]
@@ -249,7 +254,7 @@ class DynamoDBZoneChangeRepositorySpec
       when(pendingDynamoResponse.getItems).thenReturn(pendingResultList)
       when(completedDynamoResponse.getItems).thenReturn(completedResultList)
 
-      val response = await[List[ZoneChange]](underTest.getPending(okZone.id))
+      val response = underTest.getPending(okZone.id).unsafeRunSync()
 
       verify(dynamoDBHelper, times(2)).query(any[QueryRequest])
       response should contain theSameElementsAs List(zoneChangePending, zoneChangeComplete)

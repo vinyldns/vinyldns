@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import org.slf4j.Logger

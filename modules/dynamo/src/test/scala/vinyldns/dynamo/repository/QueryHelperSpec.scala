@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util
 
@@ -24,7 +24,6 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 
 import scala.collection.JavaConverters._
 import cats.effect._
@@ -33,8 +32,6 @@ class QueryHelperSpec
     extends WordSpec
     with MockitoSugar
     with Matchers
-    with VinylDNSTestData
-    with ResultHelpers
     with ScalaFutures
     with BeforeAndAfterEach {
 
@@ -50,6 +47,9 @@ class QueryHelperSpec
     item.put("key", new AttributeValue(value))
     item
   }
+
+  def await[T](f: => IO[_]): T =
+    f.map(_.asInstanceOf[T]).unsafeRunSync()
 
   "QueryHelper" should {
     "run a query with no filter where there is no continuation" in {

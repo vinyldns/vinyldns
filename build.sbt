@@ -259,7 +259,7 @@ lazy val dynamo = (project in file("modules/dynamo")).enablePlugins(AutomateHead
     coverageMinimum := 85,
     coverageFailOnMinimum := true,
     coverageHighlighting := true
-  ).dependsOn(core)
+  ).dependsOn(core % "compile->compile;test->test")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")

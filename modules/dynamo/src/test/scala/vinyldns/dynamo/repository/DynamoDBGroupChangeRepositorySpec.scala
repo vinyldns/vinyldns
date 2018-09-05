@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import com.amazonaws.services.dynamodbv2.model.{GetItemRequest, ResourceNotFoundException, _}
 import org.mockito.ArgumentCaptor
@@ -22,29 +22,23 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.domain.membership.{GroupChange, ListGroupChangesResults}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
+import vinyldns.core.TestMembershipData._
 
 import scala.collection.JavaConverters._
 import cats.effect._
+import vinyldns.dynamo.DynamoTestConfig
 
 class DynamoDBGroupChangeRepositorySpec
     extends WordSpec
     with MockitoSugar
     with Matchers
-    with GroupTestData
-    with ResultHelpers
     with ScalaFutures
     with BeforeAndAfterEach {
 
-  private implicit val defaultPatience: PatienceConfig =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
   private val dynamoDBHelper = mock[DynamoDBHelper]
-  private val groupChangeStoreConfig = VinylDNSConfig.groupChangesStoreConfig
-  private val groupChangeTable =
-    VinylDNSConfig.groupChangesStoreConfig.getString("dynamo.tableName")
+  private val groupChangeStoreConfig = DynamoTestConfig.groupChangesStoreConfig
+  private val groupChangeTable = groupChangeStoreConfig.getString("dynamo.tableName")
   class TestDynamoDBGroupChangeRepository
       extends DynamoDBGroupChangeRepository(groupChangeStoreConfig, dynamoDBHelper)
 
@@ -102,7 +96,7 @@ class DynamoDBGroupChangeRepositorySpec
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
-      val response = await[GroupChange](underTest.save(okGroupChange))
+      val response = underTest.save(okGroupChange).unsafeRunSync()
 
       response shouldBe okGroupChange
     }
@@ -111,10 +105,8 @@ class DynamoDBGroupChangeRepositorySpec
         .when(dynamoDBHelper)
         .putItem(any[PutItemRequest])
 
-      val result = underTest.save(okGroupChange).unsafeToFuture()
-      whenReady(result.failed) { failed =>
-        failed shouldBe a[ResourceNotFoundException]
-      }
+      val result = underTest.save(okGroupChange)
+      a[ResourceNotFoundException] shouldBe thrownBy(result.unsafeRunSync())
     }
   }
 
@@ -126,7 +118,7 @@ class DynamoDBGroupChangeRepositorySpec
       doReturn(expected).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
-      val response = await[Option[GroupChange]](underTest.getGroupChange(okGroupChange.id))
+      val response = underTest.getGroupChange(okGroupChange.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -137,17 +129,15 @@ class DynamoDBGroupChangeRepositorySpec
         .when(dynamoDBHelper)
         .getItem(any[GetItemRequest])
 
-      val result = underTest.getGroupChange(okGroupChange.id).unsafeToFuture()
-      whenReady(result.failed) { failed =>
-        failed shouldBe a[ResourceNotFoundException]
-      }
+      val result = underTest.getGroupChange(okGroupChange.id)
+      a[ResourceNotFoundException] shouldBe thrownBy(result.unsafeRunSync())
     }
     "return None if not found" in {
       val dynamoResponse = mock[GetItemResult]
       doReturn(null).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
-      val response = await[Option[GroupChange]](underTest.getGroupChange(okGroupChange.id))
+      val response = underTest.getGroupChange(okGroupChange.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -166,8 +156,7 @@ class DynamoDBGroupChangeRepositorySpec
 
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response =
-        await[ListGroupChangesResults](underTest.getGroupChanges(oneUserDummyGroup.id, None, 100))
+      val response = underTest.getGroupChanges(oneUserDummyGroup.id, None, 100).unsafeRunSync()
 
       response.changes should contain theSameElementsAs listOfDummyGroupChanges.take(100)
       response.lastEvaluatedTimeStamp shouldBe Some(
@@ -181,8 +170,7 @@ class DynamoDBGroupChangeRepositorySpec
 
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response =
-        await[ListGroupChangesResults](underTest.getGroupChanges(oneUserDummyGroup.id, None, 100))
+      val response = underTest.getGroupChanges(oneUserDummyGroup.id, None, 100).unsafeRunSync()
 
       response.changes shouldBe Seq()
       response.lastEvaluatedTimeStamp shouldBe None
@@ -205,11 +193,12 @@ class DynamoDBGroupChangeRepositorySpec
 
       doReturn(IO.pure(dynamoQueryResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = await[ListGroupChangesResults](
-        underTest.getGroupChanges(
+      val response = underTest
+        .getGroupChanges(
           oneUserDummyGroup.id,
           Some(listOfDummyGroupChanges(50).created.getMillis.toString),
-          100))
+          100)
+        .unsafeRunSync()
 
       response.changes should contain theSameElementsAs listOfDummyGroupChanges.slice(51, 151)
       response.lastEvaluatedTimeStamp shouldBe Some(
@@ -226,8 +215,7 @@ class DynamoDBGroupChangeRepositorySpec
 
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response =
-        await[ListGroupChangesResults](underTest.getGroupChanges(oneUserDummyGroup.id, None, 50))
+      val response = underTest.getGroupChanges(oneUserDummyGroup.id, None, 50).unsafeRunSync()
 
       response.changes should contain theSameElementsAs listOfDummyGroupChanges.take(50)
       response.lastEvaluatedTimeStamp shouldBe Some(
@@ -249,8 +237,10 @@ class DynamoDBGroupChangeRepositorySpec
 
       doReturn(IO.pure(dynamoQueryResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
-      val response = await[ListGroupChangesResults](
-        underTest.getGroupChanges(oneUserDummyGroup.id, Some(listOfDummyGroupChanges(99).id), 100))
+      val response =
+        underTest
+          .getGroupChanges(oneUserDummyGroup.id, Some(listOfDummyGroupChanges(99).id), 100)
+          .unsafeRunSync()
 
       response.changes should contain theSameElementsAs (listOfDummyGroupChanges.slice(100, 200))
       response.lastEvaluatedTimeStamp shouldBe None

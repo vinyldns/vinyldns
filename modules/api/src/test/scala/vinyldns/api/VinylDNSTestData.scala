@@ -232,11 +232,7 @@ trait VinylDNSTestData {
   val pendingChangeSet: ChangeSet = ChangeSet(Seq(pendingCreateAAAA, pendingCreateCNAME))
   val pendingCreateNS: RecordSetChange = RecordSetChangeGenerator.forAdd(ns, zoneActive, okAuth)
 
-  val aaaaUpdated: RecordSet = aaaa.copy(ttl = aaaa.ttl + 100)
-  val pendingUpdateAAAA: RecordSetChange =
-    RecordSetChangeGenerator.forUpdate(aaaa, aaaaUpdated, zoneActive, okAuth)
-  val pendingDeleteAAAA: RecordSetChange =
-    RecordSetChangeGenerator.forDelete(aaaa, zoneActive, okAuth)
+
   val completeCreateAAAA: RecordSetChange =
     pendingCreateAAAA.copy(status = RecordSetChangeStatus.Complete)
   val completeCreateCNAME: RecordSetChange =
@@ -246,8 +242,6 @@ trait VinylDNSTestData {
     pendingCreateNS.copy(status = RecordSetChangeStatus.Complete)
   val completeRecordSetChanges: List[RecordSetChange] =
     List(pendingCreateAAAA, pendingCreateCNAME, completeCreateAAAA, completeCreateCNAME)
-
-  val pendingUpdateChangeSet: ChangeSet = ChangeSet(Seq(pendingUpdateAAAA))
 
   val listZoneChangesResponse: ListZoneChangesResponse = ListZoneChangesResponse(
     zoneActive.id,
@@ -268,14 +262,10 @@ trait VinylDNSTestData {
     startFrom = None,
     maxItems = 100)
 
-  val zoneChangeComplete: ZoneChange =
-    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Complete)
+
   val zoneChangePending: ZoneChange =
     ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Pending)
-  val zoneChangeSynced: ZoneChange =
-    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Synced)
-  val zoneChangeFailed: ZoneChange =
-    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Failed)
+
 
   val atRs: RecordSet = RecordSet(
     okZone.id,

@@ -19,8 +19,21 @@ package vinyldns.core
 import org.joda.time.DateTime
 import vinyldns.core.domain.record._
 import TestZoneData._
+import TestMembershipData._
 
 object TestRecordSetData {
+
+  /* RECORDSETS */
+  val rsOk: RecordSet = RecordSet(
+    okZone.id,
+    "ok",
+    RecordType.A,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("10.1.1.1")))
+
   val aaaa: RecordSet = RecordSet(
     okZone.id,
     "aaaa",
@@ -70,4 +83,45 @@ object TestRecordSetData {
     DateTime.now,
     None,
     List(MXData(3, "mx")))
+
+  /* RECORDSET CHANGES */
+  val pendingCreateAAAA: RecordSetChange = RecordSetChange(
+    zone = zoneActive,
+    recordSet = aaaa.copy(
+      created = DateTime.now,
+      status = RecordSetStatus.Pending
+    ),
+    userId = okUser.id,
+    changeType = RecordSetChangeType.Create,
+    status = RecordSetChangeStatus.Pending
+  )
+
+  val pendingCreateCNAME: RecordSetChange = RecordSetChange(
+    zone = zoneActive,
+    recordSet = cname.copy(
+      created = DateTime.now,
+      status = RecordSetStatus.Pending
+    ),
+    userId = okUser.id,
+    changeType = RecordSetChangeType.Create,
+    status = RecordSetChangeStatus.Pending
+  )
+
+  val pendingUpdateAAAA: RecordSetChange = RecordSetChange(
+    zone = zoneActive,
+    recordSet = aaaa.copy(
+      ttl = aaaa.ttl + 100,
+      status = RecordSetStatus.PendingUpdate,
+      updated = Some(DateTime.now)
+    ),
+    userId = okUser.id,
+    changeType = RecordSetChangeType.Update,
+    status = RecordSetChangeStatus.Pending,
+    updates = Some(aaaa)
+  )
+
+  /* CHANGESETS */
+  val pendingChangeSet: ChangeSet = ChangeSet(Seq(pendingCreateAAAA, pendingCreateCNAME))
+
+  val pendingUpdateChangeSet: ChangeSet = ChangeSet(Seq(pendingUpdateAAAA))
 }
