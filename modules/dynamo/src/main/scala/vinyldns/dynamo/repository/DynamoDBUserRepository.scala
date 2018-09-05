@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util
 import java.util.HashMap
@@ -25,7 +25,6 @@ import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
 import vinyldns.core.route.Monitored
 
@@ -33,9 +32,7 @@ import scala.collection.JavaConverters._
 
 object DynamoDBUserRepository {
 
-  def apply(
-      config: Config = VinylDNSConfig.usersStoreConfig,
-      dynamoConfig: Config = VinylDNSConfig.dynamoConfig): DynamoDBUserRepository =
+  def apply(config: Config, dynamoConfig: Config): DynamoDBUserRepository =
     new DynamoDBUserRepository(
       config,
       new DynamoDBHelper(
@@ -43,9 +40,7 @@ object DynamoDBUserRepository {
         LoggerFactory.getLogger("DynamoDBUserRepository")))
 }
 
-class DynamoDBUserRepository(
-    config: Config = VinylDNSConfig.usersStoreConfig,
-    dynamoDBHelper: DynamoDBHelper)
+class DynamoDBUserRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
     extends UserRepository
     with Monitored {
 

@@ -18,7 +18,7 @@ package vinyldns.api.domain.auth
 
 import cats.effect._
 import vinyldns.core.domain.membership.{MembershipRepository, User, UserRepository}
-import vinyldns.api.repository.dynamodb.{DynamoDBMembershipRepository, DynamoDBUserRepository}
+import vinyldns.dynamo.repository.{DynamoDBMembershipRepository, DynamoDBUserRepository}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.route.Monitored
 

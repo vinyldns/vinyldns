@@ -32,7 +32,7 @@ import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
-import vinyldns.api.repository.dynamodb._
+import vinyldns.dynamo.repository._
 import vinyldns.api.repository.{DataStoreStartupError, TestDataLoader}
 import vinyldns.api.repository.mysql.MySqlDataStoreProvider
 import vinyldns.api.route.{HealthService, VinylDNSService}

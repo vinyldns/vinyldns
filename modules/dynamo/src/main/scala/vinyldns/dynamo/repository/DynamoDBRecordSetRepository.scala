@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util.HashMap
 
@@ -22,7 +22,6 @@ import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
@@ -38,9 +37,7 @@ object DynamoDBRecordSetRepository extends ProtobufConversions {
   private[repository] val RECORD_SET_SORT = "record_set_sort"
   private[repository] val RECORD_SET_BLOB = "record_set_blob"
 
-  def apply(
-      config: Config = VinylDNSConfig.recordSetStoreConfig,
-      dynamoConfig: Config = VinylDNSConfig.dynamoConfig): DynamoDBRecordSetRepository =
+  def apply(config: Config, dynamoConfig: Config): DynamoDBRecordSetRepository =
     new DynamoDBRecordSetRepository(
       config,
       new DynamoDBHelper(
@@ -49,9 +46,7 @@ object DynamoDBRecordSetRepository extends ProtobufConversions {
 
 }
 
-class DynamoDBRecordSetRepository(
-    config: Config = VinylDNSConfig.recordSetStoreConfig,
-    dynamoDBHelper: DynamoDBHelper)
+class DynamoDBRecordSetRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
     extends RecordSetRepository
     with DynamoDBRecordSetConversions
     with Monitored

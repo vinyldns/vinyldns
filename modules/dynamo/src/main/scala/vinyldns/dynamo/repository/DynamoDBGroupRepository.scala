@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util
 import java.util.HashMap
@@ -25,7 +25,6 @@ import com.amazonaws.services.dynamodbv2.model.{CreateTableRequest, Projection, 
 import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
 import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus}
 import vinyldns.core.route.Monitored
@@ -34,9 +33,7 @@ import scala.collection.JavaConverters._
 
 object DynamoDBGroupRepository {
 
-  def apply(
-      config: Config = VinylDNSConfig.groupsStoreConfig,
-      dynamoConfig: Config = VinylDNSConfig.dynamoConfig): DynamoDBGroupRepository =
+  def apply(config: Config, dynamoConfig: Config): DynamoDBGroupRepository =
     new DynamoDBGroupRepository(
       config,
       new DynamoDBHelper(
@@ -44,9 +41,7 @@ object DynamoDBGroupRepository {
         LoggerFactory.getLogger(classOf[DynamoDBGroupRepository])))
 }
 
-class DynamoDBGroupRepository(
-    config: Config = VinylDNSConfig.groupsStoreConfig,
-    dynamoDBHelper: DynamoDBHelper)
+class DynamoDBGroupRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
     extends GroupRepository
     with Monitored {
 

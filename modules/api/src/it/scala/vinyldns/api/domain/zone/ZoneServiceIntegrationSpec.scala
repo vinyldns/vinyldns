@@ -28,7 +28,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.api.engine.sqs.TestSqsService
-import vinyldns.api.repository.dynamodb.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
+import vinyldns.dynamo.repository.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
 import vinyldns.api.repository.mysql.TestMySqlInstance
 import vinyldns.core.domain.zone._
 

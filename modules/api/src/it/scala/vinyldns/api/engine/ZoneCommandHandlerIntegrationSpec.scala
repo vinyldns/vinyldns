@@ -29,7 +29,7 @@ import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.SqsConnection
-import vinyldns.api.repository.dynamodb.{
+import vinyldns.dynamo.repository.{
   DynamoDBIntegrationSpec,
   DynamoDBRecordChangeRepository,
   DynamoDBRecordSetRepository,

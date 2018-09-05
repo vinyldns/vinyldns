@@ -59,6 +59,11 @@ object Dependencies {
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV
   )
 
+  lazy val dynamoDependencies = Seq(
+    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
+  )
+
   lazy val coreTestDependencies = Seq(
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
     "org.scalacheck"            %% "scalacheck"                     % "1.13.4",

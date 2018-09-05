@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.nio.ByteBuffer
 import java.util.HashMap
@@ -25,7 +25,6 @@ import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordChangeRepository
 import vinyldns.core.protobuf.ProtobufConversions
@@ -36,9 +35,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 object DynamoDBRecordChangeRepository {
-  def apply(
-      config: Config = VinylDNSConfig.recordChangeStoreConfig,
-      dynamoConfig: Config = VinylDNSConfig.dynamoConfig): DynamoDBRecordChangeRepository =
+  def apply(config: Config, dynamoConfig: Config): DynamoDBRecordChangeRepository =
     new DynamoDBRecordChangeRepository(
       config,
       new DynamoDBHelper(
@@ -46,9 +43,7 @@ object DynamoDBRecordChangeRepository {
         LoggerFactory.getLogger("DynamoDBRecordChangeRepository")))
 }
 
-class DynamoDBRecordChangeRepository(
-    config: Config = VinylDNSConfig.recordChangeStoreConfig,
-    dynamoDBHelper: DynamoDBHelper)
+class DynamoDBRecordChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
     extends RecordChangeRepository
     with ProtobufConversions
     with Monitored {

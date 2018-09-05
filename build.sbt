@@ -187,7 +187,7 @@ lazy val api = (project in file("modules/api"))
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .dependsOn(core)
+  .dependsOn(core, dynamo)
 
 lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
@@ -247,6 +247,19 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
     coverageFailOnMinimum := true,
     coverageHighlighting := true
   )
+
+lazy val dynamo = (project in file("modules/dynamo")).enablePlugins(AutomateHeaderPlugin)
+  .settings(sharedSettings)
+  .settings(name := "dynamo")
+  .settings(noPublishSettings)
+  .settings(testSettings)
+  .settings(libraryDependencies ++= dynamoDependencies)
+  .settings(scalaStyleCompile ++ scalaStyleTest)
+  .settings(
+    coverageMinimum := 85,
+    coverageFailOnMinimum := true,
+    coverageHighlighting := true
+  ).dependsOn(core)
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")

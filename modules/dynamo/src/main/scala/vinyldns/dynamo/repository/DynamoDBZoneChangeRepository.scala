@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.nio.ByteBuffer
 import java.util.HashMap
@@ -24,7 +24,6 @@ import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone.{
   ListZoneChangesResults,
@@ -40,9 +39,7 @@ import scala.util.Try
 
 object DynamoDBZoneChangeRepository extends ProtobufConversions {
 
-  def apply(
-      config: Config = VinylDNSConfig.zoneChangeStoreConfig,
-      dynamoConfig: Config = VinylDNSConfig.dynamoConfig): DynamoDBZoneChangeRepository =
+  def apply(config: Config, dynamoConfig: Config): DynamoDBZoneChangeRepository =
     new DynamoDBZoneChangeRepository(
       config,
       new DynamoDBHelper(
@@ -50,9 +47,7 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
         LoggerFactory.getLogger("DynamoDBZoneChangeRepository")))
 }
 
-class DynamoDBZoneChangeRepository(
-    config: Config = VinylDNSConfig.zoneChangeStoreConfig,
-    dynamoDBHelper: DynamoDBHelper)
+class DynamoDBZoneChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
     extends ZoneChangeRepository
     with ProtobufConversions
     with Monitored {
