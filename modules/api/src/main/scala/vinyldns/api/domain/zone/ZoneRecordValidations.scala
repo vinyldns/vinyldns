@@ -17,7 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.implicits._, cats.data._
-import vinyldns.api.domain.record.{NSData, RecordSet, RecordType}
+import vinyldns.core.domain.record.{NSData, RecordSet, RecordType}
 
 import scala.util.matching.Regex
 

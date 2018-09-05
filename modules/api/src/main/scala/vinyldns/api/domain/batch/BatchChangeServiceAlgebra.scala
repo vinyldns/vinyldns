@@ -16,8 +16,9 @@
 
 package vinyldns.api.domain.batch
 
-import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces.BatchResult
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeSummaryList}
 
 // $COVERAGE-OFF$
 trait BatchChangeServiceAlgebra {

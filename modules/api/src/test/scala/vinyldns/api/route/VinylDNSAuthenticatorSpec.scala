@@ -28,9 +28,10 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.auth.{AuthPrincipal, AuthPrincipalProvider}
+import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.{GroupTestData, ResultHelpers}
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.auth.AuthPrincipal
 
 class VinylDNSAuthenticatorSpec
     extends WordSpec

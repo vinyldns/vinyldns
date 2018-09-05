@@ -24,10 +24,11 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.{GroupTestData, ResultHelpers}
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.zone.{NotAuthorizedError, ZoneRepository, _}
-
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.{ZoneRepository, _}
 import cats.effect._
+import vinyldns.api.domain.zone.NotAuthorizedError
+import vinyldns.core.domain.membership._
 
 class MembershipServiceSpec
     extends WordSpec

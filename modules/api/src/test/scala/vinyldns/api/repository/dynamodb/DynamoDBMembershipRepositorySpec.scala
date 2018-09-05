@@ -45,9 +45,7 @@ class DynamoDBMembershipRepositorySpec
   private val membershipTable = VinylDNSConfig.membershipStoreConfig.getString("dynamo.tableName")
   private val dynamoDBHelper = mock[DynamoDBHelper]
   class TestDynamoDBMembershipRepository
-      extends DynamoDBMembershipRepository(membershipStoreConfig, dynamoDBHelper) {
-    override def loadData: IO[Set[Set[String]]] = IO.pure(Set(Set()))
-  }
+      extends DynamoDBMembershipRepository(membershipStoreConfig, dynamoDBHelper) {}
 
   private val underTest = new TestDynamoDBMembershipRepository
 

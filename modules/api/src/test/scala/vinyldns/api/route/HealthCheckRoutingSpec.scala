@@ -24,7 +24,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
-import vinyldns.api.domain.zone.ZoneRepository
+import vinyldns.core.domain.zone.ZoneRepository
 
 import cats.effect._
 

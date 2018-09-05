@@ -27,6 +27,7 @@ import scala.collection.JavaConverters._
 import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import vinyldns.api.repository._
+import vinyldns.core.repository._
 
 class MySqlDataStoreProvider extends DataStoreProvider {
 

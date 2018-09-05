@@ -24,7 +24,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.membership.Group
+import vinyldns.core.domain.membership.Group
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSConfig}
 
 import scala.collection.JavaConverters._
@@ -44,14 +44,8 @@ class DynamoDBGroupRepositorySpec
   private val dynamoDBHelper = mock[DynamoDBHelper]
   private val groupsStoreConfig = VinylDNSConfig.groupsStoreConfig
   private val membershipTable = VinylDNSConfig.groupsStoreConfig.getString("dynamo.tableName")
-  class TestDynamoDBGroupRepository
-      extends DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper) {
-    override def loadData: IO[List[Group]] = IO.pure(List())
-  }
 
-  private val underTest = new DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper) {
-    override def loadData: IO[List[Group]] = IO.pure(List())
-  }
+  private val underTest = new DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper)
 
   override def beforeEach(): Unit = {
     reset(dynamoDBHelper)
@@ -63,7 +57,7 @@ class DynamoDBGroupRepositorySpec
     "call setuptable when it is built" in {
       val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
 
-      new TestDynamoDBGroupRepository
+      new DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper)
       verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
 
       val createTable = setupTableCaptor.getValue
@@ -81,7 +75,9 @@ class DynamoDBGroupRepositorySpec
 
       doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
 
-      a[RuntimeException] should be thrownBy new TestDynamoDBGroupRepository
+      a[RuntimeException] should be thrownBy new DynamoDBGroupRepository(
+        groupsStoreConfig,
+        dynamoDBHelper)
     }
   }
 

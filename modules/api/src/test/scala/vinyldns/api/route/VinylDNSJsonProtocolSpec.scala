@@ -21,8 +21,8 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 class VinylDNSJsonProtocolSpec
     extends WordSpec

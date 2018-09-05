@@ -26,7 +26,7 @@ import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.membership.{ListUsersResults, User, UserRepository}
+import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
 import vinyldns.api.route.Monitored
 
 import scala.collection.JavaConverters._
@@ -94,9 +94,6 @@ class DynamoDBUserRepository(
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
       .withGlobalSecondaryIndexes(secondaryIndexes: _*)
   )
-
-  // TODO: Loaders should not be inside these repos
-  UserRepository.loadTestData(this).unsafeRunSync()
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {

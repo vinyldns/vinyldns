@@ -20,8 +20,9 @@ import cats.syntax.either._
 import com.aaronbedra.orchard.CIDR
 import org.joda.time.DateTime
 import vinyldns.api.Interfaces.ensuring
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.record.RecordType
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
 
 import scala.util.{Failure, Success, Try}
 

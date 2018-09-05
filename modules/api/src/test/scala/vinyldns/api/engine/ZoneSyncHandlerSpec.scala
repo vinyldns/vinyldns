@@ -24,8 +24,10 @@ import org.mockito.Mockito.{doReturn, reset, times, verify}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone._
 
 class ZoneSyncHandlerSpec
     extends WordSpec
@@ -135,7 +137,7 @@ class ZoneSyncHandlerSpec
     records = List(NSData("172.17.42.1."))
   )
 
-  private val testRecordSetChange = RecordSetChange.forSyncAdd(testRecord2, testZone)
+  private val testRecordSetChange = RecordSetChangeGenerator.forSyncAdd(testRecord2, testZone)
   private val testChangeSet =
     ChangeSet.apply(testRecordSetChange).copy(status = ChangeSetStatus.Applied)
   private val testZoneChange = ZoneChange(testZone, testZone.account, ZoneChangeType.Sync)
@@ -285,9 +287,9 @@ class ZoneSyncHandlerSpec
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
       val testVinylDNSView = mock[ZoneView]
 
-      val unknownChange = RecordSetChange.forAdd(testRecordUnknown, testZone)
-      val dottedChange = RecordSetChange.forAdd(testRecordDotted, testZone)
-      val okDottedChange = RecordSetChange.forAdd(testRecordDottedOk, testZone)
+      val unknownChange = RecordSetChangeGenerator.forAdd(testRecordUnknown, testZone)
+      val dottedChange = RecordSetChangeGenerator.forAdd(testRecordDotted, testZone)
+      val okDottedChange = RecordSetChangeGenerator.forAdd(testRecordDottedOk, testZone)
       val expectedChanges = Seq(okDottedChange, dottedChange)
       val correctChangeSet = testChangeSet.copy(changes = expectedChanges)
 
@@ -311,10 +313,10 @@ class ZoneSyncHandlerSpec
     "allow for dots in reverse zone PTR, SOA, NS records" in {
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
       val testVinylDNSView = mock[ZoneView]
-      val dottedChange = RecordSetChange.forAdd(testRecordDotted, testZone)
-      val ptrChange = RecordSetChange.forAdd(testReversePTR, testReverseZone)
-      val nsChange = RecordSetChange.forAdd(testReverseNS, testReverseZone)
-      val soaChange = RecordSetChange.forAdd(testReverseSOA, testReverseZone)
+      val dottedChange = RecordSetChangeGenerator.forAdd(testRecordDotted, testZone)
+      val ptrChange = RecordSetChangeGenerator.forAdd(testReversePTR, testReverseZone)
+      val nsChange = RecordSetChangeGenerator.forAdd(testReverseNS, testReverseZone)
+      val soaChange = RecordSetChangeGenerator.forAdd(testReverseSOA, testReverseZone)
       val changes = List(ptrChange, nsChange, soaChange, dottedChange)
       val expectedChanges = List(ptrChange, nsChange, soaChange, dottedChange)
       val correctChangeSet = testChangeSet.copy(changes = expectedChanges)

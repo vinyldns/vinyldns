@@ -26,8 +26,9 @@ import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.record._
-import vinyldns.api.protobuf.ProtobufConversions
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.record.RecordChangeRepository
+import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 

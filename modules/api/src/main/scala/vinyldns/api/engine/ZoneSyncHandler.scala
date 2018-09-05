@@ -21,8 +21,9 @@ import cats.syntax.all._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneChangeStatus, ZoneStatus}
 import vinyldns.api.route.Monitored
 
 object ZoneSyncHandler extends DnsConversions with Monitored {

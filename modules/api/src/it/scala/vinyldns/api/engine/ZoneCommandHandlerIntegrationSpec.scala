@@ -24,8 +24,9 @@ import fs2.{Scheduler, Stream}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
-import vinyldns.api.domain.batch.BatchChangeRepository
-import vinyldns.api.domain.record._
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.repository.dynamodb.{
@@ -35,6 +36,7 @@ import vinyldns.api.repository.dynamodb.{
   DynamoDBZoneChangeRepository
 }
 import vinyldns.api.repository.mysql.TestMySqlInstance
+import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
@@ -119,9 +121,10 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
     status = RecordSetStatus.Active,
     created = DateTime.now,
     records = List(AData("1.2.3.4")))
-  private val inDbRecordChange = ChangeSet(RecordSetChange.forSyncAdd(inDbRecordSet, testZone))
+  private val inDbRecordChange = ChangeSet(
+    RecordSetChangeGenerator.forSyncAdd(inDbRecordSet, testZone))
   private val inDbZoneChange =
-    ZoneChange.forUpdate(testZone.copy(email = "new@test.com"), testZone, okUserAuth)
+    ZoneChangeGenerator.forUpdate(testZone.copy(email = "new@test.com"), testZone, okUserAuth)
 
   private val inDbRecordSetForSyncTest = RecordSet(
     zoneId = testZone.id,
@@ -184,7 +187,10 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
   "ZoneCommandHandler" should {
     "process a zone change" in {
       val change =
-        ZoneChange.forUpdate(testZone.copy(email = "updated@test.com"), testZone, okUserAuth)
+        ZoneChangeGenerator.forUpdate(
+          testZone.copy(email = "updated@test.com"),
+          testZone,
+          okUserAuth)
 
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {
@@ -197,7 +203,7 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
 
     "process a recordset change" in {
       val change =
-        RecordSetChange.forUpdate(inDbRecordSet, inDbRecordSet.copy(ttl = 1234), testZone)
+        RecordSetChangeGenerator.forUpdate(inDbRecordSet, inDbRecordSet.copy(ttl = 1234), testZone)
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {
         val getRs = recordSetRepo.getRecordSet(testZone.id, inDbRecordSet.id).unsafeToFuture()
@@ -207,7 +213,7 @@ class ZoneCommandHandlerIntegrationSpec extends DynamoDBIntegrationSpec with Eve
       }
     }
     "process a zone sync" in {
-      val change = ZoneChange.forSync(testZone, okUserAuth)
+      val change = ZoneChangeGenerator.forSync(testZone, okUserAuth)
 
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {

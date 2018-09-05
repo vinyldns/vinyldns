@@ -21,9 +21,9 @@ import java.util.Base64
 import cats.effect.IO
 import com.amazonaws.services.sqs.model._
 import org.slf4j.LoggerFactory
-import vinyldns.api.domain.record.RecordSetChange
-import vinyldns.api.domain.zone.{ZoneChange, ZoneCommand}
-import vinyldns.api.protobuf.ProtobufConversions
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
+import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._

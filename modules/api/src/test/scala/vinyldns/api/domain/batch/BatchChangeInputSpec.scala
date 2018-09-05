@@ -17,8 +17,8 @@
 package vinyldns.api.domain.batch
 
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.record.{AAAAData, AData, CNAMEData}
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
 
 class BatchChangeInputSpec extends WordSpec with Matchers {
   "BatchChangeInput" should {

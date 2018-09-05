@@ -28,8 +28,8 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import org.slf4j.Logger
-
 import cats.effect._
+
 import scala.util.Failure
 
 class MonitorSpec

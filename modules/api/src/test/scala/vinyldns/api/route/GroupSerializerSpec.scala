@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.membership.GroupStatus
+import vinyldns.core.domain.membership.GroupStatus
 
 class GroupSerializerSpec
     extends WordSpec

@@ -24,9 +24,9 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.record.{ChangeSet, ChangeSetStatus, RecordSetChange}
-import vinyldns.api.domain.zone.{Zone, ZoneStatus}
-import vinyldns.api.domain.{record, zone}
+import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.core.domain.record.{ChangeSet, ChangeSetStatus, RecordSetChange}
+import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -55,7 +55,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     "test@test.com",
     status = ZoneStatus.Active,
     connection = testConnection)
-  private val zoneB = zone.Zone(
+  private val zoneB = Zone(
     s"live-test-$user.zone-large.",
     "test@test.com",
     status = ZoneStatus.Active,
@@ -100,39 +100,38 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesA = {
     for {
       rs <- recordSetA
-    } yield RecordSetChange.forAdd(rs, zoneA, auth)
+    } yield RecordSetChangeGenerator.forAdd(rs, zoneA, auth)
   }.sortBy(_.id)
 
   private val recordSetChangesB = {
     for {
       rs <- recordSetB
-    } yield RecordSetChange.forAdd(rs, zoneB, auth)
+    } yield RecordSetChangeGenerator.forAdd(rs, zoneB, auth)
   }.sortBy(_.id)
 
   private val recordSetChangesC = {
     for {
       rs <- recordSetA
-    } yield RecordSetChange.forDelete(rs, zoneA, auth)
+    } yield RecordSetChangeGenerator.forDelete(rs, zoneA, auth)
   }.sortBy(_.id)
 
   private val recordSetChangesD = {
     for {
       rs <- recordSetA
       updateRs <- updateRecordSetA
-    } yield RecordSetChange.forUpdate(rs, updateRs, zoneA)
+    } yield RecordSetChangeGenerator.forUpdate(rs, updateRs, zoneA)
   }.sortBy(_.id)
 
   private val changeSetA = ChangeSet(recordSetChangesA)
-  private val changeSetB = record.ChangeSet(recordSetChangesB)
+  private val changeSetB = ChangeSet(recordSetChangesB)
   private val changeSetC =
-    record.ChangeSet(recordSetChangesC).copy(status = ChangeSetStatus.Applied)
-  private val changeSetD = record
-    .ChangeSet(recordSetChangesD)
+    ChangeSet(recordSetChangesC).copy(status = ChangeSetStatus.Applied)
+  private val changeSetD = ChangeSet(recordSetChangesD)
     .copy(createdTimestamp = changeSetA.createdTimestamp + 1000) // make sure D is created AFTER A
   private val changeSets = List(changeSetA, changeSetB, changeSetC, changeSetD)
 
   //This zone is to test listing record changes in correct order
-  private val zoneC = zone.Zone(
+  private val zoneC = Zone(
     s"live-test-$user.record-changes.",
     "test@test.com",
     status = ZoneStatus.Active,
@@ -175,14 +174,14 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesCreateC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield RecordSetChange.forAdd(rs, zoneC, auth).copy(created = timeOrder(index))
+    } yield RecordSetChangeGenerator.forAdd(rs, zoneC, auth).copy(created = timeOrder(index))
   }
 
   private val recordSetChangesUpdateC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
     } yield
-      RecordSetChange
+      RecordSetChangeGenerator
         .forUpdate(rs, updateRecordSetsC(index), zoneC)
         .copy(created = timeOrder(index + 3))
   }
@@ -190,12 +189,12 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesDeleteC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield RecordSetChange.forDelete(rs, zoneC, auth).copy(created = timeOrder(index + 6))
+    } yield RecordSetChangeGenerator.forDelete(rs, zoneC, auth).copy(created = timeOrder(index + 6))
   }
 
-  private val changeSetCreateC = record.ChangeSet(recordSetChangesCreateC)
-  private val changeSetUpdateC = record.ChangeSet(recordSetChangesUpdateC)
-  private val changeSetDeleteC = record.ChangeSet(recordSetChangesDeleteC)
+  private val changeSetCreateC = ChangeSet(recordSetChangesCreateC)
+  private val changeSetUpdateC = ChangeSet(recordSetChangesUpdateC)
+  private val changeSetDeleteC = ChangeSet(recordSetChangesDeleteC)
   private val changeSetsC = List(changeSetCreateC, changeSetUpdateC, changeSetDeleteC)
   private val recordSetChanges: List[RecordSetChange] =
     (recordSetChangesCreateC ++ recordSetChangesUpdateC ++ recordSetChangesDeleteC)

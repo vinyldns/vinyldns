@@ -24,22 +24,21 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
+import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.batch.{
-  BatchChangeConverter,
-  BatchChangeRepository,
-  BatchChangeService,
-  BatchChangeValidations
-}
+import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
-import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository, RecordSetService}
+import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
-import vinyldns.api.repository.{DataStoreStartupError, RepositoryName}
+import vinyldns.api.repository.dynamodb._
+import vinyldns.api.repository.{DataStoreStartupError, TestDataLoader}
 import vinyldns.api.repository.mysql.MySqlDataStoreProvider
 import vinyldns.api.route.{HealthService, VinylDNSService}
-import vinyldns.core.crypto.Crypto
+import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.repository.RepositoryName
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
@@ -74,14 +73,16 @@ object Boot extends App {
       batchChangeRepo <- IO.fromEither(
         mySqlDataStore
           .get[BatchChangeRepository](RepositoryName.batchChange)
-          .toRight[Throwable](DataStoreStartupError("Missing batch change repository")))
-      userRepo <- IO(UserRepository())
-      groupRepo <- IO(GroupRepository())
-      membershipRepo <- IO(MembershipRepository())
-      groupChangeRepo <- IO(GroupChangeRepository())
-      recordSetRepo <- IO(RecordSetRepository())
-      recordChangeRepo <- IO(RecordChangeRepository())
-      zoneChangeRepo <- IO(ZoneChangeRepository())
+          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
+      // TODO this also will all be removed with dynamic loading
+      userRepo <- IO(DynamoDBUserRepository())
+      groupRepo <- IO(DynamoDBGroupRepository())
+      membershipRepo <- IO(DynamoDBMembershipRepository())
+      groupChangeRepo <- IO(DynamoDBGroupChangeRepository())
+      recordSetRepo <- IO(DynamoDBRecordSetRepository())
+      recordChangeRepo <- IO(DynamoDBRecordChangeRepository())
+      zoneChangeRepo <- IO(DynamoDBZoneChangeRepository())
+      _ <- TestDataLoader.loadTestData(userRepo, groupRepo, membershipRepo)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))

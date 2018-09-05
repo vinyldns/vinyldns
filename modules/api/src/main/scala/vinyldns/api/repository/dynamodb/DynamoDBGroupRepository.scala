@@ -26,8 +26,8 @@ import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.membership.GroupStatus.GroupStatus
-import vinyldns.api.domain.membership.{Group, GroupRepository, GroupStatus}
+import vinyldns.core.domain.membership.GroupStatus.GroupStatus
+import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus}
 import vinyldns.api.route.Monitored
 
 import scala.collection.JavaConverters._
@@ -87,9 +87,6 @@ class DynamoDBGroupRepository(
       .withGlobalSecondaryIndexes(secondaryIndexes: _*)
       .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
   )
-
-  def loadData: IO[List[Group]] = GroupRepository.loadTestData(this)
-  loadData.unsafeRunSync()
 
   def save(group: Group): IO[Group] =
     monitor("repo.Group.save") {

@@ -28,12 +28,12 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.GroupTestData
-import vinyldns.api.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
-import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.record._
-
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record._
 import cats.effect._
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch._
 
 class BatchChangeRoutingSpec
     extends WordSpec
@@ -48,7 +48,7 @@ class BatchChangeRoutingSpec
 
   val batchChangeService: BatchChangeServiceAlgebra = TestBatchChangeService
 
-  import SingleChangeStatus._
+  import vinyldns.core.domain.batch.SingleChangeStatus._
 
   object TestData {
     import vinyldns.api.domain.batch.ChangeInputType._

@@ -20,9 +20,11 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
-import vinyldns.api.domain.dns.DnsConversions.omitTrailingDot
-import vinyldns.api.domain.record.RecordType._
+import vinyldns.core.domain.DomainHelpers.omitTrailingDot
+import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.zone.Zone
 
 object RecordSetValidations {
 

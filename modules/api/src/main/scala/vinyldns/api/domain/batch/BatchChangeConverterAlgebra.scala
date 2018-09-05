@@ -22,6 +22,7 @@ import vinyldns.api.domain.batch.BatchTransformations.{
   ExistingRecordSets,
   ExistingZones
 }
+import vinyldns.core.domain.batch.BatchChange
 
 trait BatchChangeConverterAlgebra {
 

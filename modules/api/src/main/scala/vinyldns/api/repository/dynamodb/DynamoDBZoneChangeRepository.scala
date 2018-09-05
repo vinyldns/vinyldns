@@ -25,14 +25,14 @@ import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.zone.ZoneChangeStatus.ZoneChangeStatus
-import vinyldns.api.domain.zone.{
+import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
+import vinyldns.core.domain.zone.{
   ListZoneChangesResults,
   ZoneChange,
   ZoneChangeRepository,
   ZoneChangeStatus
 }
-import vinyldns.api.protobuf.ProtobufConversions
+import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.api.route.Monitored
 import vinyldns.proto.VinylDNSProto
 

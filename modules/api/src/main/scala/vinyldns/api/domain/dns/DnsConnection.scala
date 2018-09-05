@@ -21,9 +21,10 @@ import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import vinyldns.api.Interfaces.{result, _}
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
-import vinyldns.api.domain.zone.{Zone, ZoneConnection}
+import vinyldns.api.crypto.Crypto
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
+import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 object DnsProtocol {
 
@@ -201,7 +202,7 @@ object DnsConnection {
 
   def createResolver(conn: ZoneConnection): DNS.SimpleResolver = {
     // IMPORTANT!  Make sure we decrypt the zone connection before creating the resolver
-    val decryptedConnection = conn.decrypted()
+    val decryptedConnection = conn.decrypted(Crypto.instance)
     val (host, port) = parseHostAndPort(decryptedConnection.primaryServer)
     val resolver = new DNS.SimpleResolver(host)
     resolver.setPort(port)

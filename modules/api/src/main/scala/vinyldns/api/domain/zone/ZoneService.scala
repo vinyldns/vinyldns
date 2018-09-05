@@ -19,9 +19,10 @@ package vinyldns.api.domain.zone
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.AccessValidationAlgebra
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.engine.EngineCommandBus
-import vinyldns.api.domain.membership.{Group, GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
+import vinyldns.core.domain.zone._
 
 class ZoneService(
     zoneRepository: ZoneRepository,
@@ -44,7 +45,7 @@ class ZoneService(
       _ <- zoneDoesNotExist(zone)
       _ <- adminGroupExists(zone.adminGroupId)
       _ <- userIsMemberOfGroup(zone.adminGroupId, auth).toResult
-      createZoneChange <- ZoneChange.forAdd(zone, auth).toResult
+      createZoneChange <- ZoneChangeGenerator.forAdd(zone, auth).toResult
       send <- commandBus.sendZoneCommand(createZoneChange)
     } yield send
 
@@ -56,7 +57,7 @@ class ZoneService(
       _ <- canChangeZone(auth, existingZone).toResult
       _ <- adminGroupExists(newZone.adminGroupId)
       _ <- userIsMemberOfGroup(newZone.adminGroupId, auth).toResult
-      updateZoneChange <- ZoneChange.forUpdate(newZone, existingZone, auth).toResult
+      updateZoneChange <- ZoneChangeGenerator.forUpdate(newZone, existingZone, auth).toResult
       send <- commandBus.sendZoneCommand(updateZoneChange)
     } yield send
 
@@ -64,7 +65,7 @@ class ZoneService(
     for {
       zone <- getZoneOrFail(zoneId)
       _ <- canChangeZone(auth, zone).toResult
-      deleteZoneChange <- ZoneChange.forDelete(zone, auth).toResult
+      deleteZoneChange <- ZoneChangeGenerator.forDelete(zone, auth).toResult
       send <- commandBus.sendZoneCommand(deleteZoneChange)
     } yield send
 
@@ -73,7 +74,7 @@ class ZoneService(
       zone <- getZoneOrFail(zoneId)
       _ <- canChangeZone(auth, zone).toResult
       _ <- outsideSyncDelay(zone).toResult
-      syncZoneChange <- ZoneChange.forSync(zone, auth).toResult
+      syncZoneChange <- ZoneChangeGenerator.forSync(zone, auth).toResult
       send <- commandBus.sendZoneCommand(syncZoneChange)
     } yield send
 
@@ -136,7 +137,7 @@ class ZoneService(
       zone <- getZoneOrFail(zoneId)
       _ <- canChangeZone(authPrincipal, zone).toResult
       _ <- isValidAclRule(newRule).toResult
-      zoneChange <- ZoneChange
+      zoneChange <- ZoneChangeGenerator
         .forUpdate(
           newZone = zone.addACLRule(newRule),
           oldZone = zone,
@@ -155,7 +156,7 @@ class ZoneService(
     for {
       zone <- getZoneOrFail(zoneId)
       _ <- canChangeZone(authPrincipal, zone).toResult
-      zoneChange <- ZoneChange
+      zoneChange <- ZoneChangeGenerator
         .forUpdate(
           newZone = zone.deleteACLRule(newRule),
           oldZone = zone,

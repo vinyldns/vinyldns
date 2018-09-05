@@ -20,17 +20,19 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import org.scalatest.Matchers
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.membership._
-import vinyldns.api.domain.zone._
+import vinyldns.api.domain.membership.{GroupChangeInfo, GroupInfo, MemberInfo, UserInfo}
+import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership._
+import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
 import scala.util.Random
 
 trait GroupTestData { this: Matchers =>
 
-  val okUser: User = UserRepository.okUser
-  val dummyUser: User = UserRepository.dummyUser
-  val listOfDummyUsers: List[User] = UserRepository.listOfDummyUsers
+  val okUser: User = TestDataLoader.okUser
+  val dummyUser: User = TestDataLoader.dummyUser
+  val listOfDummyUsers: List[User] = TestDataLoader.listOfDummyUsers
 
   val okUserInfo: UserInfo = UserInfo(okUser)
   val dummyUserInfo: UserInfo = UserInfo(dummyUser)
@@ -82,7 +84,7 @@ trait GroupTestData { this: Matchers =>
   val okMemberInfo: MemberInfo = MemberInfo(okUser, okGroup)
   val dummyMemberInfo: MemberInfo = MemberInfo(dummyUser, okGroup)
   val listOfMembersInfo: List[MemberInfo] =
-    UserRepository.listOfDummyUsers.map(MemberInfo(_, okGroup))
+    TestDataLoader.listOfDummyUsers.map(MemberInfo(_, okGroup))
 
   val okGroupAuth: AuthPrincipal = AuthPrincipal(okUser, Seq(okGroup.id))
   val okGroupInfo: GroupInfo = GroupInfo(okGroup)

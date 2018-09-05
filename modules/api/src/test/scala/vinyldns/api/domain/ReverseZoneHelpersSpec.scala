@@ -21,9 +21,10 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone.{InvalidRequest, _}
+import vinyldns.core.domain.record._
+import vinyldns.api.domain.zone.InvalidRequest
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.zone.Zone
 
 class ReverseZoneHelpersSpec
     extends WordSpec

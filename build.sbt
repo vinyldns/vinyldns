@@ -79,7 +79,7 @@ lazy val testSettings = Seq(
 
 lazy val apiSettings = Seq(
   name := "api",
-  libraryDependencies ++= compileDependencies ++ testDependencies,
+  libraryDependencies ++= compileDependencies ++ testDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
   coverageMinimum := 85,
@@ -181,7 +181,6 @@ lazy val allApiSettings = Revolver.settings ++ Defaults.itSettings ++
   testSettings ++
   apiPublishSettings ++
   apiDockerSettings ++
-  pbSettings ++
   scalaStyleSettings
 
 lazy val api = (project in file("modules/api"))
@@ -209,7 +208,7 @@ lazy val coreBuildSettings = Seq(
   // do not use unused params as NoOpCrypto ignores its constructor, we should provide a way
   // to write a crypto plugin so that we fall back to a noarg constructor
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
-)
+) ++ pbSettings
 
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
@@ -226,7 +225,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(coreBuildSettings)
   .settings(corePublishSettings)
   .settings(testSettings)
-  .settings(libraryDependencies ++= coreDependencies)
+  .settings(libraryDependencies ++= coreDependencies ++ coreTestDependencies.map(_ % "test"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     coverageMinimum := 85,
