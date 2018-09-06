@@ -18,9 +18,12 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import vinyldns.api.crypto.Crypto
+
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
-import vinyldns.api.domain.zone.ZoneConnection
+import vinyldns.core.domain.zone.ZoneConnection
+import vinyldns.core.repository.DataStoreConfig
 
 object VinylDNSConfig {
 
@@ -37,7 +40,8 @@ object VinylDNSConfig {
   lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("groups")
   lazy val groupChangesStoreConfig: Config = vinyldnsConfig.getConfig("groupChanges")
   lazy val membershipStoreConfig: Config = vinyldnsConfig.getConfig("membership")
-  lazy val dbConfig: Config = vinyldnsConfig.getConfig("db")
+  lazy val mySqlConfig: DataStoreConfig =
+    pureconfig.loadConfigOrThrow[DataStoreConfig](vinyldnsConfig, "mysql")
   lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
@@ -51,7 +55,7 @@ object VinylDNSConfig {
     val keyName = connectionConfig.getString("keyName")
     val key = connectionConfig.getString("key")
     val primaryServer = connectionConfig.getString("primaryServer")
-    ZoneConnection(name, keyName, key, primaryServer).encrypted()
+    ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
 
   lazy val defaultTransferConnection: ZoneConnection = {
@@ -60,6 +64,6 @@ object VinylDNSConfig {
     val keyName = connectionConfig.getString("keyName")
     val key = connectionConfig.getString("key")
     val primaryServer = connectionConfig.getString("primaryServer")
-    ZoneConnection(name, keyName, key, primaryServer).encrypted()
+    ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
 }

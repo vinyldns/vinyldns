@@ -20,8 +20,10 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
 import akka.util.Timeout
 import vinyldns.api.Interfaces._
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.{ACLRuleInfo, Zone}
 
 import scala.concurrent.duration._
 
@@ -125,8 +127,8 @@ trait ZoneRoute extends Directives {
     */
   private def encrypt(zone: Zone): Zone =
     zone.copy(
-      connection = zone.connection.map(_.encrypted()),
-      transferConnection = zone.transferConnection.map(_.encrypted()))
+      connection = zone.connection.map(_.encrypted(Crypto.instance)),
+      transferConnection = zone.transferConnection.map(_.encrypted(Crypto.instance)))
 
   // TODO: This is duplicated across routes.  Leaving duplicated until we upgrade our json serialization
   private val invalidQueryHandler = RejectionHandler

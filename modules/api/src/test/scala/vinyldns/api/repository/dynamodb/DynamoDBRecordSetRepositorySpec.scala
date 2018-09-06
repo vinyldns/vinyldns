@@ -26,8 +26,8 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet}
-import vinyldns.api.domain.zone.Zone
+import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet}
+import vinyldns.core.domain.zone.Zone
 import vinyldns.api.{ResultHelpers, VinylDNSConfig, VinylDNSTestData}
 
 import cats.effect._

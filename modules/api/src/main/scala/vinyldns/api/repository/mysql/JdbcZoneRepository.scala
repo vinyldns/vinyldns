@@ -20,11 +20,11 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.membership.User
-import vinyldns.api.domain.zone.{Zone, ZoneRepository, ZoneStatus}
-import vinyldns.api.protobuf.ProtobufConversions
-import vinyldns.api.route.Monitored
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
+import vinyldns.core.protobuf.ProtobufConversions
+import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {

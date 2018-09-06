@@ -18,11 +18,13 @@ package vinyldns.api.domain.record
 
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.engine.EngineCommandBus
-import vinyldns.api.domain.membership.{User, UserRepository}
+import vinyldns.core.domain.membership.{User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 
 class RecordSetService(
     zoneRepository: ZoneRepository,
@@ -39,7 +41,7 @@ class RecordSetService(
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZone(recordSet.zoneId)
-      change <- RecordSetChange.forAdd(recordSet, zone, Some(auth)).toResult
+      change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- recordSetDoesNotExist(rsForValidations, zone)
@@ -58,7 +60,7 @@ class RecordSetService(
     for {
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id, zone)
-      change <- RecordSetChange.forUpdate(existing, recordSet, zone, Some(auth)).toResult
+      change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone).toResult
@@ -84,7 +86,7 @@ class RecordSetService(
       _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone).toResult
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult
-      change <- RecordSetChange.forDelete(existing, zone, Some(auth)).toResult
+      change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
       send <- commandBus.sendZoneCommand(change)
     } yield send
 

@@ -20,8 +20,8 @@ import cats.scalatest.{ValidatedMatchers, ValidatedValues}
 import org.json4s.JsonDSL._
 import org.json4s.{Extraction, Serializer => json4sSerializer}
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.record.RecordType
-import vinyldns.api.domain.zone.AccessLevel
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.zone.AccessLevel
 
 class ACLRuleInfoSerializerSpec
     extends WordSpec

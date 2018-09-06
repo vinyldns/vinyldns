@@ -22,9 +22,9 @@ import cats.syntax.either._
 import org.joda.time.DateTime
 import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsProtocol._
-import vinyldns.api.domain.record
-import vinyldns.api.domain.record.RecordType._
-import vinyldns.api.domain.record._
+import vinyldns.core.domain.{DomainHelpers, record}
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record._
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -32,6 +32,8 @@ import scala.util.Try
 class BadDNSRecordException(message: String) extends Exception(message) {}
 
 trait DnsConversions {
+
+  import DomainHelpers._
 
   /**
     * record names are either relative to the zone name or
@@ -49,15 +51,6 @@ trait DnsConversions {
       zoneDnsName(zoneName).toString
     else
       DNS.Name.fromString(recordName).relativize(zoneDnsName(zoneName)).toString
-
-  def omitTrailingDot(name: String): String =
-    if (name.endsWith(".")) {
-      name.substring(0, name.length - 1)
-    } else {
-      name
-    }
-
-  def ensureTrailingDot(str: String): String = if (str.endsWith(".")) str else s"$str."
 
   def getZoneFromNonApexFqdn(domainName: String): String =
     domainName.substring(domainName.indexOf(".") + 1)

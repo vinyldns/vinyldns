@@ -20,15 +20,20 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.{ExistingRecordSets, ExistingZones}
-import vinyldns.api.domain.record.RecordSetChangeType.RecordSetChangeType
-import vinyldns.api.domain.record.RecordType.{RecordType, _}
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone.Zone
+import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.record.RecordType.{RecordType, _}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository._
-import vinyldns.api.{domain, _}
-
 import cats.effect._
+import vinyldns.api.{CatsHelpers, GroupTestData, VinylDNSTestData}
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  SingleAddChange,
+  SingleChangeStatus,
+  SingleDeleteChange
+}
 
 class BatchChangeConverterSpec
     extends WordSpec
@@ -233,12 +238,7 @@ class BatchChangeConverterSpec
 
     "successfully generate delete RecordSetChange and map IDs for all deletes" in {
       val batchChange =
-        domain.batch.BatchChange(
-          okUser.id,
-          okUser.userName,
-          None,
-          DateTime.now,
-          deleteSingleChangesGood)
+        BatchChange(okUser.id, okUser.userName, None, DateTime.now, deleteSingleChangesGood)
       val result = rightResultOf(
         underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
       val rsChanges = result.recordSetChanges
@@ -267,12 +267,7 @@ class BatchChangeConverterSpec
 
     "successfully generate update RecordSetChange and map IDs for mix of adds/deletes" in {
       val batchChange =
-        domain.batch.BatchChange(
-          okUser.id,
-          okUser.userName,
-          None,
-          DateTime.now,
-          updateSingleChangesGood)
+        BatchChange(okUser.id, okUser.userName, None, DateTime.now, updateSingleChangesGood)
       val result = rightResultOf(
         underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
       val rsChanges = result.recordSetChanges
@@ -298,7 +293,7 @@ class BatchChangeConverterSpec
     "successfully handle a combination of adds, updates, and deletes" in {
       val changes = addSingleChangesGood ++ deleteSingleChangesGood ++ updateSingleChangesGood
       val batchChange =
-        domain.batch.BatchChange(okUser.id, okUser.userName, None, DateTime.now, changes)
+        BatchChange(okUser.id, okUser.userName, None, DateTime.now, changes)
       val result = rightResultOf(
         underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
       val rsChanges = result.recordSetChanges
@@ -334,12 +329,7 @@ class BatchChangeConverterSpec
 
     "set status to failure for changes with queueing issues" in {
       val batchChangeWithBadSqs =
-        domain.batch.BatchChange(
-          okUser.id,
-          okUser.userName,
-          None,
-          DateTime.now,
-          singleChangesOneBadSqs)
+        BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneBadSqs)
       val result = rightResultOf(
         underTest
           .sendBatchForProcessing(batchChangeWithBadSqs, existingZones, existingRecordSets)
@@ -372,12 +362,7 @@ class BatchChangeConverterSpec
 
     "return error if an unsupported record is received" in {
       val batchChangeUnsupported =
-        domain.batch.BatchChange(
-          okUser.id,
-          okUser.userName,
-          None,
-          DateTime.now,
-          singleChangesOneUnsupported)
+        BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneUnsupported)
       val result = leftResultOf(
         underTest
           .sendBatchForProcessing(batchChangeUnsupported, existingZones, existingRecordSets)

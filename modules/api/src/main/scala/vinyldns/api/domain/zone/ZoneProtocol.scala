@@ -17,40 +17,14 @@
 package vinyldns.api.domain.zone
 
 import org.joda.time.DateTime
-import vinyldns.api.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
-import vinyldns.api.domain.record.RecordSetChangeType.RecordSetChangeType
-import vinyldns.api.domain.record.RecordSetStatus.RecordSetStatus
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.record.{RecordData, RecordSet, RecordSetChange}
-import vinyldns.api.domain.zone.AccessLevel.AccessLevel
-import vinyldns.api.domain.zone.ZoneStatus.ZoneStatus
-
-trait ZoneCommand {
-  val zoneId: String
-}
-
-case class ACLRuleInfo(
-    accessLevel: AccessLevel,
-    description: Option[String],
-    userId: Option[String],
-    groupId: Option[String],
-    recordMask: Option[String],
-    recordTypes: Set[RecordType],
-    displayName: Option[String] = None
-)
-
-object ACLRuleInfo {
-  def apply(aCLRule: ACLRule, name: Option[String]): ACLRuleInfo =
-    ACLRuleInfo(
-      accessLevel = aCLRule.accessLevel,
-      description = aCLRule.description,
-      userId = aCLRule.userId,
-      groupId = aCLRule.groupId,
-      recordMask = aCLRule.recordMask,
-      recordTypes = aCLRule.recordTypes,
-      displayName = name
-    )
-}
+import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
+import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.zone.{ACLRuleInfo, Zone, ZoneACL, ZoneConnection}
+import vinyldns.core.domain.zone.AccessLevel.AccessLevel
+import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
 case class ZoneACLInfo(rules: Set[ACLRuleInfo])
 

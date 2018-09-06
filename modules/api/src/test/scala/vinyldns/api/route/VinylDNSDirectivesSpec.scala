@@ -18,7 +18,7 @@ package vinyldns.api.route
 
 import java.io.IOException
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import nl.grons.metrics.scala.{Histogram, Meter}
@@ -26,6 +26,9 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, OneInstancePerTest, WordSpec}
+import vinyldns.core.route.Monitor
+
+import scala.util.Failure
 
 class VinylDNSDirectivesSpec
     extends WordSpec
@@ -84,6 +87,41 @@ class VinylDNSDirectivesSpec
 
         verify(mockLatency).+=(anyLong)
         verify(mockErrors).mark()
+      }
+    }
+    "record method" should {
+      val testMonitor = new TestMonitor()
+      val mockHttpResponse = HttpResponse()
+
+      "increment the latency and not errors when recording a successful HttpResponse" in {
+        val result = record(testMonitor, System.nanoTime())(mockHttpResponse)
+        result shouldBe mockHttpResponse
+
+        verify(mockLatency).+=(anyLong())
+        verifyZeroInteractions(mockErrors)
+      }
+      "increment the latency and the errors when recording a 500 HttpResponse" in {
+        val httpResponse = HttpResponse(StatusCodes.ServiceUnavailable)
+
+        val result = record(testMonitor, System.nanoTime())(httpResponse)
+        result shouldBe httpResponse
+
+        verify(mockLatency).+=(anyLong())
+        verify(mockErrors).mark()
+      }
+      "increment the latency and the errors when recording an exception" in {
+        an[IOException] should be thrownBy record(testMonitor, System.nanoTime())(
+          Failure(new IOException("fail")))
+
+        verify(mockLatency).+=(anyLong())
+        verify(mockErrors).mark()
+      }
+      "do nothing if the parameter is unexpected" in {
+        val result = record(testMonitor, System.nanoTime())(100)
+        result shouldBe 100
+
+        verifyZeroInteractions(mockLatency)
+        verifyZeroInteractions(mockErrors)
       }
     }
   }

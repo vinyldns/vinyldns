@@ -21,7 +21,7 @@ import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
 import cats.data.EitherT
 import cats.effect._
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
 
 trait BatchChangeRoute extends Directives {

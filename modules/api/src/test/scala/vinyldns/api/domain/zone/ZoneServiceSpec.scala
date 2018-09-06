@@ -23,12 +23,14 @@ import org.scalatest.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.membership._
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
-
 import cats.effect._
+import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership._
+import vinyldns.core.domain.zone._
+
 import scala.concurrent.duration._
 
 class ZoneServiceSpec
@@ -130,7 +132,7 @@ class ZoneServiceSpec
     "return an update zone change response" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
-      val doubleAuth = AuthPrincipal(UserRepository.okUser, Seq(grp.id, okGroup.id))
+      val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(grp.id, okGroup.id))
       val newZone = zoneAuthorized.copy(adminGroupId = okGroup.id)
       val resultChange: ZoneChange = rightResultOf(
         underTest.updateZone(newZone, doubleAuth).map(_.asInstanceOf[ZoneChange]).value,
@@ -146,7 +148,7 @@ class ZoneServiceSpec
       val oldZone = zoneAuthorized.copy(connection = Some(badConnection))
       doReturn(IO.pure(Some(oldZone))).when(mockZoneRepo).getZone(anyString)
 
-      val doubleAuth = AuthPrincipal(UserRepository.okUser, Seq(grp.id, okGroup.id))
+      val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(grp.id, okGroup.id))
       val newZone = oldZone.copy(adminGroupId = okGroup.id)
 
       val resultChange: ZoneChange =
@@ -167,7 +169,7 @@ class ZoneServiceSpec
     "return an error if the user is not authorized for the zone" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
-      val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
+      val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
       val newZone = zoneAuthorized.copy(adminGroupId = okGroup.id)
 
       val error = leftResultOf(underTest.updateZone(newZone, noAuth).value)
@@ -199,7 +201,7 @@ class ZoneServiceSpec
     "return an error if the user is not authorized for the zone" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
-      val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
+      val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
 
       val error = leftResultOf(underTest.deleteZone(zoneAuthorized.id, noAuth).value)
       error shouldBe a[NotAuthorizedError]
@@ -221,7 +223,7 @@ class ZoneServiceSpec
     "return an error if the user is not authorized for the zone" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
-      val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
+      val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
 
       val error = leftResultOf(underTest.syncZone(zoneAuthorized.id, noAuth).value)
       error shouldBe a[NotAuthorizedError]
@@ -239,7 +241,7 @@ class ZoneServiceSpec
     "return an error if the user is not authorized for the zone" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
-      val noAuth = AuthPrincipal(UserRepository.okUser, Seq())
+      val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
 
       val error = leftResultOf(underTest.getZone(zoneAuthorized.id, noAuth).value)
       error shouldBe a[NotAuthorizedError]

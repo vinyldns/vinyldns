@@ -19,8 +19,9 @@ package vinyldns.api.domain.membership
 import java.util.UUID
 
 import org.joda.time.DateTime
-import vinyldns.api.domain.membership.GroupChangeType.GroupChangeType
-import vinyldns.api.domain.membership.GroupStatus.GroupStatus
+import vinyldns.core.domain.membership.GroupChangeType.GroupChangeType
+import vinyldns.core.domain.membership.GroupStatus.GroupStatus
+import vinyldns.core.domain.membership._
 
 /* This is the new View model for Groups, do not surface the Group model directly any more */
 final case class GroupInfo(

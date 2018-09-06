@@ -23,10 +23,10 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.api.domain.membership.UserRepository
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone._
 import vinyldns.api.domain.{AccessValidations, _}
+import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
 import scala.util.Random
 
@@ -698,7 +698,7 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel),
       ExistingRecordSets(recordSetList),
-      notAuth.copy(UserRepository.dummyUser.copy(isSuper = true)))
+      notAuth.copy(TestDataLoader.dummyUser.copy(isSuper = true)))
 
     result(0) shouldBe valid
   }
@@ -815,7 +815,7 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      notAuth.copy(UserRepository.dummyUser.copy(isSuper = true)))
+      notAuth.copy(TestDataLoader.dummyUser.copy(isSuper = true)))
     result(0) shouldBe valid
   }
 

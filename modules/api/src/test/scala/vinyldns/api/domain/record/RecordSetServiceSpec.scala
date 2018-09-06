@@ -22,13 +22,15 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.membership.{ListUsersResults, UserRepository}
+import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
-
 import cats.effect._
+import vinyldns.core.domain.membership.{ListUsersResults, UserRepository}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.{AccessLevel, ZoneRepository}
 
 class RecordSetServiceSpec
     extends WordSpec
@@ -72,7 +74,7 @@ class RecordSetServiceSpec
       val result: RecordSetChange = rightResultOf(
         underTest.addRecordSet(record, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
-      result.recordSet.matches(record, zoneAuthorized.name) shouldBe true
+      matches(result.recordSet, record, zoneAuthorized.name) shouldBe true
       result.changeType shouldBe RecordSetChangeType.Create
       result.status shouldBe RecordSetChangeStatus.Pending
     }
@@ -179,8 +181,8 @@ class RecordSetServiceSpec
       val result: RecordSetChange = rightResultOf(
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value)
 
-      result.recordSet.matches(newRecord, zoneAuthorized.name) shouldBe true
-      result.updates.get.matches(oldRecord, zoneAuthorized.name) shouldBe true
+      matches(result.recordSet, newRecord, zoneAuthorized.name) shouldBe true
+      matches(result.updates.get, oldRecord, zoneAuthorized.name) shouldBe true
       result.changeType shouldBe RecordSetChangeType.Update
       result.status shouldBe RecordSetChangeStatus.Pending
     }
@@ -286,7 +288,7 @@ class RecordSetServiceSpec
           .map(_.asInstanceOf[RecordSetChange])
           .value)
 
-      result.recordSet.matches(record, zoneAuthorized.name) shouldBe true
+      matches(result.recordSet, record, zoneAuthorized.name) shouldBe true
       result.changeType shouldBe RecordSetChangeType.Delete
       result.status shouldBe RecordSetChangeStatus.Pending
     }

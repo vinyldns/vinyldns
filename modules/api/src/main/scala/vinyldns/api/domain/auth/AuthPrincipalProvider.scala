@@ -17,8 +17,10 @@
 package vinyldns.api.domain.auth
 
 import cats.effect._
-import vinyldns.api.domain.membership.{MembershipRepository, User, UserRepository}
-import vinyldns.api.route.Monitored
+import vinyldns.core.domain.membership.{MembershipRepository, User, UserRepository}
+import vinyldns.api.repository.dynamodb.{DynamoDBMembershipRepository, DynamoDBUserRepository}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.route.Monitored
 
 trait AuthPrincipalProvider extends Monitored {
   def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]]
@@ -50,8 +52,9 @@ class MembershipAuthPrincipalProvider(
 }
 
 object MembershipAuthPrincipalProvider {
-  val userRepository: UserRepository = UserRepository()
-  val membershipRepository: MembershipRepository = MembershipRepository()
+  // TODO this has to be dynamic!!!
+  val userRepository: UserRepository = DynamoDBUserRepository()
+  val membershipRepository: MembershipRepository = DynamoDBMembershipRepository()
 
   def apply(): MembershipAuthPrincipalProvider =
     new MembershipAuthPrincipalProvider(userRepository, membershipRepository)

@@ -25,8 +25,8 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.dns.DnsProtocol._
-import vinyldns.api.domain.record._
-import vinyldns.api.domain.zone._
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
 
 import scala.collection.JavaConverters._
 

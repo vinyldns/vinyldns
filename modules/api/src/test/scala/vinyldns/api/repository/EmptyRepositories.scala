@@ -16,10 +16,10 @@
 
 package vinyldns.api.repository
 
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
-import vinyldns.api.domain.zone.{Zone, ZoneRepository}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
+import vinyldns.core.domain.zone.{Zone, ZoneRepository}
 
 import cats.effect._
 

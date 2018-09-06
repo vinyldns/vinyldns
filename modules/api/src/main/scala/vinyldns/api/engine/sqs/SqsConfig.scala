@@ -27,12 +27,7 @@ case class SqsCredentials(
 case class SqsConfig(embedded: Boolean, sqsCredentials: SqsCredentials)
 
 object SqsConfig {
-  import pureconfig._
-  import pureconfig.error.ConfigReaderException
+  import pureconfig.module.catseffect.loadConfigF
 
-  def apply(config: Config, path: String): IO[SqsConfig] =
-    loadConfig[SqsConfig](config, path) match {
-      case Right(c) => IO.pure(c)
-      case Left(e) => IO.raiseError(new ConfigReaderException[SqsConfig](e))
-    }
+  def apply(config: Config, path: String): IO[SqsConfig] = loadConfigF[IO, SqsConfig](config, path)
 }

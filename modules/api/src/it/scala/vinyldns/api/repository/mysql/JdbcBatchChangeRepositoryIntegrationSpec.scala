@@ -24,11 +24,11 @@ import org.scalatest._
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.batch._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.domain.record.{AAAAData, AData}
+import vinyldns.core.domain.record.{AAAAData, AData, RecordType}
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.batch._
 
 class JdbcBatchChangeRepositoryIntegrationSpec
     extends WordSpec
@@ -43,11 +43,11 @@ class JdbcBatchChangeRepositoryIntegrationSpec
     with Inspectors
     with OptionValues {
 
-  private var repo: JdbcBatchChangeRepository = _
+  private var repo: BatchChangeRepository = _
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   import SingleChangeStatus._
-  import vinyldns.api.domain.record.RecordType._
+  import RecordType._
 
   object TestData {
 
@@ -148,7 +148,7 @@ class JdbcBatchChangeRepositoryIntegrationSpec
   import TestData._
 
   override protected def beforeAll(): Unit =
-    repo = VinylDNSJDBC.instance.batchChangeRepository
+    repo = TestMySqlInstance.batchChangeRepository
 
   override protected def beforeEach(): Unit =
     DB.localTx { s =>

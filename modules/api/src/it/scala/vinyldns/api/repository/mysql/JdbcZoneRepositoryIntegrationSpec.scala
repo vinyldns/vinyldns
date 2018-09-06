@@ -23,11 +23,11 @@ import org.scalatest._
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
-import vinyldns.api.domain.auth.AuthPrincipal
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.domain.membership.User
-import vinyldns.api.domain.zone._
+import vinyldns.core.domain.membership.User
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.zone._
 
 class JdbcZoneRepositoryIntegrationSpec
     extends WordSpec
@@ -41,11 +41,11 @@ class JdbcZoneRepositoryIntegrationSpec
     with ScalaFutures
     with Inspectors {
 
-  private var repo: JdbcZoneRepository = _
+  private var repo: ZoneRepository = _
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   override protected def beforeAll(): Unit =
-    repo = VinylDNSJDBC.instance.zoneRepository
+    repo = TestMySqlInstance.zoneRepository
 
   override protected def beforeEach(): Unit =
     DB.localTx { s =>

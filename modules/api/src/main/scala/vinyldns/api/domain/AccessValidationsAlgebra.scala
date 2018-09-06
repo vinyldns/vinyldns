@@ -16,10 +16,11 @@
 
 package vinyldns.api.domain
 
-import vinyldns.api.domain.auth.AuthPrincipal
-import vinyldns.api.domain.record.RecordSet
-import vinyldns.api.domain.record.RecordType.RecordType
-import vinyldns.api.domain.zone.{RecordSetInfo, Zone}
+import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.api.domain.zone.RecordSetInfo
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.Zone
 
 trait AccessValidationAlgebra {
 

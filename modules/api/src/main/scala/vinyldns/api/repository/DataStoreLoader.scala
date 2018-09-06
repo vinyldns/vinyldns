@@ -19,16 +19,17 @@ package vinyldns.api.repository
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
-import vinyldns.api.domain.batch.BatchChangeRepository
-import vinyldns.api.domain.membership.{
+import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.core.domain.membership.{
   GroupChangeRepository,
   GroupRepository,
   MembershipRepository,
   UserRepository
 }
-import vinyldns.api.domain.record.{RecordChangeRepository, RecordSetRepository}
-import vinyldns.api.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.api.repository.RepositoryName._
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
+import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.repository._
+import vinyldns.core.repository.RepositoryName._
 
 import scala.reflect.ClassTag
 
@@ -119,3 +120,5 @@ object DataStoreLoader {
     accessor.toEither.leftMap(errors => DataStoreStartupError(errors.toList.mkString(", ")))
   }
 }
+
+case class DataStoreStartupError(msg: String) extends Throwable(msg)
