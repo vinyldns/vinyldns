@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util
 import java.util.UUID
@@ -22,18 +22,16 @@ import java.util.UUID
 import com.amazonaws.services.dynamodbv2.model.{AttributeValue, DeleteItemRequest, ScanRequest}
 import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
-import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
-import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record.{ChangeSet, ChangeSetStatus, RecordSetChange}
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
+import vinyldns.core.TestMembershipData.abcAuth
+import vinyldns.core.TestZoneData.testConnection
+import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.duration._
-import scala.concurrent.Await
 
 class DynamoDBRecordChangeRepositoryIntegrationSpec
-    extends DynamoDBIntegrationSpec
-    with Eventually {
+    extends DynamoDBIntegrationSpec {
 
   private val recordChangeTable = "record-change-live"
 
@@ -100,26 +98,26 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesA = {
     for {
       rs <- recordSetA
-    } yield RecordSetChangeGenerator.forAdd(rs, zoneA, auth)
+    } yield makeTestAddChange(rs, zoneA, auth.userId)
   }.sortBy(_.id)
 
   private val recordSetChangesB = {
     for {
       rs <- recordSetB
-    } yield RecordSetChangeGenerator.forAdd(rs, zoneB, auth)
+    } yield makeTestAddChange(rs, zoneB, auth.userId)
   }.sortBy(_.id)
 
   private val recordSetChangesC = {
     for {
       rs <- recordSetA
-    } yield RecordSetChangeGenerator.forDelete(rs, zoneA, auth)
+    } yield makeTestDeleteChange(rs, zoneA, auth.userId)
   }.sortBy(_.id)
 
   private val recordSetChangesD = {
     for {
       rs <- recordSetA
       updateRs <- updateRecordSetA
-    } yield RecordSetChangeGenerator.forUpdate(rs, updateRs, zoneA)
+    } yield makeTestUpdateChange(rs, updateRs, zoneA, auth.userId)
   }.sortBy(_.id)
 
   private val changeSetA = ChangeSet(recordSetChangesA)
@@ -174,22 +172,21 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesCreateC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield RecordSetChangeGenerator.forAdd(rs, zoneC, auth).copy(created = timeOrder(index))
+    } yield makeTestAddChange(rs, zoneC, auth.userId).copy(created = timeOrder(index))
   }
 
   private val recordSetChangesUpdateC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
     } yield
-      RecordSetChangeGenerator
-        .forUpdate(rs, updateRecordSetsC(index), zoneC)
+      makeTestUpdateChange(rs, updateRecordSetsC(index), zoneC, auth.userId)
         .copy(created = timeOrder(index + 3))
   }
 
   private val recordSetChangesDeleteC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield RecordSetChangeGenerator.forDelete(rs, zoneC, auth).copy(created = timeOrder(index + 6))
+    } yield makeTestDeleteChange(rs, zoneC, auth.userId).copy(created = timeOrder(index + 6))
   }
 
   private val changeSetCreateC = ChangeSet(recordSetChangesCreateC)
@@ -202,16 +199,9 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       .toList
       .reverse // Changes are retrieved by time stamp in decending order
 
-  private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
-
   def setup(): Unit = {
     repo = new DynamoDBRecordChangeRepository(tableConfig, dynamoDBHelper)
-
-    var notReady = true
-    while (notReady) {
-      val result = Await.ready(repo.getRecordSetChange("any", "any").unsafeToFuture(), 5.seconds)
-      notReady = result.value.get.isFailure
-    }
+    waitForRepo(repo.getRecordSetChange("any", "any"))
 
     // Clear the table just in case there is some lagging test data
     clearTable()
@@ -221,7 +211,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       val savedChangeSet = repo.save(changeSet)
 
       // Wait until all of the change sets are saved
-      Await.result(savedChangeSet.unsafeToFuture(), 5.minutes)
+      savedChangeSet.unsafeRunTimed(5.minutes).getOrElse(fail("error in change set load"))
     }
 
     changeSetsC.foreach { changeSet =>
@@ -229,7 +219,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       val savedChangeSet = repo.save(changeSet)
 
       // Wait until all of the change sets are saved
-      Await.result(savedChangeSet.unsafeToFuture(), 5.minutes)
+      savedChangeSet.unsafeRunTimed(5.minutes).getOrElse(fail("error in change set load"))
     }
   }
 
@@ -273,104 +263,79 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
           retrieved <- repo.getRecordSetChange(saved.zoneId, testRecordSetChange.id)
         } yield retrieved
 
-      whenReady(f.unsafeToFuture(), timeout) { result =>
-        result shouldBe Some(testRecordSetChange)
-      }
+      f.unsafeRunSync() shouldBe Some(testRecordSetChange)
     }
 
     "get changes by zone id" in {
       val f = repo.getChanges(zoneA.id)
-      whenReady(f.unsafeToFuture(), timeout) { result =>
-        val sortedResults = result.map { changeSet =>
-          changeSet.copy(changes = changeSet.changes.sortBy(_.id))
-        }
-        sortedResults.size shouldBe 3
-        sortedResults should contain(changeSetA)
-        sortedResults should contain(changeSetC)
-        sortedResults should contain(changeSetD)
+      val result = f.unsafeRunSync()
+      val sortedResults = result.map { changeSet =>
+        changeSet.copy(changes = changeSet.changes.sortBy(_.id))
       }
+      sortedResults.size shouldBe 3
+      sortedResults should contain(changeSetA)
+      sortedResults should contain(changeSetC)
+      sortedResults should contain(changeSetD)
     }
 
     "get pending changes by zone id are sorted by earliest created timestamp" in {
       val f = repo.getPendingChangeSets(zoneA.id)
-      whenReady(f.unsafeToFuture(), timeout) { result =>
-        val sortedResults = result.map { changeSet =>
-          changeSet.copy(changes = changeSet.changes.sortBy(_.id))
-        }
-        sortedResults.size shouldBe 2
-        sortedResults should contain(changeSetA)
-        sortedResults should contain(changeSetD)
-        sortedResults should not contain changeSetC
-        result.head.id should equal(changeSetA.id)
-        result(1).id should equal(changeSetD.id)
+      val result = f.unsafeRunSync()
+      val sortedResults = result.map { changeSet =>
+        changeSet.copy(changes = changeSet.changes.sortBy(_.id))
       }
+      sortedResults.size shouldBe 2
+      sortedResults should contain(changeSetA)
+      sortedResults should contain(changeSetD)
+      sortedResults should not contain changeSetC
+      result.head.id should equal(changeSetA.id)
+      result(1).id should equal(changeSetD.id)
     }
 
     "list all record set changes in zone C" in {
-      eventually {
-        val testFuture = repo.listRecordSetChanges(zoneC.id)
-        whenReady(testFuture.unsafeToFuture(), timeout) { result =>
-          result.items shouldBe recordSetChanges
-        }
-      }
+      val testFuture = repo.listRecordSetChanges(zoneC.id)
+      testFuture.unsafeRunSync().items shouldBe recordSetChanges
     }
 
     "list record set changes with a page size of one" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 1)
-      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
-        {
-          result.items shouldBe recordSetChanges.take(1)
-        }
-      }
+      testFuture.unsafeRunSync().items shouldBe recordSetChanges.take(1)
     }
 
     "list record set changes with page size of one and reuse key to get another page with size of two" in {
-      val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 1)
-      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
-        {
-          val key = result.nextId
-          val testFuture2 = repo.listRecordSetChanges(zoneC.id, startFrom = key, maxItems = 2)
-          whenReady(testFuture2.unsafeToFuture(), timeout) { result =>
-            {
-              val page2 = result.items
-              page2 shouldBe recordSetChanges.slice(1, 3)
-            }
-          }
-        }
-      }
+      val testFuture = for {
+        listOne <- repo.listRecordSetChanges(zoneC.id, maxItems = 1)
+        listTwo <- repo.listRecordSetChanges(zoneC.id, startFrom = listOne.nextId, maxItems = 2)
+      } yield listTwo
+
+      val result = testFuture.unsafeRunSync()
+
+      val page2 = result.items
+      page2 shouldBe recordSetChanges.slice(1, 3)
     }
 
     "return an empty list and nextId of None when passing last record as start" in {
-      val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 9)
-      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
-        {
-          val key = result.nextId
-          val testFuture2 = repo.listRecordSetChanges(zoneC.id, startFrom = key)
-          whenReady(testFuture2.unsafeToFuture(), timeout) { result =>
-            {
-              result.nextId shouldBe None
-              result.items shouldBe List()
-            }
-          }
-        }
-      }
+      val testFuture = for {
+        listOne <- repo.listRecordSetChanges(zoneC.id, maxItems = 9)
+        listTwo <- repo.listRecordSetChanges(zoneC.id, startFrom = listOne.nextId, maxItems = 2)
+      } yield listTwo
+
+      val result = testFuture.unsafeRunSync()
+
+      result.nextId shouldBe None
+      result.items shouldBe List()
     }
 
     "have nextId of None when exhausting record changes" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, maxItems = 10)
-      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
-        result.nextId shouldBe None
-      }
+      testFuture.unsafeRunSync().nextId shouldBe None
     }
 
     "return empty list with startFrom of zero" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id, startFrom = Some("0"))
-      whenReady(testFuture.unsafeToFuture(), timeout) { result =>
-        {
-          result.nextId shouldBe None
-          result.items shouldBe List()
-        }
-      }
+      val result = testFuture.unsafeRunSync()
+      result.nextId shouldBe None
+      result.items shouldBe List()
     }
   }
 }

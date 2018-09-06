@@ -14,32 +14,28 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
 import java.util.UUID
 
+import cats.effect.IO
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
-import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import scala.concurrent.duration._
 
 trait DynamoDBIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
-    with DnsConversions
-    with VinylDNSTestData
-    with GroupTestData
-    with ResultHelpers
     with BeforeAndAfterEach
     with Matchers
     with ScalaFutures
     with Inspectors {
 
   // this is defined in the docker/docker-compose.yml file for dynamodb
-  val port: Int = 19000
+  val port: Int = 19003
   val endpoint: String = s"http://localhost:$port"
 
   val dynamoConfig: Config = ConfigFactory.parseString(s"""
@@ -66,4 +62,13 @@ trait DynamoDBIntegrationSpec
 
   /* Generates a random string useful to avoid data collision */
   def genString: String = UUID.randomUUID().toString
+
+  /* wait until the repo is ready, could take time if the table has to be created */
+  def waitForRepo[A](call: IO[A]): Unit = {
+    var notReady = call.unsafeRunTimed(5.seconds).isEmpty
+    while (notReady) {
+      Thread.sleep(2000)
+      notReady = call.unsafeRunTimed(5.seconds).isEmpty
+    }
+  }
 }

@@ -17,6 +17,7 @@
 package vinyldns.core
 
 import org.joda.time.DateTime
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 
 object TestMembershipData {
@@ -54,6 +55,8 @@ object TestMembershipData {
     adminUserIds = Set(okUser.id),
     created = DateTime.now.secondOfDay().roundFloorCopy())
 
+  val abcGroup: Group = Group("abc", "abc", id = "abc", memberIds = Set("abc"))
+
   val emptyGroup = Group("grpName", "grpEmail")
 
   val deletedGroup: Group =
@@ -74,6 +77,12 @@ object TestMembershipData {
   }
 
   /* AUTHS */
+  val okAuth: AuthPrincipal = AuthPrincipal(okUser, Seq(okGroup.id))
+
+  val abcAuth: AuthPrincipal = okAuth.copy(
+    signedInUser = okAuth.signedInUser.copy(userName = "abc", id = "abc"),
+    memberGroupIds = List(abcGroup.id, okGroup.id)
+  )
 
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(

@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.dynamodb
+package vinyldns.dynamo.repository
 
+import cats.implicits._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.PatienceConfiguration
-import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
 
 class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
-
-  private implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.global
   private val membershipTable = "membership-live"
   private val tableConfig = ConfigFactory.parseString(s"""
        | dynamo {
@@ -40,33 +36,20 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   private val testUserIds = for (i <- 0 to 5) yield s"test-user-$i"
   private val testGroupIds = for (i <- 0 to 5) yield s"test-group-$i"
 
-  private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
-
   def setup(): Unit = {
     repo = new DynamoDBMembershipRepository(tableConfig, dynamoDBHelper)
-
-    // wait until the repo is ready, could take time if the table has to be created
-    var notReady = true
-    while (notReady) {
-      val result = Await.ready(repo.getGroupsForUser("any").unsafeToFuture(), 5.seconds)
-      notReady = result.value.get.isFailure
-      Thread.sleep(2000)
-    }
+    waitForRepo(repo.getGroupsForUser("any"))
 
     // Create all the items
-    val results =
-      Future.sequence(testGroupIds.map(repo.addMembers(_, testUserIds.toSet).unsafeToFuture()))
+    val results = testGroupIds.map(repo.addMembers(_, testUserIds.toSet)).toList.parSequence
 
     // Wait until all of the data is stored
-    Await.result(results, 5.minutes)
+    results.unsafeRunTimed(5.minutes).getOrElse(fail("timeout waiting for data load"))
   }
 
   def tearDown(): Unit = {
-    val results =
-      Future.sequence(testGroupIds.map(repo.removeMembers(_, testUserIds.toSet).unsafeToFuture()))
-
-    // Wait until all of the data is stored
-    Await.result(results, 5.minutes)
+    val results = testGroupIds.map(repo.removeMembers(_, testUserIds.toSet)).toList.parSequence
+    results.unsafeRunSync()
   }
 
   "DynamoDBMembershipRepository" should {
@@ -74,10 +57,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     val user1 = genString
     val user2 = genString
     "add members successfully" in {
-      whenReady(repo.addMembers(groupId, Set(user1, user2)).unsafeToFuture(), timeout) {
-        memberIds =>
-          memberIds should contain theSameElementsAs Set(user1, user2)
-      }
+      repo.addMembers(groupId, Set(user1, user2)).unsafeRunSync() should contain theSameElementsAs Set(user1, user2)
     }
 
     "add a group to an existing user" in {
@@ -91,15 +71,11 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
 
-      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
-        userGroups should contain theSameElementsAs Set(group1, group2)
-      }
+      f.unsafeRunSync() should contain theSameElementsAs Set(group1, group2)
     }
 
     "return an empty set when getting groups for a user that does not exist" in {
-      whenReady(repo.getGroupsForUser("notHere").unsafeToFuture(), timeout) { groupIds =>
-        groupIds shouldBe empty
-      }
+      repo.getGroupsForUser("notHere").unsafeRunSync() shouldBe empty
     }
 
     "remove members successfully" in {
@@ -114,9 +90,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
 
-      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
-        userGroups should contain theSameElementsAs Set(group2)
-      }
+      f.unsafeRunSync() should contain theSameElementsAs Set(group2)
     }
 
     "remove members not in group" in {
@@ -130,9 +104,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user2)
         } yield userGroups
 
-      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
-        userGroups shouldBe empty
-      }
+      f.unsafeRunSync() shouldBe empty
     }
 
     "remove all groups for user" in {
@@ -151,33 +123,25 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
           userGroups <- repo.getGroupsForUser(user1)
         } yield userGroups
 
-      whenReady(f.unsafeToFuture(), timeout) { userGroups =>
-        userGroups shouldBe empty
-      }
+      f.unsafeRunSync() shouldBe empty
     }
 
     "retrieve all of the groups for a user" in {
       val f = repo.getGroupsForUser(testUserIds.head)
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        testGroupIds.foreach(groupId => retrieved should contain(groupId))
-      }
+      val retrieved = f.unsafeRunSync()
+      testGroupIds.foreach(groupId => retrieved should contain(groupId))
     }
 
     "remove members from a group" in {
       val membersToRemove = testUserIds.toList.sorted.take(2).toSet
       val groupsRemoved = testGroupIds.toList.sorted.take(2)
 
-      val f =
-        Future.sequence(groupsRemoved.map(repo.removeMembers(_, membersToRemove).unsafeToFuture()))
+      groupsRemoved.map(repo.removeMembers(_, membersToRemove)).parSequence.unsafeRunSync()
 
-      Await.result(f, 5.minutes)
-
-      whenReady(repo.getGroupsForUser(membersToRemove.head).unsafeToFuture(), timeout) {
-        groupsRetrieved =>
-          forAll(groupsRetrieved) { groupId =>
-            groupsRemoved should not contain groupId
-          }
+      val groupsRetrieved = repo.getGroupsForUser(membersToRemove.head).unsafeRunSync()
+      forAll(groupsRetrieved) { groupId =>
+        groupsRemoved should not contain groupId
       }
     }
   }
