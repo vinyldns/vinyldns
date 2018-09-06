@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
-import akka.http.javadsl.server.CustomRejection
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
@@ -42,7 +41,7 @@ trait VinylDNSDirectives extends Directives {
     */
   def vinyldnsAuthenticator(
       ctx: RequestContext,
-      content: String): IO[Either[CustomRejection, AuthPrincipal]] =
+      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     VinylDNSAuthenticator(ctx, content)
 
   def authenticate: Directive1[AuthPrincipal] =
@@ -53,7 +52,7 @@ trait VinylDNSDirectives extends Directives {
             .flatMap {
               case Right(authPrincipal) ⇒
                 provide(authPrincipal)
-              case Left(VinylDNSAccountLocked(err)) ⇒
+              case Left(AccountLocked(err)) ⇒
                 complete(
                   HttpResponse(
                     status = StatusCodes.Forbidden,

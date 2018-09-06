@@ -16,7 +16,6 @@
 
 package vinyldns.api.route
 
-import akka.http.javadsl.server.CustomRejection
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest}
 import akka.http.scaladsl.server.RequestContext
 import cats.effect._
@@ -84,7 +83,7 @@ class VinylDNSAuthenticatorSpec
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
       result shouldBe Right(okUserAuth)
     }
     "fail if missing Authorization header" in {
@@ -106,8 +105,8 @@ class VinylDNSAuthenticatorSpec
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(VinylNDSCredentialsMissing("CredentialsMissing"))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
+      result shouldBe Left(AuthMissing("Authorization header not found"))
     }
     "fail if Authorization header can not be parsed" in {
       val fakeHttpHeader = mock[HttpHeader]
@@ -122,8 +121,8 @@ class VinylDNSAuthenticatorSpec
       doReturn(httpRequest).when(context).request
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(VinylNDSCredentialsRejected("CredentialsRejected"))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
+      result shouldBe Left(AuthRejected("Authorization header could not be parsed"))
     }
     "fail if the access key is missing" in {
       val fakeHttpHeader = mock[HttpHeader]
@@ -146,8 +145,8 @@ class VinylDNSAuthenticatorSpec
         .extractAccessKey(any[String])
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(VinylNDSCredentialsMissing("CredentialsMissing"))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
+      result shouldBe Left(AuthMissing("accessKey not found"))
     }
     "fail if the access key can not be retrieved" in {
       val fakeHttpHeader = mock[HttpHeader]
@@ -170,8 +169,8 @@ class VinylDNSAuthenticatorSpec
         .extractAccessKey(any[String])
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(VinylNDSCredentialsRejected("CredentialsRejected"))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
+      result shouldBe Left(AuthRejected("Invalid authorization header"))
     }
     "fail if the user is locked" in {
       val fakeHttpHeader = mock[HttpHeader]
@@ -192,13 +191,13 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(IO.raiseError(AccountLocked(s"Account with username locked is locked")))
+      doReturn(IO.raiseError(AccountLocked("Account with username locked is locked")))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(VinylDNSAccountLocked("AccountLocked"))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
+      result shouldBe Left(AccountLocked("Account with username locked is locked"))
     }
     "fail if the user can not be found" in {
       val fakeHttpHeader = mock[HttpHeader]
@@ -220,13 +219,13 @@ class VinylDNSAuthenticatorSpec
         .extractAccessKey(any[String])
 
       // No User found
-      doReturn(IO.raiseError(AuthRejected(s"Account with accessKey specified was not found")))
+      doReturn(IO.raiseError(AuthRejected("Authorization header could not be parsed")))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(VinylNDSCredentialsRejected("CredentialsRejected"))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
+      result shouldBe Left(AuthRejected("Authorization header could not be parsed"))
     }
     "fail if signatures can not be validated" in {
       val fakeHttpHeader = mock[HttpHeader]
@@ -257,8 +256,8 @@ class VinylDNSAuthenticatorSpec
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
       val result =
-        await[Either[CustomRejection, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(VinylNDSCredentialsRejected("CredentialsRejected"))
+        await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
+      result shouldBe Left(AuthRejected("Request signature could not be validated"))
     }
   }
 }

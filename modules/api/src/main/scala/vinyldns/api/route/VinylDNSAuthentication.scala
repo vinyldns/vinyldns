@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.javadsl.server.CustomRejection
 import akka.http.scaladsl.server.RequestContext
 import cats.effect._
 import cats.syntax.all._
@@ -143,27 +142,19 @@ trait VinylDNSAuthentication extends Monitored {
     }
 }
 
-case class VinylNDSCredentialsMissing(err: String) extends CustomRejection
-case class VinylNDSCredentialsRejected(err: String) extends CustomRejection
-case class VinylDNSAccountLocked(err: String) extends CustomRejection
-
 class VinylDNSAuthenticator(
     val authenticator: Aws4Authenticator,
     val authPrincipalProvider: AuthPrincipalProvider)
     extends VinylDNSAuthentication {
 
-  def apply(ctx: RequestContext, content: String): IO[Either[CustomRejection, AuthPrincipal]] =
-    authenticate(ctx, content).attempt.map {
-      case Right(ok) => Right(ok)
-      case Left(_: AuthMissing) =>
-        Left(VinylNDSCredentialsMissing("CredentialsMissing"))
-      case Left(_: AuthRejected) =>
-        Left(VinylNDSCredentialsRejected("CredentialsRejected"))
-      case Left(_: AccountLocked) =>
-        Left(VinylDNSAccountLocked("AccountLocked"))
-      case Left(e: Throwable) =>
-        // throw here as some unexpected exception occurred
-        throw e
+  def apply(
+      ctx: RequestContext,
+      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
+    // Need to refactor authenticate to be an IO[Either[E, A]] instead of how it is implemented, for the time being...
+    authenticate(ctx, content).attempt.flatMap {
+      case Left(e: VinylDNSAuthenticationError) => IO.pure(Left(e))
+      case Right(ok) => IO.pure(Right(ok))
+      case Left(e) => IO.raiseError(e)
     }
 }
 
@@ -172,6 +163,8 @@ object VinylDNSAuthenticator {
   lazy val authPrincipalProvider = MembershipAuthPrincipalProvider()
   lazy val authenticator = new VinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
 
-  def apply(ctx: RequestContext, content: String): IO[Either[CustomRejection, AuthPrincipal]] =
+  def apply(
+      ctx: RequestContext,
+      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     authenticator.apply(ctx, content)
 }
