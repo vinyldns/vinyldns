@@ -5,6 +5,7 @@ import com.typesafe.sbt.packager.docker._
 import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 import org.scalafmt.sbt.ScalafmtPlugin._
 import microsites._
+import ReleaseTransformations._
 
 resolvers ++= additionalResolvers
 
@@ -45,7 +46,6 @@ def scalaStyleSettings: Seq[Def.Setting[_]] = scalaStyleCompile ++ scalaStyleTes
 // settings that should be inherited by all projects
 lazy val sharedSettings = Seq(
   organization := "vinyldns",
-  version := "0.8.0-SNAPSHOT",
   scalaVersion := "2.12.6",
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
@@ -108,7 +108,6 @@ lazy val apiDockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jdk",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "api",
-  dockerUpdateLatest := true,
   dockerExposedPorts := Seq(9000),
   dockerEntrypoint := Seq("/opt/docker/bin/api"),
   dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
@@ -121,7 +120,7 @@ lazy val apiDockerSettings = Seq(
   bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""", // adds logback
   bashScriptExtraDefines += "(cd ${app_home} && ./wait-for-dependencies.sh && cd -)",
-  credentials in Docker := Seq(Credentials(Path.userHome / ".iv2" / ".dockerCredentials")),
+  credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials")),
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
     ExecCmd("RUN", "apt-get", "update"),
@@ -135,7 +134,6 @@ lazy val portalDockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jdk",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "portal",
-  dockerUpdateLatest := true,
   dockerExposedPorts := Seq(9001),
   dockerExposedVolumes := Seq("/opt/docker/lib_extra"), // mount extra libs to the classpath
   dockerExposedVolumes := Seq("/opt/docker/conf"), // mount extra config to the classpath
@@ -146,7 +144,7 @@ lazy val portalDockerSettings = Seq(
   // adds config file to mount
   bashScriptExtraDefines += """addJava "-Dconfig.file=/opt/docker/conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"""",
-  credentials in Docker := Seq(Credentials(Path.userHome / ".iv2" / ".dockerCredentials"))
+  credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
 )
 
 lazy val noPublishSettings = Seq(
@@ -210,14 +208,30 @@ lazy val coreBuildSettings = Seq(
   scalacOptions ++= scalacOptionsByV(scalaVersion.value).filterNot(_ == "-Ywarn-unused:params")
 ) ++ pbSettings
 
+import xerial.sbt.Sonatype._
 lazy val corePublishSettings = Seq(
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
   autoAPIMappings := true,
-  credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   publish in Docker := {},
-  mainClass := None
+  mainClass := None,
+  homepage := Some(url("https://vinyldns.io")),
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/vinyldns/vinyldns"),
+      "scm:git@github.com:vinyldns/vinyldns.git"
+    )
+  ),
+  developers := List(
+    Developer(id="pauljamescleary", name="Paul James Cleary", email="pauljamescleary@gmail.com", url=url("https://github.com/pauljamescleary")),
+    Developer(id="rebstar6", name="Rebecca Star", email="rebstar6@gmail.com", url=url("https://github.com/rebstar6")),
+    Developer(id="nimaeskandary", name="Nima Eskandary", email="nimaesk1@gmail.com", url=url("https://github.com/nimaeskandary")),
+    Developer(id="mitruly", name="Michael Ly", email="michaeltrulyng@gmail.com", url=url("https://github.com/mitruly")),
+    Developer(id="britneywright", name="Britney Wright", email="blw06g@gmail.com", url=url("https://github.com/britneywright")),
+  ),
+  sonatypeProfileName := "io.vinyldns",
+  credentials += Credentials(Path.userHome / ".sbt" / "1.0" / "vinyldns-gpg-credentials")
 )
 
 lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPlugin)
@@ -228,6 +242,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(libraryDependencies ++= coreDependencies ++ coreTestDependencies.map(_ % "test"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
+    organization := "io.vinyldns",
     coverageMinimum := 85,
     coverageFailOnMinimum := true,
     coverageHighlighting := true
@@ -305,8 +320,86 @@ lazy val docSettings = Seq(
   fork in tut := true
 )
 
-lazy val docs = (project in file("modules/docs")).enablePlugins(MicrositesPlugin)
+lazy val docs = (project in file("modules/docs"))
+  .enablePlugins(MicrositesPlugin)
   .settings(docSettings)
+
+// release stages
+
+lazy val setSonatypeReleaseSettings = ReleaseStep(action = oldState => {
+  // sonatype publish target, and sonatype release steps, are different if version is SNAPSHOT
+  val extracted = Project.extract(oldState)
+  val v = extracted.get(Keys.version)
+  val snap = v.endsWith("SNAPSHOT")
+  if (!snap) {
+    val publishToSettings = Some("releases" at "https://oss.sonatype.org/" + "service/local/staging/deploy/maven2")
+    val newState = extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
+
+    // create sonatypeReleaseCommand with releaseSonatype step
+    val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
+      "project core" ::
+      "publish" ::
+      "releaseSonatype" ::
+      _
+    }
+
+    newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
+  } else {
+    val publishToSettings = Some("snapshots" at "https://oss.sonatype.org/" + "content/repositories/snapshots")
+    val newState = extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
+
+    // create sonatypeReleaseCommand without releaseSonatype step
+    val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
+      "project core" ::
+        "publish" ::
+        _
+    }
+
+    newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
+  }
+})
+
+lazy val setDockerReleaseSettings = ReleaseStep(action = oldState => {
+  // dockerUpdateLatest is set to true if the version is not a SNAPSHOT
+  val extracted = Project.extract(oldState)
+  val v = extracted.get(Keys.version)
+  val snap = v.endsWith("SNAPSHOT")
+  if (!snap) {
+    extracted
+      .appendWithSession(Seq(dockerUpdateLatest in api := true, dockerUpdateLatest in portal := true), oldState)
+  } else oldState
+})
+
+lazy val initReleaseStage = Seq[ReleaseStep](
+  releaseStepCommand(";project root"), // use version.sbt file from root
+  inquireVersions, // have a developer confirm versions
+  setReleaseVersion,
+  setDockerReleaseSettings,
+  setSonatypeReleaseSettings
+)
+
+lazy val dockerPublishStage = Seq[ReleaseStep](
+  releaseStepCommandAndRemaining(";project api;docker:publish"),
+  releaseStepCommandAndRemaining(";project portal;docker:publish")
+)
+
+lazy val sonatypePublishStage = Seq[ReleaseStep](
+  releaseStepCommandAndRemaining(";sonatypeReleaseCommand")
+)
+
+lazy val finalReleaseStage = Seq[ReleaseStep] (
+  releaseStepCommand("project root"), // use version.sbt file from root
+  commitReleaseVersion,
+  tagRelease,
+  setNextVersion,
+  commitNextVersion
+)
+
+releaseProcess :=
+  initReleaseStage ++
+  dockerPublishStage ++
+  sonatypePublishStage ++
+  finalReleaseStage
 
 // Validate runs static checks and compile to make sure we can go
 addCommandAlias("validate-api",
