@@ -3,8 +3,11 @@
 # Will run all tests, and if they pass, will push new Docker images for vinyldns/api and vinyldns/portal, and push
 # the core module to Maven Central
 #
+# Command line args:
+#   skip-tests: skips functional, unit, and integration tests
+#
 # Necessary environment variables:
-#   DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE - passphrase for notary delegation key
+#   DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: passphrase for notary delegation key
 #
 # sbt release will auto-bump version.sbt and make a commit on your local
 #
@@ -41,23 +44,34 @@ if [[ -z "${DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE}" ]]; then
 fi
 
 ##
-# functional tests
+# running tests
 ##
 
-printf "\nrunning api func tests... \n"
-"$DIR"/remove-vinyl-containers.sh
-if ! "$DIR"/func-test-api.sh
-then
-    printf "\nerror: bin/func-test-api.sh failed \n"
-    exit 1
-fi
-"$DIR"/remove-vinyl-containers.sh
+if [ "$1" != "skip-tests" ]; then
+    printf "\nrunning api func tests... \n"
+    "$DIR"/remove-vinyl-containers.sh
+    if ! "$DIR"/func-test-api.sh
+    then
+        printf "\nerror: bin/func-test-api.sh failed \n"
+        exit 1
+    fi
+    "$DIR"/remove-vinyl-containers.sh
 
-printf "\nrunning portal func tests... \n"
-if ! "$DIR"/func-test-portal.sh
-then
-    printf "\nerror: bin/func-test-portal.sh failed \n"
-    exit 1
+    printf "\nrunning portal func tests... \n"
+    if ! "$DIR"/func-test-portal.sh
+    then
+        printf "\nerror: bin/func-test-portal.sh failed \n"
+        exit 1
+    fi
+
+    printf "\nrunning verify... \n"
+    if ! "$DIR"/verify.sh
+    then
+        printf "\nerror: bin/verify.sh failed \n"
+        exit 1
+    fi
+else
+    printf "\nskipping tests... \n"
 fi
 
 ##

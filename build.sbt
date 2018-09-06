@@ -326,53 +326,64 @@ lazy val docs = (project in file("modules/docs"))
 
 // release stages
 
-val setReleaseSettings = ReleaseStep(action = oldState => {
-  // extract the build state
+lazy val setSonatypeReleaseSettings = ReleaseStep(action = oldState => {
+  // sonatype publish target, and sonatype release steps, are different if version is SNAPSHOT
   val extracted = Project.extract(oldState)
   val v = extracted.get(Keys.version)
   val snap = v.endsWith("SNAPSHOT")
   if (!snap) {
     val publishToSettings = Some("releases" at "https://oss.sonatype.org/" + "service/local/staging/deploy/maven2")
-    val newState = extracted.appendWithSession(Seq(dockerUpdateLatest in api := true,
-      dockerUpdateLatest in portal := true,
-      publishTo in core := publishToSettings), oldState)
+    val newState = extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
 
-    // create sonatypeReleaseCommand with releaseSonatype
+    // create sonatypeReleaseCommand with releaseSonatype step
     val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
       "project core" ::
       "publish" ::
       "releaseSonatype" ::
       _
     }
+
     newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
   } else {
     val publishToSettings = Some("snapshots" at "https://oss.sonatype.org/" + "content/repositories/snapshots")
-    val stateWithPublishTo = extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
+    val newState = extracted.appendWithSession(Seq(publishTo in core := publishToSettings), oldState)
 
-    // create sonatypeReleaseCommand without releaseSonatype
+    // create sonatypeReleaseCommand without releaseSonatype step
     val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
       "project core" ::
         "publish" ::
         _
     }
-    stateWithPublishTo.copy(definedCommands = stateWithPublishTo.definedCommands :+ sonatypeCommand)
+
+    newState.copy(definedCommands = newState.definedCommands :+ sonatypeCommand)
   }
 })
 
+lazy val setDockerReleaseSettings = ReleaseStep(action = oldState => {
+  // dockerUpdateLatest is set to true if the version is not a SNAPSHOT
+  val extracted = Project.extract(oldState)
+  val v = extracted.get(Keys.version)
+  val snap = v.endsWith("SNAPSHOT")
+  if (!snap) {
+    extracted
+      .appendWithSession(Seq(dockerUpdateLatest in api := true, dockerUpdateLatest in portal := true), oldState)
+  } else oldState
+})
+
 lazy val initReleaseStage = Seq[ReleaseStep](
-  releaseStepCommand("project root"), // use version.sbt file from root
+  releaseStepCommand(";project root"), // use version.sbt file from root
   inquireVersions, // have a developer confirm versions
   setReleaseVersion,
-  setReleaseSettings
+  setDockerReleaseSettings,
+  setSonatypeReleaseSettings
 )
 
-lazy val validateVerifyReleaseStage = Seq[ReleaseStep](
-  releaseStepCommandAndRemaining(";project root;validate;verify")
-)
-
-lazy val publishStage = Seq[ReleaseStep](
+lazy val dockerPublishStage = Seq[ReleaseStep](
   releaseStepCommandAndRemaining(";project api;docker:publish"),
-  releaseStepCommandAndRemaining(";project portal;docker:publish"),
+  releaseStepCommandAndRemaining(";project portal;docker:publish")
+)
+
+lazy val sonatypePublishStage = Seq[ReleaseStep](
   releaseStepCommandAndRemaining(";sonatypeReleaseCommand")
 )
 
@@ -386,8 +397,8 @@ lazy val finalReleaseStage = Seq[ReleaseStep] (
 
 releaseProcess :=
   initReleaseStage ++
-  validateVerifyReleaseStage ++
-  publishStage ++
+  dockerPublishStage ++
+  sonatypePublishStage ++
   finalReleaseStage
 
 // Validate runs static checks and compile to make sure we can go

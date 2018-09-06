@@ -150,10 +150,10 @@ running the release
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
 1. Make sure you're logged in to Docker with `docker login`
 1. Export `DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE` in your env with your notary key passphrase 
-1. Run `bin/release.sh`
-1. You will be asked to confirm the version which originally comes from `version.sbt`. __NOTE: if the version ends with 
+1. Run `bin/release.sh` _Note: the arg "skip-tests" will skip unit, integration and functional testing before a release_
+1. You will be asked to confirm the version which originally comes from `version.sbt`. _NOTE: if the version ends with 
 `SNAPSHOT`, then the docker latest tag won't be applied and the core module will only be published to the sonatype
-staging repo.__
+staging repo._
 1. When it comes to the sonatype stage, you will need the passphrase handy for the signing key, [Sonatype Credentials](#sonatype-credentials)
 1. Assuming things were successful, make a pr since sbt release auto-bumped `version.sbt` and made a commit for you
 
