@@ -59,7 +59,7 @@ object Dependencies {
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV
   )
 
-  lazy val dynamoDependencies = Seq(
+  lazy val dynamoDBDependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
   )

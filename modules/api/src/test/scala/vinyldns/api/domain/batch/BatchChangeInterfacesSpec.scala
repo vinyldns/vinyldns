@@ -20,7 +20,7 @@ import cats.implicits._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
-import vinyldns.dynamo.repository.DynamoDBRetriesExhaustedException
+import vinyldns.dynamodb.repository.DynamoDBRetriesExhaustedException
 
 import cats.effect._
 import cats.implicits._

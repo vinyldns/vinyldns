@@ -191,7 +191,7 @@ lazy val api = (project in file("modules/api"))
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .dependsOn(core, dynamo)
+  .dependsOn(core, dynamodb)
 
 lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
@@ -252,17 +252,17 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
     coverageHighlighting := true
   )
 
-lazy val dynamo = (project in file("modules/dynamo"))
+lazy val dynamodb = (project in file("modules/dynamodb"))
   .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .settings(name := "dynamo")
+  .settings(name := "dynamodb")
   .settings(noPublishSettings)
   .settings(testSettings)
   .settings(Defaults.itSettings)
-  .settings(libraryDependencies ++= dynamoDependencies ++ commonTestDependencies.map(_ % "test, it"))
+  .settings(libraryDependencies ++= dynamoDBDependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     coverageMinimum := 85,
@@ -427,18 +427,18 @@ releaseProcess :=
 addCommandAlias("validate-api",
   ";project api; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
     "it:scalastyle; compile; test:compile; it:compile")
-addCommandAlias("validate-dynamo",
-  ";project dynamo; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
+addCommandAlias("validate-dynamodb",
+  ";project dynamodb; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
     "it:scalastyle; compile; test:compile; it:compile")
 addCommandAlias("validate-core",
   ";project core; clean; headerCheck; test:headerCheck; scalastyle; test:scalastyle; compile; test:compile")
 addCommandAlias("validate-portal",
   ";project portal; clean; headerCheck; test:headerCheck; compile; test:compile; createJsHeaders; checkJsHeaders")
-addCommandAlias("validate", ";validate-core;validate-dynamo;validate-api;validate-portal")
+addCommandAlias("validate", ";validate-core;validate-dynamodb;validate-api;validate-portal")
 
 // Verify runs all tests and code coverage
-addCommandAlias("dockerComposeUpAll",";project api;dockerComposeUp;project dynamo;dockerComposeUp;project root")
-addCommandAlias("dockerComposeStopAll",";project api;dockerComposeStop;project dynamo;dockerComposeStop;project root")
+addCommandAlias("dockerComposeUpAll",";project api;dockerComposeUp;project dynamodb;dockerComposeUp;project root")
+addCommandAlias("dockerComposeStopAll",";project api;dockerComposeStop;project dynamodb;dockerComposeStop;project root")
 addCommandAlias("verify",
   ";dockerComposeUpAll;project root;coverage;test;it:test;coverageReport;coverageAggregate;dockerComposeStopAll")
 
