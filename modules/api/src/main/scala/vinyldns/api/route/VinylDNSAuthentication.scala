@@ -17,8 +17,8 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, RequestContext}
+import akka.http.javadsl.server.CustomRejection
+import akka.http.scaladsl.server.RequestContext
 import cats.effect._
 import cats.syntax.all._
 import vinyldns.api.VinylDNSConfig
@@ -33,6 +33,7 @@ import scala.util.matching.Regex
 sealed abstract class VinylDNSAuthenticationError(msg: String) extends Throwable(msg)
 final case class AuthMissing(msg: String) extends VinylDNSAuthenticationError(msg)
 final case class AuthRejected(reason: String) extends VinylDNSAuthenticationError(reason)
+final case class AccountLocked(reason: String) extends VinylDNSAuthenticationError(reason)
 
 trait VinylDNSAuthentication extends Monitored {
   val authenticator: Aws4Authenticator
@@ -131,23 +132,35 @@ trait VinylDNSAuthentication extends Monitored {
     if (encryptionEnabled) crypto.decrypt(str) else str
 
   def getAuthPrincipal(accessKey: String): IO[AuthPrincipal] =
-    authPrincipalProvider.getAuthPrincipal(accessKey).map {
-      _.getOrElse(throw AuthRejected(s"Account with accessKey $accessKey specified was not found"))
+    authPrincipalProvider.getAuthPrincipal(accessKey).flatMap {
+      case Some(ok) =>
+        if (ok.signedInUser.isLocked) {
+          IO.raiseError(
+            AccountLocked(s"Account with username ${ok.signedInUser.userName} is locked"))
+        } else IO.pure(ok)
+      case None =>
+        IO.raiseError(AuthRejected(s"Account with accessKey $accessKey specified was not found"))
     }
 }
+
+case class VinylNDSCredentialsMissing(err: String) extends CustomRejection
+case class VinylNDSCredentialsRejected(err: String) extends CustomRejection
+case class VinylDNSAccountLocked(err: String) extends CustomRejection
 
 class VinylDNSAuthenticator(
     val authenticator: Aws4Authenticator,
     val authPrincipalProvider: AuthPrincipalProvider)
     extends VinylDNSAuthentication {
 
-  def apply(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
+  def apply(ctx: RequestContext, content: String): IO[Either[CustomRejection, AuthPrincipal]] =
     authenticate(ctx, content).attempt.map {
       case Right(ok) => Right(ok)
       case Left(_: AuthMissing) =>
-        Left(AuthenticationFailedRejection.CredentialsMissing)
+        Left(VinylNDSCredentialsMissing("CredentialsMissing"))
       case Left(_: AuthRejected) =>
-        Left(AuthenticationFailedRejection.CredentialsRejected)
+        Left(VinylNDSCredentialsRejected("CredentialsRejected"))
+      case Left(_: AccountLocked) =>
+        Left(VinylDNSAccountLocked("AccountLocked"))
       case Left(e: Throwable) =>
         // throw here as some unexpected exception occurred
         throw e
@@ -159,6 +172,6 @@ object VinylDNSAuthenticator {
   lazy val authPrincipalProvider = MembershipAuthPrincipalProvider()
   lazy val authenticator = new VinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
 
-  def apply(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
+  def apply(ctx: RequestContext, content: String): IO[Either[CustomRejection, AuthPrincipal]] =
     authenticator.apply(ctx, content)
 }

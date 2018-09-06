@@ -39,6 +39,7 @@ trait VinylDNSTestData {
     created = DateTime.now.secondOfDay().roundFloorCopy())
   val okAuth: AuthPrincipal = AuthPrincipal(TestDataLoader.okUser, Seq(grp.id))
   val notAuth: AuthPrincipal = AuthPrincipal(TestDataLoader.dummyUser, Seq.empty)
+  val lockedAuth: AuthPrincipal = AuthPrincipal(TestDataLoader.lockedUser, Seq.empty)
 
   val testConnection: Option[ZoneConnection] = Some(
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))

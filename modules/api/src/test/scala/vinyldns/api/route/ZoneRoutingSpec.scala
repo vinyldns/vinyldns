@@ -17,9 +17,9 @@
 package vinyldns.api.route
 
 import akka.actor.ActorSystem
+import akka.http.javadsl.server.CustomRejection
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
-import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
 import akka.http.scaladsl.server.{Directives, RequestContext, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.effect._
@@ -332,7 +332,7 @@ class ZoneRoutingSpec
 
   override def vinyldnsAuthenticator(
       ctx: RequestContext,
-      content: String): IO[Either[Cause, AuthPrincipal]] =
+      content: String): IO[Either[CustomRejection, AuthPrincipal]] =
     IO.pure(Right(okAuth))
 
   def zoneJson(name: String, email: String): String =

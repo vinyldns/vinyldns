@@ -44,6 +44,7 @@ object DynamoDBUserRepository {
   private[repository] val IS_SUPER = "super"
   private[repository] val USER_NAME_INDEX_NAME = "username_index"
   private[repository] val ACCESS_KEY_INDEX_NAME = "access_key_index"
+  private[repository] val IS_LOCKED = "locked"
 
   def apply(
       config: DynamoDBRepositorySettings,
@@ -97,6 +98,7 @@ object DynamoDBUserRepository {
     item.put(ACCESS_KEY, new AttributeValue(user.accessKey))
     item.put(SECRET_KEY, new AttributeValue(crypto.encrypt(user.secretKey)))
     item.put(IS_SUPER, new AttributeValue().withBOOL(user.isSuper))
+    item.put(IS_LOCKED, new AttributeValue().withBOOL(user.isLocked))
 
     val firstName =
       user.firstName.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
@@ -119,7 +121,8 @@ object DynamoDBUserRepository {
       firstName = Option(item.get(FIRST_NAME)).flatMap(fn => Option(fn.getS)),
       lastName = Option(item.get(LAST_NAME)).flatMap(ln => Option(ln.getS)),
       email = Option(item.get(EMAIL)).flatMap(e => Option(e.getS)),
-      isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL
+      isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL,
+      isLocked = if (item.get(IS_LOCKED) == null) false else item.get(IS_LOCKED).getBOOL
     )
   }
 }

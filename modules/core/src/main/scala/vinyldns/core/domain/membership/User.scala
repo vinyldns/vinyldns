@@ -29,5 +29,6 @@ case class User(
     email: Option[String] = None,
     created: DateTime = DateTime.now,
     id: String = UUID.randomUUID().toString,
-    isSuper: Boolean = false
+    isSuper: Boolean = false,
+    isLocked: Boolean = false
 )

@@ -17,7 +17,7 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
+import akka.http.javadsl.server.CustomRejection
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
@@ -42,7 +42,7 @@ trait VinylDNSDirectives extends Directives {
     */
   def vinyldnsAuthenticator(
       ctx: RequestContext,
-      content: String): IO[Either[Cause, AuthPrincipal]] =
+      content: String): IO[Either[CustomRejection, AuthPrincipal]] =
     VinylDNSAuthenticator(ctx, content)
 
   def authenticate: Directive1[AuthPrincipal] =
@@ -53,13 +53,17 @@ trait VinylDNSDirectives extends Directives {
             .flatMap {
               case Right(authPrincipal) ⇒
                 provide(authPrincipal)
-              case Left(cause) ⇒
-                // we need to finish the result, rejections will proceed and ultimately
-                // we can fail with a different rejection
+              case Left(VinylDNSAccountLocked(err)) ⇒
+                complete(
+                  HttpResponse(
+                    status = StatusCodes.Forbidden,
+                    entity = HttpEntity(s"Authentication Failed: $err")
+                  ))
+              case Left(e) ⇒
                 complete(
                   HttpResponse(
                     status = StatusCodes.Unauthorized,
-                    entity = HttpEntity(s"Authentication Failed: $cause")
+                    entity = HttpEntity(s"Authentication Failed: $e")
                   ))
             }
         }
