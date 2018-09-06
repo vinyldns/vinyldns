@@ -2,19 +2,25 @@
 
 <p><img src="/img/vinyldns-fulllogoDARK-300.png" alt="VinylDNS logo" /></p>
 
-<p>VinylDNS is a DNS Management Platform that provides safe and convenient access
-for your DNS needs.</p>
+<p>VinylDNS is a vendor agnostic front-end for enabling self-service DNS and streamlining DNS operations.  It is designed to integrate with your existing DNS infrastructure, and provides extensibility to fit your installation.
+VinylDNS manages millions of DNS records supporting thousands of engineers in production at <a href="http://www.comcast.com">Comcast</a>.
+The platform provides fine-grained access controls, auditing of changes, a self-service user interface,
+secure RESTful API, and integration with infrastructure automation tools like Ansible and Terraform.</p>
 
-<p>Features Include:</p>
-
+<p>VinylDNS helps secure DNS management via:</p>
 <ul>
-  <li>Connect to an <em>existing</em> DNS zone</li>
-  <li>Define permissions to govern record access for your zone(s)</li>
-  <li>Create, Update, Delete DNS records in your zone(s)</li>
-  <li>Search for Records in your zone(s)</li>
-  <li>View every change to every record in your zone(s)</li>
-  <li>Manage Groups and Members</li>
-  <li>Synchronize VinylDNS with records from DNS</li>
+  <li>AWS Sig4 signing of all messages to ensure that the message that was sent was not altered in transit</li>
+  <li>Throttling of DNS updates to rate limit concurrent updates against your DNS systems</li>
+  <li>Encrypting user secrets and TSIG keys at rest and in-transit</li>
+  <li>Recording every change made to DNS records and zones</li>
+</ul>
+
+<p>Integration is simple with first-class language support including:</p>
+<ul>
+  <li>java</li>
+  <li>ruby</li>
+  <li>python</li>
+  <li>go-lang</li>
 </ul>
 </div></div></section><section class="technologies"><div class="container"><div class="row"></div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>VinylDNS is designed and developed by <a href="" target="_blank">VinylDNS</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/VinylDNS/vinyldns"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank">Sbt-microsites</a> - © 2016 <a href="https://www.47deg.com/" target="_blank">47 Degrees</a></p></div></div></div></footer><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
