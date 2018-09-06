@@ -23,6 +23,7 @@ import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
+import vinyldns.api.{DynamoDBApiIntegrationSpec, ResultHelpers, VinylDNSTestData}
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.zone.RecordSetAlreadyExists
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -30,7 +31,7 @@ import vinyldns.core.domain.membership.{Group, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.api.engine.sqs.TestSqsService
-import vinyldns.dynamodb.repository.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
+import vinyldns.dynamodb.repository.DynamoDBRecordSetRepository
 import vinyldns.api.repository.mysql.TestMySqlInstance
 import vinyldns.core.domain.record._
 
@@ -39,7 +40,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 class RecordSetServiceIntegrationSpec
-    extends DynamoDBIntegrationSpec
+    extends DynamoDBApiIntegrationSpec
+    with VinylDNSTestData
+    with ResultHelpers
     with MockitoSugar
     with Matchers {
 
@@ -276,7 +279,7 @@ class RecordSetServiceIntegrationSpec
 
     "update relative NS record without trailing dot" in {
       val newRecord = subTestRecordNS.copy(ttl = 200)
-      val superAuth = AuthPrincipal(okGroupAuth.signedInUser.copy(isSuper = true), Seq.empty)
+      val superAuth = AuthPrincipal(okAuth.signedInUser.copy(isSuper = true), Seq.empty)
       val result = testRecordSetService
         .updateRecordSet(newRecord, superAuth)
         .value

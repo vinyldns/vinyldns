@@ -34,17 +34,21 @@ trait DynamoDBIntegrationSpec
     with ScalaFutures
     with Inspectors {
 
-  // this is defined in the docker/docker-compose.yml file for dynamodb
-  val port: Int = 19003
-  val endpoint: String = s"http://localhost:$port"
+  // port is defined in the docker/docker-compose.yml file for dynamodb
+  val dynamoClient: AmazonDynamoDBClient = getDynamoClient(19003)
 
-  val dynamoConfig: Config = ConfigFactory.parseString(s"""
-       | key = "vinyldnsTest"
-       | secret = "notNeededForDynamoDbLocal"
-       | endpoint="$endpoint",
-       | region="us-east-1"
+  def getDynamoClient(port: Int): AmazonDynamoDBClient = {
+    val endpoint: String = s"http://localhost:$port"
+    val dynamoConfig: Config = ConfigFactory.parseString(s"""
+                                                            | key = "vinyldnsTest"
+                                                            | secret = "notNeededForDynamoDbLocal"
+                                                            | endpoint="$endpoint",
+                                                            | region="us-east-1"
     """.stripMargin)
-  val dynamoClient: AmazonDynamoDBClient = DynamoDBClient(dynamoConfig)
+
+    DynamoDBClient(dynamoConfig)
+  }
+
   val dynamoDBHelper: DynamoDBHelper =
     new DynamoDBHelper(dynamoClient, LoggerFactory.getLogger("DynamoDBIntegrationSpec"))
 

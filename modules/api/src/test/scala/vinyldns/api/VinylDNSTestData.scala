@@ -232,7 +232,6 @@ trait VinylDNSTestData {
   val pendingChangeSet: ChangeSet = ChangeSet(Seq(pendingCreateAAAA, pendingCreateCNAME))
   val pendingCreateNS: RecordSetChange = RecordSetChangeGenerator.forAdd(ns, zoneActive, okAuth)
 
-
   val completeCreateAAAA: RecordSetChange =
     pendingCreateAAAA.copy(status = RecordSetChangeStatus.Complete)
   val completeCreateCNAME: RecordSetChange =
@@ -262,10 +261,8 @@ trait VinylDNSTestData {
     startFrom = None,
     maxItems = 100)
 
-
   val zoneChangePending: ZoneChange =
     ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Pending)
-
 
   val atRs: RecordSet = RecordSet(
     okZone.id,

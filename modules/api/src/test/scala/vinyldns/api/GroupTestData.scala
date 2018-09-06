@@ -26,8 +26,6 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
-import scala.util.Random
-
 trait GroupTestData { this: Matchers =>
 
   val okUser: User = TestDataLoader.okUser
@@ -136,7 +134,6 @@ trait GroupTestData { this: Matchers =>
       created = now.minusSeconds(i),
       id = s"$i")
   }
-
 
   val listOfDummyGroupChangesInfo: List[GroupChangeInfo] =
     listOfDummyGroupChanges.map(GroupChangeInfo.apply)

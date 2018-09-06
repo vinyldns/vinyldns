@@ -1,6 +1,6 @@
 version: "3.0"
 services:
-  dynamodb:
+  dynamodb-local:
     image: "cnadiminti/dynamodb-local:2017-02-16"
     ports:
       - "19003:8000"
