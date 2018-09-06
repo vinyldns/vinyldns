@@ -148,6 +148,7 @@ running the release
 
 1. Follow [Docker Content Trust](#docker-content-trust) to setup a notary delegation for yourself
 1. Follow [Sonatype Credentials](#sonatype-credentials) to setup the sonatype pgp signing key on your local
+1. Make sure you're logged in to Docker with `docker login`
 1. Export `DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE` in your env with your notary key passphrase 
 1. Run `bin/release.sh`
 1. You will be asked to confirm the version which originally comes from `version.sbt`. __NOTE: if the version ends with 
