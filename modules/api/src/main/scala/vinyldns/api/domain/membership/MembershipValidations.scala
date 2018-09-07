@@ -33,6 +33,11 @@ object MembershipValidations {
       group.adminUserIds.contains(authPrincipal.userId) || authPrincipal.signedInUser.isSuper
     }
 
+  def isSuperAdmin(authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
+    ensuring(NotAuthorizedError("Not authorized")) {
+      authPrincipal.signedInUser.isSuper
+    }
+
   def canSeeGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized")) {
       authPrincipal.isAuthorized(groupId)

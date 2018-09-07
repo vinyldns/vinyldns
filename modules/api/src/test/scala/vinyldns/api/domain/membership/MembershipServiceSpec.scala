@@ -85,6 +85,16 @@ class MembershipServiceSpec
     adminUserIds = existingGroup.adminUserIds ++ updatedInfo.memberIds
   )
 
+  // the update will set isLocked to true
+  private val updatedToLockUserInfo = okUser.copy(
+    isLocked = true
+  )
+
+  // the update will set isLocked to false
+  private val updatedToUnlockUserInfo = lockedUser.copy(
+    isLocked = true
+  )
+
   override protected def beforeEach(): Unit =
     reset(mockGroupRepo, mockUserRepo, mockMembershipRepo, mockGroupChangeRepo, underTest)
 
@@ -748,6 +758,66 @@ class MembershipServiceSpec
 
         val error = leftResultOf(underTest.groupCanBeDeleted(okGroup).value)
         error shouldBe a[InvalidGroupRequestError]
+      }
+    }
+
+    "updateUserLockStatus" should {
+      "save the update and lock the user account" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(updatedToLockUserInfo)).when(mockUserRepo).save(any[User])
+
+        awaitResultOf(
+          underTest
+            .updateUserLockStatus(okUser.id, true, superUserAuth)
+            .value)
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.isLocked shouldBe true
+        savedUser.id shouldBe okUser.id
+      }
+
+      "save the update and unlock the user account" in {
+        doReturn(IO.pure(Some(lockedUser))).when(mockUserRepo).getUser(lockedUser.id)
+        doReturn(IO.pure(updatedToUnlockUserInfo)).when(mockUserRepo).save(any[User])
+
+        awaitResultOf(
+          underTest
+            .updateUserLockStatus(lockedUser.id, false, superUserAuth)
+            .value)
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.isLocked shouldBe false
+        savedUser.id shouldBe lockedUser.id
+      }
+
+      "return an error if the signed in user is not a super user" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+
+        val error = leftResultOf(
+          underTest
+            .updateUserLockStatus(okUser.id, true, dummyUserAuth)
+            .value)
+
+        error shouldBe a[NotAuthorizedError]
+      }
+
+      "return an error if the requested user is not found" in {
+        doReturn(IO.pure(None)).when(mockUserRepo).getUser(okUser.id)
+
+        val error = leftResultOf(
+          underTest
+            .updateUserLockStatus(okUser.id, true, superUserAuth)
+            .value)
+
+        error shouldBe a[UserNotFoundError]
       }
     }
   }

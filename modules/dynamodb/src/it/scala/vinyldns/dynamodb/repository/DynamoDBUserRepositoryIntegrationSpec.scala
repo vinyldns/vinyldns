@@ -135,5 +135,37 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       result shouldBe Some(testUser)
       result.get.isSuper shouldBe false
     }
+    "returns the locked flag when true" in {
+      val testUser = User(
+        userName = "testSuper",
+        accessKey = "testSuper",
+        secretKey = "testUser",
+        isLocked = true)
+
+      val f =
+        for {
+          saved <- repo.save(testUser)
+          result <- repo.getUser(saved.id)
+        } yield result
+
+      whenReady(f.unsafeToFuture(), timeout) { saved =>
+        saved shouldBe Some(testUser)
+        saved.get.isLocked shouldBe true
+      }
+    }
+    "returns the locked flag when false" in {
+      val testUser = User(userName = "testSuper", accessKey = "testSuper", secretKey = "testUser")
+
+      val f =
+        for {
+          saved <- repo.save(testUser)
+          result <- repo.getUser(saved.id)
+        } yield result
+
+      whenReady(f.unsafeToFuture(), timeout) { saved =>
+        saved shouldBe Some(testUser)
+        saved.get.isLocked shouldBe false
+      }
+    }
   }
 }

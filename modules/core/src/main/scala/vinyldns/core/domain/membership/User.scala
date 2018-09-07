@@ -31,4 +31,8 @@ case class User(
     id: String = UUID.randomUUID().toString,
     isSuper: Boolean = false,
     isLocked: Boolean = false
-)
+) {
+
+  def updateUserLockStatus(lockStatus: Boolean): User =
+    this.copy(isLocked = lockStatus)
+}

@@ -168,6 +168,16 @@ trait MembershipRoute extends Directives {
             }
           }
         }
+      } ~
+      (put & path("users" / Segment / "lock") & monitor("Endpoint.lockUser")) { id =>
+        execute(membershipService.updateUserLockStatus(id, true, authPrincipal)) { user =>
+          complete(StatusCodes.OK, UserInfo(user))
+        }
+      } ~
+      (put & path("users" / Segment / "unlock") & monitor("Endpoint.unlockUser")) { id =>
+        execute(membershipService.updateUserLockStatus(id, false, authPrincipal)) { user =>
+          complete(StatusCodes.OK, UserInfo(user))
+        }
       }
   }
 

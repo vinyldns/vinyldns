@@ -174,6 +174,12 @@ class MembershipService(
       .getUsers(userIds, startFrom, pageSize)
       .toResult[ListUsersResults]
 
+  def getExistingUser(userId: String): Result[User] =
+    userRepo
+      .getUser(userId)
+      .orFail(UserNotFoundError(s"User with ID $userId was not found"))
+      .toResult[User]
+
   def getExistingGroup(groupId: String): Result[Group] =
     groupRepo
       .getGroup(groupId)
@@ -222,4 +228,15 @@ class MembershipService(
         }
       }
       .toResult
+
+  def updateUserLockStatus(
+      userId: String,
+      setLockedTo: Boolean,
+      authPrincipal: AuthPrincipal): Result[User] =
+    for {
+      _ <- isSuperAdmin(authPrincipal).toResult
+      existingUser <- getExistingUser(userId)
+      newUser = existingUser.updateUserLockStatus(setLockedTo)
+      _ <- userRepo.save(newUser).toResult[User]
+    } yield newUser
 }

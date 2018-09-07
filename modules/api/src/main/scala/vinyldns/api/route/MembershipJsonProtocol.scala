@@ -39,6 +39,7 @@ object MembershipJsonProtocol {
       description: Option[String],
       members: Set[UserInfo],
       admins: Set[UserInfo])
+  final case class UpdateUserInput(id: String, isLocked: Boolean)
 }
 
 /* Defines the JSON serialization to support the Membership Routes */

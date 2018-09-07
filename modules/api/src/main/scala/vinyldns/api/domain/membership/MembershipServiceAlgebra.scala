@@ -56,4 +56,9 @@ trait MembershipServiceAlgebra {
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal): Result[ListGroupChangesResponse]
+
+  def updateUserLockStatus(
+      userId: String,
+      setLockedTo: Boolean,
+      authPrincipal: AuthPrincipal): Result[User]
 }

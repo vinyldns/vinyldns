@@ -65,6 +65,18 @@ object TestDataLoader {
     isSuper = false,
     isLocked = true
   )
+  final val superUser = User(
+    userName = "super",
+    id = "super",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "superAccessKey",
+    secretKey = "superSecretKey",
+    firstName = Some("Super"),
+    lastName = Some("User"),
+    email = Some("super@test.com"),
+    isSuper = true,
+    isLocked = false
+  )
   final val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
       userName = "name-dummy%03d".format(runner),

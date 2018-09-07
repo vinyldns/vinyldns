@@ -191,7 +191,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(IO.raiseError(AccountLocked("Account with username locked is locked")))
+      doReturn(IO.pure(Some(lockedUserAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -214,18 +214,18 @@ class VinylDNSAuthenticatorSpec
       val context: RequestContext = mock[RequestContext]
       doReturn(httpRequest).when(context).request
 
-      doReturn(okUser.accessKey)
+      doReturn("fakeKey")
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
       // No User found
-      doReturn(IO.raiseError(AuthRejected("Authorization header could not be parsed")))
+      doReturn(IO.pure(None))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
       val result =
         await[Either[VinylDNSAuthenticationError, AuthPrincipal]](underTest.apply(context, ""))
-      result shouldBe Left(AuthRejected("Authorization header could not be parsed"))
+      result shouldBe Left(AuthRejected("Account with accessKey fakeKey specified was not found"))
     }
     "fail if signatures can not be validated" in {
       val fakeHttpHeader = mock[HttpHeader]

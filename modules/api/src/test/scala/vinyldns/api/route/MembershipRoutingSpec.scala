@@ -671,4 +671,55 @@ class MembershipRoutingSpec
       }
     }
   }
+  "PUT update user lock status" should {
+    "return a 200 response with the user locked" in {
+      val updatedUser = okUser.copy(isLocked = true)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserLockStatus("ok", true, superUserAuth)
+
+      Put("/users/ok/lock") ~> membershipRoute(superUserAuth) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe okUser.id
+        result.isLocked shouldEqual true
+      }
+    }
+
+    "return a 200 response with the user unlocked" in {
+      val updatedUser = lockedUser.copy(isLocked = false)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserLockStatus("locked", false, superUserAuth)
+
+      Put("/users/locked/unlock") ~> membershipRoute(superUserAuth) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe lockedUser.id
+        result.isLocked shouldEqual false
+      }
+    }
+
+    "return a 404 Not Found when the user is not found" in {
+      doReturn(result(UserNotFoundError("fail")))
+        .when(membershipService)
+        .updateUserLockStatus(anyString, anyBoolean, any[AuthPrincipal])
+      Put("/users/notFound/lock") ~> membershipRoute(superUserAuth) ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 403 Forbidden when not authorized" in {
+      doReturn(result(NotAuthorizedError("fail")))
+        .when(membershipService)
+        .updateUserLockStatus(anyString, anyBoolean, any[AuthPrincipal])
+      Put("/users/forbidden/lock") ~> membershipRoute(okGroupAuth) ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+  }
 }
