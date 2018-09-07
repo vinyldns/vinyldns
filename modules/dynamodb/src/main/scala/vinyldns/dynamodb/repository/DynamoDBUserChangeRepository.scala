@@ -37,7 +37,6 @@ class DynamoDBUserChangeRepository(
   import DynamoDBUserRepository._
 
   private val logger = LoggerFactory.getLogger(classOf[DynamoDBUserChangeRepository])
-  private[repository] val USER_CHANGE_TABLE = "user-change"
   private[repository] val USER_CHANGE_ID = "change_id"
   private[repository] val USER_ID = "user_id"
   private[repository] val MADE_BY_ID = "made_by_id"
@@ -50,6 +49,7 @@ class DynamoDBUserChangeRepository(
   private[repository] val tableAttributes = Seq(
     new AttributeDefinition(USER_CHANGE_ID, "S")
   )
+  private[repository] val USER_CHANGE_TABLE = config.getString("dynamo.tableName")
   private val dynamoReads = config.getLong("dynamo.provisionedReads")
   private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
 
