@@ -79,7 +79,7 @@ lazy val testSettings = Seq(
 
 lazy val apiSettings = Seq(
   name := "api",
-  libraryDependencies ++= compileDependencies ++ testDependencies.map(_ % "test, it"),
+  libraryDependencies ++= compileDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
   coverageMinimum := 85,
@@ -147,6 +147,10 @@ lazy val portalDockerSettings = Seq(
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
 )
 
+lazy val dynamoDBDockerSettings = Seq(
+  composeFile := baseDirectory.value.getAbsolutePath + "/docker/docker-compose.yml"
+)
+
 lazy val noPublishSettings = Seq(
   publish := {},
   publishLocal := {},
@@ -187,7 +191,7 @@ lazy val api = (project in file("modules/api"))
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .dependsOn(core)
+  .dependsOn(core, dynamodb % "compile->compile;it->it")
 
 lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
@@ -239,7 +243,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(coreBuildSettings)
   .settings(corePublishSettings)
   .settings(testSettings)
-  .settings(libraryDependencies ++= coreDependencies ++ coreTestDependencies.map(_ % "test"))
+  .settings(libraryDependencies ++= coreDependencies ++ commonTestDependencies.map(_ % "test"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns",
@@ -247,6 +251,24 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
     coverageFailOnMinimum := true,
     coverageHighlighting := true
   )
+
+lazy val dynamodb = (project in file("modules/dynamodb"))
+  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .configs(IntegrationTest)
+  .settings(sharedSettings)
+  .settings(headerSettings(IntegrationTest))
+  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
+  .settings(name := "dynamodb")
+  .settings(noPublishSettings)
+  .settings(testSettings)
+  .settings(Defaults.itSettings)
+  .settings(libraryDependencies ++= dynamoDBDependencies ++ commonTestDependencies.map(_ % "test, it"))
+  .settings(scalaStyleCompile ++ scalaStyleTest)
+  .settings(
+    coverageMinimum := 85,
+    coverageFailOnMinimum := true,
+    coverageHighlighting := true
+  ).dependsOn(core % "compile->compile;test->test")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")
@@ -405,15 +427,20 @@ releaseProcess :=
 addCommandAlias("validate-api",
   ";project api; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
     "it:scalastyle; compile; test:compile; it:compile")
+addCommandAlias("validate-dynamodb",
+  ";project dynamodb; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
+    "it:scalastyle; compile; test:compile; it:compile")
 addCommandAlias("validate-core",
   ";project core; clean; headerCheck; test:headerCheck; scalastyle; test:scalastyle; compile; test:compile")
 addCommandAlias("validate-portal",
   ";project portal; clean; headerCheck; test:headerCheck; compile; test:compile; createJsHeaders; checkJsHeaders")
-addCommandAlias("validate", ";validate-core;validate-api;validate-portal")
+addCommandAlias("validate", ";validate-core;validate-dynamodb;validate-api;validate-portal")
 
 // Verify runs all tests and code coverage
+addCommandAlias("dockerComposeUpAll",";project api;dockerComposeUp;project dynamodb;dockerComposeUp;project root")
+addCommandAlias("dockerComposeStopAll",";project api;dockerComposeStop;project dynamodb;dockerComposeStop;project root")
 addCommandAlias("verify",
-  ";project api;dockerComposeUp;project root;coverage;test;it:test;coverageReport;coverageAggregate;project api;dockerComposeStop")
+  ";dockerComposeUpAll;project root;coverage;test;it:test;coverageReport;coverageAggregate;dockerComposeStopAll")
 
 // Build the artifacts for release
 addCommandAlias("build-api", ";project api;clean;assembly")

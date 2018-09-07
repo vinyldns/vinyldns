@@ -8,7 +8,7 @@ services:
     ports:
       - "19002:3306"
 
-  dynamodb:
+  dynamodb-local:
     image: "cnadiminti/dynamodb-local:2017-02-16"
     ports:
       - "19000:8000"

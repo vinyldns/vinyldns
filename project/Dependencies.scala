@@ -24,8 +24,7 @@ object Dependencies {
     "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "com.aaronbedra"            %  "orchard"                        % "0.1.1",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
-    "com.amazonaws"             % "aws-java-sdk-sqs"                % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-sqs"                % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
@@ -59,14 +58,19 @@ object Dependencies {
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV
   )
 
-  lazy val coreTestDependencies = Seq(
+  lazy val dynamoDBDependencies = Seq(
+    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
+  )
+
+  lazy val commonTestDependencies = Seq(
     "org.scalatest"             %% "scalatest"                      % scalaTestV,
     "org.scalacheck"            %% "scalacheck"                     % "1.13.4",
     "com.ironcorelabs"          %% "cats-scalatest"                 % "2.3.1",
     "org.mockito"               %  "mockito-core"                   % "1.10.19"
   )
 
-  lazy val testDependencies = coreTestDependencies ++ Seq(
+  lazy val apiTestDependencies = commonTestDependencies ++ Seq(
     "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
     "junit"                     %  "junit"                          % "4.12"
   )

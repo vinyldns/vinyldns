@@ -26,8 +26,6 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 
-import scala.util.Random
-
 trait GroupTestData { this: Matchers =>
 
   val okUser: User = TestDataLoader.okUser
@@ -36,7 +34,6 @@ trait GroupTestData { this: Matchers =>
 
   val okUserInfo: UserInfo = UserInfo(okUser)
   val dummyUserInfo: UserInfo = UserInfo(dummyUser)
-  val listOfDummyUsersInfo: List[UserInfo] = listOfDummyUsers.map(UserInfo(_))
 
   val okGroup: Group = Group(
     "ok",
@@ -49,7 +46,7 @@ trait GroupTestData { this: Matchers =>
     Group("deleted", "test@test.com", Some("a deleted group"), status = GroupStatus.Deleted)
   val updatedGroup: Group = okGroup.copy(
     name = "updated",
-    email = "updated@test.com",
+    email = "updated@tlistOfRandomTimeGroupChangesest.com",
     description = Some("a new description"))
   val twoUserGroup: Group = Group(
     "twoUsers",
@@ -138,22 +135,6 @@ trait GroupTestData { this: Matchers =>
       id = s"$i")
   }
 
-  val randomTimeGroup: Group = Group(
-    "randomTime",
-    "test@test.com",
-    Some("changes have random time stamp"),
-    memberIds = Set(listOfDummyUsers(0).id))
-  // making distinct, multiple changes with the same time throws this test
-  val randomTimes: List[Int] = List.range(0, 200).map(_ => Random.nextInt(1000)).distinct
-  val listOfRandomTimeGroupChanges: List[GroupChange] = randomTimes.zipWithIndex.map {
-    case (randomTime, i) =>
-      GroupChange(
-        randomTimeGroup,
-        GroupChangeType.Update,
-        dummyUser.id,
-        created = now.minusSeconds(randomTime),
-        id = s"random-time-$i")
-  }
   val listOfDummyGroupChangesInfo: List[GroupChangeInfo] =
     listOfDummyGroupChanges.map(GroupChangeInfo.apply)
 

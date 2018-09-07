@@ -22,13 +22,14 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
+import vinyldns.api.{DynamoDBApiIntegrationSpec, ResultHelpers, VinylDNSTestData}
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.api.engine.sqs.TestSqsService
-import vinyldns.api.repository.dynamodb.{DynamoDBIntegrationSpec, DynamoDBRecordSetRepository}
+import vinyldns.dynamodb.repository.DynamoDBRecordSetRepository
 import vinyldns.api.repository.mysql.TestMySqlInstance
 import vinyldns.core.domain.zone._
 
@@ -36,7 +37,11 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-class ZoneServiceIntegrationSpec extends DynamoDBIntegrationSpec with MockitoSugar {
+class ZoneServiceIntegrationSpec
+    extends DynamoDBApiIntegrationSpec
+    with VinylDNSTestData
+    with ResultHelpers
+    with MockitoSugar {
 
   private val recordSetTable = "recordSetTest"
 

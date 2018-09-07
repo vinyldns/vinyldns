@@ -1,0 +1,7 @@
+version: "3.0"
+services:
+  dynamodb-local:
+    image: "cnadiminti/dynamodb-local:2017-02-16"
+    ports:
+      - "19003:8000"
+    command: "--sharedDb --inMemory"
