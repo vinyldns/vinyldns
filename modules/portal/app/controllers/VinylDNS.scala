@@ -61,6 +61,7 @@ object VinylDNS {
       lastName: Option[String],
       email: Option[String],
       isSuper: Boolean,
+      isLocked: Boolean,
       id: String)
   object UserInfo {
     def fromAccount(account: UserAccount): UserInfo =
@@ -70,6 +71,7 @@ object VinylDNS {
         lastName = account.lastName,
         email = account.email,
         isSuper = account.isSuper,
+        isLocked = account.isLocked,
         id = account.userId
       )
   }
@@ -114,6 +116,34 @@ class VinylDNS @Inject()(
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
+  private def checkSuperUser(username: String): Try[UserAccount] =
+    for {
+      account <- userAccountAccessor.get(username).flatMap {
+        case Some(account) if account.isSuper => Success(account)
+        case Some(account) if !account.isSuper =>
+          Failure(new UserIsNotAnAdminException(s"User account for $username is not an admin"))
+        case None =>
+          Failure(new UserDoesNotExistException(s"User account for $username not found"))
+      }
+    } yield account
+
+  private def withUnlockedUser(username: String): Try[UserAccount] =
+    for {
+      account <- userAccountAccessor.get(username).flatMap {
+        case Some(account) if !account.isLocked => Success(account)
+        case Some(account) if account.isLocked =>
+          Failure(new UserAccountIsLockedException(s"User account for $username is locked"))
+        case None => Failure(new UserDoesNotExistException(s"User account for $username not found"))
+      }
+    } yield account
+
+  private def errorResponse(e: Throwable): Result =
+    e match {
+      case e: UserAccountIsLockedException => Forbidden(e.getMessage).withHeaders(cacheHeaders: _*)
+      case e: UserIsNotAnAdminException => Unauthorized(e.getMessage).withHeaders(cacheHeaders: _*)
+      case _ => NotFound("User was not found").withHeaders(cacheHeaders: _*)
+    }
+
   def login(): Action[AnyContent] = Action { implicit request =>
     val userForm = Form(
       tuple(
@@ -127,90 +157,123 @@ class VinylDNS @Inject()(
   }
 
   def newGroup(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val json = request.body.asJson
-      val payload = json.map(Json.stringify)
-      val vinyldnsRequest =
-        new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", "groups", payload)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Logger.info(response.body)
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val json = request.body.asJson
+          val payload = json.map(Json.stringify)
+          val vinyldnsRequest =
+            new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", "groups", payload)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Logger.info(response.body)
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def getGroup(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/$id")
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Logger.info(s"group [$id] retrieved with status [${response.status}]")
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/$id")
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Logger.info(s"group [$id] retrieved with status [${response.status}]")
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def deleteGroup(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val vinyldnsRequest = VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"groups/$id")
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Logger.info(s"group [$id] deleted with status [${response.status}]")
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val vinyldnsRequest = VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"groups/$id")
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Logger.info(s"group [$id] deleted with status [${response.status}]")
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def updateGroup(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val payload = request.body.asJson.map(Json.stringify)
-      val vinyldnsRequest =
-        VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"groups/$id", payload)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Logger.info(s"group [$id] updated with status [${response.status}]")
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val payload = request.body.asJson.map(Json.stringify)
+          val vinyldnsRequest =
+            VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"groups/$id", payload)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Logger.info(s"group [$id] updated with status [${response.status}]")
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def getMyGroups(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser({ _ =>
-      val queryParameters = new HashMap[String, java.util.List[String]]()
-      for {
-        (name, values) <- request.queryString
-      } queryParameters.put(name, values.asJava)
-
-      val vinyldnsRequest =
-        VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups", parameters = queryParameters)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser({ username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val queryParameters = new HashMap[String, java.util.List[String]]()
+          for {
+            (name, values) <- request.queryString
+          } queryParameters.put(name, values.asJava)
+          val vinyldnsRequest =
+            VinylDNSRequest(
+              "GET",
+              s"$vinyldnsServiceBackend",
+              s"groups",
+              parameters = queryParameters)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     })
   }
 
   def getAuthenticatedUserData(): Action[AnyContent] = Action.async { implicit request =>
     withAuthenticatedUser { user =>
-      val response = userAccountAccessor.get(user).map {
-        case Some(userDetails) =>
-          Ok(Json.toJson(VinylDNS.UserInfo.fromAccount(userDetails)))
-            .withHeaders(cacheHeaders: _*)
-        case _ =>
-          Status(404)(s"Did not find user data for '$user'")
+      withUnlockedUser(user) match {
+        case Success(_) => {
+          val response = userAccountAccessor.get(user).map {
+            case Some(userDetails) =>
+              Ok(Json.toJson(VinylDNS.UserInfo.fromAccount(userDetails)))
+                .withHeaders(cacheHeaders: _*)
+            case _ =>
+              Status(404)(s"Did not find user data for '$user'")
+          }
+          Future.fromTry(response)
+        }
+        case Failure(e) => Future(errorResponse(e))
       }
-      Future.fromTry(response)
     }
   }
 
@@ -236,28 +299,31 @@ class VinylDNS @Inject()(
   def serveCredsFile(fileName: String): Action[AnyContent] = Action.async { implicit request =>
     Logger.info(s"Serving credentials for file $fileName")
     withAuthenticatedUser { username =>
-      userAccountAccessor.get(username) match {
-        case Success(Some(account)) => Future(processCsv(username, account))
-        case Success(None) =>
-          throw new UnsupportedOperationException(s"Error - User account for $username not found")
-        case Failure(ex) => throw ex
+      withUnlockedUser(username) match {
+        case Success(account) => Future(processCsv(username, account))
+        case Failure(e) => Future(errorResponse(e))
       }
     }
   }
 
   def regenerateCreds(): Action[AnyContent] = Action.async { implicit request =>
     withAuthenticatedUser { username =>
-      Future
-        .fromTry(processRegenerate(username))
-        .map(response => {
-          Status(200)("Successfully regenerated credentials")
-            .withHeaders(cacheHeaders: _*)
-            .withSession("username" -> response.username, "accessKey" -> response.accessKey)
-        })
-        .recover {
-          case _: UserDoesNotExistException =>
-            NotFound(s"User $username was not found").withHeaders(cacheHeaders: _*)
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          Future
+            .fromTry(processRegenerate(username))
+            .map(response => {
+              Status(200)("Successfully regenerated credentials")
+                .withHeaders(cacheHeaders: _*)
+                .withSession("username" -> response.username, "accessKey" -> response.accessKey)
+            })
+            .recover {
+              case _: UserDoesNotExistException =>
+                NotFound(s"User $username was not found").withHeaders(cacheHeaders: _*)
+            }
         }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
@@ -304,26 +370,71 @@ class VinylDNS @Inject()(
 
   def getUserDataByUsername(username: String): Action[AnyContent] = Action.async {
     implicit request =>
-      withAuthenticatedUser { _ =>
-        Future
-          .fromTry {
-            for {
-              userDetails <- authenticator.lookup(username)
-              existingAccount <- userAccountAccessor.get(userDetails.username)
-              userAccount <- existingAccount match {
-                case Some(user) => Try(VinylDNS.UserInfo.fromAccount(user))
-                case None =>
-                  createNewUser(userDetails).map(VinylDNS.UserInfo.fromAccount)
+      withAuthenticatedUser { user =>
+        withUnlockedUser(user) match {
+          case Success(_) => {
+            Future
+              .fromTry {
+                for {
+                  userDetails <- authenticator.lookup(username)
+                  existingAccount <- userAccountAccessor.get(userDetails.username)
+                  userAccount <- existingAccount match {
+                    case Some(user) => Try(VinylDNS.UserInfo.fromAccount(user))
+                    case None =>
+                      createNewUser(userDetails).map(VinylDNS.UserInfo.fromAccount)
+                  }
+                } yield userAccount
               }
-            } yield userAccount
+              .map(Json.toJson(_))
+              .map(Ok(_).withHeaders(cacheHeaders: _*))
+              .recover {
+                case _: UserDoesNotExistException => NotFound(s"User $username was not found")
+              }
           }
-          .map(Json.toJson(_))
-          .map(Ok(_).withHeaders(cacheHeaders: _*))
-          .recover {
-            case _: UserDoesNotExistException => NotFound(s"User $username was not found")
-          }
+          case Failure(e) => Future(errorResponse(e))
+        }
       }
   }
+
+  def updateUser(userId: String, lockedStatus: Boolean): Action[AnyContent] = Action.async {
+    implicit request =>
+      withAuthenticatedUser { username =>
+        (withUnlockedUser(username), checkSuperUser(username)) match {
+          case (Success(_), Success(_)) =>
+            Future
+              .fromTry(updateLockStatus(userId, lockedStatus))
+              .map(_ => {
+                Status(200)(s"Successfully changed locked status to ${lockedStatus}")
+                  .withHeaders(cacheHeaders: _*)
+              })
+          case (Failure(e), Success(_)) => Future(errorResponse(e))
+          case (Success(_), Failure(e)) => Future(errorResponse(e))
+          case (Failure(e), Failure(_)) => Future(errorResponse(e))
+        }
+      }
+  }
+
+  private def updateLockStatus(userId: String, lockedStatus: Boolean): Try[UserAccount] =
+    for {
+      oldAccount <- userAccountAccessor.get(userId).flatMap {
+        case Some(account) => Success(account)
+        case None =>
+          Failure(new UserDoesNotExistException(s"Error - User account for $userId not found"))
+      }
+      account = oldAccount.lockUser(lockedStatus)
+      _ <- userAccountAccessor.put(account)
+      _ <- auditLogAccessor.log(
+        UserChangeMessage(
+          account.userId,
+          account.username,
+          DateTime.now(),
+          ChangeType("updated"),
+          account,
+          Some(oldAccount)))
+    } yield {
+      Logger.info(s"Locked status for ${account.username} set to ${lockedStatus}")
+      account
+    }
 
   def processLogin(username: String, password: String): Result =
     authenticator.authenticate(username, password) match {
@@ -348,7 +459,7 @@ class VinylDNS @Inject()(
               }
             case Some(user) =>
               Logger.info(s"User account for ${user.username} exists with id ${user.userId}")
-              Success(user)
+              withUnlockedUser(username)
           }
           .recoverWith {
             case ex =>
@@ -365,195 +476,264 @@ class VinylDNS @Inject()(
     }
 
   def getZones: Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val queryParameters = new HashMap[String, java.util.List[String]]()
-      for {
-        (name, values) <- request.queryString
-      } queryParameters.put(name, values.asJava)
-      val vinyldnsRequest =
-        new VinylDNSRequest(
-          "GET",
-          s"$vinyldnsServiceBackend",
-          "zones",
-          parameters = queryParameters)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val queryParameters = new HashMap[String, java.util.List[String]]()
+          for {
+            (name, values) <- request.queryString
+          } queryParameters.put(name, values.asJava)
+          val vinyldnsRequest =
+            new VinylDNSRequest(
+              "GET",
+              s"$vinyldnsServiceBackend",
+              "zones",
+              parameters = queryParameters)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def getZone(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val vinyldnsRequest = new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id")
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val vinyldnsRequest = new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id")
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def syncZone(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val vinyldnsRequest =
-        new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", s"zones/$id/sync")
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val vinyldnsRequest =
+            new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", s"zones/$id/sync")
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def getRecordSets(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val queryParameters = new HashMap[String, java.util.List[String]]()
-      for {
-        (name, values) <- request.queryString
-      } queryParameters.put(name, values.asJava)
-      val vinyldnsRequest = VinylDNSRequest(
-        "GET",
-        s"$vinyldnsServiceBackend",
-        s"zones/$id/recordsets",
-        parameters = queryParameters)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val queryParameters = new HashMap[String, java.util.List[String]]()
+          for {
+            (name, values) <- request.queryString
+          } queryParameters.put(name, values.asJava)
+          val vinyldnsRequest = VinylDNSRequest(
+            "GET",
+            s"$vinyldnsServiceBackend",
+            s"zones/$id/recordsets",
+            parameters = queryParameters)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def listRecordSetChanges(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val queryParameters = new HashMap[String, java.util.List[String]]()
-      for {
-        (name, values) <- request.queryString
-      } queryParameters.put(name, values.asJava)
-      val vinyldnsRequest = new VinylDNSRequest(
-        "GET",
-        s"$vinyldnsServiceBackend",
-        s"zones/$id/recordsetchanges",
-        parameters = queryParameters)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val queryParameters = new HashMap[String, java.util.List[String]]()
+          for {
+            (name, values) <- request.queryString
+          } queryParameters.put(name, values.asJava)
+          val vinyldnsRequest = new VinylDNSRequest(
+            "GET",
+            s"$vinyldnsServiceBackend",
+            s"zones/$id/recordsetchanges",
+            parameters = queryParameters)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def getChanges(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id/history")
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val vinyldnsRequest =
+            VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id/history")
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def addZone(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val json = request.body.asJson
-      val payload = json.map(Json.stringify)
-      val vinyldnsRequest =
-        new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", "zones", payload)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val json = request.body.asJson
+          val payload = json.map(Json.stringify)
+          val vinyldnsRequest =
+            new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", "zones", payload)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def updateZone(id: String): Action[AnyContent] = Action.async { implicit request =>
     withAuthenticatedUser { user =>
-      val json = request.body.asJson
-      val payload = json.map(Json.stringify)
-      val vinyldnsRequest =
-        new VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"zones/$id", payload)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+      withUnlockedUser(user) match {
+        case Success(_) => {
+          val json = request.body.asJson
+          val payload = json.map(Json.stringify)
+          val vinyldnsRequest =
+            new VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"zones/$id", payload)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def addRecordSet(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val json = request.body.asJson
-      val payload = json.map(Json.stringify)
-      val vinyldnsRequest =
-        new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", s"zones/$id/recordsets", payload)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val json = request.body.asJson
+          val payload = json.map(Json.stringify)
+          val vinyldnsRequest =
+            new VinylDNSRequest(
+              "POST",
+              s"$vinyldnsServiceBackend",
+              s"zones/$id/recordsets",
+              payload)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def deleteZone(id: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val vinyldnsRequest = new VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"zones/$id")
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val vinyldnsRequest =
+            new VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"zones/$id")
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def updateRecordSet(zid: String, rid: String): Action[AnyContent] = Action.async {
     implicit request =>
-      withAuthenticatedUser { _ =>
-        val json = request.body.asJson
-        val payload = json.map(Json.stringify)
-        val vinyldnsRequest =
-          new VinylDNSRequest(
-            "PUT",
-            s"$vinyldnsServiceBackend",
-            s"zones/$zid/recordsets/$rid",
-            payload)
-        val signedRequest =
-          signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-        executeRequest(signedRequest).map(response => {
-          Status(response.status)(response.body)
-            .withHeaders(cacheHeaders: _*)
-        })
+      withAuthenticatedUser { username =>
+        withUnlockedUser(username) match {
+          case Success(_) => {
+            val json = request.body.asJson
+            val payload = json.map(Json.stringify)
+            val vinyldnsRequest =
+              new VinylDNSRequest(
+                "PUT",
+                s"$vinyldnsServiceBackend",
+                s"zones/$zid/recordsets/$rid",
+                payload)
+            val signedRequest =
+              signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+            executeRequest(signedRequest).map(response => {
+              Status(response.status)(response.body)
+                .withHeaders(cacheHeaders: _*)
+            })
+          }
+          case Failure(e) => Future(errorResponse(e))
+        }
       }
   }
 
   def deleteRecordSet(zid: String, rid: String): Action[AnyContent] = Action.async {
     implicit request =>
-      withAuthenticatedUser { _ =>
-        val vinyldnsRequest =
-          new VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"zones/$zid/recordsets/$rid")
-        val signedRequest =
-          signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-        executeRequest(signedRequest).map(response => {
-          Status(response.status)(response.body)
-            .withHeaders(cacheHeaders: _*)
-        })
+      withAuthenticatedUser { username =>
+        withUnlockedUser(username) match {
+          case Success(_) => {
+            val vinyldnsRequest =
+              new VinylDNSRequest(
+                "DELETE",
+                s"$vinyldnsServiceBackend",
+                s"zones/$zid/recordsets/$rid")
+            val signedRequest =
+              signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+            executeRequest(signedRequest).map(response => {
+              Status(response.status)(response.body)
+                .withHeaders(cacheHeaders: _*)
+            })
+          }
+          case Failure(e) => Future(errorResponse(e))
+        }
       }
   }
 
-  def signRequest(
+  private def signRequest(
       vinyldnsRequest: VinylDNSRequest,
       credentials: AWSCredentials): SignableVinylDNSRequest = {
     val signableRequest = new SignableVinylDNSRequest(vinyldnsRequest)
@@ -596,76 +776,100 @@ class VinylDNS @Inject()(
   }
 
   def getMemberList(groupId: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val queryParameters = new HashMap[String, java.util.List[String]]()
-      for {
-        (name, values) <- request.queryString
-      } queryParameters.put(name, values.asJava)
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val queryParameters = new HashMap[String, java.util.List[String]]()
+          for {
+            (name, values) <- request.queryString
+          } queryParameters.put(name, values.asJava)
 
-      val vinyldnsRequest = new VinylDNSRequest(
-        "GET",
-        s"$vinyldnsServiceBackend",
-        s"groups/$groupId/members",
-        parameters = queryParameters)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+          val vinyldnsRequest = new VinylDNSRequest(
+            "GET",
+            s"$vinyldnsServiceBackend",
+            s"groups/$groupId/members",
+            parameters = queryParameters)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def getBatchChange(batchChangeId: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val vinyldnsRequest =
-        new VinylDNSRequest(
-          "GET",
-          s"$vinyldnsServiceBackend",
-          s"zones/batchrecordchanges/$batchChangeId")
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val vinyldnsRequest =
+            new VinylDNSRequest(
+              "GET",
+              s"$vinyldnsServiceBackend",
+              s"zones/batchrecordchanges/$batchChangeId")
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def newBatchChange(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val json = request.body.asJson
-      val payload = json.map(Json.stringify)
-      val vinyldnsRequest =
-        new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", "zones/batchrecordchanges", payload)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Logger.info(response.body)
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val json = request.body.asJson
+          val payload = json.map(Json.stringify)
+          val vinyldnsRequest =
+            new VinylDNSRequest(
+              "POST",
+              s"$vinyldnsServiceBackend",
+              "zones/batchrecordchanges",
+              payload)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Logger.info(response.body)
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 
   def listBatchChanges(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { _ =>
-      val queryParameters = new HashMap[String, java.util.List[String]]()
-      for {
-        (startFrom, maxItems) <- request.queryString
-      } queryParameters.put(startFrom, maxItems.asJava)
-      val vinyldnsRequest = new VinylDNSRequest(
-        "GET",
-        s"$vinyldnsServiceBackend",
-        "zones/batchrecordchanges",
-        parameters = queryParameters)
-      val signedRequest =
-        signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
-      executeRequest(signedRequest).map(response => {
-        Logger.info(response.body)
-        Status(response.status)(response.body)
-          .withHeaders(cacheHeaders: _*)
-      })
+    withAuthenticatedUser { username =>
+      withUnlockedUser(username) match {
+        case Success(_) => {
+          val queryParameters = new HashMap[String, java.util.List[String]]()
+          for {
+            (startFrom, maxItems) <- request.queryString
+          } queryParameters.put(startFrom, maxItems.asJava)
+          val vinyldnsRequest = new VinylDNSRequest(
+            "GET",
+            s"$vinyldnsServiceBackend",
+            "zones/batchrecordchanges",
+            parameters = queryParameters)
+          val signedRequest =
+            signRequest(vinyldnsRequest, getUserCreds(request.session.get("accessKey")))
+          executeRequest(signedRequest).map(response => {
+            Logger.info(response.body)
+            Status(response.status)(response.body)
+              .withHeaders(cacheHeaders: _*)
+          })
+        }
+        case Failure(e) => Future(errorResponse(e))
+      }
     }
   }
 }

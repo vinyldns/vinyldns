@@ -30,7 +30,8 @@ case class UserAccount(
     created: DateTime,
     accessKey: String,
     accessSecret: String,
-    isSuper: Boolean = false) {
+    isSuper: Boolean = false,
+    isLocked: Boolean = false) {
 
   private def generateKey: String = RandomStringUtils.randomAlphanumeric(20)
 
@@ -49,6 +50,9 @@ case class UserAccount(
 
   def regenerateCredentials(): UserAccount =
     copy(accessKey = generateKey, accessSecret = generateKey)
+
+  def lockUser(lockedStatus: Boolean): UserAccount =
+    copy(isLocked = lockedStatus)
 }
 
 object UserAccount {
@@ -64,6 +68,16 @@ object UserAccount {
     val key = generateKey
     val secret = generateKey
 
-    UserAccount(userId, username, firstName, lastName, email, createdTime, key, secret, false)
+    UserAccount(
+      userId,
+      username,
+      firstName,
+      lastName,
+      email,
+      createdTime,
+      key,
+      secret,
+      false,
+      false)
   }
 }

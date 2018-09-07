@@ -171,6 +171,8 @@ object LdapAuthenticator {
 }
 
 class UserDoesNotExistException(message: String) extends Exception(message: String)
+class UserIsNotAnAdminException(message: String) extends Exception(message: String)
+class UserAccountIsLockedException(message: String) extends Exception(message: String)
 
 /**
   * Top level ldap authenticator that tries authenticating on both the cable and corphq domains. Authentication is

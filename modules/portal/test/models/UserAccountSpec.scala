@@ -39,6 +39,8 @@ class UserAccountSpec extends Specification with Mockito {
       result.email must beEqualTo(email)
       result.accessKey.length must beEqualTo(20)
       result.accessSecret.length must beEqualTo(20)
+      result.isSuper must beEqualTo(false)
+      result.isLocked must beEqualTo(false)
     }
 
     "Copy an existing UserAccount with different accessKey and accessSecret" in {
@@ -60,6 +62,31 @@ class UserAccountSpec extends Specification with Mockito {
       newResult.accessSecret.length must beEqualTo(20)
       newResult.accessKey mustNotEqual result.accessKey
       newResult.accessSecret mustNotEqual result.accessSecret
+      newResult.isSuper must beEqualTo(false)
+      newResult.isLocked must beEqualTo(false)
+    }
+
+    "Lock a UserAccount" in {
+      val username = "fbaggins"
+      val fname = Some("Frodo")
+      val lname = Some("Baggins")
+      val email = Some("fb@hobbitmail.me")
+
+      val result = UserAccount(username, fname, lname, email)
+      val updatedResult = result.lockUser(true)
+
+      result must beAnInstanceOf[UserAccount]
+      result.isLocked must beEqualTo(false)
+      updatedResult must beAnInstanceOf[UserAccount]
+      UUID.fromString(updatedResult.userId) must beEqualTo(UUID.fromString(result.userId))
+      updatedResult.username must beEqualTo(username)
+      updatedResult.firstName must beEqualTo(fname)
+      updatedResult.lastName must beEqualTo(lname)
+      updatedResult.email must beEqualTo(email)
+      updatedResult.accessKey.length must beEqualTo(20)
+      updatedResult.accessSecret.length must beEqualTo(20)
+      updatedResult.isSuper must beEqualTo(false)
+      updatedResult.isLocked must beEqualTo(true)
     }
   }
 }

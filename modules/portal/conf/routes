@@ -45,6 +45,8 @@ GET           /api/groups/:gid/members           @controllers.VinylDNS.getMember
 
 GET           /api/users/currentuser             @controllers.VinylDNS.getAuthenticatedUserData
 GET           /api/users/lookupuser/:uname       @controllers.VinylDNS.getUserDataByUsername(uname: String)
+PUT           /api/users/:uid/lock               @controllers.VinylDNS.updateUser(uid: String, locked: Boolean = true)
+PUT           /api/users/:uid/unlock             @controllers.VinylDNS.updateUser(uid: String, locked: Boolean = false)
 
 GET           /api/batchchanges/:id              @controllers.VinylDNS.getBatchChange(id: String)
 GET           /api/batchchanges                  @controllers.VinylDNS.listBatchChanges
