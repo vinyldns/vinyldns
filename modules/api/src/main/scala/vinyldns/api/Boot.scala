@@ -100,7 +100,7 @@ object Boot extends App {
         DynamoDBZoneChangeRepository(
           VinylDNSConfig.zoneChangeStoreConfig,
           VinylDNSConfig.dynamoConfig))
-      _ <- TestDataLoader.loadTestData(userRepo, groupRepo, membershipRepo)
+      _ <- TestDataLoader.loadTestData(userRepo)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))
