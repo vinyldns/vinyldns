@@ -26,19 +26,6 @@ import vinyldns.core.domain.membership._
 // $COVERAGE-OFF$
 object TestDataLoader {
 
-  def loadTestData(
-      userRepo: UserRepository,
-      groupRepo: GroupRepository,
-      membershipRepo: MembershipRepository): IO[Unit] = {
-
-    val loadCalls = List(
-      loadUserTestData(userRepo),
-      loadGroupTestData(groupRepo),
-      loadMembershipTestData(membershipRepo))
-
-    loadCalls.parSequence.as(())
-  }
-
   final val testUser = User(
     userName = "testuser",
     id = "testuser",
@@ -129,19 +116,7 @@ object TestDataLoader {
     email = Some("test@test.com")
   )
 
-  final val okGroup1 = Group(
-    "ok-group",
-    "test@test.com",
-    memberIds = Set("ok"),
-    adminUserIds = Set("ok"),
-    id = "ok-group")
-  final val okGroup2 =
-    Group("ok", "test@test.com", memberIds = Set("ok"), adminUserIds = Set("ok"), id = "ok")
-
-  def loadGroupTestData(repository: GroupRepository): IO[List[Group]] =
-    List(okGroup1, okGroup2).map(repository.save(_)).parSequence
-
-  def loadUserTestData(repository: UserRepository): IO[List[User]] =
+  def loadTestData(repository: UserRepository): IO[List[User]] =
     (testUser :: okUser :: dummyUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
       listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map { user =>
       val encrypted =
@@ -150,8 +125,5 @@ object TestDataLoader {
         else user
       repository.save(encrypted)
     }.parSequence
-
-  def loadMembershipTestData(repository: MembershipRepository): IO[Set[Set[String]]] =
-    List("ok-group", "ok").map(repository.addMembers(_, Set("ok"))).parSequence.map(_.toSet)
 }
 // $COVERAGE-ON$
