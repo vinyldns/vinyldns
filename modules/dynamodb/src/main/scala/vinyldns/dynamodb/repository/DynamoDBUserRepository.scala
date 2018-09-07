@@ -24,6 +24,7 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
 import vinyldns.core.route.Monitored
 
@@ -45,7 +46,8 @@ object DynamoDBUserRepository {
 
   def apply(
       config: DynamoDBRepositorySettings,
-      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBUserRepository] = {
+      dynamoConfig: DynamoDBDataStoreSettings,
+      crypto: CryptoAlgebra): IO[DynamoDBUserRepository] = {
 
     val dynamoDBHelper = new DynamoDBHelper(
       DynamoDBClient(dynamoConfig),
@@ -83,13 +85,47 @@ object DynamoDBUserRepository {
         .withGlobalSecondaryIndexes(secondaryIndexes: _*)
     )
 
-    setup.as(new DynamoDBUserRepository(tableName, dynamoDBHelper))
+    setup.as(new DynamoDBUserRepository(tableName, dynamoDBHelper, crypto))
   }
+
+  def toItem(crypto: CryptoAlgebra, user: User): java.util.Map[String, AttributeValue] = {
+    val item = new java.util.HashMap[String, AttributeValue]()
+    item.put(USER_ID, new AttributeValue(user.id))
+    item.put(USER_NAME, new AttributeValue(user.userName))
+    item.put(CREATED, new AttributeValue().withN(user.created.getMillis.toString))
+    item.put(ACCESS_KEY, new AttributeValue(user.accessKey))
+    item.put(SECRET_KEY, new AttributeValue(crypto.encrypt(user.secretKey)))
+    item.put(IS_SUPER, new AttributeValue().withBOOL(user.isSuper))
+
+    val firstName =
+      user.firstName.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
+    item.put(FIRST_NAME, firstName)
+    val lastName =
+      user.lastName.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
+    item.put(LAST_NAME, lastName)
+    val email = user.email.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
+    item.put(EMAIL, email)
+    item
+  }
+
+  def fromItem(item: java.util.Map[String, AttributeValue]): User =
+    User(
+      id = item.get(USER_ID).getS,
+      userName = item.get(USER_NAME).getS,
+      created = new DateTime(item.get(CREATED).getN.toLong),
+      accessKey = item.get(ACCESS_KEY).getS,
+      secretKey = item.get(SECRET_KEY).getS,
+      firstName = if (item.get(FIRST_NAME) == null) None else Option(item.get(FIRST_NAME).getS),
+      lastName = if (item.get(LAST_NAME) == null) None else Option(item.get(LAST_NAME).getS),
+      email = if (item.get(EMAIL) == null) None else Option(item.get(EMAIL).getS),
+      isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL
+    )
 }
 
 class DynamoDBUserRepository private[repository] (
     userTableName: String,
-    val dynamoDBHelper: DynamoDBHelper)
+    val dynamoDBHelper: DynamoDBHelper,
+    crypto: CryptoAlgebra)
     extends UserRepository
     with Monitored {
 
@@ -203,41 +239,8 @@ class DynamoDBUserRepository private[repository] (
     monitor("repo.User.save") {
       log.info(s"Saving user id: ${user.id} name: ${user.userName}.")
 
-      val item = toItem(user)
+      val item = toItem(crypto, user)
       val request = new PutItemRequest().withTableName(userTableName).withItem(item)
       dynamoDBHelper.putItem(request).map(_ => user)
     }
-
-  def toItem(user: User): java.util.Map[String, AttributeValue] = {
-    val item = new java.util.HashMap[String, AttributeValue]()
-    item.put(USER_ID, new AttributeValue(user.id))
-    item.put(USER_NAME, new AttributeValue(user.userName))
-    item.put(CREATED, new AttributeValue().withN(user.created.getMillis.toString))
-    item.put(ACCESS_KEY, new AttributeValue(user.accessKey))
-    item.put(SECRET_KEY, new AttributeValue(user.secretKey))
-    item.put(IS_SUPER, new AttributeValue().withBOOL(user.isSuper))
-
-    val firstName =
-      user.firstName.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
-    item.put(FIRST_NAME, firstName)
-    val lastName =
-      user.lastName.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
-    item.put(LAST_NAME, lastName)
-    val email = user.email.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
-    item.put(EMAIL, email)
-    item
-  }
-
-  def fromItem(item: java.util.Map[String, AttributeValue]): User =
-    User(
-      id = item.get(USER_ID).getS,
-      userName = item.get(USER_NAME).getS,
-      created = new DateTime(item.get(CREATED).getN.toLong),
-      accessKey = item.get(ACCESS_KEY).getS,
-      secretKey = item.get(SECRET_KEY).getS,
-      firstName = if (item.get(FIRST_NAME) == null) None else Option(item.get(FIRST_NAME).getS),
-      lastName = if (item.get(LAST_NAME) == null) None else Option(item.get(LAST_NAME).getS),
-      email = if (item.get(EMAIL) == null) None else Option(item.get(EMAIL).getS),
-      isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL
-    )
 }

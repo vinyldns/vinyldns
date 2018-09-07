@@ -29,6 +29,8 @@ import vinyldns.core.TestMembershipData._
 
 import scala.collection.JavaConverters._
 import cats.effect._
+import com.typesafe.config.ConfigFactory
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.dynamodb.DynamoTestConfig
 
 class DynamoDBUserRepositorySpec
@@ -43,10 +45,11 @@ class DynamoDBUserRepositorySpec
   doReturn(IO.pure(mockPutItemResult)).when(dynamoDBHelper).putItem(any[PutItemRequest])
   private val usersStoreConfig = DynamoTestConfig.usersStoreConfig
   private val userTable = usersStoreConfig.tableName
+  private val crypto = new NoOpCrypto(ConfigFactory.load())
 
-  class TestDynamoDBUserRepository extends DynamoDBUserRepository(userTable, dynamoDBHelper)
+  class TestDynamoDBUserRepository extends DynamoDBUserRepository(userTable, dynamoDBHelper, crypto)
 
-  private val underTest = new DynamoDBUserRepository(userTable, dynamoDBHelper)
+  private val underTest = new DynamoDBUserRepository(userTable, dynamoDBHelper, crypto)
 
   override def beforeEach(): Unit =
     reset(dynamoDBHelper)
@@ -55,11 +58,15 @@ class DynamoDBUserRepositorySpec
 
   "DynamoDBUserRepository.toItem" should {
     "set all values correctly" in {
-      val items = underTest.toItem(okUser)
+      val crypt = new CryptoAlgebra {
+        def encrypt(value: String): String = "encrypted"
+        def decrypt(value: String): String = "decrypted"
+      }
+      val items = toItem(crypt, okUser)
       items.get(USER_ID).getS shouldBe okUser.id
       items.get(USER_NAME).getS shouldBe okUser.userName
       items.get(ACCESS_KEY).getS shouldBe okUser.accessKey
-      items.get(SECRET_KEY).getS shouldBe okUser.secretKey
+      items.get(SECRET_KEY).getS shouldBe "encrypted"
       items.get(FIRST_NAME).getS shouldBe okUser.firstName.get
       items.get(LAST_NAME).getS shouldBe okUser.lastName.get
       items.get(EMAIL).getS shouldBe okUser.email.get
@@ -68,21 +75,21 @@ class DynamoDBUserRepositorySpec
     "set the first name to null if it is not present" in {
       val emptyFirstName = okUser.copy(firstName = None)
 
-      val items = underTest.toItem(emptyFirstName)
+      val items = toItem(crypto, emptyFirstName)
       Option(items.get(DynamoDBUserRepository.FIRST_NAME).getS) shouldBe None
       items.get(DynamoDBUserRepository.FIRST_NAME).getNULL shouldBe true
     }
     "set the last name to null if it is not present" in {
       val emptyLastName = okUser.copy(lastName = None)
 
-      val items = underTest.toItem(emptyLastName)
+      val items = toItem(crypto, emptyLastName)
       Option(items.get(LAST_NAME).getS) shouldBe None
       items.get(LAST_NAME).getNULL shouldBe true
     }
     "set the email to null if it is not present" in {
       val emptyEmail = okUser.copy(email = None)
 
-      val items = underTest.toItem(emptyEmail)
+      val items = toItem(crypto, emptyEmail)
       Option(items.get(EMAIL).getS) shouldBe None
       items.get(EMAIL).getNULL shouldBe true
     }
@@ -90,29 +97,29 @@ class DynamoDBUserRepositorySpec
 
   "DynamoDBUserRepository.fromItem" should {
     "set all the values correctly" in {
-      val items = underTest.toItem(okUser)
-      val user = underTest.fromItem(items)
+      val items = toItem(crypto, okUser)
+      val user = fromItem(items)
 
       user shouldBe okUser
     }
     "set all the values correctly if first name is not present" in {
       val emptyFirstName = okUser.copy(firstName = None)
-      val items = underTest.toItem(emptyFirstName)
-      val user = underTest.fromItem(items)
+      val items = toItem(crypto, emptyFirstName)
+      val user = fromItem(items)
 
       user shouldBe emptyFirstName
     }
     "set all the values correctly if last name is not present" in {
       val emptyLastName = okUser.copy(lastName = None)
-      val items = underTest.toItem(emptyLastName)
-      val user = underTest.fromItem(items)
+      val items = toItem(crypto, emptyLastName)
+      val user = fromItem(items)
 
       user shouldBe emptyLastName
     }
     "set all the values correctly if email is not present" in {
       val emptyEmail = okUser.copy(email = None)
-      val items = underTest.toItem(emptyEmail)
-      val user = underTest.fromItem(items)
+      val items = toItem(crypto, emptyEmail)
+      val user = fromItem(items)
 
       user shouldBe emptyEmail
     }
@@ -123,7 +130,7 @@ class DynamoDBUserRepositorySpec
       item.put(CREATED, new AttributeValue().withN("0"))
       item.put(ACCESS_KEY, new AttributeValue("accessKey"))
       item.put(SECRET_KEY, new AttributeValue("secretkey"))
-      val user = underTest.fromItem(item)
+      val user = fromItem(item)
 
       user.firstName shouldBe None
       user.lastName shouldBe None
@@ -131,8 +138,8 @@ class DynamoDBUserRepositorySpec
     }
     "sets the isSuper flag correctly" in {
       val superUser = okUser.copy(isSuper = true)
-      val items = underTest.toItem(superUser)
-      val user = underTest.fromItem(items)
+      val items = toItem(crypto, superUser)
+      val user = fromItem(items)
 
       user shouldBe superUser
     }
@@ -143,7 +150,7 @@ class DynamoDBUserRepositorySpec
       item.put(CREATED, new AttributeValue().withN("0"))
       item.put(ACCESS_KEY, new AttributeValue("accesskey"))
       item.put(SECRET_KEY, new AttributeValue("secretkey"))
-      val user = underTest.fromItem(item)
+      val user = fromItem(item)
 
       user.isSuper shouldBe false
     }
@@ -153,7 +160,7 @@ class DynamoDBUserRepositorySpec
     "return the user if the id is found" in {
       val dynamoResponse = mock[GetItemResult]
 
-      val expected = underTest.toItem(okUser)
+      val expected = toItem(crypto, okUser)
       doReturn(expected).when(dynamoResponse).getItem
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).getItem(any[GetItemRequest])
 
@@ -188,14 +195,14 @@ class DynamoDBUserRepositorySpec
     "return the users if the id is found" in {
       val firstResponse = mock[BatchGetItemResult]
       val firstPage =
-        Map(userTable -> listOfDummyUsers.slice(0, 100).map(underTest.toItem).asJava).asJava
+        Map(userTable -> listOfDummyUsers.slice(0, 100).map(toItem(crypto, _)).asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       val secondResponse = mock[BatchGetItemResult]
       val secondPage = Map(
         userTable -> listOfDummyUsers
           .slice(100, 200)
-          .map(underTest.toItem)
+          .map(toItem(crypto, _))
           .asJava).asJava
       doReturn(secondPage).when(secondResponse).getResponses
 
@@ -266,7 +273,7 @@ class DynamoDBUserRepositorySpec
       val firstPage = Map(
         userTable -> listOfDummyUsers
           .slice(151, 200)
-          .map(underTest.toItem)
+          .map(toItem(crypto, _))
           .asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
@@ -292,7 +299,7 @@ class DynamoDBUserRepositorySpec
     "truncates the response to only return limit items" in {
       val firstResponse = mock[BatchGetItemResult]
       val firstPage =
-        Map(userTable -> listOfDummyUsers.slice(0, 50).map(underTest.toItem).asJava).asJava
+        Map(userTable -> listOfDummyUsers.slice(0, 50).map(toItem(crypto, _)).asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       doReturn(IO.pure(firstResponse))
@@ -321,7 +328,7 @@ class DynamoDBUserRepositorySpec
     "return the user if the access key is found" in {
       val dynamoResponse = mock[QueryResult]
 
-      val expected = List(underTest.toItem(okUser)).asJava
+      val expected = List(toItem(crypto, okUser)).asJava
       doReturn(expected).when(dynamoResponse).getItems
       doReturn(IO.pure(dynamoResponse)).when(dynamoDBHelper).query(any[QueryRequest])
 
