@@ -101,7 +101,7 @@ class JdbcZoneRepositoryIntegrationSpec
     if (num == 1) z.addACLRule(dummyAclRule) else z
   }
 
-  private val superUserAuth = AuthPrincipal(dummyUser.copy(isSuper = true), Seq())
+  private val jdbcSuperUserAuth = AuthPrincipal(dummyUser.copy(isSuper = true), Seq())
 
   private def testZone(name: String, adminGroupId: String = testZoneAdminGroupId) =
     okZone.copy(name = name, id = UUID.randomUUID().toString, adminGroupId = adminGroupId)
@@ -410,7 +410,7 @@ class JdbcZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-          retrieved <- repo.listZones(superUserAuth)
+          retrieved <- repo.listZones(jdbcSuperUserAuth)
         } yield retrieved
 
       whenReady(f.unsafeToFuture(), timeout) { retrieved =>
@@ -431,7 +431,7 @@ class JdbcZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-          retrieved <- repo.listZones(superUserAuth, zoneNameFilter = Some("system"))
+          retrieved <- repo.listZones(jdbcSuperUserAuth, zoneNameFilter = Some("system"))
         } yield retrieved
 
       whenReady(f.unsafeToFuture(), timeout) { retrieved =>
@@ -471,19 +471,19 @@ class JdbcZoneRepositoryIntegrationSpec
 
       whenReady(saveZones(testZones).unsafeToFuture(), timeout) { _ =>
         whenReady(
-          repo.listZones(superUserAuth, offset = None, pageSize = 4).unsafeToFuture(),
+          repo.listZones(jdbcSuperUserAuth, offset = None, pageSize = 4).unsafeToFuture(),
           timeout) { firstPage =>
           (firstPage should contain).theSameElementsInOrderAs(expectedFirstPage)
         }
 
         whenReady(
-          repo.listZones(superUserAuth, offset = Some(4), pageSize = 4).unsafeToFuture(),
+          repo.listZones(jdbcSuperUserAuth, offset = Some(4), pageSize = 4).unsafeToFuture(),
           timeout) { secondPage =>
           (secondPage should contain).theSameElementsInOrderAs(expectedSecondPage)
         }
 
         whenReady(
-          repo.listZones(superUserAuth, offset = Some(8), pageSize = 4).unsafeToFuture(),
+          repo.listZones(jdbcSuperUserAuth, offset = Some(8), pageSize = 4).unsafeToFuture(),
           timeout) { thirdPage =>
           (thirdPage should contain).theSameElementsInOrderAs(expectedThirdPage)
         }
