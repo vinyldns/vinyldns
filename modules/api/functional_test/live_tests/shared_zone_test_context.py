@@ -18,7 +18,15 @@ class SharedZoneTestContext(object):
         self.tear_down() # ensures that the environment is clean before starting
 
         try:
-            self.ok_group = self.ok_vinyldns_client.get_group("ok", status=200)
+            ok_group = {
+                'name': 'ok-group',
+                'email': 'test@test.com',
+                'description': 'this is a description',
+                'members': [ { 'id': 'ok'} ],
+                'admins': [ { 'id': 'ok'} ]
+            }
+
+            self.ok_group = self.ok_vinyldns_client.create_group(ok_group, status=200)
             # in theory this shouldn't be needed, but getting 'user is not in group' errors on zone creation
             self.confirm_member_in_group(self.ok_vinyldns_client, self.ok_group)
 
@@ -252,18 +260,7 @@ class SharedZoneTestContext(object):
         clear_zones(self.dummy_vinyldns_client)
         clear_zones(self.ok_vinyldns_client)
         clear_groups(self.dummy_vinyldns_client)
-        clear_groups(self.ok_vinyldns_client, exclude=['ok'])
-
-        # reset ok_group
-        ok_group = {
-            'id': 'ok',
-            'name': 'ok',
-            'email': 'test@test.com',
-            'description': 'this is a description',
-            'members': [ { 'id': 'ok'} ],
-            'admins': [ { 'id': 'ok'} ]
-        }
-        self.ok_vinyldns_client.update_group(ok_group['id'], ok_group, status=200)
+        clear_groups(self.ok_vinyldns_client)
 
     def confirm_member_in_group(self, client, group):
         retries = 2
