@@ -21,10 +21,14 @@ import TestMembershipData._
 
 object TestZoneData {
 
+  /* ZONES */
   val okZone: Zone = Zone("ok.zone.recordsets.", "test@test.com", adminGroupId = okGroup.id)
 
   val validConnection =
     ZoneConnection("connectionName", "connectionKeyName", "connectionKey", "127.0.0.1")
+
+  val testConnection: Option[ZoneConnection] = Some(
+    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
 
   val zoneActive: Zone = Zone(
     "some.zone.name.",
@@ -35,5 +39,9 @@ object TestZoneData {
   val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
 
   val groupAclRule: ACLRule = ACLRule(AccessLevel.Read, groupId = Some("someGroup"))
+
+  /* ZONE CHANGES */
+  val zoneChangePending: ZoneChange =
+    ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Pending)
 
 }

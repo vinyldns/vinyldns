@@ -9,7 +9,7 @@ services:
     ports:
       - "19002:3306"
 
-  dynamodb:
+  dynamodb-local:
     image: "cnadiminti/dynamodb-local:2017-02-16"
     container_name: "vinyldns-dynamodb"
     ports:
@@ -45,7 +45,7 @@ services:
       - mysql
       - bind9
       - elasticmq
-      - dynamodb
+      - dynamodb-local
 
   portal:
     image: "vinyldns/portal:0.8.0"
