@@ -85,16 +85,6 @@ class MembershipServiceSpec
     adminUserIds = existingGroup.adminUserIds ++ updatedInfo.memberIds
   )
 
-  // the update will set isLocked to true
-  private val updatedToLockUserInfo = okUser.copy(
-    isLocked = true
-  )
-
-  // the update will set isLocked to false
-  private val updatedToUnlockUserInfo = lockedUser.copy(
-    isLocked = true
-  )
-
   override protected def beforeEach(): Unit =
     reset(mockGroupRepo, mockUserRepo, mockMembershipRepo, mockGroupChangeRepo, underTest)
 
@@ -764,7 +754,6 @@ class MembershipServiceSpec
     "updateUserLockStatus" should {
       "save the update and lock the user account" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
-        doReturn(IO.pure(updatedToLockUserInfo)).when(mockUserRepo).save(any[User])
 
         awaitResultOf(
           underTest
@@ -782,7 +771,6 @@ class MembershipServiceSpec
 
       "save the update and unlock the user account" in {
         doReturn(IO.pure(Some(lockedUser))).when(mockUserRepo).getUser(lockedUser.id)
-        doReturn(IO.pure(updatedToUnlockUserInfo)).when(mockUserRepo).save(any[User])
 
         awaitResultOf(
           underTest
@@ -799,8 +787,6 @@ class MembershipServiceSpec
       }
 
       "return an error if the signed in user is not a super user" in {
-        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
-
         val error = leftResultOf(
           underTest
             .updateUserLockStatus(okUser.id, true, dummyUserAuth)
