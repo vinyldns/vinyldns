@@ -24,13 +24,7 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
-import vinyldns.core.domain.zone.{
-  ListZoneChangesResults,
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus
-}
+import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange, ZoneChangeRepository}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -168,63 +162,6 @@ class DynamoDBZoneChangeRepository private[repository] (
         ListZoneChangesResults(items, nextId, startFrom, maxItems)
       }
     }
-
-  def getPending(zoneId: String): IO[List[ZoneChange]] =
-    monitor("repo.ZoneChange.getPending") {
-      log.info(s"Getting pending zone changes for zone $zoneId")
-      for {
-        pending <- getChangesByStatus(zoneId, ZoneChangeStatus.Pending)
-        notSynced <- getChangesByStatus(zoneId, ZoneChangeStatus.Complete)
-      } yield (pending ++ notSynced).sortBy(_.created)
-    }
-
-  def getAllPendingZoneIds: IO[List[String]] = {
-    val expressionAttributeValues = new HashMap[String, AttributeValue]
-    val expressionAttributeNames = new HashMap[String, String]
-    expressionAttributeNames.put("#status_attribute", STATUS)
-    expressionAttributeValues.put(":status", new AttributeValue("Pending"))
-    val keyConditionExpression: String = "#status_attribute = :status"
-    val queryRequest = new QueryRequest()
-      .withTableName(zoneChangeTable)
-      .withIndexName(STATUS_INDEX_NAME)
-      .withExpressionAttributeNames(expressionAttributeNames)
-      .withExpressionAttributeValues(expressionAttributeValues)
-      .withKeyConditionExpression(keyConditionExpression)
-
-    dynamoDBHelper.queryAll(queryRequest).map { queryResults =>
-      queryResults.flatMap { queryResult =>
-        queryResult.getItems.asScala.toList.map { item =>
-          item.get(ZONE_ID).getS()
-        }
-      }.distinct
-    }
-  }
-
-  private def getChangesByStatus(
-      zoneId: String,
-      changeStatus: ZoneChangeStatus): IO[List[ZoneChange]] = {
-    val expressionAttributeValues = new HashMap[String, AttributeValue]
-    expressionAttributeValues.put(":status", new AttributeValue(changeStatus.toString))
-    expressionAttributeValues.put(":zone_id", new AttributeValue(zoneId))
-
-    val expressionAttributeNames = new HashMap[String, String]
-    expressionAttributeNames.put("#status_attribute", STATUS)
-    expressionAttributeNames.put("#zone_id_attribute", ZONE_ID)
-
-    val keyConditionExpression: String =
-      "#status_attribute = :status and #zone_id_attribute = :zone_id"
-
-    val queryRequest = new QueryRequest()
-      .withTableName(zoneChangeTable)
-      .withIndexName(ZONE_ID_STATUS_INDEX_NAME)
-      .withExpressionAttributeNames(expressionAttributeNames)
-      .withExpressionAttributeValues(expressionAttributeValues)
-      .withKeyConditionExpression(keyConditionExpression)
-
-    dynamoDBHelper
-      .query(queryRequest)
-      .map(result => result.getItems.asScala.toList.map(fromItem).distinct)
-  }
 
   def fromItem(item: java.util.Map[String, AttributeValue]): ZoneChange =
     try {

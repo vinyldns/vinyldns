@@ -83,25 +83,6 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       retrieved.items should equal(expectedChanges)
     }
 
-    "get pending and complete changes for a zone" in {
-      val retrieved = repo.getPending(okZones(1).id).unsafeRunSync()
-
-      val expectedChangeIds = changes
-        .filter(c =>
-          c.zoneId == okZones(1).id
-            && (c.status == ZoneChangeStatus.Pending || c.status == ZoneChangeStatus.Complete))
-        .map(_.id)
-        .toSet
-
-      retrieved.map(_.id).toSet should contain theSameElementsAs expectedChangeIds
-      retrieved.sortBy(_.created.getMillis) should equal(
-        changes
-          .filter(c =>
-            c.zoneId == okZones(1).id &&
-              (c.status == ZoneChangeStatus.Pending || c.status == ZoneChangeStatus.Complete))
-          .sortBy(_.created.getMillis))
-    }
-
     "get zone changes with a page size of one" in {
       val testFuture = repo.listZoneChanges(zoneId = okZones(1).id, startFrom = None, maxItems = 1)
 

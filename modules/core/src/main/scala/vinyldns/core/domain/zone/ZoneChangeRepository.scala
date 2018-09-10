@@ -23,10 +23,6 @@ trait ZoneChangeRepository extends Repository {
 
   def save(zoneChange: ZoneChange): IO[ZoneChange]
 
-  def getPending(zoneId: String): IO[List[ZoneChange]]
-
-  def getAllPendingZoneIds(): IO[List[String]]
-
   def listZoneChanges(
       zoneId: String,
       startFrom: Option[String] = None,
