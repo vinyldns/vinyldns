@@ -29,7 +29,7 @@ import vinyldns.core.domain.membership.{
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.repository.{DataAccessor, DataStore, DataStoreConfig, RepositoriesConfig}
+import vinyldns.core.repository._
 
 import scala.collection.JavaConverters._
 

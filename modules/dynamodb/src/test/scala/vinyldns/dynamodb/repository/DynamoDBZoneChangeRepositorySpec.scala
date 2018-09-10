@@ -52,34 +52,6 @@ class DynamoDBZoneChangeRepositorySpec
   val zoneChangeFailed: ZoneChange =
     ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Failed)
 
-//  "DynamoDBZoneChangeRepository.apply" should {
-//    "call setuptable when it is built" in {
-//      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-//
-//      new TestDynamoDBZoneChangeRepository
-//      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-//
-//      val createTable = setupTableCaptor.getValue
-//      createTable.getTableName shouldBe zoneChangeTable
-//
-//      //(createTable.getAttributeDefinitions should contain).only(store.tableAttributes: _*)
-//      createTable.getKeySchema.get(0).getAttributeName shouldBe DynamoDBZoneChangeRepository.ZONE_ID
-//      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-//      createTable.getKeySchema
-//        .get(1)
-//        .getAttributeName shouldBe DynamoDBZoneChangeRepository.CHANGE_ID
-//      createTable.getKeySchema.get(1).getKeyType shouldBe KeyType.RANGE.toString
-//      //createTable.getGlobalSecondaryIndexes.toArray() shouldBe store.secondaryIndexes.toArray
-//      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-//      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-//    }
-//
-//    "fail when an exception is thrown setting up the table" in {
-//      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-//      a[RuntimeException] should be thrownBy new TestDynamoDBZoneChangeRepository
-//    }
-//  }
-
   "DynamoDBZoneChangeRepository.save" should {
     "call DynamoDBClient.putItem when creating a zone change" in {
       val putItemResult = mock[PutItemResult]

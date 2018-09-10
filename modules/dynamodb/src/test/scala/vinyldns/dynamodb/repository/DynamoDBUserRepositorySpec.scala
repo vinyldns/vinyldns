@@ -53,37 +53,6 @@ class DynamoDBUserRepositorySpec
 
   import DynamoDBUserRepository._
 
-//  "DynamoDBUserRepository constructor" should {
-//    "call setuptable when it is built" in {
-//      val mockPutItemResult = mock[PutItemResult] // User repo is initialized with dummy users
-//      doReturn(IO.pure(mockPutItemResult))
-//        .when(dynamoDBHelper)
-//        .putItem(any[PutItemRequest])
-//
-//      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-//
-//      new TestDynamoDBUserRepository
-//      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-//
-//      val createTable = setupTableCaptor.getValue
-//
-//      createTable.getTableName shouldBe userTable
-//      // (createTable.getAttributeDefinitions should contain).only(underTest.tableAttributes: _*)
-//      createTable.getKeySchema.get(0).getAttributeName shouldBe DynamoDBUserRepository.USER_ID
-//      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-//      // createTable.getGlobalSecondaryIndexes.toArray() shouldBe underTest.secondaryIndexes.toArray
-//      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-//      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-//    }
-//
-//    "fail when an exception is thrown setting up the table" in {
-//
-//      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-//
-//      a[RuntimeException] should be thrownBy new TestDynamoDBUserRepository
-//    }
-//  }
-
   "DynamoDBUserRepository.toItem" should {
     "set all values correctly" in {
       val items = underTest.toItem(okUser)

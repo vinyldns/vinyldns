@@ -48,23 +48,6 @@ class DynamoDBMembershipRepositorySpec
 
   override def beforeEach(): Unit = reset(dynamoDBHelper)
 
-//  "DynamoDBMembershipRepository.apply" should {
-//
-//    "call setup table when it is built" in {
-//      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-//      new TestDynamoDBMembershipRepository()
-//      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-//
-//      val req = setupTableCaptor.getValue
-//      req.getTableName shouldBe membershipTable
-//    }
-//
-//    "fail when an exception is thrown setting up the table" in {
-//      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-//      a[RuntimeException] should be thrownBy new TestDynamoDBMembershipRepository()
-//    }
-//  }
-
   "DynamoDBMembershipRepository.addMembers" should {
     "add the members in batches and return the members that were added to a group" in {
       val members = (for (i <- 1 to 60) yield s"member-${i}").toSet

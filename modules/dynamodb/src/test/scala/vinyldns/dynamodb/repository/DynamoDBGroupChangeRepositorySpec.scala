@@ -45,35 +45,6 @@ class DynamoDBGroupChangeRepositorySpec
 
   override def beforeEach(): Unit =
     reset(dynamoDBHelper)
-  //
-//  "DynamoDBGroupChangeRepository constructor" should {
-//
-//    "call setup table when it is built" in {
-//      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-//
-//      new TestDynamoDBGroupChangeRepository
-//      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-//
-//      val createTable = setupTableCaptor.getValue
-//
-//      createTable.getTableName shouldBe groupChangeTable
-//      //(createTable.getAttributeDefinitions should contain).only(underTest.tableAttributes: _*)
-//      createTable.getKeySchema
-//        .get(0)
-//        .getAttributeName shouldBe DynamoDBGroupChangeRepository.GROUP_CHANGE_ID
-//      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-//      //createTable.getGlobalSecondaryIndexes.toArray() shouldBe DynamoDBGroupChangeRepository.secondaryIndexes.toArray
-//      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-//      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-//    }
-//
-//    "fail when an exception is thrown setting up the table" in {
-//
-//      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-//
-//      a[RuntimeException] should be thrownBy new TestDynamoDBGroupChangeRepository
-//    }
-//  }
 
   "DynamoDBGroupChangeRepository.toItem and fromItem" should {
     "work with all values set" in {

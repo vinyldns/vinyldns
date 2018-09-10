@@ -48,31 +48,6 @@ class DynamoDBRecordSetRepositorySpec
   override def beforeEach(): Unit =
     reset(dynamoDBHelper)
 
-//  "DynamoDBRecordRepository.apply" should {
-//    "call setup table" in {
-//      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-//
-//      new TestDynamoRecordSetRepo
-//      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-//
-//      val createTable = setupTableCaptor.getValue
-//
-//      //  (createTable.getAttributeDefinitions should contain).only(store.tableAttributes: _*)
-//      createTable.getKeySchema.get(0).getAttributeName shouldBe RECORD_SET_ID
-//      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-//      // createTable.getGlobalSecondaryIndexes.toArray() shouldBe store.secondaryIndexes.toArray
-//      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-//      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-//    }
-//
-//    "fail when an exception is thrown setting up the table" in {
-//
-//      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-//
-//      a[RuntimeException] should be thrownBy new TestDynamoRecordSetRepo()
-//    }
-//  }
-
   "DynamoDBRecordSetRepository.applyChangeSet" should {
     "return the ChangeSet" in {
       val dynamoResponse = mock[BatchWriteItemResult]
