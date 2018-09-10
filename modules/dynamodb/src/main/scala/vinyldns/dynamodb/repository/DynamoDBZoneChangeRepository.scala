@@ -21,7 +21,6 @@ import java.util.HashMap
 
 import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
@@ -39,23 +38,6 @@ import scala.util.Try
 
 object DynamoDBZoneChangeRepository extends ProtobufConversions {
 
-  def apply(config: Config, dynamoConfig: Config): DynamoDBZoneChangeRepository =
-    new DynamoDBZoneChangeRepository(
-      config,
-      new DynamoDBHelper(
-        DynamoDBClient(dynamoConfig),
-        LoggerFactory.getLogger("DynamoDBZoneChangeRepository")))
-}
-
-class DynamoDBZoneChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
-    extends ZoneChangeRepository
-    with ProtobufConversions
-    with Monitored {
-
-  import scala.collection.JavaConverters._
-
-  implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isAfter(_))
-
   private[repository] val ZONE_ID = "zone_id"
   private[repository] val CHANGE_ID = "change_id"
   private[repository] val STATUS = "status"
@@ -66,52 +48,75 @@ class DynamoDBZoneChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelpe
   private val STATUS_INDEX_NAME = "status_zone_id_index"
   private val ZONE_ID_CREATED_INDEX = "zone_id_created_index"
 
+  def apply(
+      config: DynamoDBRepositorySettings,
+      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBZoneChangeRepository] = {
+
+    val dynamoDBHelper = new DynamoDBHelper(
+      DynamoDBClient(dynamoConfig),
+      LoggerFactory.getLogger("DynamoDBZoneChangeRepository"))
+
+    val dynamoReads = config.provisionedReads
+    val dynamoWrites = config.provisionedWrites
+    val tableName = config.tableName
+
+    val tableAttributes = Seq(
+      new AttributeDefinition(CHANGE_ID, "S"),
+      new AttributeDefinition(ZONE_ID, "S"),
+      new AttributeDefinition(STATUS, "S"),
+      new AttributeDefinition(CREATED, "N")
+    )
+
+    val secondaryIndexes = Seq(
+      new GlobalSecondaryIndex()
+        .withIndexName(ZONE_ID_STATUS_INDEX_NAME)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withKeySchema(
+          new KeySchemaElement(ZONE_ID, KeyType.HASH),
+          new KeySchemaElement(STATUS, KeyType.RANGE))
+        .withProjection(new Projection().withProjectionType("ALL")),
+      new GlobalSecondaryIndex()
+        .withIndexName(STATUS_INDEX_NAME)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withKeySchema(
+          new KeySchemaElement(STATUS, KeyType.HASH),
+          new KeySchemaElement(ZONE_ID, KeyType.RANGE))
+        .withProjection(new Projection().withProjectionType("KEYS_ONLY")),
+      new GlobalSecondaryIndex()
+        .withIndexName(ZONE_ID_CREATED_INDEX)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withKeySchema(
+          new KeySchemaElement(ZONE_ID, KeyType.HASH),
+          new KeySchemaElement(CREATED, KeyType.RANGE))
+        .withProjection(new Projection().withProjectionType("ALL"))
+    )
+
+    val setup = dynamoDBHelper.setupTable(
+      new CreateTableRequest()
+        .withTableName(tableName)
+        .withAttributeDefinitions(tableAttributes: _*)
+        .withKeySchema(
+          new KeySchemaElement(ZONE_ID, KeyType.HASH),
+          new KeySchemaElement(CHANGE_ID, KeyType.RANGE))
+        .withGlobalSecondaryIndexes(secondaryIndexes: _*)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+    )
+
+    setup.map(_ => new DynamoDBZoneChangeRepository(tableName, dynamoDBHelper))
+  }
+}
+
+class DynamoDBZoneChangeRepository private (zoneChangeTable: String, dynamoDBHelper: DynamoDBHelper)
+    extends ZoneChangeRepository
+    with ProtobufConversions
+    with Monitored {
+
+  import scala.collection.JavaConverters._
+  import DynamoDBZoneChangeRepository._
+
+  implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isAfter(_))
+
   val log = LoggerFactory.getLogger(classOf[DynamoDBZoneChangeRepository])
-  private val dynamoReads = config.getLong("dynamo.provisionedReads")
-  private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
-  private[repository] val zoneChangeTable = config.getString("dynamo.tableName")
-
-  private[repository] val tableAttributes = Seq(
-    new AttributeDefinition(CHANGE_ID, "S"),
-    new AttributeDefinition(ZONE_ID, "S"),
-    new AttributeDefinition(STATUS, "S"),
-    new AttributeDefinition(CREATED, "N")
-  )
-
-  private[repository] val secondaryIndexes = Seq(
-    new GlobalSecondaryIndex()
-      .withIndexName(ZONE_ID_STATUS_INDEX_NAME)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(ZONE_ID, KeyType.HASH),
-        new KeySchemaElement(STATUS, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("ALL")),
-    new GlobalSecondaryIndex()
-      .withIndexName(STATUS_INDEX_NAME)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(STATUS, KeyType.HASH),
-        new KeySchemaElement(ZONE_ID, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("KEYS_ONLY")),
-    new GlobalSecondaryIndex()
-      .withIndexName(ZONE_ID_CREATED_INDEX)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(ZONE_ID, KeyType.HASH),
-        new KeySchemaElement(CREATED, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("ALL"))
-  )
-
-  dynamoDBHelper.setupTable(
-    new CreateTableRequest()
-      .withTableName(zoneChangeTable)
-      .withAttributeDefinitions(tableAttributes: _*)
-      .withKeySchema(
-        new KeySchemaElement(ZONE_ID, KeyType.HASH),
-        new KeySchemaElement(CHANGE_ID, KeyType.RANGE))
-      .withGlobalSecondaryIndexes(secondaryIndexes: _*)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-  )
 
   def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {

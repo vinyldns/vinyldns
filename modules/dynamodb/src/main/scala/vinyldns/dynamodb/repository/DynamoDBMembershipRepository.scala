@@ -20,7 +20,6 @@ import java.util.{Collections, HashMap}
 
 import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.MembershipRepository
 import vinyldns.core.route.Monitored
@@ -29,42 +28,47 @@ import scala.collection.JavaConverters._
 
 object DynamoDBMembershipRepository {
 
-  def apply(config: Config, dynamoConfig: Config): DynamoDBMembershipRepository =
-    new DynamoDBMembershipRepository(
-      config,
-      new DynamoDBHelper(
-        DynamoDBClient(dynamoConfig),
-        LoggerFactory.getLogger("DynamoDBMembershipRepository")))
-}
-
-class DynamoDBMembershipRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
-    extends MembershipRepository
-    with Monitored {
-
-  val log: Logger = LoggerFactory.getLogger("DynamoDBMembershipRepository")
-
   private[repository] val USER_ID = "user_id"
   private[repository] val GROUP_ID = "group_id"
 
-  private val dynamoReads = config.getLong("dynamo.provisionedReads")
-  private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
-  private[repository] val membershipTable = config.getString("dynamo.tableName")
+  def apply(
+      config: DynamoDBRepositorySettings,
+      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBMembershipRepository] = {
 
-  private[repository] val tableAttributes = Seq(
-    new AttributeDefinition(USER_ID, "S"),
-    new AttributeDefinition(GROUP_ID, "S")
-  )
+    val dynamoDBHelper = new DynamoDBHelper(
+      DynamoDBClient(dynamoConfig),
+      LoggerFactory.getLogger("DynamoDBMembershipRepository"))
 
-  private[repository] val secondaryIndexes = Seq()
-  dynamoDBHelper.setupTable(
-    new CreateTableRequest()
-      .withTableName(membershipTable)
-      .withAttributeDefinitions(tableAttributes: _*)
-      .withKeySchema(
-        new KeySchemaElement(USER_ID, KeyType.HASH),
-        new KeySchemaElement(GROUP_ID, KeyType.RANGE))
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-  )
+    val dynamoReads = config.provisionedReads
+    val dynamoWrites = config.provisionedWrites
+    val tableName = config.tableName
+
+    val tableAttributes = Seq(
+      new AttributeDefinition(USER_ID, "S"),
+      new AttributeDefinition(GROUP_ID, "S")
+    )
+
+    val setup = dynamoDBHelper.setupTable(
+      new CreateTableRequest()
+        .withTableName(tableName)
+        .withAttributeDefinitions(tableAttributes: _*)
+        .withKeySchema(
+          new KeySchemaElement(USER_ID, KeyType.HASH),
+          new KeySchemaElement(GROUP_ID, KeyType.RANGE))
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+    )
+
+    setup.map(_ => new DynamoDBMembershipRepository(tableName, dynamoDBHelper))
+  }
+}
+
+class DynamoDBMembershipRepository private (membershipTable: String, dynamoDBHelper: DynamoDBHelper)
+    extends MembershipRepository
+    with Monitored {
+
+  import DynamoDBMembershipRepository._
+
+  val log: Logger = LoggerFactory.getLogger("DynamoDBMembershipRepository")
 
   def getGroupsForUser(userId: String): IO[Set[String]] =
     monitor("repo.Membership.getGroupsForUser") {

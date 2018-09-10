@@ -19,15 +19,14 @@ package vinyldns.dynamodb.repository
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.dynamodbv2.{AmazonDynamoDBClient, AmazonDynamoDBClientBuilder}
-import com.typesafe.config.Config
 
 object DynamoDBClient {
 
-  def apply(config: Config): AmazonDynamoDBClient = {
-    val dynamoAKID = config.getString("key")
-    val dynamoSecret = config.getString("secret")
-    val dynamoEndpoint = config.getString("endpoint")
-    val dynamoRegion = config.getString("region")
+  def apply(dynamoDBDataStoreSettings: DynamoDBDataStoreSettings): AmazonDynamoDBClient = {
+    val dynamoAKID = dynamoDBDataStoreSettings.key
+    val dynamoSecret = dynamoDBDataStoreSettings.secret
+    val dynamoEndpoint = dynamoDBDataStoreSettings.endpoint
+    val dynamoRegion = dynamoDBDataStoreSettings.region
 
     // Important!  For some reason the basic credentials get lost in Jenkins.  Set the aws system properties
     // just in case

@@ -22,7 +22,6 @@ import java.util.HashMap
 import cats.effect._
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.{CreateTableRequest, Projection, _}
-import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
@@ -32,20 +31,6 @@ import vinyldns.core.route.Monitored
 import scala.collection.JavaConverters._
 
 object DynamoDBGroupRepository {
-
-  def apply(config: Config, dynamoConfig: Config): DynamoDBGroupRepository =
-    new DynamoDBGroupRepository(
-      config,
-      new DynamoDBHelper(
-        DynamoDBClient(dynamoConfig),
-        LoggerFactory.getLogger(classOf[DynamoDBGroupRepository])))
-}
-
-class DynamoDBGroupRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
-    extends GroupRepository
-    with Monitored {
-
-  val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBGroupRepository])
 
   private[repository] val GROUP_ID = "group_id"
   private val NAME = "name"
@@ -57,37 +42,57 @@ class DynamoDBGroupRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
   private val ADMIN_IDS = "admin_ids"
   private val GROUP_NAME_INDEX = "group_name_index"
 
-  private val dynamoReads = config.getLong("dynamo.provisionedReads")
-  private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
-  private[repository] val GROUP_TABLE = config.getString("dynamo.tableName")
+  def apply(
+      config: DynamoDBRepositorySettings,
+      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBGroupRepository] = {
 
-  private[repository] val tableAttributes = Seq(
-    new AttributeDefinition(GROUP_ID, "S"),
-    new AttributeDefinition(NAME, "S")
-  )
+    val dynamoDBHelper = new DynamoDBHelper(
+      DynamoDBClient(dynamoConfig),
+      LoggerFactory.getLogger(classOf[DynamoDBGroupRepository]))
 
-  private[repository] val secondaryIndexes = Seq(
-    new GlobalSecondaryIndex()
-      .withIndexName(GROUP_NAME_INDEX)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(new KeySchemaElement(NAME, KeyType.HASH))
-      .withProjection(new Projection().withProjectionType("ALL"))
-  )
+    val dynamoReads = config.provisionedReads
+    val dynamoWrites = config.provisionedWrites
+    val tableName = config.tableName
 
-  dynamoDBHelper.setupTable(
-    new CreateTableRequest()
-      .withTableName(GROUP_TABLE)
-      .withAttributeDefinitions(tableAttributes: _*)
-      .withKeySchema(new KeySchemaElement(GROUP_ID, KeyType.HASH))
-      .withGlobalSecondaryIndexes(secondaryIndexes: _*)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-  )
+    val tableAttributes = Seq(
+      new AttributeDefinition(GROUP_ID, "S"),
+      new AttributeDefinition(NAME, "S")
+    )
+
+    val secondaryIndexes = Seq(
+      new GlobalSecondaryIndex()
+        .withIndexName(GROUP_NAME_INDEX)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withKeySchema(new KeySchemaElement(NAME, KeyType.HASH))
+        .withProjection(new Projection().withProjectionType("ALL"))
+    )
+
+    val setup = dynamoDBHelper.setupTable(
+      new CreateTableRequest()
+        .withTableName(tableName)
+        .withAttributeDefinitions(tableAttributes: _*)
+        .withKeySchema(new KeySchemaElement(GROUP_ID, KeyType.HASH))
+        .withGlobalSecondaryIndexes(secondaryIndexes: _*)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+    )
+
+    setup.map(_ => new DynamoDBGroupRepository(tableName, dynamoDBHelper))
+  }
+}
+
+class DynamoDBGroupRepository private (groupTableName: String, dynamoDBHelper: DynamoDBHelper)
+    extends GroupRepository
+    with Monitored {
+
+  import DynamoDBGroupRepository._
+
+  val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBGroupRepository])
 
   def save(group: Group): IO[Group] =
     monitor("repo.Group.save") {
       log.info(s"Saving group ${group.id} ${group.name}.")
       val item = toItem(group)
-      val request = new PutItemRequest().withTableName(GROUP_TABLE).withItem(item)
+      val request = new PutItemRequest().withTableName(groupTableName).withItem(item)
       dynamoDBHelper.putItem(request).map(_ => group)
     }
 
@@ -97,7 +102,7 @@ class DynamoDBGroupRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
       log.info(s"Getting group $groupId.")
       val key = new HashMap[String, AttributeValue]()
       key.put(GROUP_ID, new AttributeValue(groupId))
-      val request = new GetItemRequest().withTableName(GROUP_TABLE).withKey(key)
+      val request = new GetItemRequest().withTableName(groupTableName).withKey(key)
 
       dynamoDBHelper
         .getItem(request)
@@ -124,13 +129,13 @@ class DynamoDBGroupRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
       val keysAndAttributes = new KeysAndAttributes().withKeys(allKeys)
 
       val request = new util.HashMap[String, KeysAndAttributes]()
-      request.put(GROUP_TABLE, keysAndAttributes)
+      request.put(groupTableName, keysAndAttributes)
 
       new BatchGetItemRequest().withRequestItems(request)
     }
 
     def parseGroups(result: BatchGetItemResult): Set[Group] = {
-      val groupAttributes = result.getResponses.asScala.get(GROUP_TABLE)
+      val groupAttributes = result.getResponses.asScala.get(groupTableName)
       groupAttributes match {
         case None =>
           Set()
@@ -163,7 +168,7 @@ class DynamoDBGroupRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
   def getAllGroups(): IO[Set[Group]] =
     monitor("repo.Group.getAllGroups") {
       log.info(s"getting all group IDs")
-      val scanRequest = new ScanRequest().withTableName(GROUP_TABLE)
+      val scanRequest = new ScanRequest().withTableName(groupTableName)
       dynamoDBHelper.scanAll(scanRequest).map { results =>
         val startTime = System.currentTimeMillis()
         val groups = results
@@ -189,7 +194,7 @@ class DynamoDBGroupRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
       val keyConditionExpression: String = "#name_attribute = :name"
 
       val queryRequest = new QueryRequest()
-        .withTableName(GROUP_TABLE)
+        .withTableName(groupTableName)
         .withIndexName(GROUP_NAME_INDEX)
         .withExpressionAttributeNames(expressionAttributeNames)
         .withExpressionAttributeValues(expressionAttributeValues)

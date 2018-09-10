@@ -120,5 +120,3 @@ object DataStoreLoader {
     accessor.toEither.leftMap(errors => DataStoreStartupError(errors.toList.mkString(", ")))
   }
 }
-
-case class DataStoreStartupError(msg: String) extends Throwable(msg)

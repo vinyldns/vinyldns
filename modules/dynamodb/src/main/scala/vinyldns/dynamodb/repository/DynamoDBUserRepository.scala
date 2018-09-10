@@ -22,7 +22,6 @@ import java.util.HashMap
 import cats.effect._
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
@@ -31,20 +30,6 @@ import vinyldns.core.route.Monitored
 import scala.collection.JavaConverters._
 
 object DynamoDBUserRepository {
-
-  def apply(config: Config, dynamoConfig: Config): DynamoDBUserRepository =
-    new DynamoDBUserRepository(
-      config,
-      new DynamoDBHelper(
-        DynamoDBClient(dynamoConfig),
-        LoggerFactory.getLogger("DynamoDBUserRepository")))
-}
-
-class DynamoDBUserRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
-    extends UserRepository
-    with Monitored {
-
-  val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBUserRepository])
 
   private[repository] val USER_ID = "userid"
   private[repository] val USER_NAME = "username"
@@ -58,37 +43,56 @@ class DynamoDBUserRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
   private[repository] val USER_NAME_INDEX_NAME = "username_index"
   private[repository] val ACCESS_KEY_INDEX_NAME = "access_key_index"
 
-  private val dynamoReads = config.getLong("dynamo.provisionedReads")
-  private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
-  private[repository] val USER_TABLE = config.getString("dynamo.tableName")
+  def apply(
+      config: DynamoDBRepositorySettings,
+      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBUserRepository] = {
 
-  private[repository] val tableAttributes = Seq(
-    new AttributeDefinition(USER_ID, "S"),
-    new AttributeDefinition(USER_NAME, "S"),
-    new AttributeDefinition(ACCESS_KEY, "S")
-  )
+    val dynamoDBHelper = new DynamoDBHelper(
+      DynamoDBClient(dynamoConfig),
+      LoggerFactory.getLogger("DynamoDBUserRepository"))
 
-  private[repository] val secondaryIndexes = Seq(
-    new GlobalSecondaryIndex()
-      .withIndexName(USER_NAME_INDEX_NAME)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(new KeySchemaElement(USER_NAME, KeyType.HASH))
-      .withProjection(new Projection().withProjectionType("ALL")),
-    new GlobalSecondaryIndex()
-      .withIndexName(ACCESS_KEY_INDEX_NAME)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(new KeySchemaElement(ACCESS_KEY, KeyType.HASH))
-      .withProjection(new Projection().withProjectionType("ALL"))
-  )
+    val dynamoReads = config.provisionedReads
+    val dynamoWrites = config.provisionedWrites
+    val tableName = config.tableName
 
-  dynamoDBHelper.setupTable(
-    new CreateTableRequest()
-      .withTableName(USER_TABLE)
-      .withAttributeDefinitions(tableAttributes: _*)
-      .withKeySchema(new KeySchemaElement(USER_ID, KeyType.HASH))
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withGlobalSecondaryIndexes(secondaryIndexes: _*)
-  )
+    val tableAttributes = Seq(
+      new AttributeDefinition(USER_ID, "S"),
+      new AttributeDefinition(USER_NAME, "S"),
+      new AttributeDefinition(ACCESS_KEY, "S")
+    )
+
+    val secondaryIndexes = Seq(
+      new GlobalSecondaryIndex()
+        .withIndexName(USER_NAME_INDEX_NAME)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withKeySchema(new KeySchemaElement(USER_NAME, KeyType.HASH))
+        .withProjection(new Projection().withProjectionType("ALL")),
+      new GlobalSecondaryIndex()
+        .withIndexName(ACCESS_KEY_INDEX_NAME)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withKeySchema(new KeySchemaElement(ACCESS_KEY, KeyType.HASH))
+        .withProjection(new Projection().withProjectionType("ALL"))
+    )
+
+    val setup = dynamoDBHelper.setupTable(
+      new CreateTableRequest()
+        .withTableName(tableName)
+        .withAttributeDefinitions(tableAttributes: _*)
+        .withKeySchema(new KeySchemaElement(USER_ID, KeyType.HASH))
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withGlobalSecondaryIndexes(secondaryIndexes: _*)
+    )
+
+    setup.map(_ => new DynamoDBUserRepository(tableName, dynamoDBHelper))
+  }
+}
+
+class DynamoDBUserRepository private (userTableName: String, dynamoDBHelper: DynamoDBHelper)
+    extends UserRepository
+    with Monitored {
+
+  import DynamoDBUserRepository._
+  val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBUserRepository])
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
@@ -96,7 +100,7 @@ class DynamoDBUserRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
 
       val key = new HashMap[String, AttributeValue]()
       key.put(USER_ID, new AttributeValue(userId))
-      val request = new GetItemRequest().withTableName(USER_TABLE).withKey(key)
+      val request = new GetItemRequest().withTableName(userTableName).withKey(key)
 
       dynamoDBHelper.getItem(request).map(result => Option(result.getItem).map(fromItem))
     }
@@ -118,13 +122,13 @@ class DynamoDBUserRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
       val keysAndAttributes = new KeysAndAttributes().withKeys(allKeys)
 
       val request = new util.HashMap[String, KeysAndAttributes]()
-      request.put(USER_TABLE, keysAndAttributes)
+      request.put(userTableName, keysAndAttributes)
 
       new BatchGetItemRequest().withRequestItems(request)
     }
 
     def parseUsers(result: BatchGetItemResult): List[User] = {
-      val userAttributes = result.getResponses.asScala.get(USER_TABLE)
+      val userAttributes = result.getResponses.asScala.get(userTableName)
       userAttributes match {
         case None =>
           List()
@@ -182,7 +186,7 @@ class DynamoDBUserRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
       val keyConditionExpression: String = "#access_key_attribute = :access_key"
 
       val queryRequest = new QueryRequest()
-        .withTableName(USER_TABLE)
+        .withTableName(userTableName)
         .withIndexName(ACCESS_KEY_INDEX_NAME)
         .withExpressionAttributeNames(expressionAttributeNames)
         .withExpressionAttributeValues(expressionAttributeValues)
@@ -198,7 +202,7 @@ class DynamoDBUserRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
       log.info(s"Saving user id: ${user.id} name: ${user.userName}.")
 
       val item = toItem(user)
-      val request = new PutItemRequest().withTableName(USER_TABLE).withItem(item)
+      val request = new PutItemRequest().withTableName(userTableName).withItem(item)
       dynamoDBHelper.putItem(request).map(_ => user)
     }
 

@@ -22,7 +22,6 @@ import java.util.HashMap
 import cats.effect._
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.record._
@@ -35,20 +34,6 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 object DynamoDBRecordChangeRepository {
-  def apply(config: Config, dynamoConfig: Config): DynamoDBRecordChangeRepository =
-    new DynamoDBRecordChangeRepository(
-      config,
-      new DynamoDBHelper(
-        DynamoDBClient(dynamoConfig),
-        LoggerFactory.getLogger("DynamoDBRecordChangeRepository")))
-}
-
-class DynamoDBRecordChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
-    extends RecordChangeRepository
-    with ProtobufConversions
-    with Monitored {
-
-  val log: Logger = LoggerFactory.getLogger("DynamoDBRecordChangeRepository")
 
   private val CHANGE_SET_ID = "change_set_id"
   private[repository] val RECORD_SET_CHANGE_ID = "record_set_change_id"
@@ -63,56 +48,80 @@ class DynamoDBRecordChangeRepository(config: Config, dynamoDBHelper: DynamoDBHel
   private val CHANGE_STATUS_ZONE_ID_INDEX = "change_status_index"
   private val ZONE_ID_CREATED_INDEX = "zone_id_created_index"
 
-  private val dynamoReads = config.getLong("dynamo.provisionedReads")
-  private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
-  private[repository] val recordChangeTable = config.getString("dynamo.tableName")
+  def apply(
+      config: DynamoDBRepositorySettings,
+      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBRecordChangeRepository] = {
 
-  private[repository] val tableAttributes = Seq(
-    new AttributeDefinition(RECORD_SET_CHANGE_ID, "S"),
-    new AttributeDefinition(CHANGE_SET_STATUS, "N"),
-    new AttributeDefinition(ZONE_ID, "S"),
-    new AttributeDefinition(RECORD_SET_CHANGE_CREATED_TIMESTAMP, "N")
-  )
+    val dynamoDBHelper = new DynamoDBHelper(
+      DynamoDBClient(dynamoConfig),
+      LoggerFactory.getLogger("DynamoDBRecordChangeRepository"))
 
-  private[repository] val secondaryIndexes = Seq(
-    new GlobalSecondaryIndex()
-      .withIndexName(ZONE_ID_CHANGE_STATUS_INDEX)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(ZONE_ID, KeyType.HASH),
-        new KeySchemaElement(CHANGE_SET_STATUS, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("ALL")),
-    new GlobalSecondaryIndex()
-      .withIndexName(ZONE_ID_RECORD_SET_CHANGE_ID_INDEX)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(ZONE_ID, KeyType.HASH),
-        new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("ALL")),
-    new GlobalSecondaryIndex()
-      .withIndexName(CHANGE_STATUS_ZONE_ID_INDEX)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(CHANGE_SET_STATUS, KeyType.HASH),
-        new KeySchemaElement(ZONE_ID, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("KEYS_ONLY")),
-    new GlobalSecondaryIndex()
-      .withIndexName(ZONE_ID_CREATED_INDEX)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(ZONE_ID, KeyType.HASH),
-        new KeySchemaElement(RECORD_SET_CHANGE_CREATED_TIMESTAMP, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("ALL"))
-  )
+    val dynamoReads = config.provisionedReads
+    val dynamoWrites = config.provisionedWrites
+    val tableName = config.tableName
 
-  dynamoDBHelper.setupTable(
-    new CreateTableRequest()
-      .withTableName(recordChangeTable)
-      .withAttributeDefinitions(tableAttributes: _*)
-      .withKeySchema(new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.HASH))
-      .withGlobalSecondaryIndexes(secondaryIndexes: _*)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-  )
+    val tableAttributes =
+      Seq(
+        new AttributeDefinition(RECORD_SET_CHANGE_ID, "S"),
+        new AttributeDefinition(CHANGE_SET_STATUS, "N"),
+        new AttributeDefinition(ZONE_ID, "S"),
+        new AttributeDefinition(RECORD_SET_CHANGE_CREATED_TIMESTAMP, "N")
+      )
+
+    val secondaryIndexes =
+      Seq(
+        new GlobalSecondaryIndex()
+          .withIndexName(ZONE_ID_CHANGE_STATUS_INDEX)
+          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+          .withKeySchema(
+            new KeySchemaElement(ZONE_ID, KeyType.HASH),
+            new KeySchemaElement(CHANGE_SET_STATUS, KeyType.RANGE))
+          .withProjection(new Projection().withProjectionType("ALL")),
+        new GlobalSecondaryIndex()
+          .withIndexName(ZONE_ID_RECORD_SET_CHANGE_ID_INDEX)
+          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+          .withKeySchema(
+            new KeySchemaElement(ZONE_ID, KeyType.HASH),
+            new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.RANGE))
+          .withProjection(new Projection().withProjectionType("ALL")),
+        new GlobalSecondaryIndex()
+          .withIndexName(CHANGE_STATUS_ZONE_ID_INDEX)
+          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+          .withKeySchema(
+            new KeySchemaElement(CHANGE_SET_STATUS, KeyType.HASH),
+            new KeySchemaElement(ZONE_ID, KeyType.RANGE))
+          .withProjection(new Projection().withProjectionType("KEYS_ONLY")),
+        new GlobalSecondaryIndex()
+          .withIndexName(ZONE_ID_CREATED_INDEX)
+          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+          .withKeySchema(
+            new KeySchemaElement(ZONE_ID, KeyType.HASH),
+            new KeySchemaElement(RECORD_SET_CHANGE_CREATED_TIMESTAMP, KeyType.RANGE))
+          .withProjection(new Projection().withProjectionType("ALL"))
+      )
+
+    val setup = dynamoDBHelper.setupTable(
+      new CreateTableRequest()
+        .withTableName(tableName)
+        .withAttributeDefinitions(tableAttributes: _*)
+        .withKeySchema(new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.HASH))
+        .withGlobalSecondaryIndexes(secondaryIndexes: _*)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+    )
+
+    setup.map(_ => new DynamoDBRecordChangeRepository(tableName, dynamoDBHelper))
+  }
+}
+
+class DynamoDBRecordChangeRepository private (
+    recordChangeTable: String,
+    dynamoDBHelper: DynamoDBHelper)
+    extends RecordChangeRepository
+    with ProtobufConversions
+    with Monitored {
+
+  import DynamoDBRecordChangeRepository._
+  val log: Logger = LoggerFactory.getLogger("DynamoDBRecordChangeRepository")
 
   def toWriteRequest(changeSet: ChangeSet, change: RecordSetChange): WriteRequest =
     new WriteRequest().withPutRequest(new PutRequest().withItem(toItem(changeSet, change)))

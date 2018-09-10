@@ -21,7 +21,6 @@ import java.util.HashMap
 
 import cats.effect._
 import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.{GroupChange, GroupChangeRepository, ListGroupChangesResults}
@@ -33,62 +32,69 @@ import scala.collection.JavaConverters._
 
 object DynamoDBGroupChangeRepository {
 
-  def apply(config: Config, dynamoConfig: Config): DynamoDBGroupChangeRepository =
-    new DynamoDBGroupChangeRepository(
-      config,
-      new DynamoDBHelper(
-        DynamoDBClient(dynamoConfig),
-        LoggerFactory.getLogger(classOf[DynamoDBGroupChangeRepository])))
-}
-
-class DynamoDBGroupChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelper)
-    extends GroupChangeRepository
-    with Monitored
-    with GroupProtobufConversions {
-
-  val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBGroupChangeRepository])
-
   private[repository] val GROUP_CHANGE_ID = "group_change_id"
   private[repository] val GROUP_ID = "group_id"
   private[repository] val CREATED = "created"
   private[repository] val GROUP_CHANGE_ATTR = "group_change_blob"
-
   private val GROUP_ID_AND_CREATED_INDEX = "GROUP_ID_AND_CREATED_INDEX"
 
-  private val dynamoReads = config.getLong("dynamo.provisionedReads")
-  private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
-  private[repository] val GROUP_CHANGE_TABLE = config.getString("dynamo.tableName")
+  def apply(
+      config: DynamoDBRepositorySettings,
+      dynamoConfig: DynamoDBDataStoreSettings): IO[DynamoDBGroupChangeRepository] = {
 
-  private[repository] val tableAttributes = Seq(
-    new AttributeDefinition(GROUP_ID, "S"),
-    new AttributeDefinition(CREATED, "N"),
-    new AttributeDefinition(GROUP_CHANGE_ID, "S")
-  )
+    val dynamoDBHelper = new DynamoDBHelper(
+      DynamoDBClient(dynamoConfig),
+      LoggerFactory.getLogger(classOf[DynamoDBGroupChangeRepository]))
 
-  private[repository] val secondaryIndexes = Seq(
-    new GlobalSecondaryIndex()
-      .withIndexName(GROUP_ID_AND_CREATED_INDEX)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-      .withKeySchema(
-        new KeySchemaElement(GROUP_ID, KeyType.HASH),
-        new KeySchemaElement(CREATED, KeyType.RANGE))
-      .withProjection(new Projection().withProjectionType("ALL"))
-  )
+    val dynamoReads = config.provisionedReads
+    val dynamoWrites = config.provisionedWrites
+    val tableName = config.tableName
 
-  dynamoDBHelper.setupTable(
-    new CreateTableRequest()
-      .withTableName(GROUP_CHANGE_TABLE)
-      .withAttributeDefinitions(tableAttributes: _*)
-      .withKeySchema(new KeySchemaElement(GROUP_CHANGE_ID, KeyType.HASH))
-      .withGlobalSecondaryIndexes(secondaryIndexes: _*)
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-  )
+    val tableAttributes = Seq(
+      new AttributeDefinition(GROUP_ID, "S"),
+      new AttributeDefinition(CREATED, "N"),
+      new AttributeDefinition(GROUP_CHANGE_ID, "S")
+    )
+
+    val secondaryIndexes = Seq(
+      new GlobalSecondaryIndex()
+        .withIndexName(GROUP_ID_AND_CREATED_INDEX)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+        .withKeySchema(
+          new KeySchemaElement(GROUP_ID, KeyType.HASH),
+          new KeySchemaElement(CREATED, KeyType.RANGE))
+        .withProjection(new Projection().withProjectionType("ALL"))
+    )
+
+    val setup = dynamoDBHelper.setupTable(
+      new CreateTableRequest()
+        .withTableName(tableName)
+        .withAttributeDefinitions(tableAttributes: _*)
+        .withKeySchema(new KeySchemaElement(GROUP_CHANGE_ID, KeyType.HASH))
+        .withGlobalSecondaryIndexes(secondaryIndexes: _*)
+        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
+    )
+
+    setup.map(_ => new DynamoDBGroupChangeRepository(tableName, dynamoDBHelper))
+  }
+}
+
+class DynamoDBGroupChangeRepository private (
+    groupChangeTableName: String,
+    dynamoDBHelper: DynamoDBHelper)
+    extends GroupChangeRepository
+    with Monitored
+    with GroupProtobufConversions {
+
+  import DynamoDBGroupChangeRepository._
+
+  val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBGroupChangeRepository])
 
   def save(groupChange: GroupChange): IO[GroupChange] =
     monitor("repo.GroupChange.save") {
       log.info(s"Saving groupChange ${groupChange.id}.")
       val item = toItem(groupChange)
-      val request = new PutItemRequest().withTableName(GROUP_CHANGE_TABLE).withItem(item)
+      val request = new PutItemRequest().withTableName(groupChangeTableName).withItem(item)
       dynamoDBHelper.putItem(request).map(_ => groupChange)
     }
 
@@ -97,7 +103,7 @@ class DynamoDBGroupChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelp
       log.info(s"Getting groupChange $groupChangeId.")
       val key = new HashMap[String, AttributeValue]()
       key.put(GROUP_CHANGE_ID, new AttributeValue(groupChangeId))
-      val request = new GetItemRequest().withTableName(GROUP_CHANGE_TABLE).withKey(key)
+      val request = new GetItemRequest().withTableName(groupChangeTableName).withKey(key)
 
       dynamoDBHelper.getItem(request).map { result =>
         Option(result.getItem).map(fromItem)
@@ -126,7 +132,7 @@ class DynamoDBGroupChangeRepository(config: Config, dynamoDBHelper: DynamoDBHelp
         "#group_id_attribute = :group_id AND #created_attribute < :created"
 
       val queryRequest = new QueryRequest()
-        .withTableName(GROUP_CHANGE_TABLE)
+        .withTableName(groupChangeTableName)
         .withIndexName(GROUP_ID_AND_CREATED_INDEX)
         .withExpressionAttributeNames(expressionAttributeNames)
         .withExpressionAttributeValues(expressionAttributeValues)
