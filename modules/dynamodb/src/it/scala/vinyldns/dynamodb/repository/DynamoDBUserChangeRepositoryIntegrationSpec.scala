@@ -3,7 +3,8 @@ import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
 import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.membership.{User, UserChange, UserChangeType}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.{User, UserChange}
 
 class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
@@ -42,14 +43,21 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   "DynamoDBUserChangeRepository" should {
     "save a user change" in {
-      val c = UserChange(
-        newUser = testUser,
-        changeType = UserChangeType.Create,
-        madeByUserId = "me",
-        oldUser = None,
-        created = DateTime.now,
-        id = "test-create"
-      )
+      val auth = AuthPrincipal(testUser, Seq.empty)
+      val c = UserChange.forAdd(testUser, auth)
+
+      val t = for {
+        _ <- repo.save(c)
+        retrieved <- repo.get(c.id)
+      } yield retrieved
+
+      t.unsafeRunSync() shouldBe Some(c)
+    }
+
+    "save a change for a modified user" in {
+      val auth = AuthPrincipal(testUser, Seq.empty)
+      val updated = testUser.copy(userName = testUser.userName + "-updated")
+      val c = UserChange.forUpdate(testUser, updated, auth)
 
       val t = for {
         _ <- repo.save(c)
