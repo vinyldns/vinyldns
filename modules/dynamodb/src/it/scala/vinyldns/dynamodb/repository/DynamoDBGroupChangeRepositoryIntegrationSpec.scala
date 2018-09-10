@@ -16,8 +16,6 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util.Collections
-
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
@@ -59,9 +57,6 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
 
   def setup(): Unit = {
     repo = DynamoDBGroupChangeRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
-    waitForRepo(repo.getGroupChange("any"))
-
-    clearGroupChanges()
 
     // Create all the changes
     val savedGroupChanges = groupChanges.map(repo.save(_)).toList.parSequence
@@ -73,33 +68,6 @@ class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSp
   def tearDown(): Unit = {
     val request = new DeleteTableRequest().withTableName(GROUP_CHANGES_TABLE)
     repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
-  }
-
-  private def clearGroupChanges(): Unit = {
-
-    import scala.collection.JavaConverters._
-
-    val scanRequest = new ScanRequest().withTableName(GROUP_CHANGES_TABLE)
-      .withAttributesToGet(DynamoDBGroupChangeRepository.GROUP_CHANGE_ID)
-
-    val allGroupChanges = repo.dynamoDBHelper.scanAll(scanRequest)
-      .unsafeRunSync()
-      .flatMap(_.getItems.asScala)
-
-    val batchWrites = allGroupChanges
-      .map { groupChange =>
-        new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(groupChange))
-      }
-      .grouped(25)
-      .map { deleteRequests =>
-        new BatchWriteItemRequest()
-          .withRequestItems(Collections.singletonMap(GROUP_CHANGES_TABLE, deleteRequests.asJava))
-      }
-      .toList
-
-    batchWrites.map { batch =>
-      repo.dynamoDBHelper.batchWriteItem(GROUP_CHANGES_TABLE, batch)
-    }.parSequence.unsafeRunSync()
   }
 
   "DynamoDBGroupChangeRepository" should {

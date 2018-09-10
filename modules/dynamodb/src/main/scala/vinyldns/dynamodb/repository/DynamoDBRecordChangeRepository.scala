@@ -109,7 +109,7 @@ object DynamoDBRecordChangeRepository {
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
     )
 
-    setup.map(_ => new DynamoDBRecordChangeRepository(tableName, dynamoDBHelper))
+    setup.as(new DynamoDBRecordChangeRepository(tableName, dynamoDBHelper))
   }
 }
 

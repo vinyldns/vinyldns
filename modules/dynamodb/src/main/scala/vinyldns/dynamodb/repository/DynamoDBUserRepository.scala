@@ -83,7 +83,7 @@ object DynamoDBUserRepository {
         .withGlobalSecondaryIndexes(secondaryIndexes: _*)
     )
 
-    setup.map(_ => new DynamoDBUserRepository(tableName, dynamoDBHelper))
+    setup.as(new DynamoDBUserRepository(tableName, dynamoDBHelper))
   }
 }
 

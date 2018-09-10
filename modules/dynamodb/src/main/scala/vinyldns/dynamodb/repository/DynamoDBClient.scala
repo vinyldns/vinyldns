@@ -28,8 +28,6 @@ object DynamoDBClient {
     val dynamoEndpoint = dynamoDBDataStoreSettings.endpoint
     val dynamoRegion = dynamoDBDataStoreSettings.region
 
-    // Important!  For some reason the basic credentials get lost in Jenkins.  Set the aws system properties
-    // just in case
     System.getProperties.setProperty("aws.accessKeyId", dynamoAKID)
     System.getProperties.setProperty("aws.secretKey", dynamoSecret)
     val credentials = new BasicAWSCredentials(dynamoAKID, dynamoSecret)

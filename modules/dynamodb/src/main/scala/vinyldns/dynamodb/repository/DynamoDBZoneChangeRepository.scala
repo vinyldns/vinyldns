@@ -20,6 +20,7 @@ import java.nio.ByteBuffer
 import java.util.HashMap
 
 import cats.effect._
+import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
@@ -102,7 +103,7 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
     )
 
-    setup.map(_ => new DynamoDBZoneChangeRepository(tableName, dynamoDBHelper))
+    setup.as(new DynamoDBZoneChangeRepository(tableName, dynamoDBHelper))
   }
 }
 

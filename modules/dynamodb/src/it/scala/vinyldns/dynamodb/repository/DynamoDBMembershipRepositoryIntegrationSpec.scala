@@ -32,7 +32,6 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   def setup(): Unit = {
     repo = DynamoDBMembershipRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
-    waitForRepo(repo.getGroupsForUser("any"))
 
     // Create all the items
     val results = testGroupIds.map(repo.addMembers(_, testUserIds.toSet)).toList.parSequence

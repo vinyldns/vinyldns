@@ -19,6 +19,7 @@ package vinyldns.dynamodb.repository
 import java.util.HashMap
 
 import cats.effect._
+import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
@@ -83,7 +84,7 @@ object DynamoDBRecordSetRepository extends ProtobufConversions {
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
     )
 
-    setup.map(_ => new DynamoDBRecordSetRepository(tableName, dynamoDBHelper))
+    setup.as(new DynamoDBRecordSetRepository(tableName, dynamoDBHelper))
   }
 }
 

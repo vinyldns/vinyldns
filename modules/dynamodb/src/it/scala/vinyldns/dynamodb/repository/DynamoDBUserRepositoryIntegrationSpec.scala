@@ -37,7 +37,6 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   def setup(): Unit = {
     repo = DynamoDBUserRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
-    waitForRepo(repo.getUser("any"))
 
     // Create all the items
     val results = users.map(repo.save(_)).parSequence

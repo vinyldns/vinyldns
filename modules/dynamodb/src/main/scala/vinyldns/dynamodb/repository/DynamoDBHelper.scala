@@ -146,11 +146,11 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
   def setupTable(createTableRequest: CreateTableRequest): IO[Unit] =
     for {
-      exists <- dynamoUtils.createTableIfNotExists(dynamoDB, createTableRequest)
-      _ = if (!exists) {
+      tableCreated <- dynamoUtils.createTableIfNotExists(dynamoDB, createTableRequest)
+      _ = if (!tableCreated) {
         log.info(s"Table ${createTableRequest.getTableName} already exists")
       }
-      _ <- dynamoUtils.waitUntilActive(dynamoDB, createTableRequest.getTableName())
+      _ <- dynamoUtils.waitUntilActive(dynamoDB, createTableRequest.getTableName)
     } yield ()
 
   def listTables(aws: ListTablesRequest): IO[ListTablesResult] =

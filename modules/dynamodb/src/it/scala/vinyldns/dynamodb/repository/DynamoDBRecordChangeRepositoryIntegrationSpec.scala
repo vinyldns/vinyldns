@@ -16,7 +16,7 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util.{Collections, UUID}
+import java.util.UUID
 
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
@@ -194,10 +194,6 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
   def setup(): Unit = {
     repo = DynamoDBRecordChangeRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
-    waitForRepo(repo.getRecordSetChange("any", "any"))
-
-    // Clear the table just in case there is some lagging test data
-    clearTable()
 
     changeSets.foreach { changeSet =>
       // Save the change set
@@ -216,37 +212,9 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     }
   }
 
-  def tearDown(): Unit =
-    clearTable()
-
-  private def clearTable(): Unit = {
-
-    import scala.collection.JavaConverters._
-
-    // clear the table that we work with here
-    // NOTE: This is brute force and could be cleaner
-    val scanRequest = new ScanRequest().withTableName(recordChangeTable)
-      .withAttributesToGet(DynamoDBRecordChangeRepository.RECORD_SET_CHANGE_ID)
-
-    val allRecordSetChanges = repo.dynamoDBHelper.scanAll(scanRequest)
-      .unsafeRunSync()
-      .flatMap(_.getItems.asScala)
-
-
-    val batchWrites = allRecordSetChanges
-      .map { change =>
-        new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(change))
-      }
-      .grouped(25)
-      .map { deleteRequests =>
-        new BatchWriteItemRequest()
-          .withRequestItems(Collections.singletonMap(recordChangeTable, deleteRequests.asJava))
-      }
-      .toList
-
-    batchWrites.map { batch =>
-      repo.dynamoDBHelper.batchWriteItem(recordChangeTable, batch)
-    }.parSequence.unsafeRunSync()
+  def tearDown(): Unit = {
+    val request = new DeleteTableRequest().withTableName(recordChangeTable)
+    repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
 
   "DynamoDBRepository" should {

@@ -16,7 +16,7 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util.{Collections, UUID}
+import java.util.UUID
 
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
@@ -75,13 +75,6 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
   def setup(): Unit = {
     repo = DynamoDBRecordSetRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
 
-    // wait until the repo is ready, could take time if the table has to be created
-    val call = repo.listRecordSets(zoneId = "any", startFrom = None, maxItems = None, recordNameFilter = None)
-    waitForRepo(call)
-
-    // Clear the zone just in case there is some lagging test data
-    clearTable()
-
     // Create all the items
     val results = recordSets.map(repo.putRecordSet(_)).toList.parSequence
 
@@ -89,36 +82,11 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
     results.unsafeRunTimed(5.minutes).getOrElse(fail("timeout waiting for data load"))
   }
 
-  def tearDown(): Unit =
-    clearTable()
-
-  private def clearTable(): Unit = {
-
-    import scala.collection.JavaConverters._
-
-    // clear all the zones from the table that we work with here
-    val scanRequest = new ScanRequest().withTableName(recordSetTable)
-      .withAttributesToGet(DynamoDBRecordSetRepository.RECORD_SET_ID)
-
-    val scanResult = repo.dynamoDBHelper.scanAll(scanRequest)
-      .unsafeRunSync()
-      .flatMap(_.getItems.asScala)
-
-    val batchWrites = scanResult
-      .map { res =>
-        new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(res))
-      }
-      .grouped(25)
-      .map { deleteRequests =>
-        new BatchWriteItemRequest()
-          .withRequestItems(Collections.singletonMap(recordSetTable, deleteRequests.asJava))
-      }
-      .toList
-
-    batchWrites.map { batch =>
-      repo.dynamoDBHelper.batchWriteItem(recordSetTable, batch)
-    }.parSequence.unsafeRunSync()
+  def tearDown(): Unit = {
+    val request = new DeleteTableRequest().withTableName(recordSetTable)
+    repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
+
 
   "DynamoDBRecordSetRepository" should {
     "get a record set by id" in {

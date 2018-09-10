@@ -16,8 +16,6 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util.Collections
-
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
@@ -62,10 +60,6 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   def setup(): Unit = {
     repo = DynamoDBZoneChangeRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
-    waitForRepo(repo.listZoneChanges("any"))
-
-    // Clear the zone just in case there is some lagging test data
-    clearChanges()
 
     // Create all the zones
     val results = changes.map(repo.save(_)).toList.parSequence
@@ -73,37 +67,11 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     results.unsafeRunTimed(5.minutes).getOrElse(fail("timeout waiting for data load"))
   }
 
-  def tearDown(): Unit =
-    clearChanges()
-
-  private def clearChanges(): Unit = {
-
-    import scala.collection.JavaConverters._
-
-    // clear all the zones from the table that we work with here
-    // NOTE: This is brute force and could be cleaner
-    val scanRequest = new ScanRequest().withTableName(zoneChangeTable)
-      .withAttributesToGet(DynamoDBZoneChangeRepository.ZONE_ID, DynamoDBZoneChangeRepository.CHANGE_ID)
-
-    val allChanges = repo.dynamoDBHelper.scanAll(scanRequest)
-      .unsafeRunSync()
-      .flatMap(_.getItems.asScala)
-
-    val batchWrites = allChanges
-      .map { change =>
-        new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(change))
-      }
-      .grouped(25)
-      .map { deleteRequests =>
-        new BatchWriteItemRequest()
-          .withRequestItems(Collections.singletonMap(zoneChangeTable, deleteRequests.asJava))
-      }
-      .toList
-
-    batchWrites.map { batch =>
-      repo.dynamoDBHelper.batchWriteItem(zoneChangeTable, batch)
-    }.parSequence.unsafeRunSync()
+  def tearDown(): Unit = {
+    val request = new DeleteTableRequest().withTableName(zoneChangeTable)
+    repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
+
 
   "DynamoDBRepository" should {
 

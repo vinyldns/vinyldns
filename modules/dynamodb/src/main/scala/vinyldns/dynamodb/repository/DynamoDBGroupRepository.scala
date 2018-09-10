@@ -76,7 +76,7 @@ object DynamoDBGroupRepository {
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
     )
 
-    setup.map(_ => new DynamoDBGroupRepository(tableName, dynamoDBHelper))
+    setup.as(new DynamoDBGroupRepository(tableName, dynamoDBHelper))
   }
 }
 

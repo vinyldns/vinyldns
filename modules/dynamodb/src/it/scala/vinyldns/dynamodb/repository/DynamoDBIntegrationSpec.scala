@@ -18,10 +18,8 @@ package vinyldns.dynamodb.repository
 
 import java.util.UUID
 
-import cats.effect.IO
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.duration._
 
 trait DynamoDBIntegrationSpec
     extends WordSpec
@@ -56,12 +54,4 @@ trait DynamoDBIntegrationSpec
   /* Generates a random string useful to avoid data collision */
   def genString: String = UUID.randomUUID().toString
 
-  /* wait until the repo is ready, could take time if the table has to be created */
-  def waitForRepo[A](call: IO[A]): Unit = {
-    var notReady = call.unsafeRunTimed(5.seconds).isEmpty
-    while (notReady) {
-      Thread.sleep(2000)
-      notReady = call.unsafeRunTimed(5.seconds).isEmpty
-    }
-  }
 }
