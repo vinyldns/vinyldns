@@ -1,9 +1,3 @@
-import pytest
-import sys
-import dns.query
-import dns.tsigkeyring
-import dns.update
-
 from utils import *
 from hamcrest import *
 from vinyldns_python import VinylDNSClient

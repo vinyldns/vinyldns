@@ -55,7 +55,7 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
-      _ <- isAdmin(existingGroup, authPrincipal).toResult
+      _ <- isGroupAdmin(existingGroup, authPrincipal).toResult
       addedMembers = newGroup.memberIds.diff(existingGroup.memberIds)
       removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
       _ <- hasMembersAndAdmins(newGroup).toResult
@@ -72,7 +72,7 @@ class MembershipService(
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
-      _ <- isAdmin(existingGroup, authPrincipal).toResult
+      _ <- isGroupAdmin(existingGroup, authPrincipal).toResult
       _ <- groupCanBeDeleted(existingGroup)
       _ <- groupChangeRepo
         .save(GroupChange.forDelete(existingGroup, authPrincipal))
