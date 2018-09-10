@@ -28,6 +28,21 @@ import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{UserChange, UserChangeRepository, UserChangeType}
 import vinyldns.core.route.Monitored
 
+object DynamoDBUserChangeRepository {
+
+  def apply(
+      config: Config,
+      dynamoConfig: Config,
+      crypto: CryptoAlgebra): DynamoDBUserChangeRepository =
+    new DynamoDBUserChangeRepository(
+      config,
+      new DynamoDBHelper(
+        DynamoDBClient(dynamoConfig),
+        LoggerFactory.getLogger("DynamoDBUserChangeRepository")),
+      crypto
+    )
+}
+
 class DynamoDBUserChangeRepository(
     config: Config,
     dynamoDBHelper: DynamoDBHelper,
@@ -97,13 +112,14 @@ class DynamoDBUserChangeRepository(
     item.put(USER_CHANGE_ID, new AttributeValue(change.id))
     item.put(USER_ID, new AttributeValue(change.newUser.id))
     item.put(USER_NAME, new AttributeValue(change.newUser.userName))
+    item.put(MADE_BY_ID, new AttributeValue(change.madeByUserId))
     item.put(CHANGE_TYPE, new AttributeValue(change.changeType.toString))
     item.put(CREATED, new AttributeValue().withN(change.created.getMillis.toString))
     item.put(
       NEW_USER,
       new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, change.newUser)))
-    change.oldUser.foreach { user =>
-      item.put(OLD_USER, new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, user)))
+    change.oldUser.foreach { oldUser =>
+      item.put(OLD_USER, new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, oldUser)))
     }
     item
   }
