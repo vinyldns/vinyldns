@@ -89,7 +89,7 @@ object DynamoDBRecordSetRepository extends ProtobufConversions {
 
 class DynamoDBRecordSetRepository private[repository] (
     val recordSetTableName: String,
-    dynamoDBHelper: DynamoDBHelper)
+    val dynamoDBHelper: DynamoDBHelper)
     extends RecordSetRepository
     with DynamoDBRecordSetConversions
     with Monitored

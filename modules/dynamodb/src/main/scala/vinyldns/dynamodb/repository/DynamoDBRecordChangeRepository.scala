@@ -115,7 +115,7 @@ object DynamoDBRecordChangeRepository {
 
 class DynamoDBRecordChangeRepository private[repository] (
     recordChangeTable: String,
-    dynamoDBHelper: DynamoDBHelper)
+    val dynamoDBHelper: DynamoDBHelper)
     extends RecordChangeRepository
     with ProtobufConversions
     with Monitored {

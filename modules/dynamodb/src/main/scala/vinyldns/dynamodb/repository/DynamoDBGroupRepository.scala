@@ -82,7 +82,7 @@ object DynamoDBGroupRepository {
 
 class DynamoDBGroupRepository private[repository] (
     groupTableName: String,
-    dynamoDBHelper: DynamoDBHelper)
+    val dynamoDBHelper: DynamoDBHelper)
     extends GroupRepository
     with Monitored {
 

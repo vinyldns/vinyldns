@@ -19,11 +19,8 @@ package vinyldns.dynamodb.repository
 import java.util.UUID
 
 import cats.effect.IO
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
-import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 
 trait DynamoDBIntegrationSpec
@@ -35,22 +32,14 @@ trait DynamoDBIntegrationSpec
     with Inspectors {
 
   // port is defined in the docker/docker-compose.yml file for dynamodb
-  val dynamoClient: AmazonDynamoDBClient = getDynamoClient(19003)
+  val dynamoIntegrationConfig: DynamoDBDataStoreSettings = getDynamoConfig(19003)
 
-  def getDynamoClient(port: Int): AmazonDynamoDBClient = {
-    val endpoint: String = s"http://localhost:$port"
-    val dynamoConfig: Config = ConfigFactory.parseString(s"""
-                                                            | key = "vinyldnsTest"
-                                                            | secret = "notNeededForDynamoDbLocal"
-                                                            | endpoint="$endpoint",
-                                                            | region="us-east-1"
-    """.stripMargin)
-
-    DynamoDBClient(dynamoConfig)
+  def getDynamoConfig(port: Int): DynamoDBDataStoreSettings = {
+    DynamoDBDataStoreSettings("vinyldnsTest",
+      "notNeededForDynamoDbLocal",
+      s"http://localhost:$port",
+      "us-east-1")
   }
-
-  val dynamoDBHelper: DynamoDBHelper =
-    new DynamoDBHelper(dynamoClient, LoggerFactory.getLogger("DynamoDBIntegrationSpec"))
 
   override protected def beforeAll(): Unit =
     setup()

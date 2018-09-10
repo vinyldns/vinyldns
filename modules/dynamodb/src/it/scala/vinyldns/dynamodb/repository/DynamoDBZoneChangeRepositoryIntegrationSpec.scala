@@ -16,11 +16,10 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util
+import java.util.Collections
 
 import cats.implicits._
-import com.amazonaws.services.dynamodbv2.model.{AttributeValue, DeleteItemRequest, ScanRequest}
-import com.typesafe.config.ConfigFactory
+import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
@@ -34,14 +33,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   private val zoneChangeTable = "zone-changes-live"
 
-  private val tableConfig = ConfigFactory.parseString(
-    s"""
-       | dynamo {
-       |   tableName = "$zoneChangeTable"
-       |   provisionedReads=30
-       |   provisionedWrites=30
-       | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+  private val tableConfig = DynamoDBRepositorySettings(s"$zoneChangeTable", 30, 30)
 
   private var repo: DynamoDBZoneChangeRepository = _
 
@@ -69,7 +61,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       created = now.minusSeconds(Random.nextInt(1000)))
 
   def setup(): Unit = {
-    repo = new DynamoDBZoneChangeRepository(tableConfig, dynamoDBHelper)
+    repo = DynamoDBZoneChangeRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
     waitForRepo(repo.listZoneChanges("any"))
 
     // Clear the zone just in case there is some lagging test data
@@ -90,29 +82,27 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
     // clear all the zones from the table that we work with here
     // NOTE: This is brute force and could be cleaner
-    val scanRequest = new ScanRequest()
-      .withTableName(zoneChangeTable)
+    val scanRequest = new ScanRequest().withTableName(zoneChangeTable)
+      .withAttributesToGet(DynamoDBZoneChangeRepository.ZONE_ID, DynamoDBZoneChangeRepository.CHANGE_ID)
 
-    val result = dynamoClient
-      .scan(scanRequest)
-      .getItems
-      .asScala
-      .map(i => (i.get("zone_id").getS, i.get("change_id").getS))
+    val allChanges = repo.dynamoDBHelper.scanAll(scanRequest)
+      .unsafeRunSync()
+      .flatMap(_.getItems.asScala)
 
-    result.foreach(Function.tupled(deleteZoneChange))
-  }
+    val batchWrites = allChanges
+      .map { change =>
+        new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(change))
+      }
+      .grouped(25)
+      .map { deleteRequests =>
+        new BatchWriteItemRequest()
+          .withRequestItems(Collections.singletonMap(zoneChangeTable, deleteRequests.asJava))
+      }
+      .toList
 
-  private def deleteZoneChange(zoneId: String, changeId: String): Unit = {
-    val key = new util.HashMap[String, AttributeValue]()
-    key.put("zone_id", new AttributeValue(zoneId))
-    key.put("change_id", new AttributeValue(changeId))
-    val request = new DeleteItemRequest().withTableName(zoneChangeTable).withKey(key)
-    try {
-      dynamoClient.deleteItem(request)
-    } catch {
-      case ex: Throwable =>
-        throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
-    }
+    batchWrites.map { batch =>
+      repo.dynamoDBHelper.batchWriteItem(zoneChangeTable, batch)
+    }.parSequence.unsafeRunSync()
   }
 
   "DynamoDBRepository" should {

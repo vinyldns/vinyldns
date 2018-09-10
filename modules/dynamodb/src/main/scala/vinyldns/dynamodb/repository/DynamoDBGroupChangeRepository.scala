@@ -81,7 +81,7 @@ object DynamoDBGroupChangeRepository {
 
 class DynamoDBGroupChangeRepository private[repository] (
     groupChangeTableName: String,
-    dynamoDBHelper: DynamoDBHelper)
+    val dynamoDBHelper: DynamoDBHelper)
     extends GroupChangeRepository
     with Monitored
     with GroupProtobufConversions {

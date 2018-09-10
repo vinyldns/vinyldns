@@ -18,7 +18,6 @@ package vinyldns.dynamodb.repository
 
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
-import com.typesafe.config.ConfigFactory
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.duration._
@@ -27,13 +26,7 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   private val userTable = "users-live"
 
-  private val tableConfig = ConfigFactory.parseString(s"""
-       | dynamo {
-       |   tableName = "$userTable"
-       |   provisionedReads=100
-       |   provisionedWrites=100
-       | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+  private val tableConfig = DynamoDBRepositorySettings(s"$userTable", 30, 30)
 
   private var repo: DynamoDBUserRepository = _
 
@@ -43,7 +36,7 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
   }
 
   def setup(): Unit = {
-    repo = new DynamoDBUserRepository(tableConfig, dynamoDBHelper)
+    repo = DynamoDBUserRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
     waitForRepo(repo.getUser("any"))
 
     // Create all the items
@@ -55,7 +48,7 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   def tearDown(): Unit = {
     val request = new DeleteTableRequest().withTableName(userTable)
-    dynamoDBHelper.deleteTable(request).unsafeRunSync()
+    repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
 
   "DynamoDBUserRepository" should {

@@ -16,11 +16,10 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util.UUID
+import java.util.{Collections, UUID}
 
 import cats.implicits._
-import com.amazonaws.services.dynamodbv2.model.{ScanRequest, ScanResult}
-import com.typesafe.config.ConfigFactory
+import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
@@ -37,17 +36,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
   private val recordSetTable = "record-sets-live"
   private[repository] val recordSetTableName: String = recordSetTable
 
-  private val tableConfig = ConfigFactory.parseString(s"""
-       | dynamo {
-       |   tableName = "$recordSetTable"
-       |   provisionedReads=50
-       |   provisionedWrites=50
-       | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+  private val tableConfig = DynamoDBRepositorySettings(s"$recordSetTable", 30, 30)
 
-  import dynamoDBHelper._
-
-  private val repo = new DynamoDBRecordSetRepository(tableConfig, dynamoDBHelper)
+  private var repo: DynamoDBRecordSetRepository = _
 
   private val users = for (i <- 1 to 3)
     yield User(s"live-test-acct$i", "key", "secret")
@@ -82,6 +73,7 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       )
 
   def setup(): Unit = {
+    repo = DynamoDBRecordSetRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
 
     // wait until the repo is ready, could take time if the table has to be created
     val call = repo.listRecordSets(zoneId = "any", startFrom = None, maxItems = None, recordNameFilter = None)
@@ -106,35 +98,26 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
 
     // clear all the zones from the table that we work with here
     val scanRequest = new ScanRequest().withTableName(recordSetTable)
+      .withAttributesToGet(DynamoDBRecordSetRepository.RECORD_SET_ID)
 
-    val scanResult = dynamoClient.scan(scanRequest)
+    val scanResult = repo.dynamoDBHelper.scanAll(scanRequest)
+      .unsafeRunSync()
+      .flatMap(_.getItems.asScala)
 
-    var counter = 0
-
-    def delete(r: ScanResult) {
-      val result = r.getItems.asScala.grouped(25)
-
-      // recurse over the results of the scan, convert each group to a BatchWriteItem with Deletes, and then delete
-      // using a blocking call
-      result.foreach { group =>
-        val recordSetIds = group.map(_.get(DynamoDBRecordSetRepository.RECORD_SET_ID).getS)
-        val deletes = recordSetIds.map(deleteRecordSetFromTable)
-        val batchDelete = toBatchWriteItemRequest(deletes, recordSetTable)
-
-        dynamoClient.batchWriteItem(batchDelete)
-
-        counter = counter + 25
+    val batchWrites = scanResult
+      .map { res =>
+        new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(res))
       }
-
-      if (r.getLastEvaluatedKey != null && !r.getLastEvaluatedKey.isEmpty) {
-        val nextScan = new ScanRequest().withTableName(recordSetTable)
-        nextScan.setExclusiveStartKey(scanResult.getLastEvaluatedKey)
-        val nextScanResult = dynamoClient.scan(scanRequest)
-        delete(nextScanResult)
+      .grouped(25)
+      .map { deleteRequests =>
+        new BatchWriteItemRequest()
+          .withRequestItems(Collections.singletonMap(recordSetTable, deleteRequests.asJava))
       }
-    }
+      .toList
 
-    delete(scanResult)
+    batchWrites.map { batch =>
+      repo.dynamoDBHelper.batchWriteItem(recordSetTable, batch)
+    }.parSequence.unsafeRunSync()
   }
 
   "DynamoDBRecordSetRepository" should {

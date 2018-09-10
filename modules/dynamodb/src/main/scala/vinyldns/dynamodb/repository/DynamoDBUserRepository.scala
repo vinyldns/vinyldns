@@ -89,7 +89,7 @@ object DynamoDBUserRepository {
 
 class DynamoDBUserRepository private[repository] (
     userTableName: String,
-    dynamoDBHelper: DynamoDBHelper)
+    val dynamoDBHelper: DynamoDBHelper)
     extends UserRepository
     with Monitored {
 
