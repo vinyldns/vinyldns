@@ -7,13 +7,13 @@ import vinyldns.core.domain.membership.{User, UserChange, UserChangeType}
 
 class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
-  private val USER_CHANGE_TABLE = "groups-live"
+  private val USER_CHANGE_TABLE = "user-changes"
 
   private val tableConfig = ConfigFactory.parseString(s"""
                                                          | dynamo {
-                                                         |   tableName = "$USER_CHANGE_TABLE"
-                                                         |   provisionedReads=30
-                                                         |   provisionedWrites=30
+                                                         |   table-name = "$USER_CHANGE_TABLE"
+                                                         |   provisioned-reads=30
+                                                         |   provisioned-writes=30
                                                          | }
     """.stripMargin).withFallback(ConfigFactory.load())
 
@@ -29,12 +29,10 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     secretKey = "user"
   )
 
-  private var repo: DynamoDBUserChangeRepository = _
+  private val repo: DynamoDBUserChangeRepository =
+    DynamoDBUserChangeRepository(dynamoDBHelper, tableConfig, new NoOpCrypto(tableConfig)).unsafeRunSync()
 
-  def setup(): Unit = {
-    repo = new DynamoDBUserChangeRepository(tableConfig, dynamoDBHelper, new NoOpCrypto(tableConfig))
-    waitForRepo(repo.get("any"))
-  }
+  def setup(): Unit = ()
 
   def tearDown(): Unit = {
     val request = new DeleteTableRequest().withTableName(USER_CHANGE_TABLE)

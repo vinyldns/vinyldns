@@ -27,73 +27,25 @@ import org.slf4j.LoggerFactory
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{UserChange, UserChangeRepository, UserChangeType}
 import vinyldns.core.route.Monitored
+import vinyldns.dynamodb.repository.DynamoDBUserRepository.CREATED
 
 object DynamoDBUserChangeRepository {
+  import pureconfig.module.catseffect._
 
-  def apply(
-      config: Config,
-      dynamoConfig: Config,
-      crypto: CryptoAlgebra): DynamoDBUserChangeRepository =
-    new DynamoDBUserChangeRepository(
-      config,
-      new DynamoDBHelper(
-        DynamoDBClient(dynamoConfig),
-        LoggerFactory.getLogger("DynamoDBUserChangeRepository")),
-      crypto
-    )
-}
+  val USER_CHANGE_ID: String = "change_id"
+  val USER_ID: String = "user_id"
+  val MADE_BY_ID: String = "made_by_id"
+  val TIMESTAMP: String = "created"
+  val USER_NAME: String = "username"
+  val CHANGE_TYPE: String = "change_type"
+  val NEW_USER: String = "new_user"
+  val OLD_USER: String = "old_user"
 
-class DynamoDBUserChangeRepository(
-    config: Config,
-    dynamoDBHelper: DynamoDBHelper,
-    crypto: CryptoAlgebra)
-    extends UserChangeRepository
-    with Monitored {
-  import DynamoDBUserRepository._
-
-  private val logger = LoggerFactory.getLogger(classOf[DynamoDBUserChangeRepository])
-  private[repository] val USER_CHANGE_ID = "change_id"
-  private[repository] val USER_ID = "user_id"
-  private[repository] val MADE_BY_ID = "made_by_id"
-  private[repository] val TIMESTAMP = "created"
-  private[repository] val USER_NAME = "username"
-  private[repository] val CHANGE_TYPE = "change_type"
-  private[repository] val NEW_USER = "new_user"
-  private[repository] val OLD_USER = "old_user"
-
-  private[repository] val tableAttributes = Seq(
+  val TABLE_ATTRIBUTES: Seq[AttributeDefinition] = Seq(
     new AttributeDefinition(USER_CHANGE_ID, "S")
   )
-  private[repository] val USER_CHANGE_TABLE = config.getString("dynamo.tableName")
-  private val dynamoReads = config.getLong("dynamo.provisionedReads")
-  private val dynamoWrites = config.getLong("dynamo.provisionedWrites")
 
-  dynamoDBHelper.setupTable(
-    new CreateTableRequest()
-      .withTableName(USER_CHANGE_TABLE)
-      .withAttributeDefinitions(tableAttributes: _*)
-      .withKeySchema(new KeySchemaElement(USER_CHANGE_ID, KeyType.HASH))
-      .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-  )
-
-  def save(change: UserChange): IO[UserChange] =
-    monitor("repo.UserChange.save") {
-      logger.info(s"Saving user change ${change.id}")
-      val item = toItem(change)
-      val request = new PutItemRequest().withTableName(USER_CHANGE_TABLE).withItem(item)
-      dynamoDBHelper.putItem(request).as(change)
-    }
-
-  def get(changeId: String): IO[Option[UserChange]] =
-    monitor("repo.UserChange.get") {
-      val key = new HashMap[String, AttributeValue]()
-      key.put(USER_CHANGE_ID, new AttributeValue(changeId))
-      val request = new GetItemRequest().withTableName(USER_CHANGE_TABLE).withKey(key)
-
-      dynamoDBHelper.getItem(request).map { result =>
-        Option(result.getItem).map(attrs => fromItem(attrs))
-      }
-    }
+  final case class Settings(tableName: String, provisionedReads: Long, provisionedWrites: Long)
 
   def fromItem(item: java.util.Map[String, AttributeValue]): UserChange =
     UserChange(
@@ -107,7 +59,7 @@ class DynamoDBUserChangeRepository(
       created = new DateTime(item.get(CREATED).getN.toLong)
     )
 
-  def toItem(change: UserChange): java.util.Map[String, AttributeValue] = {
+  def toItem(crypto: CryptoAlgebra, change: UserChange): java.util.Map[String, AttributeValue] = {
     val item = new util.HashMap[String, AttributeValue]()
     item.put(USER_CHANGE_ID, new AttributeValue(change.id))
     item.put(USER_ID, new AttributeValue(change.newUser.id))
@@ -123,4 +75,64 @@ class DynamoDBUserChangeRepository(
     }
     item
   }
+
+  def apply(
+      dynamoDBHelper: DynamoDBHelper,
+      tableConfig: Config,
+      crypto: CryptoAlgebra): IO[DynamoDBUserChangeRepository] = {
+
+    def setupTable(settings: Settings, dynamoDBHelper: DynamoDBHelper): IO[Unit] = IO {
+      dynamoDBHelper.setupTable(
+        new CreateTableRequest()
+          .withTableName(settings.tableName)
+          .withAttributeDefinitions(TABLE_ATTRIBUTES: _*)
+          .withKeySchema(new KeySchemaElement(USER_CHANGE_ID, KeyType.HASH))
+          .withProvisionedThroughput(
+            new ProvisionedThroughput(settings.provisionedReads, settings.provisionedWrites))
+      )
+    }
+
+    for {
+      settings <- loadConfigF[IO, Settings](tableConfig, "dynamo")
+      _ <- setupTable(settings, dynamoDBHelper)
+    } yield {
+      new DynamoDBUserChangeRepository(
+        settings.tableName,
+        dynamoDBHelper,
+        toItem(crypto, _),
+        fromItem
+      )
+    }
+  }
+}
+
+class DynamoDBUserChangeRepository(
+    tableName: String,
+    dynamoDBHelper: DynamoDBHelper,
+    serialize: UserChange => java.util.Map[String, AttributeValue],
+    deserialize: java.util.Map[String, AttributeValue] => UserChange)
+    extends UserChangeRepository
+    with Monitored {
+  import DynamoDBUserChangeRepository._
+
+  private val logger = LoggerFactory.getLogger(classOf[DynamoDBUserChangeRepository])
+
+  def save(change: UserChange): IO[UserChange] =
+    monitor("repo.UserChange.save") {
+      logger.info(s"Saving user change ${change.id}")
+      val item = serialize(change)
+      val request = new PutItemRequest().withTableName(tableName).withItem(item)
+      dynamoDBHelper.putItem(request).as(change)
+    }
+
+  def get(changeId: String): IO[Option[UserChange]] =
+    monitor("repo.UserChange.get") {
+      val key = new HashMap[String, AttributeValue]()
+      key.put(USER_CHANGE_ID, new AttributeValue(changeId))
+      val request = new GetItemRequest().withTableName(tableName).withKey(key)
+
+      dynamoDBHelper.getItem(request).map { result =>
+        Option(result.getItem).map(attrs => deserialize(attrs))
+      }
+    }
 }
