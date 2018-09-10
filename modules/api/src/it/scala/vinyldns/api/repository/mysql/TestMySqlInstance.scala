@@ -19,7 +19,7 @@ package vinyldns.api.repository.mysql
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataStore, RepositoryName}
 
 object TestMySqlInstance {
@@ -30,4 +30,6 @@ object TestMySqlInstance {
     instance.get[ZoneRepository](RepositoryName.zone).get
   lazy val batchChangeRepository: BatchChangeRepository =
     instance.get[BatchChangeRepository](RepositoryName.batchChange).get
+  lazy val zoneChangeRepository: ZoneChangeRepository =
+    instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
 }
