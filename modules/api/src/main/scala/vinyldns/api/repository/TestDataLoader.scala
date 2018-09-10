@@ -140,7 +140,7 @@ object TestDataLoader {
     lastName = Some("list-zero-summaries"),
     email = Some("test@test.com")
   )
-  
+
   def loadTestData(repository: UserRepository): IO[List[User]] =
     (testUser :: okUser :: dummyUser :: lockedUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
       listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map { user =>
