@@ -106,7 +106,9 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
   }
 }
 
-class DynamoDBZoneChangeRepository private (zoneChangeTable: String, dynamoDBHelper: DynamoDBHelper)
+class DynamoDBZoneChangeRepository private[repository] (
+    zoneChangeTable: String,
+    dynamoDBHelper: DynamoDBHelper)
     extends ZoneChangeRepository
     with ProtobufConversions
     with Monitored {

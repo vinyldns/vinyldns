@@ -79,7 +79,7 @@ object DynamoDBGroupChangeRepository {
   }
 }
 
-class DynamoDBGroupChangeRepository private (
+class DynamoDBGroupChangeRepository private[repository] (
     groupChangeTableName: String,
     dynamoDBHelper: DynamoDBHelper)
     extends GroupChangeRepository

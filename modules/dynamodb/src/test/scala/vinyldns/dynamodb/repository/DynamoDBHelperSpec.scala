@@ -18,6 +18,7 @@ package vinyldns.dynamodb.repository
 
 import java.util
 
+import cats.effect.IO
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodbv2.model._
 import com.codahale.metrics.Meter
@@ -152,11 +153,11 @@ class DynamoDBHelperSpec
       "return normally when no errors occur" in {
         val req = new CreateTableRequest().withTableName(testTableName)
 
-        doReturn(true).when(mockDynamoUtils).createTableIfNotExists(mockDynamo, req)
-        doNothing().when(mockDynamoUtils).waitUntilActive(mockDynamo, testTableName)
+        doReturn(IO.pure(true)).when(mockDynamoUtils).createTableIfNotExists(mockDynamo, req)
+        doReturn(IO.unit).when(mockDynamoUtils).waitUntilActive(mockDynamo, testTableName)
 
         val underTest = new TestDynamoDBHelper
-        underTest.setupTable(req)
+        underTest.setupTable(req).unsafeRunSync()
 
         verify(mockDynamoUtils).createTableIfNotExists(mockDynamo, req)
         verify(mockDynamoUtils).waitUntilActive(mockDynamo, testTableName)

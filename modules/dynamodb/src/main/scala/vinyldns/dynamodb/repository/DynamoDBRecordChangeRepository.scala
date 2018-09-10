@@ -113,7 +113,7 @@ object DynamoDBRecordChangeRepository {
   }
 }
 
-class DynamoDBRecordChangeRepository private (
+class DynamoDBRecordChangeRepository private[repository] (
     recordChangeTable: String,
     dynamoDBHelper: DynamoDBHelper)
     extends RecordChangeRepository

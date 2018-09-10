@@ -62,7 +62,9 @@ object DynamoDBMembershipRepository {
   }
 }
 
-class DynamoDBMembershipRepository private (membershipTable: String, dynamoDBHelper: DynamoDBHelper)
+class DynamoDBMembershipRepository private[repository] (
+    membershipTable: String,
+    dynamoDBHelper: DynamoDBHelper)
     extends MembershipRepository
     with Monitored {
 

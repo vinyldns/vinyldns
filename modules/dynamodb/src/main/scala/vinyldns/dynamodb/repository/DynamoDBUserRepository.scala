@@ -87,7 +87,9 @@ object DynamoDBUserRepository {
   }
 }
 
-class DynamoDBUserRepository private (userTableName: String, dynamoDBHelper: DynamoDBHelper)
+class DynamoDBUserRepository private[repository] (
+    userTableName: String,
+    dynamoDBHelper: DynamoDBHelper)
     extends UserRepository
     with Monitored {
 

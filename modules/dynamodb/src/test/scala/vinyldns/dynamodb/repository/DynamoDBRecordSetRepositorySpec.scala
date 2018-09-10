@@ -39,43 +39,39 @@ class DynamoDBRecordSetRepositorySpec
     with ScalaFutures
     with BeforeAndAfterEach {
 
-  import DynamoDBRecordSetRepository._
-
   private val dynamoDBHelper = mock[DynamoDBHelper]
   private val recordChangeConfig = DynamoTestConfig.recordChangeStoreConfig
 
   class TestDynamoRecordSetRepo
-      extends DynamoDBRecordSetRepository(recordChangeConfig, dynamoDBHelper)
+      extends DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
 
-  override def beforeEach(): Unit = {
+  override def beforeEach(): Unit =
     reset(dynamoDBHelper)
-    doNothing().when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-  }
 
-  "DynamoDBRecordRepository.apply" should {
-    "call setup table" in {
-      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-
-      val store = new TestDynamoRecordSetRepo
-      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-
-      val createTable = setupTableCaptor.getValue
-
-      (createTable.getAttributeDefinitions should contain).only(store.tableAttributes: _*)
-      createTable.getKeySchema.get(0).getAttributeName shouldBe RECORD_SET_ID
-      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-      createTable.getGlobalSecondaryIndexes.toArray() shouldBe store.secondaryIndexes.toArray
-      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-    }
-
-    "fail when an exception is thrown setting up the table" in {
-
-      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-
-      a[RuntimeException] should be thrownBy new TestDynamoRecordSetRepo()
-    }
-  }
+//  "DynamoDBRecordRepository.apply" should {
+//    "call setup table" in {
+//      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
+//
+//      new TestDynamoRecordSetRepo
+//      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
+//
+//      val createTable = setupTableCaptor.getValue
+//
+//      //  (createTable.getAttributeDefinitions should contain).only(store.tableAttributes: _*)
+//      createTable.getKeySchema.get(0).getAttributeName shouldBe RECORD_SET_ID
+//      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
+//      // createTable.getGlobalSecondaryIndexes.toArray() shouldBe store.secondaryIndexes.toArray
+//      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
+//      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
+//    }
+//
+//    "fail when an exception is thrown setting up the table" in {
+//
+//      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
+//
+//      a[RuntimeException] should be thrownBy new TestDynamoRecordSetRepo()
+//    }
+//  }
 
   "DynamoDBRecordSetRepository.applyChangeSet" should {
     "return the ChangeSet" in {
@@ -184,7 +180,7 @@ class DynamoDBRecordSetRepositorySpec
       when(dynamoDBHelper.getItem(any[GetItemRequest]))
         .thenReturn(IO.pure(dynamoResponse))
 
-      val store = new DynamoDBRecordSetRepository(recordChangeConfig, dynamoDBHelper)
+      val store = new DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
       val response = store.getRecordSet(rsOk.zoneId, rsOk.id).unsafeRunSync()
 
       verify(dynamoDBHelper).getItem(any[GetItemRequest])
@@ -196,7 +192,7 @@ class DynamoDBRecordSetRepositorySpec
   "DynamoDBRecordSetRepository.listRecordSets(zoneId)" should {
     "returns empty if no record set exist" in {
 
-      val store = new DynamoDBRecordSetRepository(recordChangeConfig, dynamoDBHelper)
+      val store = new DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
 
       val dynamoResponse = mock[QueryResult]
       val expectedItems = new util.ArrayList[util.HashMap[String, AttributeValue]]()
@@ -324,7 +320,7 @@ class DynamoDBRecordSetRepositorySpec
     }
     "throw exception when query returns an unexpected response" in {
       when(dynamoDBHelper.query(any[QueryRequest])).thenThrow(new ResourceNotFoundException("fail"))
-      val store = new DynamoDBRecordSetRepository(recordChangeConfig, dynamoDBHelper)
+      val store = new DynamoDBRecordSetRepository(recordChangeConfig.tableName, dynamoDBHelper)
 
       a[ResourceNotFoundException] should be thrownBy store.getRecordSets(
         rsOk.zoneId,

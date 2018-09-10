@@ -80,7 +80,9 @@ object DynamoDBGroupRepository {
   }
 }
 
-class DynamoDBGroupRepository private (groupTableName: String, dynamoDBHelper: DynamoDBHelper)
+class DynamoDBGroupRepository private[repository] (
+    groupTableName: String,
+    dynamoDBHelper: DynamoDBHelper)
     extends GroupRepository
     with Monitored {
 
