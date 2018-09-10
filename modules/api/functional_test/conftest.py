@@ -62,8 +62,6 @@ def pytest_configure(config):
 
     VinylDNSTestContext.configure(config.getoption("dns_ip"),
                                config.getoption("dns_zone"),
-                               config.getoption("dns_key_name"),
-                               config.getoption("dns_key"),
                                config.getoption("url"))
 
 def pytest_report_header(config):
