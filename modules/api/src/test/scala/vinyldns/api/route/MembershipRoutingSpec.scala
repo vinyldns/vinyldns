@@ -674,6 +674,9 @@ class MembershipRoutingSpec
   "PUT update user lock status" should {
     "return a 200 response with the user locked" in {
       val updatedUser = okUser.copy(isLocked = true)
+      val superUserAuth = okAuth.copy(
+        signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+        memberGroupIds = Seq.empty)
       doReturn(result(updatedUser))
         .when(membershipService)
         .updateUserLockStatus("ok", true, superUserAuth)
@@ -690,6 +693,9 @@ class MembershipRoutingSpec
 
     "return a 200 response with the user unlocked" in {
       val updatedUser = lockedUser.copy(isLocked = false)
+      val superUserAuth = okAuth.copy(
+        signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+        memberGroupIds = Seq.empty)
       doReturn(result(updatedUser))
         .when(membershipService)
         .updateUserLockStatus("locked", false, superUserAuth)
@@ -705,6 +711,9 @@ class MembershipRoutingSpec
     }
 
     "return a 404 Not Found when the user is not found" in {
+      val superUserAuth = okAuth.copy(
+        signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+        memberGroupIds = Seq.empty)
       doReturn(result(UserNotFoundError("fail")))
         .when(membershipService)
         .updateUserLockStatus(anyString, anyBoolean, any[AuthPrincipal])

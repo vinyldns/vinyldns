@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
-import vinyldns.api.{GroupTestData, ResultHelpers}
+import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.{ZoneRepository, _}
 import cats.effect._
@@ -37,6 +37,7 @@ class MembershipServiceSpec
     with BeforeAndAfterEach
     with ResultHelpers
     with GroupTestData
+    with VinylDNSTestData
     with EitherMatchers {
 
   private val mockGroupRepo = mock[GroupRepository]
@@ -753,6 +754,9 @@ class MembershipServiceSpec
 
     "updateUserLockStatus" should {
       "save the update and lock the user account" in {
+        val superUserAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+          memberGroupIds = Seq.empty)
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
 
         awaitResultOf(
@@ -770,6 +774,9 @@ class MembershipServiceSpec
       }
 
       "save the update and unlock the user account" in {
+        val superUserAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+          memberGroupIds = Seq.empty)
         doReturn(IO.pure(Some(lockedUser))).when(mockUserRepo).getUser(lockedUser.id)
 
         awaitResultOf(
@@ -796,6 +803,9 @@ class MembershipServiceSpec
       }
 
       "return an error if the requested user is not found" in {
+        val superUserAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+          memberGroupIds = Seq.empty)
         doReturn(IO.pure(None)).when(mockUserRepo).getUser(okUser.id)
 
         val error = leftResultOf(
