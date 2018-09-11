@@ -16,11 +16,10 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util
 import java.util.UUID
 
-import com.amazonaws.services.dynamodbv2.model.{AttributeValue, DeleteItemRequest, ScanRequest}
-import com.typesafe.config.ConfigFactory
+import cats.implicits._
+import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import vinyldns.core.domain.record.{ChangeSet, ChangeSetStatus, RecordSetChange}
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
@@ -35,13 +34,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
 
   private val recordChangeTable = "record-change-live"
 
-  private val tableConfig = ConfigFactory.parseString(s"""
-       | dynamo {
-       |   tableName = "$recordChangeTable"
-       |   provisionedReads=30
-       |   provisionedWrites=30
-       | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+  private val tableConfig = DynamoDBRepositorySettings(s"$recordChangeTable", 30, 30)
 
   private var repo: DynamoDBRecordChangeRepository = _
 
@@ -200,11 +193,7 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       .reverse // Changes are retrieved by time stamp in decending order
 
   def setup(): Unit = {
-    repo = new DynamoDBRecordChangeRepository(tableConfig, dynamoDBHelper)
-    waitForRepo(repo.getRecordSetChange("any", "any"))
-
-    // Clear the table just in case there is some lagging test data
-    clearTable()
+    repo = DynamoDBRecordChangeRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
 
     changeSets.foreach { changeSet =>
       // Save the change set
@@ -223,34 +212,9 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     }
   }
 
-  def tearDown(): Unit =
-    clearTable()
-
-  private def clearTable(): Unit = {
-
-    import scala.collection.JavaConverters._
-
-    // clear the table that we work with here
-    // NOTE: This is brute force and could be cleaner
-    val scanRequest = new ScanRequest()
-      .withTableName(recordChangeTable)
-
-    val result =
-      dynamoClient.scan(scanRequest).getItems.asScala.map(_.get(repo.RECORD_SET_CHANGE_ID).getS())
-
-    result.foreach(deleteItem)
-  }
-
-  private def deleteItem(recordSetChangeId: String): Unit = {
-    val key = new util.HashMap[String, AttributeValue]()
-    key.put(repo.RECORD_SET_CHANGE_ID, new AttributeValue(recordSetChangeId))
-    val request = new DeleteItemRequest().withTableName(recordChangeTable).withKey(key)
-    try {
-      dynamoClient.deleteItem(request)
-    } catch {
-      case ex: Throwable =>
-        throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
-    }
+  def tearDown(): Unit = {
+    val request = new DeleteTableRequest().withTableName(recordChangeTable)
+    repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
 
   "DynamoDBRepository" should {

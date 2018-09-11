@@ -28,51 +28,44 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
 
     "load the dynamo config" in {
       val dynamoConfig = VinylDNSConfig.dynamoConfig
-      dynamoConfig.getString("key") shouldBe "dynamoKey"
-      dynamoConfig.getString("secret") shouldBe "dynamoSecret"
-      dynamoConfig.getString("endpoint") shouldBe "dynamoEndpoint"
+      dynamoConfig.key shouldBe "dynamoKey"
+      dynamoConfig.secret shouldBe "dynamoSecret"
+      dynamoConfig.endpoint shouldBe "dynamoEndpoint"
     }
 
     "load the zone change repository config" in {
       val config = VinylDNSConfig.zoneChangeStoreConfig
-      config.getString("dynamo.tableName") shouldBe "zoneChanges"
-      config.getInt("dynamo.provisionedReads") shouldBe 30
-      config.getInt("dynamo.provisionedWrites") shouldBe 30
+      config.tableName shouldBe "zoneChanges"
+      config.provisionedReads shouldBe 40
+      config.provisionedWrites shouldBe 30
     }
 
     "load the record change repository config" in {
       val config = VinylDNSConfig.recordChangeStoreConfig
-      config.getString("dynamo.tableName") shouldBe "recordChange"
-      config.getInt("dynamo.provisionedReads") shouldBe 30
-      config.getInt("dynamo.provisionedWrites") shouldBe 30
+      config.tableName shouldBe "recordChange"
+      config.provisionedReads shouldBe 40
+      config.provisionedWrites shouldBe 30
     }
 
     "load the membership repository config" in {
       val config = VinylDNSConfig.membershipStoreConfig
-      config.getString("dynamo.tableName") shouldBe "membership"
-      config.getInt("dynamo.provisionedReads") shouldBe 30
-      config.getInt("dynamo.provisionedWrites") shouldBe 30
+      config.tableName shouldBe "membership"
+      config.provisionedReads shouldBe 40
+      config.provisionedWrites shouldBe 30
     }
 
     "load the record set repository config" in {
       val config = VinylDNSConfig.recordSetStoreConfig
-      config.getString("dynamo.tableName") shouldBe "recordSet"
-      config.getInt("dynamo.provisionedReads") shouldBe 30
-      config.getInt("dynamo.provisionedWrites") shouldBe 30
-    }
-
-    "load the account store config" in {
-      val config = VinylDNSConfig.accountStoreConfig
-      config.getString("dynamo.key") shouldBe "dynamoKey"
-      config.getString("dynamo.secret") shouldBe "dynamoSecret"
-      config.getString("dynamo.endpoint") shouldBe "dynamoEndpoint"
+      config.tableName shouldBe "recordSet"
+      config.provisionedReads shouldBe 40
+      config.provisionedWrites shouldBe 30
     }
 
     "load the group repository config" in {
       val config = VinylDNSConfig.groupsStoreConfig
-      config.getString("dynamo.tableName") shouldBe "groups"
-      config.getInt("dynamo.provisionedReads") shouldBe 30
-      config.getInt("dynamo.provisionedWrites") shouldBe 30
+      config.tableName shouldBe "groups"
+      config.provisionedReads shouldBe 40
+      config.provisionedWrites shouldBe 30
     }
   }
 }

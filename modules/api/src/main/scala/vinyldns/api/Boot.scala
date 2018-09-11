@@ -33,13 +33,13 @@ import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
 import vinyldns.dynamodb.repository._
-import vinyldns.api.repository.{DataStoreStartupError, TestDataLoader}
+import vinyldns.api.repository.TestDataLoader
 import vinyldns.api.repository.mysql.MySqlDataStoreProvider
 import vinyldns.api.route.{HealthService, VinylDNSService}
 import vinyldns.core.VinylDNSMetrics
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.zone.ZoneRepository
-import vinyldns.core.repository.RepositoryName
+import vinyldns.core.repository.{DataStoreStartupError, RepositoryName}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
@@ -76,30 +76,27 @@ object Boot extends App {
           .get[BatchChangeRepository](RepositoryName.batchChange)
           .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
       // TODO this also will all be removed with dynamic loading
-      userRepo <- IO(
-        DynamoDBUserRepository(VinylDNSConfig.usersStoreConfig, VinylDNSConfig.dynamoConfig))
-      groupRepo <- IO(
-        DynamoDBGroupRepository(VinylDNSConfig.groupsStoreConfig, VinylDNSConfig.dynamoConfig))
-      membershipRepo <- IO(
-        DynamoDBMembershipRepository(
-          VinylDNSConfig.membershipStoreConfig,
-          VinylDNSConfig.dynamoConfig))
-      groupChangeRepo <- IO(
-        DynamoDBGroupChangeRepository(
-          VinylDNSConfig.groupChangesStoreConfig,
-          VinylDNSConfig.dynamoConfig))
-      recordSetRepo <- IO(
-        DynamoDBRecordSetRepository(
-          VinylDNSConfig.recordSetStoreConfig,
-          VinylDNSConfig.dynamoConfig))
-      recordChangeRepo <- IO(
-        DynamoDBRecordChangeRepository(
-          VinylDNSConfig.recordChangeStoreConfig,
-          VinylDNSConfig.dynamoConfig))
-      zoneChangeRepo <- IO(
-        DynamoDBZoneChangeRepository(
-          VinylDNSConfig.zoneChangeStoreConfig,
-          VinylDNSConfig.dynamoConfig))
+      userRepo <- DynamoDBUserRepository(
+        VinylDNSConfig.usersStoreConfig,
+        VinylDNSConfig.dynamoConfig)
+      groupRepo <- DynamoDBGroupRepository(
+        VinylDNSConfig.groupsStoreConfig,
+        VinylDNSConfig.dynamoConfig)
+      membershipRepo <- DynamoDBMembershipRepository(
+        VinylDNSConfig.membershipStoreConfig,
+        VinylDNSConfig.dynamoConfig)
+      groupChangeRepo <- DynamoDBGroupChangeRepository(
+        VinylDNSConfig.groupChangesStoreConfig,
+        VinylDNSConfig.dynamoConfig)
+      recordSetRepo <- DynamoDBRecordSetRepository(
+        VinylDNSConfig.recordSetStoreConfig,
+        VinylDNSConfig.dynamoConfig)
+      recordChangeRepo <- DynamoDBRecordChangeRepository(
+        VinylDNSConfig.recordChangeStoreConfig,
+        VinylDNSConfig.dynamoConfig)
+      zoneChangeRepo <- DynamoDBZoneChangeRepository(
+        VinylDNSConfig.zoneChangeStoreConfig,
+        VinylDNSConfig.dynamoConfig)
       _ <- TestDataLoader.loadTestData(userRepo)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))

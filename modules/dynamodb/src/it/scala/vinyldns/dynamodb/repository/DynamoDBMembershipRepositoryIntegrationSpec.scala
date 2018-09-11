@@ -17,19 +17,13 @@
 package vinyldns.dynamodb.repository
 
 import cats.implicits._
-import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 
 class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
   private val membershipTable = "membership-live"
-  private val tableConfig = ConfigFactory.parseString(s"""
-       | dynamo {
-       |   tableName = "$membershipTable"
-       |   provisionedReads=100
-       |   provisionedWrites=100
-       | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+
+  private val tableConfig = DynamoDBRepositorySettings(s"$membershipTable", 30, 30)
 
   private var repo: DynamoDBMembershipRepository = _
 
@@ -37,8 +31,7 @@ class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   private val testGroupIds = for (i <- 0 to 5) yield s"test-group-$i"
 
   def setup(): Unit = {
-    repo = new DynamoDBMembershipRepository(tableConfig, dynamoDBHelper)
-    waitForRepo(repo.getGroupsForUser("any"))
+    repo = DynamoDBMembershipRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
 
     // Create all the items
     val results = testGroupIds.map(repo.addMembers(_, testUserIds.toSet)).toList.parSequence

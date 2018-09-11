@@ -16,12 +16,8 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util
-import java.util.Collections
-
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.ConfigFactory
 import vinyldns.core.domain.membership.{Group, GroupStatus}
 import vinyldns.core.TestMembershipData._
 
@@ -30,13 +26,7 @@ import scala.concurrent.duration._
 class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
   private val GROUP_TABLE = "groups-live"
 
-  private val tableConfig = ConfigFactory.parseString(s"""
-       | dynamo {
-       |   tableName = "$GROUP_TABLE"
-       |   provisionedReads=30
-       |   provisionedWrites=30
-       | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+  private val tableConfig = DynamoDBRepositorySettings(s"$GROUP_TABLE", 30, 30)
 
   private var repo: DynamoDBGroupRepository = _
 
@@ -64,10 +54,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
   private val groups = activeGroups ++ List(inDbDeletedGroup)
 
   def setup(): Unit = {
-    repo = new DynamoDBGroupRepository(tableConfig, dynamoDBHelper)
-    waitForRepo(repo.getGroup("any"))
-
-    clearGroups()
+    repo = DynamoDBGroupRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
 
     // Create all the groups
     val savedGroups = groups.map(repo.save(_)).toList.parSequence
@@ -78,34 +65,8 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   def tearDown(): Unit = {
     val request = new DeleteTableRequest().withTableName(GROUP_TABLE)
-    val deleteTables = dynamoDBHelper.deleteTable(request)
+    val deleteTables = repo.dynamoDBHelper.deleteTable(request)
     deleteTables.unsafeRunSync()
-  }
-
-  private def clearGroups(): Unit = {
-
-    import scala.collection.JavaConverters._
-
-    val scanRequest = new ScanRequest().withTableName(GROUP_TABLE)
-
-    val allGroups = dynamoClient.scan(scanRequest).getItems.asScala.map(repo.fromItem)
-
-    val batchWrites = allGroups
-      .map { group =>
-        val key = new util.HashMap[String, AttributeValue]()
-        key.put("group_id", new AttributeValue(group.id))
-        new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(key))
-      }
-      .grouped(25)
-      .map { deleteRequests =>
-        new BatchWriteItemRequest()
-          .withRequestItems(Collections.singletonMap(GROUP_TABLE, deleteRequests.asJava))
-      }
-      .toList
-
-    batchWrites.foreach { batch =>
-      dynamoClient.batchWriteItem(batch)
-    }
   }
 
   "DynamoDBGroupRepository" should {

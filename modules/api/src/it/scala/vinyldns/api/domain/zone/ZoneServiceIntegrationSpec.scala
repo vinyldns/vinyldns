@@ -17,7 +17,6 @@
 package vinyldns.api.domain.zone
 
 import cats.effect._
-import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
@@ -29,7 +28,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.api.engine.sqs.TestSqsService
-import vinyldns.dynamodb.repository.DynamoDBRecordSetRepository
+import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 import vinyldns.api.repository.mysql.TestMySqlInstance
 import vinyldns.core.domain.zone._
 
@@ -45,20 +44,7 @@ class ZoneServiceIntegrationSpec
 
   private val recordSetTable = "recordSetTest"
 
-  private val liveTestConfig = ConfigFactory.parseString(s"""
-       |  recordSet {
-       |    # use the dummy store, this should only be used local
-       |    dummy = true
-       |
-       |    dynamo {
-       |      tableName = "$recordSetTable"
-       |      provisionedReads=30
-       |      provisionedWrites=30
-       |    }
-       |  }
-    """.stripMargin)
-
-  private val recordSetStoreConfig = liveTestConfig.getConfig("recordSet")
+  private val recordSetStoreConfig = DynamoDBRepositorySettings(s"$recordSetTable", 30, 30)
 
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
@@ -110,7 +96,8 @@ class ZoneServiceIntegrationSpec
   private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, zone))
 
   def setup(): Unit = {
-    recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
+    recordSetRepo =
+      DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
     zoneRepo = TestMySqlInstance.zoneRepository
 
     waitForSuccess(zoneRepo.save(zone))

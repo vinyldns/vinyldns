@@ -17,7 +17,6 @@
 package vinyldns.dynamodb.repository
 
 import com.amazonaws.services.dynamodbv2.model._
-import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
@@ -37,10 +36,10 @@ class DynamoDBZoneChangeRepositorySpec
 
   private val dynamoDBHelper = mock[TestDynamoDBHelper]
   private val zoneChangeStoreConfig = DynamoTestConfig.zoneChangeStoreConfig
-  private val zoneChangeTable = zoneChangeStoreConfig.getString("dynamo.tableName")
+  private val zoneChangeTable = zoneChangeStoreConfig.tableName
 
   class TestDynamoDBZoneChangeRepository
-      extends DynamoDBZoneChangeRepository(zoneChangeStoreConfig, dynamoDBHelper)
+      extends DynamoDBZoneChangeRepository(zoneChangeTable, dynamoDBHelper)
 
   private val underTest = new TestDynamoDBZoneChangeRepository
 
@@ -52,32 +51,6 @@ class DynamoDBZoneChangeRepositorySpec
     ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Synced)
   val zoneChangeFailed: ZoneChange =
     ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Failed)
-
-  "DynamoDBZoneChangeRepository.apply" should {
-    "call setuptable when it is built" in {
-      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-
-      val store = new TestDynamoDBZoneChangeRepository
-      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-
-      val createTable = setupTableCaptor.getValue
-      createTable.getTableName shouldBe zoneChangeTable
-
-      (createTable.getAttributeDefinitions should contain).only(store.tableAttributes: _*)
-      createTable.getKeySchema.get(0).getAttributeName shouldBe store.ZONE_ID
-      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-      createTable.getKeySchema.get(1).getAttributeName shouldBe store.CHANGE_ID
-      createTable.getKeySchema.get(1).getKeyType shouldBe KeyType.RANGE.toString
-      createTable.getGlobalSecondaryIndexes.toArray() shouldBe store.secondaryIndexes.toArray
-      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-    }
-
-    "fail when an exception is thrown setting up the table" in {
-      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-      a[RuntimeException] should be thrownBy new TestDynamoDBZoneChangeRepository
-    }
-  }
 
   "DynamoDBZoneChangeRepository.save" should {
     "call DynamoDBClient.putItem when creating a zone change" in {
