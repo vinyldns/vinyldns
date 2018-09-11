@@ -16,24 +16,15 @@
 
 package controllers
 
+import java.util.UUID
+
+import cats.effect.IO
 import javax.inject.{Inject, Singleton}
-
-import models.UserAccount
 import org.joda.time.DateTime
-
-import scala.util.{Failure, Success, Try}
-
-case class UserChangeRecord(
-    changeId: Long,
-    userId: String,
-    user: String,
-    timeStamp: DateTime,
-    changeType: UserChangeType,
-    newUser: UserAccount,
-    oldUser: UserAccount)
+import vinyldns.core.domain.membership.{User, UserChange, UserChangeRepository, UserRepository}
 
 @Singleton
-class UserAccountAccessor @Inject()(store: UserAccountStore) {
+class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRepository) {
 
   /**
     * Lookup a user in the store. Using identifier as the user id and/or name
@@ -42,16 +33,26 @@ class UserAccountAccessor @Inject()(store: UserAccountStore) {
     * @return Success(Some(user account)) on success, Success(None) if the user does not exist and Failure when there
     *         was an error.
     */
-  def get(identifier: String): Try[Option[UserAccount]] =
-    store.getUserById(identifier) match {
-      case Success(None) => store.getUserByName(identifier)
-      case Success(Some(user)) => Success(Some(user))
-      case Failure(ex) => Failure(ex)
+  def get(identifier: String): IO[Option[User]] =
+    users.getUser(identifier).flatMap {
+      case None => users.getUserByName(identifier)
+      case found => IO(found)
     }
 
-  def put(user: UserAccount): Try[UserAccount] =
-    store.storeUser(user)
+  def create(user: User): IO[User] =
+    for {
+      _ <- users.save(user)
+      _ <- changes.save(
+        UserChange.CreateUser(UUID.randomUUID().toString, user, "system", DateTime.now))
+    } yield user
 
-  def getUserByKey(key: String): Try[Option[UserAccount]] =
-    store.getUserByKey(key)
+  def update(user: User, oldUser: User): IO[User] =
+    for {
+      _ <- users.save(user)
+      _ <- changes.save(
+        UserChange.UpdateUser(UUID.randomUUID().toString, user, "system", DateTime.now, oldUser))
+    } yield user
+
+  def getUserByKey(key: String): IO[Option[User]] =
+    users.getUserByAccessKey(key)
 }

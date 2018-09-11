@@ -14,29 +14,39 @@
  * limitations under the License.
  */
 
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.services.dynamodbv2.{AmazonDynamoDBClient, AmazonDynamoDBClientBuilder}
+import cats.effect.IO
 import com.google.inject.AbstractModule
 import controllers._
-import controllers.datastores.{
-  DynamoDBChangeLogStore,
-  DynamoDBUserAccountStore,
-  InMemoryChangeLogStore,
-  InMemoryUserAccountStore
-}
 import play.api.{Configuration, Environment}
+import pureconfig.module.catseffect._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
+import vinyldns.dynamodb.repository.{
+  DynamoDBDataStoreSettings,
+  DynamoDBRepositorySettings,
+  DynamoDBUserChangeRepository,
+  DynamoDBUserRepository
+}
 
 class Module(environment: Environment, configuration: Configuration) extends AbstractModule {
 
   val settings = new Settings(configuration)
 
   def configure(): Unit = {
+    // Note: Leaving the unsafeRunSync here until we do full dynamic loading of the data store
     val crypto = CryptoAlgebra.load(configuration.underlying.getConfig("crypto")).unsafeRunSync()
+
+    val dynamoConfig = configuration.get[Configuration]("dynamo")
+    val dynamoSettings = DynamoDBDataStoreSettings(
+      key = dynamoConfig.get[String]("key"),
+      secret = dynamoConfig.get[String]("secret"),
+      endpoint = dynamoConfig.get[String]("endpoint"),
+      region = dynamoConfig.get[String]("region")
+    )
+
     bind(classOf[Authenticator]).toInstance(authenticator())
-    bind(classOf[UserAccountStore]).toInstance(userAccountStore(crypto))
-    bind(classOf[ChangeLogStore]).toInstance(changeLogStore(crypto))
+    bind(classOf[UserRepository]).toInstance(userRepository(dynamoSettings, crypto))
+    bind(classOf[UserChangeRepository]).toInstance(changeLogStore(dynamoSettings, crypto))
   }
 
   private def authenticator(): Authenticator =
@@ -48,45 +58,33 @@ class Module(environment: Environment, configuration: Configuration) extends Abs
       */
     LdapAuthenticator(settings)
 
-  private def userAccountStore(crypto: CryptoAlgebra) = {
-    val useDummy = configuration.get[Boolean]("users.dummy")
-    if (useDummy)
-      new InMemoryUserAccountStore
-    else {
-      // Important!  For some reason the basic credentials get lost in Jenkins.  Set the aws system properties
-      // just in case
-      val dynamoAKID = configuration.get[String]("dynamo.key")
-      val dynamoSecret = configuration.get[String]("dynamo.secret")
-      val dynamoEndpoint = configuration.get[String]("dynamo.endpoint")
-      val region = configuration.get[String]("dynamo.region")
-      val credentials = new BasicAWSCredentials(dynamoAKID, dynamoSecret)
-      val dynamoClient = AmazonDynamoDBClientBuilder
-        .standard()
-        .withCredentials(new AWSStaticCredentialsProvider(credentials))
-        .withEndpointConfiguration(new EndpointConfiguration(dynamoEndpoint, region))
-        .build()
-        .asInstanceOf[AmazonDynamoDBClient]
-      new DynamoDBUserAccountStore(dynamoClient, configuration, crypto)
-    }
-  }
+  private def userRepository(
+      dynamoSettings: DynamoDBDataStoreSettings,
+      crypto: CryptoAlgebra): DynamoDBUserRepository = {
+    for {
+      repoSettings <- IO(
+        DynamoDBRepositorySettings(
+          tableName = configuration.get[String]("users.tablename"),
+          provisionedReads = configuration.get[Long]("users.provisionedReadThroughput"),
+          provisionedWrites = configuration.get[Long]("users.provisionedWriteThroughput")
+        )
+      )
+      repo <- DynamoDBUserRepository(repoSettings, dynamoSettings, crypto)
+    } yield repo
+  }.unsafeRunSync()
 
-  private def changeLogStore(crypto: CryptoAlgebra) = {
-    val useDummy = configuration.get[Boolean]("changelog.dummy")
-    if (useDummy)
-      new InMemoryChangeLogStore
-    else {
-      val dynamoAKID = configuration.get[String]("dynamo.key")
-      val dynamoSecret = configuration.get[String]("dynamo.secret")
-      val dynamoEndpoint = configuration.get[String]("dynamo.endpoint")
-      val region = configuration.get[String]("dynamo.region")
-      val credentials = new BasicAWSCredentials(dynamoAKID, dynamoSecret)
-      val dynamoClient = AmazonDynamoDBClientBuilder
-        .standard()
-        .withCredentials(new AWSStaticCredentialsProvider(credentials))
-        .withEndpointConfiguration(new EndpointConfiguration(dynamoEndpoint, region))
-        .build()
-        .asInstanceOf[AmazonDynamoDBClient]
-      new DynamoDBChangeLogStore(dynamoClient, configuration, crypto)
-    }
-  }
+  private def changeLogStore(
+      dynamoSettings: DynamoDBDataStoreSettings,
+      crypto: CryptoAlgebra): DynamoDBUserChangeRepository = {
+    for {
+      repoSettings <- IO(
+        DynamoDBRepositorySettings(
+          tableName = configuration.get[String]("changelog.tablename"),
+          provisionedReads = configuration.get[Long]("changelog.provisionedReadThroughput"),
+          provisionedWrites = configuration.get[Long]("changelog.provisionedWriteThroughput")
+        )
+      )
+      repo <- DynamoDBUserChangeRepository(repoSettings, dynamoSettings, crypto)
+    } yield repo
+  }.unsafeRunSync()
 }

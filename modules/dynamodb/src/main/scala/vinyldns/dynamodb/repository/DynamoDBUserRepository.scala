@@ -161,6 +161,30 @@ class DynamoDBUserRepository private[repository] (
         .value
     }
 
+  def getUserByName(username: String): IO[Option[User]] = {
+    val attributeNames = new util.HashMap[String, String]()
+    attributeNames.put("#uname", USER_NAME)
+    val attributeValues = new util.HashMap[String, AttributeValue]()
+    attributeValues.put(":uname", new AttributeValue().withS(username))
+    val request = new QueryRequest()
+      .withTableName(userTableName)
+      .withKeyConditionExpression("#uname = :uname")
+      .withExpressionAttributeNames(attributeNames)
+      .withExpressionAttributeValues(attributeValues)
+      .withIndexName(USER_NAME_INDEX_NAME)
+
+    // the question is what to do with duplicate usernames, in the portal we just log loudly, staying the same here
+    dynamoDBHelper.query(request).flatMap { result =>
+      result.getItems.asScala.toList match {
+        case x :: Nil => fromItem(x).map(Some(_))
+        case Nil => IO.pure(None)
+        case x :: _ =>
+          log.error(s"Inconsistent data, multiple user records found for user name '$username'")
+          fromItem(x).map(Some(_))
+      }
+    }
+  }
+
   def getUsers(
       userIds: Set[String],
       exclusiveStartKey: Option[String],

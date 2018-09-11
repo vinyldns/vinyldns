@@ -16,157 +16,71 @@
 
 package controllers
 
-import models.UserAccount
+import cats.effect.IO
 import org.joda.time.DateTime
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
+import org.specs2.specification.BeforeEach
+import vinyldns.core.domain.membership._
 
-import scala.util.{Failure, Success}
+class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach {
 
-class UserAccountAccessorSpec extends Specification with Mockito {
+  private val user = User(
+    "fbaggins",
+    "key",
+    "secret",
+    Some("Frodo"),
+    Some("Baggins"),
+    Some("fbaggins@hobbitmail.me"),
+    DateTime.now,
+    "frodo-uuid")
+
+  private val userLog = UserChange(
+    "frodo-uuid",
+    user,
+    "fbaggins",
+    DateTime.now,
+    None,
+    UserChangeType.Create
+  ).toOption.get
+
+  private val mockRepo = mock[UserRepository]
+  private val mockChangeRepo = mock[UserChangeRepository]
+  private val underTest = new UserAccountAccessor(mockRepo, mockChangeRepo)
+
+  protected def before: Any =
+    (mockRepo, mockChangeRepo)
+
   "User Account Accessor" should {
     "Return the user when storing a user that does not exist already" in {
-      val mockStore = mock[UserAccountStore]
-      val user = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "key",
-        "secret")
-      mockStore.storeUser(any[UserAccount]).returns(Success(user))
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.put(user) must beASuccessfulTry(user)
+      mockRepo.save(any[User]).returns(IO.pure(user))
+      mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
+      underTest.create(user).unsafeRunSync() must beEqualTo(user)
     }
 
     "Return the new user when storing a user that already exists in the store" in {
-      val mockStore = mock[UserAccountStore]
-      val oldUser = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "key",
-        "secret")
-      val newUser = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "new-key",
-        "new-secret")
-      mockStore.storeUser(any[UserAccount]).returns(Success(newUser))
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.put(newUser) must beASuccessfulTry(newUser)
-    }
-
-    "Return the failure when something goes wrong while storing a user" in {
-      val mockStore = mock[UserAccountStore]
-      val ex = new IllegalArgumentException("foobar")
-      mockStore.storeUser(any[UserAccount]).returns(Failure(ex))
-      val user = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "key",
-        "secret")
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.put(user) must beAFailedTry(ex)
+      val newUser = user.copy(accessKey = "new-key", secretKey = "new-secret")
+      mockRepo.save(any[User]).returns(IO.pure(newUser))
+      mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
+      underTest.update(newUser, user).unsafeRunSync() must beEqualTo(newUser)
     }
 
     "Return the user when retrieving a user that exists by name" in {
-      val mockStore = mock[UserAccountStore]
-      val user = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "key",
-        "secret")
-      mockStore.getUserByName(user.username).returns(Success(Some(user)))
-      mockStore.getUserById(user.username).returns(Success(None))
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.get("fbaggins") must beASuccessfulTry[Option[UserAccount]](Some(user))
+      mockRepo.getUserByName(user.userName).returns(IO.pure(Some(user)))
+      mockRepo.getUser(user.userName).returns(IO.pure(None))
+      underTest.get("fbaggins").unsafeRunSync() must beSome(user)
     }
 
     "Return the user when retrieving a user that exists by user id" in {
-      val mockStore = mock[UserAccountStore]
-      val user = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "key",
-        "secret")
-      mockStore.getUserByName(user.userId).returns(Success(None))
-      mockStore.getUserById(user.userId).returns(Success(Some(user)))
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.get("uuid") must beASuccessfulTry[Option[UserAccount]](Some(user))
+      mockRepo.getUserByName(user.id).returns(IO.pure(None))
+      mockRepo.getUser(user.id).returns(IO.pure(Some(user)))
+      underTest.get(user.id).unsafeRunSync() must beSome(user)
     }
 
     "Return None when the user to be retrieved does not exist" in {
-      val mockStore = mock[UserAccountStore]
-      mockStore.getUserByName(any[String]).returns(Success(None))
-      mockStore.getUserById(any[String]).returns(Success(None))
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.get("fbaggins") must beASuccessfulTry[Option[UserAccount]](None)
-    }
-
-    "Return the failure when the user cannot be looked up via user name" in {
-      val mockStore = mock[UserAccountStore]
-      val user = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "key",
-        "secret")
-      val ex = new IllegalArgumentException("foobar")
-      mockStore.getUserByName(user.username).returns(Failure(ex))
-      mockStore.getUserById(user.username).returns(Success(None))
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.get("fbaggins") must beAFailedTry(ex)
-    }
-
-    "Return the failure when the user cannot be looked up via user id" in {
-      val mockStore = mock[UserAccountStore]
-      val user = new UserAccount(
-        "uuid",
-        "fbaggins",
-        Some("Frodo"),
-        Some("Baggins"),
-        Some("fbaggins@hobbitmail.me"),
-        DateTime.now(),
-        "key",
-        "secret")
-      val ex = new IllegalArgumentException("foobar")
-      mockStore.getUserByName(user.userId).returns(Success(None))
-      mockStore.getUserById(user.userId).returns(Failure(ex))
-
-      val underTest = new UserAccountAccessor(mockStore)
-      underTest.get("uuid") must beAFailedTry(ex)
+      mockRepo.getUserByName(any[String]).returns(IO.pure(None))
+      mockRepo.getUser(any[String]).returns(IO.pure(None))
+      underTest.get("fbaggins").unsafeRunSync() must beNone
     }
   }
 }

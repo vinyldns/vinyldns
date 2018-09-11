@@ -19,7 +19,7 @@ package controllers
 import java.util
 
 import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, SignerFactory}
-import models.{SignableVinylDNSRequest, UserAccount, VinylDNSRequest}
+import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import org.joda.time.DateTime
 import play.api.{Logger, _}
 import play.api.data.Form
@@ -28,7 +28,10 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.mvc._
 import java.util.HashMap
+
+import cats.effect.IO
 import javax.inject.{Inject, Singleton}
+import vinyldns.core.domain.membership.User
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -63,14 +66,14 @@ object VinylDNS {
       isSuper: Boolean,
       id: String)
   object UserInfo {
-    def fromAccount(account: UserAccount): UserInfo =
+    def fromUser(user: User): UserInfo =
       UserInfo(
-        userName = account.username,
-        firstName = account.firstName,
-        lastName = account.lastName,
-        email = account.email,
-        isSuper = account.isSuper,
-        id = account.userId
+        userName = user.userName,
+        firstName = user.firstName,
+        lastName = user.lastName,
+        email = user.email,
+        isSuper = user.isSuper,
+        id = user.id
       )
   }
 
@@ -93,7 +96,6 @@ class VinylDNS @Inject()(
     configuration: Configuration,
     authenticator: Authenticator,
     userAccountAccessor: UserAccountAccessor,
-    auditLogAccessor: ChangeLogStore,
     wsClient: WSClient,
     components: ControllerComponents)
     extends AbstractController(components) {
@@ -205,27 +207,22 @@ class VinylDNS @Inject()(
     withAuthenticatedUser { user =>
       val response = userAccountAccessor.get(user).map {
         case Some(userDetails) =>
-          Ok(Json.toJson(VinylDNS.UserInfo.fromAccount(userDetails)))
+          Ok(Json.toJson(VinylDNS.UserInfo.fromUser(userDetails)))
             .withHeaders(cacheHeaders: _*)
         case _ =>
           Status(404)(s"Did not find user data for '$user'")
       }
-      Future.fromTry(response)
+      response.unsafeToFuture()
     }
   }
 
-  private def processCsv(username: String, account: UserAccount): Result =
-    account.username match {
+  private def processCsv(username: String, user: User): Result =
+    user.userName match {
       case accountUsername: String if accountUsername == username =>
-        Logger.info(
-          s"Sending credentials for user=$username with key accessKey=${account.accessKey}")
+        Logger.info(s"Sending credentials for user=$username with key accessKey=${user.accessKey}")
         Ok(
           s"NT ID, access key, secret key,api url\n%s,%s,%s,%s"
-            .format(
-              account.username,
-              account.accessKey,
-              account.accessSecret,
-              vinyldnsServiceBackend))
+            .format(user.userName, user.accessKey, user.secretKey, vinyldnsServiceBackend))
           .as("text/csv")
 
       case _ =>
@@ -236,12 +233,15 @@ class VinylDNS @Inject()(
   def serveCredsFile(fileName: String): Action[AnyContent] = Action.async { implicit request =>
     Logger.info(s"Serving credentials for file $fileName")
     withAuthenticatedUser { username =>
-      userAccountAccessor.get(username) match {
-        case Success(Some(account)) => Future(processCsv(username, account))
-        case Success(None) =>
-          throw new UnsupportedOperationException(s"Error - User account for $username not found")
-        case Failure(ex) => throw ex
-      }
+      userAccountAccessor
+        .get(username)
+        .flatMap {
+          case Some(account) => IO(processCsv(username, account))
+          case None =>
+            IO.raiseError(
+              new UnsupportedOperationException(s"Error - User account for $username not found"))
+        }
+        .unsafeToFuture()
     }
   }
 
@@ -252,7 +252,7 @@ class VinylDNS @Inject()(
         .map(response => {
           Status(200)("Successfully regenerated credentials")
             .withHeaders(cacheHeaders: _*)
-            .withSession("username" -> response.username, "accessKey" -> response.accessKey)
+            .withSession("username" -> response.userName, "accessKey" -> response.accessKey)
         })
         .recover {
           case _: UserDoesNotExistException =>
@@ -261,62 +261,50 @@ class VinylDNS @Inject()(
     }
   }
 
-  private def processRegenerate(oldAccountName: String): Try[UserAccount] =
-    for {
-      oldAccount <- userAccountAccessor.get(oldAccountName).flatMap {
-        case Some(account) => Success(account)
+  private def processRegenerate(oldAccountName: String): Try[User] = {
+    val update = for {
+      oldUser <- userAccountAccessor.get(oldAccountName).flatMap {
+        case Some(u) => IO.pure(u)
         case None =>
-          Failure(
+          IO.raiseError(
             new UserDoesNotExistException(s"Error - User account for $oldAccountName not found"))
       }
-      account = oldAccount.regenerateCredentials()
-      _ <- userAccountAccessor.put(account)
-      _ <- auditLogAccessor.log(
-        UserChangeMessage(
-          account.userId,
-          account.username,
-          DateTime.now(),
-          ChangeType("updated"),
-          account,
-          Some(oldAccount)))
+      newUser = oldUser.regenerateCredentials()
+      _ <- userAccountAccessor.update(newUser, oldUser)
     } yield {
-      Logger.info(s"Credentials successfully regenerated for ${account.username}")
-      account
-    }
-
-  private def createNewUser(details: UserDetails): Try[UserAccount] = {
-    val newAccount =
-      UserAccount(details.username, details.firstName, details.lastName, details.email)
-    for {
-      newUser <- userAccountAccessor.put(newAccount)
-    } yield {
-      auditLogAccessor.log(
-        UserChangeMessage(
-          newUser.userId,
-          newUser.username,
-          DateTime.now(),
-          ChangeType("created"),
-          newUser,
-          None))
+      Logger.info(s"Credentials successfully regenerated for ${newUser.userName}")
       newUser
     }
+
+    update.attempt.unsafeRunSync().toTry
+  }
+
+  private def createNewUser(details: UserDetails): IO[User] = {
+    val newUser =
+      User(
+        details.username,
+        User.generateKey,
+        User.generateKey,
+        details.firstName,
+        details.lastName,
+        details.email)
+    userAccountAccessor.create(newUser)
   }
 
   def getUserDataByUsername(username: String): Action[AnyContent] = Action.async {
     implicit request =>
       withAuthenticatedUser { _ =>
-        Future
-          .fromTry {
-            for {
-              userDetails <- authenticator.lookup(username)
-              existingAccount <- userAccountAccessor.get(userDetails.username)
-              userAccount <- existingAccount match {
-                case Some(user) => Try(VinylDNS.UserInfo.fromAccount(user))
-                case None =>
-                  createNewUser(userDetails).map(VinylDNS.UserInfo.fromAccount)
-              }
-            } yield userAccount
-          }
+        {
+          for {
+            userDetails <- IO.fromEither(authenticator.lookup(username).toEither)
+            existingAccount <- userAccountAccessor.get(userDetails.username)
+            userAccount <- existingAccount match {
+              case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
+              case None =>
+                createNewUser(userDetails).map(VinylDNS.UserInfo.fromUser)
+            }
+          } yield userAccount
+        }.unsafeToFuture()
           .map(Json.toJson(_))
           .map(Ok(_).withHeaders(cacheHeaders: _*))
           .recover {
@@ -335,33 +323,24 @@ class VinylDNS @Inject()(
         Logger.info(
           s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
 
-        // get or create the new style user account
-        val userAccount = userAccountAccessor
+        val user = userAccountAccessor
           .get(userDetails.username)
           .flatMap {
             case None =>
               Logger.info(s"Creating user account for ${userDetails.username}")
-              createNewUser(userDetails).map {
-                case user: UserAccount =>
-                  Logger.info(s"User account for ${user.username} created with id ${user.userId}")
-                  user
+              createNewUser(userDetails).map { u: User =>
+                Logger.info(s"User account for ${u.userName} created with id ${u.id}")
+                u
               }
-            case Some(user) =>
-              Logger.info(s"User account for ${user.username} exists with id ${user.userId}")
-              Success(user)
+            case Some(u) =>
+              Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
+              IO.pure(u)
           }
-          .recoverWith {
-            case ex =>
-              Logger.error(
-                s"User retrieval or creation failed for user ${userDetails.username} with message ${ex.getMessage}")
-              throw ex
-          }
-          .get
+          .unsafeRunSync()
 
-        Logger.info(
-          s"--NEW MEMBERSHIP-- user [${userAccount.username}] logged in with id [${userAccount.userId}]")
+        Logger.info(s"--NEW MEMBERSHIP-- user [${user.userName}] logged in with id [${user.id}]")
         Redirect("/index")
-          .withSession("username" -> userAccount.username, "accessKey" -> userAccount.accessKey)
+          .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
     }
 
   def getZones: Action[AnyContent] = Action.async { implicit request =>
@@ -564,13 +543,13 @@ class VinylDNS @Inject()(
   def getUserCreds(keyOption: Option[String]): BasicAWSCredentials =
     keyOption match {
       case Some(key) =>
-        userAccountAccessor.getUserByKey(key) match {
-          case Success(Some(account)) =>
-            new BasicAWSCredentials(account.accessKey, account.accessSecret)
-          case Success(None) =>
+        userAccountAccessor.getUserByKey(key).attempt.unsafeRunSync() match {
+          case Right(Some(account)) =>
+            new BasicAWSCredentials(account.accessKey, account.secretKey)
+          case Right(None) =>
             throw new IllegalArgumentException(
               s"Key [$key] Not Found!! Please logout then back in.")
-          case Failure(ex) => throw ex
+          case Left(ex) => throw ex
         }
       case None => throw new IllegalArgumentException("No Key Found!!")
     }

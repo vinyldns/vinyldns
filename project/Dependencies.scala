@@ -32,6 +32,7 @@ object Dependencies {
     "dnsjava"                   %  "dnsjava"                        % "2.1.7",
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.3",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
+    "org.apache.commons"        %  "commons-text"                   % "1.4",
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.json4s"                %% "json4s-ext"                     % "3.5.3",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
@@ -55,7 +56,8 @@ object Dependencies {
     "com.typesafe"              %  "config"                         % configV,
     "joda-time"                 %  "joda-time"                      % "2.8.1",
     "org.scodec"                %% "scodec-bits"                    % scodecV,
-    "nl.grons"                  %% "metrics-scala"                  % metricsScalaV
+    "nl.grons"                  %% "metrics-scala"                  % metricsScalaV,
+    "org.apache.commons"        %  "commons-text"                   % "1.4"
   )
 
   lazy val dynamoDBDependencies = Seq(
@@ -78,12 +80,15 @@ object Dependencies {
   )
 
   lazy val portalDependencies = Seq(
+    "org.apache.commons"        %  "commons-text"                   % "1.4",
     "com.typesafe.play"         %% "play-json"                      % "2.6.9",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
-    "com.typesafe.play"         %% "play-specs2"                    % playV % "test"
+    "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
+    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV
   )
 }
