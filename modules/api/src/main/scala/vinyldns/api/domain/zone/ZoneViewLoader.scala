@@ -39,7 +39,7 @@ object DnsZoneViewLoader extends DnsConversions {
       zone.transferConnection
         .getOrElse(VinylDNSConfig.defaultTransferConnection)
         .decrypted(Crypto.instance)
-    val TSIGKey = new TSIG(conn.keyName, conn.key)
+    val TSIGKey = new TSIG(TSIG.HMAC_SHA512, conn.keyName, conn.key)
     val parts = conn.primaryServer.trim().split(':')
     val (hostName, port) =
       if (parts.length < 2)

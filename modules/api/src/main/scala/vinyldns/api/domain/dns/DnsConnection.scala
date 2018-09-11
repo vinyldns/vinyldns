@@ -206,7 +206,8 @@ object DnsConnection {
     val (host, port) = parseHostAndPort(decryptedConnection.primaryServer)
     val resolver = new DNS.SimpleResolver(host)
     resolver.setPort(port)
-    resolver.setTSIGKey(new DNS.TSIG(decryptedConnection.keyName, decryptedConnection.key))
+    resolver.setTSIGKey(
+      new DNS.TSIG(DNS.TSIG.HMAC_SHA512, decryptedConnection.keyName, decryptedConnection.key))
 
     resolver
   }
