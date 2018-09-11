@@ -10,13 +10,7 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   private val USER_CHANGE_TABLE = "user-changes"
 
-  private val tableConfig = ConfigFactory.parseString(s"""
-                                                         | dynamo {
-                                                         |   table-name = "$USER_CHANGE_TABLE"
-                                                         |   provisioned-reads=30
-                                                         |   provisioned-writes=30
-                                                         | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+  private val tableConfig = DynamoDBRepositorySettings(s"$USER_CHANGE_TABLE", 30, 30)
 
   private val testUser = User(
     id = "test-user",
@@ -31,13 +25,13 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   )
 
   private val repo: DynamoDBUserChangeRepository =
-    DynamoDBUserChangeRepository(dynamoDBHelper, tableConfig, new NoOpCrypto(tableConfig)).unsafeRunSync()
+    DynamoDBUserChangeRepository(tableConfig, dynamoIntegrationConfig, new NoOpCrypto(ConfigFactory.load())).unsafeRunSync()
 
   def setup(): Unit = ()
 
   def tearDown(): Unit = {
     val request = new DeleteTableRequest().withTableName(USER_CHANGE_TABLE)
-    val deleteTables = dynamoDBHelper.deleteTable(request)
+    val deleteTables = repo.dynamoDBHelper.deleteTable(request)
     deleteTables.unsafeRunSync()
   }
 

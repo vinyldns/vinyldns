@@ -21,7 +21,6 @@ import java.util.HashMap
 import cats.effect.IO
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.Config
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.core.crypto.CryptoAlgebra
@@ -30,7 +29,6 @@ import vinyldns.core.route.Monitored
 import vinyldns.dynamodb.repository.DynamoDBUserRepository.CREATED
 
 object DynamoDBUserChangeRepository {
-  import pureconfig.module.catseffect._
 
   val USER_CHANGE_ID: String = "change_id"
   val USER_ID: String = "user_id"
@@ -77,38 +75,34 @@ object DynamoDBUserChangeRepository {
   }
 
   def apply(
-      dynamoDBHelper: DynamoDBHelper,
-      tableConfig: Config,
+      config: DynamoDBRepositorySettings,
+      dynamoConfig: DynamoDBDataStoreSettings,
       crypto: CryptoAlgebra): IO[DynamoDBUserChangeRepository] = {
 
-    def setupTable(settings: Settings, dynamoDBHelper: DynamoDBHelper): IO[Unit] = IO {
+    val dynamoDBHelper = new DynamoDBHelper(
+      DynamoDBClient(dynamoConfig),
+      LoggerFactory.getLogger("DynamoDBUserChangeRepository"))
+
+    val setup =
       dynamoDBHelper.setupTable(
         new CreateTableRequest()
-          .withTableName(settings.tableName)
+          .withTableName(config.tableName)
           .withAttributeDefinitions(TABLE_ATTRIBUTES: _*)
           .withKeySchema(new KeySchemaElement(USER_CHANGE_ID, KeyType.HASH))
           .withProvisionedThroughput(
-            new ProvisionedThroughput(settings.provisionedReads, settings.provisionedWrites))
+            new ProvisionedThroughput(config.provisionedReads, config.provisionedWrites))
       )
-    }
 
-    for {
-      settings <- loadConfigF[IO, Settings](tableConfig, "dynamo")
-      _ <- setupTable(settings, dynamoDBHelper)
-    } yield {
-      new DynamoDBUserChangeRepository(
-        settings.tableName,
-        dynamoDBHelper,
-        toItem(crypto, _),
-        fromItem
-      )
-    }
+    val serialize: UserChange => java.util.Map[String, AttributeValue] = toItem(crypto, _)
+    val deserialize: java.util.Map[String, AttributeValue] => UserChange = fromItem
+    setup.as(
+      new DynamoDBUserChangeRepository(config.tableName, dynamoDBHelper, serialize, deserialize))
   }
 }
 
-class DynamoDBUserChangeRepository(
+class DynamoDBUserChangeRepository private[repository] (
     tableName: String,
-    dynamoDBHelper: DynamoDBHelper,
+    val dynamoDBHelper: DynamoDBHelper,
     serialize: UserChange => java.util.Map[String, AttributeValue],
     deserialize: java.util.Map[String, AttributeValue] => UserChange)
     extends UserChangeRepository
