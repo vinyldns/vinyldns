@@ -17,7 +17,6 @@
 package vinyldns.api.domain.record
 
 import cats.effect._
-import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
@@ -31,7 +30,7 @@ import vinyldns.core.domain.membership.{Group, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.api.engine.sqs.TestSqsService
-import vinyldns.dynamodb.repository.DynamoDBRecordSetRepository
+import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 import vinyldns.api.repository.mysql.TestMySqlInstance
 import vinyldns.core.domain.record._
 
@@ -48,20 +47,7 @@ class RecordSetServiceIntegrationSpec
 
   private val recordSetTable = "recordSetTest"
 
-  private val liveTestConfig = ConfigFactory.parseString(s"""
-       |  recordSet {
-       |    # use the dummy store, this should only be used local
-       |    dummy = true
-       |
-       |    dynamo {
-       |      tableName = "$recordSetTable"
-       |      provisionedReads=30
-       |      provisionedWrites=30
-       |    }
-       |  }
-    """.stripMargin)
-
-  private val recordSetStoreConfig = liveTestConfig.getConfig("recordSet")
+  private val recordSetStoreConfig = DynamoDBRepositorySettings(s"$recordSetTable", 30, 30)
 
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
@@ -159,7 +145,8 @@ class RecordSetServiceIntegrationSpec
     adminGroupId = group.id)
 
   def setup(): Unit = {
-    recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
+    recordSetRepo =
+      DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
     zoneRepo = TestMySqlInstance.zoneRepository
 
     List(zone, zoneTestNameConflicts, zoneTestAddRecords).map(z => waitForSuccess(zoneRepo.save(z)))

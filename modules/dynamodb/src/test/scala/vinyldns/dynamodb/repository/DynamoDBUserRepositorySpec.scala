@@ -42,80 +42,49 @@ class DynamoDBUserRepositorySpec
   private val mockPutItemResult = mock[PutItemResult] // User repo is initialized with dummy users
   doReturn(IO.pure(mockPutItemResult)).when(dynamoDBHelper).putItem(any[PutItemRequest])
   private val usersStoreConfig = DynamoTestConfig.usersStoreConfig
-  private val userTable = usersStoreConfig.getString("dynamo.tableName")
+  private val userTable = usersStoreConfig.tableName
 
-  class TestDynamoDBUserRepository extends DynamoDBUserRepository(usersStoreConfig, dynamoDBHelper)
+  class TestDynamoDBUserRepository extends DynamoDBUserRepository(userTable, dynamoDBHelper)
 
-  private val underTest = new DynamoDBUserRepository(usersStoreConfig, dynamoDBHelper)
+  private val underTest = new DynamoDBUserRepository(userTable, dynamoDBHelper)
 
-  override def beforeEach(): Unit = {
+  override def beforeEach(): Unit =
     reset(dynamoDBHelper)
-    doNothing().when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-  }
 
-  "DynamoDBUserRepository constructor" should {
-    "call setuptable when it is built" in {
-      val mockPutItemResult = mock[PutItemResult] // User repo is initialized with dummy users
-      doReturn(IO.pure(mockPutItemResult))
-        .when(dynamoDBHelper)
-        .putItem(any[PutItemRequest])
-
-      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-
-      new TestDynamoDBUserRepository
-      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-
-      val createTable = setupTableCaptor.getValue
-
-      createTable.getTableName shouldBe userTable
-      (createTable.getAttributeDefinitions should contain).only(underTest.tableAttributes: _*)
-      createTable.getKeySchema.get(0).getAttributeName shouldBe underTest.USER_ID
-      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-      createTable.getGlobalSecondaryIndexes.toArray() shouldBe underTest.secondaryIndexes.toArray
-      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-    }
-
-    "fail when an exception is thrown setting up the table" in {
-
-      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-
-      a[RuntimeException] should be thrownBy new TestDynamoDBUserRepository
-    }
-  }
+  import DynamoDBUserRepository._
 
   "DynamoDBUserRepository.toItem" should {
     "set all values correctly" in {
       val items = underTest.toItem(okUser)
-      items.get(underTest.USER_ID).getS shouldBe okUser.id
-      items.get(underTest.USER_NAME).getS shouldBe okUser.userName
-      items.get(underTest.ACCESS_KEY).getS shouldBe okUser.accessKey
-      items.get(underTest.SECRET_KEY).getS shouldBe okUser.secretKey
-      items.get(underTest.FIRST_NAME).getS shouldBe okUser.firstName.get
-      items.get(underTest.LAST_NAME).getS shouldBe okUser.lastName.get
-      items.get(underTest.EMAIL).getS shouldBe okUser.email.get
-      items.get(underTest.CREATED).getN shouldBe okUser.created.getMillis.toString
+      items.get(USER_ID).getS shouldBe okUser.id
+      items.get(USER_NAME).getS shouldBe okUser.userName
+      items.get(ACCESS_KEY).getS shouldBe okUser.accessKey
+      items.get(SECRET_KEY).getS shouldBe okUser.secretKey
+      items.get(FIRST_NAME).getS shouldBe okUser.firstName.get
+      items.get(LAST_NAME).getS shouldBe okUser.lastName.get
+      items.get(EMAIL).getS shouldBe okUser.email.get
+      items.get(CREATED).getN shouldBe okUser.created.getMillis.toString
     }
     "set the first name to null if it is not present" in {
       val emptyFirstName = okUser.copy(firstName = None)
 
       val items = underTest.toItem(emptyFirstName)
-      Option(items.get(underTest.FIRST_NAME).getS) shouldBe None
-      items.get(underTest.FIRST_NAME).getNULL shouldBe true
+      Option(items.get(DynamoDBUserRepository.FIRST_NAME).getS) shouldBe None
+      items.get(DynamoDBUserRepository.FIRST_NAME).getNULL shouldBe true
     }
     "set the last name to null if it is not present" in {
       val emptyLastName = okUser.copy(lastName = None)
 
       val items = underTest.toItem(emptyLastName)
-      Option(items.get(underTest.LAST_NAME).getS) shouldBe None
-      items.get(underTest.LAST_NAME).getNULL shouldBe true
+      Option(items.get(LAST_NAME).getS) shouldBe None
+      items.get(LAST_NAME).getNULL shouldBe true
     }
     "set the email to null if it is not present" in {
       val emptyEmail = okUser.copy(email = None)
 
       val items = underTest.toItem(emptyEmail)
-      Option(items.get(underTest.EMAIL).getS) shouldBe None
-      items.get(underTest.EMAIL).getNULL shouldBe true
+      Option(items.get(EMAIL).getS) shouldBe None
+      items.get(EMAIL).getNULL shouldBe true
     }
   }
 
@@ -149,11 +118,11 @@ class DynamoDBUserRepositorySpec
     }
     "sets empty values correctly if key is not present in item" in {
       val item = new java.util.HashMap[String, AttributeValue]()
-      item.put(underTest.USER_ID, new AttributeValue("ok"))
-      item.put(underTest.USER_NAME, new AttributeValue("ok"))
-      item.put(underTest.CREATED, new AttributeValue().withN("0"))
-      item.put(underTest.ACCESS_KEY, new AttributeValue("accessKey"))
-      item.put(underTest.SECRET_KEY, new AttributeValue("secretkey"))
+      item.put(USER_ID, new AttributeValue("ok"))
+      item.put(USER_NAME, new AttributeValue("ok"))
+      item.put(CREATED, new AttributeValue().withN("0"))
+      item.put(ACCESS_KEY, new AttributeValue("accessKey"))
+      item.put(SECRET_KEY, new AttributeValue("secretkey"))
       val user = underTest.fromItem(item)
 
       user.firstName shouldBe None
@@ -169,11 +138,11 @@ class DynamoDBUserRepositorySpec
     }
     "sets the isSuper flag correctly if the key is not present in the item" in {
       val item = new java.util.HashMap[String, AttributeValue]()
-      item.put(underTest.USER_ID, new AttributeValue("ok"))
-      item.put(underTest.USER_NAME, new AttributeValue("ok"))
-      item.put(underTest.CREATED, new AttributeValue().withN("0"))
-      item.put(underTest.ACCESS_KEY, new AttributeValue("accesskey"))
-      item.put(underTest.SECRET_KEY, new AttributeValue("secretkey"))
+      item.put(USER_ID, new AttributeValue("ok"))
+      item.put(USER_NAME, new AttributeValue("ok"))
+      item.put(CREATED, new AttributeValue().withN("0"))
+      item.put(ACCESS_KEY, new AttributeValue("accesskey"))
+      item.put(SECRET_KEY, new AttributeValue("secretkey"))
       val user = underTest.fromItem(item)
 
       user.isSuper shouldBe false
@@ -218,13 +187,13 @@ class DynamoDBUserRepositorySpec
   "DynamoDBUserRepository.getUsers" should {
     "return the users if the id is found" in {
       val firstResponse = mock[BatchGetItemResult]
-      val firstPage = Map(
-        underTest.USER_TABLE -> listOfDummyUsers.slice(0, 100).map(underTest.toItem).asJava).asJava
+      val firstPage =
+        Map(userTable -> listOfDummyUsers.slice(0, 100).map(underTest.toItem).asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       val secondResponse = mock[BatchGetItemResult]
       val secondPage = Map(
-        underTest.USER_TABLE -> listOfDummyUsers
+        userTable -> listOfDummyUsers
           .slice(100, 200)
           .map(underTest.toItem)
           .asJava).asJava
@@ -245,7 +214,7 @@ class DynamoDBUserRepositorySpec
     }
     "return None if no users found" in {
       val firstResponse = mock[BatchGetItemResult]
-      val firstPage = Map(underTest.USER_TABLE -> List().asJava).asJava
+      val firstPage = Map(userTable -> List().asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       doReturn(IO.pure(firstResponse))
@@ -281,21 +250,21 @@ class DynamoDBUserRepositorySpec
 
         for { userId <- userIds } {
           val key = new util.HashMap[String, AttributeValue]()
-          key.put(underTest.USER_ID, new AttributeValue(userId))
+          key.put(USER_ID, new AttributeValue(userId))
           allKeys.add(key)
         }
 
         val keysAndAttributes = new KeysAndAttributes().withKeys(allKeys)
 
         val request = new util.HashMap[String, KeysAndAttributes]()
-        request.put(underTest.USER_TABLE, keysAndAttributes)
+        request.put(userTable, keysAndAttributes)
 
         new BatchGetItemRequest().withRequestItems(request)
       }
 
       val firstResponse = mock[BatchGetItemResult]
       val firstPage = Map(
-        underTest.USER_TABLE -> listOfDummyUsers
+        userTable -> listOfDummyUsers
           .slice(151, 200)
           .map(underTest.toItem)
           .asJava).asJava
@@ -322,8 +291,8 @@ class DynamoDBUserRepositorySpec
     }
     "truncates the response to only return limit items" in {
       val firstResponse = mock[BatchGetItemResult]
-      val firstPage = Map(
-        underTest.USER_TABLE -> listOfDummyUsers.slice(0, 50).map(underTest.toItem).asJava).asJava
+      val firstPage =
+        Map(userTable -> listOfDummyUsers.slice(0, 50).map(underTest.toItem).asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       doReturn(IO.pure(firstResponse))

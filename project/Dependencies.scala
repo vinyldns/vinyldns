@@ -60,7 +60,9 @@ object Dependencies {
 
   lazy val dynamoDBDependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
+    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
+    "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
+    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV
   )
 
   lazy val commonTestDependencies = Seq(

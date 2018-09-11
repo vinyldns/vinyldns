@@ -19,7 +19,7 @@ package vinyldns.api.engine
 import java.util.concurrent.Executors
 
 import cats.effect.IO
-import com.typesafe.config.ConfigFactory
+import cats.implicits._
 import fs2.{Scheduler, Stream}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
@@ -33,6 +33,7 @@ import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.dynamodb.repository.{
   DynamoDBRecordChangeRepository,
   DynamoDBRecordSetRepository,
+  DynamoDBRepositorySettings,
   DynamoDBZoneChangeRepository
 }
 import vinyldns.api.repository.mysql.TestMySqlInstance
@@ -56,42 +57,9 @@ class ZoneCommandHandlerIntegrationSpec
   private val recordSetTable = "recordSetTest"
   private val recordChangeTable = "recordChangeTest"
 
-  private val liveTestConfig = ConfigFactory.parseString(s"""
-       |  zoneChanges {
-       |    # use the dummy store, this should only be used local
-       |    dummy = true
-       |
-       |    dynamo {
-       |      tableName = "$zoneChangeTable"
-       |      provisionedReads=30
-       |      provisionedWrites=30
-       |    }
-       |  }
-       |  recordSet {
-       |    # use the dummy store, this should only be used local
-       |    dummy = true
-       |
-       |    dynamo {
-       |      tableName = "$recordSetTable"
-       |      provisionedReads=30
-       |      provisionedWrites=30
-       |    }
-       |  }
-       |  recordChange {
-       |    # use the dummy store, this should only be used local
-       |    dummy = true
-       |
-       |    dynamo {
-       |      tableName = "$recordChangeTable"
-       |      provisionedReads=30
-       |      provisionedWrites=30
-       |    }
-       |  }
-    """.stripMargin)
-
-  private val zoneChangeStoreConfig = liveTestConfig.getConfig("zoneChanges")
-  private val recordSetStoreConfig = liveTestConfig.getConfig("recordSet")
-  private val recordChangeStoreConfig = liveTestConfig.getConfig("recordChange")
+  private val zoneChangeStoreConfig = DynamoDBRepositorySettings(s"$zoneChangeTable", 30, 30)
+  private val recordSetStoreConfig = DynamoDBRepositorySettings(s"$recordSetTable", 30, 30)
+  private val recordChangeStoreConfig = DynamoDBRepositorySettings(s"$recordChangeTable", 30, 30)
 
   private implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
@@ -151,9 +119,15 @@ class ZoneCommandHandlerIntegrationSpec
   }
 
   def setup(): Unit = {
-    recordChangeRepo = new DynamoDBRecordChangeRepository(recordChangeStoreConfig, dynamoDBHelper)
-    recordSetRepo = new DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoDBHelper)
-    zoneChangeRepo = new DynamoDBZoneChangeRepository(zoneChangeStoreConfig, dynamoDBHelper)
+    val repos = (
+      DynamoDBRecordChangeRepository(recordChangeStoreConfig, dynamoIntegrationConfig),
+      DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig),
+      DynamoDBZoneChangeRepository(zoneChangeStoreConfig, dynamoIntegrationConfig)
+    ).parTupled.unsafeRunSync()
+
+    recordChangeRepo = repos._1
+    recordSetRepo = repos._2
+    zoneChangeRepo = repos._3
     zoneRepo = TestMySqlInstance.zoneRepository
     batchChangeRepo = TestMySqlInstance.batchChangeRepository
     sqsConn = SqsConnection()

@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-package vinyldns.api
+package vinyldns.core.repository
 
-import vinyldns.dynamodb.repository.{DynamoDBDataStoreSettings, DynamoDBIntegrationSpec}
-
-trait DynamoDBApiIntegrationSpec extends DynamoDBIntegrationSpec {
-
-  override val dynamoIntegrationConfig: DynamoDBDataStoreSettings = getDynamoConfig(19000)
-
-}
+case class DataStoreStartupError(msg: String) extends Throwable(msg)

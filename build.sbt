@@ -202,7 +202,7 @@ lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
     (scalastyleConfig in Test) := baseDirectory.value / "scalastyle-test-config.xml",
     (scalastyleConfig in IntegrationTest) := baseDirectory.value / "scalastyle-test-config.xml"
   )
-  .aggregate(core, api, portal)
+  .aggregate(core, api, portal, dynamodb)
 
 lazy val coreBuildSettings = Seq(
   name := "core",

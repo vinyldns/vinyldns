@@ -17,18 +17,39 @@
 package vinyldns.dynamodb
 
 import com.typesafe.config.{Config, ConfigFactory}
+import pureconfig.{CamelCase, ConfigFieldMapping, ProductHint}
+import vinyldns.dynamodb.repository.{DynamoDBDataStoreSettings, DynamoDBRepositorySettings}
 
 object DynamoTestConfig {
 
   lazy val config: Config = ConfigFactory.load()
   lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
-  lazy val dynamoConfig: Config = vinyldnsConfig.getConfig("dynamo")
-  lazy val zoneChangeStoreConfig: Config = vinyldnsConfig.getConfig("zoneChanges")
-  lazy val recordSetStoreConfig: Config = vinyldnsConfig.getConfig("recordSet")
-  lazy val recordChangeStoreConfig: Config = vinyldnsConfig.getConfig("recordChange")
-  lazy val usersStoreConfig: Config = vinyldnsConfig.getConfig("users")
-  lazy val groupsStoreConfig: Config = vinyldnsConfig.getConfig("groups")
-  lazy val groupChangesStoreConfig: Config = vinyldnsConfig.getConfig("groupChanges")
-  lazy val membershipStoreConfig: Config = vinyldnsConfig.getConfig("membership")
 
+  lazy val dynamoConfig: DynamoDBDataStoreSettings =
+    pureconfig.loadConfigOrThrow[DynamoDBDataStoreSettings](vinyldnsConfig, "dynamo")
+
+  // TODO these will change when dynamically loaded
+  implicit def hint[T]: ProductHint[T] = ProductHint[T](ConfigFieldMapping(CamelCase, CamelCase))
+
+  lazy val zoneChangeStoreConfig: DynamoDBRepositorySettings =
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](
+      vinyldnsConfig.getConfig("zoneChanges.dynamo"))
+  lazy val recordSetStoreConfig: DynamoDBRepositorySettings =
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](
+      vinyldnsConfig.getConfig("recordSet.dynamo"))
+  lazy val recordChangeStoreConfig: DynamoDBRepositorySettings =
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](
+      vinyldnsConfig.getConfig("recordChange.dynamo"))
+  lazy val usersStoreConfig: DynamoDBRepositorySettings =
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](
+      vinyldnsConfig.getConfig("users.dynamo"))
+  lazy val groupsStoreConfig: DynamoDBRepositorySettings =
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](
+      vinyldnsConfig.getConfig("groups.dynamo"))
+  lazy val groupChangesStoreConfig: DynamoDBRepositorySettings =
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](
+      vinyldnsConfig.getConfig("groupChanges.dynamo"))
+  lazy val membershipStoreConfig: DynamoDBRepositorySettings =
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](
+      vinyldnsConfig.getConfig("membership.dynamo"))
 }

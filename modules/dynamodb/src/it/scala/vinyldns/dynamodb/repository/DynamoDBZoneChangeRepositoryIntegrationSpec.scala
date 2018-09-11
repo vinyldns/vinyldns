@@ -16,11 +16,8 @@
 
 package vinyldns.dynamodb.repository
 
-import java.util
-
 import cats.implicits._
-import com.amazonaws.services.dynamodbv2.model.{AttributeValue, DeleteItemRequest, ScanRequest}
-import com.typesafe.config.ConfigFactory
+import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
@@ -34,14 +31,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
 
   private val zoneChangeTable = "zone-changes-live"
 
-  private val tableConfig = ConfigFactory.parseString(
-    s"""
-       | dynamo {
-       |   tableName = "$zoneChangeTable"
-       |   provisionedReads=30
-       |   provisionedWrites=30
-       | }
-    """.stripMargin).withFallback(ConfigFactory.load())
+  private val tableConfig = DynamoDBRepositorySettings(s"$zoneChangeTable", 30, 30)
 
   private var repo: DynamoDBZoneChangeRepository = _
 
@@ -69,11 +59,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
       created = now.minusSeconds(Random.nextInt(1000)))
 
   def setup(): Unit = {
-    repo = new DynamoDBZoneChangeRepository(tableConfig, dynamoDBHelper)
-    waitForRepo(repo.listZoneChanges("any"))
-
-    // Clear the zone just in case there is some lagging test data
-    clearChanges()
+    repo = DynamoDBZoneChangeRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
 
     // Create all the zones
     val results = changes.map(repo.save(_)).toList.parSequence
@@ -81,39 +67,11 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     results.unsafeRunTimed(5.minutes).getOrElse(fail("timeout waiting for data load"))
   }
 
-  def tearDown(): Unit =
-    clearChanges()
-
-  private def clearChanges(): Unit = {
-
-    import scala.collection.JavaConverters._
-
-    // clear all the zones from the table that we work with here
-    // NOTE: This is brute force and could be cleaner
-    val scanRequest = new ScanRequest()
-      .withTableName(zoneChangeTable)
-
-    val result = dynamoClient
-      .scan(scanRequest)
-      .getItems
-      .asScala
-      .map(i => (i.get("zone_id").getS, i.get("change_id").getS))
-
-    result.foreach(Function.tupled(deleteZoneChange))
+  def tearDown(): Unit = {
+    val request = new DeleteTableRequest().withTableName(zoneChangeTable)
+    repo.dynamoDBHelper.deleteTable(request).unsafeRunSync()
   }
 
-  private def deleteZoneChange(zoneId: String, changeId: String): Unit = {
-    val key = new util.HashMap[String, AttributeValue]()
-    key.put("zone_id", new AttributeValue(zoneId))
-    key.put("change_id", new AttributeValue(changeId))
-    val request = new DeleteItemRequest().withTableName(zoneChangeTable).withKey(key)
-    try {
-      dynamoClient.deleteItem(request)
-    } catch {
-      case ex: Throwable =>
-        throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
-    }
-  }
 
   "DynamoDBRepository" should {
 

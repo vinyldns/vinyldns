@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package vinyldns.api
+package vinyldns.dynamodb.repository
 
-import vinyldns.dynamodb.repository.{DynamoDBDataStoreSettings, DynamoDBIntegrationSpec}
+final case class DynamoDBDataStoreSettings(
+    key: String,
+    secret: String,
+    endpoint: String,
+    region: String)
 
-trait DynamoDBApiIntegrationSpec extends DynamoDBIntegrationSpec {
-
-  override val dynamoIntegrationConfig: DynamoDBDataStoreSettings = getDynamoConfig(19000)
-
-}
+final case class DynamoDBRepositorySettings(
+    tableName: String,
+    provisionedReads: Long,
+    provisionedWrites: Long)

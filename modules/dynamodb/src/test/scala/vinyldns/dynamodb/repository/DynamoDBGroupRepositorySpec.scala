@@ -17,7 +17,6 @@
 package vinyldns.dynamodb.repository
 
 import com.amazonaws.services.dynamodbv2.model.{GetItemRequest, ResourceNotFoundException, _}
-import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
@@ -38,43 +37,12 @@ class DynamoDBGroupRepositorySpec
 
   private val dynamoDBHelper = mock[DynamoDBHelper]
   private val groupsStoreConfig = DynamoTestConfig.groupsStoreConfig
-  private val membershipTable = groupsStoreConfig.getString("dynamo.tableName")
+  private val groupsTable = groupsStoreConfig.tableName
 
-  private val underTest = new DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper)
+  private val underTest = new DynamoDBGroupRepository(groupsTable, dynamoDBHelper)
 
-  override def beforeEach(): Unit = {
+  override def beforeEach(): Unit =
     reset(dynamoDBHelper)
-    doNothing().when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-  }
-
-  "DynamoDBGroupRepository constructor" should {
-
-    "call setuptable when it is built" in {
-      val setupTableCaptor = ArgumentCaptor.forClass(classOf[CreateTableRequest])
-
-      new DynamoDBGroupRepository(groupsStoreConfig, dynamoDBHelper)
-      verify(dynamoDBHelper).setupTable(setupTableCaptor.capture())
-
-      val createTable = setupTableCaptor.getValue
-
-      createTable.getTableName shouldBe membershipTable
-      (createTable.getAttributeDefinitions should contain).only(underTest.tableAttributes: _*)
-      createTable.getKeySchema.get(0).getAttributeName shouldBe underTest.GROUP_ID
-      createTable.getKeySchema.get(0).getKeyType shouldBe KeyType.HASH.toString
-      createTable.getGlobalSecondaryIndexes.toArray() shouldBe underTest.secondaryIndexes.toArray
-      createTable.getProvisionedThroughput.getReadCapacityUnits shouldBe 30L
-      createTable.getProvisionedThroughput.getWriteCapacityUnits shouldBe 30L
-    }
-
-    "fail when an exception is thrown setting up the table" in {
-
-      doThrow(new RuntimeException("fail")).when(dynamoDBHelper).setupTable(any[CreateTableRequest])
-
-      a[RuntimeException] should be thrownBy new DynamoDBGroupRepository(
-        groupsStoreConfig,
-        dynamoDBHelper)
-    }
-  }
 
   "DynamoDBGroupRepository.toItem" should {
     "set all values correctly" in {
@@ -220,7 +188,7 @@ class DynamoDBGroupRepositorySpec
     "return the groups if the id is found" in {
       val firstResponse = mock[BatchGetItemResult]
       val firstPage = Map(
-        underTest.GROUP_TABLE -> listOfDummyGroups
+        groupsTable -> listOfDummyGroups
           .slice(0, 100)
           .map(underTest.toItem)
           .asJava).asJava
@@ -228,7 +196,7 @@ class DynamoDBGroupRepositorySpec
 
       val secondResponse = mock[BatchGetItemResult]
       val secondPage = Map(
-        underTest.GROUP_TABLE -> listOfDummyGroups
+        groupsTable -> listOfDummyGroups
           .slice(100, 200)
           .map(underTest.toItem)
           .asJava).asJava
@@ -249,7 +217,7 @@ class DynamoDBGroupRepositorySpec
     "not return a group if it is deleted" in {
       val dynamoResponse = mock[BatchGetItemResult]
       val expected = underTest.toItem(deletedGroup)
-      val firstPage = Map(underTest.GROUP_TABLE -> List(expected).asJava).asJava
+      val firstPage = Map(groupsTable -> List(expected).asJava).asJava
 
       doReturn(firstPage).when(dynamoResponse).getResponses
       doReturn(IO.pure(dynamoResponse))
@@ -263,7 +231,7 @@ class DynamoDBGroupRepositorySpec
 
     "return None if no groups found" in {
       val firstResponse = mock[BatchGetItemResult]
-      val firstPage = Map(underTest.GROUP_TABLE -> List().asJava).asJava
+      val firstPage = Map(groupsTable -> List().asJava).asJava
       doReturn(firstPage).when(firstResponse).getResponses
 
       doReturn(IO.pure(firstResponse))
