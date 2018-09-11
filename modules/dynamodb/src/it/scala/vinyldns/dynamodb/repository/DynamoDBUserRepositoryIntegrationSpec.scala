@@ -149,10 +149,10 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       result.get.isLocked shouldBe true
     }
     "returns the locked flag when false" in {
-      val result = repo.getUser(testUserIds.head).unsafeRunSync()
+      val f = repo.getUserByAccessKey(users.head.accessKey).unsafeRunSync()
 
-      result shouldBe Some(testUserIds.head)
-      result.get.isLocked shouldBe false
+      f shouldBe Some(users.head)
+      f.get.isLocked shouldBe false
     }
   }
 }
