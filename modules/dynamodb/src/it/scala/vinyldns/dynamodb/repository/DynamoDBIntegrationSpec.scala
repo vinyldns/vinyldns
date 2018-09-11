@@ -19,15 +19,12 @@ package vinyldns.dynamodb.repository
 import java.util.UUID
 
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.LoggerFactory
 
 trait DynamoDBIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
-    with BeforeAndAfterEach
     with Matchers
-    with ScalaFutures
     with Inspectors {
 
   // port is defined in the docker/docker-compose.yml file for dynamodb

@@ -16,9 +16,10 @@
 
 package vinyldns.api
 
+import org.scalatest.concurrent.ScalaFutures
 import vinyldns.dynamodb.repository.{DynamoDBDataStoreSettings, DynamoDBIntegrationSpec}
 
-trait DynamoDBApiIntegrationSpec extends DynamoDBIntegrationSpec {
+trait DynamoDBApiIntegrationSpec extends DynamoDBIntegrationSpec with ScalaFutures {
 
   override val dynamoIntegrationConfig: DynamoDBDataStoreSettings = getDynamoConfig(19000)
 
