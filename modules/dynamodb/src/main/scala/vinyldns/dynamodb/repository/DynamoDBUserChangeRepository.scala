@@ -49,7 +49,8 @@ object DynamoDBUserChangeRepository {
       c <- IO(item.get(CHANGE_TYPE).getS)
       changeType <- IO.fromEither(UserChangeType.fromString(c))
       newUser <- IO(item.get(NEW_USER).getM).flatMap(m => DynamoDBUserRepository.fromItem(m))
-      oldUser <- OptionT(IO(Option(item.get(OLD_USER)).flatMap(i => Option(i.getM))))
+      oldUser <- OptionT(IO(Option(item.get(OLD_USER))))
+        .subflatMap(av => Option(av.getM))
         .semiflatMap(DynamoDBUserRepository.fromItem)
         .value
       madeByUserId <- IO(item.get(MADE_BY_ID).getS)
