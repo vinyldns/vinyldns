@@ -232,12 +232,12 @@ class MembershipService(
 
   def updateUserLockStatus(
       userId: String,
-      setLockedTo: LockStatus,
+      lockStatus: LockStatus,
       authPrincipal: AuthPrincipal): Result[User] =
     for {
       _ <- isSuperAdmin(authPrincipal).toResult
       existingUser <- getExistingUser(userId)
-      newUser = existingUser.updateUserLockStatus(setLockedTo)
+      newUser = existingUser.updateUserLockStatus(lockStatus)
       _ <- userRepo.save(newUser).toResult[User]
     } yield newUser
 }

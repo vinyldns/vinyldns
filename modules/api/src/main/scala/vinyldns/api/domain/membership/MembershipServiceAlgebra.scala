@@ -60,6 +60,6 @@ trait MembershipServiceAlgebra {
 
   def updateUserLockStatus(
       userId: String,
-      setLockedTo: LockStatus,
+      lockStatus: LockStatus,
       authPrincipal: AuthPrincipal): Result[User]
 }
