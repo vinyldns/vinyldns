@@ -46,40 +46,40 @@ Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyld
 To start up a local instance of VinylDNS on your machine with docker:
 
 1. Ensure that you have [docker](https://docs.docker.com/install/) and [docker-compose](https://docs.docker.com/compose/install/)
-2. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
-3. Navigate to repo: `cd vinyldns`
-4. Run `bin/docker-up-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001` along with their 
+1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
+1. Navigate to repo: `cd vinyldns`
+1. Run `bin/docker-up-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001` along with their 
 dependencies, ping the API on `http://localhost:9000/ping` and the portal on `http://localhost:9001`, and notify you if either failed to start.
-5. To stop the local setup, run `./bin/remove-vinyl-containers.sh` from the project root.
+1. To stop the local setup, run `./bin/remove-vinyl-containers.sh` from the project root.
 
 Things to try after VinylDNS is running:
 
 1. View the portal at <http://localhost:9001> in a web browser
-2. Login with the credentials ***testuser*** and ***testpassword***
-3. Navigate to the `groups` tab: <http://localhost:9001/groups>
-4. Click on the **New Group** button and create a new group
-5. Navigate to the `zones` tab: <http://localhost:9001/zones>
-6. Click on the **Connect** button to connect to zone, the `bin/docker-up-vinyldns.sh` started up a local bind9 DNS server 
+1. Login with the credentials ***testuser*** and ***testpassword***
+1. Navigate to the `groups` tab: <http://localhost:9001/groups>
+1. Click on the **New Group** button and create a new group
+1. Navigate to the `zones` tab: <http://localhost:9001/zones>
+1. Click on the **Connect** button to connect to zone, the `bin/docker-up-vinyldns.sh` started up a local bind9 DNS server 
 with a few test zones preloaded, 
 connect to `Zone Name = dummy.`, `Email = sometest@vinyldns.com`, `Admin Group = the group you just created`. The DNS
 Server and Zone Transfer Server can be left blank as the test zones use the defaults 
-7. This is async, so refresh the zones page to view the newly created zone
-8. Click the **View** button under the **Actions** column for the `dummy.` zone
-9. You will see that some records are preloaded already, this is because these records existed in the bind9 server 
+1. This is async, so refresh the zones page to view the newly created zone
+1. Click the **View** button under the **Actions** column for the `dummy.` zone
+1. You will see that some records are preloaded already, this is because these records existed in the bind9 server 
 and VinylDNS automatically syncs records with the backend DNS server upon zone connection
-10. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
+1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
 in the **Manage Zone** tab
-11. To try creating a DNS record, click on the **Create Record Set** button under Records, `Record Type = A, Record Name = my-test-a,
+1. To try creating a DNS record, click on the **Create Record Set** button under Records, `Record Type = A, Record Name = my-test-a,
 TTL = 300, IP Addressess = 1.1.1.1`
-12. Click on the **Refresh** button under Records, you should see your new record created
+1. Click on the **Refresh** button under Records, you should see your new record created
 
 Things to note: 
 
 1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
-2. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
-3. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
-4. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the bin/.env file before execution. You'll need to also modify your application.conf and uncomment the `play.filters.disabled` line. You can read more about this at https://www.playframework.com/documentation/2.6.x/AllowedHostsFilter
-5. A similar docker/.env can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
+1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
+1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
+1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the bin/.env file before execution. You'll need to also modify your application.conf and uncomment the `play.filters.disabled` line. You can read more about this at https://www.playframework.com/documentation/2.6.x/AllowedHostsFilter
+1. A similar docker/.env can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
 
 For details regarding setup and configuration of the dev environment, see the [Developer Guide](DEVELOPER_GUIDE.md).
 
