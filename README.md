@@ -81,7 +81,7 @@ Things to note:
 
 ### Docker Customization
 1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the bin/.env file before execution.
-2. A similar docker/.env can be modified to change the default ports for the Portal and API.
+2. A similar docker/.env can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
 
 For details regarding setup and configuration of the dev environment, see the [Developer Guide](DEVELOPER_GUIDE.md).
 
