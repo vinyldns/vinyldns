@@ -23,10 +23,9 @@ import vinyldns.dynamodb.repository.DynamoDBRepositorySettings
 object DynamoTestConfig {
 
   lazy val config: Config = ConfigFactory.load()
-  lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
 
   lazy val dynamoDBConfig: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](vinyldnsConfig, "dynamodb")
+    pureconfig.loadConfigOrThrow[DataStoreConfig](config, "dynamodb")
 
   lazy val baseReposConfigs: RepositoriesConfig = dynamoDBConfig.repositories
   lazy val zoneChangeStoreConfig: DynamoDBRepositorySettings =

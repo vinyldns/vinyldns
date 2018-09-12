@@ -30,9 +30,9 @@ import vinyldns.core.repository.RepositoryName._
 class DynamoDBDataStoreProviderSpec extends DynamoDBIntegrationSpec {
   private var dataStore: DataStore = _
 
-  val vinyldnsConfig: Config = ConfigFactory.load().getConfig("vinyldns")
+  val config: Config = ConfigFactory.load()
   val dynamoDBConfig: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](vinyldnsConfig, "dynamodb")
+    pureconfig.loadConfigOrThrow[DataStoreConfig](config, "dynamodb")
   val provider: DynamoDBDataStoreProvider = new DynamoDBDataStoreProvider()
 
 
