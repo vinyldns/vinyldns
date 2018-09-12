@@ -77,13 +77,14 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
   }
   "loadRepoConfigs" should {
     "Return a map of configured repos are properly configured" in {
-      val enabledRepoConf: Config = ConfigFactory.parseString("""
-                                                                |{
-                                                                |   table-name = "someName"
-                                                                |   provisioned-reads = 20
-                                                                |   provisioned-writes = 30
-                                                                | }
-                                                              """.stripMargin)
+      val enabledRepoConf: Config =
+        ConfigFactory.parseString("""
+                             |{
+                             |   table-name = "someName"
+                             |   provisioned-reads = 20
+                             |   provisioned-writes = 30
+                             | }
+                            """.stripMargin)
       val repoSettings =
         RepositoriesConfig(Some(enabledRepoConf), None, None, None, None, None, None, None, None)
       val response = underTest
@@ -93,12 +94,13 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
       response shouldBe Map(RepositoryName.user -> DynamoDBRepositorySettings("someName", 20, 30))
     }
     "Return an error if a repo isnt configured correctly" in {
-      val badRepoConf: Config = ConfigFactory.parseString("""
-                                                                |{
-                                                                |   provisioned-reads = 20
-                                                                |   provisioned-writes = 30
-                                                                | }
-                                                              """.stripMargin)
+      val badRepoConf: Config =
+        ConfigFactory.parseString("""
+                             |{
+                             |   provisioned-reads = 20
+                             |   provisioned-writes = 30
+                             | }
+                            """.stripMargin)
       val repoSettings =
         RepositoriesConfig(
           Some(badRepoConf),

@@ -19,7 +19,7 @@ package vinyldns.dynamodb.repository
 import java.util.UUID
 
 import org.scalatest._
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 trait DynamoDBIntegrationSpec
     extends WordSpec
@@ -29,7 +29,7 @@ trait DynamoDBIntegrationSpec
 
   // port is defined in the docker/docker-compose.yml file for dynamodb
   val dynamoIntegrationConfig: DynamoDBDataStoreSettings = getDynamoConfig(19003)
-  val logger = LoggerFactory.getLogger("DynamoDBIntegationSpec")
+  val logger: Logger = LoggerFactory.getLogger("DynamoDBIntegrationSpec")
 
   // only used for teardown
   lazy val testDynamoDBHelper: DynamoDBHelper = new DynamoDBHelper(

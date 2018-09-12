@@ -27,20 +27,18 @@ import vinyldns.core.repository.{DataStore, DataStoreConfig}
 import vinyldns.core.repository.RepositoryName._
 
 
-class DynamoDBDataStoreProviderSpec extends DynamoDBIntegrationSpec {
-  private var dataStore: DataStore = _
+class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
 
   val config: Config = ConfigFactory.load()
   val dynamoDBConfig: DataStoreConfig =
     pureconfig.loadConfigOrThrow[DataStoreConfig](config, "dynamodb")
   val provider: DynamoDBDataStoreProvider = new DynamoDBDataStoreProvider()
 
+  logger.info("Loading all dynamodb tables in DynamoDBDataStoreProviderSpec")
+  val dataStore: DataStore = provider.load(dynamoDBConfig).unsafeRunSync()
+  logger.info("DynamoDBDataStoreProviderSpec load complete")
 
-  def setup(): Unit = {
-    logger.info("Loading all dynamodb tables in DynamoDBDataStoreProviderSpec")
-    dataStore = provider.load(dynamoDBConfig).unsafeRunSync()
-    logger.info("DynamoDBDataStoreProviderSpec load complete")
-  }
+  def setup(): Unit = ()
 
   def tearDown(): Unit = {
     val deletes = dynamoDBConfig.repositories.configMap.map {
@@ -57,17 +55,17 @@ class DynamoDBDataStoreProviderSpec extends DynamoDBIntegrationSpec {
 
   "DynamoDBDataStoreProvider" should {
     "properly load configured repos" in {
-      dataStore.get[UserRepository](user) should not be None
-      dataStore.get[GroupRepository](group) should not be None
-      dataStore.get[MembershipRepository](membership) should not be None
-      dataStore.get[GroupChangeRepository](groupChange) should not be None
-      dataStore.get[RecordSetRepository](recordSet) should not be None
-      dataStore.get[RecordChangeRepository](recordChange) should not be None
-      dataStore.get[ZoneChangeRepository](zoneChange) should not be None
+      dataStore.get[UserRepository](user) shouldBe defined
+      dataStore.get[GroupRepository](group) shouldBe defined
+      dataStore.get[MembershipRepository](membership) shouldBe defined
+      dataStore.get[GroupChangeRepository](groupChange) shouldBe defined
+      dataStore.get[RecordSetRepository](recordSet) shouldBe defined
+      dataStore.get[RecordChangeRepository](recordChange) shouldBe defined
+      dataStore.get[ZoneChangeRepository](zoneChange) shouldBe defined
     }
     "not load configured off repos" in {
-      dataStore.get[ZoneRepository](zone) shouldBe None
-      dataStore.get[BatchChangeRepository](batchChange) shouldBe None
+      dataStore.get[ZoneRepository](zone) shouldBe empty
+      dataStore.get[BatchChangeRepository](batchChange) shouldBe empty
     }
     "validate a loaded repo works" in {
       val testUser = User(
@@ -75,12 +73,13 @@ class DynamoDBDataStoreProviderSpec extends DynamoDBIntegrationSpec {
         "provider-load-test-access",
         "provider-load-test-secret"
       )
-      val userRepo = dataStore.get[UserRepository](user).get
-      val save = userRepo.save(testUser)
-      save.unsafeRunSync() shouldBe testUser
+      val userRepo = dataStore.get[UserRepository](user)
 
-      val get = userRepo.getUser(testUser.id)
-      get.unsafeRunSync() shouldBe Some(testUser)
+      val save = userRepo.map(_.save(testUser)).parSequence
+      save.unsafeRunSync() shouldBe Some(testUser)
+
+      val get = userRepo.map(_.getUser(testUser.id)).parSequence
+      get.unsafeRunSync().flatten shouldBe Some(testUser)
     }
   }
 }
