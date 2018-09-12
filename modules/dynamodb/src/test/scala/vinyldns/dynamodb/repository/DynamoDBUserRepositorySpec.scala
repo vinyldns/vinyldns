@@ -133,7 +133,7 @@ class DynamoDBUserRepositorySpec
       item.put(CREATED, new AttributeValue().withN("0"))
       item.put(ACCESS_KEY, new AttributeValue("accessKey"))
       item.put(SECRET_KEY, new AttributeValue("secretkey"))
-      item.put(LOCK_STATUS, new AttributeValue("lock_status"))
+      item.put(LOCK_STATUS, new AttributeValue("lockstatus"))
       val user = fromItem(item).unsafeRunSync()
 
       user.firstName shouldBe None

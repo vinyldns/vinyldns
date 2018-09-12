@@ -44,9 +44,9 @@ object DynamoDBUserRepository {
   private[repository] val ACCESS_KEY = "accesskey"
   private[repository] val SECRET_KEY = "secretkey"
   private[repository] val IS_SUPER = "super"
+  private[repository] val LOCK_STATUS = "lockstatus"
   private[repository] val USER_NAME_INDEX_NAME = "username_index"
   private[repository] val ACCESS_KEY_INDEX_NAME = "access_key_index"
-  private[repository] val LOCK_STATUS = "lock_status"
 
   def apply(
       config: DynamoDBRepositorySettings,
