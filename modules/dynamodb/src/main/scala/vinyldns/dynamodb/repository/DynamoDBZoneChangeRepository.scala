@@ -24,13 +24,7 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
-import vinyldns.core.domain.zone.{
-  ListZoneChangesResults,
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus
-}
+import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange, ZoneChangeRepository}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -41,12 +35,9 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
 
   private[repository] val ZONE_ID = "zone_id"
   private[repository] val CHANGE_ID = "change_id"
-  private[repository] val STATUS = "status"
   private[repository] val BLOB = "blob"
   private[repository] val CREATED = "created"
 
-  private val ZONE_ID_STATUS_INDEX_NAME = "zone_id_status_index"
-  private val STATUS_INDEX_NAME = "status_zone_id_index"
   private val ZONE_ID_CREATED_INDEX = "zone_id_created_index"
 
   def apply(
@@ -64,25 +55,10 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
     val tableAttributes = Seq(
       new AttributeDefinition(CHANGE_ID, "S"),
       new AttributeDefinition(ZONE_ID, "S"),
-      new AttributeDefinition(STATUS, "S"),
       new AttributeDefinition(CREATED, "N")
     )
 
     val secondaryIndexes = Seq(
-      new GlobalSecondaryIndex()
-        .withIndexName(ZONE_ID_STATUS_INDEX_NAME)
-        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-        .withKeySchema(
-          new KeySchemaElement(ZONE_ID, KeyType.HASH),
-          new KeySchemaElement(STATUS, KeyType.RANGE))
-        .withProjection(new Projection().withProjectionType("ALL")),
-      new GlobalSecondaryIndex()
-        .withIndexName(STATUS_INDEX_NAME)
-        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-        .withKeySchema(
-          new KeySchemaElement(STATUS, KeyType.HASH),
-          new KeySchemaElement(ZONE_ID, KeyType.RANGE))
-        .withProjection(new Projection().withProjectionType("KEYS_ONLY")),
       new GlobalSecondaryIndex()
         .withIndexName(ZONE_ID_CREATED_INDEX)
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
@@ -169,63 +145,6 @@ class DynamoDBZoneChangeRepository private[repository] (
       }
     }
 
-  def getPending(zoneId: String): IO[List[ZoneChange]] =
-    monitor("repo.ZoneChange.getPending") {
-      log.info(s"Getting pending zone changes for zone $zoneId")
-      for {
-        pending <- getChangesByStatus(zoneId, ZoneChangeStatus.Pending)
-        notSynced <- getChangesByStatus(zoneId, ZoneChangeStatus.Complete)
-      } yield (pending ++ notSynced).sortBy(_.created)
-    }
-
-  def getAllPendingZoneIds: IO[List[String]] = {
-    val expressionAttributeValues = new HashMap[String, AttributeValue]
-    val expressionAttributeNames = new HashMap[String, String]
-    expressionAttributeNames.put("#status_attribute", STATUS)
-    expressionAttributeValues.put(":status", new AttributeValue("Pending"))
-    val keyConditionExpression: String = "#status_attribute = :status"
-    val queryRequest = new QueryRequest()
-      .withTableName(zoneChangeTable)
-      .withIndexName(STATUS_INDEX_NAME)
-      .withExpressionAttributeNames(expressionAttributeNames)
-      .withExpressionAttributeValues(expressionAttributeValues)
-      .withKeyConditionExpression(keyConditionExpression)
-
-    dynamoDBHelper.queryAll(queryRequest).map { queryResults =>
-      queryResults.flatMap { queryResult =>
-        queryResult.getItems.asScala.toList.map { item =>
-          item.get(ZONE_ID).getS()
-        }
-      }.distinct
-    }
-  }
-
-  private def getChangesByStatus(
-      zoneId: String,
-      changeStatus: ZoneChangeStatus): IO[List[ZoneChange]] = {
-    val expressionAttributeValues = new HashMap[String, AttributeValue]
-    expressionAttributeValues.put(":status", new AttributeValue(changeStatus.toString))
-    expressionAttributeValues.put(":zone_id", new AttributeValue(zoneId))
-
-    val expressionAttributeNames = new HashMap[String, String]
-    expressionAttributeNames.put("#status_attribute", STATUS)
-    expressionAttributeNames.put("#zone_id_attribute", ZONE_ID)
-
-    val keyConditionExpression: String =
-      "#status_attribute = :status and #zone_id_attribute = :zone_id"
-
-    val queryRequest = new QueryRequest()
-      .withTableName(zoneChangeTable)
-      .withIndexName(ZONE_ID_STATUS_INDEX_NAME)
-      .withExpressionAttributeNames(expressionAttributeNames)
-      .withExpressionAttributeValues(expressionAttributeValues)
-      .withKeyConditionExpression(keyConditionExpression)
-
-    dynamoDBHelper
-      .query(queryRequest)
-      .map(result => result.getItems.asScala.toList.map(fromItem).distinct)
-  }
-
   def fromItem(item: java.util.Map[String, AttributeValue]): ZoneChange =
     try {
       val blob = item.get(BLOB)
@@ -247,7 +166,6 @@ class DynamoDBZoneChangeRepository private[repository] (
 
     item.put(CHANGE_ID, new AttributeValue(zoneChange.id))
     item.put(ZONE_ID, new AttributeValue(zoneChange.zoneId))
-    item.put(STATUS, new AttributeValue(zoneChange.status.toString))
     item.put(BLOB, new AttributeValue().withB(bb))
     item.put(CREATED, new AttributeValue().withN(zoneChange.created.getMillis.toString))
     item
