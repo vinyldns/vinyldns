@@ -20,7 +20,7 @@ import org.joda.time.DateTime
 sealed abstract class UserChangeType(val value: String)
 object UserChangeType {
   case object Create extends UserChangeType("create")
-  case object Update extends UserChangeType("delete")
+  case object Update extends UserChangeType("update")
 
   case class UnknownUserChangeType(value: String) extends Throwable(s"Unknown change type $value")
 
