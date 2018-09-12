@@ -9,7 +9,7 @@ DIR=$( cd $(dirname $0) ; pwd -P )
 
 set -a # Required in order to source docker/.env
 # Source customizable env files
-source .env
+source "$DIR"/.env
 source "$DIR"/../docker/.env
 
 echo "Starting portal server and all dependencies in the background..."
