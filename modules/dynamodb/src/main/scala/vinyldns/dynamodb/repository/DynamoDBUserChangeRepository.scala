@@ -44,7 +44,7 @@ object DynamoDBUserChangeRepository {
   )
 
   // Note: This should be an Either; however pulling everything into an Either is a big refactoring
-  def fromItem(item: java.util.Map[String, AttributeValue]): IO[UserChange] = {
+  def fromItem(item: java.util.Map[String, AttributeValue]): IO[UserChange] =
     for {
       c <- IO(item.get(CHANGE_TYPE).getS)
       changeType <- IO.fromEither(UserChangeType.fromString(c))
@@ -58,7 +58,6 @@ object DynamoDBUserChangeRepository {
       created <- IO(new DateTime(item.get(CREATED).getN.toLong))
       change <- IO.fromEither(UserChange(id, newUser, madeByUserId, created, oldUser, changeType))
     } yield change
-  }
 
   def toItem(crypto: CryptoAlgebra, change: UserChange): java.util.Map[String, AttributeValue] = {
     val item = new util.HashMap[String, AttributeValue]()
