@@ -19,6 +19,12 @@ package vinyldns.core.domain.membership
 import java.util.UUID
 
 import org.joda.time.DateTime
+import vinyldns.core.domain.membership.LockStatus.LockStatus
+
+object LockStatus extends Enumeration {
+  type LockStatus = Value
+  val Locked, Unlocked = Value
+}
 
 case class User(
     userName: String,
@@ -30,9 +36,9 @@ case class User(
     created: DateTime = DateTime.now,
     id: String = UUID.randomUUID().toString,
     isSuper: Boolean = false,
-    isLocked: Boolean = false
+    lockStatus: LockStatus = LockStatus.Unlocked
 ) {
 
-  def updateUserLockStatus(lockStatus: Boolean): User =
-    this.copy(isLocked = lockStatus)
+  def updateUserLockStatus(lockStatus: LockStatus): User =
+    this.copy(lockStatus = lockStatus)
 }

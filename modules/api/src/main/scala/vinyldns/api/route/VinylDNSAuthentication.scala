@@ -26,6 +26,7 @@ import vinyldns.api.domain.auth.{AuthPrincipalProvider, MembershipAuthPrincipalP
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.route.Monitored
+import vinyldns.core.domain.membership.LockStatus
 
 import scala.util.matching.Regex
 
@@ -133,7 +134,7 @@ trait VinylDNSAuthentication extends Monitored {
   def getAuthPrincipal(accessKey: String): IO[AuthPrincipal] =
     authPrincipalProvider.getAuthPrincipal(accessKey).flatMap {
       case Some(ok) =>
-        if (ok.signedInUser.isLocked) {
+        if (ok.signedInUser.lockStatus == LockStatus.Locked) {
           IO.raiseError(
             AccountLocked(s"Account with username ${ok.signedInUser.userName} is locked"))
         } else IO.pure(ok)

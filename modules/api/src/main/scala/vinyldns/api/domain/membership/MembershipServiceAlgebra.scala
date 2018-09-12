@@ -18,6 +18,7 @@ package vinyldns.api.domain.membership
 
 import vinyldns.api.Interfaces.Result
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership._
 
 trait MembershipServiceAlgebra {
@@ -59,6 +60,6 @@ trait MembershipServiceAlgebra {
 
   def updateUserLockStatus(
       userId: String,
-      setLockedTo: Boolean,
+      setLockedTo: LockStatus,
       authPrincipal: AuthPrincipal): Result[User]
 }

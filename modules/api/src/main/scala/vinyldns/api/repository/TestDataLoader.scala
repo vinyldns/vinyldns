@@ -63,7 +63,7 @@ object TestDataLoader {
     lastName = Some("User"),
     email = Some("testlocked@test.com"),
     isSuper = false,
-    isLocked = true
+    lockStatus = LockStatus.Locked
   )
   final val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(

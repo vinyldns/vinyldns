@@ -761,7 +761,7 @@ class MembershipServiceSpec
 
         awaitResultOf(
           underTest
-            .updateUserLockStatus(okUser.id, true, superUserAuth)
+            .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
             .value)
 
         val userCaptor = ArgumentCaptor.forClass(classOf[User])
@@ -769,7 +769,7 @@ class MembershipServiceSpec
         verify(mockUserRepo).save(userCaptor.capture())
 
         val savedUser = userCaptor.getValue
-        savedUser.isLocked shouldBe true
+        savedUser.lockStatus shouldBe LockStatus.Locked
         savedUser.id shouldBe okUser.id
       }
 
@@ -781,7 +781,7 @@ class MembershipServiceSpec
 
         awaitResultOf(
           underTest
-            .updateUserLockStatus(lockedUser.id, false, superUserAuth)
+            .updateUserLockStatus(lockedUser.id, LockStatus.Unlocked, superUserAuth)
             .value)
 
         val userCaptor = ArgumentCaptor.forClass(classOf[User])
@@ -789,14 +789,14 @@ class MembershipServiceSpec
         verify(mockUserRepo).save(userCaptor.capture())
 
         val savedUser = userCaptor.getValue
-        savedUser.isLocked shouldBe false
+        savedUser.lockStatus shouldBe LockStatus.Unlocked
         savedUser.id shouldBe lockedUser.id
       }
 
       "return an error if the signed in user is not a super user" in {
         val error = leftResultOf(
           underTest
-            .updateUserLockStatus(okUser.id, true, dummyUserAuth)
+            .updateUserLockStatus(okUser.id, LockStatus.Locked, dummyUserAuth)
             .value)
 
         error shouldBe a[NotAuthorizedError]
@@ -810,7 +810,7 @@ class MembershipServiceSpec
 
         val error = leftResultOf(
           underTest
-            .updateUserLockStatus(okUser.id, true, superUserAuth)
+            .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
             .value)
 
         error shouldBe a[UserNotFoundError]

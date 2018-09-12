@@ -30,10 +30,11 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.membership._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.membership.{Group, LockStatus}
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
 import vinyldns.api.{GroupTestData, VinylDNSTestData}
+import vinyldns.core.domain.membership.LockStatus.LockStatus
 
 class MembershipRoutingSpec
     extends WordSpec
@@ -673,13 +674,13 @@ class MembershipRoutingSpec
   }
   "PUT update user lock status" should {
     "return a 200 response with the user locked" in {
-      val updatedUser = okUser.copy(isLocked = true)
+      val updatedUser = okUser.copy(lockStatus = LockStatus.Locked)
       val superUserAuth = okAuth.copy(
         signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
         memberGroupIds = Seq.empty)
       doReturn(result(updatedUser))
         .when(membershipService)
-        .updateUserLockStatus("ok", true, superUserAuth)
+        .updateUserLockStatus("ok", LockStatus.Locked, superUserAuth)
 
       Put("/users/ok/lock") ~> membershipRoute(superUserAuth) ~> check {
         status shouldBe StatusCodes.OK
@@ -687,18 +688,18 @@ class MembershipRoutingSpec
         val result = responseAs[UserInfo]
 
         result.id shouldBe okUser.id
-        result.isLocked shouldEqual true
+        result.lockStatus shouldBe LockStatus.Locked
       }
     }
 
     "return a 200 response with the user unlocked" in {
-      val updatedUser = lockedUser.copy(isLocked = false)
+      val updatedUser = lockedUser.copy(lockStatus = LockStatus.Unlocked)
       val superUserAuth = okAuth.copy(
         signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
         memberGroupIds = Seq.empty)
       doReturn(result(updatedUser))
         .when(membershipService)
-        .updateUserLockStatus("locked", false, superUserAuth)
+        .updateUserLockStatus("locked", LockStatus.Unlocked, superUserAuth)
 
       Put("/users/locked/unlock") ~> membershipRoute(superUserAuth) ~> check {
         status shouldBe StatusCodes.OK
@@ -706,7 +707,7 @@ class MembershipRoutingSpec
         val result = responseAs[UserInfo]
 
         result.id shouldBe lockedUser.id
-        result.isLocked shouldEqual false
+        result.lockStatus shouldBe LockStatus.Unlocked
       }
     }
 
@@ -716,7 +717,7 @@ class MembershipRoutingSpec
         memberGroupIds = Seq.empty)
       doReturn(result(UserNotFoundError("fail")))
         .when(membershipService)
-        .updateUserLockStatus(anyString, anyBoolean, any[AuthPrincipal])
+        .updateUserLockStatus(anyString, any[LockStatus], any[AuthPrincipal])
       Put("/users/notFound/lock") ~> membershipRoute(superUserAuth) ~> check {
         status shouldBe StatusCodes.NotFound
       }
@@ -725,7 +726,7 @@ class MembershipRoutingSpec
     "return a 403 Forbidden when not authorized" in {
       doReturn(result(NotAuthorizedError("fail")))
         .when(membershipService)
-        .updateUserLockStatus(anyString, anyBoolean, any[AuthPrincipal])
+        .updateUserLockStatus(anyString, any[LockStatus], any[AuthPrincipal])
       Put("/users/forbidden/lock") ~> membershipRoute(okGroupAuth) ~> check {
         status shouldBe StatusCodes.Forbidden
       }
