@@ -46,10 +46,11 @@ class DynamoDBUserRepositorySpec
   private val usersStoreConfig = DynamoTestConfig.usersStoreConfig
   private val userTable = usersStoreConfig.tableName
   private val crypto = new NoOpCrypto(ConfigFactory.load())
-
-  class TestDynamoDBUserRepository extends DynamoDBUserRepository(userTable, dynamoDBHelper, crypto)
-
-  private val underTest = new DynamoDBUserRepository(userTable, dynamoDBHelper, crypto)
+  private val underTest = new DynamoDBUserRepository(
+    userTable,
+    dynamoDBHelper,
+    DynamoDBUserRepository.toItem(crypto, _),
+    DynamoDBUserRepository.fromItem)
 
   override def beforeEach(): Unit =
     reset(dynamoDBHelper)
@@ -98,28 +99,28 @@ class DynamoDBUserRepositorySpec
   "DynamoDBUserRepository.fromItem" should {
     "set all the values correctly" in {
       val items = toItem(crypto, okUser)
-      val user = fromItem(items)
+      val user = fromItem(items).unsafeRunSync()
 
       user shouldBe okUser
     }
     "set all the values correctly if first name is not present" in {
       val emptyFirstName = okUser.copy(firstName = None)
       val items = toItem(crypto, emptyFirstName)
-      val user = fromItem(items)
+      val user = fromItem(items).unsafeRunSync()
 
       user shouldBe emptyFirstName
     }
     "set all the values correctly if last name is not present" in {
       val emptyLastName = okUser.copy(lastName = None)
       val items = toItem(crypto, emptyLastName)
-      val user = fromItem(items)
+      val user = fromItem(items).unsafeRunSync()
 
       user shouldBe emptyLastName
     }
     "set all the values correctly if email is not present" in {
       val emptyEmail = okUser.copy(email = None)
       val items = toItem(crypto, emptyEmail)
-      val user = fromItem(items)
+      val user = fromItem(items).unsafeRunSync()
 
       user shouldBe emptyEmail
     }
@@ -130,7 +131,7 @@ class DynamoDBUserRepositorySpec
       item.put(CREATED, new AttributeValue().withN("0"))
       item.put(ACCESS_KEY, new AttributeValue("accessKey"))
       item.put(SECRET_KEY, new AttributeValue("secretkey"))
-      val user = fromItem(item)
+      val user = fromItem(item).unsafeRunSync()
 
       user.firstName shouldBe None
       user.lastName shouldBe None
@@ -139,7 +140,7 @@ class DynamoDBUserRepositorySpec
     "sets the isSuper flag correctly" in {
       val superUser = okUser.copy(isSuper = true)
       val items = toItem(crypto, superUser)
-      val user = fromItem(items)
+      val user = fromItem(items).unsafeRunSync()
 
       user shouldBe superUser
     }
@@ -150,7 +151,7 @@ class DynamoDBUserRepositorySpec
       item.put(CREATED, new AttributeValue().withN("0"))
       item.put(ACCESS_KEY, new AttributeValue("accesskey"))
       item.put(SECRET_KEY, new AttributeValue("secretkey"))
-      val user = fromItem(item)
+      val user = fromItem(item).unsafeRunSync()
 
       user.isSuper shouldBe false
     }

@@ -19,6 +19,7 @@ package vinyldns.dynamodb.repository
 import java.util
 import java.util.HashMap
 
+import cats.data.OptionT
 import cats.effect._
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
@@ -85,7 +86,7 @@ object DynamoDBUserRepository {
         .withGlobalSecondaryIndexes(secondaryIndexes: _*)
     )
 
-    setup.as(new DynamoDBUserRepository(tableName, dynamoDBHelper, crypto))
+    setup.as(new DynamoDBUserRepository(tableName, dynamoDBHelper, toItem(crypto, _), fromItem))
   }
 
   def toItem(crypto: CryptoAlgebra, user: User): java.util.Map[String, AttributeValue] = {
@@ -108,7 +109,7 @@ object DynamoDBUserRepository {
     item
   }
 
-  def fromItem(item: java.util.Map[String, AttributeValue]): User =
+  def fromItem(item: java.util.Map[String, AttributeValue]): IO[User] = IO {
     User(
       id = item.get(USER_ID).getS,
       userName = item.get(USER_NAME).getS,
@@ -120,12 +121,14 @@ object DynamoDBUserRepository {
       email = if (item.get(EMAIL) == null) None else Option(item.get(EMAIL).getS),
       isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL
     )
+  }
 }
 
 class DynamoDBUserRepository private[repository] (
     userTableName: String,
     val dynamoDBHelper: DynamoDBHelper,
-    crypto: CryptoAlgebra)
+    serialize: User => java.util.Map[String, AttributeValue],
+    deserialize: java.util.Map[String, AttributeValue] => IO[User])
     extends UserRepository
     with Monitored {
 
@@ -140,7 +143,11 @@ class DynamoDBUserRepository private[repository] (
       key.put(USER_ID, new AttributeValue(userId))
       val request = new GetItemRequest().withTableName(userTableName).withKey(key)
 
-      dynamoDBHelper.getItem(request).map(result => Option(result.getItem).map(fromItem))
+      OptionT
+        .liftF(dynamoDBHelper.getItem(request))
+        .subflatMap(r => Option(r.getItem))
+        .semiflatMap(item => deserialize(item))
+        .value
     }
 
   def getUsers(
@@ -165,13 +172,13 @@ class DynamoDBUserRepository private[repository] (
       new BatchGetItemRequest().withRequestItems(request)
     }
 
-    def parseUsers(result: BatchGetItemResult): List[User] = {
+    def parseUsers(result: BatchGetItemResult): IO[List[User]] = {
       val userAttributes = result.getResponses.asScala.get(userTableName)
       userAttributes match {
         case None =>
-          List()
+          IO.pure(List())
         case Some(items) =>
-          items.asScala.toList.map(fromItem)
+          items.asScala.toList.map(fromItem).sequence
       }
     }
 
@@ -195,14 +202,20 @@ class DynamoDBUserRepository private[repository] (
 
       val batchGets = batches.map(toBatchGetItemRequest)
 
-      // run the batches in parallel
       val batchGetIo = batchGets.map(dynamoDBHelper.batchGetItem)
 
-      val allBatches: IO[List[BatchGetItemResult]] = batchGetIo.sequence
+      // run the batches in parallel
+      val allBatches: IO[List[BatchGetItemResult]] = batchGetIo.parSequence
 
-      val allUsers = allBatches.map { batchGetItemResults =>
-        batchGetItemResults.flatMap(parseUsers)
-      }
+      val allUsers = for {
+        batches <- allBatches
+        x <- batches.foldLeft(IO(List.empty[User])) { (acc, cur) =>
+          for {
+            u <- parseUsers(cur)
+            a <- acc
+          } yield u ++ a
+        }
+      } yield x
 
       allUsers.map { list =>
         val lastEvaluatedId =
@@ -230,17 +243,15 @@ class DynamoDBUserRepository private[repository] (
         .withExpressionAttributeValues(expressionAttributeValues)
         .withKeyConditionExpression(keyConditionExpression)
 
-      dynamoDBHelper.query(queryRequest).map { results =>
-        results.getItems.asScala.headOption.map(fromItem)
+      dynamoDBHelper.query(queryRequest).flatMap { results =>
+        results.getItems.asScala.headOption.map(deserialize).sequence
       }
     }
 
   def save(user: User): IO[User] = //For testing purposes
     monitor("repo.User.save") {
       log.info(s"Saving user id: ${user.id} name: ${user.userName}.")
-
-      val item = toItem(crypto, user)
-      val request = new PutItemRequest().withTableName(userTableName).withItem(item)
+      val request = new PutItemRequest().withTableName(userTableName).withItem(serialize(user))
       dynamoDBHelper.putItem(request).map(_ => user)
     }
 }

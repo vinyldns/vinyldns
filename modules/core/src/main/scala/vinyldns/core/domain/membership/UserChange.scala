@@ -15,43 +15,65 @@
  */
 
 package vinyldns.core.domain.membership
-import java.util.UUID
-
 import org.joda.time.DateTime
-import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.UserChangeType.UserChangeType
 
-object UserChangeType extends Enumeration {
-  type UserChangeType = Value
+sealed abstract class UserChangeType(val value: String)
+object UserChangeType {
+  case object Create extends UserChangeType("create")
+  case object Update extends UserChangeType("delete")
 
-  // Note: we do not have Delete yet, Update would be for locking and unlocking users
-  val Create, Update = Value
+  case class UnknownUserChangeType(value: String) extends Throwable(s"Unknown change type $value")
+
+  def fromString(value: String): Either[UnknownUserChangeType, UserChangeType] =
+    value.toLowerCase match {
+      case UserChangeType.Create.value => Right(Create)
+      case UserChangeType.Update.value => Right(Update)
+      case other => Left(UnknownUserChangeType(other))
+    }
+
+  def fromChange[A <: UserChange](change: A): UserChangeType = change match {
+    case CreateUser(_, _, _, _) => Create
+    case UpdateUser(_, _, _, _, _) => Update
+  }
 }
 
-final case class UserChange(
-    newUser: User,
-    changeType: UserChangeType,
-    madeByUserId: String,
-    oldUser: Option[User],
+/**
+  * The nice thing about this is that we cannot have a UserChange in an invalid state.  For example,
+  * we cannot have a UserChange(ChangeType.Update, oldUser=None)
+  */
+sealed trait UserChange {
+  def id: String
+  def newUser: User
+  def madeByUserId: String
+  def created: DateTime
+}
+final case class CreateUser(id: String, newUser: User, madeByUserId: String, created: DateTime)
+    extends UserChange
+
+final case class UpdateUser(
     id: String,
-    created: DateTime)
+    newUser: User,
+    madeByUserId: String,
+    created: DateTime,
+    oldUser: User)
+    extends UserChange
 
 object UserChange {
-  def forAdd(user: User, authPrincipal: AuthPrincipal): UserChange =
-    UserChange(
-      user,
-      UserChangeType.Create,
-      authPrincipal.userId,
-      None,
-      UUID.randomUUID().toString,
-      DateTime.now)
 
-  def forUpdate(newUser: User, oldUser: User, authPrincipal: AuthPrincipal): UserChange =
-    UserChange(
-      newUser,
-      UserChangeType.Update,
-      authPrincipal.userId,
-      Some(oldUser),
-      UUID.randomUUID().toString,
-      DateTime.now)
+  def apply(
+      id: String,
+      newUser: User,
+      madeByUserId: String,
+      created: DateTime,
+      oldUser: Option[User],
+      changeType: UserChangeType): Either[IllegalArgumentException, UserChange] =
+    changeType match {
+      case UserChangeType.Create =>
+        Right(CreateUser(id, newUser, madeByUserId, created))
+      case UserChangeType.Update =>
+        oldUser
+          .map(u => Right(UpdateUser(id, newUser, madeByUserId, created, u)))
+          .getOrElse(Left(new IllegalArgumentException(
+            s"Unable to create update user change, old user is not defined")))
+    }
 }

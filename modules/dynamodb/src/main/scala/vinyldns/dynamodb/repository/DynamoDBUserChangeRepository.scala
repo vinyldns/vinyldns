@@ -18,22 +18,22 @@ package vinyldns.dynamodb.repository
 import java.util
 import java.util.HashMap
 
+import cats.data.OptionT
 import cats.effect.IO
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.membership.{UserChange, UserChangeRepository, UserChangeType}
+import vinyldns.core.domain.membership._
 import vinyldns.core.route.Monitored
-import vinyldns.dynamodb.repository.DynamoDBUserRepository.CREATED
 
 object DynamoDBUserChangeRepository {
 
   val USER_CHANGE_ID: String = "change_id"
   val USER_ID: String = "user_id"
   val MADE_BY_ID: String = "made_by_id"
-  val TIMESTAMP: String = "created"
+  val CREATED: String = "created"
   val USER_NAME: String = "username"
   val CHANGE_TYPE: String = "change_type"
   val NEW_USER: String = "new_user"
@@ -43,19 +43,20 @@ object DynamoDBUserChangeRepository {
     new AttributeDefinition(USER_CHANGE_ID, "S")
   )
 
-  final case class Settings(tableName: String, provisionedReads: Long, provisionedWrites: Long)
-
-  def fromItem(item: java.util.Map[String, AttributeValue]): UserChange =
-    UserChange(
-      newUser = DynamoDBUserRepository.fromItem(item.get(NEW_USER).getM),
-      changeType = UserChangeType.withName(item.get(CHANGE_TYPE).getS),
-      madeByUserId = item.get(MADE_BY_ID).getS,
-      oldUser = Option(item.get(OLD_USER))
-        .map(av => av.getM)
-        .map(attrs => DynamoDBUserRepository.fromItem(attrs)),
-      id = item.get(USER_CHANGE_ID).getS,
-      created = new DateTime(item.get(CREATED).getN.toLong)
-    )
+  // Note: This should be an Either; however pulling everything into an Either is a big refactoring
+  def fromItem(item: java.util.Map[String, AttributeValue]): IO[UserChange] =
+    for {
+      c <- IO(item.get(CHANGE_TYPE).getS)
+      changeType <- IO.fromEither(UserChangeType.fromString(c))
+      newUser <- IO(item.get(NEW_USER).getM).flatMap(m => DynamoDBUserRepository.fromItem(m))
+      oldUser <- OptionT(IO(Option(item.get(OLD_USER)).map(_.getM)))
+        .semiflatMap(DynamoDBUserRepository.fromItem)
+        .value
+      madeByUserId <- IO(item.get(MADE_BY_ID).getS)
+      id <- IO(item.get(USER_CHANGE_ID).getS)
+      created <- IO(new DateTime(item.get(CREATED).getN.toLong))
+      change <- IO.fromEither(UserChange(id, newUser, madeByUserId, created, oldUser, changeType))
+    } yield change
 
   def toItem(crypto: CryptoAlgebra, change: UserChange): java.util.Map[String, AttributeValue] = {
     val item = new util.HashMap[String, AttributeValue]()
@@ -63,13 +64,18 @@ object DynamoDBUserChangeRepository {
     item.put(USER_ID, new AttributeValue(change.newUser.id))
     item.put(USER_NAME, new AttributeValue(change.newUser.userName))
     item.put(MADE_BY_ID, new AttributeValue(change.madeByUserId))
-    item.put(CHANGE_TYPE, new AttributeValue(change.changeType.toString))
+    item.put(CHANGE_TYPE, new AttributeValue(UserChangeType.fromChange(change).value))
     item.put(CREATED, new AttributeValue().withN(change.created.getMillis.toString))
     item.put(
       NEW_USER,
       new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, change.newUser)))
-    change.oldUser.foreach { oldUser =>
-      item.put(OLD_USER, new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, oldUser)))
+
+    change match {
+      case UpdateUser(_, _, _, _, oldUser) =>
+        item.put(
+          OLD_USER,
+          new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, oldUser)))
+      case _ => ()
     }
     item
   }
@@ -94,7 +100,7 @@ object DynamoDBUserChangeRepository {
       )
 
     val serialize: UserChange => java.util.Map[String, AttributeValue] = toItem(crypto, _)
-    val deserialize: java.util.Map[String, AttributeValue] => UserChange = fromItem
+    val deserialize: java.util.Map[String, AttributeValue] => IO[UserChange] = fromItem
     setup.as(
       new DynamoDBUserChangeRepository(config.tableName, dynamoDBHelper, serialize, deserialize))
   }
@@ -104,7 +110,7 @@ class DynamoDBUserChangeRepository private[repository] (
     tableName: String,
     val dynamoDBHelper: DynamoDBHelper,
     serialize: UserChange => java.util.Map[String, AttributeValue],
-    deserialize: java.util.Map[String, AttributeValue] => UserChange)
+    deserialize: java.util.Map[String, AttributeValue] => IO[UserChange])
     extends UserChangeRepository
     with Monitored {
   import DynamoDBUserChangeRepository._
@@ -125,8 +131,11 @@ class DynamoDBUserChangeRepository private[repository] (
       key.put(USER_CHANGE_ID, new AttributeValue(changeId))
       val request = new GetItemRequest().withTableName(tableName).withKey(key)
 
-      dynamoDBHelper.getItem(request).map { result =>
-        Option(result.getItem).map(attrs => deserialize(attrs))
-      }
+      // OptionT is a convenience wrapper around IO[Option[A]]
+      OptionT
+        .liftF(dynamoDBHelper.getItem(request))
+        .subflatMap(r => Option(r.getItem))
+        .semiflatMap(item => deserialize(item))
+        .value
     }
 }
