@@ -78,7 +78,7 @@ Things to note:
 1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
 2. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
 3. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
-4. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the bin/.env file before execution.
+4. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the bin/.env file before execution. You'll need to also modify your application.conf and uncomment the `play.filters.disabled` line. You can read more about this at https://www.playframework.com/documentation/2.6.x/AllowedHostsFilter
 5. A similar docker/.env can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
 
 For details regarding setup and configuration of the dev environment, see the [Developer Guide](DEVELOPER_GUIDE.md).
