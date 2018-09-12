@@ -32,8 +32,8 @@ object UserChangeType {
     }
 
   def fromChange[A <: UserChange](change: A): UserChangeType = change match {
-    case CreateUser(_, _, _, _) => Create
-    case UpdateUser(_, _, _, _, _) => Update
+    case UserChange.CreateUser(_, _, _, _) => Create
+    case UserChange.UpdateUser(_, _, _, _, _) => Update
   }
 }
 
@@ -47,18 +47,16 @@ sealed trait UserChange {
   def madeByUserId: String
   def created: DateTime
 }
-final case class CreateUser(id: String, newUser: User, madeByUserId: String, created: DateTime)
-    extends UserChange
-
-final case class UpdateUser(
-    id: String,
-    newUser: User,
-    madeByUserId: String,
-    created: DateTime,
-    oldUser: User)
-    extends UserChange
-
 object UserChange {
+  final case class CreateUser(id: String, newUser: User, madeByUserId: String, created: DateTime)
+      extends UserChange
+  final case class UpdateUser(
+      id: String,
+      newUser: User,
+      madeByUserId: String,
+      created: DateTime,
+      oldUser: User)
+      extends UserChange
 
   def apply(
       id: String,

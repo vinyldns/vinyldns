@@ -27,12 +27,12 @@ class UserChangeSpec extends WordSpec with Matchers with EitherMatchers with Eit
   "apply" should {
     "succeed for CreateUser" in {
       val result = UserChange("foo", newUser, "bar", currentDate, None, UserChangeType.Create)
-      result shouldBe Right(CreateUser("foo", newUser, "bar", currentDate))
+      result shouldBe Right(UserChange.CreateUser("foo", newUser, "bar", currentDate))
     }
     "succeed for UpdateUser" in {
       val result =
         UserChange("foo", newUser, "bar", currentDate, Some(newUser), UserChangeType.Update)
-      result shouldBe Right(UpdateUser("foo", newUser, "bar", currentDate, newUser))
+      result shouldBe Right(UserChange.UpdateUser("foo", newUser, "bar", currentDate, newUser))
     }
     "fail for invalid parameters" in {
       val result = UserChange("foo", newUser, "bar", currentDate, None, UserChangeType.Update)

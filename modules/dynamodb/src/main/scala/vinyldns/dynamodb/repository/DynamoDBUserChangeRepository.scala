@@ -72,7 +72,7 @@ object DynamoDBUserChangeRepository {
       new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, change.newUser)))
 
     change match {
-      case UpdateUser(_, _, _, _, oldUser) =>
+      case UserChange.UpdateUser(_, _, _, _, oldUser) =>
         item.put(
           OLD_USER,
           new AttributeValue().withM(DynamoDBUserRepository.toItem(crypto, oldUser)))

@@ -20,7 +20,7 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{CreateUser, UpdateUser, User}
+import vinyldns.core.domain.membership.{User, UserChange}
 
 class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
@@ -54,7 +54,7 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   "DynamoDBUserChangeRepository" should {
     "save a user change" in {
       val auth = AuthPrincipal(testUser, Seq.empty)
-      val c = CreateUser("foo", testUser, auth.userId, DateTime.now)
+      val c = UserChange.CreateUser("foo", testUser, auth.userId, DateTime.now)
 
       val t = for {
         _ <- repo.save(c)
@@ -67,7 +67,7 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     "save a change for a modified user" in {
       val auth = AuthPrincipal(testUser, Seq.empty)
       val updated = testUser.copy(userName = testUser.userName + "-updated")
-      val c = UpdateUser("foo", updated, auth.userId, DateTime.now, testUser)
+      val c = UserChange.UpdateUser("foo", updated, auth.userId, DateTime.now, testUser)
 
       val t = for {
         _ <- repo.save(c)
