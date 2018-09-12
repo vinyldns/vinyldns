@@ -7,7 +7,14 @@
 # by default on port 9000
 ######################################################################
 
+
 DIR=$( cd $(dirname $0) ; pwd -P )
+
+set -a # Required in order to source docker/.env
+# Source customizable env files
+source .env
+source "$DIR"/../docker/.env
+
 WORK_DIR="$DIR"/../target/scala-2.12
 mkdir -p "$WORK_DIR"
 
@@ -26,13 +33,12 @@ cp -f "$DIR"/../modules/api/target/scala-2.12/vinyldns.jar "$WORK_DIR"/docker/ap
 echo "Starting API server and all dependencies in the background..."
 docker-compose -f "$WORK_DIR"/docker/docker-compose-func-test.yml --project-directory "$WORK_DIR"/docker up --build -d api
 
-VINYLDNS_URL="http://localhost:9000"
-echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
+echo "Waiting for API to be ready at ${VINYLDNS_API_URL} ..."
 DATA=""
 RETRY=40
 while [ "$RETRY" -gt 0 ]
 do
-    DATA=$(curl -I -s "${VINYLDNS_URL}/ping" -o /dev/null -w "%{http_code}")
+    DATA=$(curl -I -s "${VINYLDNS_API_URL}/ping" -o /dev/null -w "%{http_code}")
     if [ $? -eq 0 ]
     then
         echo "Succeeded in connecting to VinylDNS API!"

@@ -2,15 +2,16 @@ version: "3.0"
 services:
   mysql:
     image: "mysql:5.7"
+    env_file:
+      .env
     container_name: "vinyldns-mysql"
-    environment:
-      - MYSQL_ROOT_PASSWORD=pass # do not use quotes around the environment variables!!!
-      - MYSQL_ROOT_HOST=% # this is required as mysql is currently locked down to localhost
     ports:
       - "19002:3306"
 
   dynamodb-local:
     image: "cnadiminti/dynamodb-local:2017-02-16"
+    env_file:
+      .env
     container_name: "vinyldns-dynamodb"
     ports:
       - "19000:8000"
@@ -18,6 +19,8 @@ services:
 
   bind9:
     image: "vinyldns/bind9:0.0.1"
+    env_file:
+      .env
     container_name: "vinyldns-bind9"
     ports:
       - "19001:53/udp"
@@ -36,11 +39,11 @@ services:
 
   api:
     image: "vinyldns/api:0.8.0"
-    environment:
-      - REST_PORT=9000
+    env_file:
+      .env
     container_name: "vinyldns-api"
     ports:
-      - "9000:9000"
+      - "${REST_PORT}:${REST_PORT}"
     depends_on:
       - mysql
       - bind9
@@ -49,8 +52,10 @@ services:
 
   portal:
     image: "vinyldns/portal:0.8.0"
+    env_file:
+      .env
     ports:
-      - "9001:9001"
+      - "${PORTAL_PORT}:${PORTAL_PORT}"
     container_name: "vinyldns-portal"
     volumes:
       - ./portal/application.conf:/opt/docker/conf/application.conf

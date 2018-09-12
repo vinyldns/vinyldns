@@ -7,16 +7,20 @@
 
 DIR=$( cd $(dirname $0) ; pwd -P )
 
+set -a # Required in order to source docker/.env
+# Source customizable env files
+source .env
+source "$DIR"/../docker/.env
+
 echo "Starting portal server and all dependencies in the background..."
 docker-compose -f "$DIR"/../docker/docker-compose-build.yml up -d
 
-VINYLDNS_URL="http://localhost:9000"
-echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
+echo "Waiting for API to be ready at ${VINYLDNS_API_URL} ..."
 DATA=""
 RETRY=40
 while [ "$RETRY" -gt 0 ]
 do
-    DATA=$(curl -I -s "${VINYLDNS_URL}/ping" -o /dev/null -w "%{http_code}")
+    DATA=$(curl -I -s "${VINYLDNS_API_URL}/ping" -o /dev/null -w "%{http_code}")
     if [ $? -eq 0 ]
     then
         echo "Succeeded in connecting to VinylDNS API!"
@@ -35,13 +39,12 @@ do
     fi
 done
 
-VINYLDNS_URL="http://localhost:9001"
-echo "Waiting for portal to be ready at ${VINYLDNS_URL} ..."
+echo "Waiting for portal to be ready at ${VINYLDNS_PORTAL_URL} ..."
 DATA=""
 RETRY=40
 while [ "$RETRY" -gt 0 ]
 do
-    DATA=$(curl -I -s "${VINYLDNS_URL}" -o /dev/null -w "%{http_code}")
+    DATA=$(curl -I -s "${VINYLDNS_PORTAL_URL}" -o /dev/null -w "%{http_code}")
     if [ $? -eq 0 ]
     then
         echo "Succeeded in connecting to VinylDNS portal!"
