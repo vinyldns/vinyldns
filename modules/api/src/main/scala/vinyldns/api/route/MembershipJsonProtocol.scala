@@ -23,7 +23,6 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s._
 import vinyldns.api.domain.membership._
-import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{Group, GroupChangeType, GroupStatus, LockStatus}
 
 object MembershipJsonProtocol {
@@ -40,7 +39,6 @@ object MembershipJsonProtocol {
       description: Option[String],
       members: Set[UserInfo],
       admins: Set[UserInfo])
-  final case class UpdateUserInput(id: String, lockStatus: LockStatus)
 }
 
 /* Defines the JSON serialization to support the Membership Routes */
