@@ -758,11 +758,12 @@ class MembershipServiceSpec
           signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
           memberGroupIds = Seq.empty)
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
 
-        awaitResultOf(
-          underTest
-            .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
-            .value)
+        underTest
+          .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
+          .value
+          .unsafeRunSync()
 
         val userCaptor = ArgumentCaptor.forClass(classOf[User])
 
@@ -778,11 +779,13 @@ class MembershipServiceSpec
           signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
           memberGroupIds = Seq.empty)
         doReturn(IO.pure(Some(lockedUser))).when(mockUserRepo).getUser(lockedUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
 
-        awaitResultOf(
-          underTest
-            .updateUserLockStatus(lockedUser.id, LockStatus.Unlocked, superUserAuth)
-            .value)
+        val something = underTest
+          .updateUserLockStatus(lockedUser.id, LockStatus.Unlocked, superUserAuth)
+          .value
+
+        something.unsafeRunSync()
 
         val userCaptor = ArgumentCaptor.forClass(classOf[User])
 
