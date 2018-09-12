@@ -35,12 +35,9 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
 
   private[repository] val ZONE_ID = "zone_id"
   private[repository] val CHANGE_ID = "change_id"
-  private[repository] val STATUS = "status"
   private[repository] val BLOB = "blob"
   private[repository] val CREATED = "created"
 
-  private val ZONE_ID_STATUS_INDEX_NAME = "zone_id_status_index"
-  private val STATUS_INDEX_NAME = "status_zone_id_index"
   private val ZONE_ID_CREATED_INDEX = "zone_id_created_index"
 
   def apply(
@@ -58,25 +55,10 @@ object DynamoDBZoneChangeRepository extends ProtobufConversions {
     val tableAttributes = Seq(
       new AttributeDefinition(CHANGE_ID, "S"),
       new AttributeDefinition(ZONE_ID, "S"),
-      new AttributeDefinition(STATUS, "S"),
       new AttributeDefinition(CREATED, "N")
     )
 
     val secondaryIndexes = Seq(
-      new GlobalSecondaryIndex()
-        .withIndexName(ZONE_ID_STATUS_INDEX_NAME)
-        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-        .withKeySchema(
-          new KeySchemaElement(ZONE_ID, KeyType.HASH),
-          new KeySchemaElement(STATUS, KeyType.RANGE))
-        .withProjection(new Projection().withProjectionType("ALL")),
-      new GlobalSecondaryIndex()
-        .withIndexName(STATUS_INDEX_NAME)
-        .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-        .withKeySchema(
-          new KeySchemaElement(STATUS, KeyType.HASH),
-          new KeySchemaElement(ZONE_ID, KeyType.RANGE))
-        .withProjection(new Projection().withProjectionType("KEYS_ONLY")),
       new GlobalSecondaryIndex()
         .withIndexName(ZONE_ID_CREATED_INDEX)
         .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
@@ -184,7 +166,6 @@ class DynamoDBZoneChangeRepository private[repository] (
 
     item.put(CHANGE_ID, new AttributeValue(zoneChange.id))
     item.put(ZONE_ID, new AttributeValue(zoneChange.zoneId))
-    item.put(STATUS, new AttributeValue(zoneChange.status.toString))
     item.put(BLOB, new AttributeValue().withB(bb))
     item.put(CREATED, new AttributeValue().withN(zoneChange.created.getMillis.toString))
     item
