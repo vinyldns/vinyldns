@@ -66,7 +66,7 @@ object Boot extends App {
       banner <- vinyldnsBanner()
       crypto <- IO(Crypto.instance) // load crypto
       // TODO datastore loading will not be hardcoded by type here
-      mySqlDataStore <- new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig)
+      mySqlDataStore <- new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig, crypto)
       zoneRepo <- IO.fromEither(
         mySqlDataStore
           .get[ZoneRepository](RepositoryName.zone)

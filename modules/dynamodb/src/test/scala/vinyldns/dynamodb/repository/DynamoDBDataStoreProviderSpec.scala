@@ -19,7 +19,12 @@ package vinyldns.dynamodb.repository
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError, RepositoriesConfig, RepositoryName}
+import vinyldns.core.repository.{
+  DataStoreConfig,
+  DataStoreStartupError,
+  RepositoriesConfig,
+  RepositoryName
+}
 import vinyldns.dynamodb.DynamoTestConfig
 
 class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {

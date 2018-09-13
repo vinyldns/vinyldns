@@ -116,9 +116,9 @@ object DynamoDBUserRepository {
       created = new DateTime(item.get(CREATED).getN.toLong),
       accessKey = item.get(ACCESS_KEY).getS,
       secretKey = item.get(SECRET_KEY).getS,
-      firstName = Option(item.get(FIRST_NAME)).map(_.getS),
-      lastName = Option(item.get(LAST_NAME)).map(_.getS),
-      email = Option(item.get(EMAIL)).map(_.getS),
+      firstName = Option(item.get(FIRST_NAME)).flatMap(fn => Option(fn.getS)),
+      lastName = Option(item.get(LAST_NAME)).flatMap(ln => Option(ln.getS)),
+      email = Option(item.get(EMAIL)).flatMap(e => Option(e.getS)),
       isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL
     )
   }

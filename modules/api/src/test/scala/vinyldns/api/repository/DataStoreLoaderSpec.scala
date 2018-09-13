@@ -21,7 +21,12 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
-import vinyldns.core.domain.membership.{GroupChangeRepository, GroupRepository, MembershipRepository, UserRepository}
+import vinyldns.core.domain.membership.{
+  GroupChangeRepository,
+  GroupRepository,
+  MembershipRepository,
+  UserRepository
+}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
@@ -92,14 +97,17 @@ class DataStoreLoaderSpec
 
     "throw an exception if getValidatedConfigs fails" in {
       val loadCall =
-        DataStoreLoader.loadAll(List(goodConfig.copy(repositories = allDisabledReposConfig)), crypto)
+        DataStoreLoader.loadAll(
+          List(goodConfig.copy(repositories = allDisabledReposConfig)),
+          crypto)
       val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
       thrown.msg should include("Config validation error")
     }
 
     "throw an exception if load fails" in {
       val loadCall = DataStoreLoader.loadAll(
-        List(goodConfig.copy(className = "vinyldns.api.repository.FailDataStoreProvider")), crypto)
+        List(goodConfig.copy(className = "vinyldns.api.repository.FailDataStoreProvider")),
+        crypto)
       val thrown = the[RuntimeException] thrownBy loadCall.unsafeRunSync()
       thrown.getMessage should include("ruh roh")
     }

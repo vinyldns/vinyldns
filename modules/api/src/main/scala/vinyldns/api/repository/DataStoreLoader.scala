@@ -21,7 +21,12 @@ import cats.effect.IO
 import cats.implicits._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{GroupChangeRepository, GroupRepository, MembershipRepository, UserRepository}
+import vinyldns.core.domain.membership.{
+  GroupChangeRepository,
+  GroupRepository,
+  MembershipRepository,
+  UserRepository
+}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository._
