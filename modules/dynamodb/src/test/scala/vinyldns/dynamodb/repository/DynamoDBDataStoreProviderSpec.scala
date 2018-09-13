@@ -18,17 +18,14 @@ package vinyldns.dynamodb.repository
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.core.repository.{
-  DataStoreConfig,
-  DataStoreStartupError,
-  RepositoriesConfig,
-  RepositoryName
-}
+import vinyldns.core.crypto.NoOpCrypto
+import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError, RepositoriesConfig, RepositoryName}
 import vinyldns.dynamodb.DynamoTestConfig
 
 class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
 
-  val underTest = new DynamoDBDataStoreProvider()
+  private val underTest = new DynamoDBDataStoreProvider()
+  private val crypto = new NoOpCrypto()
 
   "load" should {
     // Note: success here will actually startup the repos, just testing failure in unit tests
@@ -54,7 +51,7 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
       val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
 
       a[pureconfig.error.ConfigReaderException[DynamoDBDataStoreSettings]] should be thrownBy underTest
-        .load(badSettings)
+        .load(badSettings, crypto)
         .unsafeRunSync()
     }
   }

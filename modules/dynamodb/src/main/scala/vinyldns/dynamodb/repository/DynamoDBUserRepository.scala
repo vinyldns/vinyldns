@@ -116,9 +116,9 @@ object DynamoDBUserRepository {
       created = new DateTime(item.get(CREATED).getN.toLong),
       accessKey = item.get(ACCESS_KEY).getS,
       secretKey = item.get(SECRET_KEY).getS,
-      firstName = if (item.get(FIRST_NAME) == null) None else Option(item.get(FIRST_NAME).getS),
-      lastName = if (item.get(LAST_NAME) == null) None else Option(item.get(LAST_NAME).getS),
-      email = if (item.get(EMAIL) == null) None else Option(item.get(EMAIL).getS),
+      firstName = Option(item.get(FIRST_NAME)).map(_.getS),
+      lastName = Option(item.get(LAST_NAME)).map(_.getS),
+      email = Option(item.get(EMAIL)).map(_.getS),
       isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL
     )
   }
@@ -211,9 +211,9 @@ class DynamoDBUserRepository private[repository] (
         batches <- allBatches
         x <- batches.foldLeft(IO(List.empty[User])) { (acc, cur) =>
           for {
-            u <- parseUsers(cur)
-            a <- acc
-          } yield u ++ a
+            users <- parseUsers(cur)
+            accumulated <- acc
+          } yield users ++ accumulated
         }
       } yield x
 

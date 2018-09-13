@@ -19,6 +19,7 @@ package vinyldns.dynamodb.repository
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
 import com.typesafe.config.{Config, ConfigFactory}
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
@@ -33,9 +34,10 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
   val dynamoDBConfig: DataStoreConfig =
     pureconfig.loadConfigOrThrow[DataStoreConfig](config, "dynamodb")
   val provider: DynamoDBDataStoreProvider = new DynamoDBDataStoreProvider()
+  val crypto: CryptoAlgebra = new NoOpCrypto()
 
   logger.info("Loading all dynamodb tables in DynamoDBDataStoreProviderSpec")
-  val dataStore: DataStore = provider.load(dynamoDBConfig).unsafeRunSync()
+  val dataStore: DataStore = provider.load(dynamoDBConfig, crypto).unsafeRunSync()
   logger.info("DynamoDBDataStoreProviderSpec load complete")
 
   def setup(): Unit = ()

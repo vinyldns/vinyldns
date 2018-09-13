@@ -21,6 +21,7 @@ import cats.effect.IO
 import org.slf4j.LoggerFactory
 import vinyldns.core.repository._
 import pureconfig.module.catseffect.loadConfigF
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
@@ -38,12 +39,12 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
   private val implementedRepositories =
     Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange)
 
-  def load(config: DataStoreConfig): IO[DataStore] =
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
     for {
       settingsConfig <- loadConfigF[IO, DynamoDBDataStoreSettings](config.settings)
       _ <- validateRepos(config.repositories)
       repoConfigs <- loadRepoConfigs(config.repositories)
-      dataStore <- initializeRepos(settingsConfig, repoConfigs)
+      dataStore <- initializeRepos(settingsConfig, repoConfigs, crypto)
     } yield dataStore
 
   def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
@@ -73,7 +74,8 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
 
   def initializeRepos(
       dynamoConfig: DynamoDBDataStoreSettings,
-      repoSettings: Map[RepositoryName, DynamoDBRepositorySettings]): IO[DataStore] = {
+      repoSettings: Map[RepositoryName, DynamoDBRepositorySettings],
+      crypto: CryptoAlgebra): IO[DataStore] = {
 
     def initializeSingleRepo[T <: Repository](
         repoName: RepositoryName,
@@ -83,7 +85,9 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     }
 
     (
-      initializeSingleRepo[UserRepository](user, DynamoDBUserRepository.apply(_, dynamoConfig)),
+      initializeSingleRepo[UserRepository](
+        user,
+        DynamoDBUserRepository.apply(_, dynamoConfig, crypto)),
       initializeSingleRepo[GroupRepository](group, DynamoDBGroupRepository.apply(_, dynamoConfig)),
       initializeSingleRepo[MembershipRepository](
         membership,
