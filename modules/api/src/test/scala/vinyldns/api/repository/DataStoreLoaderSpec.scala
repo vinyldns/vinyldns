@@ -20,6 +20,7 @@ import cats.scalatest.{EitherMatchers, EitherValues}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mockito.MockitoSugar
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
   GroupRepository,
@@ -40,6 +41,7 @@ class DataStoreLoaderSpec
     with EitherValues
     with EitherMatchers {
 
+  val crypto: CryptoAlgebra = new NoOpCrypto()
   val placeholderConfig: Config = ConfigFactory.parseMap(Map[String, String]().asJava)
   val enabled = Some(placeholderConfig)
 
@@ -74,7 +76,7 @@ class DataStoreLoaderSpec
 
   "loadAll" should {
     "return a data accessor for valid config for one datastore" in {
-      val loadCall = DataStoreLoader.loadAll(List(goodConfig))
+      val loadCall = DataStoreLoader.loadAll(List(goodConfig), crypto)
       noException should be thrownBy loadCall.unsafeRunSync()
     }
 
@@ -89,20 +91,23 @@ class DataStoreLoaderSpec
         placeholderConfig,
         allDisabledReposConfig.copy(user = enabled))
 
-      val loadCall = DataStoreLoader.loadAll(List(config1, config2))
+      val loadCall = DataStoreLoader.loadAll(List(config1, config2), crypto)
       noException should be thrownBy loadCall.unsafeRunSync()
     }
 
     "throw an exception if getValidatedConfigs fails" in {
       val loadCall =
-        DataStoreLoader.loadAll(List(goodConfig.copy(repositories = allDisabledReposConfig)))
+        DataStoreLoader.loadAll(
+          List(goodConfig.copy(repositories = allDisabledReposConfig)),
+          crypto)
       val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
       thrown.msg should include("Config validation error")
     }
 
     "throw an exception if load fails" in {
       val loadCall = DataStoreLoader.loadAll(
-        List(goodConfig.copy(className = "vinyldns.api.repository.FailDataStoreProvider")))
+        List(goodConfig.copy(className = "vinyldns.api.repository.FailDataStoreProvider")),
+        crypto)
       val thrown = the[RuntimeException] thrownBy loadCall.unsafeRunSync()
       thrown.getMessage should include("ruh roh")
     }
@@ -142,26 +147,26 @@ class DataStoreLoaderSpec
 
   "load" should {
     "succeed if properly configured" in {
-      noException should be thrownBy DataStoreLoader.load(goodConfig).unsafeRunSync()
+      noException should be thrownBy DataStoreLoader.load(goodConfig, crypto).unsafeRunSync()
     }
     "fail if it cant find the class defined" in {
       val config = goodConfig.copy(className = "something.undefined")
 
-      val call = DataStoreLoader.load(config)
+      val call = DataStoreLoader.load(config, crypto)
       a[java.lang.ClassNotFoundException] should be thrownBy call.unsafeRunSync()
     }
     "fail the defined class is not a DataStoreProvider" in {
       val config =
         goodConfig.copy(className = "vinyldns.api.repository.DataStoreLoaderSpec")
 
-      val call = DataStoreLoader.load(config)
+      val call = DataStoreLoader.load(config, crypto)
       a[java.lang.ClassCastException] should be thrownBy call.unsafeRunSync()
     }
     "fail if the providers load method fails" in {
       val config =
         goodConfig.copy(className = "vinyldns.api.repository.FailDataStoreProvider")
 
-      val call = DataStoreLoader.load(config)
+      val call = DataStoreLoader.load(config, crypto)
       a[RuntimeException] should be thrownBy call.unsafeRunSync()
     }
   }

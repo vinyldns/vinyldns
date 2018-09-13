@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package vinyldns.core.repository
-
+package vinyldns.core.domain.membership
 import cats.effect.IO
-import vinyldns.core.crypto.CryptoAlgebra
 
-trait DataStoreProvider {
-  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore]
+trait UserChangeRepository {
+  def save(change: UserChange): IO[UserChange]
+  def get(changeId: String): IO[Option[UserChange]]
 }

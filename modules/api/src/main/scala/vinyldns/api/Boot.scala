@@ -64,9 +64,9 @@ object Boot extends App {
     // that if anything fails, the app does not start!
     for {
       banner <- vinyldnsBanner()
-      _ <- Crypto.loadCrypto(VinylDNSConfig.cryptoConfig) // load crypto
+      crypto <- IO(Crypto.instance) // load crypto
       // TODO datastore loading will not be hardcoded by type here
-      mySqlDataStore <- new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig)
+      mySqlDataStore <- new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig, crypto)
       zoneRepo <- IO.fromEither(
         mySqlDataStore
           .get[ZoneRepository](RepositoryName.zone)
@@ -78,7 +78,9 @@ object Boot extends App {
       // TODO this also will all be removed with dynamic loading
       userRepo <- DynamoDBUserRepository(
         VinylDNSConfig.usersStoreConfig,
-        VinylDNSConfig.dynamoConfig)
+        VinylDNSConfig.dynamoConfig,
+        crypto
+      )
       groupRepo <- DynamoDBGroupRepository(
         VinylDNSConfig.groupsStoreConfig,
         VinylDNSConfig.dynamoConfig)
