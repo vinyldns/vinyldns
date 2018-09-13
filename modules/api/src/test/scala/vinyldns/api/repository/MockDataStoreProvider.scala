@@ -17,6 +17,7 @@
 package vinyldns.api.repository
 import cats.effect.IO
 import org.scalatest.mockito.MockitoSugar
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
@@ -30,7 +31,7 @@ import vinyldns.core.repository.{DataStore, DataStoreConfig, DataStoreProvider}
 
 class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 
-  def load(config: DataStoreConfig): IO[DataStore] = {
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] = {
     val repoConfig = config.repositories
 
     val user = repoConfig.user.map(_ => mock[UserRepository])
@@ -62,6 +63,6 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 class AlternateMockDataStoreProvider extends MockDataStoreProvider
 
 class FailDataStoreProvider extends DataStoreProvider {
-  def load(config: DataStoreConfig): IO[DataStore] =
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
     IO.raiseError(new RuntimeException("ruh roh"))
 }

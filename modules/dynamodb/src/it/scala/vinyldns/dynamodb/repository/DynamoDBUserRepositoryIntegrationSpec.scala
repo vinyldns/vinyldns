@@ -18,6 +18,8 @@ package vinyldns.dynamodb.repository
 
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
+import com.typesafe.config.ConfigFactory
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.duration._
@@ -36,7 +38,7 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
   }
 
   def setup(): Unit = {
-    repo = DynamoDBUserRepository(tableConfig, dynamoIntegrationConfig).unsafeRunSync()
+    repo = DynamoDBUserRepository(tableConfig, dynamoIntegrationConfig, new NoOpCrypto(ConfigFactory.load())).unsafeRunSync()
 
     // Create all the items
     val results = users.map(repo.save(_)).parSequence

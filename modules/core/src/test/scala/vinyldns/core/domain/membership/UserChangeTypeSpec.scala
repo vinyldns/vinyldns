@@ -14,11 +14,20 @@
  * limitations under the License.
  */
 
-package vinyldns.core.repository
+package vinyldns.core.domain.membership
+import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.domain.membership.UserChangeType.UnknownUserChangeType
 
-import cats.effect.IO
-import vinyldns.core.crypto.CryptoAlgebra
-
-trait DataStoreProvider {
-  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore]
+class UserChangeTypeSpec extends WordSpec with Matchers {
+  "fromString" should {
+    "succeed for Create" in {
+      UserChangeType.fromString("create") shouldBe Right(UserChangeType.Create)
+    }
+    "succeed for Update" in {
+      UserChangeType.fromString("update") shouldBe Right(UserChangeType.Update)
+    }
+    "fail for unknown string" in {
+      UserChangeType.fromString("badness") shouldBe Left(UnknownUserChangeType("badness"))
+    }
+  }
 }

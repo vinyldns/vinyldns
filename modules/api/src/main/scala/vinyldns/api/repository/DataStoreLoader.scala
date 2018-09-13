@@ -19,6 +19,7 @@ package vinyldns.api.repository
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
@@ -34,18 +35,18 @@ import vinyldns.core.repository.RepositoryName._
 import scala.reflect.ClassTag
 
 object DataStoreLoader {
-  def loadAll(configs: List[DataStoreConfig]): IO[DataAccessor] =
+  def loadAll(configs: List[DataStoreConfig], crypto: CryptoAlgebra): IO[DataAccessor] =
     for {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs))
-      dataStores <- activeConfigs.map(load).parSequence
+      dataStores <- activeConfigs.map(load(_, crypto)).parSequence
       accessor <- IO.fromEither(generateAccessor(dataStores))
     } yield accessor
 
-  def load(config: DataStoreConfig): IO[(DataStoreConfig, DataStore)] =
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[(DataStoreConfig, DataStore)] =
     for {
       className <- IO.pure(config.className)
       provider <- IO(Class.forName(className).newInstance.asInstanceOf[DataStoreProvider])
-      dataStore <- provider.load(config)
+      dataStore <- provider.load(config, crypto)
     } yield (config, dataStore)
 
   /*

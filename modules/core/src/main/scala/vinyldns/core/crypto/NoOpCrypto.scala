@@ -16,7 +16,7 @@
 
 package vinyldns.core.crypto
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 
 /**
   * Provides a no op implementation of Crypto.  Does not actually do any encryption.
@@ -27,6 +27,9 @@ import com.typesafe.config.Config
   *               to dynamically load this Crypto implementation.  However, it is not used.
   */
 class NoOpCrypto(val config: Config) extends CryptoAlgebra {
+  def this() {
+    this(ConfigFactory.load())
+  }
   def encrypt(value: String): String = value
   def decrypt(value: String): String = value
 }

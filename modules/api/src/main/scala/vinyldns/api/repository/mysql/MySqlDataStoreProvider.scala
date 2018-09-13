@@ -26,6 +26,7 @@ import pureconfig.module.catseffect.loadConfigF
 import scala.collection.JavaConverters._
 import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.repository._
 
 class MySqlDataStoreProvider extends DataStoreProvider {
@@ -33,7 +34,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
   private val implementedRepositories = Set(RepositoryName.zone, RepositoryName.batchChange)
 
-  def load(config: DataStoreConfig): IO[DataStore] =
+  def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
     for {
       settingsConfig <- loadConfigF[IO, MySqlDataStoreSettings](config.settings)
       _ <- validateRepos(config.repositories)

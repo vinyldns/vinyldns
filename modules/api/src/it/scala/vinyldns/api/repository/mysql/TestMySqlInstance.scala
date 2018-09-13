@@ -17,13 +17,14 @@
 package vinyldns.api.repository.mysql
 
 import vinyldns.api.VinylDNSConfig
+import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.repository.{DataStore, RepositoryName}
 
 object TestMySqlInstance {
   lazy val instance: DataStore =
-    new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig).unsafeRunSync()
+    new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig, Crypto.instance).unsafeRunSync()
 
   lazy val zoneRepository: ZoneRepository =
     instance.get[ZoneRepository](RepositoryName.zone).get

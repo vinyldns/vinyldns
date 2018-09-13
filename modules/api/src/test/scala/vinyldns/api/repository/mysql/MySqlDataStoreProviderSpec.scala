@@ -18,10 +18,10 @@ package vinyldns.api.repository.mysql
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError}
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
-
   val mySqlConfig: Config = ConfigFactory.parseString(
     """
       |    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
@@ -49,6 +49,8 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
     pureconfig.loadConfigOrThrow[DataStoreConfig](mySqlConfig)
 
   val underTest = new MySqlDataStoreProvider()
+
+  val crypto: CryptoAlgebra = new NoOpCrypto()
 
   "validateRepos" should {
     "Return successfully if all configured repos are implemented" in {
@@ -94,7 +96,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
       val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
 
       a[pureconfig.error.ConfigReaderException[MySqlDataStoreSettings]] should be thrownBy underTest
-        .load(badSettings)
+        .load(badSettings, crypto)
         .unsafeRunSync()
     }
     "Fail if validateRepos fails" in {
@@ -103,7 +105,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
       val badSettings = dataStoreSettings.copy(repositories = badRepos)
 
       a[DataStoreStartupError] should be thrownBy underTest
-        .load(badSettings)
+        .load(badSettings, crypto)
         .unsafeRunSync()
     }
   }
