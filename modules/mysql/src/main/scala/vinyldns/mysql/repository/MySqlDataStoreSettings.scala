@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 case class MySqlDataStoreSettings(
     name: String,

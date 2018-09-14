@@ -29,7 +29,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.record._
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
-import vinyldns.api.repository.mysql.TestMySqlInstance
+import vinyldns.mysql.repository.TestMySqlInstance
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.Await

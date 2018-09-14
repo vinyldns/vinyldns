@@ -31,7 +31,7 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
-import vinyldns.api.repository.mysql.TestMySqlInstance
+import vinyldns.mysql.repository.TestMySqlInstance
 import vinyldns.core.domain.record._
 
 import scala.concurrent.Await

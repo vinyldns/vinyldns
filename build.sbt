@@ -194,7 +194,7 @@ lazy val api = (project in file("modules/api"))
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .dependsOn(core, dynamodb % "compile->compile;it->it")
+  .dependsOn(core, dynamodb % "compile->compile;it->it", mysql % "compile->compile;it->it")
 
 val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")
 lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
@@ -279,6 +279,24 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
     coverageHighlighting := true,
     parallelExecution in Test := true,
     parallelExecution in IntegrationTest := true
+  ).dependsOn(core % "compile->compile;test->test")
+
+lazy val mysql = (project in file("modules/mysql"))
+  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .configs(IntegrationTest)
+  .settings(sharedSettings)
+  .settings(headerSettings(IntegrationTest))
+  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
+  .settings(name := "mysql")
+  .settings(noPublishSettings)
+  .settings(testSettings)
+  .settings(Defaults.itSettings)
+  .settings(libraryDependencies ++= mysqlDependencies ++ commonTestDependencies.map(_ % "test, it"))
+  .settings(scalaStyleCompile ++ scalaStyleTest)
+  .settings(
+    coverageMinimum := 85,
+    coverageFailOnMinimum := true,
+    coverageHighlighting := true
   ).dependsOn(core % "compile->compile;test->test")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
@@ -439,19 +457,21 @@ addCommandAlias("validate", "; root/clean; " +
   "all core/headerCheck core/test:headerCheck " +
   "api/headerCheck api/test:headerCheck api/it:headerCheck " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
+  "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
   "portal/headerCheck portal/test:headerCheck; " +
   "all core/scalastyle core/test:scalastyle " +
   "api/scalastyle api/test:scalastyle api/it:scalastyle " +
-  "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle" +
-  "portal/scalastyle portal/test:scalastyle;" +
-  "portal/createJsHeaders;portal/checkJsHeaders;" +
-  "root/compile;root/test:compile;root/it:compile"
+  "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle " +
+  "mysql/scalastyle mysql/test:scalastyle mysql/it:scalastyle " +
+  "portal/scalastyle portal/test:scalastyle; " +
+  "portal/createJsHeaders;portal/checkJsHeaders; " +
+  "root/compile;root/test:compile;root/it:compile "
 )
 
 addCommandAlias("verify", "; project root; killDocker; " +
-  "project api; dockerComposeUp; project dynamodb; dockerComposeUp; " +
+  "project api; dockerComposeUp; project dynamodb; dockerComposeUp; project mysql; dockerComposeUp; " +
   "project root; coverage; " +
-  "all core/test dynamodb/test api/test dynamodb/it:test api/it:test portal/test; " +
+  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test; " +
   "project root; coverageReport; coverageAggregate; killDocker"
 )
 

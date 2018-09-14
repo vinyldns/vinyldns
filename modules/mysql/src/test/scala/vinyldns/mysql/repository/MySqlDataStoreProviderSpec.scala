@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
@@ -22,9 +22,9 @@ import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError}
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
-  val mySqlConfig: Config = ConfigFactory.parseString(
-    """
-      |    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+  val mySqlConfig: Config =
+    ConfigFactory.parseString("""
+      |    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
       |
       |    settings {
       |      name = "test-database"
@@ -75,7 +75,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
     "Fail if a required setting is not included" in {
       val badConfig = ConfigFactory.parseString(
         """
-          |    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+          |    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
           |
           |    settings {
           |      name = "test-database"

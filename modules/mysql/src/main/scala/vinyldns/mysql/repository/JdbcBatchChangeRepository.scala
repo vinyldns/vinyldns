@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import cats.data._
 import cats.effect._

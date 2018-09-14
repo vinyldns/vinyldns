@@ -37,7 +37,7 @@ import vinyldns.dynamodb.repository.{
   DynamoDBRepositorySettings,
   DynamoDBZoneChangeRepository
 }
-import vinyldns.api.repository.mysql.TestMySqlInstance
+import vinyldns.mysql.repository.TestMySqlInstance
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
   GroupRepository,

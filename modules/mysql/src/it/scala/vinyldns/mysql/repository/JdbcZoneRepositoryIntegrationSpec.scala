@@ -14,32 +14,73 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import java.util.UUID
 
 import cats.effect._
+import org.joda.time.DateTime
 import org.scalatest._
 import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.membership.User
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.membership.{Group, User}
 import vinyldns.core.domain.zone._
 
 class JdbcZoneRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
-    with DnsConversions
-    with VinylDNSTestData
-    with GroupTestData
-    with ResultHelpers
     with BeforeAndAfterEach
     with Matchers
     with ScalaFutures
     with Inspectors {
+
+  val okUser = User(
+    userName = "ok",
+    id = "ok",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "okAccessKey",
+    secretKey = "okSecretKey",
+    firstName = Some("ok"),
+    lastName = Some("ok"),
+    email = Some("test@test.com")
+  )
+
+  val okGroup: Group = Group(
+    "ok",
+    "test@test.com",
+    Some("a test group"),
+    memberIds = Set(okUser.id),
+    adminUserIds = Set(okUser.id),
+    created = DateTime.now.secondOfDay().roundFloorCopy())
+
+  val okZone: Zone = Zone("ok.zone.recordsets.", "test@test.com", adminGroupId = okGroup.id)
+
+  val dummyUser = User(
+    userName = "dummy",
+    id = "dummy",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "dummyAccessKey",
+    secretKey = "dummySecretKey")
+
+  val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
+    User(
+      userName = "name-dummy%03d".format(runner),
+      id = "dummy%03d".format(runner),
+      created = DateTime.now.secondOfDay().roundFloorCopy(),
+      accessKey = "dummy",
+      secretKey = "dummy"
+    )
+  }
+
+  val dummyGroup: Group = Group(
+    "dummy",
+    "test@test.com",
+    Some("has the dummy users"),
+    memberIds = listOfDummyUsers.map(_.id).toSet)
+
+  val dummyUserAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
 
   private var repo: ZoneRepository = _
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
@@ -466,8 +507,8 @@ class JdbcZoneRepositoryIntegrationSpec
       // we have 10 zones in test zones, let's page through and check
       val sorted = testZones.sortBy(_.name)
       val expectedFirstPage = sorted.take(4)
-      val expectedSecondPage = sorted.drop(4).take(4)
-      val expectedThirdPage = sorted.drop(8).take(4)
+      val expectedSecondPage = sorted.slice(4, 8)
+      val expectedThirdPage = sorted.slice(8, 12)
 
       whenReady(saveZones(testZones).unsafeToFuture(), timeout) { _ =>
         whenReady(
@@ -510,8 +551,8 @@ class JdbcZoneRepositoryIntegrationSpec
       val sorted = testZones.sortBy(_.name)
       val filtered = sorted.filter(_.adminGroupId == testZoneAdminGroupId)
       val expectedFirstPage = filtered.take(2)
-      val expectedSecondPage = filtered.drop(2).take(2)
-      val expectedThirdPage = filtered.drop(4).take(2)
+      val expectedSecondPage = filtered.slice(2, 4)
+      val expectedThirdPage = filtered.slice(4, 6)
 
       // make sure our auth is a member of the testZoneAdminGroup
       val auth = AuthPrincipal(dummyUser, Seq(testZoneAdminGroupId))

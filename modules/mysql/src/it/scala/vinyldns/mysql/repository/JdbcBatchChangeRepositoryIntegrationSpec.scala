@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import java.util.UUID
 
@@ -25,18 +25,13 @@ import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.record.{AAAAData, AData, RecordType}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.batch._
+import vinyldns.core.domain.membership.{Group, User}
 
 class JdbcBatchChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
-    with DnsConversions
-    with VinylDNSTestData
-    with GroupTestData
-    with ResultHelpers
     with BeforeAndAfterEach
     with Matchers
     with ScalaFutures
@@ -51,8 +46,50 @@ class JdbcBatchChangeRepositoryIntegrationSpec
 
   object TestData {
 
-    val okAuth: AuthPrincipal = okGroupAuth
-    val notAuth: AuthPrincipal = dummyUserAuth
+    val okUser = User(
+      userName = "ok",
+      id = "ok",
+      created = DateTime.now.secondOfDay().roundFloorCopy(),
+      accessKey = "okAccessKey",
+      secretKey = "okSecretKey",
+      firstName = Some("ok"),
+      lastName = Some("ok"),
+      email = Some("test@test.com")
+    )
+
+    val okGroup: Group = Group(
+      "ok",
+      "test@test.com",
+      Some("a test group"),
+      memberIds = Set(okUser.id),
+      adminUserIds = Set(okUser.id),
+      created = DateTime.now.secondOfDay().roundFloorCopy())
+
+    final val dummyUser = User(
+      userName = "dummy",
+      id = "dummy",
+      created = DateTime.now.secondOfDay().roundFloorCopy(),
+      accessKey = "dummyAccessKey",
+      secretKey = "dummySecretKey")
+
+    val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
+      User(
+        userName = "name-dummy%03d".format(runner),
+        id = "dummy%03d".format(runner),
+        created = DateTime.now.secondOfDay().roundFloorCopy(),
+        accessKey = "dummy",
+        secretKey = "dummy"
+      )
+    }
+
+    val dummyGroup: Group = Group(
+      "dummy",
+      "test@test.com",
+      Some("has the dummy users"),
+      memberIds = listOfDummyUsers.map(_.id).toSet)
+
+    val okAuth: AuthPrincipal = AuthPrincipal(okUser, Seq(okGroup.id))
+    val notAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
 
     val zoneID: String = "someZoneId"
     val zoneName: String = "somezone.com."

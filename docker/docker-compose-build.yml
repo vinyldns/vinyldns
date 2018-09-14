@@ -1,6 +1,6 @@
 version: "3.0"
 services:
-  mysql:
+  mysql-local:
     image: "mysql:5.7"
     env_file:
       .env
@@ -45,7 +45,7 @@ services:
     ports:
       - "${REST_PORT}:${REST_PORT}"
     depends_on:
-      - mysql
+      - mysql-local
       - bind9
       - elasticmq
       - dynamodb-local
