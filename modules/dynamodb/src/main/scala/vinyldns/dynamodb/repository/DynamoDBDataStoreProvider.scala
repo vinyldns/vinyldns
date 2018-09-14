@@ -103,7 +103,7 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
       IO.pure[Option[BatchChangeRepository]](None),
       initializeSingleRepo[UserChangeRepository](
         userChange,
-        DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto)),
+        DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto))
     ).parMapN { new DataStore(_, _, _, _, _, _, _, _, _, _) }
   }
 
