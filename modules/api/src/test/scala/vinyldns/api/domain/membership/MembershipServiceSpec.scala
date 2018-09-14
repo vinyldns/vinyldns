@@ -781,11 +781,10 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some(lockedUser))).when(mockUserRepo).getUser(lockedUser.id)
         doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
 
-        val something = underTest
+        underTest
           .updateUserLockStatus(lockedUser.id, LockStatus.Unlocked, superUserAuth)
           .value
-
-        something.unsafeRunSync()
+          .unsafeRunSync()
 
         val userCaptor = ArgumentCaptor.forClass(classOf[User])
 
