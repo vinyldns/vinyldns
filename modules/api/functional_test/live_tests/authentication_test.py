@@ -19,3 +19,11 @@ def test_request_fails_when_user_is_not_found():
     client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'unknownAccessKey', 'anyAccessSecretKey')
 
     client.list_batch_change_summaries(status=401)
+
+def test_request_succeeds_when_user_is_found_and_not_locked():
+    """
+    Test request success with Success (200) when user account is found and not locked
+    """
+    client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'okAccessKey', 'okSecretKey')
+
+    client.list_batch_change_summaries(status=200)

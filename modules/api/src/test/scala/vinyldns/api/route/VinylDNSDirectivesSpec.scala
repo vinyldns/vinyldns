@@ -18,7 +18,7 @@ package vinyldns.api.route
 
 import java.io.IOException
 
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import nl.grons.metrics.scala.{Histogram, Meter}
@@ -65,6 +65,26 @@ class VinylDNSDirectivesSpec
 
   override def beforeEach(): Unit =
     reset(mockLatency, mockErrors)
+
+  ".handleAuthenticateError" should {
+    "respond with Forbidden status if account is locked" in {
+      val trythis = handleAuthenticateError(AccountLocked("error"))
+
+      trythis shouldBe HttpResponse(
+        status = StatusCodes.Forbidden,
+        entity = HttpEntity(s"Authentication Failed: error")
+      )
+    }
+
+    "respond with Unauthorized status for other authentication errors" in {
+      val trythis = handleAuthenticateError(AuthRejected("error"))
+
+      trythis shouldBe HttpResponse(
+        status = StatusCodes.Unauthorized,
+        entity = HttpEntity(s"Authentication Failed: error")
+      )
+    }
+  }
 
   "The monitor directive" should {
     "record when completing an HttpResponse normally" in {

@@ -52,21 +52,25 @@ trait VinylDNSDirectives extends Directives {
             .flatMap {
               case Right(authPrincipal) ⇒
                 provide(authPrincipal)
-              case Left(AccountLocked(err)) ⇒
-                complete(
-                  HttpResponse(
-                    status = StatusCodes.Forbidden,
-                    entity = HttpEntity(s"Authentication Failed: $err")
-                  ))
               case Left(e) ⇒
-                complete(
-                  HttpResponse(
-                    status = StatusCodes.Unauthorized,
-                    entity = HttpEntity(s"Authentication Failed: $e")
-                  ))
+                complete(handleAuthenticateError(e))
             }
         }
       }
+    }
+
+  def handleAuthenticateError(error: VinylDNSAuthenticationError): HttpResponse =
+    error match {
+      case AccountLocked(err) =>
+        HttpResponse(
+          status = StatusCodes.Forbidden,
+          entity = HttpEntity(s"Authentication Failed: $err")
+        )
+      case e =>
+        HttpResponse(
+          status = StatusCodes.Unauthorized,
+          entity = HttpEntity(s"Authentication Failed: ${e.getMessage}")
+        )
     }
 
   /* Adds monitoring to an Endpoint.  The name will be surfaced in JMX */
