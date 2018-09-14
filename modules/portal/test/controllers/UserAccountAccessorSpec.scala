@@ -56,6 +56,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
       mockRepo.save(any[User]).returns(IO.pure(user))
       mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
       underTest.create(user).unsafeRunSync() must beEqualTo(user)
+      there.was(one(mockChangeRepo).save(any[UserChange]))
     }
 
     "Return the new user when storing a user that already exists in the store" in {
@@ -63,6 +64,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
       mockRepo.save(any[User]).returns(IO.pure(newUser))
       mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
       underTest.update(newUser, user).unsafeRunSync() must beEqualTo(newUser)
+      there.was(one(mockChangeRepo).save(any[UserChange]))
     }
 
     "Return the user when retrieving a user that exists by name" in {
@@ -81,6 +83,11 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
       mockRepo.getUserByName(any[String]).returns(IO.pure(None))
       mockRepo.getUser(any[String]).returns(IO.pure(None))
       underTest.get("fbaggins").unsafeRunSync() must beNone
+    }
+
+    "Return the user by access key" in {
+      mockRepo.getUser(user.id).returns(IO.pure(Some(user)))
+      underTest.getUserByKey(user.id).unsafeRunSync() must beSome(user)
     }
   }
 }

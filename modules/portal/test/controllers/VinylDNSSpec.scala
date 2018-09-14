@@ -172,9 +172,7 @@ class VinylDNSSpec extends Specification with Mockito {
             .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
         status(result) must beEqualTo(404)
-        header("Pragma", result) must beSome("no-cache")
-        header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-        header("Expires", result) must beSome("0")
+        hasCacheHeaders(result)
       }
     }
 
@@ -568,9 +566,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(hobbitGroup)
           }
         }
@@ -593,9 +589,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(BAD_REQUEST)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -618,9 +612,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -642,9 +634,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(CONFLICT)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -667,9 +657,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(hobbitGroup)
           }
         }
@@ -692,9 +680,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -714,9 +700,7 @@ class VinylDNSSpec extends Specification with Mockito {
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -739,9 +723,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NO_CONTENT)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -763,9 +745,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -787,9 +767,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(FORBIDDEN)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -810,9 +788,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -838,9 +814,7 @@ class VinylDNSSpec extends Specification with Mockito {
 
             status(result) must beEqualTo(OK)
             contentAsJson(result) must beEqualTo(hobbitGroup)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -863,9 +837,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(BAD_REQUEST)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -887,9 +859,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -912,9 +882,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(FORBIDDEN)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -937,9 +905,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -962,9 +928,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(hobbitGroupMembers)
           }
         }
@@ -987,9 +951,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(BAD_REQUEST)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1010,9 +972,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1034,9 +994,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1058,9 +1016,7 @@ class VinylDNSSpec extends Specification with Mockito {
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(frodoGroupList)
           }
         }
@@ -1081,9 +1037,7 @@ class VinylDNSSpec extends Specification with Mockito {
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1156,9 +1110,7 @@ class VinylDNSSpec extends Specification with Mockito {
               .withSession("username" -> "frodo")
           )
         status(result) must beEqualTo(200)
-        header("Pragma", result) must beSome("no-cache")
-        header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-        header("Expires", result) must beSome("0")
+        hasCacheHeaders(result)
         contentAsJson(result) must beEqualTo(expected)
       }
 
@@ -1252,6 +1204,12 @@ class VinylDNSSpec extends Specification with Mockito {
     accessor.create(any[User]).returns(IO.pure(frodoUser))
     accessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
     accessor
+  }
+
+  private def hasCacheHeaders(result: Future[play.api.mvc.Result]) = {
+    header("Pragma", result) must beSome("no-cache")
+    header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+    header("Expires", result) must beSome("0")
   }
 
   val mockUserAccountAccessor: UserAccountAccessor = buildMockUserAccountAccessor

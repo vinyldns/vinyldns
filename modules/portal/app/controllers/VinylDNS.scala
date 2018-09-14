@@ -47,8 +47,6 @@ object VinylDNS {
     private val MSG = "alertMessage"
     def error(msg: String): Flash = Flash(Map(TYPE -> "danger", MSG -> msg))
     def warning(msg: String): Flash = Flash(Map(TYPE -> "warning", MSG -> msg))
-    def info(msg: String): Flash = Flash(Map(TYPE -> "info", MSG -> msg))
-    def success(msg: String): Flash = Flash(Map(TYPE -> "success", MSG -> msg))
 
     def fromFlash(flash: Flash): Option[Alert] =
       (flash.get(TYPE), flash.get(MSG)) match {
