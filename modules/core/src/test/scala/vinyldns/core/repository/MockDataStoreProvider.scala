@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository
+package vinyldns.core.repository
+
 import cats.effect.IO
 import org.scalatest.mockito.MockitoSugar
 import vinyldns.core.crypto.CryptoAlgebra
@@ -27,7 +28,6 @@ import vinyldns.core.domain.membership.{
 }
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.repository.{DataStore, DataStoreConfig, DataStoreProvider}
 
 class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 
