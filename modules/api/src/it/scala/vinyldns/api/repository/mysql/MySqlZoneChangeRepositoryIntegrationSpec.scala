@@ -21,8 +21,7 @@ import java.util.UUID
 import org.joda.time.DateTime
 import cats.implicits._
 import org.scalatest._
-import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.concurrent.ScalaFutures
 import scalikejdbc.DB
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import vinyldns.api.domain.dns.DnsConversions
@@ -47,7 +46,6 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     with OptionValues {
 
   private var repo: ZoneChangeRepository = _
-  private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   object TestData {
     def randomZoneChange: ZoneChange =
@@ -101,33 +99,28 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     "save a change" in {
       val change = changes(1)
       // save the change
-      whenReady(repo.save(change).unsafeToFuture(), timeout) { saved =>
-        saved should equal(change)
+      val saveResponse = repo.save(change).unsafeRunSync()
+      saveResponse should equal(change)
 
-        // list the change
-        whenReady(repo.listZoneChanges(change.zone.id).unsafeToFuture(), timeout) { retrieved =>
-          retrieved.items should equal(List(change))
-        }
-      }
+      // verify change in repo
+      val listResponse = repo.listZoneChanges(change.zone.id).unsafeRunSync()
+      listResponse.items should equal(List(change))
     }
 
     "update a change" in {
       val change = changes(1).copy(systemMessage = Some("original"))
       val updatedChange = change.copy(systemMessage = Some("updated"))
       // save the change
-      whenReady(repo.save(change).unsafeToFuture(), timeout) { firstSave =>
-        firstSave should equal(change)
+      val firstSaveResponse = repo.save(change).unsafeRunSync()
+      firstSaveResponse should equal(change)
 
-        // update the change
-        whenReady(repo.save(updatedChange).unsafeToFuture(), timeout) { secondSave =>
-          secondSave should equal(updatedChange)
+      // update change
+      val updateResponse = repo.save(updatedChange).unsafeRunSync()
+      updateResponse should equal(updatedChange)
 
-          // list the updated change
-          whenReady(repo.listZoneChanges(change.zone.id).unsafeToFuture(), timeout) { secondList =>
-            secondList.items should equal(List(updatedChange))
-          }
-        }
-      }
+      // verify change in repo
+      val listResponse = repo.listZoneChanges(change.zone.id).unsafeRunSync()
+      listResponse.items should equal(List(updatedChange))
     }
 
     "get all changes for a zone in order" in {
@@ -144,11 +137,10 @@ class MySqlZoneChangeRepositoryIntegrationSpec
           .reverse
 
       // nextId should be none since default maxItems > 3
-      whenReady(repo.listZoneChanges(zones(1).id).unsafeToFuture(), timeout) { retrieved =>
-        retrieved.items should equal(expectedChanges)
-        retrieved.nextId should equal(None)
-        retrieved.startFrom should equal(None)
-      }
+      val listResponse = repo.listZoneChanges(zones(1).id).unsafeRunSync()
+      listResponse.items should equal(expectedChanges)
+      listResponse.nextId should equal(None)
+      listResponse.startFrom should equal(None)
     }
 
     "get zone changes using a maxItems of 1" in {
@@ -165,17 +157,15 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       val expectedChanges = List(zoneOneChanges(0))
       val expectedNext = Some(zoneOneChanges(1).created.getMillis.toString)
 
-      whenReady(
-        repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeToFuture(),
-        timeout) { retrieved =>
-        retrieved.items.size should equal(1)
-        retrieved.items should equal(expectedChanges)
-        retrieved.nextId should equal(expectedNext)
-        retrieved.startFrom should equal(None)
-      }
+      val listResponse =
+        repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeRunSync()
+      listResponse.items.size should equal(1)
+      listResponse.items should equal(expectedChanges)
+      listResponse.nextId should equal(expectedNext)
+      listResponse.startFrom should equal(None)
     }
 
-    "get zone changes using a startFrom and maxItems" in {
+    "page zone changes using a startFrom and maxItems" in {
       val changeSetupResults = changes.map(repo.save(_)).toList.parSequence
       changeSetupResults
         .unsafeRunTimed(5.minutes)
@@ -191,44 +181,31 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       val expectedPageTwo = List(zoneOneChanges(1))
       val expectedPageTwoNext = Some(zoneOneChanges(2).created.getMillis.toString)
       val expectedPageThree = List(zoneOneChanges(2))
-      val expectedPageThreeNext = None
 
-      // get first page of 1
-      whenReady(
-        repo
-          .listZoneChanges(zones(1).id, startFrom = None, maxItems = 1)
-          .unsafeToFuture(),
-        timeout) { retrievedOne =>
-        retrievedOne.items.size should equal(1)
-        retrievedOne.items should equal(expectedPageOne)
-        retrievedOne.nextId should equal(expectedPageOneNext)
-        retrievedOne.startFrom should equal(None)
+      // get first page
+      val pageOne =
+        repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeRunSync()
+      pageOne.items.size should equal(1)
+      pageOne.items should equal(expectedPageOne)
+      pageOne.nextId should equal(expectedPageOneNext)
+      pageOne.startFrom should equal(None)
 
-        // get second page of 1
-        whenReady(
-          repo
-            .listZoneChanges(zones(1).id, startFrom = retrievedOne.nextId, maxItems = 1)
-            .unsafeToFuture(),
-          timeout) { retrievedTwo =>
-          retrievedTwo.items.size should equal(1)
-          retrievedTwo.items should equal(expectedPageTwo)
-          retrievedTwo.nextId should equal(expectedPageTwoNext)
-          retrievedTwo.startFrom should equal(retrievedOne.nextId)
+      // get second page
+      val pageTwo =
+        repo.listZoneChanges(zones(1).id, startFrom = pageOne.nextId, maxItems = 1).unsafeRunSync()
+      pageTwo.items.size should equal(1)
+      pageTwo.items should equal(expectedPageTwo)
+      pageTwo.nextId should equal(expectedPageTwoNext)
+      pageTwo.startFrom should equal(pageOne.nextId)
 
-          // get final page of 1
-          // nextId should be None
-          whenReady(
-            repo
-              .listZoneChanges(zones(1).id, startFrom = retrievedTwo.nextId, maxItems = 1)
-              .unsafeToFuture(),
-            timeout) { retrievedThree =>
-            retrievedThree.items.size should equal(1)
-            retrievedThree.items should equal(expectedPageThree)
-            retrievedThree.nextId should equal(expectedPageThreeNext)
-            retrievedThree.startFrom should equal(retrievedTwo.nextId)
-          }
-        }
-      }
+      // get final page
+      // next id should be none now
+      val pageThree =
+        repo.listZoneChanges(zones(1).id, startFrom = pageTwo.nextId, maxItems = 1).unsafeRunSync()
+      pageThree.items.size should equal(1)
+      pageThree.items should equal(expectedPageThree)
+      pageThree.nextId should equal(None)
+      pageThree.startFrom should equal(pageTwo.nextId)
     }
   }
 }
