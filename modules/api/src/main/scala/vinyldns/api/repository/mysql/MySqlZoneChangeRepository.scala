@@ -42,7 +42,7 @@ class MySqlZoneChangeRepository
       |  FROM zone_change zc
       |  WHERE zc.zone_id = {zoneId} AND
       |        (
-      |          CASE WHEN {startFrom} != '' AND zc.created_time_change_id < {startFrom}
+      |          CASE WHEN {startFrom} != '' AND zc.created_time_change_id <= {startFrom}
       |               THEN 1
       |               WHEN {startFrom} = ''
       |               THEN 1
@@ -112,9 +112,9 @@ class MySqlZoneChangeRepository
 }
 
 case class MySqlZoneChangePagingKey(createdTimeSeconds: String, changeId: String)
-  extends Ordered[MySqlZoneChangePagingKey] {
+    extends Ordered[MySqlZoneChangePagingKey] {
 
-  override def toString: String = s"${createdTimeSeconds}_{$changeId}"
+  override def toString: String = s"${createdTimeSeconds}_${changeId}"
 
   def compare(that: MySqlZoneChangePagingKey): Int = this.toString.compare(that.toString)
 }

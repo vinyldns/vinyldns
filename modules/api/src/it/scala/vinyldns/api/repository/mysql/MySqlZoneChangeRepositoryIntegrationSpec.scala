@@ -87,18 +87,11 @@ class MySqlZoneChangeRepositoryIntegrationSpec
   }
 
   "MySqlZoneChangeRepository" should {
-    implicit def dateTimeOrdering: Ordering[MySqlZoneChangePagingKey] = Ordering.fromLessThan(_.isAfter(_))
-
     "successfully save a change" in {
       val change = changes(1)
-      whenReady(repo.listZoneChanges(change.zone.id).unsafeToFuture(), timeout) { retrieved =>
-        retrieved.items.length should equal(0)
-      }
-
       whenReady(repo.save(change).unsafeToFuture(), timeout) { saved =>
         saved should equal(change)
       }
-
       whenReady(repo.listZoneChanges(change.zone.id).unsafeToFuture(), timeout) { retrieved =>
         retrieved.items should equal(List(change))
       }
@@ -111,9 +104,13 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         .getOrElse(
           fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
 
-      val f = repo.listZoneChanges(zones(1).id).unsafeToFuture()
-      val expectedChanges = changes.filter(_.zoneId == zones(1).id).sortBy(MySqlZoneChangePagingKey(_))
-      whenReady(f, timeout) { retrieved =>
+      val expectedChanges =
+        changes
+          .filter(_.zoneId == zones(1).id)
+          .sortBy(MySqlZoneChangePagingKey(_))
+          .reverse
+
+      whenReady(repo.listZoneChanges(zones(1).id).unsafeToFuture(), timeout) { retrieved =>
         retrieved.items should equal(expectedChanges)
         retrieved.nextId should equal(None)
         retrieved.startFrom should equal(None)
@@ -128,12 +125,77 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         .getOrElse(
           fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
 
-      val f = repo.listZoneChanges(zones(1).id).unsafeToFuture()
-      val expectedChanges = testChanges.filter(_.zoneId == zones(1).id).sortBy(_.created)
-      whenReady(f, timeout) { retrieved =>
+      val expectedChanges =
+        testChanges
+          .filter(_.zoneId == zones(1).id)
+          .sortBy(MySqlZoneChangePagingKey(_))
+          .reverse
+
+      whenReady(repo.listZoneChanges(zones(1).id).unsafeToFuture(), timeout) { retrieved =>
         retrieved.items should equal(expectedChanges)
         retrieved.nextId should equal(None)
         retrieved.startFrom should equal(None)
+      }
+    }
+
+    "get zone changes using a maxItems of 1" in {
+      val changeSetupResults = changes.map(repo.save(_)).toList.parSequence
+      changeSetupResults
+        .unsafeRunTimed(5.minutes)
+        .getOrElse(
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
+
+      val zoneOneChanges = changes
+        .filter(_.zoneId == zones(1).id)
+        .sortBy(MySqlZoneChangePagingKey(_))
+        .reverse
+      val expectedChanges = List(zoneOneChanges(0))
+      val expectedNext = Some(MySqlZoneChangePagingKey(zoneOneChanges(1)).toString)
+
+      whenReady(
+        repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeToFuture(),
+        timeout) { retrieved =>
+        retrieved.items.size should equal(1)
+        retrieved.items should equal(expectedChanges)
+        retrieved.nextId should equal(expectedNext)
+        retrieved.startFrom should equal(None)
+      }
+    }
+
+    "get zone changes using a startFrom and maxItems" in {
+      val changeSetupResults = changes.map(repo.save(_)).toList.parSequence
+      changeSetupResults
+        .unsafeRunTimed(5.minutes)
+        .getOrElse(
+          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
+
+      val zoneOneChanges = changes
+        .filter(_.zoneId == zones(1).id)
+        .sortBy(MySqlZoneChangePagingKey(_))
+        .reverse
+      val expectedPageOne = List(zoneOneChanges(0))
+      val expectedPageOneNext = Some(MySqlZoneChangePagingKey(zoneOneChanges(1)).toString)
+      val expectedPageTwo = List(zoneOneChanges(1))
+      val expectedPageTwoNext = Some(MySqlZoneChangePagingKey(zoneOneChanges(2)).toString)
+
+      whenReady(
+        repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeToFuture(),
+        timeout) { retrievedOne =>
+        retrievedOne.items.size should equal(1)
+        retrievedOne.items should equal(expectedPageOne)
+        retrievedOne.nextId should equal(expectedPageOneNext)
+        retrievedOne.startFrom should equal(None)
+
+        whenReady(
+          repo
+            .listZoneChanges(zones(1).id, startFrom = retrievedOne.nextId, maxItems = 1)
+            .unsafeToFuture(),
+          timeout) { retrievedTwo =>
+          retrievedTwo.items.size should equal(1)
+          retrievedTwo.items should equal(expectedPageTwo)
+          retrievedTwo.nextId should equal(expectedPageTwoNext)
+          retrievedTwo.startFrom should equal(retrievedOne.nextId)
+        }
       }
     }
   }
