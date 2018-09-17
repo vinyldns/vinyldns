@@ -18,11 +18,12 @@ package vinyldns.core.repository
 
 import cats.data._
 import cats.implicits._
-import cats.scalatest.{EitherMatchers, EitherValues}
+import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.repository.RepositoryName._
 
 import scala.collection.JavaConverters._
@@ -32,7 +33,8 @@ class DataStoreLoaderSpec
     with Matchers
     with MockitoSugar
     with EitherValues
-    with EitherMatchers {
+    with EitherMatchers
+    with ValidatedMatchers {
 
   val crypto: CryptoAlgebra = new NoOpCrypto()
   val placeholderConfig: Config = ConfigFactory.parseMap(Map[String, String]().asJava)
@@ -77,11 +79,18 @@ class DataStoreLoaderSpec
         responses: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, TestDataAccessor] =
       new TestDataAccessor().validNel
   }
+  object FailAccessorProvider extends DataAccessorProvider[TestDataAccessor] {
+    override def repoNames: List[RepositoryName] = RepositoryName.values.toList
+
+    override def create(
+        responses: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, TestDataAccessor] =
+      "create failure".invalidNel[TestDataAccessor]
+  }
 
   "loadAll" should {
     "return a data accessor for valid config for one datastore" in {
       val loadCall = DataStoreLoader.loadAll(List(goodConfig), crypto, TestAccessorProvider)
-      noException should be thrownBy loadCall.unsafeRunSync()
+      loadCall.unsafeRunSync() shouldBe a[TestDataAccessor]
     }
 
     "return a data accessor for valid config for multiple datastores" in {
@@ -96,7 +105,7 @@ class DataStoreLoaderSpec
         allDisabledReposConfig.copy(user = enabled))
 
       val loadCall = DataStoreLoader.loadAll(List(config1, config2), crypto, TestAccessorProvider)
-      noException should be thrownBy loadCall.unsafeRunSync()
+      loadCall.unsafeRunSync() shouldBe a[TestDataAccessor]
     }
 
     "throw an exception if getValidatedConfigs fails" in {
@@ -109,13 +118,19 @@ class DataStoreLoaderSpec
       thrown.msg should include("Config validation error")
     }
 
-    "throw an exception if load fails" in {
+    "throw an exception if datastore load fails" in {
       val loadCall = DataStoreLoader.loadAll(
         List(goodConfig.copy(className = "vinyldns.core.repository.FailDataStoreProvider")),
         crypto,
         TestAccessorProvider)
       val thrown = the[RuntimeException] thrownBy loadCall.unsafeRunSync()
       thrown.getMessage should include("ruh roh")
+    }
+
+    "throw an exception if accessor create fails" in {
+      val loadCall = DataStoreLoader.loadAll(List(goodConfig), crypto, FailAccessorProvider)
+      val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
+      thrown.getMessage shouldBe "create failure"
     }
   }
 
@@ -178,6 +193,42 @@ class DataStoreLoaderSpec
 
       val call = DataStoreLoader.load(config, crypto)
       a[RuntimeException] should be thrownBy call.unsafeRunSync()
+    }
+  }
+
+  "getRepoOf" should {
+    val mockUserRepo = mock[UserRepository]
+    "succeed if properly configured and loaded for repo" in {
+      val config = DataStoreConfig(
+        "some.class.name",
+        placeholderConfig,
+        allDisabledReposConfig.copy(user = enabled))
+      val store = new DataStore(Some(mockUserRepo))
+
+      val outcome = DataStoreLoader.getRepoOf[UserRepository](List((config, store)), user)
+      outcome should beValid(mockUserRepo)
+    }
+    "fail if not included in configuration" in {
+      val config = DataStoreConfig("some.class.name", placeholderConfig, allDisabledReposConfig)
+      val store = new DataStore(Some(mockUserRepo))
+
+      val outcome = DataStoreLoader
+        .getRepoOf[UserRepository](List((config, store)), user)
+      outcome should
+        haveInvalid(
+          "Repo user was not returned by configured database: Unknown Configured Database")
+    }
+    "fail if not returned by datastore" in {
+      val config = DataStoreConfig(
+        "some.class.name",
+        placeholderConfig,
+        allDisabledReposConfig.copy(user = enabled))
+      val store = new DataStore()
+
+      val outcome = DataStoreLoader
+        .getRepoOf[UserRepository](List((config, store)), user)
+      outcome should
+        haveInvalid("Repo user was not returned by configured database: some.class.name")
     }
   }
 }
