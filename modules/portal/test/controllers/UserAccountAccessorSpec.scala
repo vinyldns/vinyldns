@@ -49,7 +49,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
   private val underTest = new UserAccountAccessor(mockRepo, mockChangeRepo)
 
   protected def before: Any =
-    (mockRepo, mockChangeRepo)
+    org.mockito.Mockito.reset(mockRepo, mockChangeRepo)
 
   "User Account Accessor" should {
     "Return the user when storing a user that does not exist already" in {
@@ -86,7 +86,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     }
 
     "Return the user by access key" in {
-      mockRepo.getUser(user.id).returns(IO.pure(Some(user)))
+      mockRepo.getUserByAccessKey(user.id).returns(IO.pure(Some(user)))
       underTest.getUserByKey(user.id).unsafeRunSync() must beSome(user)
     }
   }
