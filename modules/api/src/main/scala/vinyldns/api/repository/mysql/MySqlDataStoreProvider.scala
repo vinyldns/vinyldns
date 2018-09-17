@@ -32,7 +32,8 @@ import vinyldns.core.repository._
 class MySqlDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
-  private val implementedRepositories = Set(RepositoryName.zone, RepositoryName.batchChange)
+  private val implementedRepositories =
+    Set(RepositoryName.zone, RepositoryName.batchChange, RepositoryName.zoneChange)
 
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
     for {
@@ -57,7 +58,11 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   def initializeRepos(): IO[DataStore] = IO {
     val zones = Some(new JdbcZoneRepository())
     val batchChanges = Some(new JdbcBatchChangeRepository())
-    new DataStore(zoneRepository = zones, batchChangeRepository = batchChanges)
+    val zoneChanges = Some(new MySqlZoneChangeRepository())
+    new DataStore(
+      zoneRepository = zones,
+      batchChangeRepository = batchChanges,
+      zoneChangeRepository = zoneChanges)
   }
 
   def runDBMigrations(settings: MySqlDataStoreSettings): IO[Unit] = IO {
