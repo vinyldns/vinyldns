@@ -98,13 +98,35 @@ class MySqlZoneChangeRepositoryIntegrationSpec
   }
 
   "MySqlZoneChangeRepository" should {
-    "successfully save a change" in {
+    "save a change" in {
       val change = changes(1)
+      // save the change
       whenReady(repo.save(change).unsafeToFuture(), timeout) { saved =>
         saved should equal(change)
+
+        // list the change
+        whenReady(repo.listZoneChanges(change.zone.id).unsafeToFuture(), timeout) { retrieved =>
+          retrieved.items should equal(List(change))
+        }
       }
-      whenReady(repo.listZoneChanges(change.zone.id).unsafeToFuture(), timeout) { retrieved =>
-        retrieved.items should equal(List(change))
+    }
+
+    "update a change" in {
+      val change = changes(1).copy(systemMessage = Some("original"))
+      val updatedChange = change.copy(systemMessage = Some("updated"))
+      // save the change
+      whenReady(repo.save(change).unsafeToFuture(), timeout) { firstSave =>
+        firstSave should equal(change)
+
+        // update the change
+        whenReady(repo.save(updatedChange).unsafeToFuture(), timeout) { secondSave =>
+          secondSave should equal(updatedChange)
+
+          // list the updated change
+          whenReady(repo.listZoneChanges(change.zone.id).unsafeToFuture(), timeout) { secondList =>
+            secondList.items should equal(List(updatedChange))
+          }
+        }
       }
     }
 
@@ -121,6 +143,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
           .sortBy(_.created.getMillis)
           .reverse
 
+      // nextId should be none since default maxItems > 3
       whenReady(repo.listZoneChanges(zones(1).id).unsafeToFuture(), timeout) { retrieved =>
         retrieved.items should equal(expectedChanges)
         retrieved.nextId should equal(None)
