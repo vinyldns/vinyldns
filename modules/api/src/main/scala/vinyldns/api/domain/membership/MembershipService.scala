@@ -19,6 +19,7 @@ package vinyldns.api.domain.membership
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 
@@ -55,7 +56,7 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
-      _ <- isAdmin(existingGroup, authPrincipal).toResult
+      _ <- isGroupAdmin(existingGroup, authPrincipal).toResult
       addedMembers = newGroup.memberIds.diff(existingGroup.memberIds)
       removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
       _ <- hasMembersAndAdmins(newGroup).toResult
@@ -72,7 +73,7 @@ class MembershipService(
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
-      _ <- isAdmin(existingGroup, authPrincipal).toResult
+      _ <- isGroupAdmin(existingGroup, authPrincipal).toResult
       _ <- groupCanBeDeleted(existingGroup)
       _ <- groupChangeRepo
         .save(GroupChange.forDelete(existingGroup, authPrincipal))
@@ -174,6 +175,12 @@ class MembershipService(
       .getUsers(userIds, startFrom, pageSize)
       .toResult[ListUsersResults]
 
+  def getExistingUser(userId: String): Result[User] =
+    userRepo
+      .getUser(userId)
+      .orFail(UserNotFoundError(s"User with ID $userId was not found"))
+      .toResult[User]
+
   def getExistingGroup(groupId: String): Result[Group] =
     groupRepo
       .getGroup(groupId)
@@ -222,4 +229,15 @@ class MembershipService(
         }
       }
       .toResult
+
+  def updateUserLockStatus(
+      userId: String,
+      lockStatus: LockStatus,
+      authPrincipal: AuthPrincipal): Result[User] =
+    for {
+      _ <- isSuperAdmin(authPrincipal).toResult
+      existingUser <- getExistingUser(userId)
+      newUser = existingUser.updateUserLockStatus(lockStatus)
+      _ <- userRepo.save(newUser).toResult[User]
+    } yield newUser
 }

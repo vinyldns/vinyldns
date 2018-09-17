@@ -23,7 +23,7 @@ import vinyldns.api.domain.membership._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.membership.{Group, LockStatus}
 
 trait MembershipRoute extends Directives {
   this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
@@ -167,6 +167,18 @@ trait MembershipRoute extends Directives {
                 }
             }
           }
+        }
+      } ~
+      (put & path("users" / Segment / "lock") & monitor("Endpoint.lockUser")) { id =>
+        execute(membershipService.updateUserLockStatus(id, LockStatus.Locked, authPrincipal)) {
+          user =>
+            complete(StatusCodes.OK, UserInfo(user))
+        }
+      } ~
+      (put & path("users" / Segment / "unlock") & monitor("Endpoint.unlockUser")) { id =>
+        execute(membershipService.updateUserLockStatus(id, LockStatus.Unlocked, authPrincipal)) {
+          user =>
+            complete(StatusCodes.OK, UserInfo(user))
         }
       }
   }

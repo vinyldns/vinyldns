@@ -21,6 +21,7 @@ import java.util.UUID
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership.GroupChangeType.GroupChangeType
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
+import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership._
 
 /* This is the new View model for Groups, do not surface the Group model directly any more */
@@ -73,7 +74,8 @@ case class UserInfo(
     firstName: Option[String] = None,
     lastName: Option[String] = None,
     email: Option[String] = None,
-    created: Option[DateTime] = None
+    created: Option[DateTime] = None,
+    lockStatus: LockStatus = LockStatus.Unlocked
 )
 object UserInfo {
   def apply(user: User): UserInfo =
@@ -83,7 +85,8 @@ object UserInfo {
       firstName = user.firstName,
       lastName = user.lastName,
       email = user.email,
-      created = Some(user.created)
+      created = Some(user.created),
+      lockStatus = user.lockStatus
     )
 }
 

@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
@@ -42,7 +41,7 @@ trait VinylDNSDirectives extends Directives {
     */
   def vinyldnsAuthenticator(
       ctx: RequestContext,
-      content: String): IO[Either[Cause, AuthPrincipal]] =
+      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     VinylDNSAuthenticator(ctx, content)
 
   def authenticate: Directive1[AuthPrincipal] =
@@ -53,17 +52,25 @@ trait VinylDNSDirectives extends Directives {
             .flatMap {
               case Right(authPrincipal) ⇒
                 provide(authPrincipal)
-              case Left(cause) ⇒
-                // we need to finish the result, rejections will proceed and ultimately
-                // we can fail with a different rejection
-                complete(
-                  HttpResponse(
-                    status = StatusCodes.Unauthorized,
-                    entity = HttpEntity(s"Authentication Failed: $cause")
-                  ))
+              case Left(e) ⇒
+                complete(handleAuthenticateError(e))
             }
         }
       }
+    }
+
+  def handleAuthenticateError(error: VinylDNSAuthenticationError): HttpResponse =
+    error match {
+      case AccountLocked(err) =>
+        HttpResponse(
+          status = StatusCodes.Forbidden,
+          entity = HttpEntity(s"Authentication Failed: $err")
+        )
+      case e =>
+        HttpResponse(
+          status = StatusCodes.Unauthorized,
+          entity = HttpEntity(s"Authentication Failed: ${e.getMessage}")
+        )
     }
 
   /* Adds monitoring to an Endpoint.  The name will be surfaced in JMX */
