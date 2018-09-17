@@ -31,7 +31,8 @@ import java.util.HashMap
 
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
-import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.membership.LockStatus.LockStatus
+import vinyldns.core.domain.membership.{LockStatus, User}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -111,6 +112,13 @@ class VinylDNS @Inject()(
     ("Pragma", "no-cache"),
     ("Expires", "0"))
 
+  implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
+    def reads(json: JsValue): JsResult[LockStatus] = json match {
+      case JsString(v) => JsSuccess(LockStatus.withName(v))
+      case _ => JsError("LockStatus value was not a string")
+    }
+    def writes(o: LockStatus): JsValue = JsString(o.toString)
+  }
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
