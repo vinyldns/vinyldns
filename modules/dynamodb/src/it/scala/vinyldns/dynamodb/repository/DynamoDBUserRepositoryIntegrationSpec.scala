@@ -20,8 +20,7 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
 import com.typesafe.config.ConfigFactory
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.membership.User
-
+import vinyldns.core.domain.membership.{User, LockStatus}
 import scala.concurrent.duration._
 
 class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
@@ -134,6 +133,25 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       val result = repo.getUser(saved.id).unsafeRunSync()
       result shouldBe Some(testUser)
       result.get.isSuper shouldBe false
+    }
+    "returns the locked flag when true" in {
+      val testUser = User(
+        userName = "testSuper",
+        accessKey = "testSuper",
+        secretKey = "testUser",
+        lockStatus = LockStatus.Locked)
+
+      val saved = repo.save(testUser).unsafeRunSync()
+      val result = repo.getUser(saved.id).unsafeRunSync()
+
+      result shouldBe Some(testUser)
+      result.get.lockStatus shouldBe LockStatus.Locked
+    }
+    "returns the locked flag when false" in {
+      val f = repo.getUserByAccessKey(users.head.accessKey).unsafeRunSync()
+
+      f shouldBe Some(users.head)
+      f.get.lockStatus shouldBe LockStatus.Unlocked
     }
   }
 }

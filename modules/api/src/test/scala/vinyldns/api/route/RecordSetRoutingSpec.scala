@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCodes}
-import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
 import akka.http.scaladsl.server.{Directives, RequestContext, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.effect._
@@ -485,7 +484,7 @@ class RecordSetRoutingSpec
 
   override def vinyldnsAuthenticator(
       ctx: RequestContext,
-      content: String): IO[Either[Cause, AuthPrincipal]] =
+      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     IO.pure(Right(okAuth))
 
   private def rsJson(recordSet: RecordSet): String =

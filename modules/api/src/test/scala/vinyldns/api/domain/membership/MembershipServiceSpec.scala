@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
-import vinyldns.api.{GroupTestData, ResultHelpers}
+import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.{ZoneRepository, _}
 import cats.effect._
@@ -37,6 +37,7 @@ class MembershipServiceSpec
     with BeforeAndAfterEach
     with ResultHelpers
     with GroupTestData
+    with VinylDNSTestData
     with EitherMatchers {
 
   private val mockGroupRepo = mock[GroupRepository]
@@ -748,6 +749,73 @@ class MembershipServiceSpec
 
         val error = leftResultOf(underTest.groupCanBeDeleted(okGroup).value)
         error shouldBe a[InvalidGroupRequestError]
+      }
+    }
+
+    "updateUserLockStatus" should {
+      "save the update and lock the user account" in {
+        val superUserAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+          memberGroupIds = Seq.empty)
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.lockStatus shouldBe LockStatus.Locked
+        savedUser.id shouldBe okUser.id
+      }
+
+      "save the update and unlock the user account" in {
+        val superUserAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+          memberGroupIds = Seq.empty)
+        doReturn(IO.pure(Some(lockedUser))).when(mockUserRepo).getUser(lockedUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserLockStatus(lockedUser.id, LockStatus.Unlocked, superUserAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.lockStatus shouldBe LockStatus.Unlocked
+        savedUser.id shouldBe lockedUser.id
+      }
+
+      "return an error if the signed in user is not a super user" in {
+        val error = leftResultOf(
+          underTest
+            .updateUserLockStatus(okUser.id, LockStatus.Locked, dummyUserAuth)
+            .value)
+
+        error shouldBe a[NotAuthorizedError]
+      }
+
+      "return an error if the requested user is not found" in {
+        val superUserAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
+          memberGroupIds = Seq.empty)
+        doReturn(IO.pure(None)).when(mockUserRepo).getUser(okUser.id)
+
+        val error = leftResultOf(
+          underTest
+            .updateUserLockStatus(okUser.id, LockStatus.Locked, superUserAuth)
+            .value)
+
+        error shouldBe a[UserNotFoundError]
       }
     }
   }

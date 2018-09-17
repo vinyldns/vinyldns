@@ -17,8 +17,7 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.server.AuthenticationFailedRejection.Cause
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, RequestContext}
+import akka.http.scaladsl.server.RequestContext
 import cats.effect._
 import cats.syntax.all._
 import vinyldns.api.VinylDNSConfig
@@ -27,12 +26,14 @@ import vinyldns.api.domain.auth.{AuthPrincipalProvider, MembershipAuthPrincipalP
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.route.Monitored
+import vinyldns.core.domain.membership.LockStatus
 
 import scala.util.matching.Regex
 
 sealed abstract class VinylDNSAuthenticationError(msg: String) extends Throwable(msg)
 final case class AuthMissing(msg: String) extends VinylDNSAuthenticationError(msg)
 final case class AuthRejected(reason: String) extends VinylDNSAuthenticationError(reason)
+final case class AccountLocked(reason: String) extends VinylDNSAuthenticationError(reason)
 
 trait VinylDNSAuthentication extends Monitored {
   val authenticator: Aws4Authenticator
@@ -131,8 +132,14 @@ trait VinylDNSAuthentication extends Monitored {
     if (encryptionEnabled) crypto.decrypt(str) else str
 
   def getAuthPrincipal(accessKey: String): IO[AuthPrincipal] =
-    authPrincipalProvider.getAuthPrincipal(accessKey).map {
-      _.getOrElse(throw AuthRejected(s"Account with accessKey $accessKey specified was not found"))
+    authPrincipalProvider.getAuthPrincipal(accessKey).flatMap {
+      case Some(ok) =>
+        if (ok.signedInUser.lockStatus == LockStatus.Locked) {
+          IO.raiseError(
+            AccountLocked(s"Account with username ${ok.signedInUser.userName} is locked"))
+        } else IO.pure(ok)
+      case None =>
+        IO.raiseError(AuthRejected(s"Account with accessKey $accessKey specified was not found"))
     }
 }
 
@@ -141,16 +148,14 @@ class VinylDNSAuthenticator(
     val authPrincipalProvider: AuthPrincipalProvider)
     extends VinylDNSAuthentication {
 
-  def apply(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
-    authenticate(ctx, content).attempt.map {
-      case Right(ok) => Right(ok)
-      case Left(_: AuthMissing) =>
-        Left(AuthenticationFailedRejection.CredentialsMissing)
-      case Left(_: AuthRejected) =>
-        Left(AuthenticationFailedRejection.CredentialsRejected)
-      case Left(e: Throwable) =>
-        // throw here as some unexpected exception occurred
-        throw e
+  def apply(
+      ctx: RequestContext,
+      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
+    // Need to refactor authenticate to be an IO[Either[E, A]] instead of how it is implemented, for the time being...
+    authenticate(ctx, content).attempt.flatMap {
+      case Left(e: VinylDNSAuthenticationError) => IO.pure(Left(e))
+      case Right(ok) => IO.pure(Right(ok))
+      case Left(e) => IO.raiseError(e)
     }
 }
 
@@ -159,6 +164,8 @@ object VinylDNSAuthenticator {
   lazy val authPrincipalProvider = MembershipAuthPrincipalProvider()
   lazy val authenticator = new VinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
 
-  def apply(ctx: RequestContext, content: String): IO[Either[Cause, AuthPrincipal]] =
+  def apply(
+      ctx: RequestContext,
+      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
     authenticator.apply(ctx, content)
 }

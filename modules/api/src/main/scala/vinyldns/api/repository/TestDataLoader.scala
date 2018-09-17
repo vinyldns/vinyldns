@@ -51,7 +51,20 @@ object TestDataLoader {
     id = "dummy",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "dummyAccessKey",
-    secretKey = "dummySecretKey")
+    secretKey = "dummySecretKey"
+  )
+  final val lockedUser = User(
+    userName = "locked",
+    id = "locked",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "lockedAccessKey",
+    secretKey = "lockedSecretKey",
+    firstName = Some("Locked"),
+    lastName = Some("User"),
+    email = Some("testlocked@test.com"),
+    isSuper = false,
+    lockStatus = LockStatus.Locked
+  )
   final val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
       userName = "name-dummy%03d".format(runner),
@@ -117,7 +130,7 @@ object TestDataLoader {
   )
 
   def loadTestData(repository: UserRepository): IO[List[User]] =
-    (testUser :: okUser :: dummyUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
+    (testUser :: okUser :: dummyUser :: lockedUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
       listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map { user =>
       val encrypted =
         if (VinylDNSConfig.encryptUserSecrets)

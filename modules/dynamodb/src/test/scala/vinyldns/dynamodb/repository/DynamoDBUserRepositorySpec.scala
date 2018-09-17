@@ -31,6 +31,7 @@ import scala.collection.JavaConverters._
 import cats.effect._
 import com.typesafe.config.ConfigFactory
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+import vinyldns.core.domain.membership.LockStatus
 import vinyldns.dynamodb.DynamoTestConfig
 
 class DynamoDBUserRepositorySpec
@@ -72,6 +73,7 @@ class DynamoDBUserRepositorySpec
       items.get(LAST_NAME).getS shouldBe okUser.lastName.get
       items.get(EMAIL).getS shouldBe okUser.email.get
       items.get(CREATED).getN shouldBe okUser.created.getMillis.toString
+      items.get(LOCK_STATUS).getS shouldBe okUser.lockStatus.toString
     }
     "set the first name to null if it is not present" in {
       val emptyFirstName = okUser.copy(firstName = None)
@@ -131,6 +133,7 @@ class DynamoDBUserRepositorySpec
       item.put(CREATED, new AttributeValue().withN("0"))
       item.put(ACCESS_KEY, new AttributeValue("accessKey"))
       item.put(SECRET_KEY, new AttributeValue("secretkey"))
+      item.put(LOCK_STATUS, new AttributeValue("lockstatus"))
       val user = fromItem(item).unsafeRunSync()
 
       user.firstName shouldBe None
@@ -151,9 +154,23 @@ class DynamoDBUserRepositorySpec
       item.put(CREATED, new AttributeValue().withN("0"))
       item.put(ACCESS_KEY, new AttributeValue("accesskey"))
       item.put(SECRET_KEY, new AttributeValue("secretkey"))
+      item.put(LOCK_STATUS, new AttributeValue("Locked"))
       val user = fromItem(item).unsafeRunSync()
 
       user.isSuper shouldBe false
+    }
+
+    "sets the lockStatus to Unlocked if the given value is invalid" in {
+      val item = new java.util.HashMap[String, AttributeValue]()
+      item.put(USER_ID, new AttributeValue("ok"))
+      item.put(USER_NAME, new AttributeValue("ok"))
+      item.put(CREATED, new AttributeValue().withN("0"))
+      item.put(ACCESS_KEY, new AttributeValue("accesskey"))
+      item.put(SECRET_KEY, new AttributeValue("secretkey"))
+      item.put(LOCK_STATUS, new AttributeValue("lock_status"))
+      val user = fromItem(item).unsafeRunSync()
+
+      user.lockStatus shouldBe LockStatus.Unlocked
     }
   }
 
