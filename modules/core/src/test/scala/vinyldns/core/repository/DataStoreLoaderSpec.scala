@@ -203,14 +203,14 @@ class DataStoreLoaderSpec
         "some.class.name",
         placeholderConfig,
         allDisabledReposConfig.copy(user = enabled))
-      val store = new DataStore(Some(mockUserRepo))
+      val store = DataStore(Some(mockUserRepo))
 
       val outcome = DataStoreLoader.getRepoOf[UserRepository](List((config, store)), user)
       outcome should beValid(mockUserRepo)
     }
     "fail if not included in configuration" in {
       val config = DataStoreConfig("some.class.name", placeholderConfig, allDisabledReposConfig)
-      val store = new DataStore(Some(mockUserRepo))
+      val store = DataStore(Some(mockUserRepo))
 
       val outcome = DataStoreLoader
         .getRepoOf[UserRepository](List((config, store)), user)
@@ -223,7 +223,7 @@ class DataStoreLoaderSpec
         "some.class.name",
         placeholderConfig,
         allDisabledReposConfig.copy(user = enabled))
-      val store = new DataStore()
+      val store = DataStore()
 
       val outcome = DataStoreLoader
         .getRepoOf[UserRepository](List((config, store)), user)

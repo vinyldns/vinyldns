@@ -24,6 +24,33 @@ import vinyldns.core.repository.RepositoryName.RepositoryName
 
 import scala.reflect.ClassTag
 
+object DataStore {
+  def apply(
+      userRepository: Option[UserRepository] = None,
+      groupRepository: Option[GroupRepository] = None,
+      membershipRepository: Option[MembershipRepository] = None,
+      groupChangeRepository: Option[GroupChangeRepository] = None,
+      recordSetRepository: Option[RecordSetRepository] = None,
+      recordChangeRepository: Option[RecordChangeRepository] = None,
+      zoneChangeRepository: Option[ZoneChangeRepository] = None,
+      zoneRepository: Option[ZoneRepository] = None,
+      batchChangeRepository: Option[BatchChangeRepository] = None,
+      userChangeRepository: Option[UserChangeRepository] = None
+  ): DataStore =
+    new DataStore(
+      userRepository,
+      groupRepository,
+      membershipRepository,
+      groupChangeRepository,
+      recordSetRepository,
+      recordChangeRepository,
+      zoneChangeRepository,
+      zoneRepository,
+      batchChangeRepository,
+      userChangeRepository
+    )
+}
+
 class DataStore(
     userRepository: Option[UserRepository] = None,
     groupRepository: Option[GroupRepository] = None,

@@ -45,7 +45,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
     val batchChange = repoConfig.batchChange.map(_ => mock[BatchChangeRepository])
 
     IO.pure(
-      new DataStore(
+      DataStore(
         user,
         group,
         membership,

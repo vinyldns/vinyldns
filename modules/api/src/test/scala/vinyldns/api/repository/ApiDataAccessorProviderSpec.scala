@@ -69,7 +69,7 @@ class ApiDataAccessorProviderSpec
       val enabledConfig =
         DataStoreConfig("some.datastore", placeholderConfig, allEnabledReposConfig)
 
-      val enabledDataStore = new DataStore(
+      val enabledDataStore = DataStore(
         Some(user),
         Some(group),
         Some(membership),
@@ -89,7 +89,7 @@ class ApiDataAccessorProviderSpec
           placeholderConfig,
           allEnabledReposConfig.copy(user = None))
 
-      val store = new DataStore(
+      val store = DataStore(
         Some(user),
         Some(group),
         Some(membership),
@@ -106,7 +106,7 @@ class ApiDataAccessorProviderSpec
       val enabledConfig =
         DataStoreConfig("some.datastore", placeholderConfig, allEnabledReposConfig)
 
-      val store = new DataStore(
+      val store = DataStore(
         Some(user),
         Some(group),
         Some(membership),
