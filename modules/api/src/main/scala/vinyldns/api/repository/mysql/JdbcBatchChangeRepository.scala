@@ -186,6 +186,7 @@ class JdbcBatchChangeRepository
       IO {
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(0)
+          // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId
           val queryResult = GET_BATCH_CHANGE_SUMMARY
             .bindByName('userId -> userId, 'startFrom -> startValue, 'maxItems -> (maxItems + 1))
             .map { res =>
