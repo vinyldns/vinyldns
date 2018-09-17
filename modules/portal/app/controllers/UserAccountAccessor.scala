@@ -16,8 +16,6 @@
 
 package controllers
 
-import java.util.UUID
-
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
@@ -42,15 +40,13 @@ class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRe
   def create(user: User): IO[User] =
     for {
       _ <- users.save(user)
-      _ <- changes.save(
-        UserChange.CreateUser(UUID.randomUUID().toString, user, "system", DateTime.now))
+      _ <- changes.save(UserChange.CreateUser(user, "system", DateTime.now))
     } yield user
 
   def update(user: User, oldUser: User): IO[User] =
     for {
       _ <- users.save(user)
-      _ <- changes.save(
-        UserChange.UpdateUser(UUID.randomUUID().toString, user, "system", DateTime.now, oldUser))
+      _ <- changes.save(UserChange.UpdateUser(user, "system", DateTime.now, oldUser))
     } yield user
 
   def getUserByKey(key: String): IO[Option[User]] =

@@ -15,6 +15,8 @@
  */
 
 package vinyldns.core.domain.membership
+import java.util.UUID
+
 import org.joda.time.DateTime
 
 sealed abstract class UserChangeType(val value: String)
@@ -48,14 +50,18 @@ sealed trait UserChange {
   def created: DateTime
 }
 object UserChange {
-  final case class CreateUser(id: String, newUser: User, madeByUserId: String, created: DateTime)
-      extends UserChange
-  final case class UpdateUser(
-      id: String,
+  final case class CreateUser(
       newUser: User,
       madeByUserId: String,
       created: DateTime,
-      oldUser: User)
+      id: String = UUID.randomUUID().toString)
+      extends UserChange
+  final case class UpdateUser(
+      newUser: User,
+      madeByUserId: String,
+      created: DateTime,
+      oldUser: User,
+      id: String = UUID.randomUUID().toString)
       extends UserChange
 
   def apply(
@@ -67,10 +73,10 @@ object UserChange {
       changeType: UserChangeType): Either[IllegalArgumentException, UserChange] =
     changeType match {
       case UserChangeType.Create =>
-        Right(CreateUser(id, newUser, madeByUserId, created))
+        Right(CreateUser(newUser, madeByUserId, created, id))
       case UserChangeType.Update =>
         oldUser
-          .map(u => Right(UpdateUser(id, newUser, madeByUserId, created, u)))
+          .map(u => Right(UpdateUser(newUser, madeByUserId, created, u, id)))
           .getOrElse(Left(new IllegalArgumentException(
             s"Unable to create update user change, old user is not defined")))
     }
