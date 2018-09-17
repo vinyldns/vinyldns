@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package vinyldns.api.repository.mysql
 
 import java.util.UUID
@@ -62,11 +78,6 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         ZoneChangeType.Update,
         status,
         created = DateTime.now().minusSeconds(Random.nextInt(1000)))
-
-    val constantDateTime: DateTime = DateTime.now()
-    val changesWithSameCreated
-      : IndexedSeq[ZoneChange] = for { zone <- zones; status <- statuses } yield
-      ZoneChange(zone, zone.account, ZoneChangeType.Update, status, created = constantDateTime)
   }
 
   import TestData._
@@ -107,28 +118,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       val expectedChanges =
         changes
           .filter(_.zoneId == zones(1).id)
-          .sortBy(MySqlZoneChangePagingKey(_))
-          .reverse
-
-      whenReady(repo.listZoneChanges(zones(1).id).unsafeToFuture(), timeout) { retrieved =>
-        retrieved.items should equal(expectedChanges)
-        retrieved.nextId should equal(None)
-        retrieved.startFrom should equal(None)
-      }
-    }
-
-    "get all changes for a zone in order when there are duplicate created times" in {
-      val testChanges = changes ++ changesWithSameCreated
-      val changeSetupResults = testChanges.map(repo.save(_)).toList.parSequence
-      changeSetupResults
-        .unsafeRunTimed(5.minutes)
-        .getOrElse(
-          fail("timeout waiting for changes to save in MySqlZoneChangeRepositoryIntegrationSpec"))
-
-      val expectedChanges =
-        testChanges
-          .filter(_.zoneId == zones(1).id)
-          .sortBy(MySqlZoneChangePagingKey(_))
+          .sortBy(_.created.getMillis)
           .reverse
 
       whenReady(repo.listZoneChanges(zones(1).id).unsafeToFuture(), timeout) { retrieved =>
@@ -147,10 +137,10 @@ class MySqlZoneChangeRepositoryIntegrationSpec
 
       val zoneOneChanges = changes
         .filter(_.zoneId == zones(1).id)
-        .sortBy(MySqlZoneChangePagingKey(_))
+        .sortBy(_.created.getMillis)
         .reverse
       val expectedChanges = List(zoneOneChanges(0))
-      val expectedNext = Some(MySqlZoneChangePagingKey(zoneOneChanges(1)).toString)
+      val expectedNext = Some(zoneOneChanges(1).created.getMillis.toString)
 
       whenReady(
         repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeToFuture(),
@@ -171,21 +161,27 @@ class MySqlZoneChangeRepositoryIntegrationSpec
 
       val zoneOneChanges = changes
         .filter(_.zoneId == zones(1).id)
-        .sortBy(MySqlZoneChangePagingKey(_))
+        .sortBy(_.created.getMillis)
         .reverse
       val expectedPageOne = List(zoneOneChanges(0))
-      val expectedPageOneNext = Some(MySqlZoneChangePagingKey(zoneOneChanges(1)).toString)
+      val expectedPageOneNext = Some(zoneOneChanges(1).created.getMillis.toString)
       val expectedPageTwo = List(zoneOneChanges(1))
-      val expectedPageTwoNext = Some(MySqlZoneChangePagingKey(zoneOneChanges(2)).toString)
+      val expectedPageTwoNext = Some(zoneOneChanges(2).created.getMillis.toString)
+      val expectedPageThree = List(zoneOneChanges(2))
+      val expectedPageThreeNext = None
 
+      // get first page of 1
       whenReady(
-        repo.listZoneChanges(zones(1).id, startFrom = None, maxItems = 1).unsafeToFuture(),
+        repo
+          .listZoneChanges(zones(1).id, startFrom = None, maxItems = 1)
+          .unsafeToFuture(),
         timeout) { retrievedOne =>
         retrievedOne.items.size should equal(1)
         retrievedOne.items should equal(expectedPageOne)
         retrievedOne.nextId should equal(expectedPageOneNext)
         retrievedOne.startFrom should equal(None)
 
+        // get second page of 1
         whenReady(
           repo
             .listZoneChanges(zones(1).id, startFrom = retrievedOne.nextId, maxItems = 1)
@@ -195,6 +191,19 @@ class MySqlZoneChangeRepositoryIntegrationSpec
           retrievedTwo.items should equal(expectedPageTwo)
           retrievedTwo.nextId should equal(expectedPageTwoNext)
           retrievedTwo.startFrom should equal(retrievedOne.nextId)
+
+          // get final page of 1
+          // nextId should be None
+          whenReady(
+            repo
+              .listZoneChanges(zones(1).id, startFrom = retrievedTwo.nextId, maxItems = 1)
+              .unsafeToFuture(),
+            timeout) { retrievedThree =>
+            retrievedThree.items.size should equal(1)
+            retrievedThree.items should equal(expectedPageThree)
+            retrievedThree.nextId should equal(expectedPageThreeNext)
+            retrievedThree.startFrom should equal(retrievedTwo.nextId)
+          }
         }
       }
     }

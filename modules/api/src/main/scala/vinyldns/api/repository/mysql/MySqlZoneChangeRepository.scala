@@ -17,6 +17,7 @@
 package vinyldns.api.repository.mysql
 
 import cats.effect.IO
+import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf._
@@ -32,24 +33,16 @@ class MySqlZoneChangeRepository
 
   private final val PUT_ZONE_CHANGE =
     sql"""
-      |INSERT INTO zone_change (change_id, zone_id, data, created_time_change_id)
-      |  VALUES ({change_id}, {zone_id}, {data}, {created_time_change_id})
+      |INSERT INTO zone_change (change_id, zone_id, data, created_timestamp)
+      |  VALUES ({change_id}, {zone_id}, {data}, {created_timestamp})
       """.stripMargin
 
   private final val LIST_ZONES_CHANGES =
     sql"""
       |SELECT zc.data
       |  FROM zone_change zc
-      |  WHERE zc.zone_id = {zoneId} AND
-      |        (
-      |          CASE WHEN {startFrom} != '' AND zc.created_time_change_id <= {startFrom}
-      |               THEN 1
-      |               WHEN {startFrom} = ''
-      |               THEN 1
-      |               ELSE 0
-      |          END
-      |        ) = 1
-      |  ORDER BY zc.created_time_change_id DESC
+      |  WHERE zc.zone_id = {zoneId} AND zc.created_timestamp <= {startFrom}
+      |  ORDER BY zc.created_timestamp DESC
       |  LIMIT {maxItems}
     """.stripMargin
 
@@ -63,7 +56,7 @@ class MySqlZoneChangeRepository
               'change_id -> zoneChange.id,
               'zone_id -> zoneChange.zoneId,
               'data -> toPB(zoneChange).toByteArray,
-              'created_time_change_id -> MySqlZoneChangePagingKey(zoneChange).toString
+              'created_timestamp -> zoneChange.created.getMillis
             )
             .update()
             .apply()
@@ -82,7 +75,7 @@ class MySqlZoneChangeRepository
       logger.info(s"Getting zone changes for zone $zoneId")
       IO {
         DB.readOnly { implicit s =>
-          val startValue = startFrom.getOrElse("")
+          val startValue = startFrom.getOrElse(DateTime.now().getMillis.toString)
           // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId
           val queryResult = LIST_ZONES_CHANGES
             .bindByName(
@@ -96,9 +89,10 @@ class MySqlZoneChangeRepository
           val maxQueries = queryResult.take(maxItems)
 
           // nextId is Option[String] to maintains backwards compatibility
+          // earlier maxItems was incremented, if the (maxItems + 1) size is not reached then pages are exhausted
           val nextId = queryResult match {
-            case _ if queryResult.size < maxItems | queryResult.isEmpty => None
-            case _ => Some(MySqlZoneChangePagingKey(queryResult.last).toString)
+            case _ if queryResult.size <= maxItems | queryResult.isEmpty => None
+            case _ => Some(queryResult.last.created.getMillis.toString)
           }
 
           ListZoneChangesResults(maxQueries, nextId, startFrom, maxItems)
@@ -109,17 +103,4 @@ class MySqlZoneChangeRepository
   private def extractZoneChange(colIndex: Int): WrappedResultSet => ZoneChange = res => {
     fromPB(VinylDNSProto.ZoneChange.parseFrom(res.bytes(colIndex)))
   }
-}
-
-case class MySqlZoneChangePagingKey(createdTimeSeconds: String, changeId: String)
-    extends Ordered[MySqlZoneChangePagingKey] {
-
-  override def toString: String = s"${createdTimeSeconds}_${changeId}"
-
-  def compare(that: MySqlZoneChangePagingKey): Int = this.toString.compare(that.toString)
-}
-
-object MySqlZoneChangePagingKey {
-  def apply(zoneChange: ZoneChange): MySqlZoneChangePagingKey =
-    MySqlZoneChangePagingKey(zoneChange.created.getMillis.toString, zoneChange.id)
 }
