@@ -73,7 +73,7 @@ lazy val testSettings = Seq(
   parallelExecution in Test := false,
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := false,
-  testOptions in Test += Tests.Argument("-oD"),
+  testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
   logBuffered in Test := false
 )
 
@@ -315,7 +315,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     // change the name of the output to portal.zip
     packageName in Universal := "portal"
   )
-  .dependsOn(core)
+  .dependsOn(core, dynamodb)
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",

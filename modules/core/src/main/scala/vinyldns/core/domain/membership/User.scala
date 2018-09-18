@@ -18,6 +18,7 @@ package vinyldns.core.domain.membership
 
 import java.util.UUID
 
+import org.apache.commons.lang3.RandomStringUtils
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 
@@ -26,7 +27,7 @@ object LockStatus extends Enumeration {
   val Locked, Unlocked = Value
 }
 
-case class User(
+final case class User(
     userName: String,
     accessKey: String,
     secretKey: String,
@@ -41,4 +42,11 @@ case class User(
 
   def updateUserLockStatus(lockStatus: LockStatus): User =
     this.copy(lockStatus = lockStatus)
+
+  def regenerateCredentials(): User =
+    copy(accessKey = User.generateKey, secretKey = User.generateKey)
+}
+
+object User {
+  def generateKey: String = RandomStringUtils.randomAlphanumeric(20)
 }

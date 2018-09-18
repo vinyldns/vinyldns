@@ -54,7 +54,7 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   "DynamoDBUserChangeRepository" should {
     "save a user change" in {
       val auth = AuthPrincipal(testUser, Seq.empty)
-      val c = UserChange.CreateUser("foo", testUser, auth.userId, DateTime.now)
+      val c = UserChange.CreateUser(testUser, auth.userId, DateTime.now, "foo")
 
       val t = for {
         _ <- repo.save(c)
@@ -67,7 +67,7 @@ class DynamoDBUserChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
     "save a change for a modified user" in {
       val auth = AuthPrincipal(testUser, Seq.empty)
       val updated = testUser.copy(userName = testUser.userName + "-updated")
-      val c = UserChange.UpdateUser("foo", updated, auth.userId, DateTime.now, testUser)
+      val c = UserChange.UpdateUser(updated, auth.userId, DateTime.now, testUser, "foo")
 
       val t = for {
         _ <- repo.save(c)

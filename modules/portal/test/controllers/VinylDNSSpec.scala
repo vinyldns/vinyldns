@@ -16,20 +16,20 @@
 
 package controllers
 
+import cats.effect.IO
 import com.amazonaws.auth.BasicAWSCredentials
-import models.UserAccount
-import org.joda.time.DateTime
 import org.junit.runner._
 import org.specs2.mock.Mockito
 import org.specs2.mutable._
 import org.specs2.runner._
-import play.api.{Application, Configuration, Environment, Mode}
-import play.api.libs.json.{JsObject, JsValue, Json, OWrites}
+import play.api.libs.json.{JsValue, Json, OWrites}
 import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test._
+import play.api.{Configuration, Environment, Mode}
 import play.core.server.{Server, ServerConfig}
+import vinyldns.core.domain.membership._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -42,7 +42,6 @@ import play.api.routing.sird.{
   PUT => backendPUT,
   _
 }
-import play.api.inject.guice.GuiceApplicationBuilder
 
 import scala.util.{Failure, Success}
 
@@ -52,18 +51,7 @@ import scala.util.{Failure, Success}
   * For more information, consult the wiki.
   */
 @RunWith(classOf[JUnitRunner])
-class VinylDNSSpec extends Specification with Mockito {
-
-  val simulatedBackendPort = 9001
-
-  // Important: order is critical, put the override after loading the default config from application-test.conf
-  val testConfig: Configuration =
-    Configuration.load(Environment.simple()) ++ Configuration.from(
-      Map("portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort"))
-
-  val app: Application = GuiceApplicationBuilder()
-    .configure(testConfig)
-    .build()
+class VinylDNSSpec extends Specification with Mockito with TestApplicationData {
 
   val components: ControllerComponents = Helpers.stubControllerComponents()
   val defaultActionBuilder = DefaultActionBuilder(Helpers.stubBodyParser())
@@ -81,11 +69,11 @@ class VinylDNSSpec extends Specification with Mockito {
         val ws: WSClient = mock[WSClient]
 
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-        userAccessor.get(anyString).returns(Success(Some(frodoAccount)))
-        userAccessor.get("frodo").returns(Success(Some(frodoAccount)))
+        userAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        userAccessor.get("frodo").returns(IO.pure(Some(frodoUser)))
 
         val vinyldnsPortal =
-          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+          new VinylDNS(config, authenticator, userAccessor, ws, components)
         val result = vinyldnsPortal
           .getAuthenticatedUserData()
           .apply(
@@ -95,11 +83,11 @@ class VinylDNSSpec extends Specification with Mockito {
         status(result) must beEqualTo(200)
         val userInfo: JsValue = contentAsJson(result)
 
-        (userInfo \ "id").as[String] must beEqualTo(frodoAccount.userId)
-        (userInfo \ "userName").as[String] must beEqualTo(frodoAccount.username)
-        Some((userInfo \ "firstName").as[String]) must beEqualTo(frodoAccount.firstName)
-        Some((userInfo \ "lastName").as[String]) must beEqualTo(frodoAccount.lastName)
-        Some((userInfo \ "email").as[String]) must beEqualTo(frodoAccount.email)
+        (userInfo \ "id").as[String] must beEqualTo(frodoUser.id)
+        (userInfo \ "userName").as[String] must beEqualTo(frodoUser.userName)
+        Some((userInfo \ "firstName").as[String]) must beEqualTo(frodoUser.firstName)
+        Some((userInfo \ "lastName").as[String]) must beEqualTo(frodoUser.lastName)
+        Some((userInfo \ "email").as[String]) must beEqualTo(frodoUser.email)
         (userInfo \ "isSuper").as[Boolean] must beFalse
       }
       "return Not found if the current logged in user was not found" in new WithApplication(app) {
@@ -109,11 +97,11 @@ class VinylDNSSpec extends Specification with Mockito {
         val ws: WSClient = mock[WSClient]
 
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-        userAccessor.get(anyString).returns(Success(Some(frodoAccount)))
-        userAccessor.get("frodo").returns(Success(None))
+        userAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        userAccessor.get("frodo").returns(IO.pure(None))
 
         val vinyldnsPortal =
-          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+          new VinylDNS(config, authenticator, userAccessor, ws, components)
         val result = vinyldnsPortal
           .getAuthenticatedUserData()
           .apply(
@@ -132,26 +120,23 @@ class VinylDNSSpec extends Specification with Mockito {
         val ws: WSClient = mock[WSClient]
 
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-        userAccessor.get("fbaggins").returns(Success(Some(frodoAccount)))
-        userAccessor.put(any[UserAccount]).returns(Success(frodoAccount))
-        mockAuditLog.log(any[ChangeLogMessage]).returns(Success(newFrodoLog))
+        userAccessor.get("fbaggins").returns(IO.pure(Some(frodoUser)))
+        userAccessor.update(any[User], any[User]).returns(IO.pure(frodoUser))
 
         val vinyldnsPortal =
-          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+          new VinylDNS(config, authenticator, userAccessor, ws, components)
         val result = vinyldnsPortal
           .regenerateCreds()
-          .apply(
-            FakeRequest(POST, "/regenerate-creds").withSession(
-              "username" -> frodoAccount.username,
-              "accessKey" -> frodoAccount.accessKey))
+          .apply(FakeRequest(POST, "/regenerate-creds")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
         status(result) must beEqualTo(200)
         header("Pragma", result) must beSome("no-cache")
         header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
         header("Expires", result) must beSome("0")
 
-        session(result).get("username") must beSome(frodoAccount.username)
-        (session(result).get("accessKey") must not).beSome(frodoAccount.accessKey)
+        session(result).get("username") must beSome(frodoUser.userName)
+        (session(result).get("accessKey") must not).beSome(frodoUser.accessKey)
       }
 
       "fail if user is not found" in new WithApplication(app) {
@@ -163,22 +148,18 @@ class VinylDNSSpec extends Specification with Mockito {
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
         userAccessor
           .get("fbaggins")
-          .returns(
-            Failure(new UserDoesNotExistException(s"Error - User account for frodo not found")))
+          .returns(IO.raiseError(
+            new UserDoesNotExistException(s"Error - User account for frodo not found")))
 
         val vinyldnsPortal =
-          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+          new VinylDNS(config, authenticator, userAccessor, ws, components)
         val result = vinyldnsPortal
           .regenerateCreds()
-          .apply(
-            FakeRequest(POST, "/regenerate-creds").withSession(
-              "username" -> frodoAccount.username,
-              "accessKey" -> frodoAccount.accessKey))
+          .apply(FakeRequest(POST, "/regenerate-creds")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
         status(result) must beEqualTo(404)
-        header("Pragma", result) must beSome("no-cache")
-        header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-        header("Expires", result) must beSome("0")
+        hasCacheHeaders(result)
       }
     }
 
@@ -191,10 +172,10 @@ class VinylDNSSpec extends Specification with Mockito {
           val ws: WSClient = mock[WSClient]
 
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-          userAccessor.get(frodoDetails.username).returns(Success(Some(frodoAccount)))
+          userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -213,10 +194,10 @@ class VinylDNSSpec extends Specification with Mockito {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
-          userAccessor.get(frodoDetails.username).returns(Success(Some(frodoAccount)))
+          userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -234,11 +215,11 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-          userAccessor.get(anyString).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(frodoAccount))
+          userAccessor.get(anyString).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -246,7 +227,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withFormUrlEncodedBody("username" -> "frodo", "password" -> "secondbreakfast")
             )
           there.was(one(userAccessor).get("frodo"))
-          there.was(one(userAccessor).put(_: UserAccount))
+          there.was(one(userAccessor).create(_: User))
         }
         "call the user accessor to create the new style user account if it is not found" in new WithApplication(
           app) {
@@ -258,11 +239,11 @@ class VinylDNSSpec extends Specification with Mockito {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
-          userAccessor.get(frodoDetails.username).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(frodoAccount))
+          userAccessor.get(frodoDetails.username).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -271,7 +252,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 "password" -> "secondbreakfast")
             )
           there.was(one(userAccessor).get(frodoDetails.username))
-          there.was(one(userAccessor).put(_: UserAccount))
+          there.was(one(userAccessor).create(_: User))
         }
 
         "do not call the user accessor to create the new user account if it is found" in new WithApplication(
@@ -281,10 +262,10 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-          userAccessor.get(any[String]).returns(Success(Some(frodoAccount)))
+          userAccessor.get(any[String]).returns(IO.pure(Some(frodoUser)))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -292,7 +273,7 @@ class VinylDNSSpec extends Specification with Mockito {
                 .withFormUrlEncodedBody("username" -> "frodo", "password" -> "secondbreakfast")
             )
           there.was(one(userAccessor).get("frodo"))
-          there.was(no(userAccessor).put(_: UserAccount))
+          there.was(no(userAccessor).create(_: User))
         }
 
         "set the username, and key for the new style membership" in new WithApplication(app) {
@@ -303,10 +284,10 @@ class VinylDNSSpec extends Specification with Mockito {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
-          userAccessor.get(frodoDetails.username).returns(Success(Some(frodoAccount)))
+          userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -314,8 +295,8 @@ class VinylDNSSpec extends Specification with Mockito {
                 "username" -> frodoDetails.username,
                 "password" -> "secondbreakfast")
             )
-          session(response).get("username") must beSome(frodoAccount.username)
-          session(response).get("accessKey") must beSome(frodoAccount.accessKey)
+          session(response).get("username") must beSome(frodoUser.userName)
+          session(response).get("accessKey") must beSome(frodoUser.accessKey)
           session(response).get("rootAccount") must beNone
 
         }
@@ -327,10 +308,10 @@ class VinylDNSSpec extends Specification with Mockito {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
-          userAccessor.get(frodoDetails.username).returns(Success(Some(frodoAccount)))
+          userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -350,11 +331,11 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-          userAccessor.get(anyString).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(frodoAccount))
+          userAccessor.get(anyString).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -370,19 +351,19 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-          userAccessor.get(anyString).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(frodoAccount))
+          userAccessor.get(anyString).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
               FakeRequest()
                 .withFormUrlEncodedBody("username" -> "frodo", "password" -> "secondbreakfast")
             )
-          session(response).get("username") must beSome(frodoAccount.username)
-          session(response).get("accessKey") must beSome(frodoAccount.accessKey)
+          session(response).get("username") must beSome(frodoUser.userName)
+          session(response).get("accessKey") must beSome(frodoUser.accessKey)
         }
         "redirect to index" in new WithApplication(app) {
           val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
@@ -390,11 +371,11 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-          userAccessor.get(anyString).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(frodoAccount))
+          userAccessor.get(anyString).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -413,11 +394,11 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
-          userAccessor.get(anyString).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(serviceAccount))
+          userAccessor.get(anyString).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -433,18 +414,18 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
-          userAccessor.get(anyString).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(serviceAccount))
+          userAccessor.get(anyString).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
               FakeRequest()
                 .withFormUrlEncodedBody("username" -> "service", "password" -> "password")
             )
-          session(response).get("username") must beSome(serviceAccount.username)
+          session(response).get("username") must beSome(serviceAccount.userName)
           session(response).get("accessKey") must beSome(serviceAccount.accessKey)
         }
         "redirect to index" in new WithApplication(app) {
@@ -453,11 +434,11 @@ class VinylDNSSpec extends Specification with Mockito {
           val config: Configuration = Configuration.load(Environment.simple())
           val ws: WSClient = mock[WSClient]
           authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
-          userAccessor.get(anyString).returns(Success(None))
-          userAccessor.put(any[UserAccount]).returns(Success(serviceAccount))
+          userAccessor.get(anyString).returns(IO.pure(None))
+          userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -480,7 +461,7 @@ class VinylDNSSpec extends Specification with Mockito {
             .returns(Failure(new RuntimeException("login failed")))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -500,13 +481,7 @@ class VinylDNSSpec extends Specification with Mockito {
             .returns(Failure(new RuntimeException("login failed")))
 
           val vinyldnsPortal =
-            new VinylDNS(
-              config,
-              authenticator,
-              mockUserAccountAccessor,
-              mockAuditLog,
-              ws,
-              components)
+            new VinylDNS(config, authenticator, mockUserAccountAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -526,7 +501,7 @@ class VinylDNSSpec extends Specification with Mockito {
             .returns(Failure(new RuntimeException("login failed")))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -546,7 +521,7 @@ class VinylDNSSpec extends Specification with Mockito {
             .returns(Failure(new RuntimeException("login failed")))
 
           val vinyldnsPortal =
-            new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+            new VinylDNS(config, authenticator, userAccessor, ws, components)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -569,25 +544,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.newGroup()(
               FakeRequest(POST, "/groups")
                 .withJsonBody(hobbitGroupRequest)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(hobbitGroup)
           }
         }
@@ -601,25 +567,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.newGroup()(
               FakeRequest(POST, "/groups")
                 .withJsonBody(invalidHobbitGroup)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(BAD_REQUEST)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -633,25 +590,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.newGroup()(
               FakeRequest(POST, s"/groups")
                 .withJsonBody(hobbitGroupRequest)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -664,25 +612,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.newGroup()(
               FakeRequest(POST, "/groups")
                 .withJsonBody(hobbitGroupRequest)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(CONFLICT)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -697,24 +636,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.getGroup(hobbitGroupId)(
-              FakeRequest(GET, s"/groups/$hobbitGroupId")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result =
+              underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(hobbitGroup)
           }
         }
@@ -729,24 +659,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.getGroup(hobbitGroupId)(
-              FakeRequest(GET, s"/groups/$hobbitGroupId")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result =
+              underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -759,24 +680,14 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.getGroup("not-hobbits")(
-              FakeRequest(GET, "/groups/not-hobbits")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result = underTest.getGroup("not-hobbits")(FakeRequest(GET, "/groups/not-hobbits")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -791,24 +702,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.deleteGroup(hobbitGroupId)(
-              FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result =
+              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NO_CONTENT)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -822,24 +724,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.deleteGroup(hobbitGroupId)(
-              FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result =
+              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -852,25 +745,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
 
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.deleteGroup(hobbitGroupId)(
-              FakeRequest(DELETE, s"/groups/$hobbitGroupId")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result =
+              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(FORBIDDEN)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -883,24 +767,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.deleteGroup("not-hobbits")(
-              FakeRequest(DELETE, "/groups/not-hobbits")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result =
+              underTest.deleteGroup("not-hobbits")(FakeRequest(DELETE, "/groups/not-hobbits")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -916,26 +791,17 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
             contentAsJson(result) must beEqualTo(hobbitGroup)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -949,25 +815,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(invalidHobbitGroup)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(BAD_REQUEST)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -980,25 +837,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1012,25 +860,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(FORBIDDEN)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1044,25 +883,16 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.updateGroup("not-hobbits")(
               FakeRequest(PUT, "/groups/not-hobbits")
                 .withJsonBody(hobbitGroup)
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1077,24 +907,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(hobbitGroupMembers)
           }
         }
@@ -1109,24 +930,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/groups/$hobbitGroupId/members?maxItems=0")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(BAD_REQUEST)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1139,24 +951,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/groups/$hobbitGroupId/members")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1170,24 +973,15 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/groups/$hobbitGroupId/members")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(NOT_FOUND)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1202,24 +996,14 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.getMyGroups()(
-              FakeRequest(GET, s"/api/groups")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result = underTest.getMyGroups()(FakeRequest(GET, s"/api/groups")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(frodoGroupList)
           }
         }
@@ -1233,24 +1017,14 @@ class VinylDNSSpec extends Specification with Mockito {
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
-            mockUserAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-            val underTest = new VinylDNS(
-              testConfig,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              mockAuditLog,
-              client,
-              components)
-            val result = underTest.getMyGroups()(
-              FakeRequest(GET, s"/api/groups")
-                .withSession(
-                  "username" -> frodoAccount.username,
-                  "accessKey" -> frodoAccount.accessKey))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              new VinylDNS(testConfig, mockLdapAuthenticator, mockUserAccessor, client, components)
+            val result = underTest.getMyGroups()(FakeRequest(GET, s"/api/groups")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
-            header("Pragma", result) must beSome("no-cache")
-            header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-            header("Expires", result) must beSome("0")
+            hasCacheHeaders(result)
           }
         }
       }
@@ -1260,30 +1034,20 @@ class VinylDNSSpec extends Specification with Mockito {
         val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         val config: Configuration = Configuration.load(Environment.simple())
         val ws: WSClient = mock[WSClient]
-        mockUserAccountAccessor.getUserByKey(anyString).returns(Success(Some(frodoAccount)))
-        val underTest = new VinylDNS(
-          config,
-          mockLdapAuthenticator,
-          mockUserAccountAccessor,
-          mockAuditLog,
-          ws,
-          components)
+        mockUserAccountAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest =
+          new VinylDNS(config, mockLdapAuthenticator, mockUserAccountAccessor, ws, components)
 
-        val result: BasicAWSCredentials = underTest.getUserCreds(Some(frodoAccount.accessKey))
-        there.was(one(mockUserAccountAccessor).getUserByKey(frodoAccount.accessKey))
-        result.getAWSAccessKeyId must beEqualTo(frodoAccount.accessKey)
-        result.getAWSSecretKey must beEqualTo(frodoAccount.accessSecret)
+        val result: BasicAWSCredentials = underTest.getUserCreds(Some(frodoUser.accessKey))
+        there.was(one(mockUserAccountAccessor).getUserByKey(frodoUser.accessKey))
+        result.getAWSAccessKeyId must beEqualTo(frodoUser.accessKey)
+        result.getAWSSecretKey must beEqualTo(frodoUser.secretKey)
       }
       "fail when not supplied with a key using the new style" in new WithApplication(app) {
         val config: Configuration = Configuration.load(Environment.simple())
         val ws: WSClient = mock[WSClient]
-        val underTest = new VinylDNS(
-          config,
-          mockLdapAuthenticator,
-          mockUserAccountAccessor,
-          mockAuditLog,
-          ws,
-          components)
+        val underTest =
+          new VinylDNS(config, mockLdapAuthenticator, mockUserAccountAccessor, ws, components)
 
         underTest.getUserCreds(None) must throwAn[IllegalArgumentException]
       }
@@ -1295,20 +1059,18 @@ class VinylDNSSpec extends Specification with Mockito {
         val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         val config: Configuration = Configuration.load(Environment.simple())
         val ws: WSClient = mock[WSClient]
-        userAccessor.get(frodoAccount.username).returns(Success(Some(frodoAccount)))
+        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
         val underTest =
-          new VinylDNS(config, mockLdapAuthenticator, userAccessor, mockAuditLog, ws, components)
+          new VinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components)
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
           FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-            .withSession(
-              "username" -> frodoAccount.username,
-              "accessKey" -> frodoAccount.accessKey))
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
         val content: String = contentAsString(result)
         content must contain("NT ID")
-        content must contain(frodoAccount.username)
-        content must contain(frodoAccount.accessKey)
-        content must contain(frodoAccount.accessSecret)
+        content must contain(frodoUser.userName)
+        content must contain(frodoUser.accessKey)
+        content must contain(frodoUser.secretKey)
       }
     }
 
@@ -1322,12 +1084,12 @@ class VinylDNSSpec extends Specification with Mockito {
         val ws: WSClient = mock[WSClient]
         val lookupValue = "someNTID"
         authenticator.lookup(lookupValue).returns(Success(frodoDetails))
-        userAccessor.get(frodoDetails.username).returns(Success(Some(frodoAccount)))
+        userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
-        val expected = Json.toJson(VinylDNS.UserInfo.fromAccount(frodoAccount))
+        val expected = Json.toJson(VinylDNS.UserInfo.fromUser(frodoUser))
 
         val vinyldnsPortal =
-          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+          new VinylDNS(config, authenticator, userAccessor, ws, components)
         val result = vinyldnsPortal
           .getUserDataByUsername(lookupValue)
           .apply(
@@ -1335,9 +1097,7 @@ class VinylDNSSpec extends Specification with Mockito {
               .withSession("username" -> "frodo")
           )
         status(result) must beEqualTo(200)
-        header("Pragma", result) must beSome("no-cache")
-        header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
-        header("Expires", result) must beSome("0")
+        hasCacheHeaders(result)
         contentAsJson(result) must beEqualTo(expected)
       }
 
@@ -1346,17 +1106,17 @@ class VinylDNSSpec extends Specification with Mockito {
         val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         val config: Configuration = Configuration.load(Environment.simple())
         val ws: WSClient = mock[WSClient]
-        userAccessor.get(frodoAccount.username).returns(Success(None))
+        userAccessor.get(frodoUser.userName).returns(IO.pure(None))
         authenticator
-          .lookup(frodoAccount.username)
+          .lookup(frodoUser.userName)
           .returns(Failure(new UserDoesNotExistException("not found")))
 
         val vinyldnsPortal =
-          new VinylDNS(config, authenticator, userAccessor, mockAuditLog, ws, components)
+          new VinylDNS(config, authenticator, userAccessor, ws, components)
         val result = vinyldnsPortal
-          .getUserDataByUsername(frodoAccount.username)
+          .getUserDataByUsername(frodoUser.userName)
           .apply(
-            FakeRequest(GET, s"/api/users/lookupuser/${frodoAccount.username}")
+            FakeRequest(GET, s"/api/users/lookupuser/${frodoUser.userName}")
               .withSession("username" -> "frodo")
           )
 
@@ -1368,141 +1128,20 @@ class VinylDNSSpec extends Specification with Mockito {
     }
   }
 
-  val frodoDetails = UserDetails(
-    "CN=frodo,OU=hobbits,DC=middle,DC=earth",
-    "frodo",
-    Some("fbaggins@hobbitmail.me"),
-    Some("Frodo"),
-    Some("Baggins"))
-
-  val frodoAccount = UserAccount(
-    "frodo-uuid",
-    "fbaggins",
-    Some("Frodo"),
-    Some("Baggins"),
-    Some("fbaggins@hobbitmail.me"),
-    DateTime.now,
-    "key",
-    "secret")
-
-  val newFrodoLog = UserChangeMessage(
-    "frodo-uuid",
-    "fbaggins",
-    DateTime.now,
-    ChangeType("updated"),
-    frodoAccount,
-    Some(frodoAccount)
-  )
-
-  val serviceAccountDetails =
-    UserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
-  val serviceAccount =
-    UserAccount("service-uuid", "service", None, None, None, DateTime.now, "key", "secret")
-
-  val frodoJsonString: String = s"""{
-       |  "userName":  "${frodoAccount.username}",
-       |  "firstName": "${frodoAccount.firstName}",
-       |  "lastName":  "${frodoAccount.lastName}",
-       |  "email":     "${frodoAccount.email}",
-       |  "created":   "${frodoAccount.created}",
-       |  "id":        "${frodoAccount.userId}"
-       |}
-     """.stripMargin
-
-  val samAccount = UserAccount(
-    "sam-uuid",
-    "sgamgee",
-    Some("Samwise"),
-    Some("Gamgee"),
-    Some("sgamgee@hobbitmail.me"),
-    DateTime.now,
-    "key",
-    "secret")
-  val samDetails = UserDetails(
-    "CN=sam,OU=hobbits,DC=middle,DC=earth",
-    "sam",
-    Some("sgamgee@hobbitmail.me"),
-    Some("Sam"),
-    Some("Gamgee"))
-
   def buildMockUserAccountAccessor: UserAccountAccessor = {
     val accessor = mock[UserAccountAccessor]
-    accessor.get(anyString).returns(Success(Some(mock[UserAccount])))
-    accessor.put(any[UserAccount]).returns(Success(mock[UserAccount]))
-    accessor.getUserByKey(anyString).returns(Success(Some(mock[UserAccount])))
+    accessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+    accessor.create(any[User]).returns(IO.pure(frodoUser))
+    accessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
     accessor
   }
 
-  def buildMockChangeLogStore: ChangeLogStore = {
-    val log = mock[ChangeLogStore]
-    log.log(any[ChangeLogMessage]).defaultAnswer {
-      case message: ChangeLogMessage => Success(message)
-    }
-    log
+  private def hasCacheHeaders(result: Future[play.api.mvc.Result]) = {
+    header("Pragma", result) must beSome("no-cache")
+    header("Cache-Control", result) must beSome("no-cache, no-store, must-revalidate")
+    header("Expires", result) must beSome("0")
   }
 
   val mockUserAccountAccessor: UserAccountAccessor = buildMockUserAccountAccessor
-
-  val mockAuditLog: ChangeLogStore = buildMockChangeLogStore
-
   val mockLdapAuthenticator: LdapAuthenticator = mock[LdapAuthenticator]
-
-  val frodoJson: String =
-    s"""{
-        |"name": "${frodoAccount.username}"
-        |}
-     """.stripMargin
-
-  val hobbitGroupId = "uuid-12345-abcdef"
-  val hobbitGroup: JsValue = Json.parse(s"""{
-        | "id":          "${hobbitGroupId}",
-        | "name":        "hobbits",
-        | "email":       "hobbitAdmin@shire.me",
-        | "description": "Hobbits of the shire",
-        | "members":     [ { "id": "${frodoAccount.userId}" },  { "id": "samwise-userId" } ],
-        | "admins":      [ { "id": "${frodoAccount.userId}" } ]
-        | }
-    """.stripMargin)
-
-  val ringbearerGroup: JsValue = Json.parse(
-    s"""{
-       |  "id":          "ringbearer-group-uuid",
-       |  "name":        "ringbearers",
-       |  "email":       "future-minions@mordor.me",
-       |  "description": "Corruptable folk of middle-earth",
-       |  "members":     [ { "id": "${frodoAccount.userId}" },  { "id": "sauron-userId" } ],
-       |  "admins":      [ { "id": "sauron-userId" } ]
-       |  }
-     """.stripMargin
-  )
-  val hobbitGroupRequest: JsValue = Json.parse(s"""{
-        | "name":        "hobbits",
-        | "email":       "hobbitAdmin@shire.me",
-        | "description": "Hobbits of the shire",
-        | "members":     [ { "id": "${frodoAccount.userId}" },  { "id": "samwise-userId" } ],
-        | "admins":      [ { "id": "${frodoAccount.userId}" } ]
-        | }
-    """.stripMargin)
-
-  val invalidHobbitGroup: JsValue = Json.parse(s"""{
-        | "name":        "hobbits",
-        | "email":       "hobbitAdmin@shire.me",
-        | "description": "Hobbits of the shire",
-        | "members":     [ { "id": "${frodoAccount.userId}" },  { "id": "merlin-userId" } ],
-        | "admins":      [ { "id": "${frodoAccount.userId}" } ]
-        | }
-    """.stripMargin)
-
-  val hobbitGroupMembers: JsValue = Json.parse(
-    s"""{
-       | "members": [ ${frodoJsonString} ],
-       | "maxItems": 100
-       |}
-     """.stripMargin
-  )
-
-  val groupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup))
-  val emptyGroupList: JsObject = Json.obj("groups" -> Json.arr())
-
-  val frodoGroupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup, ringbearerGroup))
 }

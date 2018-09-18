@@ -31,5 +31,7 @@ trait UserRepository extends Repository {
 
   def getUserByAccessKey(accessKey: String): IO[Option[User]]
 
+  def getUserByName(userName: String): IO[Option[User]]
+
   def save(user: User): IO[User]
 }
