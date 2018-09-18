@@ -47,6 +47,7 @@ object DynamoDBUserRepository {
   private[repository] val LOCK_STATUS = "lockstatus"
   private[repository] val USER_NAME_INDEX_NAME = "username_index"
   private[repository] val ACCESS_KEY_INDEX_NAME = "access_key_index"
+  private val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBUserRepository])
 
   def apply(
       config: DynamoDBRepositorySettings,
@@ -115,7 +116,6 @@ object DynamoDBUserRepository {
 
   def fromItem(item: java.util.Map[String, AttributeValue]): IO[User] = IO {
     def userStatus(str: String): LockStatus = Try(LockStatus.withName(str)).getOrElse {
-      val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBUserRepository])
       log.error(s"Invalid locked status value '$str'; defaulting to unlocked")
       LockStatus.Unlocked
     }
@@ -130,7 +130,9 @@ object DynamoDBUserRepository {
       lastName = Option(item.get(LAST_NAME)).flatMap(ln => Option(ln.getS)),
       email = Option(item.get(EMAIL)).flatMap(e => Option(e.getS)),
       isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL,
-      lockStatus = userStatus(item.get(LOCK_STATUS).getS)
+      lockStatus =
+        if (item.get(LOCK_STATUS) == null) LockStatus.Unlocked
+        else userStatus(item.get(LOCK_STATUS).getS)
     )
   }
 }
