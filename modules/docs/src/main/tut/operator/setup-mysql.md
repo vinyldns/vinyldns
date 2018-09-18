@@ -24,4 +24,4 @@ pool.
 
 ## Configuring MySQL
 Before you can configure MySQL, make note of the host, username, and password that you will be using.
-Follow the [MySQL Configuration](config-api#mysql) to complete the setup.
+Follow the [API Database Configuration](config-api#database-configuration) to complete the setup.

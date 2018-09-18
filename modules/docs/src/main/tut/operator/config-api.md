@@ -12,8 +12,7 @@ section: "operator_menu"
 - [Configuration Overview](#configuration-overview)
 - [Configuration API Server](#configuring-api-server)
 - [AWS SQS](#aws-sqs)
-- [AWS DynamoDB](#aws-dynamodb)
-- [MySQL](#mysql)
+- [Database Configuration](#database-configuration)
 - [Cryptography](#cryptography-settings)
 - [Additional Configuration Settings](#additional-configuration-settings)
 - [Full Example Config](#full-example-config)
@@ -101,105 +100,113 @@ vinyldns {
 }
 ```
 
-## AWS DynamoDB
-Be sure to follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
+## Database Configuration
+VinylDNS supports both DynamoDB and MySQL backends. You can enable all repos in a single backend, or have a mix of the two.
+For each backend, you need to configure the table(s) that should be loaded.
+
+You must have all of the following required API repositories configured in exactly one datastore.
+**At the moment, not all repositories are implemented in both datastores, but we are actively working on expanding
+MySQL support to all repositories**:
+- record-set (dynamodb only)
+- record-change (dynamodb only)
+- zone-change (mysql or dynamodb)
+- user (dynamodb only)
+- group (dynamodb only)
+- group-change (dynamodb only)
+- membership (dynamodb only)
+- zone (mysql only)
+- batch-change (mysql only)
+
+
+If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
+
+If using MySQL, follow the [MySQL Setup Guide](setup-mysql) first to get the values you need to configure here.
+
 
 ```yaml
 vinyldns {
 
-  dynamo {
-
-    # AWS_ACCESS_KEY, credential needed to access the SQS queue
-    key = "x"
-
-    # AWS_SECRET_ACCESS_KEY, credential needed to access the SQS queue
-    secret = "x"
-
-    # DynamoDB url for the region you are running in, this example is in us-east-1
-    endpoint = "https://dynamodb.us-east-1.amazonaws.com"
-  }
-
-  # These are settings for each table
-  zoneChanges {
-    dynamo {
-      # Name of the table where zone changes are saved
-      tableName = "zoneChange"
-
-      # Provisioned throughput for reads
-      provisionedReads = 30
-
-      # Provisioned throughput for writes
-      provisionedWrites = 30
+  # this list should include only the datastores being used by your instance
+  data-stores = ["mysql", "dynamodb"]
+  
+  dynamodb {
+      
+    # this is the path to the DynamoDB provider. This should not be edited
+    # from the default in reference.conf
+    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    
+    settings {
+      # AWS_ACCESS_KEY, credential needed to access the SQS queue
+      key = "x"
+    
+      # AWS_SECRET_ACCESS_KEY, credential needed to access the SQS queue
+      secret = "x"
+    
+      # DynamoDB url for the region you are running in, this example is in us-east-1
+      endpoint = "https://dynamodb.us-east-1.amazonaws.com"
+      
+      # DynamoDB region
+      region = "us-east-1"
+    }
+    
+    repositories {
+      # all repositories with config sections here will be enabled in dynamodb
+      record-set {
+        # Name of the table where recordsets are saved
+        table-name = "recordSetTest"
+        # Provisioned throughput for reads
+        provisioned-reads = 30
+        # Provisioned throughput for writes
+        provisioned-writes = 20
+      }
+      record-change {
+        table-name = "recordChangeTest"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      zone-change {
+        table-name = "zoneChangesTest"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      user {
+        table-name = "usersTest"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      group {
+        table-name = "groupsTest"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      group-change {
+        table-name = "groupChangesTest"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      membership {
+        table-name = "membershipTest"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
     }
   }
-
-  recordSet {
-    dynamo {
-      tableName = "recordSet"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  recordChange {
-    dynamo {
-      tableName = "recordChange"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  users {
-    dynamo {
-      tableName = "users"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  groups {
-    dynamo {
-      tableName = "groups"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  groupChanges {
-    dynamo {
-      tableName = "groupChanges"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  membership {
-    dynamo {
-      tableName = "membership"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-}
-```
-
-## MySQL
-Be sure to follow the [MySQL Setup Guide](setup-mysql) first to get the values you need to configure here.
-
-```yaml
-  db {
-    # the name of the database, recommend to leave this as is
-    name = "vinyldns"
-
-    # should be false in production
-    local-mode = false
-
-    default {
+  
+  mysql {
+    
+    # this is the path to the mysql provider. This should not be edited
+    # from the default in reference.conf
+    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    
+    settings {
+      # the name of the database, recommend to leave this as is
+      name = "vinyldns"
+      
       # the jdbc driver, recommended to leave this as is
       driver = "org.mariadb.jdbc.Driver"
 
       # the URL used to create the schema, typically this will be without the "database" name
-      migrationUrl = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
 
       # the main connection URL
       url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
@@ -211,15 +218,25 @@ Be sure to follow the [MySQL Setup Guide](setup-mysql) first to get the values y
       password = "pass"
 
       # the maximum number of connections to scale the connection pool to
-      poolMaxSize = 20
+      pool-max-size = 20
 
       # the maximum number of seconds to wait for a connection from the connection pool
-      connectionTimeoutMillis = 1000
+      connection-timeout-millis = 1000
 
       # The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit
-      maxLifeTime = 600000
+      max-life-time = 600000
+    }
+    
+    repositories {
+      # all repositories with config sections here will be enabled in mysql
+      zone {
+        # no additional settings for repositories enabled in mysql
+      },
+      batch-change {
+      }
     }
   }
+}
 ```
 
 ## Cryptography Settings
@@ -373,84 +390,78 @@ vinyldns {
     type = "vinyldns.core.crypto.NoOpCrypto"
   }
 
-  # default settings point to the setup from docker compose
-  db {
-    name = "vinyldns"
-    # set this to true if we run migrations to initialize the database schema on start
-    local-mode = true
-    default {
+  # both datastore options are in use
+  data-stores = ["mysql", "dynamodb"]
+  
+  dynamodb {
+    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    
+    settings {
+      key = "x"
+      secret = "x"
+      endpoint = "http://vinyldns-dynamodb:8000"
+      region = "us-east-1"
+    }
+    
+    repositories {
+      record-set {
+        table-name = "recordSet"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      record-change {
+        table-name = "recordChange"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      zone-change {
+        table-name = "zoneChanges"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      user {
+        table-name = "users"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      group {
+        table-name = "groups"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      group-change {
+        table-name = "groupChanges"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+      membership {
+        table-name = "membership"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+    }
+  }
+  
+  mysql {
+    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    
+    settings {
+      name = "vinyldns"
       driver = "org.mariadb.jdbc.Driver"
-      migrationUrl = "jdbc:mariadb://vinyldns-mysql:3306/?user=root&password=pass"
-      url = "jdbc:mariadb://vinyldns-mysql:3306/vinyldns?user=root&password=pass"
+      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+      url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
       user = "root"
       password = "pass"
-      poolMaxSize = 20
-      connectionTimeoutMillis = 1000
-      maxLifeTime = 600000
+      pool-max-size = 20
+      connection-timeout-millis = 1000
+      max-life-time = 600000
     }
-  }
-
-  # dynamodb settings, for local docker compose the secrets are not needed
-  dynamo {
-    key = "x"
-    secret = "x"
-    endpoint = "http://vinyldns-dynamodb:8000"
-  }
-
-  # dynamodb table settings follow
-  zoneChanges {
-    dynamo {
-      tableName = "zoneChange"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  recordSet {
-    dynamo {
-      tableName = "recordSet"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  recordChange {
-    dynamo {
-      tableName = "recordChange"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  users {
-    dynamo {
-      tableName = "users"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  groups {
-    dynamo {
-      tableName = "groups"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  groupChanges {
-    dynamo {
-      tableName = "groupChanges"
-      provisionedReads = 30
-      provisionedWrites = 30
-    }
-  }
-
-  membership {
-    dynamo {
-      tableName = "membership"
-      provisionedReads = 30
-      provisionedWrites = 30
+    
+    repositories {
+      zone {
+      },
+      batch-change {
+      }
     }
   }
 

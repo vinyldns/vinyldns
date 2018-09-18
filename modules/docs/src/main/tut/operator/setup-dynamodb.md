@@ -36,7 +36,7 @@ the throughput very low and operate in the "almost" free-tier.
 
 ## Configuring DynamoDB
 Before you can configure DynamoDB, make note of the AWS account (access key and secret access key) as well as the
-DynamoDB endpoint (region) that you will be using.  Follow the [DynamoDB API Configuration](config-api#aws-dynamodb)
+DynamoDB endpoint (region) that you will be using.  Follow the [API Database Configuration](config-api#database-configuration)
 to complete the setup for the API.
 
 You also need to configure DynamoDB for the portal [DynamoDB Portal Configuration](config-portal#dynamodb)
