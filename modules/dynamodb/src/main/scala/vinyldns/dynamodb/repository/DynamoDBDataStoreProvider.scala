@@ -23,12 +23,7 @@ import vinyldns.core.repository._
 import pureconfig.module.catseffect.loadConfigF
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{
-  GroupChangeRepository,
-  GroupRepository,
-  MembershipRepository,
-  UserRepository
-}
+import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName._
@@ -37,7 +32,7 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger("DynamoDBDataStoreProvider")
   private val implementedRepositories =
-    Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange)
+    Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange, userChange)
 
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
     for {
@@ -105,8 +100,11 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
         zoneChange,
         DynamoDBZoneChangeRepository.apply(_, dynamoConfig)),
       IO.pure[Option[ZoneRepository]](None),
-      IO.pure[Option[BatchChangeRepository]](None)
-    ).parMapN { new DataStore(_, _, _, _, _, _, _, _, _) }
+      IO.pure[Option[BatchChangeRepository]](None),
+      initializeSingleRepo[UserChangeRepository](
+        userChange,
+        DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto))
+    ).parMapN { DataStore.apply }
   }
 
 }
