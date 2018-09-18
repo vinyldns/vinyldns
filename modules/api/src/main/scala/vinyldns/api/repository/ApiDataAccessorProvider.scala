@@ -39,16 +39,16 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       zone,
       batchChange)
 
-  def create(responses: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, ApiDataAccessor] =
+  def create(dataStores: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, ApiDataAccessor] =
     (
-      getRepoOf[UserRepository](responses, user),
-      getRepoOf[GroupRepository](responses, group),
-      getRepoOf[MembershipRepository](responses, membership),
-      getRepoOf[GroupChangeRepository](responses, groupChange),
-      getRepoOf[RecordSetRepository](responses, recordSet),
-      getRepoOf[RecordChangeRepository](responses, recordChange),
-      getRepoOf[ZoneChangeRepository](responses, zoneChange),
-      getRepoOf[ZoneRepository](responses, zone),
-      getRepoOf[BatchChangeRepository](responses, batchChange)
+      getRepoOf[UserRepository](dataStores, user),
+      getRepoOf[GroupRepository](dataStores, group),
+      getRepoOf[MembershipRepository](dataStores, membership),
+      getRepoOf[GroupChangeRepository](dataStores, groupChange),
+      getRepoOf[RecordSetRepository](dataStores, recordSet),
+      getRepoOf[RecordChangeRepository](dataStores, recordChange),
+      getRepoOf[ZoneChangeRepository](dataStores, zoneChange),
+      getRepoOf[ZoneRepository](dataStores, zone),
+      getRepoOf[BatchChangeRepository](dataStores, batchChange)
     ).mapN(ApiDataAccessor)
 }
