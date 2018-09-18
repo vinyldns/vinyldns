@@ -268,6 +268,7 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
   .settings(libraryDependencies ++= dynamoDBDependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
+    organization := "io.vinyldns",
     coverageMinimum := 85,
     coverageFailOnMinimum := true,
     coverageHighlighting := true
