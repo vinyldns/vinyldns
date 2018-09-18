@@ -18,11 +18,11 @@ package controllers
 
 import javax.naming.NamingEnumeration
 import javax.naming.directory._
-
 import controllers.LdapAuthenticator.{ContextCreator, LdapByDomainAuthenticator}
 import org.specs2.mock.Mockito
 import org.specs2.mock.mockito.ArgumentCapture
 import org.specs2.mutable.Specification
+import play.api.{Configuration, Environment}
 import play.api.test.WithApplication
 import play.api.inject.guice.GuiceApplicationBuilder
 
@@ -63,24 +63,22 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
     Mocks(contextCreator, context, searchResults, searchNext, byDomainAuthenticator, mockAttributes)
   }
 
-  val app = GuiceApplicationBuilder().build()
-  val testApp = GuiceApplicationBuilder().configure(Map("portal.test_login" -> true)).build()
-  val settings = new Settings(app.configuration)
   val testDomain1 = LdapSearchDomain("someDomain", "DC=test,DC=test,DC=com")
   val testDomain2 = LdapSearchDomain("anotherDomain", "DC=test,DC=com")
 
   "LdapAuthenticator" should {
-    "apply method must create an LDAP Authenticator" in new WithApplication(app) {
-      val underTest = LdapAuthenticator.apply(settings)
-      underTest must haveClass(
-        ClassTag(
-          new LdapAuthenticator(
-            settings.ldapSearchBase,
-            LdapByDomainAuthenticator.apply(),
-            mock[ServiceAccount]).getClass))
+    "apply method must create an LDAP Authenticator" in {
+      val testConfig: Configuration =
+        Configuration.load(Environment.simple()) ++ Configuration.from(
+          Map("portal.test_login" -> false))
+      val underTest = LdapAuthenticator.apply(new Settings(testConfig))
+      underTest must beAnInstanceOf[LdapAuthenticator]
     }
-    "apply method must create a Test Authenticator if selected" in new WithApplication(testApp) {
-      val underTest = LdapAuthenticator.apply(new Settings(app.configuration))
+    "apply method must create a Test Authenticator if selected" in {
+      val testConfig: Configuration =
+        Configuration.load(Environment.simple()) ++ Configuration.from(
+          Map("portal.test_login" -> true))
+      val underTest = LdapAuthenticator.apply(new Settings(testConfig))
       underTest must beAnInstanceOf[TestAuthenticator]
     }
     ".authenticate" should {
