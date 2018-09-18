@@ -58,14 +58,15 @@ trait TestApplicationData { this: Mockito =>
   val serviceAccount =
     User("service", "key", "secret", None, None, None, DateTime.now, "service-uuid")
 
-  val frodoJsonString: String = s"""{
-                                   |  "userName":  "${frodoUser.userName}",
-                                   |  "firstName": "${frodoUser.firstName}",
-                                   |  "lastName":  "${frodoUser.lastName}",
-                                   |  "email":     "${frodoUser.email}",
-                                   |  "created":   "${frodoUser.created}",
-                                   |  "id":        "${frodoUser.id}"
-                                   |}
+  val frodoJsonString: String =
+    s"""{
+       |  "userName":  "${frodoUser.userName}",
+       |  "firstName": "${frodoUser.firstName}",
+       |  "lastName":  "${frodoUser.lastName}",
+       |  "email":     "${frodoUser.email}",
+       |  "created":   "${frodoUser.created}",
+       |  "id":        "${frodoUser.id}"
+       |}
      """.stripMargin
 
   val samAccount = User(
@@ -92,13 +93,13 @@ trait TestApplicationData { this: Mockito =>
 
   val hobbitGroupId = "uuid-12345-abcdef"
   val hobbitGroup: JsValue = Json.parse(s"""{
-                                           | "id":          "${hobbitGroupId}",
-                                           | "name":        "hobbits",
-                                           | "email":       "hobbitAdmin@shire.me",
-                                           | "description": "Hobbits of the shire",
-                                           | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
-                                           | "admins":      [ { "id": "${frodoUser.id}" } ]
-                                           | }
+       | "id":          "${hobbitGroupId}",
+       | "name":        "hobbits",
+       | "email":       "hobbitAdmin@shire.me",
+       | "description": "Hobbits of the shire",
+       | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
+       | "admins":      [ { "id": "${frodoUser.id}" } ]
+       | }
     """.stripMargin)
 
   val ringbearerGroup: JsValue = Json.parse(
@@ -113,21 +114,21 @@ trait TestApplicationData { this: Mockito =>
      """.stripMargin
   )
   val hobbitGroupRequest: JsValue = Json.parse(s"""{
-                                                  | "name":        "hobbits",
-                                                  | "email":       "hobbitAdmin@shire.me",
-                                                  | "description": "Hobbits of the shire",
-                                                  | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
-                                                  | "admins":      [ { "id": "${frodoUser.id}" } ]
-                                                  | }
+      | "name":        "hobbits",
+      | "email":       "hobbitAdmin@shire.me",
+      | "description": "Hobbits of the shire",
+      | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
+      | "admins":      [ { "id": "${frodoUser.id}" } ]
+      | }
     """.stripMargin)
 
   val invalidHobbitGroup: JsValue = Json.parse(s"""{
-                                                  | "name":        "hobbits",
-                                                  | "email":       "hobbitAdmin@shire.me",
-                                                  | "description": "Hobbits of the shire",
-                                                  | "members":     [ { "id": "${frodoUser.id}" },  { "id": "merlin-userId" } ],
-                                                  | "admins":      [ { "id": "${frodoUser.id}" } ]
-                                                  | }
+      | "name":        "hobbits",
+      | "email":       "hobbitAdmin@shire.me",
+      | "description": "Hobbits of the shire",
+      | "members":     [ { "id": "${frodoUser.id}" },  { "id": "merlin-userId" } ],
+      | "admins":      [ { "id": "${frodoUser.id}" } ]
+      | }
     """.stripMargin)
 
   val hobbitGroupMembers: JsValue = Json.parse(

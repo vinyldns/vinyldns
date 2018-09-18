@@ -35,7 +35,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 /* these verbs are renamed to avoid collisions with the verb identifiers in the standard values library file */
-import play.api.routing.sird.{DELETE => backendDELETE, GET => backendGET, POST => backendPOST, PUT => backendPUT, _}
+import play.api.routing.sird.{
+  DELETE => backendDELETE,
+  GET => backendGET,
+  POST => backendPOST,
+  PUT => backendPUT,
+  _
+}
 
 import scala.util.{Failure, Success}
 
