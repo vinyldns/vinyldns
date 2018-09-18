@@ -16,14 +16,29 @@
 
 package controllers
 
+import cats.effect.IO
 import org.junit.runner.RunWith
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
+import play.api.{Configuration, Environment}
 import play.api.test.Helpers._
 import play.api.test._
+import vinyldns.core.domain.membership.User
+import play.api.mvc.ControllerComponents
+import play.api.test.CSRFTokenHelper._
+
 @RunWith(classOf[JUnitRunner])
 class FrontendControllerSpec extends Specification with Mockito with TestApplicationData {
+
+  val components: ControllerComponents = Helpers.stubControllerComponents()
+  val config: Configuration = Configuration.load(Environment.simple())
+  val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+  val underTest = new FrontendController(
+    components,
+    config,
+    userAccessor
+  )
 
   "FrontendController" should {
     "send 404 on a bad request" in new WithApplication(app) {
@@ -37,11 +52,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         headers(result) must contain("Location" -> "/login")
       }
       "render the index page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.index()(FakeRequest(GET, "/").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain(s"Are you sure you want to log out")
@@ -55,11 +67,9 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         headers(result) must contain("Location" -> "/login")
       }
       "render the zone page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/index")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.index()(
+            FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Are you sure you want to log out")
@@ -74,11 +84,9 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         headers(result) must contain("Location" -> "/login")
       }
       "render the groups view page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/groups")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.viewAllGroups()(
+            FakeRequest(GET, "/groups").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Groups | VinylDNS")
@@ -92,11 +100,9 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         headers(result) must contain("Location" -> "/login")
       }
       "render the groups view page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/groups/some-id")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.viewGroup("some-id")(
+            FakeRequest(GET, "/groups").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Group | VinylDNS")
@@ -110,11 +116,9 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         headers(result) must contain("Location" -> "/login")
       }
       "render the zone view page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/zones")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.viewAllZones()(
+            FakeRequest(GET, "/zones").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Zones | VinylDNS")
@@ -127,12 +131,10 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
-      "render the groups view page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/zones/some-id")
-            .withSession("username" -> username)).get
+      "render the zones view page when the user is logged in" in new WithApplication(app) {
+        val result =
+          underTest.viewZone("some-id")(
+            FakeRequest(GET, "/zones/some-id").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Zone | VinylDNS")
@@ -182,11 +184,9 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         headers(result) must contain("Location" -> "/login")
       }
       "render the batch changes view page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/batchchanges")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.viewAllBatchChanges()(
+            FakeRequest(GET, "/batchchanges").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Batch Changes | VinylDNS")
@@ -200,11 +200,11 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         headers(result) must contain("Location" -> "/login")
       }
       "render the batch change view page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/batchchanges/some-id")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.viewBatchChange("some-id")(
+            FakeRequest(GET, "/batchchanges/some-id")
+              .withSession("username" -> "frodo")
+              .withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Batch Change | VinylDNS")
@@ -217,12 +217,10 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
-      "render the batch change view page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/batchchanges/new")
-            .withSession("username" -> username)).get
+      "render the new batch change view page when the user is logged in" in new WithApplication(app) {
+        val result =
+          underTest.viewNewBatchChange()(
+            FakeRequest(GET, "/batchchanges/new").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("New Batch Change | VinylDNS")
@@ -239,16 +237,22 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       }
 
       "be displayed on the logged-in view if sidebar flag is true" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/zones")
-            .withSession("username" -> username)).get
+        val result =
+          underTest.viewAllZones()(
+            FakeRequest(GET, "/zones").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("test link sidebar")
         contentAsString(result) must not(contain("test link login"))
       }
     }
+  }
+
+  def buildMockUserAccountAccessor: UserAccountAccessor = {
+    val accessor = mock[UserAccountAccessor]
+    accessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+    accessor.create(any[User]).returns(IO.pure(frodoUser))
+    accessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+    accessor
   }
 }

@@ -30,10 +30,13 @@ import scala.concurrent.Future
  * Controller for specific pages - sends requests along to views
  */
 @Singleton
-class FrontendController @Inject()(components: ControllerComponents, configuration: Configuration)
+class FrontendController @Inject()(
+    components: ControllerComponents,
+    configuration: Configuration,
+    userAccountAccessor: UserAccountAccessor)
     extends AbstractController(components) {
 
-  import VinylDNS.withAuthenticatedUser
+  private val userAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
@@ -57,53 +60,37 @@ class FrontendController @Inject()(components: ControllerComponents, configurati
     Redirect("/login").withNewSession
   }
 
-  def index(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.zones.zones(username)))
-    }
+  def index(): Action[AnyContent] = userAction.async { implicit request =>
+    Future(Ok(views.html.zones.zones(request.user.userName)))
   }
 
-  def viewAllGroups(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.groups.groups(username)))
-    }
+  def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>
+    Future(Ok(views.html.groups.groups(request.user.userName)))
   }
 
-  def viewGroup(groupId: String): Action[AnyContent] = Action.async { implicit request =>
+  def viewGroup(groupId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View group for $groupId")
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.groups.groupDetail(username)))
-    }
+    Future(Ok(views.html.groups.groupDetail(request.user.userName)))
   }
 
-  def viewAllZones(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.zones.zones(username)))
-    }
+  def viewAllZones(): Action[AnyContent] = userAction.async { implicit request =>
+    Future(Ok(views.html.zones.zones(request.user.userName)))
   }
 
-  def viewZone(zoneId: String): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.zones.zoneDetail(username, zoneId)))
-    }
+  def viewZone(zoneId: String): Action[AnyContent] = userAction.async { implicit request =>
+    Future(Ok(views.html.zones.zoneDetail(request.user.userName, zoneId)))
   }
 
-  def viewAllBatchChanges(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.batchChanges.batchChanges(username)))
-    }
+  def viewAllBatchChanges(): Action[AnyContent] = userAction.async { implicit request =>
+    Future(Ok(views.html.batchChanges.batchChanges(request.user.userName)))
   }
 
-  def viewBatchChange(batchId: String): Action[AnyContent] = Action.async { implicit request =>
+  def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View Batch Change for $batchId")
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.batchChanges.batchChangeDetail(username)))
-    }
+    Future(Ok(views.html.batchChanges.batchChangeDetail(request.user.userName)))
   }
 
-  def viewNewBatchChange(): Action[AnyContent] = Action.async { implicit request =>
-    withAuthenticatedUser { username =>
-      Future(Ok(views.html.batchChanges.batchChangeNew(username)))
-    }
+  def viewNewBatchChange(): Action[AnyContent] = userAction.async { implicit request =>
+    Future(Ok(views.html.batchChanges.batchChangeNew(request.user.userName)))
   }
 }

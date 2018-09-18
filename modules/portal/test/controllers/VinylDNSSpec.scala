@@ -145,11 +145,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val config: Configuration = Configuration.load(Environment.simple())
         val ws: WSClient = mock[WSClient]
 
+        userAccessor.get("fbaggins").returns(IO.pure(None))
+
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-        userAccessor
-          .get("fbaggins")
-          .returns(IO.raiseError(
-            new UserDoesNotExistException(s"Error - User account for frodo not found")))
 
         val vinyldnsPortal =
           new VinylDNS(config, authenticator, userAccessor, ws, components, crypto)
@@ -544,6 +542,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -573,6 +572,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -602,6 +602,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -630,6 +631,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -660,6 +662,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -689,6 +692,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -716,6 +720,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -744,6 +749,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -772,6 +778,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -799,6 +806,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
 
             val underTest =
@@ -827,6 +835,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -857,6 +866,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -887,6 +897,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -915,6 +926,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -944,6 +956,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -973,6 +986,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -1003,6 +1017,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -1032,6 +1047,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -1059,6 +1075,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -1087,6 +1104,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -1116,6 +1134,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -1143,6 +1162,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
@@ -1252,7 +1272,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         val config: Configuration = Configuration.load(Environment.simple())
         val ws: WSClient = mock[WSClient]
-        userAccessor.get(frodoUser.userName).returns(IO.pure(None))
+        userAccessor.get(any[String]).returns(IO.pure(None))
         authenticator
           .lookup(frodoUser.userName)
           .returns(Failure(new UserDoesNotExistException("not found")))
@@ -1267,9 +1287,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           )
 
         status(result) must beEqualTo(404)
-        header("Pragma", result) must beNone
-        header("Cache-Control", result) must beNone
-        header("Expires", result) must beNone
+        hasCacheHeaders(result)
       }
     }
   }
