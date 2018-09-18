@@ -18,32 +18,24 @@ package controllers
 
 import cats.effect.IO
 import com.amazonaws.auth.BasicAWSCredentials
-import org.joda.time.DateTime
 import org.junit.runner._
 import org.specs2.mock.Mockito
 import org.specs2.mutable._
 import org.specs2.runner._
-import play.api.{Application, Configuration, Environment, Mode}
-import play.api.libs.json.{JsObject, JsValue, Json, OWrites}
+import play.api.libs.json.{JsValue, Json, OWrites}
 import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.Helpers._
 import play.api.test._
+import play.api.{Configuration, Environment, Mode}
 import play.core.server.{Server, ServerConfig}
-import vinyldns.core.domain.membership.{User, UserChange, UserChangeType}
+import vinyldns.core.domain.membership._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 /* these verbs are renamed to avoid collisions with the verb identifiers in the standard values library file */
-import play.api.routing.sird.{
-  DELETE => backendDELETE,
-  GET => backendGET,
-  POST => backendPOST,
-  PUT => backendPUT,
-  _
-}
-import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.routing.sird.{DELETE => backendDELETE, GET => backendGET, POST => backendPOST, PUT => backendPUT, _}
 
 import scala.util.{Failure, Success}
 
@@ -53,18 +45,7 @@ import scala.util.{Failure, Success}
   * For more information, consult the wiki.
   */
 @RunWith(classOf[JUnitRunner])
-class VinylDNSSpec extends Specification with Mockito {
-
-  val simulatedBackendPort = 9001
-
-  // Important: order is critical, put the override after loading the default config from application-test.conf
-  val testConfig: Configuration =
-    Configuration.load(Environment.simple()) ++ Configuration.from(
-      Map("portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort"))
-
-  val app: Application = GuiceApplicationBuilder()
-    .configure(testConfig)
-    .build()
+class VinylDNSSpec extends Specification with Mockito with TestApplicationData {
 
   val components: ControllerComponents = Helpers.stubControllerComponents()
   val defaultActionBuilder = DefaultActionBuilder(Helpers.stubBodyParser())
@@ -1141,63 +1122,6 @@ class VinylDNSSpec extends Specification with Mockito {
     }
   }
 
-  val frodoDetails = UserDetails(
-    "CN=frodo,OU=hobbits,DC=middle,DC=earth",
-    "frodo",
-    Some("fbaggins@hobbitmail.me"),
-    Some("Frodo"),
-    Some("Baggins"))
-
-  val frodoUser = User(
-    "fbaggins",
-    "key",
-    "secret",
-    Some("Frodo"),
-    Some("Baggins"),
-    Some("fbaggins@hobbitmail.me"),
-    DateTime.now,
-    "frodo-uuid")
-
-  val newFrodoLog = UserChange(
-    "frodo-uuid",
-    frodoUser,
-    "fbaggins",
-    DateTime.now,
-    None,
-    UserChangeType.Create
-  ).toOption.get
-
-  val serviceAccountDetails =
-    UserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
-  val serviceAccount =
-    User("service", "key", "secret", None, None, None, DateTime.now, "service-uuid")
-
-  val frodoJsonString: String = s"""{
-       |  "userName":  "${frodoUser.userName}",
-       |  "firstName": "${frodoUser.firstName}",
-       |  "lastName":  "${frodoUser.lastName}",
-       |  "email":     "${frodoUser.email}",
-       |  "created":   "${frodoUser.created}",
-       |  "id":        "${frodoUser.id}"
-       |}
-     """.stripMargin
-
-  val samAccount = User(
-    "sgamgee",
-    "key",
-    "secret",
-    Some("Samwise"),
-    Some("Gamgee"),
-    Some("sgamgee@hobbitmail.me"),
-    DateTime.now,
-    "sam-uuid")
-  val samDetails = UserDetails(
-    "CN=sam,OU=hobbits,DC=middle,DC=earth",
-    "sam",
-    Some("sgamgee@hobbitmail.me"),
-    Some("Sam"),
-    Some("Gamgee"))
-
   def buildMockUserAccountAccessor: UserAccountAccessor = {
     val accessor = mock[UserAccountAccessor]
     accessor.get(anyString).returns(IO.pure(Some(frodoUser)))
@@ -1214,63 +1138,4 @@ class VinylDNSSpec extends Specification with Mockito {
 
   val mockUserAccountAccessor: UserAccountAccessor = buildMockUserAccountAccessor
   val mockLdapAuthenticator: LdapAuthenticator = mock[LdapAuthenticator]
-
-  val frodoJson: String =
-    s"""{
-        |"name": "${frodoUser.userName}"
-        |}
-     """.stripMargin
-
-  val hobbitGroupId = "uuid-12345-abcdef"
-  val hobbitGroup: JsValue = Json.parse(s"""{
-        | "id":          "${hobbitGroupId}",
-        | "name":        "hobbits",
-        | "email":       "hobbitAdmin@shire.me",
-        | "description": "Hobbits of the shire",
-        | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
-        | "admins":      [ { "id": "${frodoUser.id}" } ]
-        | }
-    """.stripMargin)
-
-  val ringbearerGroup: JsValue = Json.parse(
-    s"""{
-       |  "id":          "ringbearer-group-uuid",
-       |  "name":        "ringbearers",
-       |  "email":       "future-minions@mordor.me",
-       |  "description": "Corruptable folk of middle-earth",
-       |  "members":     [ { "id": "${frodoUser.id}" },  { "id": "sauron-userId" } ],
-       |  "admins":      [ { "id": "sauron-userId" } ]
-       |  }
-     """.stripMargin
-  )
-  val hobbitGroupRequest: JsValue = Json.parse(s"""{
-        | "name":        "hobbits",
-        | "email":       "hobbitAdmin@shire.me",
-        | "description": "Hobbits of the shire",
-        | "members":     [ { "id": "${frodoUser.id}" },  { "id": "samwise-userId" } ],
-        | "admins":      [ { "id": "${frodoUser.id}" } ]
-        | }
-    """.stripMargin)
-
-  val invalidHobbitGroup: JsValue = Json.parse(s"""{
-        | "name":        "hobbits",
-        | "email":       "hobbitAdmin@shire.me",
-        | "description": "Hobbits of the shire",
-        | "members":     [ { "id": "${frodoUser.id}" },  { "id": "merlin-userId" } ],
-        | "admins":      [ { "id": "${frodoUser.id}" } ]
-        | }
-    """.stripMargin)
-
-  val hobbitGroupMembers: JsValue = Json.parse(
-    s"""{
-       | "members": [ ${frodoJsonString} ],
-       | "maxItems": 100
-       |}
-     """.stripMargin
-  )
-
-  val groupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup))
-  val emptyGroupList: JsObject = Json.obj("groups" -> Json.arr())
-
-  val frodoGroupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup, ringbearerGroup))
 }

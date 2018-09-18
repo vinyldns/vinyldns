@@ -30,7 +30,7 @@ class ConfigSpec extends Specification {
 
       dynamoAKID must beEqualTo("akid goes here")
       dynamoSecret must beEqualTo("secret key goes here")
-      dynamoEndpoint must beEqualTo("http://127.0.0.1:19000")
+      dynamoEndpoint must beEqualTo("http://foo.bar")
       region must beEqualTo("us-east-1")
     }
   }

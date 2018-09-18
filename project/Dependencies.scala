@@ -80,7 +80,6 @@ object Dependencies {
   )
 
   lazy val portalDependencies = Seq(
-    "org.apache.commons"        %  "commons-text"                   % "1.4",
     "com.typesafe.play"         %% "play-json"                      % "2.6.9",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),

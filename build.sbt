@@ -73,7 +73,7 @@ lazy val testSettings = Seq(
   parallelExecution in Test := false,
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := false,
-  testOptions in Test += Tests.Argument("-oD"),
+  testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
   logBuffered in Test := false
 )
 

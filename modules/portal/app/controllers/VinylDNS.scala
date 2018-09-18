@@ -112,13 +112,6 @@ class VinylDNS @Inject()(
     ("Pragma", "no-cache"),
     ("Expires", "0"))
 
-  implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
-    def reads(json: JsValue): JsResult[LockStatus] = json match {
-      case JsString(v) => JsSuccess(LockStatus.withName(v))
-      case _ => JsError("LockStatus value was not a string")
-    }
-    def writes(o: LockStatus): JsValue = JsString(o.toString)
-  }
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 

@@ -14,11 +14,28 @@
  * limitations under the License.
  */
 
+package modules
+
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import cats.effect.IO
 import com.google.inject.AbstractModule
 import controllers._
 import play.api.{Configuration, Environment}
-import pureconfig.module.catseffect._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.dynamodb.repository.{
@@ -28,7 +45,8 @@ import vinyldns.dynamodb.repository.{
   DynamoDBUserRepository
 }
 
-class Module(environment: Environment, configuration: Configuration) extends AbstractModule {
+class VinylDNSModule(environment: Environment, configuration: Configuration)
+    extends AbstractModule {
 
   val settings = new Settings(configuration)
 
