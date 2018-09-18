@@ -74,7 +74,10 @@ lazy val testSettings = Seq(
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := false,
   testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
-  logBuffered in Test := false
+  logBuffered in Test := false,
+  // Hide stack traces in tests
+  traceLevel in Test := -1,
+  traceLevel in IntegrationTest := -1
 )
 
 lazy val apiSettings = Seq(
