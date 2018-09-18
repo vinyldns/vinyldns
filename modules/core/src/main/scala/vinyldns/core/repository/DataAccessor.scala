@@ -16,23 +16,14 @@
 
 package vinyldns.core.repository
 
-import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{
-  GroupChangeRepository,
-  GroupRepository,
-  MembershipRepository,
-  UserRepository
-}
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import cats.data.ValidatedNel
+import vinyldns.core.repository.RepositoryName._
 
-final case class DataAccessor(
-    userRepository: UserRepository,
-    groupRepository: GroupRepository,
-    membershipRepository: MembershipRepository,
-    groupChangeRepository: GroupChangeRepository,
-    recordSetRepository: RecordSetRepository,
-    recordChangeRepository: RecordChangeRepository,
-    zoneChangeRepository: ZoneChangeRepository,
-    zoneRepository: ZoneRepository,
-    batchChangeRepository: BatchChangeRepository)
+trait DataAccessorProvider[A <: DataAccessor] {
+
+  def repoNames: List[RepositoryName]
+
+  def create(responses: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, A]
+}
+
+trait DataAccessor
