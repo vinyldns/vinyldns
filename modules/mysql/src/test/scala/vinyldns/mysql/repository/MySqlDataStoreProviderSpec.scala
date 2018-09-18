@@ -22,28 +22,7 @@ import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError}
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
-  val mySqlConfig: Config =
-    ConfigFactory.parseString("""
-      |    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
-      |
-      |    settings {
-      |      name = "test-database"
-      |      driver = "org.mariadb.jdbc.Driver"
-      |      migration-url = "test-url"
-      |      url = "test-url"
-      |      user = "test-user"
-      |      password = "test-pass"
-      |      pool-initial-size = 10
-      |      pool-max-size = 20
-      |      connection-timeout-millis = 1000
-      |      max-life-time = 600000
-      |    }
-      |
-      |    repositories {
-      |      zone {},
-      |      batch-change {}
-      |    }
-      |    """.stripMargin)
+  val mySqlConfig: Config = ConfigFactory.load().getConfig("mysql")
 
   val dataStoreSettings: DataStoreConfig =
     pureconfig.loadConfigOrThrow[DataStoreConfig](mySqlConfig)

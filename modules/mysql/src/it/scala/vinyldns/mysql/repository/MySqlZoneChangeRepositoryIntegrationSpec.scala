@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import java.util.UUID
 
-import org.joda.time.DateTime
 import cats.implicits._
+import org.joda.time.DateTime
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import scalikejdbc.DB
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
-import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.membership.{Group, User}
 import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone._
 
@@ -35,10 +33,6 @@ import scala.util.Random
 class MySqlZoneChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
-    with DnsConversions
-    with VinylDNSTestData
-    with GroupTestData
-    with ResultHelpers
     with BeforeAndAfterEach
     with Matchers
     with ScalaFutures
@@ -48,6 +42,27 @@ class MySqlZoneChangeRepositoryIntegrationSpec
   private var repo: ZoneChangeRepository = _
 
   object TestData {
+    val okUser = User(
+      userName = "ok",
+      id = "ok",
+      created = DateTime.now.secondOfDay().roundFloorCopy(),
+      accessKey = "okAccessKey",
+      secretKey = "okSecretKey",
+      firstName = Some("ok"),
+      lastName = Some("ok"),
+      email = Some("test@test.com")
+    )
+
+    val okGroup: Group = Group(
+      "ok",
+      "test@test.com",
+      Some("a test group"),
+      memberIds = Set(okUser.id),
+      adminUserIds = Set(okUser.id),
+      created = DateTime.now.secondOfDay().roundFloorCopy())
+
+    val okZone: Zone = Zone("ok.zone.recordsets.", "test@test.com", adminGroupId = okGroup.id)
+
     def randomZoneChange: ZoneChange =
       ZoneChange(
         zone = okZone,
@@ -64,7 +79,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         s"${goodUser.userName}.zone$i.",
         "test@test.com",
         status = ZoneStatus.Active,
-        connection = testConnection)
+        connection = Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")))
 
     val statuses: List[ZoneChangeStatus] = ZoneChangeStatus.Pending :: ZoneChangeStatus.Failed ::
       ZoneChangeStatus.Synced :: Nil

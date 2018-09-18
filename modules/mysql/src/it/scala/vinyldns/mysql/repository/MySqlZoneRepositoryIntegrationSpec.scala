@@ -28,7 +28,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, User}
 import vinyldns.core.domain.zone._
 
-class JdbcZoneRepositoryIntegrationSpec
+class MySqlZoneRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
@@ -142,7 +142,7 @@ class JdbcZoneRepositoryIntegrationSpec
     if (num == 1) z.addACLRule(dummyAclRule) else z
   }
 
-  private val jdbcSuperUserAuth = AuthPrincipal(dummyUser.copy(isSuper = true), Seq())
+  private val superUserAuth = AuthPrincipal(dummyUser.copy(isSuper = true), Seq())
 
   private def testZone(name: String, adminGroupId: String = testZoneAdminGroupId) =
     okZone.copy(name = name, id = UUID.randomUUID().toString, adminGroupId = adminGroupId)
@@ -155,7 +155,7 @@ class JdbcZoneRepositoryIntegrationSpec
         }
     }
 
-  "JdbcZoneRepository" should {
+  "MySqlZoneRepository" should {
     "return the zone when it is saved" in {
       whenReady(repo.save(okZone).unsafeToFuture(), timeout) { retrieved =>
         retrieved shouldBe okZone
@@ -451,7 +451,7 @@ class JdbcZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-          retrieved <- repo.listZones(jdbcSuperUserAuth)
+          retrieved <- repo.listZones(superUserAuth)
         } yield retrieved
 
       whenReady(f.unsafeToFuture(), timeout) { retrieved =>
@@ -472,7 +472,7 @@ class JdbcZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-          retrieved <- repo.listZones(jdbcSuperUserAuth, zoneNameFilter = Some("system"))
+          retrieved <- repo.listZones(superUserAuth, zoneNameFilter = Some("system"))
         } yield retrieved
 
       whenReady(f.unsafeToFuture(), timeout) { retrieved =>
@@ -512,19 +512,19 @@ class JdbcZoneRepositoryIntegrationSpec
 
       whenReady(saveZones(testZones).unsafeToFuture(), timeout) { _ =>
         whenReady(
-          repo.listZones(jdbcSuperUserAuth, offset = None, pageSize = 4).unsafeToFuture(),
+          repo.listZones(superUserAuth, offset = None, pageSize = 4).unsafeToFuture(),
           timeout) { firstPage =>
           (firstPage should contain).theSameElementsInOrderAs(expectedFirstPage)
         }
 
         whenReady(
-          repo.listZones(jdbcSuperUserAuth, offset = Some(4), pageSize = 4).unsafeToFuture(),
+          repo.listZones(superUserAuth, offset = Some(4), pageSize = 4).unsafeToFuture(),
           timeout) { secondPage =>
           (secondPage should contain).theSameElementsInOrderAs(expectedSecondPage)
         }
 
         whenReady(
-          repo.listZones(jdbcSuperUserAuth, offset = Some(8), pageSize = 4).unsafeToFuture(),
+          repo.listZones(superUserAuth, offset = Some(8), pageSize = 4).unsafeToFuture(),
           timeout) { thirdPage =>
           (thirdPage should contain).theSameElementsInOrderAs(expectedThirdPage)
         }

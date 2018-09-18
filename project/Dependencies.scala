@@ -70,10 +70,10 @@ object Dependencies {
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
-    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.3",
+    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.6",
     "org.scalikejdbc"           %% "scalikejdbc"                    % "2.5.2",
     "org.scalikejdbc"           %% "scalikejdbc-config"             % "2.5.2",
-    "com.zaxxer"                %  "HikariCP"                       % "2.5.1"
+    "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
   )
 
   lazy val commonTestDependencies = Seq(

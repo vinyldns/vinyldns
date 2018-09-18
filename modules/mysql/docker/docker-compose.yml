@@ -1,6 +1,6 @@
 version: "3.0"
 services:
-  mysql-local:
+  mysql-module:
     image: "mysql:5.7"
     environment:
     - MYSQL_ROOT_PASSWORD=pass # do not use quotes around the environment variables!!!
