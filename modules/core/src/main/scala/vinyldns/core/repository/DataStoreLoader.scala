@@ -14,32 +14,25 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository
+package vinyldns.core.repository
 
 import cats.data._
 import cats.effect.IO
 import cats.implicits._
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{
-  GroupChangeRepository,
-  GroupRepository,
-  MembershipRepository,
-  UserRepository
-}
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.repository._
 import vinyldns.core.repository.RepositoryName._
 
 import scala.reflect.ClassTag
 
 object DataStoreLoader {
-  def loadAll(configs: List[DataStoreConfig], crypto: CryptoAlgebra): IO[DataAccessor] =
+  def loadAll[A <: DataAccessor](
+      configs: List[DataStoreConfig],
+      crypto: CryptoAlgebra,
+      dataAccessorProvider: DataAccessorProvider[A]): IO[DataAccessor] =
     for {
-      activeConfigs <- IO.fromEither(getValidatedConfigs(configs))
+      activeConfigs <- IO.fromEither(getValidatedConfigs(configs, dataAccessorProvider.repoNames))
       dataStores <- activeConfigs.map(load(_, crypto)).parSequence
-      accessor <- IO.fromEither(generateAccessor(dataStores))
+      accessor <- IO.fromEither(generateAccessor(dataStores, dataAccessorProvider))
     } yield accessor
 
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[(DataStoreConfig, DataStore)] =
@@ -54,7 +47,8 @@ object DataStoreLoader {
    * DataStoreConfigs with at least one defined repo if valid
    */
   def getValidatedConfigs(
-      configs: List[DataStoreConfig]): Either[DataStoreStartupError, List[DataStoreConfig]] = {
+      configs: List[DataStoreConfig],
+      repoNames: List[RepositoryName]): Either[DataStoreStartupError, List[DataStoreConfig]] = {
 
     val repoConfigs = configs.map(_.repositories)
 
@@ -69,7 +63,7 @@ object DataStoreLoader {
       }
     }
 
-    val combinedValidations = RepositoryName.values.map(existsOnce).reduce(_ |+| _)
+    val combinedValidations = repoNames.map(existsOnce).reduce(_ |+| _)
 
     combinedValidations.toEither
       .map(_ => configs.filter(_.repositories.nonEmpty))
@@ -79,45 +73,36 @@ object DataStoreLoader {
       }
   }
 
-  def generateAccessor(responses: List[(DataStoreConfig, DataStore)])
-    : Either[DataStoreStartupError, DataAccessor] = {
+  def getRepoOf[A <: Repository: ClassTag](
+      responses: List[(DataStoreConfig, DataStore)],
+      repoName: RepositoryName): ValidatedNel[String, A] = {
 
-    def getRepoOf[A <: Repository: ClassTag](repoName: RepositoryName): ValidatedNel[String, A] = {
-
-      val matched = responses.find {
-        case (c, _) => c.repositories.hasKey(repoName)
-      }
-
-      val repository = matched.flatMap {
-        case (_, store) => store.get[A](repoName)
-      }
-
-      repository match {
-        case Some(repo) => repo.validNel
-        case None =>
-          val dataStoreName = matched
-            .map {
-              case (c, _) => c.className
-            }
-            .getOrElse("Unknown Configured Database")
-
-          s"Repo $repoName was not returned by configured database: $dataStoreName".invalidNel
-      }
+    val matched = responses.find {
+      case (c, _) => c.repositories.hasKey(repoName)
     }
 
-    val accessor: ValidatedNel[String, DataAccessor] =
-      (
-        getRepoOf[UserRepository](user),
-        getRepoOf[GroupRepository](group),
-        getRepoOf[MembershipRepository](membership),
-        getRepoOf[GroupChangeRepository](groupChange),
-        getRepoOf[RecordSetRepository](recordSet),
-        getRepoOf[RecordChangeRepository](recordChange),
-        getRepoOf[ZoneChangeRepository](zoneChange),
-        getRepoOf[ZoneRepository](zone),
-        getRepoOf[BatchChangeRepository](batchChange))
-        .mapN(DataAccessor)
+    val repository = matched.flatMap {
+      case (_, store) => store.get[A](repoName)
+    }
 
+    repository match {
+      case Some(repo) => repo.validNel
+      case None =>
+        val dataStoreName = matched
+          .map {
+            case (c, _) => c.className
+          }
+          .getOrElse("Unknown Configured Database")
+
+        s"Repo $repoName was not returned by configured database: $dataStoreName".invalidNel
+    }
+  }
+
+  def generateAccessor[A <: DataAccessor](
+      responses: List[(DataStoreConfig, DataStore)],
+      dataAccessorProvider: DataAccessorProvider[A]): Either[DataStoreStartupError, A] = {
+    val accessor = dataAccessorProvider.create(responses)
     accessor.toEither.leftMap(errors => DataStoreStartupError(errors.toList.mkString(", ")))
   }
+
 }

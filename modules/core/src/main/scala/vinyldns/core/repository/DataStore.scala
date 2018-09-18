@@ -17,17 +17,39 @@
 package vinyldns.core.repository
 
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{
-  GroupChangeRepository,
-  GroupRepository,
-  MembershipRepository,
-  UserRepository
-}
+import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName.RepositoryName
 
 import scala.reflect.ClassTag
+
+object DataStore {
+  def apply(
+      userRepository: Option[UserRepository] = None,
+      groupRepository: Option[GroupRepository] = None,
+      membershipRepository: Option[MembershipRepository] = None,
+      groupChangeRepository: Option[GroupChangeRepository] = None,
+      recordSetRepository: Option[RecordSetRepository] = None,
+      recordChangeRepository: Option[RecordChangeRepository] = None,
+      zoneChangeRepository: Option[ZoneChangeRepository] = None,
+      zoneRepository: Option[ZoneRepository] = None,
+      batchChangeRepository: Option[BatchChangeRepository] = None,
+      userChangeRepository: Option[UserChangeRepository] = None
+  ): DataStore =
+    new DataStore(
+      userRepository,
+      groupRepository,
+      membershipRepository,
+      groupChangeRepository,
+      recordSetRepository,
+      recordChangeRepository,
+      zoneChangeRepository,
+      zoneRepository,
+      batchChangeRepository,
+      userChangeRepository
+    )
+}
 
 class DataStore(
     userRepository: Option[UserRepository] = None,
@@ -38,7 +60,8 @@ class DataStore(
     recordChangeRepository: Option[RecordChangeRepository] = None,
     zoneChangeRepository: Option[ZoneChangeRepository] = None,
     zoneRepository: Option[ZoneRepository] = None,
-    batchChangeRepository: Option[BatchChangeRepository] = None
+    batchChangeRepository: Option[BatchChangeRepository] = None,
+    userChangeRepository: Option[UserChangeRepository] = None
 ) {
 
   lazy val dataStoreMap: Map[RepositoryName, Repository] =
@@ -51,7 +74,8 @@ class DataStore(
       recordChangeRepository.map(RepositoryName.recordChange -> _),
       zoneChangeRepository.map(RepositoryName.zoneChange -> _),
       zoneRepository.map(RepositoryName.zone -> _),
-      batchChangeRepository.map(RepositoryName.batchChange -> _)
+      batchChangeRepository.map(RepositoryName.batchChange -> _),
+      userChangeRepository.map(RepositoryName.userChange -> _)
     ).flatten.toMap
 
   def keys: Set[RepositoryName] = dataStoreMap.keySet
