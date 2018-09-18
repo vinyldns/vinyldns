@@ -171,7 +171,18 @@
                                 </li>
                             </ul>
                         </span>
-                        <span ng-if="record.type == 'PTR'">{{ record.ptrRecordData }}</span>
+                        <span ng-if="record.type == 'PTR'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.ptrRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <li ng-if="record.onlyFour && record.ptrRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
                         <span ng-if="record.type == 'TXT'">{{ record.textRecordData }}</span>
                         <span ng-if="record.type == 'NS'">
                             <ul class="table-cell-list">

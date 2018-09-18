@@ -129,7 +129,11 @@ angular.module('service.records', [])
                     newRecord.canBeEdited = !isApex(record.name, zoneName)
                     break;
                 case 'PTR':
-                    newRecord.ptrRecordData = record.records[0].ptrdname;
+                    newRecord.ptrRecordData = [];
+                    angular.forEach(record.records, function(ptrRecord) {
+                        newRecord.ptrRecordData.push(ptrRecord.ptrdname);
+                    });
+                    newRecord.onlyFour = true;
                     break;
                 case 'SOA':
                     newRecord.soaMName = record.records[0].mname;
@@ -200,7 +204,10 @@ angular.module('service.records', [])
                     newRecord.records = [{"text": record.textRecordData}];
                     break;
                 case 'PTR':
-                    newRecord.records = [{"ptrdname": record.ptrRecordData}];
+                    newRecord.records = [];
+                    angular.forEach(record.ptrRecordData, function(ptrdname) {
+                        newRecord.records.push({"ptrdname": ptrdname});
+                    });
                     break;
                 case 'SRV':
                     newRecord.records = [];
