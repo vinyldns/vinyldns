@@ -3,7 +3,7 @@
 VINYLDNS_URL="http://vinyldns-api:9000"
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
-RETRY=40
+RETRY=60
 while [ "$RETRY" -gt 0 ]
 do
     DATA=$(curl -I -s "${VINYLDNS_URL}/ping" -o /dev/null -w "%{http_code}")
