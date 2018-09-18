@@ -22,12 +22,8 @@ import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 import play.api.test.Helpers._
 import play.api.test._
-import play.api.inject.guice.GuiceApplicationBuilder
 @RunWith(classOf[JUnitRunner])
-class FrontendControllerSpec extends Specification with Mockito {
-
-  // this has to be lazy due to how the FrontendController is boot strapped
-  def app = GuiceApplicationBuilder().build()
+class FrontendControllerSpec extends Specification with Mockito with TestApplicationData {
 
   "FrontendController" should {
     "send 404 on a bad request" in new WithApplication(app) {
