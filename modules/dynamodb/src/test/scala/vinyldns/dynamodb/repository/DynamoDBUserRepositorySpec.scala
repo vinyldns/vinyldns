@@ -172,6 +172,17 @@ class DynamoDBUserRepositorySpec
 
       user.lockStatus shouldBe LockStatus.Unlocked
     }
+    "sets the lockStatus to Unlocked if the given value is null" in {
+      val item = new java.util.HashMap[String, AttributeValue]()
+      item.put(USER_ID, new AttributeValue("ok"))
+      item.put(USER_NAME, new AttributeValue("ok"))
+      item.put(CREATED, new AttributeValue().withN("0"))
+      item.put(ACCESS_KEY, new AttributeValue("accesskey"))
+      item.put(SECRET_KEY, new AttributeValue("secretkey"))
+      val user = fromItem(item).unsafeRunSync()
+
+      user.lockStatus shouldBe LockStatus.Unlocked
+    }
   }
 
   "DynamoDBUserRepository.getUser" should {
