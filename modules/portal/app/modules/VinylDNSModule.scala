@@ -62,6 +62,7 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       region = dynamoConfig.get[String]("region")
     )
 
+    bind(classOf[CryptoAlgebra]).toInstance(crypto)
     bind(classOf[Authenticator]).toInstance(authenticator())
     bind(classOf[UserRepository]).toInstance(userRepository(dynamoSettings, crypto))
     bind(classOf[UserChangeRepository]).toInstance(changeLogStore(dynamoSettings, crypto))

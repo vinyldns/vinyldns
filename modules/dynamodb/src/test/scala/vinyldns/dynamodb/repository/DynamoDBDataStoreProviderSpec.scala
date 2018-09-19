@@ -88,7 +88,17 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
                              | }
                             """.stripMargin)
       val repoSettings =
-        RepositoriesConfig(Some(enabledRepoConf), None, None, None, None, None, None, None, None)
+        RepositoriesConfig(
+          Some(enabledRepoConf),
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None)
       val response = underTest
         .loadRepoConfigs(repoSettings)
         .unsafeRunSync()
@@ -107,6 +117,7 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
         RepositoriesConfig(
           Some(badRepoConf),
           Some(badRepoConf),
+          None,
           None,
           None,
           None,

@@ -57,14 +57,14 @@ object Dependencies {
     "joda-time"                 %  "joda-time"                      % "2.8.1",
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV,
-    "org.apache.commons"        %  "commons-text"                   % "1.4"
+    "org.apache.commons"        %  "commons-text"                   % "1.4",
+    "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
+    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV
   )
 
   lazy val dynamoDBDependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
-    "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
-    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV
+    "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
   )
 
   lazy val commonTestDependencies = Seq(
@@ -86,8 +86,6 @@ object Dependencies {
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
-    "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
-    "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
-    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV
+    "com.typesafe.play"         %% "play-specs2"                    % playV % "test"
   )
 }

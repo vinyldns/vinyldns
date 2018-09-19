@@ -22,6 +22,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Application, Configuration, Environment}
 import play.api.libs.json.{JsObject, JsValue, Json}
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership._
 
 import scala.util.Success
@@ -164,7 +165,8 @@ trait TestApplicationData { this: Mockito =>
       .bindings(
         bind[Authenticator].to(mockAuth),
         bind[UserRepository].to(mockUserRepo),
-        bind[UserChangeRepository].to(mockUserChangeRepo)
+        bind[UserChangeRepository].to(mockUserChangeRepo),
+        bind[CryptoAlgebra].to(new NoOpCrypto())
       )
       .configure(testConfig)
       .build()

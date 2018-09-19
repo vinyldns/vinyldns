@@ -74,7 +74,10 @@ lazy val testSettings = Seq(
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := false,
   testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
-  logBuffered in Test := false
+  logBuffered in Test := false,
+  // Hide stack traces in tests
+  traceLevel in Test := -1,
+  traceLevel in IntegrationTest := -1
 )
 
 lazy val apiSettings = Seq(
@@ -259,12 +262,13 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
   .settings(name := "dynamodb")
-  .settings(noPublishSettings)
+  .settings(corePublishSettings)
   .settings(testSettings)
   .settings(Defaults.itSettings)
   .settings(libraryDependencies ++= dynamoDBDependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
+    organization := "io.vinyldns",
     coverageMinimum := 85,
     coverageFailOnMinimum := true,
     coverageHighlighting := true
@@ -315,7 +319,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     // change the name of the output to portal.zip
     packageName in Universal := "portal"
   )
-  .dependsOn(core, dynamodb)
+  .dependsOn(dynamodb)
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",

@@ -59,7 +59,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val zones = Some(new JdbcZoneRepository())
     val batchChanges = Some(new JdbcBatchChangeRepository())
     val zoneChanges = Some(new MySqlZoneChangeRepository())
-    new DataStore(
+    DataStore(
       zoneRepository = zones,
       batchChangeRepository = batchChanges,
       zoneChangeRepository = zoneChanges)
