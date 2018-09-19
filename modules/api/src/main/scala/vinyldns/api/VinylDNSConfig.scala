@@ -51,7 +51,6 @@ object VinylDNSConfig {
   lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
-  lazy val encryptUserSecrets: Boolean = vinyldnsConfig.getBoolean("encrypt-user-secrets")
   lazy val approvedNameServers: List[Regex] =
     vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)
 

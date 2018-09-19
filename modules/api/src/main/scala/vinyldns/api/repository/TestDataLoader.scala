@@ -19,8 +19,6 @@ package vinyldns.api.repository
 import cats.effect.IO
 import cats.implicits._
 import org.joda.time.DateTime
-import vinyldns.api.VinylDNSConfig
-import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.membership._
 
 // $COVERAGE-OFF$
@@ -132,11 +130,7 @@ object TestDataLoader {
   def loadTestData(repository: UserRepository): IO[List[User]] =
     (testUser :: okUser :: dummyUser :: lockedUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
       listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map { user =>
-      val encrypted =
-        if (VinylDNSConfig.encryptUserSecrets)
-          user.copy(secretKey = Crypto.encrypt(user.secretKey))
-        else user
-      repository.save(encrypted)
+      repository.save(user)
     }.parSequence
 }
 // $COVERAGE-ON$

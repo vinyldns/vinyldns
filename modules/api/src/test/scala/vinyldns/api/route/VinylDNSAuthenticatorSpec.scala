@@ -38,20 +38,14 @@ class VinylDNSAuthenticatorSpec
   private val underTest = new VinylDNSAuthenticator(mockAuthenticator, mockAuthPrincipalProvider)
 
   "VinylDNSAuthenticator" should {
-    "use Crypto if encryption is enabled" in {
+    "use Crypto" in {
       val str = "mysecret"
       val mockCrypto = mock[CryptoAlgebra]
       doReturn("decrypted!").when(mockCrypto).decrypt(str)
-      val res = underTest.decryptSecret(str, encryptionEnabled = true, crypto = mockCrypto)
+      val res = underTest.decryptSecret(str, crypto = mockCrypto)
       res shouldNot be(str)
       res shouldBe "decrypted!"
       verify(mockCrypto).decrypt(str)
-    }
-    "not use Crypto if encryption is disabled" in {
-      val str = "mysecret"
-      val mockCrypto = mock[CryptoAlgebra]
-      underTest.decryptSecret(str, encryptionEnabled = false, crypto = mockCrypto)
-      verifyZeroInteractions(mockCrypto)
     }
     "return an authPrincipal when the request is valid" in {
       val fakeHttpHeader = mock[HttpHeader]
