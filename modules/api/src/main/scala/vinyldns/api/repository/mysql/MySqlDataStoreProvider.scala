@@ -59,7 +59,10 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val zones = Some(new JdbcZoneRepository())
     val batchChanges = Some(new JdbcBatchChangeRepository())
     val zoneChanges = Some(new MySqlZoneChangeRepository())
-    DataStore(zoneRepository = zones, batchChangeRepository = batchChanges, zoneChangeRepository = zoneChanges)
+    DataStore(
+      zoneRepository = zones,
+      batchChangeRepository = batchChanges,
+      zoneChangeRepository = zoneChanges)
   }
 
   def runDBMigrations(settings: MySqlDataStoreSettings): IO[Unit] = IO {

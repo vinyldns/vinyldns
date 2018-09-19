@@ -32,10 +32,12 @@ class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRe
     *         was an error.
     */
   def get(identifier: String): IO[Option[User]] =
-    users.getUser(identifier).flatMap {
-      case None => users.getUserByName(identifier)
-      case found => IO(found)
-    }
+    users
+      .getUser(identifier)
+      .flatMap {
+        case None => users.getUserByName(identifier)
+        case found => IO(found)
+      }
 
   def create(user: User): IO[User] =
     for {
