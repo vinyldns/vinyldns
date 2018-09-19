@@ -21,6 +21,7 @@ import org.joda.time.DateTime
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeEach
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership._
 
 class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach {
@@ -46,10 +47,11 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
 
   private val mockRepo = mock[UserRepository]
   private val mockChangeRepo = mock[UserChangeRepository]
-  private val underTest = new UserAccountAccessor(mockRepo, mockChangeRepo)
+  private val mockCrypto = spy(new NoOpCrypto())
+  private val underTest = new UserAccountAccessor(mockRepo, mockChangeRepo, mockCrypto)
 
   protected def before: Any =
-    org.mockito.Mockito.reset(mockRepo, mockChangeRepo)
+    org.mockito.Mockito.reset(mockRepo, mockChangeRepo, mockCrypto)
 
   "User Account Accessor" should {
     "Return the user when storing a user that does not exist already" in {
@@ -71,12 +73,14 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
       mockRepo.getUserByName(user.userName).returns(IO.pure(Some(user)))
       mockRepo.getUser(user.userName).returns(IO.pure(None))
       underTest.get("fbaggins").unsafeRunSync() must beSome(user)
+      there.was(one(mockCrypto).decrypt(user.secretKey))
     }
 
     "Return the user when retrieving a user that exists by user id" in {
       mockRepo.getUserByName(user.id).returns(IO.pure(None))
       mockRepo.getUser(user.id).returns(IO.pure(Some(user)))
       underTest.get(user.id).unsafeRunSync() must beSome(user)
+      there.was(one(mockCrypto).decrypt(user.secretKey))
     }
 
     "Return None when the user to be retrieved does not exist" in {
@@ -88,6 +92,7 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
     "Return the user by access key" in {
       mockRepo.getUserByAccessKey(user.id).returns(IO.pure(Some(user)))
       underTest.getUserByKey(user.id).unsafeRunSync() must beSome(user)
+      there.was(one(mockCrypto).decrypt(user.secretKey))
     }
   }
 }
