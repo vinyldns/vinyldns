@@ -18,7 +18,7 @@ package controllers
 
 import java.util
 
-import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, SignerFactory}
+import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
 import play.api.data.Form
@@ -439,28 +439,6 @@ class VinylDNS @Inject()(
       })
   }
 
-  def signRequest(
-      vinyldnsRequest: VinylDNSRequest,
-      credentials: AWSCredentials): SignableVinylDNSRequest = {
-    val signableRequest = new SignableVinylDNSRequest(vinyldnsRequest)
-    signer.sign(signableRequest, credentials)
-    signableRequest
-  }
-
-  def getUserCreds(keyOption: Option[String]): BasicAWSCredentials =
-    keyOption match {
-      case Some(key) =>
-        userAccountAccessor.getUserByKey(key).attempt.unsafeRunSync() match {
-          case Right(Some(account)) =>
-            new BasicAWSCredentials(account.accessKey, crypto.decrypt(account.secretKey))
-          case Right(None) =>
-            throw new IllegalArgumentException(
-              s"Key [$key] Not Found!! Please logout then back in.")
-          case Left(ex) => throw ex
-        }
-      case None => throw new IllegalArgumentException("No Key Found!!")
-    }
-
   private def extractParameters(
       params: util.Map[String, util.List[String]]): Seq[(String, String)] =
     params.asScala.foldLeft(Seq[(String, String)]()) {
@@ -470,7 +448,7 @@ class VinylDNS @Inject()(
 
   private def executeRequest(request: VinylDNSRequest, user: User) = {
     val signableRequest = new SignableVinylDNSRequest(request)
-    val credentials = new BasicAWSCredentials(user.accessKey, user.secretKey)
+    val credentials = new BasicAWSCredentials(user.accessKey, crypto.decrypt(user.secretKey))
     signer.sign(signableRequest, credentials)
     Logger.info(s"Request to send: [${signableRequest.getResourcePath}]")
     wsClient
