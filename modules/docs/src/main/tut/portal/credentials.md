@@ -12,4 +12,4 @@ If your credentials are compromised you can generate new ones. In the User Menu 
 Regenerating your credentials will invalidate your previous credentials. If you are using any VinylDNS tools beyond the
 portal you can then select *Download Credentials* to retrieve your new credentials and update the tools you use.
 
-[![User credentials](../img/portal/credentials.png){:.screenshot}](../img/portal/credentials.png)
+[![User credentials](../img/portal/credentials_annotated.png){:.screenshot}](../img/portal/credentials_annotated.png)
