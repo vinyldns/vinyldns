@@ -20,13 +20,12 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.RequestContext
 import cats.effect._
 import cats.syntax.all._
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.auth.{AuthPrincipalProvider, MembershipAuthPrincipalProvider}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.route.Monitored
 import vinyldns.core.domain.membership.LockStatus
+import vinyldns.core.route.Monitored
 
 import scala.util.matching.Regex
 
@@ -125,11 +124,8 @@ trait VinylDNSAuthentication extends Monitored {
         content)
     } yield authPrincipal
 
-  def decryptSecret(
-      str: String,
-      encryptionEnabled: Boolean = VinylDNSConfig.encryptUserSecrets,
-      crypto: CryptoAlgebra = Crypto.instance): String =
-    if (encryptionEnabled) crypto.decrypt(str) else str
+  def decryptSecret(str: String, crypto: CryptoAlgebra = Crypto.instance): String =
+    crypto.decrypt(str)
 
   def getAuthPrincipal(accessKey: String): IO[AuthPrincipal] =
     authPrincipalProvider.getAuthPrincipal(accessKey).flatMap {
