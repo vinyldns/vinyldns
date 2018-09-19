@@ -16,18 +16,13 @@
 
 package controllers
 
-import cats.data.OptionT
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
-import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{User, UserChange, UserChangeRepository, UserRepository}
 
 @Singleton
-class UserAccountAccessor @Inject()(
-    users: UserRepository,
-    changes: UserChangeRepository,
-    crypto: CryptoAlgebra) {
+class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRepository) {
 
   /**
     * Lookup a user in the store. Using identifier as the user id and/or name
@@ -43,7 +38,6 @@ class UserAccountAccessor @Inject()(
         case None => users.getUserByName(identifier)
         case found => IO(found)
       }
-      .map(decrypt)
 
   def create(user: User): IO[User] =
     for {
@@ -58,8 +52,5 @@ class UserAccountAccessor @Inject()(
     } yield user
 
   def getUserByKey(key: String): IO[Option[User]] =
-    users.getUserByAccessKey(key).map(decrypt)
-
-  def decrypt(user: Option[User]): Option[User] =
-    user.map(u => u.copy(secretKey = crypto.decrypt(u.secretKey)))
+    users.getUserByAccessKey(key)
 }

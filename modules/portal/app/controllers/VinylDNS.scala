@@ -31,6 +31,7 @@ import java.util.HashMap
 
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
 
@@ -96,7 +97,8 @@ class VinylDNS @Inject()(
     authenticator: Authenticator,
     userAccountAccessor: UserAccountAccessor,
     wsClient: WSClient,
-    components: ControllerComponents)
+    components: ControllerComponents,
+    crypto: CryptoAlgebra)
     extends AbstractController(components) {
 
   import VinylDNS._
@@ -221,7 +223,11 @@ class VinylDNS @Inject()(
         Logger.info(s"Sending credentials for user=$username with key accessKey=${user.accessKey}")
         Ok(
           s"NT ID, access key, secret key,api url\n%s,%s,%s,%s"
-            .format(user.userName, user.accessKey, user.secretKey, vinyldnsServiceBackend))
+            .format(
+              user.userName,
+              user.accessKey,
+              crypto.decrypt(user.secretKey),
+              vinyldnsServiceBackend))
           .as("text/csv")
 
       case _ =>
@@ -544,7 +550,7 @@ class VinylDNS @Inject()(
       case Some(key) =>
         userAccountAccessor.getUserByKey(key).attempt.unsafeRunSync() match {
           case Right(Some(account)) =>
-            new BasicAWSCredentials(account.accessKey, account.secretKey)
+            new BasicAWSCredentials(account.accessKey, crypto.decrypt(account.secretKey))
           case Right(None) =>
             throw new IllegalArgumentException(
               s"Key [$key] Not Found!! Please logout then back in.")
