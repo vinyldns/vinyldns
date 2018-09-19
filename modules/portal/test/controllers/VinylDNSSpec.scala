@@ -17,7 +17,6 @@
 package controllers
 
 import cats.effect.IO
-import com.amazonaws.auth.BasicAWSCredentials
 import org.junit.runner._
 import org.specs2.mock.Mockito
 import org.specs2.mutable._
@@ -1179,42 +1178,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             hasCacheHeaders(result)
           }
         }
-      }
-    }
-    ".getUserCreds" should {
-      "return credentials for a user using the new style" in new WithApplication(app) {
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-        val config: Configuration = Configuration.load(Environment.simple())
-        val ws: WSClient = mock[WSClient]
-        mockUserAccountAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-        val underTest =
-          new VinylDNS(
-            config,
-            mockLdapAuthenticator,
-            mockUserAccountAccessor,
-            ws,
-            components,
-            crypto)
-
-        val result: BasicAWSCredentials = underTest.getUserCreds(Some(frodoUser.accessKey))
-        there.was(one(mockUserAccountAccessor).getUserByKey(frodoUser.accessKey))
-        there.was(one(crypto).decrypt(frodoUser.secretKey))
-        result.getAWSAccessKeyId must beEqualTo(frodoUser.accessKey)
-        result.getAWSSecretKey must beEqualTo(frodoUser.secretKey)
-      }
-      "fail when not supplied with a key using the new style" in new WithApplication(app) {
-        val config: Configuration = Configuration.load(Environment.simple())
-        val ws: WSClient = mock[WSClient]
-        val underTest =
-          new VinylDNS(
-            config,
-            mockLdapAuthenticator,
-            mockUserAccountAccessor,
-            ws,
-            components,
-            crypto)
-
-        underTest.getUserCreds(None) must throwAn[IllegalArgumentException]
       }
     }
     ".serveCredFile" should {
