@@ -17,6 +17,7 @@
 package vinyldns.api
 
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.repository.RepositoryName._
 
 class VinylDNSConfigSpec extends WordSpec with Matchers {
 
@@ -26,46 +27,26 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
       restConfig.getInt("port") shouldBe 9000
     }
 
-    "load the dynamo config" in {
-      val dynamoConfig = VinylDNSConfig.dynamoConfig
-      dynamoConfig.key shouldBe "dynamoKey"
-      dynamoConfig.secret shouldBe "dynamoSecret"
-      dynamoConfig.endpoint shouldBe "dynamoEndpoint"
-    }
+    "properly load the datastore configs" in {
 
-    "load the zone change repository config" in {
-      val config = VinylDNSConfig.zoneChangeStoreConfig
-      config.tableName shouldBe "zoneChanges"
-      config.provisionedReads shouldBe 40
-      config.provisionedWrites shouldBe 30
+      VinylDNSConfig.dataStoreConfigs.unsafeRunSync.length shouldBe 2
     }
+    "assign the correct mysql repositories" in {
+      val mysqlConfig =
+        VinylDNSConfig.dataStoreConfigs.unsafeRunSync
+          .find(_.className == "vinyldns.api.repository.mysql.MySqlDataStoreProvider")
+          .get
 
-    "load the record change repository config" in {
-      val config = VinylDNSConfig.recordChangeStoreConfig
-      config.tableName shouldBe "recordChange"
-      config.provisionedReads shouldBe 40
-      config.provisionedWrites shouldBe 30
+      mysqlConfig.repositories.keys should contain theSameElementsAs Set(zone, batchChange)
     }
+    "assign the correct dynamodb repositories" in {
+      val dynamodbConfig =
+        VinylDNSConfig.dataStoreConfigs.unsafeRunSync
+          .find(_.className == "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider")
+          .get
 
-    "load the membership repository config" in {
-      val config = VinylDNSConfig.membershipStoreConfig
-      config.tableName shouldBe "membership"
-      config.provisionedReads shouldBe 40
-      config.provisionedWrites shouldBe 30
-    }
-
-    "load the record set repository config" in {
-      val config = VinylDNSConfig.recordSetStoreConfig
-      config.tableName shouldBe "recordSet"
-      config.provisionedReads shouldBe 40
-      config.provisionedWrites shouldBe 30
-    }
-
-    "load the group repository config" in {
-      val config = VinylDNSConfig.groupsStoreConfig
-      config.tableName shouldBe "groups"
-      config.provisionedReads shouldBe 40
-      config.provisionedWrites shouldBe 30
+      dynamodbConfig.repositories.keys should contain theSameElementsAs
+        Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange)
     }
   }
 }

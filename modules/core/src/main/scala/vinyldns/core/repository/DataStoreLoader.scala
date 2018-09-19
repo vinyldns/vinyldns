@@ -20,27 +20,33 @@ import cats.data._
 import cats.effect.IO
 import cats.implicits._
 import vinyldns.core.crypto.CryptoAlgebra
+import org.slf4j.LoggerFactory
 import vinyldns.core.repository.RepositoryName._
 
 import scala.reflect.ClassTag
 
 object DataStoreLoader {
+
+  private val logger = LoggerFactory.getLogger("DataStoreLoader")
+
   def loadAll[A <: DataAccessor](
       configs: List[DataStoreConfig],
       crypto: CryptoAlgebra,
-      dataAccessorProvider: DataAccessorProvider[A]): IO[DataAccessor] =
+      dataAccessorProvider: DataAccessorProvider[A]): IO[A] =
     for {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs, dataAccessorProvider.repoNames))
       dataStores <- activeConfigs.map(load(_, crypto)).parSequence
       accessor <- IO.fromEither(generateAccessor(dataStores, dataAccessorProvider))
     } yield accessor
 
-  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[(DataStoreConfig, DataStore)] =
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[(DataStoreConfig, DataStore)] = {
+    logger.error(s"Attempting to load repos ${config.repositories.keys} from ${config.className}")
     for {
       className <- IO.pure(config.className)
       provider <- IO(Class.forName(className).newInstance.asInstanceOf[DataStoreProvider])
       dataStore <- provider.load(config, crypto)
     } yield (config, dataStore)
+  }
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only

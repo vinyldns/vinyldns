@@ -25,7 +25,6 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.core.domain.zone.ZoneRepository
-
 import cats.effect._
 
 class HealthCheckRoutingSpec
@@ -34,7 +33,6 @@ class HealthCheckRoutingSpec
     with Directives
     with HealthCheckRoute
     with VinylDNSJsonProtocol
-    with VinylDNSDirectives
     with OneInstancePerTest
     with Matchers
     with MockitoSugar {
