@@ -57,17 +57,20 @@
             </modal-element>
 
             <modal-element ng-if="currentRecord.type == 'PTR'"
-                           label="FQDN"
+                           label="FQDN (one per line)"
                            invalid-when="addRecordForm.$submitted && addRecordForm.ptrRecordData.$invalid">
-                <input name="ptrRecordData"
-                       class="form-control"
-                       ng-model="currentRecord.ptrRecordData"
-                       ng-class="recordModal.details.class"
-                       ng-readonly="recordModal.details.readOnly"
-                       required>
-                </input>
+                <textarea name="recordData"
+                          ng-model="currentRecord.ptrRecordData"
+                          rows="5"
+                          class="form-control"
+                          ng-list="&#10;"
+                          ng-trim="false"
+                          ng-class="recordModal.details.class"
+                          ng-readonly="recordModal.details.readOnly"
+                          required>
+                </textarea>
                 <modal-invalid>
-                    A fully qualified domain name is required
+                    At least one fully qualified domain name is required
                 </modal-invalid>
             </modal-element>
 
