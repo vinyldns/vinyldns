@@ -133,7 +133,7 @@ vinyldns {
       
     # this is the path to the DynamoDB provider. This should not be edited
     # from the default in reference.conf
-    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
     
     settings {
       # AWS_ACCESS_KEY, credential needed to access the SQS queue
@@ -394,7 +394,7 @@ vinyldns {
   data-stores = ["mysql", "dynamodb"]
   
   dynamodb {
-    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
     
     settings {
       key = "x"
