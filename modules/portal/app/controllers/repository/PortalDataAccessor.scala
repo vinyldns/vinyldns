@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository
+package controllers.repository
 
-import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{
-  GroupChangeRepository,
-  GroupRepository,
-  MembershipRepository,
-  UserRepository
-}
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.repository.DataAccessor
 
-final case class ApiDataAccessor(
+final case class PortalDataAccessor(
     userRepository: UserRepository,
-    groupRepository: GroupRepository,
-    membershipRepository: MembershipRepository,
-    groupChangeRepository: GroupChangeRepository,
-    recordSetRepository: RecordSetRepository,
-    recordChangeRepository: RecordChangeRepository,
-    zoneChangeRepository: ZoneChangeRepository,
-    zoneRepository: ZoneRepository,
-    batchChangeRepository: BatchChangeRepository)
+    userChangeRepository: UserChangeRepository)
     extends DataAccessor

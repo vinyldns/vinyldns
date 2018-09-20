@@ -14,42 +14,24 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository
+package controllers.repository
 
 import cats.data.ValidatedNel
-import cats.implicits._
-import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership._
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfig}
+import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.repository.DataStoreLoader.getRepoOf
 import vinyldns.core.repository.RepositoryName._
+import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfig}
 
-object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
+object PortalDataAccessorProvider extends DataAccessorProvider[PortalDataAccessor] {
   def repoNames: List[RepositoryName] =
     List(
       user,
-      group,
-      membership,
-      groupChange,
-      recordSet,
-      recordChange,
-      zoneChange,
-      zone,
-      batchChange)
+      userChange)
 
   def create(
-      dataStores: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, ApiDataAccessor] =
+      dataStores: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, PortalDataAccessor] =
     (
       getRepoOf[UserRepository](dataStores, user),
-      getRepoOf[GroupRepository](dataStores, group),
-      getRepoOf[MembershipRepository](dataStores, membership),
-      getRepoOf[GroupChangeRepository](dataStores, groupChange),
-      getRepoOf[RecordSetRepository](dataStores, recordSet),
-      getRepoOf[RecordChangeRepository](dataStores, recordChange),
-      getRepoOf[ZoneChangeRepository](dataStores, zoneChange),
-      getRepoOf[ZoneRepository](dataStores, zone),
-      getRepoOf[BatchChangeRepository](dataStores, batchChange)
-    ).mapN(ApiDataAccessor)
+      getRepoOf[UserChangeRepository](dataStores, userChange)
+    ).mapN(PortalDataAccessor)
 }
