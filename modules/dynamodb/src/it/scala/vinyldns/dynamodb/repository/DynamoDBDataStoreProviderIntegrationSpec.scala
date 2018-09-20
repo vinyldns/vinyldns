@@ -16,6 +16,7 @@
 
 package vinyldns.dynamodb.repository
 
+import cats.effect.IO
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
 import com.typesafe.config.{Config, ConfigFactory}
@@ -77,10 +78,10 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
       )
       val userRepo = dataStore.get[UserRepository](user)
 
-      val save = userRepo.map(_.save(testUser)).parSequence
+      val save = userRepo.map(_.save(testUser)).sequence[IO, User]
       save.unsafeRunSync() shouldBe Some(testUser)
 
-      val get = userRepo.map(_.getUser(testUser.id)).parSequence
+      val get = userRepo.map(_.getUser(testUser.id)).sequence[IO, Option[User]]
       get.unsafeRunSync().flatten shouldBe Some(testUser)
     }
   }

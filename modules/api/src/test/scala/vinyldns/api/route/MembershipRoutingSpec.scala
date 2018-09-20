@@ -51,6 +51,7 @@ class MembershipRoutingSpec
     with BeforeAndAfterEach {
 
   val membershipService: MembershipService = mock[MembershipService]
+  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
 
   override protected def beforeEach(): Unit = reset(membershipService)
 
