@@ -38,21 +38,19 @@ import controllers.repository.{PortalDataAccessor, PortalDataAccessorProvider}
 import play.api.{Configuration, Environment}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
-import vinyldns.core.repository.{DataStoreLoader}
+import vinyldns.core.repository.DataStoreLoader
 class VinylDNSModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
   val settings = new Settings(configuration)
 
-
   def configure(): Unit = {
-    // Note: Leaving the unsafeRunSync here until we do full dynamic loading of the data store
-
     val startApp = for {
       cryptoConf <- settings.cryptoConfig
       crypto <- CryptoAlgebra.load(cryptoConf)
       repoConfigs <- settings.dataStoreConfigs
-      repositories <- DataStoreLoader.loadAll[PortalDataAccessor](repoConfigs, crypto, PortalDataAccessorProvider)
+      repositories <- DataStoreLoader
+        .loadAll[PortalDataAccessor](repoConfigs, crypto, PortalDataAccessorProvider)
     } yield {
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
       bind(classOf[Authenticator]).toInstance(authenticator())
@@ -64,12 +62,11 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
   }
 
   private def authenticator(): Authenticator =
-
-  /**
-    * Why not load config here you ask?  Well, there is some ugliness in the LdapAuthenticator
-    * that I am not looking to undo at this time.  There are private classes
-    * that do some wrapping.  It all seems to work, so I am leaving it alone
-    * to complete the Play framework upgrade
-    */
+    /**
+      * Why not load config here you ask?  Well, there is some ugliness in the LdapAuthenticator
+      * that I am not looking to undo at this time.  There are private classes
+      * that do some wrapping.  It all seems to work, so I am leaving it alone
+      * to complete the Play framework upgrade
+      */
     LdapAuthenticator(settings)
 }

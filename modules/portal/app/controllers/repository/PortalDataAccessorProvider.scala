@@ -17,6 +17,7 @@
 package controllers.repository
 
 import cats.data.ValidatedNel
+import cats.implicits._
 import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.repository.DataStoreLoader.getRepoOf
 import vinyldns.core.repository.RepositoryName._
@@ -24,9 +25,7 @@ import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfi
 
 object PortalDataAccessorProvider extends DataAccessorProvider[PortalDataAccessor] {
   def repoNames: List[RepositoryName] =
-    List(
-      user,
-      userChange)
+    List(user, userChange)
 
   def create(
       dataStores: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, PortalDataAccessor] =

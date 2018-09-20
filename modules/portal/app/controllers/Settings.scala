@@ -47,7 +47,6 @@ class Settings(private val config: Configuration) {
 
   val cryptoConfig = IO(config.get[Config]("crypto"))
 
-
   implicit def ldapSearchDomainLoader: ConfigLoader[List[LdapSearchDomain]] =
     new ConfigLoader[List[LdapSearchDomain]] {
       def load(config: Config, path: String): List[LdapSearchDomain] = {
