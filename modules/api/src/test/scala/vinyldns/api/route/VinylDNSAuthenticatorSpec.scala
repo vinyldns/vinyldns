@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain.auth.AuthPrincipalProvider
-import vinyldns.api.{GroupTestData}
+import vinyldns.api.GroupTestData
 import vinyldns.core.crypto.CryptoAlgebra
 
 class VinylDNSAuthenticatorSpec
@@ -35,7 +35,8 @@ class VinylDNSAuthenticatorSpec
   private val mockAuthenticator = mock[Aws4Authenticator]
   private val mockAuthPrincipalProvider = mock[AuthPrincipalProvider]
 
-  private val underTest = new VinylDNSAuthenticator(mockAuthenticator, mockAuthPrincipalProvider)
+  private val underTest =
+    new ProductionVinylDNSAuthenticator(mockAuthenticator, mockAuthPrincipalProvider)
 
   "VinylDNSAuthenticator" should {
     "use Crypto" in {
@@ -74,7 +75,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Right(okUserAuth)
     }
     "fail if missing Authorization header" in {
@@ -95,7 +96,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Left(AuthMissing("Authorization header not found"))
     }
     "fail if Authorization header can not be parsed" in {
@@ -110,7 +111,7 @@ class VinylDNSAuthenticatorSpec
       val context: RequestContext = mock[RequestContext]
       doReturn(httpRequest).when(context).request
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Left(AuthRejected("Authorization header could not be parsed"))
     }
     "fail if the access key is missing" in {
@@ -133,7 +134,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Left(AuthMissing("accessKey not found"))
     }
     "fail if the access key can not be retrieved" in {
@@ -156,7 +157,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Left(AuthRejected("Invalid authorization header"))
     }
     "fail if the user is locked" in {
@@ -182,7 +183,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Left(AccountLocked("Account with username locked is locked"))
     }
     "fail if the user can not be found" in {
@@ -209,7 +210,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Left(AuthRejected("Account with accessKey fakeKey specified was not found"))
     }
     "fail if signatures can not be validated" in {
@@ -240,7 +241,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
-      val result = underTest.apply(context, "").unsafeRunSync()
+      val result = underTest.authenticate(context, "").unsafeRunSync()
       result shouldBe Left(AuthRejected("Request signature could not be validated"))
     }
   }

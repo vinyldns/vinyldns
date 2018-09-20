@@ -22,6 +22,7 @@ import akka.event.Logging._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.directives.LogEntry
+import vinyldns.core.domain.auth.AuthPrincipal
 
 class VinylDNSServiceSpec
     extends WordSpec
@@ -29,6 +30,9 @@ class VinylDNSServiceSpec
     with MockitoSugar
     with OneInstancePerTest
     with VinylDNSDirectives {
+
+  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
+    mock[AuthPrincipal])
 
   private def buildMockRequest(
       path: String = "/path/to/resource",

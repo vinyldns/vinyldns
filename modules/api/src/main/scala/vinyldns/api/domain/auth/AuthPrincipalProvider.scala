@@ -17,10 +17,7 @@
 package vinyldns.api.domain.auth
 
 import cats.effect._
-import vinyldns.api.VinylDNSConfig
-import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.membership.{MembershipRepository, User, UserRepository}
-import vinyldns.dynamodb.repository.{DynamoDBMembershipRepository, DynamoDBUserRepository}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.route.Monitored
 
@@ -51,20 +48,4 @@ class MembershipAuthPrincipalProvider(
     monitor("membership.getGroupsForUser") {
       membershipRepo.getGroupsForUser(userId)
     }
-}
-
-object MembershipAuthPrincipalProvider {
-  // TODO this has to be dynamic!!!
-  val userRepository: UserRepository =
-    DynamoDBUserRepository(
-      VinylDNSConfig.usersStoreConfig,
-      VinylDNSConfig.dynamoConfig,
-      Crypto.instance)
-      .unsafeRunSync()
-  val membershipRepository: MembershipRepository =
-    DynamoDBMembershipRepository(VinylDNSConfig.membershipStoreConfig, VinylDNSConfig.dynamoConfig)
-      .unsafeRunSync()
-
-  def apply(): MembershipAuthPrincipalProvider =
-    new MembershipAuthPrincipalProvider(userRepository, membershipRepository)
 }

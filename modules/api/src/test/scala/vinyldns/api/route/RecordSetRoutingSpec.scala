@@ -17,9 +17,8 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCodes}
-import akka.http.scaladsl.server.{Directives, RequestContext, Route}
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import cats.effect._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -482,10 +481,7 @@ class RecordSetRoutingSpec
 
   val recordSetService: RecordSetServiceAlgebra = new TestService
 
-  override def vinyldnsAuthenticator(
-      ctx: RequestContext,
-      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
-    IO.pure(Right(okAuth))
+  val vinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
 
   private def rsJson(recordSet: RecordSet): String =
     compact(render(Extraction.decompose(recordSet)))

@@ -22,7 +22,6 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
-import cats.effect._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -34,21 +33,14 @@ import scala.util.control.NonFatal
 
 trait VinylDNSDirectives extends Directives {
 
-  /**
-    * Authenticator that takes a request context and yields an Authentication, which is an Either
-    * that holds a Left - Rejection, or Right - AuthPrincipal.
-    * @return an Authentication with the AuthPrincipal as looked up from the request, or a Left(Rejection)
-    */
-  def vinyldnsAuthenticator(
-      ctx: RequestContext,
-      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
-    VinylDNSAuthenticator(ctx, content)
+  val vinylDNSAuthenticator: VinylDNSAuthenticator
 
   def authenticate: Directive1[AuthPrincipal] =
     extractExecutionContext.flatMap { implicit ec ⇒
       extractRequestContext.flatMap { ctx =>
         extractStrictEntity(10.seconds).flatMap { strictEntity =>
-          onSuccess(vinyldnsAuthenticator(ctx, strictEntity.data.utf8String).unsafeToFuture())
+          onSuccess(
+            vinylDNSAuthenticator.authenticate(ctx, strictEntity.data.utf8String).unsafeToFuture())
             .flatMap {
               case Right(authPrincipal) ⇒
                 provide(authPrincipal)

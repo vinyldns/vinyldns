@@ -47,6 +47,7 @@ class BatchChangeRoutingSpec
     with GroupTestData {
 
   val batchChangeService: BatchChangeServiceAlgebra = TestBatchChangeService
+  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(okUserAuth)
 
   import vinyldns.core.domain.batch.SingleChangeStatus._
 

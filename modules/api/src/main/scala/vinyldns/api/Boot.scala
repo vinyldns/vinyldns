@@ -32,14 +32,10 @@ import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.ProductionZoneCommandHandler
 import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
-import vinyldns.dynamodb.repository._
-import vinyldns.api.repository.TestDataLoader
-import vinyldns.api.repository.mysql.MySqlDataStoreProvider
+import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.{HealthService, VinylDNSService}
 import vinyldns.core.VinylDNSMetrics
-import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.zone.ZoneRepository
-import vinyldns.core.repository.{DataStoreStartupError, RepositoryName}
+import vinyldns.core.repository.DataStoreLoader
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
@@ -65,41 +61,10 @@ object Boot extends App {
     for {
       banner <- vinyldnsBanner()
       crypto <- IO(Crypto.instance) // load crypto
-      // TODO datastore loading will not be hardcoded by type here
-      mySqlDataStore <- new MySqlDataStoreProvider().load(VinylDNSConfig.mySqlConfig, crypto)
-      zoneRepo <- IO.fromEither(
-        mySqlDataStore
-          .get[ZoneRepository](RepositoryName.zone)
-          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
-      batchChangeRepo <- IO.fromEither(
-        mySqlDataStore
-          .get[BatchChangeRepository](RepositoryName.batchChange)
-          .toRight[Throwable](DataStoreStartupError("Missing zone repository")))
-      // TODO this also will all be removed with dynamic loading
-      userRepo <- DynamoDBUserRepository(
-        VinylDNSConfig.usersStoreConfig,
-        VinylDNSConfig.dynamoConfig,
-        crypto
-      )
-      groupRepo <- DynamoDBGroupRepository(
-        VinylDNSConfig.groupsStoreConfig,
-        VinylDNSConfig.dynamoConfig)
-      membershipRepo <- DynamoDBMembershipRepository(
-        VinylDNSConfig.membershipStoreConfig,
-        VinylDNSConfig.dynamoConfig)
-      groupChangeRepo <- DynamoDBGroupChangeRepository(
-        VinylDNSConfig.groupChangesStoreConfig,
-        VinylDNSConfig.dynamoConfig)
-      recordSetRepo <- DynamoDBRecordSetRepository(
-        VinylDNSConfig.recordSetStoreConfig,
-        VinylDNSConfig.dynamoConfig)
-      recordChangeRepo <- DynamoDBRecordChangeRepository(
-        VinylDNSConfig.recordChangeStoreConfig,
-        VinylDNSConfig.dynamoConfig)
-      zoneChangeRepo <- DynamoDBZoneChangeRepository(
-        VinylDNSConfig.zoneChangeStoreConfig,
-        VinylDNSConfig.dynamoConfig)
-      _ <- TestDataLoader.loadTestData(userRepo)
+      repoConfigs <- VinylDNSConfig.dataStoreConfigs
+      repositories <- DataStoreLoader
+        .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
+      _ <- TestDataLoader.loadTestData(repositories.userRepository)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))
@@ -109,47 +74,26 @@ object Boot extends App {
       batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
       _ <- fs2.async.start(
-        ProductionZoneCommandHandler.run(
-          sqsConnection,
-          processingSignal,
-          zoneRepo,
-          zoneChangeRepo,
-          recordChangeRepo,
-          recordSetRepo,
-          batchChangeRepo,
-          sqsConfig))
+        ProductionZoneCommandHandler.run(sqsConnection, processingSignal, repositories, sqsConfig))
     } yield {
       val zoneValidations = new ZoneValidations(syncDelay)
       val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
       val commandBus = new SqsCommandBus(sqsConnection)
-      val membershipService =
-        new MembershipService(groupRepo, userRepo, membershipRepo, zoneRepo, groupChangeRepo)
+      val membershipService = MembershipService(repositories)
       val connectionValidator =
         new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection)
-      val recordSetService = new RecordSetService(
-        zoneRepo,
-        recordSetRepo,
-        recordChangeRepo,
-        userRepo,
-        commandBus,
-        AccessValidations)
-      val zoneService = new ZoneService(
-        zoneRepo,
-        groupRepo,
-        userRepo,
-        zoneChangeRepo,
+      val recordSetService = RecordSetService(repositories, commandBus, AccessValidations)
+      val zoneService = ZoneService(
+        repositories,
         connectionValidator,
         commandBus,
         zoneValidations,
         AccessValidations)
-      val healthService = new HealthService(zoneRepo)
-      val batchChangeConverter = new BatchChangeConverter(batchChangeRepo, commandBus)
-      val batchChangeService = new BatchChangeService(
-        zoneRepo,
-        recordSetRepo,
-        batchChangeValidations,
-        batchChangeRepo,
-        batchChangeConverter)
+      val healthService = new HealthService(repositories.zoneRepository)
+      val batchChangeConverter =
+        new BatchChangeConverter(repositories.batchChangeRepository, commandBus)
+      val batchChangeService =
+        BatchChangeService(repositories, batchChangeValidations, batchChangeConverter)
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
         membershipService,
@@ -158,7 +102,10 @@ object Boot extends App {
         healthService,
         recordSetService,
         batchChangeService,
-        collectorRegistry)
+        collectorRegistry,
+        repositories.userRepository,
+        repositories.membershipRepository
+      )
 
       DefaultExports.initialize()
       collectorRegistry.register(new DropwizardExports(VinylDNSMetrics.metricsRegistry))
