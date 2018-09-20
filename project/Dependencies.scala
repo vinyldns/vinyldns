@@ -9,6 +9,7 @@ object Dependencies {
   lazy val prometheusV = "0.4.0"
   lazy val catsEffectV = "0.10.1"
   lazy val configV = "1.3.2"
+  lazy val scalikejdbcV = "3.3.1"
   lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
   lazy val playV = "2.6.19"
@@ -33,8 +34,8 @@ object Dependencies {
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.json4s"                %% "json4s-ext"                     % "3.5.3",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
-    "org.scalikejdbc"           %% "scalikejdbc"                    % "3.3.1",
-    "org.scalikejdbc"           %% "scalikejdbc-config"             % "3.3.1",
+    "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
+    "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "org.slf4j"                 %  "slf4j-api"                      % "1.7.7",
     "co.fs2"                    %% "fs2-core"                       % "0.10.5",
@@ -67,8 +68,8 @@ object Dependencies {
   lazy val mysqlDependencies = Seq(
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.6",
-    "org.scalikejdbc"           %% "scalikejdbc"                    % "2.5.2",
-    "org.scalikejdbc"           %% "scalikejdbc-config"             % "2.5.2",
+    "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
+    "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
   )
 
