@@ -19,26 +19,5 @@ import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.mysql.repository.MySqlTestTrait
 
 trait MySqlApiIntegrationSpec extends MySqlTestTrait {
-  val mysqlConfig: Config = ConfigFactory.parseString(s"""
-    |  mysql {
-    |    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
-    |
-    |    settings {
-    |      name = "vinyldns"
-    |      driver = "org.mariadb.jdbc.Driver"
-    |      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
-    |      url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
-    |      user = "root"
-    |      password = "pass"
-    |      pool-max-size = 20
-    |      connection-timeout-millis = 1000
-    |      max-life-time = 600000
-    |    }
-    |
-    |    repositories {
-    |      batch-change {}
-    |      zone {}
-    |    }
-    |  }
-     """.stripMargin)
+  val mysqlConfig: Config = ConfigFactory.load().getConfig("vinyldns")
 }
