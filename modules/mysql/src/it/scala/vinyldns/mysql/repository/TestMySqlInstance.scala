@@ -22,10 +22,10 @@ import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
 
-object TestMySqlInstance {
-  lazy val mysqlConfig: Config = ConfigFactory.load()
+trait MySqlTestTrait {
+  def mysqlConfig: Config
 
-  val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig, "mysql")
+  lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig, "mysql")
 
   lazy val instance: DataStore =
     new MySqlDataStoreProvider().load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
@@ -36,4 +36,8 @@ object TestMySqlInstance {
     instance.get[ZoneRepository](RepositoryName.zone).get
   lazy val zoneChangeRepository: ZoneChangeRepository =
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
+}
+
+object TestMySqlInstance extends MySqlTestTrait {
+  def mysqlConfig: Config = ConfigFactory.load()
 }

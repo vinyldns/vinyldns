@@ -22,7 +22,12 @@ import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.{DynamoDBApiIntegrationSpec, ResultHelpers, VinylDNSTestData}
+import vinyldns.api.{
+  DynamoDBApiIntegrationSpec,
+  MySqlApiIntegrationSpec,
+  ResultHelpers,
+  VinylDNSTestData
+}
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.zone.RecordSetAlreadyExists
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -31,7 +36,6 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
-import vinyldns.mysql.repository.TestMySqlInstance
 import vinyldns.core.domain.record._
 
 import scala.concurrent.Await
@@ -43,7 +47,8 @@ class RecordSetServiceIntegrationSpec
     with VinylDNSTestData
     with ResultHelpers
     with MockitoSugar
-    with Matchers {
+    with Matchers
+    with MySqlApiIntegrationSpec {
 
   private val recordSetTable = "recordSetTest"
 
@@ -147,7 +152,7 @@ class RecordSetServiceIntegrationSpec
   def setup(): Unit = {
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
-    zoneRepo = TestMySqlInstance.zoneRepository
+    zoneRepo = zoneRepository
 
     List(zone, zoneTestNameConflicts, zoneTestAddRecords).map(z => waitForSuccess(zoneRepo.save(z)))
 

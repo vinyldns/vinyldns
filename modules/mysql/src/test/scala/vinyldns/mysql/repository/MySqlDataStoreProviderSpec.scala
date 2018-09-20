@@ -60,7 +60,6 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
           |      name = "test-database"
           |      driver = "org.mariadb.jdbc.Driver"
           |      migration-url = "test-url"
-          |      pool-initial-size = 10
           |      pool-max-size = 20
           |      connection-timeout-millis = 1000
           |      max-life-time = 600000

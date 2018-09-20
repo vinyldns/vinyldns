@@ -74,7 +74,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         None,
         None)
 
-    val randomBatchChange: BatchChange = BatchChange(
+    def randomBatchChange: BatchChange = BatchChange(
       okAuth.userId,
       okAuth.signedInUser.userName,
       Some("description"),

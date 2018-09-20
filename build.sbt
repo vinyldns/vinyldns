@@ -210,7 +210,7 @@ lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb)
+  .aggregate(core, api, portal, dynamodb, mysql)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
