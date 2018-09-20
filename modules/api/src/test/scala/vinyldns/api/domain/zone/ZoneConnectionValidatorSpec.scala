@@ -20,20 +20,19 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
-import vinyldns.api.{AkkaTestJawn, ResultHelpers, VinylDNSTestData}
+import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import cats.effect._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 
 class ZoneConnectionValidatorSpec
-    extends AkkaTestJawn
-    with WordSpecLike
+    extends WordSpec
     with Matchers
     with MockitoSugar
     with VinylDNSTestData
