@@ -1,7 +1,7 @@
 import sbt._
 object Dependencies {
 
-  lazy val akkaHttpV = "10.1.3"
+  lazy val akkaHttpV = "10.1.5"
   lazy val akkaV = "2.5.12"
   lazy val jettyV = "8.1.12.v20130726"
   lazy val pureConfigV = "0.9.2"
@@ -11,14 +11,13 @@ object Dependencies {
   lazy val configV = "1.3.2"
   lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
-  lazy val playV = "2.6.15"
+  lazy val playV = "2.6.19"
   lazy val awsV = "1.11.95"
 
   lazy val compileDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
     "com.typesafe.akka"         %% "akka-http-spray-json"           % akkaHttpV,
     "de.heikoseeberger"         %% "akka-http-json4s"               % "1.21.0",
-    "com.typesafe.akka"         %% "akka-remote"                    % akkaV,
     "com.typesafe.akka"         %% "akka-slf4j"                     % akkaV,
     "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
     "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
@@ -36,8 +35,8 @@ object Dependencies {
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.json4s"                %% "json4s-ext"                     % "3.5.3",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
-    "org.scalikejdbc"           %% "scalikejdbc"                    % "2.5.2",
-    "org.scalikejdbc"           %% "scalikejdbc-config"             % "2.5.2",
+    "org.scalikejdbc"           %% "scalikejdbc"                    % "3.3.1",
+    "org.scalikejdbc"           %% "scalikejdbc-config"             % "3.3.1",
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "org.slf4j"                 %  "slf4j-api"                      % "1.7.7",
     "co.fs2"                    %% "fs2-core"                       % "0.10.5",
@@ -80,7 +79,7 @@ object Dependencies {
   )
 
   lazy val portalDependencies = Seq(
-    "com.typesafe.play"         %% "play-json"                      % "2.6.9",
+    "com.typesafe.play"         %% "play-json"                      % "2.6.10",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
