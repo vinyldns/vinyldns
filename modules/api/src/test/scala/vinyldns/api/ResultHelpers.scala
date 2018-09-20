@@ -16,16 +16,12 @@
 
 package vinyldns.api
 
-import akka.actor._
-import akka.testkit.TestEvent.Mute
-import akka.testkit.{EventFilter, TestKit}
-import akka.util.Timeout
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.ValidatedMatchers
-import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec, Suite}
+import org.scalatest.{Matchers, PropSpec}
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -34,8 +30,6 @@ import scala.reflect.ClassTag
 final case class TimeoutException(message: String) extends Throwable(message)
 
 trait ResultHelpers {
-
-  implicit val baseTimeout: Timeout = new Timeout(2.seconds)
 
   def await[T](f: => IO[_], duration: FiniteDuration = 1.second): T =
     awaitResultOf[T](f.map(_.asInstanceOf[T]).attempt, duration).toOption.get
@@ -85,15 +79,4 @@ object ValidationTestImprovements extends PropSpec with Matchers with ValidatedM
     def failWith[EE <: DomainValidationError](implicit tag: ClassTag[EE]): Unit =
       value.failures.map(_ shouldBe an[EE])
   }
-}
-
-class AkkaTestJawn
-    extends TestKit(ActorSystem("vinyldns", VinylDNSConfig.config))
-    with Suite
-    with BeforeAndAfterAll
-    with ResultHelpers {
-
-  system.eventStream.publish(Mute(EventFilter.info(), EventFilter.debug(), EventFilter.warning()))
-
-  override def afterAll(): Unit = system.terminate()
 }

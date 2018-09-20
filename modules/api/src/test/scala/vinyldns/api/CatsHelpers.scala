@@ -16,7 +16,6 @@
 
 package vinyldns.api
 
-import akka.util.Timeout
 import cats.effect._
 import cats.implicits._
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
@@ -29,8 +28,6 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 trait CatsHelpers {
-
-  implicit val baseTimeout: Timeout = new Timeout(2.seconds)
 
   def await[E, T](f: => IO[T], duration: FiniteDuration = 1.second): T = {
     val i: IO[Either[E, T]] = f.attempt.map {
