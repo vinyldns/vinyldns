@@ -20,7 +20,6 @@ import cats.implicits._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
-import vinyldns.dynamodb.repository.DynamoDBRetriesExhaustedException
 
 import cats.effect._
 import cats.implicits._
@@ -89,9 +88,9 @@ class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers 
     "filter out unsuccessful futures" in {
       val futures = List(
         IO.pure(1),
-        IO.raiseError(DynamoDBRetriesExhaustedException("bad")),
+        IO.raiseError(new RuntimeException("bad")),
         IO.pure(2),
-        IO.raiseError(DynamoDBRetriesExhaustedException("bad again")),
+        IO.raiseError(new RuntimeException("bad again")),
         IO.pure(3)
       )
 
@@ -100,8 +99,8 @@ class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers 
     }
     "return an empty list of all fail" in {
       val futures = List(
-        IO.raiseError(DynamoDBRetriesExhaustedException("bad")),
-        IO.raiseError(DynamoDBRetriesExhaustedException("bad again"))
+        IO.raiseError(new RuntimeException("bad")),
+        IO.raiseError(new RuntimeException("bad again"))
       )
 
       val result = await(futures.collectSuccesses)
