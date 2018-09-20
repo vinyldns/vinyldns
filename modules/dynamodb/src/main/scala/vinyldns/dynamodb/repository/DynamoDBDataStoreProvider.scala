@@ -75,13 +75,16 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     def initializeSingleRepo[T <: Repository](
         repoName: RepositoryName,
         fn: DynamoDBRepositorySettings => IO[T]): IO[Option[T]] =
-      for {
-        configuredOn <- IO.pure(repoSettings.get(repoName))
-        _ <- IO(
-          configuredOn.foreach(_ => logger.error(s"Loading dynamodb repo for type: $repoName")))
-        repo <- configuredOn.map(fn(_)).sequence[IO, T]
-        _ <- IO(repo.foreach(_ => logger.error(s"Completed dynamodb load for type: $repoName")))
-      } yield repo
+      repoSettings
+        .get(repoName)
+        .map { configuredOn =>
+          for {
+            _ <- IO(logger.error(s"Loading dynamodb repo for type: $repoName"))
+            repo <- fn(configuredOn)
+            _ <- IO(logger.error(s"Completed dynamodb load for type: $repoName"))
+          } yield repo
+        }
+        .sequence
 
     (
       initializeSingleRepo[UserRepository](
