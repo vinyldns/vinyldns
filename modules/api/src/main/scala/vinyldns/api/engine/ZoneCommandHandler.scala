@@ -26,10 +26,10 @@ import fs2.async.mutable.Signal
 import org.slf4j.LoggerFactory
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeType, ZoneRepository}
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
 import vinyldns.api.engine.sqs.SqsConnection
-import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.api.repository.ApiDataAccessor
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -63,11 +63,7 @@ object ZoneCommandHandler {
       extends ChangeRequest
 
   def mainFlow(
-      zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository,
-      recordSetRepository: RecordSetRepository,
-      recordChangeRepository: RecordChangeRepository,
-      batchChangeRepository: BatchChangeRepository,
+      dataAccessor: ApiDataAccessor,
       sqsConnection: SqsConnection,
       pollingInterval: FiniteDuration,
       pauseSignal: Signal[IO, Boolean])(implicit scheduler: Scheduler): Stream[IO, Unit] = {
@@ -79,10 +75,15 @@ object ZoneCommandHandler {
     val increaseTimeoutForZoneSyncs = changeVisibilityTimeoutForZoneSyncs(sqsConnection)
 
     // Handlers for each type of change request
-    val zoneChangeHandler = ZoneChangeHandler(zoneRepository, zoneChangeRepository)
+    val zoneChangeHandler =
+      ZoneChangeHandler(dataAccessor.zoneRepository, dataAccessor.zoneChangeRepository)
     val recordChangeHandler =
-      RecordSetChangeHandler(recordSetRepository, recordChangeRepository, batchChangeRepository)
-    val zoneSyncHandler = ZoneSyncHandler(recordSetRepository, recordChangeRepository)
+      RecordSetChangeHandler(
+        dataAccessor.recordSetRepository,
+        dataAccessor.recordChangeRepository,
+        dataAccessor.batchChangeRepository)
+    val zoneSyncHandler =
+      ZoneSyncHandler(dataAccessor.recordSetRepository, dataAccessor.recordChangeRepository)
 
     val changeRequestProcessor =
       processChangeRequests(zoneChangeHandler, recordChangeHandler, zoneSyncHandler)
@@ -237,11 +238,7 @@ object ProductionZoneCommandHandler {
   def run(
       sqsConnection: SqsConnection,
       processingSignal: Signal[IO, Boolean],
-      zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository,
-      recordChangeRepository: RecordChangeRepository,
-      recordSetRepository: RecordSetRepository,
-      batchChangeRepository: BatchChangeRepository,
+      dataAccessor: ApiDataAccessor,
       config: Config): IO[Unit] = {
     implicit val scheduler: Scheduler =
       Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
@@ -250,15 +247,7 @@ object ProductionZoneCommandHandler {
       pollingInterval <- IO.pure(
         config.getDuration("polling-interval", TimeUnit.MILLISECONDS).milliseconds)
       flow <- ZoneCommandHandler
-        .mainFlow(
-          zoneRepository,
-          zoneChangeRepository,
-          recordSetRepository,
-          recordChangeRepository,
-          batchChangeRepository,
-          sqsConnection,
-          pollingInterval,
-          processingSignal)
+        .mainFlow(dataAccessor, sqsConnection, pollingInterval, processingSignal)
         .compile
         .drain
     } yield flow

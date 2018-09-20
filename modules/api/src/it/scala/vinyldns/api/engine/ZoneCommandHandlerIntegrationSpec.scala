@@ -23,13 +23,14 @@ import cats.implicits._
 import fs2.{Scheduler, Stream}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 import vinyldns.api.{DynamoDBApiIntegrationSpec, VinylDNSTestData}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
-import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.SqsConnection
+import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.dynamodb.repository.{
   DynamoDBRecordChangeRepository,
   DynamoDBRecordSetRepository,
@@ -37,14 +38,21 @@ import vinyldns.dynamodb.repository.{
   DynamoDBZoneChangeRepository
 }
 import vinyldns.api.repository.mysql.TestMySqlInstance
+import vinyldns.core.domain.membership.{
+  GroupChangeRepository,
+  GroupRepository,
+  MembershipRepository,
+  UserRepository
+}
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.ExecutionContext
 
 class ZoneCommandHandlerIntegrationSpec
     extends DynamoDBApiIntegrationSpec
     with VinylDNSTestData
+    with MockitoSugar
     with Eventually {
 
   import vinyldns.api.engine.sqs.SqsConverters._
@@ -65,11 +73,7 @@ class ZoneCommandHandlerIntegrationSpec
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  private var recordChangeRepo: RecordChangeRepository = _
-  private var recordSetRepo: RecordSetRepository = _
-  private var zoneChangeRepo: ZoneChangeRepository = _
-  private var zoneRepo: ZoneRepository = _
-  private var batchChangeRepo: BatchChangeRepository = _
+  private var repositories: ApiDataAccessor = _
   private var sqsConn: SqsConnection = _
   private var str: Stream[IO, Unit] = _
   private val stopSignal = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
@@ -119,38 +123,36 @@ class ZoneCommandHandlerIntegrationSpec
   }
 
   def setup(): Unit = {
-    val repos = (
-      DynamoDBRecordChangeRepository(recordChangeStoreConfig, dynamoIntegrationConfig),
+    val dynamoRepos = (
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig),
+      DynamoDBRecordChangeRepository(recordChangeStoreConfig, dynamoIntegrationConfig),
       DynamoDBZoneChangeRepository(zoneChangeStoreConfig, dynamoIntegrationConfig)
     ).parTupled.unsafeRunSync()
 
-    recordChangeRepo = repos._1
-    recordSetRepo = repos._2
-    zoneChangeRepo = repos._3
-    zoneRepo = TestMySqlInstance.zoneRepository
-    batchChangeRepo = TestMySqlInstance.batchChangeRepository
+    repositories = ApiDataAccessor(
+      mock[UserRepository],
+      mock[GroupRepository],
+      mock[MembershipRepository],
+      mock[GroupChangeRepository],
+      dynamoRepos._1,
+      dynamoRepos._2,
+      dynamoRepos._3,
+      TestMySqlInstance.zoneRepository,
+      TestMySqlInstance.batchChangeRepository
+    )
+
     sqsConn = SqsConnection()
 
     //seed items database
-    waitForSuccess(zoneRepo.save(testZone))
-    waitForSuccess(recordChangeRepo.save(inDbRecordChange))
-    waitForSuccess(recordChangeRepo.save(inDbRecordChangeForSyncTest))
-    waitForSuccess(recordSetRepo.apply(inDbRecordChange))
-    waitForSuccess(recordSetRepo.apply(inDbRecordChangeForSyncTest))
-    waitForSuccess(zoneChangeRepo.save(inDbZoneChange))
-    // Run a noop query to make sure recordSetRepo is up
-    waitForSuccess(recordSetRepo.listRecordSets("1", None, None, None))
+    (
+      repositories.zoneRepository.save(testZone),
+      repositories.recordChangeRepository.save(inDbRecordChange),
+      repositories.recordChangeRepository.save(inDbRecordChangeForSyncTest),
+      repositories.recordSetRepository.apply(inDbRecordChange),
+      repositories.recordSetRepository.apply(inDbRecordChangeForSyncTest),
+      repositories.zoneChangeRepository.save(inDbZoneChange)).parTupled.unsafeRunSync()
 
-    str = ZoneCommandHandler.mainFlow(
-      zoneRepo,
-      zoneChangeRepo,
-      recordSetRepo,
-      recordChangeRepo,
-      batchChangeRepo,
-      sqsConn,
-      100.millis,
-      stopSignal)
+    str = ZoneCommandHandler.mainFlow(repositories, sqsConn, 100.millis, stopSignal)
     str.compile.drain.unsafeRunAsync { _ =>
       ()
     }
@@ -168,7 +170,7 @@ class ZoneCommandHandlerIntegrationSpec
 
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {
-        val getZone = zoneRepo.getZone(testZone.id).unsafeToFuture()
+        val getZone = repositories.zoneRepository.getZone(testZone.id).unsafeToFuture()
         whenReady(getZone) { zn =>
           zn.get.email shouldBe "updated@test.com"
         }
@@ -180,7 +182,9 @@ class ZoneCommandHandlerIntegrationSpec
         RecordSetChangeGenerator.forUpdate(inDbRecordSet, inDbRecordSet.copy(ttl = 1234), testZone)
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {
-        val getRs = recordSetRepo.getRecordSet(testZone.id, inDbRecordSet.id).unsafeToFuture()
+        val getRs = repositories.recordSetRepository
+          .getRecordSet(testZone.id, inDbRecordSet.id)
+          .unsafeToFuture()
         whenReady(getRs) { rs =>
           rs.get.ttl shouldBe 1234
         }
@@ -192,8 +196,9 @@ class ZoneCommandHandlerIntegrationSpec
       sendCommand(change, sqsConn).unsafeRunSync()
       eventually {
         val validatingQueries = for {
-          rs <- recordSetRepo.getRecordSet(testZone.id, inDbRecordSetForSyncTest.id)
-          ch <- recordChangeRepo.listRecordSetChanges(testZone.id)
+          rs <- repositories.recordSetRepository
+            .getRecordSet(testZone.id, inDbRecordSetForSyncTest.id)
+          ch <- repositories.recordChangeRepository.listRecordSetChanges(testZone.id)
         } yield (rs, ch)
 
         whenReady(validatingQueries.unsafeToFuture()) { data =>
@@ -209,10 +214,5 @@ class ZoneCommandHandlerIntegrationSpec
         }
       }
     }
-  }
-
-  private def waitForSuccess[T](f: => IO[T]): T = {
-    val waiting = f.unsafeToFuture().recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
-    Await.result[T](waiting, 15.seconds)
   }
 }

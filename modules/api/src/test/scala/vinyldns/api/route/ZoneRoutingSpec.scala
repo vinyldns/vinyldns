@@ -16,12 +16,10 @@
 
 package vinyldns.api.route
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
-import akka.http.scaladsl.server.{Directives, RequestContext, Route}
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import cats.effect._
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -45,8 +43,6 @@ class ZoneRoutingSpec
     with VinylDNSJsonProtocol
     with Matchers
     with GroupTestData {
-
-  def actorRefFactory: ActorSystem = system
 
   private val okAuth = okGroupAuth
   private val alreadyExists = Zone("already.exists.", "test@test.com")
@@ -329,10 +325,7 @@ class ZoneRoutingSpec
 
   val zoneService: ZoneServiceAlgebra = TestZoneService
 
-  override def vinyldnsAuthenticator(
-      ctx: RequestContext,
-      content: String): IO[Either[VinylDNSAuthenticationError, AuthPrincipal]] =
-    IO.pure(Right(okAuth))
+  val vinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
 
   def zoneJson(name: String, email: String): String =
     zoneJson(Zone(name, email, connection = null, created = null, status = null, id = null))

@@ -26,6 +26,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, OneInstancePerTest, WordSpec}
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.route.Monitor
 
 import scala.util.Failure
@@ -42,6 +43,9 @@ class VinylDNSDirectivesSpec
 
   private val mockLatency = mock[Histogram]
   private val mockErrors = mock[Meter]
+
+  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
+    mock[AuthPrincipal])
 
   class TestMonitor extends Monitor("test") {
     override val latency: Histogram = mockLatency
