@@ -21,11 +21,11 @@ import java.util.UUID
 import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 import scalikejdbc.DB
-import vinyldns.core.domain.membership.{Group, User}
+import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone._
+import vinyldns.core.TestZoneData.okZone
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -35,33 +35,12 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers
-    with ScalaFutures
     with Inspectors
     with OptionValues {
 
   private var repo: ZoneChangeRepository = _
 
   object TestData {
-    val okUser = User(
-      userName = "ok",
-      id = "ok",
-      created = DateTime.now.secondOfDay().roundFloorCopy(),
-      accessKey = "okAccessKey",
-      secretKey = "okSecretKey",
-      firstName = Some("ok"),
-      lastName = Some("ok"),
-      email = Some("test@test.com")
-    )
-
-    val okGroup: Group = Group(
-      "ok",
-      "test@test.com",
-      Some("a test group"),
-      memberIds = Set(okUser.id),
-      adminUserIds = Set(okUser.id),
-      created = DateTime.now.secondOfDay().roundFloorCopy())
-
-    val okZone: Zone = Zone("ok.zone.recordsets.", "test@test.com", adminGroupId = okGroup.id)
 
     def randomZoneChange: ZoneChange =
       ZoneChange(

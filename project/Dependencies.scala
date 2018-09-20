@@ -27,9 +27,7 @@ object Dependencies {
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
-    "com.zaxxer"                %  "HikariCP"                       % "2.5.1",
     "dnsjava"                   %  "dnsjava"                        % "2.1.7",
-    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.3",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
@@ -68,8 +66,6 @@ object Dependencies {
 
   lazy val mysqlDependencies = Seq(
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
-    "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
-    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.6",
     "org.scalikejdbc"           %% "scalikejdbc"                    % "2.5.2",
     "org.scalikejdbc"           %% "scalikejdbc-config"             % "2.5.2",
