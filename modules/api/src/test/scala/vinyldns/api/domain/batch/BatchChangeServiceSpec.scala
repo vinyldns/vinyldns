@@ -103,7 +103,7 @@ class BatchChangeServiceSpec
     None,
     None)
 
-  private val batchChangeRepo = InMemoryBatchChangeRepository
+  private val batchChangeRepo = new InMemoryBatchChangeRepository
 
   object EmptyBatchConverter extends BatchChangeConverterAlgebra {
     def sendBatchForProcessing(

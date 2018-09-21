@@ -214,7 +214,8 @@ class BatchChangeConverterSpec
       }
   }
 
-  private val underTest = new BatchChangeConverter(InMemoryBatchChangeRepository, SqsWithFail)
+  private val batchChangeRepo = new InMemoryBatchChangeRepository
+  private val underTest = new BatchChangeConverter(batchChangeRepo, SqsWithFail)
 
   "convertAndSendBatchForProcessing" should {
     "successfully generate add RecordSetChange and map IDs for all adds" in {
@@ -322,7 +323,7 @@ class BatchChangeConverterSpec
 
       // check the batch has been stored in the DB
       val savedBatch: Option[BatchChange] =
-        await(InMemoryBatchChangeRepository.getBatchChange(batchChange.id))
+        await(batchChangeRepo.getBatchChange(batchChange.id))
 
       savedBatch shouldBe Some(batchChange)
     }
@@ -356,7 +357,7 @@ class BatchChangeConverterSpec
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
-        await(InMemoryBatchChangeRepository.getBatchChange(batchChangeWithBadSqs.id))
+        await(batchChangeRepo.getBatchChange(batchChangeWithBadSqs.id))
       savedBatch shouldBe Some(returnedBatch)
     }
 
@@ -370,7 +371,7 @@ class BatchChangeConverterSpec
       result shouldBe an[BatchConversionError]
 
       val notSaved: Option[BatchChange] =
-        await(InMemoryBatchChangeRepository.getBatchChange(batchChangeUnsupported.id))
+        await(batchChangeRepo.getBatchChange(batchChangeUnsupported.id))
       notSaved shouldBe None
     }
   }

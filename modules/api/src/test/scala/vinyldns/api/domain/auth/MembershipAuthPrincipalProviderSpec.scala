@@ -50,7 +50,7 @@ class MembershipAuthPrincipalProviderSpec
         .when(mockMembershipRepo)
         .getGroupsForUser(any[String])
 
-      val result = await[Option[AuthPrincipal]](underTest.getAuthPrincipal(accessKey))
+      val result = underTest.getAuthPrincipal(accessKey).unsafeRunSync()
       result.map { authPrincipal =>
         authPrincipal.signedInUser shouldBe okUser
         authPrincipal.memberGroupIds should contain theSameElementsAs Seq(okGroup.id, dummyGroup.id)

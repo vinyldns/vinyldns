@@ -1,7 +1,8 @@
 -Xms512M
--Xmx2048M
+-Xmx4096M
 -Xss2M
--XX:MaxMetaspaceSize=1024M
+-XX:MaxMetaspaceSize=2048M
+-XX:ReservedCodeCacheSize=1024M
 -Dsbt.gigahorse=false
 -Dhttp.port=9001
 -Djava.net.preferIPv4Stack=true
