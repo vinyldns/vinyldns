@@ -25,7 +25,7 @@ import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
 trait MySqlTestTrait {
   def mysqlConfig: Config
 
-  lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig, "mysql")
+  lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
 
   lazy val instance: DataStore =
     new MySqlDataStoreProvider().load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
