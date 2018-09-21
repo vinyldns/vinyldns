@@ -39,5 +39,5 @@ trait MySqlTestTrait {
 }
 
 object TestMySqlInstance extends MySqlTestTrait {
-  def mysqlConfig: Config = ConfigFactory.load()
+  def mysqlConfig: Config = ConfigFactory.load().getConfig("mysql")
 }
