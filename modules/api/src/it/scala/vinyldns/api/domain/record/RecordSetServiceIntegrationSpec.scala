@@ -327,11 +327,9 @@ class RecordSetServiceIntegrationSpec
         testRecordSetService
           .addRecordSet(newRecord, auth)
           .value
-          .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetChange]]
-      whenReady(result, timeout) { out =>
-        rightValue(out).recordSet.name shouldBe "any-name"
-      }
+          .unsafeRunSync()
+
+      rightValue(result).asInstanceOf[RecordSetChange].recordSet.name shouldBe "any-name"
     }
   }
 
