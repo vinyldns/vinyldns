@@ -23,7 +23,7 @@ import vinyldns.core.domain.batch._
 import scala.collection.concurrent
 import cats.effect._
 
-object InMemoryBatchChangeRepository extends BatchChangeRepository {
+class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
   implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isAfter(_))
 
