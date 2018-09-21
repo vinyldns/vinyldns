@@ -18,6 +18,7 @@ package controllers
 
 import java.util
 
+import actions.{ApiAction, FrontendAction}
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
@@ -87,9 +88,9 @@ class VinylDNS @Inject()(
     wsClient: WSClient,
     components: ControllerComponents,
     crypto: CryptoAlgebra)
-    extends AbstractController(components) {
+    extends AbstractController(components)
+    with CacheHeader {
 
-  import VinylDNS._
   import play.api.mvc._
 
   private val signer = SignerFactory.getSigner("VinylDNS", "us/east")
@@ -97,10 +98,6 @@ class VinylDNS @Inject()(
     configuration
       .getOptional[String]("portal.vinyldns.backend.url")
       .getOrElse("http://localhost:9000")
-  private val cacheHeaders = Seq(
-    ("Cache-Control", "no-cache, no-store, must-revalidate"),
-    ("Pragma", "no-cache"),
-    ("Expires", "0"))
 
   // Need this guy for user actions, brings the session username and user account into the Action
   private val userAction = Action.andThen(new ApiAction(userAccountAccessor.get))

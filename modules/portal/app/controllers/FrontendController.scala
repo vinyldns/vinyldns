@@ -16,6 +16,7 @@
 
 package controllers
 
+import actions.FrontendAction
 import javax.inject.{Inject, Singleton}
 import models.CustomLinks
 import org.slf4j.LoggerFactory
