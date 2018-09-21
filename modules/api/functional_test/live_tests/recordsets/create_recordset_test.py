@@ -1465,8 +1465,6 @@ def test_create_record_with_existing_wildcard_succeeds(shared_zone_test_context)
 
         test_create = client.create_recordset(test_rs, status=202)
         test_rs = client.wait_until_recordset_change_status(test_create, 'Complete')['recordSet']
-    except:
-        pass
     finally:
         try:
             delete_result = client.delete_recordset(wildcard_rs['zoneId'], wildcard_rs['id'], status=202)
