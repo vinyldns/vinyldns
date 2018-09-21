@@ -18,8 +18,12 @@ package controllers
 
 import java.net.URI
 
+import cats.effect.IO
+import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import play.api.{ConfigLoader, Configuration}
+import pureconfig.module.catseffect.loadConfigF
+import vinyldns.core.repository.DataStoreConfig
 
 import scala.collection.JavaConverters._
 
@@ -35,6 +39,13 @@ class Settings(private val config: Configuration) {
   val ldapProviderUrl: URI = new URI(config.get[String]("LDAP.context.providerUrl"))
 
   val portalTestLogin: Boolean = config.getOptional[Boolean]("portal.test_login").getOrElse(false)
+
+  val dataStoreConfigs: IO[List[DataStoreConfig]] =
+    loadConfigF[IO, List[String]](config.underlying, "data-stores").flatMap { lst =>
+      lst.map(loadConfigF[IO, DataStoreConfig](config.underlying, _)).parSequence
+    }
+
+  val cryptoConfig = IO(config.get[Config]("crypto"))
 
   implicit def ldapSearchDomainLoader: ConfigLoader[List[LdapSearchDomain]] =
     new ConfigLoader[List[LdapSearchDomain]] {
