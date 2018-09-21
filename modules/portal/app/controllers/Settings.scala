@@ -41,7 +41,7 @@ class Settings(private val config: Configuration) {
   val portalTestLogin: Boolean = config.getOptional[Boolean]("portal.test_login").getOrElse(false)
 
   val dataStoreConfigs: IO[List[DataStoreConfig]] =
-    IO(config.underlying.getStringList("data-stores").asScala.toList).flatMap { lst =>
+    loadConfigF[IO, List[String]](config.underlying, "data-stores").flatMap { lst =>
       lst.map(loadConfigF[IO, DataStoreConfig](config.underlying, _)).parSequence
     }
 
