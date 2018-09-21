@@ -53,7 +53,7 @@ class RecordSetChangeHandlerSpec
   private val rsRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
   private val changeRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
 
-  private val batchRepo = InMemoryBatchChangeRepository
+  private val batchRepo = new InMemoryBatchChangeRepository
 
   private val rs = completeCreateAAAA.recordSet
 
@@ -302,7 +302,7 @@ class RecordSetChangeHandlerSpec
       // resolve called once when validating, 12x for retries
       verify(mockConn, times(13)).resolve(rs.name, rsChange.zone.name, rs.typ)
 
-      val batchChangeUpdates = await(batchRepo.getBatchChange(batchChange.id))
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
       val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
         ch.copy(
           status = SingleChangeStatus.Failed,

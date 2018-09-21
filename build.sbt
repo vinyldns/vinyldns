@@ -70,7 +70,7 @@ lazy val sharedSettings = Seq(
 )
 
 lazy val testSettings = Seq(
-  parallelExecution in Test := false,
+  parallelExecution in Test := true,
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := false,
   testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
@@ -196,6 +196,7 @@ lazy val api = (project in file("modules/api"))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
   .dependsOn(core, dynamodb % "compile->compile;it->it")
 
+val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")
 lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
   .configs(IntegrationTest)
   .settings(headerSettings(IntegrationTest))
@@ -203,7 +204,11 @@ lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
   .settings(
     inConfig(IntegrationTest)(scalafmtConfigSettings),
     (scalastyleConfig in Test) := baseDirectory.value / "scalastyle-test-config.xml",
-    (scalastyleConfig in IntegrationTest) := baseDirectory.value / "scalastyle-test-config.xml"
+    (scalastyleConfig in IntegrationTest) := baseDirectory.value / "scalastyle-test-config.xml",
+    killDocker := {
+      import scala.sys.process._
+      "./bin/remove-vinyl-containers.sh" !
+    },
   )
   .aggregate(core, api, portal, dynamodb)
 
@@ -271,7 +276,9 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
     organization := "io.vinyldns",
     coverageMinimum := 85,
     coverageFailOnMinimum := true,
-    coverageHighlighting := true
+    coverageHighlighting := true,
+    parallelExecution in Test := true,
+    parallelExecution in IntegrationTest := true
   ).dependsOn(core % "compile->compile;test->test")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
@@ -427,24 +434,26 @@ releaseProcess :=
   sonatypePublishStage ++
   finalReleaseStage
 
-// Validate runs static checks and compile to make sure we can go
-addCommandAlias("validate-api",
-  ";project api; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
-    "it:scalastyle; compile; test:compile; it:compile")
-addCommandAlias("validate-dynamodb",
-  ";project dynamodb; clean; headerCheck; test:headerCheck; it:headerCheck; scalastyle; test:scalastyle; " +
-    "it:scalastyle; compile; test:compile; it:compile")
-addCommandAlias("validate-core",
-  ";project core; clean; headerCheck; test:headerCheck; scalastyle; test:scalastyle; compile; test:compile")
-addCommandAlias("validate-portal",
-  ";project portal; clean; headerCheck; test:headerCheck; compile; test:compile; createJsHeaders; checkJsHeaders")
-addCommandAlias("validate", ";validate-core;validate-dynamodb;validate-api;validate-portal")
+// Let's do things in parallel!
+addCommandAlias("validate", "; root/clean; " +
+  "all core/headerCheck core/test:headerCheck " +
+  "api/headerCheck api/test:headerCheck api/it:headerCheck " +
+  "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
+  "portal/headerCheck portal/test:headerCheck; " +
+  "all core/scalastyle core/test:scalastyle " +
+  "api/scalastyle api/test:scalastyle api/it:scalastyle " +
+  "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle" +
+  "portal/scalastyle portal/test:scalastyle;" +
+  "portal/createJsHeaders;portal/checkJsHeaders;" +
+  "root/compile;root/test:compile;root/it:compile"
+)
 
-// Verify runs all tests and code coverage
-addCommandAlias("dockerComposeUpAll",";project api;dockerComposeUp;project dynamodb;dockerComposeUp;project root")
-addCommandAlias("dockerComposeStopAll",";project api;dockerComposeStop;project dynamodb;dockerComposeStop;project root")
-addCommandAlias("verify",
-  ";dockerComposeUpAll;project root;coverage;test;it:test;coverageReport;coverageAggregate;dockerComposeStopAll")
+addCommandAlias("verify", "; project root; killDocker; " +
+  "project api; dockerComposeUp; project dynamodb; dockerComposeUp; " +
+  "project root; coverage; " +
+  "all core/test dynamodb/test api/test dynamodb/it:test api/it:test portal/test; " +
+  "project root; coverageReport; coverageAggregate; killDocker"
+)
 
 // Build the artifacts for release
 addCommandAlias("build-api", ";project api;clean;assembly")
