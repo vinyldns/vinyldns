@@ -1483,9 +1483,11 @@ def test_create_record_with_existing_cname_wildcard_succeed(shared_zone_test_con
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    wildcard_rs = get_recordset_json(shared_zone_test_context, '*', 'CNAME', [{'cname': 'cname2.'}])
+    zone = shared_zone_test_context.system_test_zone
 
-    test_rs = get_recordset_json(shared_zone_test_context, 'new_record', 'A', [{'address': '10.1.1.1'}])
+    wildcard_rs = get_recordset_json(zone, '*', 'CNAME', [{'cname': 'cname2.'}])
+
+    test_rs = get_recordset_json(zone, 'new_record', 'A', [{'address': '10.1.1.1'}])
 
     try:
         wildcard_create = client.create_recordset(wildcard_rs, status=202)
