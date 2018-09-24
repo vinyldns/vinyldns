@@ -14,26 +14,30 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
-import vinyldns.api.VinylDNSConfig
-import vinyldns.api.crypto.Crypto
+import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
 
-object TestMySqlInstance {
+trait MySqlIntegrationSpec {
+  def mysqlConfig: Config
 
-  lazy val mySqlConfig: DataStoreConfig =
-    pureconfig.loadConfigOrThrow[DataStoreConfig](VinylDNSConfig.vinyldnsConfig, "mysql")
+  lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
 
   lazy val instance: DataStore =
-    new MySqlDataStoreProvider().load(mySqlConfig, Crypto.instance).unsafeRunSync()
+    new MySqlDataStoreProvider().load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
 
-  lazy val zoneRepository: ZoneRepository =
-    instance.get[ZoneRepository](RepositoryName.zone).get
   lazy val batchChangeRepository: BatchChangeRepository =
     instance.get[BatchChangeRepository](RepositoryName.batchChange).get
+  lazy val zoneRepository: ZoneRepository =
+    instance.get[ZoneRepository](RepositoryName.zone).get
   lazy val zoneChangeRepository: ZoneChangeRepository =
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
+}
+
+object TestMySqlInstance extends MySqlIntegrationSpec {
+  def mysqlConfig: Config = ConfigFactory.load().getConfig("mysql")
 }

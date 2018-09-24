@@ -84,6 +84,8 @@ object TestMembershipData {
     memberGroupIds = List(abcGroup.id, okGroup.id)
   )
 
+  val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(oneUserDummyGroup.id))
+
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(
     okGroup,

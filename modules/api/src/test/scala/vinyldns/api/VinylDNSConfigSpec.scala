@@ -34,7 +34,7 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
     "assign the correct mysql repositories" in {
       val mysqlConfig =
         VinylDNSConfig.dataStoreConfigs.unsafeRunSync
-          .find(_.className == "vinyldns.api.repository.mysql.MySqlDataStoreProvider")
+          .find(_.className == "vinyldns.mysql.repository.MySqlDataStoreProvider")
           .get
 
       mysqlConfig.repositories.keys should contain theSameElementsAs Set(zone, batchChange)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import cats.effect.IO
 import com.zaxxer.hikari.HikariDataSource
@@ -56,8 +56,8 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   }
 
   def initializeRepos(): IO[DataStore] = IO {
-    val zones = Some(new JdbcZoneRepository())
-    val batchChanges = Some(new JdbcBatchChangeRepository())
+    val zones = Some(new MySqlZoneRepository())
+    val batchChanges = Some(new MySqlBatchChangeRepository())
     val zoneChanges = Some(new MySqlZoneChangeRepository())
     DataStore(
       zoneRepository = zones,

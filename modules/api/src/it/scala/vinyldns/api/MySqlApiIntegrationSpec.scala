@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.api
+import com.typesafe.config.{Config, ConfigFactory}
+import vinyldns.mysql.repository.MySqlIntegrationSpec
 
-case class MySqlDataStoreSettings(
-    name: String,
-    driver: String,
-    migrationUrl: String,
-    url: String,
-    user: String,
-    password: String,
-    poolMaxSize: Int,
-    connectionTimeoutMillis: Long,
-    maxLifeTime: Long,
-    migrationSchemaTable: Option[String])
+trait MySqlApiIntegrationSpec extends MySqlIntegrationSpec {
+  val mysqlConfig: Config = ConfigFactory.load().getConfig("vinyldns.mysql")
+}

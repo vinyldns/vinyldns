@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import cats.effect._
 import cats.implicits._
@@ -27,9 +27,9 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-class JdbcZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
+class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
 
-  private final val logger = LoggerFactory.getLogger(classOf[JdbcZoneRepository])
+  private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneRepository])
   private final val MAX_ACCESSORS = 30
 
   /**
