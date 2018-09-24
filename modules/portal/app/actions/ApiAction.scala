@@ -18,9 +18,9 @@ package actions
 
 import cats.effect.IO
 import controllers.CacheHeader
-import play.api.mvc.{ActionFunction, Request, Result}
+import play.api.mvc.Result
 import play.api.mvc.Results.{Forbidden, NotFound, Unauthorized}
-import vinyldns.core.domain.membership.{LockStatus, User}
+import vinyldns.core.domain.membership.{User}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,33 +31,21 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, return Forbidden message
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class ApiAction(userLookup: String => IO[Option[User]])(
+class ApiAction(val userLookup: String => IO[Option[User]])(
     implicit val executionContext: ExecutionContext)
-    extends ActionFunction[Request, UserRequest]
+    extends VinylDnsAction
     with CacheHeader {
 
-  def invokeBlock[A](request: Request[A], block: UserRequest[A] => Future[Result]): Future[Result] =
-    // if the user name is not in session, reject
-    request.session.get("username") match {
-      case None =>
-        Future(
-          Unauthorized("You are not logged in. Please login to continue.").withHeaders(
-            cacheHeaders: _*))
+  def notLoggedInResult: Future[Result] =
+    Future.successful(
+      Unauthorized("You are not logged in. Please login to continue.").withHeaders(
+        cacheHeaders: _*))
 
-      case Some(un) =>
-        // user name in session, let's get it from the repo
-        userLookup(un).unsafeToFuture().flatMap {
-          case None =>
-            // Odd case, but let's handle with a different error message
-            Future.successful(
-              NotFound(s"Unable to find user account for user name '$un'")
-                .withHeaders(cacheHeaders: _*))
+  def cantFindAccountResult(un: String): Future[Result] =
+    Future.successful(
+      NotFound(s"Unable to find user account for user name '$un'")
+        .withHeaders(cacheHeaders: _*))
 
-          case Some(user) if user.lockStatus == LockStatus.Locked =>
-            Future.successful(Forbidden(s"Account is locked.").withHeaders(cacheHeaders: _*))
-
-          case Some(user) =>
-            block(new UserRequest(un, user, request))
-        }
-    }
+  def lockedUserResult: Future[Result] =
+    Future.successful(Forbidden(s"Account is locked.").withHeaders(cacheHeaders: _*))
 }

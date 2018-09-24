@@ -18,9 +18,9 @@ package actions
 
 import cats.effect.IO
 import controllers.{CacheHeader, VinylDNS}
-import play.api.mvc.{ActionFunction, Request, Result}
+import play.api.mvc.Result
 import play.api.mvc.Results.Redirect
-import vinyldns.core.domain.membership.{LockStatus, User}
+import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,39 +31,27 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to login screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class FrontendAction(userLookup: String => IO[Option[User]])(
+class FrontendAction(val userLookup: String => IO[Option[User]])(
     implicit val executionContext: ExecutionContext)
-    extends ActionFunction[Request, UserRequest]
+    extends VinylDnsAction
     with CacheHeader {
 
-  def invokeBlock[A](request: Request[A], block: UserRequest[A] => Future[Result]): Future[Result] =
-    // if the user name is not in session, redirect to the login screen
-    request.session.get("username") match {
-      case None =>
-        Future(
-          Redirect("/login")
-            .flashing(VinylDNS.Alerts.error("You are not logged in. Please login to continue."))
-            .withHeaders(cacheHeaders: _*))
+  def notLoggedInResult: Future[Result] =
+    Future(
+      Redirect("/login")
+        .flashing(VinylDNS.Alerts.error("You are not logged in. Please login to continue."))
+        .withHeaders(cacheHeaders: _*))
 
-      case Some(un) =>
-        // user name in session, let's get it from the repo
-        userLookup(un).unsafeToFuture().flatMap {
-          case None =>
-            // Odd case, but let's redirect to login with a different error message
-            Future.successful(
-              Redirect("/login")
-                .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
-                .withHeaders(cacheHeaders: _*))
+  def cantFindAccountResult(un: String): Future[Result] =
+    Future.successful(
+      Redirect("/login")
+        .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
+        .withHeaders(cacheHeaders: _*))
 
-          case Some(user) if user.lockStatus == LockStatus.Locked =>
-            Future.successful(
-              Redirect("/login")
-                .flashing(VinylDNS.Alerts.error(s"Account locked"))
-                .withNewSession
-                .withHeaders(cacheHeaders: _*))
-
-          case Some(user) =>
-            block(new UserRequest(un, user, request))
-        }
-    }
+  def lockedUserResult: Future[Result] =
+    Future.successful(
+      Redirect("/login")
+        .flashing(VinylDNS.Alerts.error(s"Account locked"))
+        .withNewSession
+        .withHeaders(cacheHeaders: _*))
 }
