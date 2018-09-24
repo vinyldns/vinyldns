@@ -89,15 +89,6 @@ class RecordSetServiceIntegrationSpec
     DateTime.now,
     None,
     List(AAAAData("fd69:27cc:fe91::60")))
-  private val wildcardTestRecordCNAME = RecordSet(
-    zone.id,
-    "*",
-    CNAME,
-    38400,
-    RecordSetStatus.Active,
-    DateTime.now,
-    None,
-    List(CNAMEData("example.com")))
   private val subTestRecordA = RecordSet(
     zone.id,
     "a-record",
@@ -169,7 +160,6 @@ class RecordSetServiceIntegrationSpec
     val records = List(
       apexTestRecordA,
       apexTestRecordAAAA,
-      wildcardTestRecordCNAME,
       subTestRecordA,
       subTestRecordAAAA,
       subTestRecordNS,
@@ -319,17 +309,6 @@ class RecordSetServiceIntegrationSpec
       whenReady(result, timeout) { out =>
         leftValue(out) shouldBe a[RecordSetAlreadyExists]
       }
-    }
-
-    "add record if CNAME wildcard exists" in {
-      val newRecord = subTestRecordA.copy(name = "any-name")
-      val result =
-        testRecordSetService
-          .addRecordSet(newRecord, auth)
-          .value
-          .unsafeRunSync()
-
-      rightValue(result).asInstanceOf[RecordSetChange].recordSet.name shouldBe "any-name"
     }
   }
 
