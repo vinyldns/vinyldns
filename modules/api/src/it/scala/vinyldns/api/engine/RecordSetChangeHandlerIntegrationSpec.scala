@@ -16,7 +16,7 @@
 
 package vinyldns.api.engine
 
-import cats.effect.IO
+import cats.implicits._
 import cats.scalatest.{EitherMatchers, EitherValues}
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
@@ -99,7 +99,7 @@ class RecordSetChangeHandlerIntegrationSpec
       testRecordA
     )
 
-    records.map(record => recordSetRepo.putRecordSet(record).unsafeRunSync())
+    records.map(record => recordSetRepo.putRecordSet(record)).parSequence.unsafeRunSync()
 
     testRecordSetService = new RecordSetService(
       zoneRepo,
