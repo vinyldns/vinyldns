@@ -10,44 +10,73 @@ The portal configuration is much smaller than the API Server.
 **Note: Unlike the API server, not all configuration resides under a `vinyldns` namespace.**
 
 ## Configuration
-- [AWS DynamoDB](#aws-dynamodb)
+- [Database Configuration](#database-configuration)
 - [LDAP](#ldap)
 - [Cryptography](#cryptography-settings)
 - [Custom Links](#custom-links)
 - [Additional Configuration Settings](#additional-configuration-settings)
 - [Full Example Config](#full-example-config)
 
-## AWS DynamoDB
-Be sure to follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
+## Database Configuration
+VinylDNS supports both DynamoDB and MySQL backends (see [API Database Configuration](config-api#database-configuration)).
+
+If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
+
+If using MySQL, follow the [MySQL Setup Guide](setup-mysql) first to get the values you need to configure here.
+
 
 The Portal uses the following tables:
 
 * `user`
 * `userChanges`
 
+Note that the user table is shared between the API and the portal, and *must* be configured with
+the same values in both configs. **At the moment, the user and userChange repository are only implemented in DynamoDB, but we are actively
+working on MySQL implementations**:
+
 ```yaml
-dynamo {
+vinyldns {
 
-  # AWS_ACCESS_KEY, credential needed to access the SQS queue
-  key = "x"
-
-  # AWS_SECRET_ACCESS_KEY, credential needed to access the SQS queue
-  secret = "x"
-
-  # DynamoDB url for the region you are running in, this example is in us-east-1
-  endpoint = "https://dynamodb.us-east-1.amazonaws.com"
-}
-
-users {
-  tablename = "users"
-  provisionedReadThroughput = 100
-  provisionedWriteThroughput = 100
-}
-
-changelog {
-  tablename = "usersAndGroupChanges"
-  provisionedReadThroughput = 100
-  provisionedWriteThroughput = 100
+  # this list should include only the datastores being used by your portal instance (user and userChange repo)
+  data-stores = ["dynamodb"]
+  
+  dynamodb {
+      
+    # this is the path to the DynamoDB provider. This should not be edited
+    # from the default in reference.conf
+    class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
+    
+    settings {
+      # AWS_ACCESS_KEY, credential needed to access the SQS queue
+      key = "x"
+    
+      # AWS_SECRET_ACCESS_KEY, credential needed to access the SQS queue
+      secret = "x"
+    
+      # DynamoDB url for the region you are running in, this example is in us-east-1
+      endpoint = "https://dynamodb.us-east-1.amazonaws.com"
+      
+      # DynamoDB region
+      region = "us-east-1"
+    }
+    
+    repositories {
+      # all repositories with config sections here will be enabled in dynamodb
+      user {
+        # Name of the table where recordsets are saved
+        table-name = "usersTest"
+        # Provisioned throughput for reads
+        provisioned-reads = 30
+        # Provisioned throughput for writes
+        provisioned-writes = 20
+      }
+      user-change {
+        table-name = "userChangeTest"
+        provisioned-reads = 30
+        provisioned-writes = 20
+      }
+    }
+  }
 }
 ```
 
@@ -172,26 +201,30 @@ portal.vinyldns.backend.url = "http://vinyldns-api:9000"
 portal.test_login = false
 
 # configuration for the users and groups store
-dynamo {
-  key = "akid goes here"
-  secret = "secret key goes here"
-  endpoint = "http://vinyldns-dynamodb:8000"
-  test_datastore = false
-}
+data-stores = ["dynamodb"]
 
-users {
-  dummy = false
-  tablename = "users"
-  provisionedReadThroughput = 100
-  provisionedWriteThroughput = 100
-}
-
-changelog {
-  dummy = false
-  tablename = "usersAndGroupChanges"
-  provisionedReadThroughput = 100
-  provisionedWriteThroughput = 100
-}
+dynamodb {
+  class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
+  
+  settings {
+    key = "x"
+    secret = "x"
+    endpoint = "http://vinyldns-dynamodb:8000"
+    region = "us-east-1"
+  }
+  
+  repositories {
+    user {
+      table-name = "usersTest"
+      provisioned-reads = 30
+      provisioned-writes = 20
+    }
+    user-change {
+      table-name = "userChangeTest"
+      provisioned-reads = 30
+      provisioned-writes = 20
+    }
+  }
 
 LDAP {
   user="test"
