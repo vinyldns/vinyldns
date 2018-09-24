@@ -196,7 +196,7 @@ vinyldns {
     
     # this is the path to the mysql provider. This should not be edited
     # from the default in reference.conf
-    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
     
     settings {
       # the name of the database, recommend to leave this as is
@@ -443,7 +443,7 @@ vinyldns {
   }
   
   mysql {
-    class-name = "vinyldns.api.repository.mysql.MySqlDataStoreProvider"
+    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
     
     settings {
       name = "vinyldns"
