@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import cats.effect.IO
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
+import scalikejdbc._
 import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf._
 import vinyldns.core.route.Monitored
-import scalikejdbc._
 import vinyldns.proto.VinylDNSProto
 
 class MySqlZoneChangeRepository

@@ -9,6 +9,7 @@ object Dependencies {
   lazy val prometheusV = "0.4.0"
   lazy val catsEffectV = "0.10.1"
   lazy val configV = "1.3.2"
+  lazy val scalikejdbcV = "3.3.1"
   lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
   lazy val playV = "2.6.19"
@@ -27,16 +28,14 @@ object Dependencies {
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
-    "com.zaxxer"                %  "HikariCP"                       % "2.5.1",
     "dnsjava"                   %  "dnsjava"                        % "2.1.7",
-    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.3",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
     "org.json4s"                %% "json4s-ext"                     % "3.5.3",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
-    "org.scalikejdbc"           %% "scalikejdbc"                    % "3.3.1",
-    "org.scalikejdbc"           %% "scalikejdbc-config"             % "3.3.1",
+    "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
+    "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "org.slf4j"                 %  "slf4j-api"                      % "1.7.7",
     "co.fs2"                    %% "fs2-core"                       % "0.10.5",
@@ -64,6 +63,14 @@ object Dependencies {
   lazy val dynamoDBDependencies = Seq(
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources()
+  )
+
+  lazy val mysqlDependencies = Seq(
+    "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
+    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.6",
+    "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
+    "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
+    "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
   )
 
   lazy val commonTestDependencies = Seq(

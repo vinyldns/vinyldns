@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import cats.data._
 import cats.effect._
@@ -26,7 +26,7 @@ import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 /**
-  * JdbcBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
+  * MySqlBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
   * BatchChange and SingleChange are stored in RDS as two tables.
   * The batch_change_id foreign key on single_change table helps to ensure single change records
   * only exist as part of a batch change.
@@ -34,12 +34,12 @@ import vinyldns.proto.VinylDNSProto
   * qin data column of single change table.
   * There're indexes on the tables to provide easy query by single_change_id, batch_change_id, user_id
   */
-class JdbcBatchChangeRepository
+class MySqlBatchChangeRepository
     extends BatchChangeRepository
     with BatchChangeProtobufConversions
     with Monitored {
 
-  private final val logger = LoggerFactory.getLogger(classOf[JdbcBatchChangeRepository])
+  private final val logger = LoggerFactory.getLogger(classOf[MySqlBatchChangeRepository])
 
   private final val PUT_BATCH_CHANGE =
     sql"""

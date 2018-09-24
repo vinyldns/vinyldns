@@ -14,95 +14,58 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import java.util.UUID
 
 import cats.effect._
 import org.joda.time.DateTime
 import org.scalatest._
-import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
-import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
-import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.record.{AAAAData, AData, RecordType}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.core.domain.record.{AAAAData, AData, RecordData, RecordType}
 import vinyldns.core.domain.batch._
+import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.TestMembershipData.okAuth
 
-class JdbcBatchChangeRepositoryIntegrationSpec
+class MySqlBatchChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
-    with DnsConversions
-    with VinylDNSTestData
-    with GroupTestData
-    with ResultHelpers
     with BeforeAndAfterEach
     with Matchers
-    with ScalaFutures
     with Inspectors
     with OptionValues {
 
   private var repo: BatchChangeRepository = _
-  private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
   import SingleChangeStatus._
   import RecordType._
 
   object TestData {
-
-    val okAuth: AuthPrincipal = okGroupAuth
-    val notAuth: AuthPrincipal = dummyUserAuth
-
-    val zoneID: String = "someZoneId"
-    val zoneName: String = "somezone.com."
+    def generateSingleAddChange(recordType: RecordType, recordData: RecordData): SingleAddChange =
+      SingleAddChange(okZone.id,
+        okZone.name,
+        "test",
+        "test.somezone.com.",
+        recordType, 3600,
+        recordData,
+        Pending,
+        None,
+        None,
+        None)
 
     val sc1: SingleAddChange =
-      SingleAddChange(
-        zoneID,
-        zoneName,
-        "test",
-        "test.somezone.com.",
-        A,
-        3600,
-        AData("1.2.3.4"),
-        Pending,
-        None,
-        None,
-        None)
+      generateSingleAddChange(A, AData("1.2.3.4"))
 
     val sc2: SingleAddChange =
-      SingleAddChange(
-        zoneID,
-        zoneName,
-        "test",
-        "test.somezone.com.",
-        A,
-        3600,
-        AData("1.2.3.40"),
-        Pending,
-        None,
-        None,
-        None)
+      generateSingleAddChange(A, AData("1.2.3.40"))
 
     val sc3: SingleAddChange =
-      SingleAddChange(
-        zoneID,
-        zoneName,
-        "test",
-        "test.somezone.com.",
-        AAAA,
-        300,
-        AAAAData("2001:558:feed:beef:0:0:0:1"),
-        Pending,
-        None,
-        None,
-        None)
+      generateSingleAddChange(AAAA, AAAAData("2001:558:feed:beef:0:0:0:1"))
 
     val deleteChange: SingleDeleteChange =
       SingleDeleteChange(
-        zoneID,
-        zoneName,
+        okZone.id,
+        okZone.name,
         "delete",
         "delete.somezone.com.",
         A,
@@ -126,8 +89,8 @@ class JdbcBatchChangeRepositoryIntegrationSpec
 
     val bcARecords: BatchChange = randomBatchChange
 
-    def randomBatchChangeWithList(singlechanges: List[SingleChange]): BatchChange =
-      bcARecords.copy(id = UUID.randomUUID().toString, changes = singlechanges)
+    def randomBatchChangeWithList(singleChanges: List[SingleChange]): BatchChange =
+      bcARecords.copy(id = UUID.randomUUID().toString, changes = singleChanges)
 
     val pendingBatchChange: BatchChange = randomBatchChange.copy(createdTimestamp = DateTime.now)
 
@@ -196,50 +159,39 @@ class JdbcBatchChangeRepositoryIntegrationSpec
     actual.maxItems shouldBe expected.maxItems
   }
 
-  "JdbcBatchChangeRepository" should {
+  "MySqlBatchChangeRepository" should {
     "save batch changes and single changes" in {
-      val f = repo.save(bcARecords).unsafeToFuture()
-      whenReady(f, timeout) { saved =>
-        saved shouldBe bcARecords
-      }
+      repo.save(bcARecords).unsafeRunSync() shouldBe bcARecords
     }
 
-    "get a batchchange by id" in {
+    "get a batch change by ID" in {
       val f =
         for {
           _ <- repo.save(bcARecords)
           retrieved <- repo.getBatchChange(bcARecords.id)
         } yield retrieved
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        areSame(retrieved, Some(bcARecords))
-      }
+      areSame(f.unsafeRunSync(), Some(bcARecords))
     }
 
-    "return none if a batchchange is not found by id" in {
-      whenReady(repo.getBatchChange("doesnotexist").unsafeToFuture(), timeout) { retrieved =>
-        retrieved shouldBe empty
-      }
+    "return none if a batch change is not found by ID" in {
+      repo.getBatchChange("doesnotexist").unsafeRunSync() shouldBe empty
     }
 
-    "get singlechanges by list of id" in {
+    "get single changes by list of ID" in {
       val f =
         for {
           _ <- repo.save(bcARecords)
           retrieved <- repo.getSingleChanges(bcARecords.changes.map(_.id))
         } yield retrieved
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        retrieved shouldBe bcARecords.changes
-      }
+      f.unsafeRunSync() shouldBe bcARecords.changes
     }
 
-    "not fail on get empty list of singlechanges" in {
+    "not fail on get empty list of single changes" in {
       val f = repo.getSingleChanges(List())
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        retrieved shouldBe List()
-      }
+      f.unsafeRunSync() shouldBe List()
     }
 
     "get single changes should match order from batch changes" in {
@@ -255,13 +207,11 @@ class JdbcBatchChangeRepositoryIntegrationSpec
             .getOrElse(IO.pure[List[SingleChange]](Nil))
         } yield (retrieved, singleChanges)
 
-      whenReady(f.unsafeToFuture(), timeout) {
-        case (maybeBatchChange, singleChanges) =>
-          maybeBatchChange.value.changes shouldBe singleChanges
-      }
+      val (maybeBatchChange, singleChanges) = f.unsafeRunSync()
+      maybeBatchChange.value.changes shouldBe singleChanges
     }
 
-    "update singlechanges" in {
+    "update single changes" in {
       val batchChange = randomBatchChange
       val completed = batchChange.changes.map(_.complete("aaa", "bbb"))
       val f =
@@ -271,17 +221,13 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getSingleChanges(completed.map(_.id))
         } yield retrieved
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        retrieved shouldBe completed
-      }
+      f.unsafeRunSync() shouldBe completed
     }
 
-    "not fail on empty update singlechanges" in {
+    "not fail on empty update single changes" in {
       val f = repo.updateSingleChanges(List())
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        retrieved shouldBe List()
-      }
+      f.unsafeRunSync() shouldBe List()
     }
 
     "update some changes in a batch" in {
@@ -295,12 +241,10 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getSingleChanges(batchChange.changes.map(_.id))
         } yield retrieved
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        retrieved shouldBe completed ++ incomplete
-      }
+      f.unsafeRunSync() shouldBe completed ++ incomplete
     }
 
-    "get batchchange summary by user id" in {
+    "get batch change summary by user ID" in {
       val change_one = pendingBatchChange.copy(createdTimestamp = DateTime.now)
       val change_two = completeBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(1000))
       val otherUserBatchChange =
@@ -329,12 +273,10 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           BatchChangeSummary(change_one))
       )
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        areSame(retrieved, expectedChanges)
-      }
+      areSame(f.unsafeRunSync(), expectedChanges)
     }
 
-    "get batchchange summary by user id with maxItems" in {
+    "get batch change summary by user ID with maxItems" in {
       val change_one = pendingBatchChange.copy(createdTimestamp = DateTime.now)
       val change_two = completeBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(1000))
       val otherUserBatchChange =
@@ -365,12 +307,10 @@ class JdbcBatchChangeRepositoryIntegrationSpec
         3
       )
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        areSame(retrieved, expectedChanges)
-      }
+      areSame(f.unsafeRunSync(), expectedChanges)
     }
 
-    "get batchchange summary by user id with explicit startFrom" in {
+    "get batch change summary by user ID with explicit startFrom" in {
       val timeBase = DateTime.now
       val change_one = pendingBatchChange.copy(createdTimestamp = timeBase)
       val change_two = completeBatchChange.copy(createdTimestamp = timeBase.plus(1000))
@@ -406,12 +346,10 @@ class JdbcBatchChangeRepositoryIntegrationSpec
         3
       )
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        areSame(retrieved, expectedChanges)
-      }
+      areSame(f.unsafeRunSync(), expectedChanges)
     }
 
-    "get batchchange summary by user id with explicit startFrom and maxItems" in {
+    "get batch change summary by user ID with explicit startFrom and maxItems" in {
       val timeBase = DateTime.now
       val change_one = pendingBatchChange.copy(createdTimestamp = timeBase)
       val change_two = completeBatchChange.copy(createdTimestamp = timeBase.plus(1000))
@@ -440,12 +378,10 @@ class JdbcBatchChangeRepositoryIntegrationSpec
       val expectedChanges =
         BatchChangeSummaryList(List(BatchChangeSummary(change_three)), Some(1), Some(2), 1)
 
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        areSame(retrieved, expectedChanges)
-      }
+      areSame(f.unsafeRunSync(), expectedChanges)
     }
 
-    "get second page of batchchange summaries by user id" in {
+    "get second page of batch change summaries by user ID" in {
       val timeBase = DateTime.now
       val change_one = pendingBatchChange.copy(createdTimestamp = timeBase)
       val change_two = completeBatchChange.copy(createdTimestamp = timeBase.plus(1000))
@@ -479,21 +415,16 @@ class JdbcBatchChangeRepositoryIntegrationSpec
           BatchChangeSummary(change_two),
           BatchChangeSummary(change_one)),
         Some(1),
-        None,
-        100
+        None
       )
-
-      whenReady(f.unsafeToFuture(), timeout) { retrieved =>
-        areSame(retrieved._1, expectedChanges)
-        areSame(retrieved._2, secondPageExpectedChanges)
-      }
+      val retrieved = f.unsafeRunSync()
+      areSame(retrieved._1, expectedChanges)
+      areSame(retrieved._2, secondPageExpectedChanges)
     }
 
-    "return empty list if a batchchange summary is not found by user id" in {
-      whenReady(repo.getBatchChangeSummariesByUserId("doesnotexist").unsafeToFuture(), timeout) {
-        retrieved =>
-          retrieved.batchChanges shouldBe empty
-      }
+    "return empty list if a batch change summary is not found by user ID" in {
+      val batchChangeSummaries = repo.getBatchChangeSummariesByUserId("doesnotexist").unsafeRunSync()
+      batchChangeSummaries.batchChanges shouldBe empty
     }
   }
 }

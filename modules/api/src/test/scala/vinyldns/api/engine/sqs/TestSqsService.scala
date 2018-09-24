@@ -29,7 +29,7 @@ trait TestSqsService extends EngineCommandBus {
     result(cmd.asInstanceOf[ZoneCommandResult])
 
   def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]] =
-    cmds.map(IO.pure(_))
+    cmds.map(IO.pure)
 }
 
 object TestSqsService extends TestSqsService

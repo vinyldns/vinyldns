@@ -5,7 +5,7 @@ section: "operator_menu"
 ---
 
 # Setup MySQL
-VinylDNS stores some tables in MySQL.  The motivation to split databases was due to the Query limitations avaiable
+VinylDNS stores some tables in MySQL.  The motivation to split databases was due to the Query limitations available
 in AWS DynamoDB.  Currently, the following tables are present in MySQL
 
 * `zone` - holds zones

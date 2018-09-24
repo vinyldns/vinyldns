@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.api.repository.mysql
+package vinyldns.mysql.repository
 
 import java.util.UUID
 
-import org.joda.time.DateTime
 import cats.implicits._
+import org.joda.time.DateTime
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
 import scalikejdbc.DB
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
-import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone._
+import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.TestZoneData.testConnection
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -35,19 +34,15 @@ import scala.util.Random
 class MySqlZoneChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
-    with DnsConversions
-    with VinylDNSTestData
-    with GroupTestData
-    with ResultHelpers
     with BeforeAndAfterEach
     with Matchers
-    with ScalaFutures
     with Inspectors
     with OptionValues {
 
   private var repo: ZoneChangeRepository = _
 
   object TestData {
+
     def randomZoneChange: ZoneChange =
       ZoneChange(
         zone = okZone,

@@ -25,7 +25,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
-import vinyldns.api.{DynamoDBApiIntegrationSpec, VinylDNSTestData}
+import vinyldns.api.{DynamoDBApiIntegrationSpec, MySqlApiIntegrationSpec, VinylDNSTestData}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
@@ -37,7 +37,6 @@ import vinyldns.dynamodb.repository.{
   DynamoDBRepositorySettings,
   DynamoDBZoneChangeRepository
 }
-import vinyldns.api.repository.mysql.TestMySqlInstance
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
   GroupRepository,
@@ -53,7 +52,8 @@ class ZoneCommandHandlerIntegrationSpec
     extends DynamoDBApiIntegrationSpec
     with VinylDNSTestData
     with MockitoSugar
-    with Eventually {
+    with Eventually
+    with MySqlApiIntegrationSpec {
 
   import vinyldns.api.engine.sqs.SqsConverters._
 
@@ -137,8 +137,8 @@ class ZoneCommandHandlerIntegrationSpec
       dynamoRepos._1,
       dynamoRepos._2,
       dynamoRepos._3,
-      TestMySqlInstance.zoneRepository,
-      TestMySqlInstance.batchChangeRepository
+      zoneRepository,
+      batchChangeRepository
     )
 
     sqsConn = SqsConnection()
