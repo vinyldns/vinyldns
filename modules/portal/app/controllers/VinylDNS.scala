@@ -531,7 +531,7 @@ class VinylDNS @Inject()(
           .withHeaders(cacheHeaders: _*)
       })
     } else {
-      Future(Forbidden("Request restricted to super users only."))
+      Future.successful(Forbidden("Request restricted to super users only."))
     }
   }
 
@@ -545,7 +545,7 @@ class VinylDNS @Inject()(
           .withHeaders(cacheHeaders: _*)
       })
     } else {
-      Future(Forbidden("Request restricted to super users only."))
+      Future.successful(Forbidden("Request restricted to super users only."))
     }
   }
 }
