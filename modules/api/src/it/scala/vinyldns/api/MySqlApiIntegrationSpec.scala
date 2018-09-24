@@ -16,8 +16,8 @@
 
 package vinyldns.api
 import com.typesafe.config.{Config, ConfigFactory}
-import vinyldns.mysql.repository.MySqlTestTrait
+import vinyldns.mysql.repository.MySqlIntegrationSpec
 
-trait MySqlApiIntegrationSpec extends MySqlTestTrait {
-  val mysqlConfig: Config = ConfigFactory.load().getConfig("vinyldns").getConfig("mysql")
+trait MySqlApiIntegrationSpec extends MySqlIntegrationSpec {
+  val mysqlConfig: Config = ConfigFactory.load().getConfig("vinyldns.mysql")
 }

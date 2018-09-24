@@ -9,7 +9,7 @@ import ReleaseTransformations._
 
 resolvers ++= additionalResolvers
 
-lazy val IntegrationTest = config("it") extend(Test)
+lazy val IntegrationTest = config("it") extend Test
 
 // Needed because we want scalastyle for integration tests which is not first class
 val codeStyleIntegrationTest = taskKey[Unit]("enforce code style then integration test")
@@ -66,7 +66,12 @@ lazy val sharedSettings = Seq(
 
   // scala format
   scalafmtOnCompile := true,
-  scalafmtOnCompile in IntegrationTest := true
+  scalafmtOnCompile in IntegrationTest := true,
+
+  // coverage options
+  coverageMinimum := 85,
+  coverageFailOnMinimum := true,
+  coverageHighlighting := true,
 )
 
 lazy val testSettings = Seq(
@@ -85,9 +90,6 @@ lazy val apiSettings = Seq(
   libraryDependencies ++= compileDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
-  coverageMinimum := 85,
-  coverageFailOnMinimum := true,
-  coverageHighlighting := true,
   coverageExcludedPackages := ".*Boot.*"
 )
 
@@ -254,10 +256,7 @@ lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPl
   .settings(libraryDependencies ++= coreDependencies ++ commonTestDependencies.map(_ % "test"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
-    organization := "io.vinyldns",
-    coverageMinimum := 85,
-    coverageFailOnMinimum := true,
-    coverageHighlighting := true
+    organization := "io.vinyldns"
   )
 
 lazy val dynamodb = (project in file("modules/dynamodb"))
@@ -274,9 +273,6 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns",
-    coverageMinimum := 85,
-    coverageFailOnMinimum := true,
-    coverageHighlighting := true,
     parallelExecution in Test := true,
     parallelExecution in IntegrationTest := true
   ).dependsOn(core % "compile->compile;test->test")
@@ -295,9 +291,6 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns",
-    coverageMinimum := 85,
-    coverageFailOnMinimum := true,
-    coverageHighlighting := true
   ).dependsOn(core % "compile->compile;test->test")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
@@ -462,11 +455,11 @@ addCommandAlias("validate", "; root/clean; " +
   "portal/headerCheck portal/test:headerCheck; " +
   "all core/scalastyle core/test:scalastyle " +
   "api/scalastyle api/test:scalastyle api/it:scalastyle " +
-  "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle " +
-  "mysql/scalastyle mysql/test:scalastyle mysql/it:scalastyle " +
-  "portal/scalastyle portal/test:scalastyle; " +
-  "portal/createJsHeaders;portal/checkJsHeaders; " +
-  "root/compile;root/test:compile;root/it:compile "
+  "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle" +
+  "mysql/scalastyle mysql/test:scalastyle mysql/it:scalastyle" +
+  "portal/scalastyle portal/test:scalastyle;" +
+  "portal/createJsHeaders;portal/checkJsHeaders;" +
+  "root/compile;root/test:compile;root/it:compile"
 )
 
 addCommandAlias("verify", "; project root; killDocker; " +

@@ -26,6 +26,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.TestZoneData.testConnection
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -58,7 +59,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
         s"${goodUser.userName}.zone$i.",
         "test@test.com",
         status = ZoneStatus.Active,
-        connection = Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")))
+        connection = testConnection)
 
     val statuses: List[ZoneChangeStatus] = ZoneChangeStatus.Pending :: ZoneChangeStatus.Failed ::
       ZoneChangeStatus.Synced :: Nil
