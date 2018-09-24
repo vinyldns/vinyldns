@@ -39,7 +39,7 @@ Before you can configure DynamoDB, make note of the AWS account (access key and 
 DynamoDB endpoint (region) that you will be using.  Follow the [API Database Configuration](config-api#database-configuration)
 to complete the setup for the API.
 
-You also need to configure DynamoDB for the portal [DynamoDB Portal Configuration](config-portal#dynamodb)
+You also need to configure DynamoDB for the portal [Portal Database Configuration](config-portal#database-configuration)
 
 ### RecordSet Table
 Each row in the RecordSet table is a `RRSet`, which means it comprises one or more "Records" inside of it.
