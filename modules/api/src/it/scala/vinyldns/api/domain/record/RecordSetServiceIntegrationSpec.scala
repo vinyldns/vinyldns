@@ -97,7 +97,7 @@ class RecordSetServiceIntegrationSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(AData("10.1.1.1")))
+    List(CNAMEData("example.com")))
   private val subTestRecordA = RecordSet(
     zone.id,
     "a-record",
