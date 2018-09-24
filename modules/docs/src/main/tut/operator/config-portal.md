@@ -30,7 +30,7 @@ The Portal uses the following tables:
 * `user`
 * `userChanges`
 
-Note that the user table is shared between the api and the portal, and *must* be configured with
+Note that the user table is shared between the API and the portal, and *must* be configured with
 the same values in both configs. **At the moment, the user and userChange repository are only implemented in DynamoDB, but we are actively
 working on MySQL implementations**:
 
