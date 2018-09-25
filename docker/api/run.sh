@@ -23,7 +23,7 @@ export JDBC_MIGRATION_URL="jdbc:mariadb://${MYSQL_ADDRESS}:${MYSQL_PORT}/?user=$
 # wait until mysql is ready...
 echo 'Waiting for MYSQL to be ready...'
 DATA=""
-RETRY=30
+RETRY=60
 while [ $RETRY -gt 0 ]
 do
     DATA=$(nc -vzw1 vinyldns-mysql 3306)
