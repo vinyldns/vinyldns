@@ -48,7 +48,6 @@ object VinylDNS {
     private val TYPE = "alertType"
     private val MSG = "alertMessage"
     def error(msg: String): Flash = Flash(Map(TYPE -> "danger", MSG -> msg))
-    def warning(msg: String): Flash = Flash(Map(TYPE -> "warning", MSG -> msg))
 
     def fromFlash(flash: Flash): Option[Alert] =
       (flash.get(TYPE), flash.get(MSG)) match {
@@ -188,28 +187,23 @@ class VinylDNS @Inject()(
     }
   }
 
-  private def processCsv(username: String, user: User): Result =
-    user.userName match {
-      case accountUsername: String if accountUsername == username =>
-        Logger.info(s"Sending credentials for user=$username with key accessKey=${user.accessKey}")
-        Ok(
-          s"NT ID, access key, secret key,api url\n%s,%s,%s,%s"
-            .format(
-              user.userName,
-              user.accessKey,
-              crypto.decrypt(user.secretKey),
-              vinyldnsServiceBackend))
-          .as("text/csv")
-
-      case _ =>
-        Redirect("/login").withNewSession
-          .flashing(VinylDNS.Alerts.error("Mismatched credentials - Please log in again"))
-    }
+  private def processCsv(user: User): Result = {
+    Logger.info(
+      s"Sending credentials for user=${user.userName} with key accessKey=${user.accessKey}")
+    Ok(
+      s"NT ID, access key, secret key,api url\n%s,%s,%s,%s"
+        .format(
+          user.userName,
+          user.accessKey,
+          crypto.decrypt(user.secretKey),
+          vinyldnsServiceBackend))
+      .as("text/csv")
+  }
 
   def serveCredsFile(fileName: String): Action[AnyContent] = frontendAction.async {
     implicit request =>
       Logger.info(s"Serving credentials for file $fileName")
-      Future(processCsv(request.userName, request.user))
+      Future(processCsv(request.user))
   }
 
   def regenerateCreds(): Action[AnyContent] = userAction.async { implicit request =>
@@ -355,14 +349,6 @@ class VinylDNS @Inject()(
       s"$vinyldnsServiceBackend",
       s"zones/$id/recordsetchanges",
       parameters = queryParameters)
-    executeRequest(vinyldnsRequest, request.user).map(response => {
-      Status(response.status)(response.body)
-        .withHeaders(cacheHeaders: _*)
-    })
-  }
-
-  def getChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
-    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id/history")
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
@@ -526,12 +512,12 @@ class VinylDNS @Inject()(
       val vinyldnsRequest =
         new VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"users/$userId/lock")
       executeRequest(vinyldnsRequest, request.user).map(response => {
-        Logger.info(response.body)
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
     } else {
-      Future.successful(Forbidden("Request restricted to super users only."))
+      Future.successful(
+        Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*))
     }
   }
 
@@ -540,12 +526,12 @@ class VinylDNS @Inject()(
       val vinyldnsRequest =
         new VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"users/$userId/unlock")
       executeRequest(vinyldnsRequest, request.user).map(response => {
-        Logger.info(response.body)
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
     } else {
-      Future.successful(Forbidden("Request restricted to super users only."))
+      Future.successful(
+        Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*))
     }
   }
 }

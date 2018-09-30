@@ -17,6 +17,7 @@
 package controllers
 
 import cats.effect.IO
+import controllers.VinylDNS.Alert
 import org.junit.runner._
 import org.specs2.mock.Mockito
 import org.specs2.mutable._
@@ -54,6 +55,21 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
   val crypto: CryptoAlgebra = spy(new NoOpCrypto())
 
   protected def before: Any = org.mockito.Mockito.reset(crypto)
+
+  "VinylDNS.Alerts" should {
+    "send error" in {
+      VinylDNS.Alerts.fromFlash(
+        Flash(
+          Map(
+            "alertType" -> "danger",
+            "alertMessage" -> "Authentication failed, please try again"))) must
+        beEqualTo(Some(Alert("danger", "Authentication failed, please try again")))
+    }
+
+    "send error" in {
+      VinylDNS.Alerts.fromFlash(Flash(Map())) must beEqualTo(None)
+    }
+  }
 
   "VinylDNS" should {
     "send 404 on a bad request" in new WithApplication(app) {
@@ -109,6 +125,44 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         status(result) must beEqualTo(404)
       }
+      "return Forbidden if the current user account is locked" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        userAccessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
+
+        val vinyldnsPortal =
+          new VinylDNS(config, authenticator, userAccessor, ws, components, crypto)
+        val result = vinyldnsPortal
+          .getAuthenticatedUserData()
+          .apply(
+            FakeRequest(GET, "/api/users/currentuser").withSession(("username", "frodo"))
+          )
+
+        status(result) must beEqualTo(403)
+        contentAsString(result) must beEqualTo("Account is locked.")
+      }
+      "return unauthorized (401) if the current user account is locked" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        userAccessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
+
+        val vinyldnsPortal =
+          new VinylDNS(config, authenticator, userAccessor, ws, components, crypto)
+        val result = vinyldnsPortal
+          .getAuthenticatedUserData()
+          .apply(FakeRequest(GET, "/api/users/currentuser"))
+
+        status(result) must beEqualTo(401)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+      }
     }
 
     ".regenerateCreds" should {
@@ -156,6 +210,50 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
         status(result) must beEqualTo(404)
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+
+        userAccessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
+
+        val vinyldnsPortal =
+          new VinylDNS(config, authenticator, userAccessor, ws, components, crypto)
+        val result = vinyldnsPortal
+          .regenerateCreds()
+          .apply(
+            FakeRequest(POST, "/regenerate-creds")
+              .withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+        status(result) must beEqualTo(403)
+        contentAsString(result) must beEqualTo("Account is locked.")
+        hasCacheHeaders(result)
+      }
+      "return unauthorized (401) if user account is locked" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+
+        userAccessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
+
+        val vinyldnsPortal =
+          new VinylDNS(config, authenticator, userAccessor, ws, components, crypto)
+        val result = vinyldnsPortal
+          .regenerateCreds()
+          .apply(FakeRequest(POST, "/regenerate-creds"))
+
+        status(result) must beEqualTo(401)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
         hasCacheHeaders(result)
       }
     }
@@ -650,7 +748,63 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           }
         }
       }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/groups") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroup)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.newGroup()(
+              FakeRequest(POST, "/groups")
+                .withJsonBody(hobbitGroupRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            contentAsString(result) must beEqualTo("Account is locked.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/groups") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroup)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.newGroup()(FakeRequest(POST, "/groups")
+              .withJsonBody(hobbitGroupRequest))
+
+            status(result) must beEqualTo(401)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
     }
+
     ".getGroup" should {
       "return the group description if it is found - status ok (200)" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
@@ -737,7 +891,63 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           }
         }
       }
+      "return status forbidden (403) if the user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/groups/${hobbitGroupId}") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroup)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.getGroup(hobbitGroupId)(
+                FakeRequest(GET, s"/groups/$hobbitGroupId")
+                  .withSession(
+                    "username" -> lockedFrodoUser.userName,
+                    "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+      "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/groups/${hobbitGroupId}") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroup)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                mockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId"))
+
+            status(result) must beEqualTo(401)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
     }
+
     ".deleteGroup" should {
       "return ok with no content (204) when delete is successful" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
@@ -764,6 +974,61 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) must beEqualTo(NO_CONTENT)
             hasCacheHeaders(result)
+          }
+        }
+      }
+      "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendDELETE(p"/groups/$hobbitGroupId") =>
+            defaultActionBuilder {
+              Results.NoContent
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                mockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId"))
+
+            status(result) mustEqual 401
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return forbidden (403) when user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendDELETE(p"/groups/$hobbitGroupId") =>
+            defaultActionBuilder {
+              Results.NoContent
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.deleteGroup(hobbitGroupId)(
+                FakeRequest(DELETE, s"/groups/$hobbitGroupId")
+                  .withSession(
+                    "username" -> lockedFrodoUser.userName,
+                    "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
           }
         }
       }
@@ -854,6 +1119,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
       }
     }
+
     ".updateGroup" should {
       "return the new group description if it is saved successfully - Ok (200)" in new WithApplication(
         app) {
@@ -882,6 +1148,62 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) must beEqualTo(OK)
             contentAsJson(result) must beEqualTo(hobbitGroup)
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return unauthorized (401) if the user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/groups/$hobbitGroupId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroup)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                mockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.updateGroup(hobbitGroupId)(FakeRequest(PUT, s"/groups/$hobbitGroupId")
+                .withJsonBody(hobbitGroup))
+
+            status(result) mustEqual 401
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return forbidden (403) if the user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/groups/$hobbitGroupId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroup)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.updateGroup(hobbitGroupId)(
+              FakeRequest(PUT, s"/groups/$hobbitGroupId")
+                .withJsonBody(hobbitGroup)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            contentAsString(result) must beEqualTo("Account is locked.")
             hasCacheHeaders(result)
           }
         }
@@ -1006,6 +1328,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
       }
     }
+
     ".getMemberList" should {
       "return a list of members of the group when requested - Ok (200)" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
@@ -1033,6 +1356,60 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             status(result) must beEqualTo(OK)
             hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(hobbitGroupMembers)
+          }
+        }
+      }
+      "return unauthorized (401) if the user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/groups/$hobbitGroupId/members") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroupMembers)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.getMemberList(hobbitGroupId)(
+              FakeRequest(GET, s"/data/groups/$hobbitGroupId/members"))
+
+            status(result) mustEqual 401
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return forbidden (403) if the user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/groups/$hobbitGroupId/members") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitGroupMembers)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.getMemberList(hobbitGroupId)(
+              FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) must beEqualTo(FORBIDDEN)
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
           }
         }
       }
@@ -1123,6 +1500,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
       }
     }
+
     ".myGroups" should {
       "return the list of groups when requested - Ok(200)" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
@@ -1149,6 +1527,59 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             status(result) must beEqualTo(OK)
             hasCacheHeaders(result)
             contentAsJson(result) must beEqualTo(frodoGroupList)
+          }
+        }
+      }
+      "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/groups") =>
+            defaultActionBuilder {
+              Results.Ok(frodoGroupList)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                mockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.getMyGroups()(FakeRequest(GET, s"/api/groups"))
+
+            status(result) mustEqual 401
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return forbidden (403) when user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/groups") =>
+            defaultActionBuilder {
+              Results.Ok(frodoGroupList)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                lockedUserMockUserAccountAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.getMyGroups()(
+              FakeRequest(GET, s"/api/groups")
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
           }
         }
       }
@@ -1180,6 +1611,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
       }
     }
+
     ".serveCredFile" should {
       "return a csv file with the new style credentials" in new WithApplication(app) {
         import play.api.mvc.Result
@@ -1200,6 +1632,74 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         content must contain(frodoUser.accessKey)
         content must contain(frodoUser.secretKey)
         there.was(one(crypto).decrypt(frodoUser.secretKey))
+      }
+      "redirect to login if user is not logged in" in new WithApplication(app) {
+        import play.api.mvc.Result
+
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+        val underTest =
+          new VinylDNS(
+            config,
+            mockLdapAuthenticator,
+            mockUserAccountAccessor,
+            ws,
+            components,
+            crypto)
+
+        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
+          FakeRequest(GET, s"/download-creds-file/credsfile.csv"))
+
+        status(result) mustEqual 303
+        redirectLocation(result) must beSome("/login")
+        flash(result).get("alertType") must beSome("danger")
+        flash(result).get("alertMessage") must beSome(
+          "You are not logged in. Please login to continue.")
+      }
+      "redirect to login if user account is locked" in new WithApplication(app) {
+        import play.api.mvc.Result
+
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+        val underTest =
+          new VinylDNS(
+            config,
+            mockLdapAuthenticator,
+            lockedUserMockUserAccountAccessor,
+            ws,
+            components,
+            crypto)
+
+        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
+          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
+
+        status(result) mustEqual 303
+        redirectLocation(result) must beSome("/login")
+        flash(result).get("alertType") must beSome("danger")
+        flash(result).get("alertMessage") must beSome("Account locked")
+      }
+      "redirect to login if user account is not found" in new WithApplication(app) {
+        import play.api.mvc.Result
+
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+        userAccessor.get(frodoUser.userName).returns(IO.pure(None))
+        val underTest =
+          new VinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
+
+        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
+          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        status(result) mustEqual 303
+        redirectLocation(result) must beSome("/login")
+        flash(result).get("alertType") must beSome("danger")
+        flash(result).get("alertMessage") must beSome(
+          s"Unable to find user account for user name '${frodoUser.userName}'")
       }
     }
 
@@ -1229,7 +1729,56 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         hasCacheHeaders(result)
         contentAsJson(result) must beEqualTo(expected)
       }
+      "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+        val lookupValue = "someNTID"
+        authenticator.lookup(lookupValue).returns(Success(frodoDetails))
 
+        val vinyldnsPortal =
+          new VinylDNS(
+            config,
+            authenticator,
+            lockedUserMockUserAccountAccessor,
+            ws,
+            components,
+            crypto)
+        val result = vinyldnsPortal
+          .getUserDataByUsername(lookupValue)
+          .apply(FakeRequest(GET, s"/api/users/lookupuser/$lookupValue"))
+
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+        val config: Configuration = Configuration.load(Environment.simple())
+        val ws: WSClient = mock[WSClient]
+        val lookupValue = "someNTID"
+        authenticator.lookup(lookupValue).returns(Success(frodoDetails))
+
+        val vinyldnsPortal =
+          new VinylDNS(
+            config,
+            authenticator,
+            lockedUserMockUserAccountAccessor,
+            ws,
+            components,
+            crypto)
+        val result = vinyldnsPortal
+          .getUserDataByUsername(lookupValue)
+          .apply(
+            FakeRequest(GET, s"/api/users/lookupuser/$lookupValue")
+              .withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+        status(result) must beEqualTo(403)
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo("Account is locked.")
+      }
       "return a 404 if the account is not found" in new WithApplication(app) {
         val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
         val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
@@ -1253,14 +1802,982 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         hasCacheHeaders(result)
       }
     }
+
+    ".getZones" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.getZones()(FakeRequest(GET, s"/api/zones"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.getZones()(
+              FakeRequest(GET, s"/api/zones").withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".getZone" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.getZone(hobbitZoneId)(FakeRequest(GET, s"/api/zones/$hobbitZoneId"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.getZone(hobbitZoneId)(
+              FakeRequest(GET, s"/api/zones/$hobbitZoneId").withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".syncZone" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones/$hobbitZoneId/sync") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.syncZone(hobbitZoneId)(FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId/sync") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.syncZone(hobbitZoneId)(
+              FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync").withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".getRecordSets" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId/recordsets") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitRecordSet)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.getRecordSets(hobbitZoneId)(
+                FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId/recordsets") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitRecordSet)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.getRecordSets(hobbitZoneId)(
+              FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".listRecordSetChanges" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId/recordsetchanges") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitRecordSet)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.listRecordSetChanges(hobbitZoneId)(
+                FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/$hobbitZoneId/recordsetchanges") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitRecordSet)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.listRecordSetChanges(hobbitZoneId)(
+              FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".addZone" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.addZone()(FakeRequest(POST, s"/api/zones").withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.addZone()(
+              FakeRequest(POST, s"/api/zones")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".updateZone" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.updateZone(hobbitZoneId)(
+                FakeRequest(PUT, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.updateZone(hobbitZoneId)(
+              FakeRequest(PUT, s"/api/zones/$hobbitZoneId")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".addRecordSet" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/zones/$hobbitZoneId/recordsets") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.addRecordSet(hobbitRecordSetId)(
+                FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
+                  .withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.addRecordSet(hobbitRecordSetId)(
+              FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".deleteZone" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendDELETE(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.deleteZone(hobbitZoneId)(
+                FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendDELETE(p"/zones/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.deleteZone(hobbitZoneId)(
+              FakeRequest(DELETE, s"/api/zones/$hobbitZoneId")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".updateRecordSet" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
+                FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
+                  .withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
+              FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".deleteRecordSet" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendDELETE(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
+                FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendDELETE(p"/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
+              FakeRequest(DELETE, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".getBatchChange" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/batchrecordchanges/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.getBatchChange(hobbitZoneId)(
+                FakeRequest(GET, s"/api/batchchanges/$hobbitZoneId")
+                  .withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/batchrecordchanges/$hobbitZoneId") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.getBatchChange(hobbitZoneId)(
+              FakeRequest(GET, s"/api/batchchanges/$hobbitZoneId")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".newBatchChange" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.newBatchChange()(
+                FakeRequest(POST, s"/api/batchchanges").withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.newBatchChange()(
+              FakeRequest(POST, s"/api/batchchanges")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".listBatchChanges" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/batchrecordchanges") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              buildMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.listBatchChanges()(
+                FakeRequest(GET, s"/api/batchchanges").withJsonBody(hobbitZoneRequest))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/batchrecordchanges") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = new VinylDNS(
+              testConfig,
+              mockLdapAuthenticator,
+              lockedUserMockUserAccountAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.listBatchChanges()(
+              FakeRequest(GET, s"/api/batchchanges")
+                .withJsonBody(hobbitZoneRequest)
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo("Account is locked.")
+          }
+        }
+      }
+    }
+
+    ".lockUser" should {
+      "return successful if requesting user is a super user" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/users/${frodoUser.id}/lock") =>
+            defaultActionBuilder {
+              Results.Ok(userJson)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                userAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.lockUser(frodoUser.id)(
+              FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
+                .withSession(
+                  "username" -> superFrodoUser.userName,
+                  "accessKey" -> superFrodoUser.accessKey))
+
+            status(result) must beEqualTo(OK)
+            contentAsJson(result) must beEqualTo(userJson)
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/users/${frodoUser.id}/lock") =>
+            defaultActionBuilder {
+              Results.Ok(userJson)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                userAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock"))
+
+            status(result) mustEqual 401
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return Forbidden if requesting user is not a super user" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/users/${frodoUser.id}/lock") =>
+            defaultActionBuilder {
+              Results.Ok(userJson)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                userAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+            status(result) must beEqualTo(403)
+            contentAsString(result) must beEqualTo("Request restricted to super users only.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+    }
+
+    ".unlockUser" should {
+      "return successful if requesting user is a super user" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/users/${lockedFrodoUser.id}/unlock") =>
+            defaultActionBuilder {
+              Results.Ok(userJson)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                userAccessor,
+                client,
+                components,
+                crypto)
+            val result = underTest.unlockUser(lockedFrodoUser.id)(
+              FakeRequest(PUT, s"/users/${lockedFrodoUser.id}/unlock")
+                .withSession(
+                  "username" -> superFrodoUser.userName,
+                  "accessKey" -> superFrodoUser.accessKey))
+
+            status(result) must beEqualTo(OK)
+            contentAsJson(result) must beEqualTo(userJson)
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/users/${frodoUser.id}/unlock") =>
+            defaultActionBuilder {
+              Results.Ok(userJson)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                userAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/unlock"))
+
+            status(result) mustEqual 401
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return forbidden (403) if requesting user is not a super user" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPUT(p"/users/${frodoUser.id}/unlock") =>
+            defaultActionBuilder {
+              Results.Ok(userJson)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+            val underTest =
+              new VinylDNS(
+                testConfig,
+                mockLdapAuthenticator,
+                userAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.unlockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/unlock")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+            status(result) mustEqual 403
+            contentAsString(result) must beEqualTo("Request restricted to super users only.")
+            hasCacheHeaders(result)
+          }
+        }
+      }
+    }
   }
 
   def buildMockUserAccountAccessor: UserAccountAccessor = {
     val accessor = mock[UserAccountAccessor]
-    accessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+    accessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
+    accessor.get(superFrodoUser.userName).returns(IO.pure(Some(superFrodoUser)))
+    accessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
     accessor.create(any[User]).returns(IO.pure(frodoUser))
-    accessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+    accessor.getUserByKey(frodoUser.accessKey).returns(IO.pure(Some(frodoUser)))
+    accessor.getUserByKey(superFrodoUser.accessKey).returns(IO.pure(Some(superFrodoUser)))
+    accessor.getUserByKey(lockedFrodoUser.accessKey).returns(IO.pure(Some(lockedFrodoUser)))
     accessor
+  }
+
+  def lockedUserMockUserAccountAccessor: UserAccountAccessor = {
+    val accessor = mock[UserAccountAccessor]
+    accessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
+
   }
 
   private def hasCacheHeaders(result: Future[play.api.mvc.Result]) = {
