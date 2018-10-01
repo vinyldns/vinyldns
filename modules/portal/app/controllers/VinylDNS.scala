@@ -294,6 +294,7 @@ class VinylDNS @Inject()(
     }
 
   def getZones: Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
       (name, values) <- request.queryString
@@ -304,26 +305,32 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def getZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val vinyldnsRequest = new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def syncZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val vinyldnsRequest =
       new VinylDNSRequest("POST", s"$vinyldnsServiceBackend", s"zones/$id/sync")
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def getRecordSets(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
       (name, values) <- request.queryString
@@ -337,9 +344,11 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def listRecordSetChanges(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
       (name, values) <- request.queryString
@@ -353,9 +362,11 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def addZone(): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val json = request.body.asJson
     val payload = json.map(Json.stringify)
     val vinyldnsRequest =
@@ -364,9 +375,11 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def updateZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val json = request.body.asJson
     val payload = json.map(Json.stringify)
     val vinyldnsRequest =
@@ -375,9 +388,11 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def addRecordSet(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val json = request.body.asJson
     val payload = json.map(Json.stringify)
     val vinyldnsRequest =
@@ -386,18 +401,22 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def deleteZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val vinyldnsRequest = new VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"zones/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def updateRecordSet(zid: String, rid: String): Action[AnyContent] = userAction.async {
     implicit request =>
+      // $COVERAGE-OFF$
       val json = request.body.asJson
       val payload = json.map(Json.stringify)
       val vinyldnsRequest =
@@ -410,16 +429,19 @@ class VinylDNS @Inject()(
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
+      // $COVERAGE-ON$
   }
 
   def deleteRecordSet(zid: String, rid: String): Action[AnyContent] = userAction.async {
     implicit request =>
+      // $COVERAGE-OFF$
       val vinyldnsRequest =
         new VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"zones/$zid/recordsets/$rid")
       executeRequest(vinyldnsRequest, request.user).map(response => {
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
+      // $COVERAGE-ON$
   }
 
   private def extractParameters(
@@ -467,6 +489,7 @@ class VinylDNS @Inject()(
 
   def getBatchChange(batchChangeId: String): Action[AnyContent] = userAction.async {
     implicit request =>
+      // $COVERAGE-OFF$
       val vinyldnsRequest =
         new VinylDNSRequest(
           "GET",
@@ -476,9 +499,11 @@ class VinylDNS @Inject()(
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
+      // $COVERAGE-ON$
   }
 
   def newBatchChange(): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val json = request.body.asJson
     val payload = json.map(Json.stringify)
     val vinyldnsRequest =
@@ -488,9 +513,11 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def listBatchChanges(): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
       (startFrom, maxItems) <- request.queryString
@@ -505,6 +532,7 @@ class VinylDNS @Inject()(
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
+    // $COVERAGE-ON$
   }
 
   def lockUser(userId: String): Action[AnyContent] = userAction.async { implicit request =>
