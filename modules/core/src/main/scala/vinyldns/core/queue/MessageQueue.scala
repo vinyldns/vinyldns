@@ -50,5 +50,5 @@ trait MessageQueue {
 
   // sends a batch of messages to the queue, the queue should serialize those and return List[IO[Message]]
   // where each IO could individually fail.  Note: retry semantics is not a requirement of the queue implementation
-  def sendBatch(messages: List[ZoneCommand]): IO[Unit]
+  def sendBatch[A <: ZoneCommand](messages: List[A]): IO[Unit]
 }
