@@ -24,7 +24,8 @@ export JDBC_MIGRATION_URL="jdbc:mariadb://${MYSQL_ADDRESS}:${MYSQL_PORT}/?user=$
 echo 'Waiting for MYSQL to be ready...'
 DATA=""
 RETRY=60
-while [ $RETRY -gt 0 ]
+SLEEP_DURATION=1
+while [ "$RETRY" -gt 0 ]
 do
     DATA=$(nc -vzw1 vinyldns-mysql 3306)
     if [ $? -eq 0 ]
@@ -34,9 +35,9 @@ do
         echo "Retrying Again" >&2
 
         let RETRY-=1
-        sleep .5
+        sleep "$SLEEP_DURATION"
 
-        if [ $RETRY -eq 0 ]
+        if [ "$RETRY" -eq 0 ]
         then
           echo "Exceeded retries waiting for MYSQL to be ready, failing"
           return 1
