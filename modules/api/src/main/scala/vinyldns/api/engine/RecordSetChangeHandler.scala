@@ -241,5 +241,9 @@ object RecordSetChangeHandler {
   private def wildCardExistsForRecord(
       recordSet: RecordSet,
       recordSetRepository: RecordSetRepository): IO[Boolean] =
-    recordSetRepository.getRecordSets(recordSet.zoneId, "*", recordSet.typ).map(_.nonEmpty)
+    (
+      recordSetRepository.getRecordSets(recordSet.zoneId, "*", recordSet.typ),
+      recordSetRepository.getRecordSets(recordSet.zoneId, "*", RecordType.CNAME))
+      .parMapN(_ ++ _)
+      .map(_.nonEmpty)
 }

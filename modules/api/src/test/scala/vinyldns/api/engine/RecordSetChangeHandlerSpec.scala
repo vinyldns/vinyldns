@@ -486,6 +486,64 @@ class RecordSetChangeHandlerSpec
       batchChangeUpdates.get.changes shouldBe scExpected
     }
 
+    "bypass the validate and verify steps if a wildcard CNAME exists" in {
+      // Return empty as the wildcard record matching the type
+      doReturn(IO.pure(List.empty))
+        .when(mockRsRepo)
+        .getRecordSets(rsChange.recordSet.zoneId, "*", rsChange.recordSet.typ)
+
+      // Return a wildcard matching CNAME
+      doReturn(IO.pure(List(rsChange.recordSet)))
+        .when(mockRsRepo)
+        .getRecordSets(rsChange.recordSet.zoneId, "*", RecordType.CNAME)
+
+      // The second return is for verify
+      doReturn(Interfaces.result(List()))
+        .doReturn(Interfaces.result(List(rs)))
+        .when(mockConn)
+        .resolve(rs.name, rsChange.zone.name, rs.typ)
+
+      doReturn(Interfaces.result(Right(NoError(mockDnsMessage))))
+        .when(mockConn)
+        .applyChange(rsChange)
+      doReturn(IO.pure(cs)).when(mockChangeRepo).save(any[ChangeSet])
+      doReturn(IO.pure(cs)).when(mockRsRepo).apply(any[ChangeSet])
+
+      val test = underTest.apply(mockConn, rsChange)
+      val res = test.unsafeRunSync()
+
+      res.status shouldBe RecordSetChangeStatus.Complete
+
+      verify(mockRsRepo).apply(rsRepoCaptor.capture())
+      verify(mockChangeRepo).save(changeRepoCaptor.capture())
+
+      val appliedCs = rsRepoCaptor.getValue
+      appliedCs.status shouldBe ChangeSetStatus.Complete
+      appliedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
+      appliedCs.changes.head.recordSet.status shouldBe RecordSetStatus.Active
+
+      // Our change should be successful
+      val savedCs = changeRepoCaptor.getValue
+      savedCs.status shouldBe ChangeSetStatus.Complete
+      savedCs.changes.head.status shouldBe RecordSetChangeStatus.Complete
+
+      // make sure the record was applied
+      verify(mockConn).applyChange(rsChange)
+
+      // make sure we never called resolve, as we skip validate step and verify
+      verify(mockConn, never).resolve(rs.name, rsChange.zone.name, rs.typ)
+
+      val batchChangeUpdates = batchRepo.getBatchChange(batchChange.id).unsafeRunSync()
+      val updatedSingleChanges = completeCreateAAAASingleChanges.map { ch =>
+        ch.copy(
+          status = SingleChangeStatus.Complete,
+          recordChangeId = Some(rsChange.id),
+          recordSetId = Some(rsChange.recordSet.id))
+      }
+      val scExpected = notUpdatedChange :: updatedSingleChanges
+      batchChangeUpdates.get.changes shouldBe scExpected
+    }
+
     "bypass the validate and verify steps if change is ns" in {
       val rsChangeNs = completeCreateNS
       val rsNs = completeCreateNS.recordSet
