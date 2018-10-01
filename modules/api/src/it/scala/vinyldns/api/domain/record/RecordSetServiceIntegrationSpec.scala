@@ -164,7 +164,8 @@ class RecordSetServiceIntegrationSpec
       subTestRecordAAAA,
       subTestRecordNS,
       apexTestRecordNameConflict,
-      subTestRecordNameConflict)
+      subTestRecordNameConflict
+    )
     records.map(record => waitForSuccess(recordSetRepo.putRecordSet(record)))
 
     testRecordSetService = new RecordSetService(

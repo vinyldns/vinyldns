@@ -1465,8 +1465,36 @@ def test_create_record_with_existing_wildcard_succeeds(shared_zone_test_context)
 
         test_create = client.create_recordset(test_rs, status=202)
         test_rs = client.wait_until_recordset_change_status(test_create, 'Complete')['recordSet']
-    except:
-        pass
+    finally:
+        try:
+            delete_result = client.delete_recordset(wildcard_rs['zoneId'], wildcard_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+        finally:
+            try:
+                delete_result = client.delete_recordset(test_rs['zoneId'], test_rs['id'], status=202)
+                client.wait_until_recordset_change_status(delete_result, 'Complete')
+            except:
+                pass
+
+
+def test_create_record_with_existing_cname_wildcard_succeed(shared_zone_test_context):
+    """
+    Test that creating a record when a CNAME wildcard record already exists succeeds
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone = shared_zone_test_context.system_test_zone
+
+    wildcard_rs = get_recordset_json(zone, '*', 'CNAME', [{'cname': 'cname2.'}])
+
+    test_rs = get_recordset_json(zone, 'new_record', 'A', [{'address': '10.1.1.1'}])
+
+    try:
+        wildcard_create = client.create_recordset(wildcard_rs, status=202)
+        wildcard_rs = client.wait_until_recordset_change_status(wildcard_create, 'Complete')['recordSet']
+
+        test_create = client.create_recordset(test_rs, status=202)
+        test_rs = client.wait_until_recordset_change_status(test_create, 'Complete')['recordSet']
     finally:
         try:
             delete_result = client.delete_recordset(wildcard_rs['zoneId'], wildcard_rs['id'], status=202)
