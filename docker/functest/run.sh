@@ -4,6 +4,7 @@ VINYLDNS_URL="http://vinyldns-api:9000"
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
+SLEEP_DURATION=1
 while [ "$RETRY" -gt 0 ]
 do
     DATA=$(curl -I -s "${VINYLDNS_URL}/ping" -o /dev/null -w "%{http_code}")
@@ -14,7 +15,7 @@ do
         echo "Retrying Again" >&2
 
         let RETRY-=1
-        sleep 1
+        sleep "$SLEEP_DURATION"
 
         if [ "$RETRY" -eq 0 ]
         then
