@@ -23,7 +23,7 @@ export JDBC_MIGRATION_URL="jdbc:mariadb://${MYSQL_ADDRESS}:${MYSQL_PORT}/?user=$
 # wait until mysql is ready...
 echo 'Waiting for MYSQL to be ready...'
 DATA=""
-RETRY=60
+RETRY=40
 SLEEP_DURATION=1
 while [ "$RETRY" -gt 0 ]
 do
