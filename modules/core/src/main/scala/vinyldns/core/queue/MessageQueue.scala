@@ -15,40 +15,39 @@
  */
 
 package vinyldns.core.queue
+import cats.data.NonEmptyList
 import cats.effect.IO
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
+import vinyldns.core.domain.zone.ZoneCommand
 
 import scala.concurrent.duration.FiniteDuration
 
 // for ultimately acknowledging or re-queue of the message, this is queue implementation independent
 trait MessageHandle
-sealed abstract class CommandMessage[A <: ZoneCommand](val handle: MessageHandle, val command: A) {}
-final case class RecordChangeMessage(h: MessageHandle, c: RecordSetChange) extends CommandMessage(h, c)
-final case class ZoneChangeMessage(h: MessageHandle, c: ZoneChange) extends CommandMessage(h, c)
+final case class CommandMessage(handle: MessageHandle, command: ZoneCommand)
+
+sealed trait SendResult
+final case class SendOk(zc: ZoneCommand) extends SendResult
+final case class SendError(e: Throwable, zc: ZoneCommand) extends SendResult
+
+sealed trait DeleteResult
 
 // main consumer
 trait MessageQueue {
 
-  // receives a single message, the command should already be deserialized
-  def receive(): IO[CommandMessage[_]]
-
-  // receives a batch of messages
-  def receiveBatch(): IO[List[CommandMessage[_]]]
+  // receives up to maxMessageCount messages, the command should already be deserialized
+  def receive(maxMessageCount: Int): IO[List[CommandMessage]]
 
   // puts the message back on the queue with the intention of having it re-processed again
-  def requeue(message: CommandMessage[_]): IO[Unit]
+  def requeue(message: CommandMessage): IO[Unit]
 
-  // removes a message from the queue, indicating completion or the message should never be processed
-  def remove(message: CommandMessage[_]): IO[Unit]
+  // removes messages from the queue, indicating completion or the message should never be processed
+  def remove(message: NonEmptyList[CommandMessage]): IO[Unit]
 
   // alters the visibility timeout for a message on the queue.
-  def changeMessageTimeout(message: CommandMessage[_], duration: FiniteDuration): IO[Unit]
-
-  // sends a zone command to the queue, the queue will need to serialize it (if necessary) first
-  def send[A <: ZoneCommand](command: A): IO[Unit]
+  def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit]
 
   // sends a batch of messages to the queue, the queue should serialize those and return List[IO[Message]]
   // where each IO could individually fail.  Note: retry semantics is not a requirement of the queue implementation
-  def sendBatch[A <: ZoneCommand](messages: List[A]): IO[Unit]
+  def send(messages: NonEmptyList[ZoneCommand]): IO[NonEmptyList[Either[SendError, SendOk]]]
+
 }
