@@ -21,6 +21,8 @@ import vinyldns.core.domain.zone.ZoneCommand
 
 import scala.concurrent.duration.FiniteDuration
 
+// $COVERAGE-OFF$
+
 // Message handle is implementation specific.  For example, in SQS, this may be the `Message` itself
 trait MessageHandle
 
@@ -61,3 +63,4 @@ trait MessageQueue {
   // sends a single message, exceptions will be raised via IO
   def send[A <: ZoneCommand](command: A): IO[Unit]
 }
+// $COVERAGE-ON$
