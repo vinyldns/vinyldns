@@ -15,6 +15,7 @@
  */
 
 package controllers
+import akka.io.dns.RecordType
 import cats.effect.IO
 import org.joda.time.DateTime
 import org.specs2.mock.Mockito
@@ -24,7 +25,7 @@ import play.api.{Application, Configuration, Environment}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership._
-
+import vinyldns.core.domain.record._
 import scala.util.Success
 
 trait TestApplicationData { this: Mockito =>
@@ -44,6 +45,32 @@ trait TestApplicationData { this: Mockito =>
     Some("fbaggins@hobbitmail.me"),
     DateTime.now,
     "frodo-uuid")
+
+  val lockedFrodoUser = User(
+    "lockedFbaggins",
+    "lockedKey",
+    "lockedSecret",
+    Some("LockedFrodo"),
+    Some("LockedBaggins"),
+    Some("lockedfbaggins@hobbitmail.me"),
+    DateTime.now,
+    "locked-frodo-uuid",
+    false,
+    LockStatus.Locked
+  )
+
+  val superFrodoUser = User(
+    "superBaggins",
+    "superKey",
+    "superSecret",
+    Some("SuperFrodo"),
+    Some("SuperBaggins"),
+    Some("superfbaggins@hobbitmail.me"),
+    DateTime.now,
+    "super-frodo-uuid",
+    true,
+    LockStatus.Unlocked
+  )
 
   val newFrodoLog = UserChange(
     "frodo-uuid",
@@ -92,6 +119,16 @@ trait TestApplicationData { this: Mockito =>
        |}
      """.stripMargin
 
+  val userJson: JsValue = Json.parse(s"""{
+      |  "userName":  "${frodoUser.userName}",
+      |  "firstName": "${frodoUser.firstName}",
+      |  "lastName":  "${frodoUser.lastName}",
+      |  "email":     "${frodoUser.email}",
+      |  "created":   "${frodoUser.created}",
+      |  "id":        "${frodoUser.id}"
+      |}
+     """.stripMargin)
+
   val hobbitGroupId = "uuid-12345-abcdef"
   val hobbitGroup: JsValue = Json.parse(s"""{
        | "id":          "${hobbitGroupId}",
@@ -139,6 +176,42 @@ trait TestApplicationData { this: Mockito =>
        |}
      """.stripMargin
   )
+
+  val hobbitZoneId = "uuid-abcdef-12345"
+  val hobbitZone: JsValue = Json.parse(s"""{
+      | "id":             "${hobbitZoneId}",
+      | "name":           "hobbits",
+      | "email":          "hobbitAdmin@shire.me",
+      | "status":         "Active",
+      | "account":        "system",
+      | "shared":         false,
+      | "adminGroupName": "hobbits",
+      | "adminGroupId":   "${hobbitGroupId}"
+      | }
+    """.stripMargin)
+
+  val hobbitZoneRequest: JsValue = Json.parse(s"""{
+      | "name":           "hobbits",
+      | "email":          "hobbitAdmin@shire.me",
+      | "status":         "Active",
+      | "account":        "system",
+      | "shared":         false,
+      | "adminGroupName": "hobbits",
+      | "adminGroupId":   "${hobbitGroupId}"
+      | }
+    """.stripMargin)
+
+  val hobbitRecordSetId = "uuid-record-12345"
+  val hobbitRecordSet: JsValue = Json.parse(s"""{
+      | "zoneId":        "${hobbitZoneId}",
+      | "name":          "ok",
+      | "typ":           "${RecordType.A}",
+      | "ttl":           "200",
+      | "status":        "${RecordSetStatus.Active}",
+      | "records":       [ { "address": "10.1.1.1" } ],
+      | "id":            "$hobbitRecordSetId"
+      | }
+    """.stripMargin)
 
   val groupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup))
   val emptyGroupList: JsObject = Json.obj("groups" -> Json.arr())
