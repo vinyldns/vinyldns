@@ -29,8 +29,9 @@ import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
+import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeType, ZoneRepository}
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageHandle, MessageQueue}
 
 import scala.concurrent.duration._
@@ -204,9 +205,18 @@ class CommandHandlerSpec
       verify(mockZoneSyncProcessor).apply(sync)
       verifyZeroInteractions(mockRecordChangeProcessor)
     }
+    "handle zone deletes" in {
+      val del = zoneCreate.copy(changeType = ZoneChangeType.Delete)
+      val change = CommandMessage(TestHandle("foo"), del)
+      doReturn(IO.pure(del)).doReturn(IO.pure(change)).when(mockZoneChangeProcessor).apply(del)
+      Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
+      verify(mockZoneChangeProcessor).apply(del)
+      verifyZeroInteractions(mockZoneSyncProcessor)
+      verifyZeroInteractions(mockRecordChangeProcessor)
+    }
   }
 
-  "running an entire flow" should {
+  "main flow" should {
     "process successfully" in {
       val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
       val cmd = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
@@ -241,6 +251,108 @@ class CommandHandlerSpec
       verify(mq, atLeastOnce()).receive(count)
       verify(mockRecordChangeProcessor)
         .apply(any[DnsConnection], mockito.Matchers.eq(pendingCreateAAAA))
+      verify(mq).remove(cmd)
+    }
+    "continue processing on unexpected failure" in {
+      val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+      val cmd = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
+
+      // stage pulling from the message queue, make sure we always return our command
+      doReturn(IO.pure(List(cmd)))
+        .doReturn(IO.pure(List(cmd)))
+        .when(mq)
+        .receive(count)
+
+      // stage our record change processing failure, and then a success
+      doReturn(IO.raiseError(new RuntimeException("fail")))
+        .doReturn(IO.pure(cmd.command))
+        .when(mockRecordChangeProcessor)
+        .apply(any[DnsConnection], any[RecordSetChange])
+
+      // stage removing from the queue
+      doReturn(IO.unit).when(mq).remove(cmd)
+
+      val flow =
+        CommandHandler
+          .mainFlow(
+            mockZoneChangeProcessor,
+            mockRecordChangeProcessor,
+            mockZoneSyncProcessor,
+            mq,
+            count,
+            100.millis,
+            stop)
+          .take(1)
+
+      // kick off processing of messages
+      flow.compile.drain.unsafeRunSync()
+
+      // verify our interactions
+      verify(mq, atLeastOnce()).receive(count)
+
+      // verify that our record was attempted two times
+      verify(mockRecordChangeProcessor, times(2))
+        .apply(any[DnsConnection], mockito.Matchers.eq(pendingCreateAAAA))
+      verify(mq).remove(cmd)
+    }
+  }
+
+  "run" should {
+    "process a zone update change through the flow" in {
+      // testing the run method, which does nothing more than simplify construction of the main flow
+      val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+      val cmd = CommandMessage(TestHandle("foo"), zoneUpdate)
+
+      val zoneRepo = mock[ZoneRepository]
+      val zoneChangeRepo = mock[ZoneChangeRepository]
+      val recordSetRepo = mock[RecordSetRepository]
+      val recordChangeRepo = mock[RecordChangeRepository]
+      val batchChangeRepo = mock[BatchChangeRepository]
+
+      // stage pulling from the message queue, return the message in the first poll, stage a few additional
+      // polls just in case
+      doReturn(IO.pure(List(cmd)))
+        .doReturn(IO.pure(List()))
+        .doReturn(IO.pure(List()))
+        .doReturn(IO.pure(List()))
+        .when(mq)
+        .receive(count)
+
+      // stage processing for a zone update, the simplest of cases
+      doReturn(IO.pure(zoneUpdate.zone)).when(zoneRepo).save(zoneUpdate.zone)
+      doReturn(IO.pure(zoneUpdate)).when(zoneChangeRepo).save(any[ZoneChange])
+
+      // stage removing from the queue
+      doReturn(IO.unit).when(mq).remove(cmd)
+
+      val flow =
+        CommandHandler
+          .run(
+            mq,
+            count,
+            stop,
+            100.millis,
+            zoneRepo,
+            zoneChangeRepo,
+            recordSetRepo,
+            recordChangeRepo,
+            batchChangeRepo)
+
+      // kick off processing of messages
+      flow.unsafeRunAsync { _ =>
+        ()
+      }
+
+      // sleep to allow the flow to run once
+      Thread.sleep(200)
+
+      // shutoff processing on the flow
+      stop.set(true).unsafeRunSync()
+
+      // verify our interactions
+      verify(mq, atLeastOnce()).receive(count)
+      verify(zoneRepo).save(zoneUpdate.zone)
+      verify(zoneChangeRepo).save(any[ZoneChange])
       verify(mq).remove(cmd)
     }
   }
