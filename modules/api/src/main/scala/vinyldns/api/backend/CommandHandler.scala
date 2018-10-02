@@ -51,7 +51,7 @@ object CommandHandler {
       pollingInterval: FiniteDuration,
       pauseSignal: Signal[IO, Boolean])(implicit scheduler: Scheduler): Stream[IO, Unit] = {
 
-    // Polls SQS for message batches, connected to the signal which is toggled in the status endpoint
+    // Polls queue for message batches, connected to the signal which is toggled in the status endpoint
     val messageSource = startPolling(mq, count, pollingInterval).pauseWhen(pauseSignal)
 
     // Increase timeouts for zone syncs as they can take 10s of minutes
@@ -63,7 +63,7 @@ object CommandHandler {
     // Delete messages from message queue when complete
     val updateQueue = messageSink(mq)
 
-    // concurrently run as many message batches as possible
+    // concurrently run 4 message batches, so we can have 40 messages max running concurrently
     def flow(): Stream[IO, Unit] =
       messageSource
         .join(4)
