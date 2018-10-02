@@ -65,9 +65,9 @@
                                         <div class="table-form-group">
                                             <a class="btn btn-info btn-rounded" ng-href="/groups/{{group.id}}">
                                             View</a>
-                                            <a class="btn btn-warning btn-rounded" ng-click="editGroup(group);">
+                                            <a ng-if="groupAdmin(group)" class="btn btn-warning btn-rounded" ng-click="editGroup(group);">
                                                 Edit</a>
-                                            <button id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
+                                            <button ng-if="groupAdmin(group)" id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
                                             Delete</button>
                                         </div>
                                     </td>

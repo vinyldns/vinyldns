@@ -168,8 +168,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 'id': $scope.currentGroup.id,
                 'name': name,
                 'email': email,
-                'members': [{ id: $scope.profile.id }],
-                'admins': [{ id: $scope.profile.id }]
+                'members': $scope.currentGroup.members,
+                'admins': $scope.currentGroup.admins
             };
 
         if (description) {
@@ -226,6 +226,12 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     function profileFailure(results) {
         $scope.profile = $scope.profile || {};
+    }
+
+    $scope.groupAdmin = function(group) {
+        var isAdmin = group.admins.find(x => x.id === $scope.profile.id);
+        var isSuper = $scope.profile.isSuper;
+        return (isAdmin || isSuper) ? true : false;
     }
 
     //get user data on groups view load
