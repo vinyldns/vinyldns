@@ -166,7 +166,7 @@ object CommandHandler {
         case Right(ok) => ok
       }
 
-  /* On success, delete the message; on failure, do nothing and allow it to retry */
+  /* On success, delete the message; on failure retry */
   def messageSink(mq: MessageQueue): Sink[IO, MessageOutcome] =
     _.evalMap[Any] {
       case DeleteMessage(msg) =>
