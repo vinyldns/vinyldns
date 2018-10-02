@@ -20,7 +20,6 @@ import cats.effect.IO
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -83,31 +82,6 @@ trait SqsConnection {
         IO.pure(ok)
     }
   }
-
-  def receiveMessageBatch(request: ReceiveMessageRequest): IO[ReceiveMessageResult] =
-    monitored("sqs.receiveMessageBatch")(
-      sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
-        request.withQueueUrl(this.queueUrl),
-        client.receiveMessageAsync))
-
-  def deleteMessage(request: DeleteMessageRequest): IO[DeleteMessageResult] =
-    monitored("sqs.deleteMessage")(
-      sqsAsync[DeleteMessageRequest, DeleteMessageResult](
-        request.withQueueUrl(this.queueUrl),
-        client.deleteMessageAsync))
-
-  def sendMessage(request: SendMessageRequest): IO[SendMessageResult] =
-    monitored("sqs.sendMessage")(
-      sqsAsync[SendMessageRequest, SendMessageResult](
-        request.withQueueUrl(this.queueUrl),
-        client.sendMessageAsync))
-
-  def changeMessageVisibility(
-      request: ChangeMessageVisibilityRequest): IO[ChangeMessageVisibilityResult] =
-    monitored("sqs.changeMessageVisibility")(
-      sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
-        request.withQueueUrl(this.queueUrl),
-        client.changeMessageVisibilityAsync))
 }
 
 final case class LiveSqsConnection(client: AmazonSQSAsync, queueUrl: String) extends SqsConnection {

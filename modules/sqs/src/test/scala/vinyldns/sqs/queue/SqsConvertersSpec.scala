@@ -18,15 +18,7 @@ package vinyldns.sqs.queue
 
 import java.util.Base64
 
-import cats.effect.IO
-import com.amazonaws.services.sqs.model.{
-  Message,
-  MessageAttributeValue,
-  SendMessageRequest,
-  SendMessageResult
-}
-import org.mockito.Matchers._
-import org.mockito.Mockito._
+import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData._
@@ -106,18 +98,6 @@ class SqsConvertersSpec extends WordSpec with Matchers with MockitoSugar {
           ).asJava)
 
       fromMessage(msg) shouldBe pendingCreateAAAA
-    }
-  }
-
-  "sendCommand" should {
-    "forward the command as a message to sqs" in {
-      val mockConn = mock[SqsConnection]
-      val mockResponse = mock[SendMessageResult]
-
-      doReturn(IO.pure(mockResponse)).when(mockConn).sendMessage(any[SendMessageRequest])
-      sendCommand(zoneChangePending, mockConn).unsafeRunSync()
-
-      verify(mockConn).sendMessage(any[SendMessageRequest])
     }
   }
 }

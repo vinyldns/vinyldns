@@ -18,7 +18,6 @@ package vinyldns.sqs.queue
 
 import java.util.Base64
 
-import cats.effect.IO
 import com.amazonaws.services.sqs.model._
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.record.RecordSetChange
@@ -81,12 +80,21 @@ object SqsConverters extends ProtobufConversions {
         ).asJava)
   }
 
+  /*
+  def toSendMessageRequest[A <: ZoneCommand](messages: NonEmptyList[A]): SendMessageBatchRequest = {
+    val bytes = messages.map{
+      case recordSetChange: RecordSetChange => toPB(recordSetChange)
+      case zoneChange: ZoneChange => toPB(zoneChange)
+    }
+
+    ???
+  }
+   */
+
   def fromMessage(message: Message): ZoneCommand = {
     logger.info(
       s"Received message with attributes ${message.getMessageAttributes.asScala}, ${message.getAttributes.asScala}")
-
     val messageType = message.getMessageAttributes.asScala("message-type").getStringValue
-
     val messageBytes = Base64.getDecoder.decode(message.getBody)
     parseMessageType(messageType) match {
       case SqsRecordSetChangeMessage =>
@@ -94,6 +102,16 @@ object SqsConverters extends ProtobufConversions {
       case SqsZoneChangeMessage => fromPB(VinylDNSProto.ZoneChange.parseFrom(messageBytes))
     }
   }
+
+  /*
+  def fromMessage(sendMessageBatchResultEntry: SendMessageBatchResultEntry): ZoneCommand = {
+    ???
+  }
+
+  def fromMessage(batchResultErrorEntry: BatchResultErrorEntry): (Exception, ZoneCommand) = {
+    ???
+  }
+   */
 
   def toRecordSetChange(message: Message): Try[RecordSetChange] = {
     logger.info(
@@ -103,7 +121,4 @@ object SqsConverters extends ProtobufConversions {
       fromPB(VinylDNSProto.RecordSetChange.parseFrom(messageBytes))
     }
   }
-
-  def sendCommand(cmd: ZoneCommand, sqsConnection: SqsConnection): IO[ZoneCommand] =
-    sqsConnection.sendMessage(toSendMessageRequest(cmd)).map(_ => cmd)
 }
