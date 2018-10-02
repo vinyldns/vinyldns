@@ -30,7 +30,9 @@ trait MessageHandle
 final case class CommandMessage(handle: MessageHandle, command: ZoneCommand)
 
 // need to encode the possibility of one or more commands failing to send
-final case class SendBatchResult(successes: List[ZoneCommand], failures: List[(Exception, ZoneCommand)])
+final case class SendBatchResult(
+    successes: List[ZoneCommand],
+    failures: List[(Exception, ZoneCommand)])
 
 // Using types here to ensure we cannot pass in a negative or 0 count
 final case class MessageCount private (value: Int) extends AnyVal

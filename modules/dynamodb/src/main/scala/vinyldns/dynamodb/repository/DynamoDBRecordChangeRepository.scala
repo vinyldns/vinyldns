@@ -43,9 +43,7 @@ object DynamoDBRecordChangeRepository {
   private val RECORD_SET_CHANGE_CREATED_TIMESTAMP = "record_set_change_created_timestamp"
   private val PROCESSING_TIMESTAMP = "processing_timestamp"
   private val RECORD_SET_CHANGE_BLOB = "record_set_change_blob"
-  private val ZONE_ID_CHANGE_STATUS_INDEX = "zone_id_change_status_index"
   private val ZONE_ID_RECORD_SET_CHANGE_ID_INDEX = "zone_id_record_set_change_id_index"
-  private val CHANGE_STATUS_ZONE_ID_INDEX = "change_status_index"
   private val ZONE_ID_CREATED_INDEX = "zone_id_created_index"
 
   def apply(
@@ -71,26 +69,12 @@ object DynamoDBRecordChangeRepository {
     val secondaryIndexes =
       Seq(
         new GlobalSecondaryIndex()
-          .withIndexName(ZONE_ID_CHANGE_STATUS_INDEX)
-          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-          .withKeySchema(
-            new KeySchemaElement(ZONE_ID, KeyType.HASH),
-            new KeySchemaElement(CHANGE_SET_STATUS, KeyType.RANGE))
-          .withProjection(new Projection().withProjectionType("ALL")),
-        new GlobalSecondaryIndex()
           .withIndexName(ZONE_ID_RECORD_SET_CHANGE_ID_INDEX)
           .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
           .withKeySchema(
             new KeySchemaElement(ZONE_ID, KeyType.HASH),
             new KeySchemaElement(RECORD_SET_CHANGE_ID, KeyType.RANGE))
           .withProjection(new Projection().withProjectionType("ALL")),
-        new GlobalSecondaryIndex()
-          .withIndexName(CHANGE_STATUS_ZONE_ID_INDEX)
-          .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
-          .withKeySchema(
-            new KeySchemaElement(CHANGE_SET_STATUS, KeyType.HASH),
-            new KeySchemaElement(ZONE_ID, KeyType.RANGE))
-          .withProjection(new Projection().withProjectionType("KEYS_ONLY")),
         new GlobalSecondaryIndex()
           .withIndexName(ZONE_ID_CREATED_INDEX)
           .withProvisionedThroughput(new ProvisionedThroughput(dynamoReads, dynamoWrites))
@@ -149,108 +133,6 @@ class DynamoDBRecordChangeRepository private[repository] (
       }
 
       result.map(_ => changeSet)
-    }
-
-  def getPendingChangeSets(zoneId: String): IO[List[ChangeSet]] =
-    monitor("repo.RecordChange.getPendingChangeSets") {
-      log.info(s"Getting pending change sets for zone $zoneId")
-      val expressionAttributeValues = new HashMap[String, AttributeValue]
-      expressionAttributeValues.put(":zone_id", new AttributeValue(zoneId))
-      expressionAttributeValues.put(
-        ":applied",
-        new AttributeValue().withN(ChangeSetStatus.Applied.intValue.toString))
-
-      val expressionAttributeNames = new HashMap[String, String]
-      expressionAttributeNames.put("#zone_id_attribute", ZONE_ID)
-      expressionAttributeNames.put("#change_set_status", CHANGE_SET_STATUS)
-
-      val keyConditionExpression: String =
-        "#zone_id_attribute = :zone_id and #change_set_status < :applied"
-
-      val queryRequest = new QueryRequest()
-        .withTableName(recordChangeTable)
-        .withIndexName(ZONE_ID_CHANGE_STATUS_INDEX)
-        .withExpressionAttributeNames(expressionAttributeNames)
-        .withExpressionAttributeValues(expressionAttributeValues)
-        .withKeyConditionExpression(keyConditionExpression)
-
-      dynamoDBHelper.queryAll(queryRequest).map { queryResults =>
-        queryResults.flatMap { queryResult =>
-          queryResult.getItems.asScala
-            .foldLeft(Map.empty[String, ChangeSet]) {
-              case (changeSetMap, item) =>
-                val csid = item.get(CHANGE_SET_ID).getS
-                val thisChangeSet = changeSetMap.getOrElse(csid, toChangeSet(item))
-                changeSetMap + (csid -> thisChangeSet.appendRecordSetChange(
-                  toRecordSetChange(item)))
-            }
-            .values
-            .toList
-            .sortBy(_.createdTimestamp)
-        }.distinct
-      }
-    }
-
-  def getAllPendingZoneIds(): IO[List[String]] =
-    monitor("repo.RecordChange.getAllPendingZoneIds") {
-      log.info(s"Getting all pending zone ids")
-      val expressionAttributeValues = new HashMap[String, AttributeValue]
-      expressionAttributeValues.put(
-        ":pending",
-        new AttributeValue().withN(ChangeSetStatus.Pending.intValue.toString))
-      val expressionAttributeNames = new HashMap[String, String]
-      expressionAttributeNames.put("#change_set_status", CHANGE_SET_STATUS)
-
-      val keyConditionExpression: String = "#change_set_status = :pending"
-
-      val queryRequest = new QueryRequest()
-        .withTableName(recordChangeTable)
-        .withIndexName(CHANGE_STATUS_ZONE_ID_INDEX)
-        .withExpressionAttributeNames(expressionAttributeNames)
-        .withExpressionAttributeValues(expressionAttributeValues)
-        .withKeyConditionExpression(keyConditionExpression)
-
-      dynamoDBHelper.queryAll(queryRequest).map { queryResults =>
-        queryResults.flatMap { queryresult =>
-          queryresult.getItems.asScala.toList.map { item =>
-            item.get(ZONE_ID).getS()
-          }
-        }.distinct
-      }
-    }
-
-  def getChanges(zoneId: String): IO[List[ChangeSet]] =
-    monitor("repo.RecordChange.getChanges") {
-      log.info(s"Getting all change sets for zone $zoneId")
-      val expressionAttributeValues = new HashMap[String, AttributeValue]
-      expressionAttributeValues.put(":zone_id", new AttributeValue(zoneId))
-
-      val expressionAttributeNames = new HashMap[String, String]
-      expressionAttributeNames.put("#zone_id_attribute", ZONE_ID)
-
-      val keyConditionExpression: String = "#zone_id_attribute = :zone_id"
-
-      val queryRequest = new QueryRequest()
-        .withTableName(recordChangeTable)
-        .withIndexName(ZONE_ID_CHANGE_STATUS_INDEX)
-        .withExpressionAttributeNames(expressionAttributeNames)
-        .withExpressionAttributeValues(expressionAttributeValues)
-        .withKeyConditionExpression(keyConditionExpression)
-
-      dynamoDBHelper.query(queryRequest).map { queryResult =>
-        {
-          queryResult.getItems.asScala
-            .foldLeft(Map.empty[String, ChangeSet]) {
-              case (changeSetMap, item) =>
-                val csid = item.get(CHANGE_SET_ID).getS
-                val thisChangeSet = changeSetMap.getOrElse(csid, toChangeSet(item))
-                changeSetMap + (csid -> thisChangeSet.appendRecordSetChange(
-                  toRecordSetChange(item)))
-            }
-            .values
-            .toList
-        }
-      }
     }
 
   def listRecordSetChanges(
