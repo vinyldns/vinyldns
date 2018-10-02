@@ -242,20 +242,6 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       sortedResults should contain(changeSetD)
     }
 
-    "get pending changes by zone id are sorted by earliest created timestamp" in {
-      val f = repo.getPendingChangeSets(zoneA.id)
-      val result = f.unsafeRunSync()
-      val sortedResults = result.map { changeSet =>
-        changeSet.copy(changes = changeSet.changes.sortBy(_.id))
-      }
-      sortedResults.size shouldBe 2
-      sortedResults should contain(changeSetA)
-      sortedResults should contain(changeSetD)
-      sortedResults should not contain changeSetC
-      result.head.id should equal(changeSetA.id)
-      result(1).id should equal(changeSetD.id)
-    }
-
     "list all record set changes in zone C" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id)
       testFuture.unsafeRunSync().items shouldBe recordSetChanges
