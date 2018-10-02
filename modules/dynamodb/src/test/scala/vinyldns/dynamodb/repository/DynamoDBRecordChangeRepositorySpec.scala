@@ -161,45 +161,6 @@ class DynamoDBRecordChangeRepositorySpec
     }
   }
 
-  "DynamoDBRecordChangeRepository.getChanges(zoneId)" should {
-    "returns empty is no changes exist" in {
-      val dynamoResponse = mock[QueryResult]
-      when(dynamoResponse.getItems)
-        .thenReturn(new java.util.ArrayList[java.util.Map[String, AttributeValue]]())
-      when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
-
-      val store = new TestRepo
-      val response = store.getChanges(zoneActive.id).unsafeRunSync()
-
-      verify(dynamoDBHelper).query(any[QueryRequest])
-
-      response shouldBe empty
-    }
-    "call dynamoDBHelper.query when retrieving an existing change set" in {
-      val dynamoResponse = mock[QueryResult]
-      val store = new TestRepo
-
-      val resultList = new java.util.ArrayList[java.util.Map[String, AttributeValue]]()
-      resultList.add(store.toItem(pendingChangeSet, pendingCreateAAAA))
-      resultList.add(store.toItem(pendingChangeSet, pendingCreateCNAME))
-
-      when(dynamoDBHelper.query(any[QueryRequest])).thenReturn(IO.pure(dynamoResponse))
-      when(dynamoResponse.getItems).thenReturn(resultList)
-
-      val response = store.getChanges(zoneActive.id).unsafeRunSync()
-
-      verify(dynamoDBHelper).query(any[QueryRequest])
-      response should contain(pendingChangeSet)
-    }
-    "throw exception when query returns an unexpected response" in {
-      when(dynamoDBHelper.query(any[QueryRequest]))
-        .thenThrow(new ResourceNotFoundException("failed"))
-      val store = new TestRepo
-
-      a[ResourceNotFoundException] should be thrownBy store.getChanges(zoneActive.id)
-    }
-  }
-
   "DynamoDBRecordChangeRepository.toRecordSetChange" should {
     "be able to decode the output of toItem" in {
       val store = new TestRepo

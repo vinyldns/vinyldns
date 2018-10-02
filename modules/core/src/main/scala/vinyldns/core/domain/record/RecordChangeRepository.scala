@@ -23,8 +23,6 @@ trait RecordChangeRepository extends Repository {
 
   def save(changeSet: ChangeSet): IO[ChangeSet]
 
-  def getChanges(zoneId: String): IO[List[ChangeSet]]
-
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String] = None,

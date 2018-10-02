@@ -135,40 +135,6 @@ class DynamoDBRecordChangeRepository private[repository] (
       result.map(_ => changeSet)
     }
 
-  def getChanges(zoneId: String): IO[List[ChangeSet]] =
-    monitor("repo.RecordChange.getChanges") {
-      log.info(s"Getting all change sets for zone $zoneId")
-      val expressionAttributeValues = new HashMap[String, AttributeValue]
-      expressionAttributeValues.put(":zone_id", new AttributeValue(zoneId))
-
-      val expressionAttributeNames = new HashMap[String, String]
-      expressionAttributeNames.put("#zone_id_attribute", ZONE_ID)
-
-      val keyConditionExpression: String = "#zone_id_attribute = :zone_id"
-
-      val queryRequest = new QueryRequest()
-        .withTableName(recordChangeTable)
-        .withIndexName(ZONE_ID_RECORD_SET_CHANGE_ID_INDEX)
-        .withExpressionAttributeNames(expressionAttributeNames)
-        .withExpressionAttributeValues(expressionAttributeValues)
-        .withKeyConditionExpression(keyConditionExpression)
-
-      dynamoDBHelper.query(queryRequest).map { queryResult =>
-        {
-          queryResult.getItems.asScala
-            .foldLeft(Map.empty[String, ChangeSet]) {
-              case (changeSetMap, item) =>
-                val csid = item.get(CHANGE_SET_ID).getS
-                val thisChangeSet = changeSetMap.getOrElse(csid, toChangeSet(item))
-                changeSetMap + (csid -> thisChangeSet.appendRecordSetChange(
-                  toRecordSetChange(item)))
-            }
-            .values
-            .toList
-        }
-      }
-    }
-
   def listRecordSetChanges(
       zoneId: String,
       startFrom: Option[String] = None,

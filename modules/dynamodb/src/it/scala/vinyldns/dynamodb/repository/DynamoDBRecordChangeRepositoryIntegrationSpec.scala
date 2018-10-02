@@ -230,18 +230,6 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
       f.unsafeRunSync() shouldBe Some(testRecordSetChange)
     }
 
-    "get changes by zone id" in {
-      val f = repo.getChanges(zoneA.id)
-      val result = f.unsafeRunSync()
-      val sortedResults = result.map { changeSet =>
-        changeSet.copy(changes = changeSet.changes.sortBy(_.id))
-      }
-      sortedResults.size shouldBe 3
-      sortedResults should contain(changeSetA)
-      sortedResults should contain(changeSetC)
-      sortedResults should contain(changeSetD)
-    }
-
     "list all record set changes in zone C" in {
       val testFuture = repo.listRecordSetChanges(zoneC.id)
       testFuture.unsafeRunSync().items shouldBe recordSetChanges
