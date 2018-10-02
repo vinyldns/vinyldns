@@ -37,7 +37,7 @@ class FrontendAction(val userLookup: String => IO[Option[User]])(
     with CacheHeader {
 
   def notLoggedInResult: Future[Result] =
-    Future(
+    Future.successful(
       Redirect("/login")
         .flashing(VinylDNS.Alerts.error("You are not logged in. Please login to continue."))
         .withHeaders(cacheHeaders: _*))
