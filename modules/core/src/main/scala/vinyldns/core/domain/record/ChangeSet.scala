@@ -60,9 +60,6 @@ case class ChangeSet(
   }
 
   def isFinished: Boolean = changes.forall(_.isDone)
-
-  def appendRecordSetChange(recordSetChange: RecordSetChange): ChangeSet =
-    copy(changes = changes :+ recordSetChange)
 }
 
 object ChangeSet {
