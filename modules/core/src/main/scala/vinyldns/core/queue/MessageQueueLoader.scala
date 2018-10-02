@@ -23,12 +23,10 @@ object MessageQueueLoader {
 
   private val logger = LoggerFactory.getLogger("MessageQueueLoader")
 
-  def load(config: MessageQueueConfig): IO[MessageQueue] = {
-    logger.error(s"Attempting to load queue ${config.className}")
+  def load(config: MessageQueueConfig): IO[MessageQueue] =
     for {
-      className <- IO.pure(config.className)
-      provider <- IO(Class.forName(className).newInstance.asInstanceOf[MessageQueueProvider])
+      _ <- IO(logger.error(s"Attempting to load queue ${config.className}"))
+      provider <- IO(Class.forName(config.className).newInstance.asInstanceOf[MessageQueueProvider])
       queue <- provider.load(config)
     } yield queue
-  }
 }

@@ -16,11 +16,32 @@
 
 package vinyldns.core.queue
 
+import cats.effect.IO
 import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+
+object MockMessageQueueProvider extends MockitoSugar {
+
+  val mockMessageQueue: MessageQueue = mock[MessageQueue]
+
+}
+
+class MockMessageQueueProvider extends MessageQueueProvider {
+
+  def load(config: MessageQueueConfig): IO[MessageQueue] =
+    IO.pure(MockMessageQueueProvider.mockMessageQueue)
+
+}
+
+class FailMessageQueueProvider extends MessageQueueProvider {
+
+  def load(config: MessageQueueConfig): IO[MessageQueue] =
+    IO.raiseError(new RuntimeException("boo"))
+
+}
 
 class MessageQueueLoaderSpec
     extends WordSpec
