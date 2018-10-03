@@ -19,6 +19,7 @@ package vinyldns.sqs.queue
 import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data.NonEmptyList
+import cats.scalatest.EitherMatchers
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
 import vinyldns.core.TestRecordSetData._
@@ -29,8 +30,8 @@ import vinyldns.core.queue.{CommandMessage, MessageCount}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SqsMessageQueueSpec extends WordSpec
-  with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach with Matchers with EitherValues {
+class SqsMessageQueueIntegrationSpec extends WordSpec
+  with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach with Matchers with EitherMatchers with EitherValues {
   private val queue: SqsMessageQueue = SqsMessageQueue()
 
   // Re-create queue before tests
@@ -57,7 +58,7 @@ class SqsMessageQueueSpec extends WordSpec
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result.length shouldBe 1
-      result.head.command shouldBe a[RecordSetChange]
+      result.map(_.command) should contain theSameElementsAs List(rsAddChange)
     }
 
     "receive up to MessageCount messages from the queue" in {
@@ -67,42 +68,39 @@ class SqsMessageQueueSpec extends WordSpec
       }
 
       val result = queue.receive(MessageCount(4).right.value).unsafeRunSync()
-      result.length shouldBe 4
+      result should have length 4
       result.foreach(_.command shouldBe a[ZoneCommand])
     }
 
-    "return Unit when attempting to remove item from empty queue" in {
-      val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
-      result.length shouldBe 0
-
-      noException should be thrownBy
-        queue.remove(CommandMessage(ReceiptHandle("does-not-exist"), makeTestAddChange(rsOk))).unsafeRunSync()
+    "succeed when attempting to remove item from empty queue" in {
+      queue.remove(CommandMessage(SqsMessageHandle("does-not-exist"), makeTestAddChange(rsOk)))
+        .attempt.unsafeRunSync() should beRight(())
     }
 
-    "return Unit when attempting to remove item from queue" in {
+    "succeed when attempting to remove item from queue" in {
       queue.send(rsAddChange).unsafeRunSync()
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result.length shouldBe 1
 
-      noException should be thrownBy
-        queue.remove(CommandMessage(result(0).handle, makeTestAddChange(rsOk))).unsafeRunSync()
+      queue.remove(CommandMessage(result(0).handle, makeTestAddChange(rsOk)))
+        .attempt.unsafeRunSync() should beRight(())
     }
 
-    "return Unit when attempting to requeue" in {
+    "succeed when attempting to requeue" in {
       queue.send(makeTestAddChange(rsOk)).unsafeRunSync()
 
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result.length shouldBe 1
+      result should have length 1
 
-      noException should be thrownBy
-        queue.requeue(CommandMessage(result(0).handle, makeTestAddChange(rsOk))).unsafeRunSync()
+      queue.requeue(CommandMessage(result(0).handle, makeTestAddChange(rsOk)))
+        .attempt.unsafeRunSync() should beRight(())
     }
 
     "send a single message request" in {
-      noException should be thrownBy queue.send(makeTestAddChange(rsOk)).unsafeRunSync()
+      queue.send(makeTestAddChange(rsOk)).attempt.unsafeRunSync() should beRight(())
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
-      result.length shouldBe 1
+      result should have length 1
       result(0).command shouldBe a[RecordSetChange]
     }
 
@@ -110,7 +108,7 @@ class SqsMessageQueueSpec extends WordSpec
       val messages = NonEmptyList.fromListUnsafe(List(rsAddChange, zoneChangePending))
 
       val result = queue.send(messages).unsafeRunSync()
-      result.successes.length shouldBe 2
+      result.successes should have length 2
       result.failures shouldBe empty
     }
 
@@ -118,11 +116,10 @@ class SqsMessageQueueSpec extends WordSpec
       queue.send(makeTestAddChange(rsOk)).unsafeRunSync()
 
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result.length shouldBe 1
+      result should have length 1
 
-      noException should be thrownBy
-        queue.changeMessageTimeout(CommandMessage(result(0).handle, makeTestAddChange(rsOk)),
-          FiniteDuration(5, SECONDS)).unsafeRunSync()
+      queue.changeMessageTimeout(CommandMessage(result(0).handle, makeTestAddChange(rsOk)),
+        FiniteDuration(5, SECONDS)).attempt.unsafeRunSync() should beRight(())
     }
   }
 }

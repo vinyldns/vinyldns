@@ -39,7 +39,7 @@ import scala.concurrent.duration.FiniteDuration
 
 // Unique identifier corresponding to action of receiving the message, not the message itself. Only this info
 // is required for actions like removal and changing message timeout in AWS SQS
-final case class ReceiptHandle(value: String) extends MessageHandle
+final case class SqsMessageHandle(receiptHandle: String) extends MessageHandle
 
 case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
     extends MessageQueue
@@ -89,13 +89,15 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
           .withQueueUrl(queueUrl),
         client.receiveMessageAsync
       ).map(_.getMessages.asScala.toList.map(m =>
-        CommandMessage(ReceiptHandle(m.getReceiptHandle), fromMessage(m))))
+        CommandMessage(SqsMessageHandle(m.getReceiptHandle), fromMessage(m))))
     }
 
   def remove(message: CommandMessage): IO[Unit] =
     monitored("sqs.removeMessage")(
       sqsAsync[DeleteMessageRequest, DeleteMessageResult](
-        new DeleteMessageRequest(queueUrl, message.handle.asInstanceOf[ReceiptHandle].value),
+        new DeleteMessageRequest(
+          queueUrl,
+          message.handle.asInstanceOf[SqsMessageHandle].receiptHandle),
         client.deleteMessageAsync)).map(_ => ())
 
   // AWS SQS has no explicit requeue mechanism; use changeMessageTimeout instead
@@ -119,7 +121,7 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
       .map { batchResult =>
         val idLookupMap = idLookup.toMap
         val successes = batchResult.getSuccessful.asScala.map(fromMessage(_, idLookupMap)).toList
-        val failures = batchResult.getFailed.asScala.map(fromMessage).toList
+        val failures = batchResult.getFailed.asScala.map(fromMessage(_, idLookupMap)).toList
         SendBatchResult(successes, failures)
       }
   }
@@ -128,13 +130,11 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
     monitored("sqs.changeMessageTimeout")(
       sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
         new ChangeMessageVisibilityRequest()
-          .withReceiptHandle(message.handle.asInstanceOf[ReceiptHandle].value)
+          .withReceiptHandle(message.handle.asInstanceOf[SqsMessageHandle].receiptHandle)
           .withVisibilityTimeout(duration.toSeconds.toInt) // 1800 seconds == 30 minutes
           .withQueueUrl(queueUrl),
         client.changeMessageVisibilityAsync
       )).map(_ => ())
-
-  def shutdown(): Unit = client.shutdown()
 }
 
 object SqsMessageQueue {

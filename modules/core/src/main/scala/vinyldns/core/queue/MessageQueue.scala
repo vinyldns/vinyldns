@@ -65,7 +65,5 @@ trait MessageQueue {
   // sends a single message, exceptions will be raised via IO
   def send[A <: ZoneCommand](command: A): IO[Unit]
 
-  // shutdown queue client
-  def shutdown(): Unit
 }
 // $COVERAGE-ON$

@@ -33,17 +33,9 @@ object SqsConverters extends ProtobufConversions {
 
   private val logger = LoggerFactory.getLogger("vinyldns.sqs.queue.SqsConverters")
 
-  sealed trait SqsMessageType {
-    def name: String
-  }
-
-  case object SqsRecordSetChangeMessage extends SqsMessageType {
-    val name = "SqsRecordSetChangeMessage"
-  }
-
-  case object SqsZoneChangeMessage extends SqsMessageType {
-    val name = "SqsZoneChangeMessage"
-  }
+  sealed abstract class SqsMessageType(val name: String)
+  case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage")
+  case object SqsZoneChangeMessage extends SqsMessageType("SqsZoneChangeMessage")
 
   def parseMessageType(messageType: String): SqsMessageType = messageType match {
     case SqsRecordSetChangeMessage.name => SqsRecordSetChangeMessage
@@ -91,16 +83,17 @@ object SqsConverters extends ProtobufConversions {
     }
 
     val messageBatchRequestEntryList = messageTypeBytesTuple.zipWithIndex
-      .map { tuple =>
-        new SendMessageBatchRequestEntry()
-          .withMessageBody(Base64.getEncoder.encodeToString(tuple._1._2))
-          .withId(idLookup(tuple._2)._1)
-          .withMessageAttributes(
-            Map(
-              "message-type" -> new MessageAttributeValue()
-                .withStringValue(tuple._1._1)
-                .withDataType("String")
-            ).asJava)
+      .map {
+        case ((messageTypeName, messageBytes), index) =>
+          new SendMessageBatchRequestEntry()
+            .withMessageBody(Base64.getEncoder.encodeToString(messageBytes))
+            .withId(idLookup(index)._1)
+            .withMessageAttributes(
+              Map(
+                "message-type" -> new MessageAttributeValue()
+                  .withStringValue(messageTypeName)
+                  .withDataType("String")
+              ).asJava)
       }
       .toList
       .asJava
@@ -131,17 +124,26 @@ object SqsConverters extends ProtobufConversions {
     zoneCommand match {
       case recordSetChange: RecordSetChange => recordSetChange
       case zoneChange: ZoneChange => zoneChange
+      case None => throw new Exception("Could not find send batch zone command")
     }
   }
 
   def fromMessage[A <: ZoneCommand](
-      batchResultErrorEntry: BatchResultErrorEntry): (Exception, ZoneCommand) = {
+      batchResultErrorEntry: BatchResultErrorEntry,
+      idLookup: Map[String, A]): (Exception, ZoneCommand) = {
     logger.info(
       s"Received message with attributes ${batchResultErrorEntry.getMessage}, " +
         s"${batchResultErrorEntry.getCode}")
 
     val messageBytes = Base64.getDecoder.decode(batchResultErrorEntry.getMessage)
-    throw new Exception(Base64.getDecoder.decode(messageBytes).toString)
+    val zoneCommand = idLookup.getOrElse(batchResultErrorEntry.getId, None)
+    zoneCommand match {
+      case recordSetChange: RecordSetChange =>
+        (new Exception(Base64.getDecoder.decode(messageBytes).toString), recordSetChange)
+      case zoneChange: ZoneChange =>
+        (new Exception(Base64.getDecoder.decode(messageBytes).toString), zoneChange)
+      case None => throw new Exception("Could not find send batch error zone command")
+    }
   }
 
   def toRecordSetChange(message: Message): Try[RecordSetChange] = {
