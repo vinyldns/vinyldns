@@ -129,7 +129,7 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
       sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
         new ChangeMessageVisibilityRequest()
           .withReceiptHandle(message.handle.asInstanceOf[ReceiptHandle].value)
-          .withVisibilityTimeout(duration._1.toInt) // 1800 seconds == 30 minutes
+          .withVisibilityTimeout(duration.toSeconds.toInt) // 1800 seconds == 30 minutes
           .withQueueUrl(queueUrl),
         client.changeMessageVisibilityAsync
       )).map(_ => ())
