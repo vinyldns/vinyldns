@@ -17,11 +17,9 @@
 package vinyldns.core.queue
 
 import cats.effect.IO
-import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 
 object MockMessageQueueProvider extends MockitoSugar {
 
@@ -43,15 +41,8 @@ class FailMessageQueueProvider extends MessageQueueProvider {
 
 }
 
-class MessageQueueLoaderSpec
-    extends WordSpec
-    with Matchers
-    with MockitoSugar
-    with EitherValues
-    with EitherMatchers
-    with ValidatedMatchers {
+class MessageQueueLoaderSpec extends WordSpec with Matchers {
 
-  val crypto: CryptoAlgebra = new NoOpCrypto()
   val placeholderConfig: Config = ConfigFactory.parseString("{}")
 
   "load" should {
