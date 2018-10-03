@@ -70,7 +70,7 @@ class DnsConnectionSpec
     200L,
     InetAddress.getByName("10.1.1.1"))
 
-  private val mockResolver = mock[DNS.Resolver]
+  private val mockResolver = mock[DNS.SimpleResolver]
   private val mockMessage = mock[DNS.Message]
   private val messageCaptor = ArgumentCaptor.forClass(classOf[DNS.Message])
   private val mockDnsQuery = mock[DnsQuery]
