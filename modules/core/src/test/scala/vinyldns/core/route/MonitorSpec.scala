@@ -75,7 +75,7 @@ class MonitorSpec
     "record successful futures" in {
       val traitTest = new TestMonitoring
 
-      whenReady(traitTest.doSomethingGood().unsafeToFuture()) { result =>
+      whenReady(traitTest.doSomethingGood().unsafeToFuture()) { _ =>
         verify(mockLatency).+=(anyLong)
         verifyZeroInteractions(mockErrors)
       }

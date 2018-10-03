@@ -48,7 +48,7 @@ class JavaCryptoSpec extends WordSpec with Matchers {
     }
 
     "be thread safe" in {
-      (1 to 100).par.foreach { i =>
+      (1 to 100).par.foreach { _ =>
         val e = unencryptedString
         val h = javaCrypto.encrypt(e)
         val r = javaCrypto.decrypt(h)

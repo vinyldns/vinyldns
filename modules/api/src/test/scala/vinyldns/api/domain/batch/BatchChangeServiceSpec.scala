@@ -153,12 +153,7 @@ class BatchChangeServiceSpec
       IO.pure(dbZones.filter(zn => zoneNames.contains(zn.name)))
 
     override def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = {
-      val zones = for {
-        zoneInDB <- dbZones
-        zoneMatch <- zoneNames
-        if zoneInDB.name.endsWith(zoneMatch)
-      } yield zoneInDB
-      IO.pure(zones)
+      IO.pure(dbZones.filter(z => zoneNames.exists(z.name.endsWith)))
     }
   }
 
