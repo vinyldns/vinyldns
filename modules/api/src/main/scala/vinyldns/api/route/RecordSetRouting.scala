@@ -104,7 +104,7 @@ trait RecordSetRoute extends Directives {
           }
       } ~
       path("zones" / Segment / "recordsets" / Segment / "changes" / Segment) {
-        (zoneId, rsId, changeId) =>
+        (zoneId, _, changeId) =>
           get {
             monitor("Endpoint.getRecordSetChange") {
               execute(recordSetService.getRecordSetChange(zoneId, changeId, authPrincipal)) {
