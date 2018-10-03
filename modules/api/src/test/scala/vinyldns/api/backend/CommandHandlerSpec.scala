@@ -22,7 +22,7 @@ import cats.scalatest.EitherMatchers
 import fs2._
 import org.mockito
 import org.mockito.Matchers._
-import org.mockito.Mockito
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
@@ -31,7 +31,7 @@ import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeType, ZoneRepository}
+import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageHandle, MessageQueue}
 
 import scala.concurrent.duration._
@@ -58,11 +58,15 @@ class CommandHandlerSpec
   private val mockRecordChangeProcessor =
     mock[(DnsConnection, RecordSetChange) => IO[RecordSetChange]]
   private val mockZoneSyncProcessor = mock[ZoneChange => IO[ZoneChange]]
+  private val defaultConn =
+    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
   private val processor =
     CommandHandler.processChangeRequests(
       mockZoneChangeProcessor,
       mockRecordChangeProcessor,
-      mockZoneSyncProcessor)
+      mockZoneSyncProcessor,
+      defaultConn
+    )
 
   override protected def beforeEach(): Unit =
     Mockito.reset(mq, mockZoneChangeProcessor, mockRecordChangeProcessor, mockZoneSyncProcessor)
@@ -96,7 +100,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutForZoneSyncs(mq))
+        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -109,7 +113,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutForZoneSyncs(mq))
+        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -122,7 +126,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutForZoneSyncs(mq))
+        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -134,7 +138,7 @@ class CommandHandlerSpec
       Stream
         .emit(msg)
         .covary[IO]
-        .to(CommandHandler.changeVisibilityTimeoutForZoneSyncs(mq))
+        .to(CommandHandler.changeVisibilityTimeoutWhenSyncing(mq))
         .compile
         .drain
         .unsafeRunSync()
@@ -182,6 +186,29 @@ class CommandHandlerSpec
       verify(mockRecordChangeProcessor).apply(any[DnsConnection], any[RecordSetChange])
       verifyZeroInteractions(mockZoneSyncProcessor)
       verifyZeroInteractions(mockZoneChangeProcessor)
+    }
+    "use the default zone connection when the change zone connection is not defined" in {
+      val noConnChange =
+        pendingCreateAAAA.copy(
+          zone = pendingCreateAAAA.zone.copy(connection = None, transferConnection = None))
+      val default = defaultConn.copy(primaryServer = "default.conn.test.com")
+      val defaultConnProcessor =
+        CommandHandler.processChangeRequests(
+          mockZoneChangeProcessor,
+          mockRecordChangeProcessor,
+          mockZoneSyncProcessor,
+          default
+        )
+      val change = CommandMessage(TestHandle("foo"), noConnChange)
+      doReturn(IO.pure(change))
+        .when(mockRecordChangeProcessor)
+        .apply(any[DnsConnection], any[RecordSetChange])
+      Stream.emit(change).covary[IO].through(defaultConnProcessor).compile.drain.unsafeRunSync()
+
+      val connCaptor = ArgumentCaptor.forClass(classOf[DnsConnection])
+      verify(mockRecordChangeProcessor).apply(connCaptor.capture(), any[RecordSetChange])
+      val resolver = connCaptor.getValue.resolver
+      resolver.getAddress.getHostName shouldBe default.primaryServer
     }
     "handle zone creates" in {
       val change = CommandMessage(TestHandle("foo"), zoneCreate)
@@ -241,7 +268,9 @@ class CommandHandlerSpec
             mq,
             count,
             100.millis,
-            stop)
+            stop,
+            defaultConn
+          )
           .take(1)
 
       // kick off processing of messages
@@ -281,7 +310,9 @@ class CommandHandlerSpec
             mq,
             count,
             100.millis,
-            stop)
+            stop,
+            defaultConn
+          )
           .take(1)
 
       // kick off processing of messages
@@ -336,7 +367,9 @@ class CommandHandlerSpec
             zoneChangeRepo,
             recordSetRepo,
             recordChangeRepo,
-            batchChangeRepo)
+            batchChangeRepo,
+            defaultConn
+          )
 
       // kick off processing of messages
       flow.unsafeRunAsync { _ =>

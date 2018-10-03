@@ -20,12 +20,11 @@ import cats.effect.IO
 import fs2._
 import fs2.async.mutable.Signal
 import org.slf4j.LoggerFactory
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.engine.{RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncHandler}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeType, ZoneRepository}
+import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,16 +48,17 @@ object CommandHandler {
       mq: MessageQueue,
       count: MessageCount,
       pollingInterval: FiniteDuration,
-      pauseSignal: Signal[IO, Boolean])(implicit scheduler: Scheduler): Stream[IO, Unit] = {
+      pauseSignal: Signal[IO, Boolean],
+      defaultConn: ZoneConnection)(implicit scheduler: Scheduler): Stream[IO, Unit] = {
 
     // Polls queue for message batches, connected to the signal which is toggled in the status endpoint
     val messageSource = startPolling(mq, count, pollingInterval).pauseWhen(pauseSignal)
 
-    // Increase timeouts for zone syncs as they can take 10s of minutes
-    val increaseTimeoutForZoneSyncs = changeVisibilityTimeoutForZoneSyncs(mq)
+    // Increase timeouts for zone syncs and creates as they can take 10s of minutes
+    val increaseTimeoutWhenSyncing = changeVisibilityTimeoutWhenSyncing(mq)
 
     val changeRequestProcessor =
-      processChangeRequests(zoneChangeHandler, recordChangeHandler, zoneSyncHandler)
+      processChangeRequests(zoneChangeHandler, recordChangeHandler, zoneSyncHandler, defaultConn)
 
     // Delete messages from message queue when complete
     val updateQueue = messageSink(mq)
@@ -67,7 +67,7 @@ object CommandHandler {
     def flow(): Stream[IO, Unit] =
       messageSource
         .join(4)
-        .observe(increaseTimeoutForZoneSyncs)
+        .observe(increaseTimeoutWhenSyncing)
         .through(changeRequestProcessor)
         .to(updateQueue)
         .handleErrorWith { error =>
@@ -108,8 +108,8 @@ object CommandHandler {
     pollingStream()
   }
 
-  /* We should only change visibility timeout for zone syncs, which could take minutes */
-  def changeVisibilityTimeoutForZoneSyncs(mq: MessageQueue): Sink[IO, CommandMessage] =
+  /* We should only change visibility timeout for zone syncs and creates, which could take minutes */
+  def changeVisibilityTimeoutWhenSyncing(mq: MessageQueue): Sink[IO, CommandMessage] =
     _.evalMap { message =>
       message.command match {
         case sync: ZoneChange
@@ -127,7 +127,8 @@ object CommandHandler {
   def processChangeRequests(
       zoneChangeProcessor: ZoneChange => IO[ZoneChange],
       recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
-      zoneSyncProcessor: ZoneChange => IO[ZoneChange]): Pipe[IO, CommandMessage, MessageOutcome] =
+      zoneSyncProcessor: ZoneChange => IO[ZoneChange],
+      defaultConn: ZoneConnection): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[MessageOutcome] { message =>
       message.command match {
         case sync: ZoneChange
@@ -146,7 +147,7 @@ object CommandHandler {
 
         case rcr: RecordSetChange =>
           val dnsConn =
-            DnsConnection(rcr.zone.connection.getOrElse(VinylDNSConfig.defaultZoneConnection))
+            DnsConnection(rcr.zone.connection.getOrElse(defaultConn))
           outcomeOf(message)(recordChangeProcessor(dnsConn, rcr))
       }
     }
@@ -175,18 +176,19 @@ object CommandHandler {
         // Nothing to do here, the message will be retried after visibility timeout
         logger.error(s"Message failed, retrying; $msg")
         mq.requeue(msg)
-    }.map(_ => ())
+    }.as(())
 
   def run(
       mq: MessageQueue,
-      count: MessageCount,
+      msgsPerPoll: MessageCount,
       processingSignal: Signal[IO, Boolean],
       pollingInterval: FiniteDuration,
       zoneRepo: ZoneRepository,
       zoneChangeRepo: ZoneChangeRepository,
       recordSetRepo: RecordSetRepository,
       recordChangeRepo: RecordChangeRepository,
-      batchChangeRepo: BatchChangeRepository)(implicit scheduler: Scheduler): IO[Unit] = {
+      batchChangeRepo: BatchChangeRepository,
+      defaultConn: ZoneConnection)(implicit scheduler: Scheduler): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
       ZoneChangeHandler(zoneRepo, zoneChangeRepo)
@@ -201,9 +203,11 @@ object CommandHandler {
         recordChangeHandler,
         zoneSyncHandler,
         mq,
-        count,
+        msgsPerPoll,
         pollingInterval,
-        processingSignal)
+        processingSignal,
+        defaultConn
+      )
       .compile
       .drain
   }
