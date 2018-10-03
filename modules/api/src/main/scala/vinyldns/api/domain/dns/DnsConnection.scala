@@ -84,7 +84,7 @@ class DnsQuery(val lookup: DNS.Lookup, val zoneName: DNS.Name) {
   def error: String = lookup.getErrorString
 }
 
-class DnsConnection(val resolver: DNS.Resolver) extends DnsConversions {
+class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
 
   import DnsProtocol._
 
