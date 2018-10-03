@@ -155,8 +155,6 @@ class BatchChangeServiceSpec
     override def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = {
       val zones = for {
         zoneInDB <- dbZones
-        zoneMatch <- zoneNames
-        if zoneInDB.name.endsWith(zoneMatch)
       } yield zoneInDB
       IO.pure(zones)
     }
