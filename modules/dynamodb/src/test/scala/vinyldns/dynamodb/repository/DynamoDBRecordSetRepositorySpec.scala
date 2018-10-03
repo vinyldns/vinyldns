@@ -72,7 +72,7 @@ class DynamoDBRecordSetRepositorySpec
     }
 
     "group change sets into batch writes with 25 in each" in {
-      val changes = for (i <- 1 to 52) yield pendingCreateAAAA
+      val changes = for (_ <- 1 to 52) yield pendingCreateAAAA
       val batchCaptor = ArgumentCaptor.forClass(classOf[Seq[WriteRequest]])
       val dynamoResponse = mock[BatchWriteItemResult]
       val dynamoRequest = mock[BatchWriteItemRequest]
@@ -108,7 +108,7 @@ class DynamoDBRecordSetRepositorySpec
     }
 
     "returns a future failure if any batch fails" in {
-      val changes = for (i <- 0 to 52) yield pendingCreateAAAA
+      val changes = for (_ <- 0 to 52) yield pendingCreateAAAA
       val dynamoResponse = mock[BatchWriteItemResult]
       val unprocessed = mock[java.util.Map[String, AttributeValue]]
       doReturn(null).when(unprocessed).get(anyString())

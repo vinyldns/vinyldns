@@ -49,7 +49,7 @@ class DynamoDBRecordChangeRepositorySpec
 
   "DynamoDBRecordChangeRepository.save" should {
     "group change sets into batch writes with 25 in each" in {
-      val changes = for (i <- 1 to 52) yield pendingCreateAAAA
+      val changes = for (_ <- 1 to 52) yield pendingCreateAAAA
       val changeSet = ChangeSet(changes)
 
       val batchCaptor = ArgumentCaptor.forClass(classOf[Seq[WriteRequest]])
@@ -81,7 +81,7 @@ class DynamoDBRecordChangeRepositorySpec
     }
 
     "returns a future failure if the first batch fails" in {
-      val changes = for (i <- 0 to 52) yield pendingCreateAAAA
+      val changes = for (_ <- 0 to 52) yield pendingCreateAAAA
       val changeSet = ChangeSet(changes)
 
       val dynamoResponse = mock[BatchWriteItemResult]
@@ -100,7 +100,7 @@ class DynamoDBRecordChangeRepositorySpec
     }
 
     "returns a future failure if any batch fails" in {
-      val changes = for (i <- 0 to 52) yield pendingCreateAAAA
+      val changes = for (_ <- 0 to 52) yield pendingCreateAAAA
       val changeSet = ChangeSet(changes)
 
       val dynamoResponse = mock[BatchWriteItemResult]
