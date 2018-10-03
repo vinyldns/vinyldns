@@ -16,23 +16,68 @@
 
 package vinyldns.sqs.queue
 
+import java.util.UUID
+import java.util.concurrent.TimeUnit.SECONDS
+
 import cats.data.NonEmptyList
 import cats.effect.IO
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.model._
+import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
+import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
+import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.domain.zone.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
-
-import scala.concurrent.duration.FiniteDuration
-import scala.collection.JavaConverters._
+import vinyldns.core.route.Monitor
 import vinyldns.sqs.queue.SqsConverters._
 
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.FiniteDuration
+
+// Unique identifier corresponding to action of receiving the message, not the message itself. Only this info
+// is required for actions like removal and changing message timeout in AWS SQS
 final case class ReceiptHandle(value: String) extends MessageHandle
 
-class SqsMessageQueue(liveSqsConnection: LiveSqsConnection)
+case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
     extends MessageQueue
     with ProtobufConversions {
-  import liveSqsConnection._
+
+  // Helper function for monitoring instrumentation
+  private def monitored[A](name: String)(f: => IO[A]): IO[A] = {
+    val monitor = Monitor(name)
+    val startTime = System.currentTimeMillis
+
+    def timeAndRecord: Boolean => Unit = monitor.capture(monitor.duration(startTime), _)
+
+    def failed(): Unit = timeAndRecord(false)
+    def succeeded(): Unit = timeAndRecord(true)
+
+    f.attempt.flatMap {
+      case Left(error) =>
+        failed()
+        IO.raiseError(error)
+      case Right(ok) =>
+        succeeded()
+        IO.pure(ok)
+    }
+  }
+
+  // Helper for handling SQS requests and responses
+  private def sqsAsync[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
+      request: A,
+      f: (A, AsyncHandler[A, B]) => java.util.concurrent.Future[B]): IO[B] =
+    IO.async[B] { complete: (Either[Throwable, B] => Unit) =>
+      val asyncHandler = new AsyncHandler[A, B] {
+        def onError(exception: Exception): Unit = complete(Left(exception))
+
+        def onSuccess(request: A, result: B): Unit = complete(Right(result))
+      }
+
+      f(request, asyncHandler)
+    }
 
   def receive(count: MessageCount): IO[List[CommandMessage]] =
     monitored("sqs.receiveMessageBatch") {
@@ -54,7 +99,8 @@ class SqsMessageQueue(liveSqsConnection: LiveSqsConnection)
         client.deleteMessageAsync)).map(_ => ())
 
   // AWS SQS has no explicit requeue mechanism; use changeMessageTimeout instead
-  def requeue(message: CommandMessage): IO[Unit] = IO.unit
+  def requeue(message: CommandMessage): IO[Unit] =
+    changeMessageTimeout(message, new FiniteDuration(120, SECONDS))
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitored("sqs.sendMessage")(
@@ -63,30 +109,50 @@ class SqsMessageQueue(liveSqsConnection: LiveSqsConnection)
           .withQueueUrl(queueUrl),
         client.sendMessageAsync)).map(_ => ())
 
-  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
-    IO.pure(SendBatchResult(List(), List()))
-  /*
-  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
+  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] = {
+    val idLookup = messages.toList.map(UUID.randomUUID().toString -> _)
     monitored("sqs.sendMessageBatch")(
       sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
-        toSendMessageRequest(messages)
+        toSendMessageRequest(messages, idLookup)
           .withQueueUrl(queueUrl),
         client.sendMessageBatchAsync))
-      .map{
-      batchResult =>
-        val successes = batchResult.getSuccessful.asScala.map(fromMessage).toList
+      .map { batchResult =>
+        val idLookupMap = idLookup.toMap
+        val successes = batchResult.getSuccessful.asScala.map(fromMessage(_, idLookupMap)).toList
         val failures = batchResult.getFailed.asScala.map(fromMessage).toList
         SendBatchResult(successes, failures)
       }
-   */
+  }
 
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitored("sqs.changeMessageTimeout")(
       sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
         new ChangeMessageVisibilityRequest()
           .withReceiptHandle(message.handle.asInstanceOf[ReceiptHandle].value)
-          .withVisibilityTimeout(1600) // 1800 seconds == 30 minutes
+          .withVisibilityTimeout(duration._1.toInt) // 1800 seconds == 30 minutes
           .withQueueUrl(queueUrl),
         client.changeMessageVisibilityAsync
       )).map(_ => ())
+
+  def shutdown(): Unit = client.shutdown()
+}
+
+object SqsMessageQueue {
+  def apply(config: Config = ConfigFactory.load().getConfig("sqs")): SqsMessageQueue = {
+    val accessKey = config.getString("access-key")
+    val secretKey = config.getString("secret-key")
+    val serviceEndpoint = config.getString("service-endpoint")
+    val signingRegion = config.getString("signing-region")
+    val queueUrl = config.getString("queue-url")
+
+    val client =
+      AmazonSQSAsyncClientBuilder
+        .standard()
+        .withEndpointConfiguration(new EndpointConfiguration(serviceEndpoint, signingRegion))
+        .withCredentials(
+          new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
+        .build()
+
+    new SqsMessageQueue(queueUrl, client)
+  }
 }
