@@ -98,6 +98,7 @@ object VinylDNSService {
   }
 }
 
+// $COVERAGE-OFF$
 class VinylDNSService(
     val membershipService: MembershipServiceAlgebra,
     val processingDisabled: Signal[IO, Boolean],
@@ -149,3 +150,4 @@ class VinylDNSService(
       unloggedRoutes ~ authenticatedRoutes)
   val routes = vinyldnsRoutes
 }
+// $COVERAGE-ON$
