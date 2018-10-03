@@ -229,7 +229,9 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     }
 
     $scope.groupAdmin = function(group) {
-        var isAdmin = group.admins.find(x => x.id === $scope.profile.id);
+        var isAdmin = group.admins.find(function (x) {
+          return x.id === $scope.profile.id;
+        });
         var isSuper = $scope.profile.isSuper;
         return (isAdmin || isSuper) ? true : false;
     }
