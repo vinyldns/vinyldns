@@ -28,9 +28,9 @@ import vinyldns.proto.VinylDNSProto
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
-class SqsConvertersSpec extends WordSpec with Matchers with MockitoSugar {
+class SqsMessageQueueSpec extends WordSpec with Matchers with MockitoSugar {
 
-  import vinyldns.sqs.queue.SqsConverters._
+  import vinyldns.sqs.queue.SqsMessageQueue._
 
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
