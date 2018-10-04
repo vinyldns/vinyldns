@@ -61,7 +61,6 @@ object DynamoDBRecordChangeRepository {
     val tableAttributes =
       Seq(
         new AttributeDefinition(RECORD_SET_CHANGE_ID, "S"),
-        new AttributeDefinition(CHANGE_SET_STATUS, "N"),
         new AttributeDefinition(ZONE_ID, "S"),
         new AttributeDefinition(RECORD_SET_CHANGE_CREATED_TIMESTAMP, "N")
       )
