@@ -106,7 +106,7 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
   // AWS SQS has no explicit requeue mechanism; need to delete and re-add while specifying
   // message visibility
   def requeue(message: CommandMessage): IO[Unit] =
-    changeMessageTimeout(message, new FiniteDuration(120, SECONDS))
+    changeMessageTimeout(message, new FiniteDuration(2, SECONDS))
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitored("sqs.sendMessage")(
@@ -146,7 +146,7 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
 }
 
 object SqsMessageQueue extends ProtobufConversions {
-  private val logger = LoggerFactory.getLogger("vinyldns.sqs.queue.SqsConverters")
+  private val logger = LoggerFactory.getLogger("vinyldns.sqs.queue.SqsMessageQueue")
 
   sealed abstract class SqsMessageType(val name: String)
   case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage")
