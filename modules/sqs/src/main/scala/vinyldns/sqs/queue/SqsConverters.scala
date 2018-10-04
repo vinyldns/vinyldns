@@ -19,6 +19,7 @@ package vinyldns.sqs.queue
 import java.util.Base64
 
 import cats.data.NonEmptyList
+import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.services.sqs.model._
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.record.RecordSetChange
@@ -27,7 +28,6 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 object SqsConverters extends ProtobufConversions {
 
@@ -37,40 +37,49 @@ object SqsConverters extends ProtobufConversions {
   case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage")
   case object SqsZoneChangeMessage extends SqsMessageType("SqsZoneChangeMessage")
 
+  implicit class AmazonWebServiceRequestImprovements[A <: AmazonWebServiceRequest](
+      baseMessage: SendMessageRequest) {
+    def withMessageType(messageTypeName: String): SendMessageRequest =
+      baseMessage
+        .withMessageAttributes(
+          Map(
+            "message-type" -> new MessageAttributeValue()
+              .withStringValue(messageTypeName)
+              .withDataType("String")
+          ).asJava
+        )
+  }
+
+  implicit class SendMessageBatchRequestEntryImprovements(
+      baseRequestEntry: SendMessageBatchRequestEntry) {
+    def withMessageType(messageTypeName: String): SendMessageBatchRequestEntry =
+      baseRequestEntry
+        .withMessageAttributes(
+          Map(
+            "message-type" -> new MessageAttributeValue()
+              .withStringValue(messageTypeName)
+              .withDataType("String")
+          ).asJava
+        )
+  }
+
   def parseMessageType(messageType: String): SqsMessageType = messageType match {
     case SqsRecordSetChangeMessage.name => SqsRecordSetChangeMessage
     case SqsZoneChangeMessage.name => SqsZoneChangeMessage
   }
 
-  def toSendMessageRequest(cmd: ZoneCommand): SendMessageRequest = cmd match {
-    case rsc: RecordSetChange => toSendMessageRequest(rsc)
-    case zc: ZoneChange => toSendMessageRequest(zc)
-  }
+  def toSendMessageRequest(zoneCommand: ZoneCommand): SendMessageRequest = {
+    val messageTypeBytesTuple = zoneCommand match {
+      case rsc: RecordSetChange => (SqsRecordSetChangeMessage.name, toPB(rsc).toByteArray)
+      case zc: ZoneChange => (SqsZoneChangeMessage.name, toPB(zc).toByteArray)
+    }
 
-  def toSendMessageRequest(recordSetChange: RecordSetChange): SendMessageRequest = {
-    val bytes = toPB(recordSetChange).toByteArray
-    val messageBody = Base64.getEncoder.encodeToString(bytes)
-    new SendMessageRequest()
-      .withMessageBody(messageBody)
-      .withMessageAttributes(
-        Map(
-          "message-type" -> new MessageAttributeValue()
-            .withStringValue(SqsRecordSetChangeMessage.name)
-            .withDataType("String")
-        ).asJava)
-  }
-
-  def toSendMessageRequest(zoneChange: ZoneChange): SendMessageRequest = {
-    val bytes = toPB(zoneChange).toByteArray
-    val messageBody = Base64.getEncoder.encodeToString(bytes)
-    new SendMessageRequest()
-      .withMessageBody(messageBody)
-      .withMessageAttributes(
-        Map(
-          "message-type" -> new MessageAttributeValue()
-            .withStringValue(SqsZoneChangeMessage.name)
-            .withDataType("String")
-        ).asJava)
+    messageTypeBytesTuple match {
+      case (messageType, messageBytes) =>
+        new SendMessageRequest()
+          .withMessageBody(Base64.getEncoder.encodeToString(messageBytes))
+          .withMessageType(messageType)
+    }
   }
 
   def toSendMessageRequest[A <: ZoneCommand](messages: NonEmptyList[A]): SendMessageBatchRequest = {
@@ -87,12 +96,7 @@ object SqsConverters extends ProtobufConversions {
           new SendMessageBatchRequestEntry()
             .withMessageBody(Base64.getEncoder.encodeToString(messageBytes))
             .withId(id)
-            .withMessageAttributes(
-              Map(
-                "message-type" -> new MessageAttributeValue()
-                  .withStringValue(messageType)
-                  .withDataType("String")
-              ).asJava)
+            .withMessageType(messageType)
       }
       .toList
       .asJava
@@ -142,15 +146,6 @@ object SqsConverters extends ProtobufConversions {
       case zoneChange: ZoneChange =>
         (new Exception(Base64.getDecoder.decode(messageBytes).toString), zoneChange)
       case None => throw new Exception("Could not find send batch error zone command")
-    }
-  }
-
-  def toRecordSetChange(message: Message): Try[RecordSetChange] = {
-    logger.info(
-      s"Received message with attributes ${message.getMessageAttributes.asScala}, ${message.getAttributes.asScala}")
-    Try {
-      val messageBytes = Base64.getDecoder.decode(message.getBody)
-      fromPB(VinylDNSProto.RecordSetChange.parseFrom(messageBytes))
     }
   }
 }

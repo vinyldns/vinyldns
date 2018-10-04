@@ -52,7 +52,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
   val rsAddChange: RecordSetChange = makeTestAddChange(rsOk)
 
-  "SqsMessageQueueSpec" should {
+  "SqsMessageQueueIntegrationSpec" should {
     "receive a single message from the queue" in {
       queue.send(rsAddChange).unsafeRunSync()
 
@@ -106,9 +106,12 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     "send a message batch request" in {
       val messages = NonEmptyList.fromListUnsafe(List(rsAddChange, zoneChangePending))
 
-      val result = queue.send(messages).unsafeRunSync()
-      result.successes should have length 2
-      result.failures shouldBe empty
+      val sendResult = queue.send(messages).unsafeRunSync()
+      val receiveResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+
+      sendResult.successes should have length 2
+      sendResult.failures shouldBe empty
+      receiveResult.map(_.command) should contain theSameElementsAs List(rsAddChange, zoneChangePending)
     }
 
     "change message visibility timeouts" in {
