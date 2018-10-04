@@ -1634,14 +1634,12 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
             # valid change
             get_change_PTR_json("192.0.2.44", ptrdname="base.vinyldns"),
             get_change_PTR_json("192.0.2.198", ptrdname="delegated.vinyldns"),
+            get_change_PTR_json("192.0.2.197"),
+            get_change_PTR_json("192.0.2.197", ptrdname="ptrdata."),
 
             # input validation failures
             get_change_PTR_json("invalidip.111."),
             get_change_PTR_json("4.5.6.7", ttl=29, ptrdname="-1.2.3.4"),
-
-            # duplicate PTR name failures
-            get_change_PTR_json("192.0.2.197"),
-            get_change_PTR_json("192.0.2.197", ptrdname="ptrdata."),
 
             # delegated and non-delegated PTR duplicate name checks
             get_change_PTR_json("192.0.2.196"), # delegated zone
@@ -1674,21 +1672,18 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[0], input_name="192.0.2.44", record_type="PTR", record_data="base.vinyldns.")
         assert_successful_change_in_error_response(response[1], input_name="192.0.2.198", record_type="PTR", record_data="delegated.vinyldns.")
 
+
+        # duplicate names succeed for ptr
+        assert_successful_change_in_error_response(response[2], input_name="192.0.2.197", record_type="PTR", record_data="test.com.")
+        assert_successful_change_in_error_response(response[3], input_name="192.0.2.197", record_type="PTR", record_data="ptrdata.")
+
         # input validation failures: invalid ip, ttl, data
-        assert_failed_change_in_error_response(response[2], input_name="invalidip.111.", record_type="PTR", record_data="test.com.",
+        assert_failed_change_in_error_response(response[4], input_name="invalidip.111.", record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid IP address: "invalidip.111.".'])
-        assert_failed_change_in_error_response(response[3], input_name="4.5.6.7", ttl=29, record_type="PTR", record_data="-1.2.3.4.",
+        assert_failed_change_in_error_response(response[5], input_name="4.5.6.7", ttl=29, record_type="PTR", record_data="-1.2.3.4.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "-1.2.3.4.", '
                                                                'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
-
-        # duplicate names always fail for ptr
-        assert_failed_change_in_error_response(response[4], input_name="192.0.2.197", record_type="PTR", record_data="test.com.",
-                                               error_messages=['Record Name "192.0.2.197" Not Unique In Batch Change:'
-                                                               ' cannot have multiple "PTR" records with the same name.'])
-        assert_failed_change_in_error_response(response[5], input_name="192.0.2.197", record_type="PTR", record_data="ptrdata.",
-                                               error_messages=['Record Name "192.0.2.197" Not Unique In Batch Change:'
-                                                               ' cannot have multiple "PTR" records with the same name.'])
 
         # delegated and non-delegated PTR duplicate name checks
         assert_successful_change_in_error_response(response[6], input_name="192.0.2.196", record_type="PTR", record_data="test.com.")
@@ -1782,6 +1777,11 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[5], input_name="17.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="replace-ptr.cname.")
         assert_successful_change_in_error_response(response[6], input_name="192.0.2.17", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
 
+        #successful changes: record input_name does not have to be unique
+        assert_successful_change_in_error_response(response[14], input_name="192.0.2.50", record_type="PTR", change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[15], input_name="192.0.2.50", record_type="PTR", record_data="test.com.")
+        assert_successful_change_in_error_response(response[16], input_name="192.0.2.50", record_type="PTR", record_data="test.com.", ttl=350)
+
         # input validations failures: invalid IP, ttl, and record data
         assert_failed_change_in_error_response(response[7], input_name="1.1.1", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=['Invalid IP address: "1.1.1".'])
@@ -1796,17 +1796,12 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[10], input_name="192.0.1.25", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Zone Discovery Failed: zone for \"192.0.1.25\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
 
-        # context validation failures: record does not exist, failure on update with double add
+        # context validation failures: record does not exist
         assert_failed_change_in_error_response(response[11], input_name="192.0.2.199", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"192.0.2.199\" Does Not Exist: cannot delete a record that does not exist."])
         assert_successful_change_in_error_response(response[12], ttl=300, input_name="192.0.2.200", record_type="PTR", record_data="has-updated.ptr.")
         assert_failed_change_in_error_response(response[13], input_name="192.0.2.200", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"192.0.2.200\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[14], input_name="192.0.2.50", record_type="PTR", change_type="DeleteRecordSet"),
-        assert_failed_change_in_error_response(response[15], input_name="192.0.2.50", record_type="PTR", record_data="test.com.",
-                                               error_messages=['Record Name "192.0.2.50" Not Unique In Batch Change: cannot have multiple "PTR" records with the same name.'])
-        assert_failed_change_in_error_response(response[16], input_name="192.0.2.50", record_type="PTR", record_data="test.com.", ttl=350,
-                                               error_messages=['Record Name "192.0.2.50" Not Unique In Batch Change: cannot have multiple "PTR" records with the same name.'])
 
     finally:
         clear_recordset_list(to_delete, ok_client)
@@ -1824,6 +1819,8 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         "changes": [
             # valid change
             get_change_PTR_json("fd69:27cc:fe91::1234"),
+            get_change_PTR_json("fd69:27cc:fe91::abc", ptrdname="duplicate.record1."),
+            get_change_PTR_json("fd69:27cc:fe91::abc", ptrdname="duplicate.record2."),
 
             # input validation failures
             get_change_PTR_json("fd69:27cc:fe91::abe", ttl=29),
@@ -1834,8 +1831,6 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
             get_change_PTR_json("fedc:ba98:7654::abc", ptrdname="zone.discovery.error."),
 
             # context validation failures
-            get_change_PTR_json("fd69:27cc:fe91::abc", ptrdname="duplicate.record1."),
-            get_change_PTR_json("fd69:27cc:fe91::abc", ptrdname="duplicate.record2."),
             get_change_PTR_json("fd69:27cc:fe91::ffff", ptrdname="existing.ptr.")
         ]
     }
@@ -1852,24 +1847,23 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="fd69:27cc:fe91::1234", record_type="PTR", record_data="test.com.")
 
-        # independent validations: bad TTL, malformed host name/IP address, duplicate record
-        assert_failed_change_in_error_response(response[1], input_name="fd69:27cc:fe91::abe", ttl=29, record_type="PTR", record_data="test.com.",
+        # successful changes: input_name does not have to be unique
+        assert_successful_change_in_error_response(response[1], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record1.")
+        assert_successful_change_in_error_response(response[2], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record2.")
+
+    # independent validations: bad TTL, malformed host name/IP address, duplicate record
+        assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91::abe", ttl=29, record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
-        assert_failed_change_in_error_response(response[2], input_name="fd69:27cc:fe91::bae", record_type="PTR", record_data="$malformed.hostname.",
+        assert_failed_change_in_error_response(response[4], input_name="fd69:27cc:fe91::bae", record_type="PTR", record_data="$malformed.hostname.",
                                                error_messages=['Invalid domain name: "$malformed.hostname.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data="malformed.ip.address.",
+        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data="malformed.ip.address.",
                                                error_messages=['Invalid IP address: "fd69:27cc:fe91de::ab".'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[4], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data="zone.discovery.error.",
+        assert_failed_change_in_error_response(response[6], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data="zone.discovery.error.",
                                                error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
 
         # context validations: duplicates in batch, existing record sets pre-request
-        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record1.",
-                                               error_messages=["Record Name \"fd69:27cc:fe91::abc\" Not Unique In Batch Change: cannot have multiple \"PTR\" records with the same name."])
-        assert_failed_change_in_error_response(response[6], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record2.",
-                                               error_messages=["Record Name \"fd69:27cc:fe91::abc\" Not Unique In Batch Change: cannot have multiple \"PTR\" records with the same name."])
-
         assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91::ffff", record_type="PTR", record_data="existing.ptr.",
                                                    error_messages=["Record \"fd69:27cc:fe91::ffff\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
 
@@ -1931,6 +1925,10 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[1], ttl=300, input_name="fd69:27cc:fe91::62", record_type="PTR", record_data="has-updated.ptr.")
         assert_successful_change_in_error_response(response[2], input_name="fd69:27cc:fe91::62", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
 
+        # successful changes: input_name does not have to be unique
+        assert_successful_change_in_error_response(response[11], input_name="fd69:27cc:fe91::1122", record_type="PTR", record_data="test.com.")
+        assert_successful_change_in_error_response(response[12], input_name="fd69:27cc:fe91::1122", record_type="PTR", record_data="test.com.", ttl=350)
+
         # input validations failures: invalid IP, ttl, and record data
         assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=['Invalid IP address: "fd69:27cc:fe91de::ab".'])
@@ -1952,10 +1950,6 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[9], input_name="fd69:27cc:fe91::65", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"fd69:27cc:fe91::65\" Does Not Exist: cannot delete a record that does not exist."])
         assert_successful_change_in_error_response(response[10], input_name="fd69:27cc:fe91::1122", record_type="PTR", change_type="DeleteRecordSet")
-        assert_failed_change_in_error_response(response[11], input_name="fd69:27cc:fe91::1122", record_type="PTR", record_data="test.com.",
-                                               error_messages=["Record Name \"fd69:27cc:fe91::1122\" Not Unique In Batch Change: cannot have multiple \"PTR\" records with the same name."])
-        assert_failed_change_in_error_response(response[12], input_name="fd69:27cc:fe91::1122", record_type="PTR", record_data="test.com.", ttl=350,
-                                               error_messages=["Record Name \"fd69:27cc:fe91::1122\" Not Unique In Batch Change: cannot have multiple \"PTR\" records with the same name."])
 
 
     finally:
