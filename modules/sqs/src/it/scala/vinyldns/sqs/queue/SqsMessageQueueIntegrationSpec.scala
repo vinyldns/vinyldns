@@ -40,7 +40,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
   override protected def afterEach(): Unit = {
     // Remove items from queue after each test
-    val result = queue.receive(MessageCount(10).right.value).unsafeRunSync()
+    val result = queue.receive(MessageCount(100).right.value).unsafeRunSync()
     result.foreach(queue.remove)
   }
 
@@ -102,15 +102,15 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       result(0).command shouldBe a[RecordSetChange]
     }
 
-    "send a message batch request" in {
-      val messages = NonEmptyList.fromListUnsafe(List(rsAddChange, zoneChangePending))
+    "send a message batch request with failures" in {
+      val commands = for (_ <- 0 to 15) yield makeTestAddChange(aaaa, zoneActive)
+      val commandList = commands.toList
 
-      val sendResult = queue.send(messages).unsafeRunSync()
-      val receiveResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      val messages = NonEmptyList.fromListUnsafe(commandList)
 
-      sendResult.successes should have length 2
-      sendResult.failures shouldBe empty
-      receiveResult.map(_.command) should contain theSameElementsAs List(rsAddChange, zoneChangePending)
+      val result = queue.send(messages).unsafeRunSync()
+      result.successes should contain theSameElementsAs commandList
+      result.failures shouldBe empty
     }
 
     "change message visibility timeouts" in {

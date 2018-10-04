@@ -103,7 +103,8 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
           message.handle.asInstanceOf[SqsMessageHandle].receiptHandle),
         client.deleteMessageAsync)).map(_ => ())
 
-  // AWS SQS has no explicit requeue mechanism; use changeMessageTimeout instead
+  // AWS SQS has no explicit requeue mechanism; need to delete and re-add while specifying
+  // message visibility
   def requeue(message: CommandMessage): IO[Unit] =
     changeMessageTimeout(message, new FiniteDuration(120, SECONDS))
 
