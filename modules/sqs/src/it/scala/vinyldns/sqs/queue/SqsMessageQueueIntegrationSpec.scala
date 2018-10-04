@@ -57,7 +57,6 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       queue.send(rsAddChange).unsafeRunSync()
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
-      result.length shouldBe 1
       result.map(_.command) should contain theSameElementsAs List(rsAddChange)
     }
 

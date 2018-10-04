@@ -73,25 +73,24 @@ object SqsConverters extends ProtobufConversions {
         ).asJava)
   }
 
-  def toSendMessageRequest[A <: ZoneCommand](
-      messages: NonEmptyList[A],
-      idLookup: List[(String, A)]): SendMessageBatchRequest = {
+  def toSendMessageRequest[A <: ZoneCommand](messages: NonEmptyList[A]): SendMessageBatchRequest = {
     val messageTypeBytesTuple = messages.map {
       case recordSetChange: RecordSetChange =>
-        (SqsRecordSetChangeMessage.name, toPB(recordSetChange).toByteArray)
-      case zoneChange: ZoneChange => (SqsZoneChangeMessage.name, toPB(zoneChange).toByteArray)
+        (SqsRecordSetChangeMessage.name, recordSetChange.id, toPB(recordSetChange).toByteArray)
+      case zoneChange: ZoneChange =>
+        (SqsZoneChangeMessage.name, zoneChange.id, toPB(zoneChange).toByteArray)
     }
 
-    val messageBatchRequestEntryList = messageTypeBytesTuple.zipWithIndex
+    val messageBatchRequestEntryList = messageTypeBytesTuple
       .map {
-        case ((messageTypeName, messageBytes), index) =>
+        case (messageType, id, messageBytes) =>
           new SendMessageBatchRequestEntry()
             .withMessageBody(Base64.getEncoder.encodeToString(messageBytes))
-            .withId(idLookup(index)._1)
+            .withId(id)
             .withMessageAttributes(
               Map(
                 "message-type" -> new MessageAttributeValue()
-                  .withStringValue(messageTypeName)
+                  .withStringValue(messageType)
                   .withDataType("String")
               ).asJava)
       }

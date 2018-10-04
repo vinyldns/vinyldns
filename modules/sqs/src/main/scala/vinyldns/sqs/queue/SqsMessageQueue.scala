@@ -16,7 +16,6 @@
 
 package vinyldns.sqs.queue
 
-import java.util.UUID
 import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data.NonEmptyList
@@ -111,20 +110,18 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
           .withQueueUrl(queueUrl),
         client.sendMessageAsync)).map(_ => ())
 
-  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] = {
-    val idLookup = messages.toList.map(UUID.randomUUID().toString -> _)
+  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
     monitored("sqs.sendMessageBatch")(
       sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
-        toSendMessageRequest(messages, idLookup)
+        toSendMessageRequest(messages)
           .withQueueUrl(queueUrl),
         client.sendMessageBatchAsync))
       .map { batchResult =>
-        val idLookupMap = idLookup.toMap
+        val idLookupMap = messages.toList.map(zc => zc.id -> zc).toMap
         val successes = batchResult.getSuccessful.asScala.map(fromMessage(_, idLookupMap)).toList
         val failures = batchResult.getFailed.asScala.map(fromMessage(_, idLookupMap)).toList
         SendBatchResult(successes, failures)
       }
-  }
 
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitored("sqs.changeMessageTimeout")(

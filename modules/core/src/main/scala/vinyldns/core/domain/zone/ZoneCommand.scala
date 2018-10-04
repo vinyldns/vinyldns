@@ -17,6 +17,7 @@
 package vinyldns.core.domain.zone
 
 trait ZoneCommand {
+  val id: String
   val zoneId: String
   val id: String
 }
