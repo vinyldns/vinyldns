@@ -17,16 +17,17 @@
 package vinyldns.sqs.queue
 
 import java.util.Base64
-import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data.NonEmptyList
 import cats.effect.IO
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
+import com.amazonaws.retry.PredefinedBackoffStrategies.ExponentialBackoffStrategy
+import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
-import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
+import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult, ClientConfiguration}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneCommand}
@@ -104,9 +105,9 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
         client.deleteMessageAsync)).map(_ => ())
 
   // AWS SQS has no explicit requeue mechanism; need to delete and re-add while specifying
-  // message visibility
-  def requeue(message: CommandMessage): IO[Unit] =
-    changeMessageTimeout(message, new FiniteDuration(2, SECONDS))
+  // message visibility. AWS natively applies an exponential back-off retry mechanism
+  // (see: https://docs.aws.amazon.com/general/latest/gr/api-retries.html).
+  def requeue(message: CommandMessage): IO[Unit] = IO.unit
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitored("sqs.sendMessage")(
@@ -188,6 +189,13 @@ object SqsMessageQueue extends ProtobufConversions {
     val client =
       AmazonSQSAsyncClientBuilder
         .standard()
+        .withClientConfiguration(new ClientConfiguration()
+        .withRetryPolicy(new RetryPolicy(
+          RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
+          new ExponentialBackoffStrategy(0, 64), // Base delay and max back-off delay of 64
+          100, // Max error retry count (set to dead-letter count); default is 3
+          true
+        )))
         .withEndpointConfiguration(new EndpointConfiguration(serviceEndpoint, signingRegion))
         .withCredentials(
           new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
