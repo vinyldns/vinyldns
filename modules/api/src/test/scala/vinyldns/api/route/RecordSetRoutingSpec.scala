@@ -28,8 +28,14 @@ import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.{
+  RecordSetChange,
+  RecordSetChangeStatus,
+  RecordSetChangeType,
+  ZoneCommandResult
+}
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._

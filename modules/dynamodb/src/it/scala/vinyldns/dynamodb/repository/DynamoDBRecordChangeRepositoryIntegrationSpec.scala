@@ -21,11 +21,12 @@ import java.util.UUID
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
-import vinyldns.core.domain.record.{ChangeSet, ChangeSetStatus, RecordSetChange}
+import vinyldns.core.domain.record.{ChangeSet, ChangeSetStatus}
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
 import vinyldns.core.TestMembershipData.abcAuth
 import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.TestRecordSetData._
+import vinyldns.core.domain.RecordSetChange
 
 import scala.concurrent.duration._
 

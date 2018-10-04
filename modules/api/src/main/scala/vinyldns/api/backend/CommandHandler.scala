@@ -22,8 +22,9 @@ import fs2.async.mutable.Signal
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.engine.{RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncHandler}
+import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneChangeType}
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 

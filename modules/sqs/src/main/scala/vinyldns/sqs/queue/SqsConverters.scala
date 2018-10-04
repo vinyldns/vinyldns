@@ -22,8 +22,7 @@ import cats.data.NonEmptyList
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.services.sqs.model._
 import org.slf4j.LoggerFactory
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
+import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
 
@@ -127,7 +126,6 @@ object SqsConverters extends ProtobufConversions {
     zoneCommand match {
       case recordSetChange: RecordSetChange => recordSetChange
       case zoneChange: ZoneChange => zoneChange
-      case None => throw new Exception("Could not find send batch zone command")
     }
   }
 
@@ -137,7 +135,6 @@ object SqsConverters extends ProtobufConversions {
     logger.info(
       s"Received message with attributes ${batchResultErrorEntry.getMessage}, " +
         s"${batchResultErrorEntry.getCode}")
-
     val messageBytes = Base64.getDecoder.decode(batchResultErrorEntry.getMessage)
     val zoneCommand = idLookup.getOrElse(batchResultErrorEntry.getId, None)
     zoneCommand match {
@@ -145,7 +142,6 @@ object SqsConverters extends ProtobufConversions {
         (new Exception(Base64.getDecoder.decode(messageBytes).toString), recordSetChange)
       case zoneChange: ZoneChange =>
         (new Exception(Base64.getDecoder.decode(messageBytes).toString), zoneChange)
-      case None => throw new Exception("Could not find send batch error zone command")
     }
   }
 }

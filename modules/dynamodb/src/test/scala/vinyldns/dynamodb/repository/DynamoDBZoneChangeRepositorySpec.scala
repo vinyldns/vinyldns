@@ -22,10 +22,10 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 import cats.effect._
 import vinyldns.dynamodb.DynamoTestConfig
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 
 class DynamoDBZoneChangeRepositorySpec
     extends WordSpec

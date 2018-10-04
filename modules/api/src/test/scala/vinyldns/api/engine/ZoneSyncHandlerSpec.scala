@@ -26,6 +26,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
+import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 

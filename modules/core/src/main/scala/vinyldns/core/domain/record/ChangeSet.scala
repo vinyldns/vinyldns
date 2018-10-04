@@ -19,6 +19,7 @@ package vinyldns.core.domain.record
 import java.util.UUID
 
 import org.joda.time.DateTime
+import vinyldns.core.domain.RecordSetChange
 
 sealed trait ChangeSetStatus {
   def intValue: Int = this match {

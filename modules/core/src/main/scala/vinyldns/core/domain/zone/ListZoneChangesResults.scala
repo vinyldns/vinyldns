@@ -15,6 +15,7 @@
  */
 
 package vinyldns.core.domain.zone
+import vinyldns.core.domain.ZoneChange
 
 case class ListZoneChangesResults(
     items: List[ZoneChange] = List[ZoneChange](),

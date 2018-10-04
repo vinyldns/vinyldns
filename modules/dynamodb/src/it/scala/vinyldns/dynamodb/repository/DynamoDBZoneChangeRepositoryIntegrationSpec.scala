@@ -23,6 +23,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestMembershipData.now
+import vinyldns.core.domain.{ZoneChange, ZoneChangeType}
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -47,7 +48,7 @@ class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpe
   private val zones = okZones
 
   private val statuses = {
-    import vinyldns.core.domain.zone.ZoneChangeStatus._
+    import vinyldns.core.domain.ZoneChangeStatus._
     Pending :: Complete :: Failed :: Synced :: Nil
   }
   private val changes = for {zone <- zones; status <- statuses} yield

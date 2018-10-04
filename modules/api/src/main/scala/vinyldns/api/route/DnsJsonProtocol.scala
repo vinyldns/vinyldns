@@ -25,6 +25,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import vinyldns.api.domain.zone.RecordSetInfo
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 

@@ -18,6 +18,7 @@ package vinyldns.core
 
 import vinyldns.core.domain.zone._
 import TestMembershipData._
+import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 
 object TestZoneData {
 

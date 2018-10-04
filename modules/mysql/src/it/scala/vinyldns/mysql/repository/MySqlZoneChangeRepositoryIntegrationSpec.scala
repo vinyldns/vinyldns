@@ -23,10 +23,11 @@ import org.joda.time.DateTime
 import org.scalatest._
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.User
-import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
+import vinyldns.core.domain.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestZoneData.testConnection
+import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 
 import scala.concurrent.duration._
 import scala.util.Random

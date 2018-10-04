@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.record._
 import TestZoneData._
 import TestMembershipData._
+import vinyldns.core.domain.{RecordSetChange, RecordSetChangeStatus, RecordSetChangeType}
 import vinyldns.core.domain.zone.Zone
 
 object TestRecordSetData {

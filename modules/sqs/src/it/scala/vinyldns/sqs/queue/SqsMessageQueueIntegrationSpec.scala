@@ -24,8 +24,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.ZoneCommand
+import vinyldns.core.domain.{RecordSetChange, ZoneCommand}
 import vinyldns.core.queue.{CommandMessage, MessageCount}
 
 import scala.concurrent.duration.FiniteDuration

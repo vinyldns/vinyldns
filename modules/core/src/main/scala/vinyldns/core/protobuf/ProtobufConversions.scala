@@ -17,10 +17,10 @@
 package vinyldns.core.protobuf
 
 import org.joda.time.DateTime
+import vinyldns.core.domain._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-import vinyldns.core.domain.{record, zone}
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
@@ -45,7 +45,7 @@ trait ProtobufConversions {
     else ZoneACL()
 
   def fromPB(chg: VinylDNSProto.RecordSetChange): RecordSetChange =
-    record.RecordSetChange(
+    RecordSetChange(
       zone = fromPB(chg.getZone),
       recordSet = fromPB(chg.getRecordSet),
       userId = chg.getUserId,
@@ -78,7 +78,7 @@ trait ProtobufConversions {
       name = zn.getName,
       email = zn.getEmail,
       status =
-        if (zn.getStatus() == "Pending") ZoneStatus.Active else ZoneStatus.withName(zn.getStatus()),
+        if (zn.getStatus == "Pending") ZoneStatus.Active else ZoneStatus.withName(zn.getStatus),
       created = new DateTime(zn.getCreated),
       updated = if (zn.hasUpdated) Some(new DateTime(zn.getUpdated)) else None,
       id = zn.getId,

@@ -17,12 +17,8 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
-import vinyldns.core.domain.zone.{
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus,
-  ZoneRepository
-}
+import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus}
+import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 
 object ZoneChangeHandler {
 

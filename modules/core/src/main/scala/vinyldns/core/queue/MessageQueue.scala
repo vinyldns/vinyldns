@@ -17,7 +17,7 @@
 package vinyldns.core.queue
 import cats.data.NonEmptyList
 import cats.effect.IO
-import vinyldns.core.domain.zone.ZoneCommand
+import vinyldns.core.domain.ZoneCommand
 
 import scala.concurrent.duration.FiniteDuration
 

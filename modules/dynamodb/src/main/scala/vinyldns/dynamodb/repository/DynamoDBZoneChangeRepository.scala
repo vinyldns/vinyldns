@@ -24,7 +24,8 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange, ZoneChangeRepository}
+import vinyldns.core.domain.ZoneChange
+import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChangeRepository}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto

@@ -17,6 +17,7 @@
 package vinyldns.core.domain.record
 
 import cats.effect._
+import vinyldns.core.domain.RecordSetChange
 import vinyldns.core.repository.Repository
 
 trait RecordChangeRepository extends Repository {

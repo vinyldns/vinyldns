@@ -27,7 +27,7 @@ import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import com.typesafe.config.{Config, ConfigFactory}
-import vinyldns.core.domain.zone.ZoneCommand
+import vinyldns.core.domain.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitor

@@ -22,6 +22,7 @@ import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.domain.ZoneCommandResult
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.zone._
 

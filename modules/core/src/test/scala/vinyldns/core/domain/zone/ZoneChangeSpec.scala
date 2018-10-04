@@ -18,6 +18,7 @@ package vinyldns.core.domain.zone
 
 import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 
 class ZoneChangeSpec extends WordSpec with Matchers {
 

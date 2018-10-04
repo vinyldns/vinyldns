@@ -18,9 +18,9 @@ package vinyldns.api.domain.record
 
 import vinyldns.api.Interfaces.Result
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.ZoneCommandResult
 import vinyldns.api.route.ListRecordSetsResponse
-import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
+import vinyldns.core.domain.{RecordSetChange, ZoneCommandResult}
+import vinyldns.core.domain.record.RecordSet
 
 trait RecordSetServiceAlgebra {
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult]

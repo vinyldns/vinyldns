@@ -31,6 +31,7 @@ import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.domain.{RecordSetChange, RecordSetChangeStatus, RecordSetChangeType}
 import vinyldns.dynamodb.repository.{
   DynamoDBRecordChangeRepository,
   DynamoDBRecordSetRepository,

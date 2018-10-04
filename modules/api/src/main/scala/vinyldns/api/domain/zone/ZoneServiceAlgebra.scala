@@ -17,8 +17,9 @@
 package vinyldns.api.domain.zone
 
 import vinyldns.api.Interfaces.Result
+import vinyldns.core.domain.ZoneCommandResult
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.{ACLRuleInfo, Zone, ZoneCommandResult}
+import vinyldns.core.domain.zone.{ACLRuleInfo, Zone}
 
 trait ZoneServiceAlgebra {
 

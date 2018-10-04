@@ -22,16 +22,12 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.core.domain.record.{
-  RecordSet,
-  RecordSetChange,
-  RecordSetChangeType,
-  RecordSetStatus
-}
+import vinyldns.core.domain.record.{RecordSet, RecordSetStatus}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.{RecordSetChange, RecordSetChangeType}
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._

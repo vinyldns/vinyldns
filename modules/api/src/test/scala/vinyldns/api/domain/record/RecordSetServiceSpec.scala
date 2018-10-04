@@ -28,6 +28,7 @@ import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import cats.effect._
+import vinyldns.core.domain.{RecordSetChange, RecordSetChangeStatus, RecordSetChangeType}
 import vinyldns.core.domain.membership.{ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{AccessLevel, ZoneRepository}

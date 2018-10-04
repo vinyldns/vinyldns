@@ -21,6 +21,7 @@ import java.nio.ByteBuffer
 import com.amazonaws.services.dynamodbv2.model._
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
+import vinyldns.core.domain.{RecordSetChange, RecordSetChangeStatus, RecordSetChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
