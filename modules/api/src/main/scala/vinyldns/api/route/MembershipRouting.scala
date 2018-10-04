@@ -93,7 +93,7 @@ trait MembershipRoute extends Directives {
             }
           }
       } ~
-      path("groups" / Segment) { id =>
+      path("groups" / Segment) { _ =>
         put {
           monitor("Endpoint.updateGroup") {
             entity(as[UpdateGroupInput]) { input =>

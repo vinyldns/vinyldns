@@ -35,19 +35,16 @@ trait VinylDNSDirectives extends Directives {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator
 
-  def authenticate: Directive1[AuthPrincipal] =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      extractRequestContext.flatMap { ctx =>
-        extractStrictEntity(10.seconds).flatMap { strictEntity =>
-          onSuccess(
-            vinylDNSAuthenticator.authenticate(ctx, strictEntity.data.utf8String).unsafeToFuture())
-            .flatMap {
-              case Right(authPrincipal) ⇒
-                provide(authPrincipal)
-              case Left(e) ⇒
-                complete(handleAuthenticateError(e))
-            }
-        }
+  def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
+      extractStrictEntity(10.seconds).flatMap { strictEntity =>
+        onSuccess(
+          vinylDNSAuthenticator.authenticate(ctx, strictEntity.data.utf8String).unsafeToFuture())
+          .flatMap {
+            case Right(authPrincipal) ⇒
+              provide(authPrincipal)
+            case Left(e) ⇒
+              complete(handleAuthenticateError(e))
+          }
       }
     }
 

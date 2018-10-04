@@ -39,14 +39,14 @@ object DataStoreLoader {
       accessor <- IO.fromEither(generateAccessor(dataStores, dataAccessorProvider))
     } yield accessor
 
-  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[(DataStoreConfig, DataStore)] = {
-    logger.error(s"Attempting to load repos ${config.repositories.keys} from ${config.className}")
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[(DataStoreConfig, DataStore)] =
     for {
-      className <- IO.pure(config.className)
-      provider <- IO(Class.forName(className).newInstance.asInstanceOf[DataStoreProvider])
+      _ <- IO(
+        logger.error(
+          s"Attempting to load repos ${config.repositories.keys} from ${config.className}"))
+      provider <- IO(Class.forName(config.className).newInstance.asInstanceOf[DataStoreProvider])
       dataStore <- provider.load(config, crypto)
     } yield (config, dataStore)
-  }
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only

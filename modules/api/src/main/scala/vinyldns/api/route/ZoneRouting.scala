@@ -76,7 +76,7 @@ trait ZoneRoute extends Directives {
           complete(StatusCodes.Accepted, chg)
         }
       } ~
-      (put & path("zones" / Segment) & monitor("Endpoint.updateZone")) { id =>
+      (put & path("zones" / Segment) & monitor("Endpoint.updateZone")) { _ =>
         entity(as[Zone]) { zone =>
           execute(zoneService.updateZone(encrypt(zone), authPrincipal)) { chg =>
             complete(StatusCodes.Accepted, chg)
