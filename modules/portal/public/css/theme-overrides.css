@@ -33,6 +33,22 @@ a {
     color: #005fb3;
 }
 
+.btn-warning, .btn-warning:disabled:hover, a.btn-warning {
+    background-color: #fff;
+    border-color: #eea236;
+    color: #eea236;
+}
+
+.btn-warning:focus, .btn-warning:active, .btn-warning:active:hover {
+  background-color: #d58512;
+}
+
+.btn-warning:hover {
+    background-color: #fff;
+    border-color: #d58512;
+    color: #d58512;
+}
+
 .btn-danger, .btn-danger:disabled:hover {
     background-color: #fff;
     border-color: #E04B4A;

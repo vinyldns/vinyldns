@@ -65,7 +65,9 @@
                                         <div class="table-form-group">
                                             <a class="btn btn-info btn-rounded" ng-href="/groups/{{group.id}}">
                                             View</a>
-                                            <button id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
+                                            <a ng-if="groupAdmin(group)" class="btn btn-warning btn-rounded" ng-click="editGroup(group);">
+                                                Edit</a>
+                                            <button ng-if="groupAdmin(group)" id="delete-group-{{group.name}}" class="btn btn-danger btn-rounded" ng-click="confirmDeleteGroup(group);">
                                             Delete</button>
                                         </div>
                                     </td>
@@ -150,6 +152,68 @@
     </div>
 </div>
 <!-- END CREATE GROUP MODAL -->
+
+<!-- EDIT GROUP MODAL -->
+<div class="modal" id="modal_edit_group" tabindex="-1" role="dialog" aria-labelledby="largeModalHead" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form class="form-horizontal" name="submitEditGroupForm" ng-submit="submitEditGroupForm.$valid &&
+        submitEditGroup(currentGroup.name, currentGroup.email, currentGroup.description);"
+              novalidate>
+            <div class="modal-content" id="edit-group-form">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" ng-click="closeEditModal()"><span aria-hidden="true">&times;</span><span class="sr-only">
+                      Close</span></button>
+                    <h4 class="modal-title" id="largeModalHead">Edit Group Details</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="panel-body">
+                        <modal-element label="Name" invalid-when="submitEditGroupForm.$submitted && submitEditGroupForm.name.$invalid">
+                            <input id="edit-group-name"
+                                   name="name"
+                                   class="form-control"
+                                   ng-model="currentGroup.name"
+                                   ng-model-options="{ updateOn: 'submit' }"
+                                   type="text"
+                                   required>
+                            </input>
+                            <span class="help-block">
+                                This should be a single word name used for the groups.  Use hyphens if needed, no spaces.
+                            </span>
+                        </modal-element>
+                        <modal-element label="Email" invalid-when="submitEditGroupForm.$submitted && submitEditGroupForm.email.$invalid">
+                            <input id="edit-group-email"
+                                   name="email"
+                                   class="form-control"
+                                   ng-model="currentGroup.email"
+                                   ng-model-options="{ updateOn: 'submit' }"
+                                   type="text"
+                                   required>
+                            </input>
+                            <span class="help-block">The email distribution list for the group.</span>
+                        </modal-element>
+                        <modal-element label="Description">
+                            <input id="edit-group-description"
+                                   name="description"
+                                   class="form-control"
+                                   ng-model="currentGroup.description"
+                                   ng-model-options="{ updateOn: 'submit' }"
+                                   type="text">
+                            </input>
+                            <span class="help-block">
+                              A short description of the group, if more info is needed other than the name.
+                            </span>
+                        </modal-element>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="edit-group-button" class="btn btn-primary pull-right">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeEditModal()">Close</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- END EDIT GROUP MODAL -->
 
 <!-- DELETE GROUP MODAL -->
 <form name="deleteGroupForm" ng-submit="deleteGroup()" role="form" class="form-horizontal" novalidate>
