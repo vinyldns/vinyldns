@@ -19,5 +19,5 @@ package vinyldns.core.queue
 import cats.effect.IO
 
 trait MessageQueueProvider {
-  def load(config: MessageQueueConfig): IO[MessageQueue]
+  def load(config: MessageQueueConfig): IO[MessageQueue[_]]
 }

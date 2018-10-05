@@ -22,12 +22,9 @@ import vinyldns.core.domain.zone.ZoneCommand
 import scala.concurrent.duration.FiniteDuration
 
 // $COVERAGE-OFF$
-
-// Message handle is implementation specific.  For example, in SQS, this may be the `Message` itself
-trait MessageHandle
-
-// Represents a command encoded in a message on a queue
-final case class CommandMessage(handle: MessageHandle, command: ZoneCommand)
+trait CommandMessage {
+  def command: ZoneCommand
+}
 
 // need to encode the possibility of one or more commands failing to send
 final case class SendBatchResult(
@@ -44,25 +41,25 @@ object MessageCount {
 }
 
 // main message queue to be implemented
-trait MessageQueue {
+trait MessageQueue[A <: CommandMessage] {
 
   // receives a batch of messages.  In SQS, we require number of messages, message attributes, and timeout.
   // the latter of those are likely not applicable for all message queues, but a count certainly is
-  def receive(count: MessageCount): IO[List[CommandMessage]]
+  def receive(count: MessageCount): IO[List[A]]
 
   // puts the message back on the queue with the intention of having it re-processed again
-  def requeue(message: CommandMessage): IO[Unit]
+  def requeue(message: A): IO[Unit]
 
   // removes a message from the queue, indicating completion or the message should never be processed
-  def remove(message: CommandMessage): IO[Unit]
+  def remove(message: A): IO[Unit]
 
   // updates the amount of time this message will remain invisible for until it can be retried
-  def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit]
+  def changeMessageTimeout(message: A, duration: FiniteDuration): IO[Unit]
 
   // we need to track which messages failed and report that back to the caller
-  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult]
+  def send[B <: ZoneCommand](messages: NonEmptyList[B]): IO[SendBatchResult]
 
   // sends a single message, exceptions will be raised via IO
-  def send[A <: ZoneCommand](command: A): IO[Unit]
+  def send[B <: ZoneCommand](command: B): IO[Unit]
 }
 // $COVERAGE-ON$

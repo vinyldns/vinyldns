@@ -13,6 +13,7 @@ CREATE TABLE message_queue (
   created DATETIME NOT NULL,
   updated DATETIME NOT NULL,
   timeout_seconds INT NOT NULL,
+  attempts INT NOT NULL DEFAULT 0,
   PRIMARY KEY (message_id),
   INDEX updated_index (updated),
   INDEX timeout_index (timeout_seconds)
