@@ -31,19 +31,22 @@ import vinyldns.mysql.queue.MessageType.{RecordChangeMessageType, ZoneChangeMess
 import vinyldns.mysql.queue.MySQLMessageQueue.{MessageId, MessageType}
 import vinyldns.proto.VinylDNSProto
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 object MySQLMessageQueue {
   sealed abstract class MessageType(val value: Int)
   final case class InvalidMessageHandle(msg: String) extends Throwable(msg)
   final case class MessageAttemptsExceeded(msg: String) extends Throwable(msg)
+  final case class InvalidMessageTimeout(timeout: Int)
+      extends Throwable(s"Invalid message timeout $timeout")
   final case class MessageId(value: String) extends AnyVal
 }
 
 object MessageType {
   case object RecordChangeMessageType extends MessageType(1)
   case object ZoneChangeMessageType extends MessageType(2)
-  final case class InvalidMessageType(msg: String) extends Throwable(msg)
+  final case class InvalidMessageType(value: Int)
+      extends Throwable(s"$value is not a valid message type value")
 
   def fromCommand(cmd: ZoneCommand): MessageType = cmd match {
     case _: ZoneChange => ZoneChangeMessageType
@@ -53,12 +56,16 @@ object MessageType {
   def fromInt(i: Int): Either[InvalidMessageType, MessageType] = i match {
     case 1 => Right(RecordChangeMessageType)
     case 2 => Right(ZoneChangeMessageType)
-    case _ => Left(InvalidMessageType(s"$i is not a valid message type value"))
+    case _ => Left(InvalidMessageType(i))
   }
 }
 
 /* MySQL Command Message implementation */
-final case class MySQLMessage(id: MessageId, attempts: Int, command: ZoneCommand)
+final case class MySQLMessage(
+    id: MessageId,
+    attempts: Int,
+    timeout: FiniteDuration,
+    command: ZoneCommand)
     extends CommandMessage
 object MySQLMessage {
   final case class UnsupportedCommandMessage(msg: String) extends Throwable(msg)
@@ -79,8 +86,8 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
 
   private val INSERT_MESSAGE =
     sql"""
-      |REPLACE INTO message_queue(id, message_type, in_flight, data, created, updated, attempts)
-      |     VALUES ({id}, {messageType}, {inFlight}, {data}, {created}, {updated}, {attempts})
+      |INSERT IGNORE INTO message_queue(id, message_type, in_flight, data, created, updated, timeout_seconds, attempts)
+      |     VALUES ({id}, {messageType}, {inFlight}, {data}, {created}, {updated}, {timeoutSeconds}, {attempts})
     """.stripMargin
 
   private val REQUEUE_MESSAGE =
@@ -99,7 +106,7 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
 
   private val FETCH_UNCLAIMED =
     sql"""
-         |SELECT id, message_type, data, attempts
+         |SELECT id, message_type, data, attempts, timeout_seconds
          |  FROM message_queue
          | WHERE in_flight = 0
          |    OR updated < DATE_SUB(NOW(),INTERVAL timeout_seconds SECOND)
@@ -124,7 +131,8 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       id: MessageId,
       typ: Int,
       data: Array[Byte],
-      attempts: Int): Either[(Throwable, MessageId), MySQLMessage] = {
+      attempts: Int,
+      timeoutSeconds: Int): Either[(Throwable, MessageId), MySQLMessage] = {
     // parse the type, if it cannot parse we fail with the message id, same with the data
     for {
       messageType <- MessageType.fromInt(typ)
@@ -135,7 +143,11 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
         }
       }
       _ <- Either.cond(attempts < 100, (), MessageAttemptsExceeded(id.value)) // mark as error if too many attempts
-    } yield MySQLMessage(id, attempts, cmd)
+      _ <- Either.cond(
+        timeoutSeconds > 0,
+        (),
+        MySQLMessageQueue.InvalidMessageTimeout(timeoutSeconds))
+    } yield MySQLMessage(id, attempts, timeoutSeconds.seconds, cmd)
   }.leftMap { e =>
     (e, id)
   }
@@ -149,7 +161,8 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
         val typ = rs.int(2)
         val data = rs.bytes(3)
         val attempts = rs.int(4)
-        parseMessage(id, typ, data, attempts)
+        val timeoutSeconds = rs.int(5)
+        parseMessage(id, typ, data, attempts, timeoutSeconds)
       }
       .list()
       .apply()
@@ -181,8 +194,9 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       'inFlight -> 0,
       'attempts -> 0,
       'data -> getBytes(cmd),
-      'created -> ts.getMillis,
-      'updated -> ts.getMillis
+      'created -> ts,
+      'updated -> ts,
+      'timeoutSeconds -> 30 // TODO: This needs to be configuration driven
     )
   }
 
@@ -253,7 +267,7 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       IO.fromEither(MySQLMessage.cast(message))
         .map { mysql =>
           DB.localTx { implicit s =>
-            CHANGE_TIMEOUT.bind(mysql.id.value, duration.toSeconds).update().apply()
+            CHANGE_TIMEOUT.bind(duration.toSeconds, mysql.id.value).update().apply()
           }
         }
         .as(())
