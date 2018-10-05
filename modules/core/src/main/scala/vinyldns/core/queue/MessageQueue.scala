@@ -41,20 +41,20 @@ object MessageCount {
 }
 
 // main message queue to be implemented
-trait MessageQueue[A <: CommandMessage] {
+trait MessageQueue {
 
   // receives a batch of messages.  In SQS, we require number of messages, message attributes, and timeout.
   // the latter of those are likely not applicable for all message queues, but a count certainly is
-  def receive(count: MessageCount): IO[List[A]]
+  def receive(count: MessageCount): IO[List[CommandMessage]]
 
   // puts the message back on the queue with the intention of having it re-processed again
-  def requeue(message: A): IO[Unit]
+  def requeue(message: CommandMessage): IO[Unit]
 
   // removes a message from the queue, indicating completion or the message should never be processed
-  def remove(message: A): IO[Unit]
+  def remove(message: CommandMessage): IO[Unit]
 
   // updates the amount of time this message will remain invisible for until it can be retried
-  def changeMessageTimeout(message: A, duration: FiniteDuration): IO[Unit]
+  def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit]
 
   // we need to track which messages failed and report that back to the caller
   def send[B <: ZoneCommand](messages: NonEmptyList[B]): IO[SendBatchResult]

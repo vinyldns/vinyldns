@@ -57,21 +57,30 @@ object MessageType {
   }
 }
 
-final case class MySQLCommandMessage(id: MessageId, attempts: Int, command: ZoneCommand)
+/* MySQL Command Message implementation */
+final case class MySQLMessage(id: MessageId, attempts: Int, command: ZoneCommand)
     extends CommandMessage
+object MySQLMessage {
+  final case class UnsupportedCommandMessage(msg: String) extends Throwable(msg)
 
-class MySQLMessageQueue
-    extends MessageQueue[MySQLCommandMessage]
-    with Monitored
-    with ProtobufConversions {
+  /* Casts a CommandMessage safely, if not a MySQLCommandMessage, then we fail */
+  def cast(message: CommandMessage): Either[UnsupportedCommandMessage, MySQLMessage] =
+    message match {
+      case mysql: MySQLMessage => Right(mysql)
+      case other =>
+        Left(UnsupportedCommandMessage(s"${other.getClass.getName} is unsupported for MySQL Queue"))
+    }
+}
+
+class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConversions {
   import MySQLMessageQueue._
 
   private val logger = LoggerFactory.getLogger(classOf[MySQLMessageQueue])
 
   private val INSERT_MESSAGE =
     sql"""
-      |REPLACE INSERT INTO message_queue(id, message_type, in_flight, data, created, updated)
-      |     VALUES ({id}, {messageType}, {inFlight}, {data}, {created}, {updated})
+      |REPLACE INTO message_queue(id, message_type, in_flight, data, created, updated, attempts)
+      |     VALUES ({id}, {messageType}, {inFlight}, {data}, {created}, {updated}, {attempts})
     """.stripMargin
 
   private val REQUEUE_MESSAGE =
@@ -102,10 +111,11 @@ class MySQLMessageQueue
          |DELETE FROM message_queue WHERE id IN (?)
     """.stripMargin
 
+  // Important!  Make sure to update the updated timestamp to current, and increment the attempts!
   private val CLAIM_MESSAGES =
     sql"""
          |UPDATE message_queue
-         |   SET in_flight=1, updated=NOW()
+         |   SET in_flight=1, updated=NOW(), attempts=attempts+1
          | WHERE id in (?)
     """.stripMargin
 
@@ -114,7 +124,7 @@ class MySQLMessageQueue
       id: MessageId,
       typ: Int,
       data: Array[Byte],
-      attempts: Int): Either[(Throwable, MessageId), MySQLCommandMessage] = {
+      attempts: Int): Either[(Throwable, MessageId), MySQLMessage] = {
     // parse the type, if it cannot parse we fail with the message id, same with the data
     for {
       messageType <- MessageType.fromInt(typ)
@@ -125,13 +135,13 @@ class MySQLMessageQueue
         }
       }
       _ <- Either.cond(attempts < 100, (), MessageAttemptsExceeded(id.value)) // mark as error if too many attempts
-    } yield MySQLCommandMessage(id, attempts, cmd)
+    } yield MySQLMessage(id, attempts, cmd)
   }.leftMap { e =>
     (e, id)
   }
 
   def fetchUnclaimed(limit: Int)(
-      implicit s: DBSession): List[Either[(Throwable, MessageId), MySQLCommandMessage]] =
+      implicit s: DBSession): List[Either[(Throwable, MessageId), MySQLMessage]] =
     FETCH_UNCLAIMED
       .bind(limit)
       .map { rs =>
@@ -160,22 +170,35 @@ class MySQLMessageQueue
   }
 
   /* Generate params for insertion of messages */
-  def genParams(commands: NonEmptyList[ZoneCommand]): Seq[Seq[(Symbol, Any)]] =
-    commands.toList.map(genParams)
+  def insertParams(commands: NonEmptyList[ZoneCommand]): Seq[Seq[(Symbol, Any)]] =
+    commands.toList.map(insertParams)
 
-  def genParams(cmd: ZoneCommand): Seq[(Symbol, Any)] = {
+  def insertParams(cmd: ZoneCommand): Seq[(Symbol, Any)] = {
     val ts = DateTime.now
     Seq(
       'id -> cmd.id,
       'messageType -> MessageType.fromCommand(cmd).value,
       'inFlight -> 0,
+      'attempts -> 0,
       'data -> getBytes(cmd),
       'created -> ts.getMillis,
       'updated -> ts.getMillis
     )
   }
 
-  def receive(count: MessageCount): IO[List[MySQLCommandMessage]] =
+  /**
+    * Algorithm is a little interesting.  All of this is in the same transaction
+    *
+    * 1. Fetch unclaimed messages from the database.  It is possible that they are in a bad disposition.
+    * - if we cannot parse the message
+    * - if the message type is unknown
+    * - if the number of retries is exceeded
+    *
+    * 2. If there are any errors stemming from step 1, delete them
+    *
+    * 3. For all the good messages, mark them as in-flight, and increment the attempts
+    */
+  def receive(count: MessageCount): IO[List[CommandMessage]] =
     monitor("queue.JDBC.receive") {
       IO {
         // Need a max count, we can just do 10
@@ -205,31 +228,35 @@ class MySQLMessageQueue
       }
     }
 
-  def requeue(message: MySQLCommandMessage): IO[Unit] =
+  def requeue(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.requeue") {
-      IO {
+      IO.fromEither(MySQLMessage.cast(message)).map { mysql =>
         DB.localTx { implicit s =>
-          REQUEUE_MESSAGE.bind(message.id).update().apply()
+          REQUEUE_MESSAGE.bind(mysql.id.value).update().apply()
         }
       }
     }.as(())
 
-  def remove(message: MySQLCommandMessage): IO[Unit] =
+  def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.remove") {
-      IO {
-        DB.localTx { implicit s =>
-          deleteMessages(List(message.id))
+      IO.fromEither(MySQLMessage.cast(message))
+        .map { mysql =>
+          DB.localTx { implicit s =>
+            deleteMessages(List(mysql.id))
+          }
         }
-      }.as(())
+        .as(())
     }
 
-  def changeMessageTimeout(message: MySQLCommandMessage, duration: FiniteDuration): IO[Unit] =
+  def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.JDBC.changeMessageTimeout") {
-      IO {
-        DB.localTx { implicit s =>
-          CHANGE_TIMEOUT.bind(message.id, duration.toSeconds).update().apply()
+      IO.fromEither(MySQLMessage.cast(message))
+        .map { mysql =>
+          DB.localTx { implicit s =>
+            CHANGE_TIMEOUT.bind(mysql.id.value, duration.toSeconds).update().apply()
+          }
         }
-      }.as(())
+        .as(())
     }
 
   def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
@@ -237,9 +264,9 @@ class MySQLMessageQueue
       IO {
         DB.localTx { implicit s =>
           // Note, we do replace into, so these really cannot fail, they all succeed or all fail
-          // Other note, not doing a size check on the messages, but we should chunk these, assuming a
-          // small number for right now which is not ideal
-          INSERT_MESSAGE.batchByName(genParams(messages): _*).apply()
+          // Other note, not doing a size check on the messages, but we should chunk these,
+          // assuming a small number for right now which is not ideal
+          INSERT_MESSAGE.batchByName(insertParams(messages): _*).apply()
           SendBatchResult(messages.toList, Nil)
         }
       }
@@ -249,7 +276,7 @@ class MySQLMessageQueue
     monitor("queue.JDBC.send") {
       IO {
         DB.localTx { implicit s =>
-          INSERT_MESSAGE.bindByName(genParams(command): _*).update().apply()
+          INSERT_MESSAGE.bindByName(insertParams(command): _*).update().apply()
         }
       }
     }

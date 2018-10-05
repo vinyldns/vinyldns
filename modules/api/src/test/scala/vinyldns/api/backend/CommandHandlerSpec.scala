@@ -32,7 +32,7 @@ import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone._
-import vinyldns.core.queue.{CommandMessage, MessageCount, MessageHandle, MessageQueue}
+import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,12 +46,12 @@ class CommandHandlerSpec
     with EitherValues
     with EitherMatchers {
 
-  private case class TestHandle(value: String) extends MessageHandle
+  private case class TestCommandMessage(command: ZoneCommand, value: String) extends CommandMessage
   private val mq = mock[MessageQueue]
   implicit val sched: Scheduler =
     Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
   private val messages = for { i <- 0 to 10 } yield
-    CommandMessage(TestHandle(i.toString), pendingCreateAAAA)
+    TestCommandMessage(pendingCreateAAAA, i.toString)
   private val count = MessageCount(10).right.value
 
   private val mockZoneChangeProcessor = mock[ZoneChange => IO[ZoneChange]]
@@ -96,7 +96,7 @@ class CommandHandlerSpec
     "update the timeout for zone syncs" in {
       doReturn(IO.unit).when(mq).changeMessageTimeout(any[CommandMessage], any[FiniteDuration])
       val sync = zoneCreate.copy(changeType = ZoneChangeType.Sync)
-      val msg = CommandMessage(TestHandle("foo"), sync)
+      val msg = TestCommandMessage(sync, "foo")
       Stream
         .emit(msg)
         .covary[IO]
@@ -109,7 +109,7 @@ class CommandHandlerSpec
     }
     "update the timeout for zone creates" in {
       doReturn(IO.unit).when(mq).changeMessageTimeout(any[CommandMessage], any[FiniteDuration])
-      val msg = CommandMessage(TestHandle("foo"), zoneCreate)
+      val msg = TestCommandMessage(zoneCreate, "foo")
       Stream
         .emit(msg)
         .covary[IO]
@@ -122,7 +122,7 @@ class CommandHandlerSpec
     }
     "not update the timeout for zone deletes" in {
       val del = zoneCreate.copy(changeType = ZoneChangeType.Delete)
-      val msg = CommandMessage(TestHandle("foo"), del)
+      val msg = TestCommandMessage(del, "foo")
       Stream
         .emit(msg)
         .covary[IO]
@@ -134,7 +134,7 @@ class CommandHandlerSpec
       verifyZeroInteractions(mq)
     }
     "not update the timeout for record changes" in {
-      val msg = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
+      val msg = TestCommandMessage(pendingCreateAAAA, "foo")
       Stream
         .emit(msg)
         .covary[IO]
@@ -149,13 +149,13 @@ class CommandHandlerSpec
 
   "determining outcome" should {
     "generate a retry for failures" in {
-      val msg = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
+      val msg = TestCommandMessage(pendingCreateAAAA, "foo")
       val result =
         CommandHandler.outcomeOf(msg)(IO.raiseError(new RuntimeException("fail"))).unsafeRunSync()
       result shouldBe RetryMessage(msg)
     }
     "generate delete for successes" in {
-      val msg = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
+      val msg = TestCommandMessage(pendingCreateAAAA, "foo")
       val result = CommandHandler.outcomeOf(msg)(IO.unit).unsafeRunSync()
       result shouldBe DeleteMessage(msg)
     }
@@ -163,13 +163,13 @@ class CommandHandlerSpec
 
   "message sink" should {
     "retry messages" in {
-      val msg = RetryMessage(CommandMessage(TestHandle("foo"), pendingCreateAAAA))
+      val msg = RetryMessage(TestCommandMessage(pendingCreateAAAA, "foo"))
       doReturn(IO.unit).when(mq).requeue(msg.message)
       Stream.emit(msg).covary[IO].to(CommandHandler.messageSink(mq)).compile.drain.unsafeRunSync()
       verify(mq).requeue(msg.message)
     }
     "remove messages" in {
-      val msg = DeleteMessage(CommandMessage(TestHandle("foo"), pendingCreateAAAA))
+      val msg = DeleteMessage(TestCommandMessage(pendingCreateAAAA, "foo"))
       doReturn(IO.unit).when(mq).remove(msg.message)
       Stream.emit(msg).covary[IO].to(CommandHandler.messageSink(mq)).compile.drain.unsafeRunSync()
       verify(mq).remove(msg.message)
@@ -178,7 +178,7 @@ class CommandHandlerSpec
 
   "processing change requests" should {
     "handle record changes" in {
-      val change = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
+      val change = TestCommandMessage(pendingCreateAAAA, "foo")
       doReturn(IO.pure(change))
         .when(mockRecordChangeProcessor)
         .apply(any[DnsConnection], any[RecordSetChange])
@@ -199,7 +199,7 @@ class CommandHandlerSpec
           mockZoneSyncProcessor,
           default
         )
-      val change = CommandMessage(TestHandle("foo"), noConnChange)
+      val change = TestCommandMessage(noConnChange, "foo")
       doReturn(IO.pure(change))
         .when(mockRecordChangeProcessor)
         .apply(any[DnsConnection], any[RecordSetChange])
@@ -211,7 +211,7 @@ class CommandHandlerSpec
       resolver.getAddress.getHostName shouldBe default.primaryServer
     }
     "handle zone creates" in {
-      val change = CommandMessage(TestHandle("foo"), zoneCreate)
+      val change = TestCommandMessage(zoneCreate, "foo")
       doReturn(IO.pure(zoneCreate))
         .doReturn(IO.pure(change))
         .when(mockZoneChangeProcessor)
@@ -224,7 +224,7 @@ class CommandHandlerSpec
     }
     "handle zone syncs" in {
       val sync = zoneCreate.copy(changeType = ZoneChangeType.Sync)
-      val change = CommandMessage(TestHandle("foo"), sync)
+      val change = TestCommandMessage(sync, "foo")
       doReturn(IO.pure(sync)).doReturn(IO.pure(change)).when(mockZoneChangeProcessor).apply(sync)
       doReturn(IO.pure(sync)).when(mockZoneSyncProcessor).apply(sync)
       Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
@@ -234,7 +234,7 @@ class CommandHandlerSpec
     }
     "handle zone deletes" in {
       val del = zoneCreate.copy(changeType = ZoneChangeType.Delete)
-      val change = CommandMessage(TestHandle("foo"), del)
+      val change = TestCommandMessage(del, "foo")
       doReturn(IO.pure(del)).doReturn(IO.pure(change)).when(mockZoneChangeProcessor).apply(del)
       Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
       verify(mockZoneChangeProcessor).apply(del)
@@ -246,7 +246,7 @@ class CommandHandlerSpec
   "main flow" should {
     "process successfully" in {
       val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
-      val cmd = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
+      val cmd = TestCommandMessage(pendingCreateAAAA, "foo")
 
       // stage pulling from the message queue
       doReturn(IO.pure(List(cmd))).when(mq).receive(count)
@@ -284,7 +284,7 @@ class CommandHandlerSpec
     }
     "continue processing on unexpected failure" in {
       val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
-      val cmd = CommandMessage(TestHandle("foo"), pendingCreateAAAA)
+      val cmd = TestCommandMessage(pendingCreateAAAA, "foo")
 
       // stage pulling from the message queue, make sure we always return our command
       doReturn(IO.pure(List(cmd)))
@@ -332,7 +332,7 @@ class CommandHandlerSpec
     "process a zone update change through the flow" in {
       // testing the run method, which does nothing more than simplify construction of the main flow
       val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
-      val cmd = CommandMessage(TestHandle("foo"), zoneUpdate)
+      val cmd = TestCommandMessage(zoneUpdate, "foo")
 
       val zoneRepo = mock[ZoneRepository]
       val zoneChangeRepo = mock[ZoneChangeRepository]
