@@ -20,13 +20,6 @@ import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data.NonEmptyList
 import cats.scalatest.EitherMatchers
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.retry.PredefinedBackoffStrategies.ExponentialBackoffStrategy
-import com.amazonaws.retry.RetryPolicy
-import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder
-import com.amazonaws.services.sqs.model.{SendMessageBatchRequest, SendMessageBatchRequestEntry}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
 import vinyldns.core.TestRecordSetData._
@@ -35,56 +28,11 @@ import vinyldns.core.domain.{RecordSetChange, ZoneCommand}
 import vinyldns.core.queue.{CommandMessage, MessageCount}
 
 import scala.concurrent.duration.FiniteDuration
-import scala.collection.JavaConverters._
 
 class SqsMessageQueueIntegrationSpec extends WordSpec
   with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach with Matchers with EitherMatchers with EitherValues {
 
-  private val client =
-    AmazonSQSAsyncClientBuilder
-      .standard()
-      .withClientConfiguration(
-        new ClientConfiguration()
-          .withRetryPolicy(new RetryPolicy(
-            RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
-            new ExponentialBackoffStrategy(2, 64), // Base delay and max back-off delay of 64
-            100, // Max error retry count (set to dead-letter count); default is 3
-            true
-          )))
-      .withEndpointConfiguration(new EndpointConfiguration("http://localhost:19005/", "us-east-1"))
-      .withCredentials(new AWSStaticCredentialsProvider(
-        new BasicAWSCredentials("x", "x")))
-      .build()
-
-  case class TestSqsMessageQueue() extends SqsMessageQueue("http://localhost:19005/queue/sqs", client) {
-    override def toSendMessageBatchRequest[A <: ZoneCommand](
-      commands: NonEmptyList[A]): SendMessageBatchRequest = {
-      print(s"Entering toSendMessageBatchRequest...\n")
-      val entries = commands
-        .map(cmd => (cmd, messageData(cmd)))
-        .map {
-          case (zc: ZoneCommand, msgBody) if zc.zoneId == okZone.id => {
-            print(s"Entering here...\n")
-            new SendMessageBatchRequestEntry()
-              .withId("same-id")
-              .withMessageBody(msgBody)
-              .withMessageType(messageType(zc))
-          }
-          case (cmd, msgBody) =>
-            new SendMessageBatchRequestEntry()
-              .withMessageBody(msgBody)
-              .withId(cmd.id)
-              .withMessageType(messageType(cmd))
-        }
-        .toList
-        .asJava
-
-      new SendMessageBatchRequest()
-        .withEntries(entries)
-    }
-  }
-
-  private val queue: SqsMessageQueue = TestSqsMessageQueue()
+  private val queue: SqsMessageQueue = SqsMessageQueue()
 
   // Re-create queue before tests
   override protected def beforeAll(): Unit = {
@@ -163,20 +111,6 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val messages = NonEmptyList.fromListUnsafe(commands)
 
       val result = queue.send(messages).unsafeRunSync()
-
-      result.successes should contain theSameElementsAs commands
-      result.failures shouldBe empty
-    }
-
-    "send a message batch request with successes and failures" in {
-      val recordSetChanges = for (_ <- 0 to 4) yield makeTestAddChange(aaaa, zoneActive)
-      val zoneChanges = for (_ <- 0 to 2) yield makeTestPendingZoneChange(okZone)
-      val commands = recordSetChanges.toList ++ zoneChanges.toList
-
-      val messages = NonEmptyList.fromListUnsafe(commands)
-
-      val result = queue.send(messages).unsafeRunSync()
-      print(s"failures: ${result.failures}\n")
 
       result.successes should contain theSameElementsAs commands
       result.failures shouldBe empty

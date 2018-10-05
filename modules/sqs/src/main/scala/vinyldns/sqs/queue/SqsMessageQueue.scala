@@ -83,8 +83,6 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       f(request, asyncHandler)
     }
 
-  case class AwsException extends AmazonSQSException()
-
   def receive(count: MessageCount): IO[List[CommandMessage]] =
     monitored("sqs.receiveMessageBatch") {
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
