@@ -18,7 +18,8 @@ package vinyldns.sqs.queue
 
 import java.util.Base64
 
-import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
+import cats.data.NonEmptyList
+import com.amazonaws.services.sqs.model._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData._
@@ -96,6 +97,28 @@ class SqsMessageQueueSpec extends WordSpec with Matchers with MockitoSugar with 
           ).asJava)
 
       fromMessage(msg) shouldBe pendingCreateAAAA
+    }
+  }
+
+  "toSendBatchResult" should {
+    "build a SendBatchResult with successes and failures" in {
+      val successes = List(pendingCreateAAAA, makeTestPendingZoneChange(okZone))
+      val failures = List(zoneChangePending, pendingCreateCNAME)
+      val batchResult = new SendMessageBatchResult()
+        .withSuccessful(successes.map { cmd =>
+          new SendMessageBatchResultEntry()
+            .withId(cmd.id)
+        }.asJava)
+        .withFailed(failures.map { cmd =>
+          new BatchResultErrorEntry()
+            .withId(cmd.id)
+            .withMessage("error message")
+        }.asJava)
+      val cmds = NonEmptyList.fromListUnsafe(successes ++ failures)
+      val result = toSendBatchResult(batchResult, cmds)
+
+      result.successes should contain theSameElementsAs successes
+      result.failures.map(_._2) should contain theSameElementsAs failures
     }
   }
 }

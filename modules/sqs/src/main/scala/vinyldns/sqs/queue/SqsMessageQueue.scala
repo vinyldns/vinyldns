@@ -67,7 +67,6 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         IO.pure(ok)
     }
   }
-  // $COVERAGE-ON$
 
   // Helper for handling SQS requests and responses
   private def sqsAsync[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
@@ -82,6 +81,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
       f(request, asyncHandler)
     }
+  // $COVERAGE-ON$
 
   def receive(count: MessageCount): IO[List[CommandMessage]] =
     monitored("sqs.receiveMessageBatch") {
@@ -123,16 +123,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
           .withQueueUrl(queueUrl),
         client.sendMessageBatchAsync))
       .map { batchResult =>
-        val successfulIds = batchResult.getSuccessful.asScala.map(_.getId)
-        val successes = cmds.toList.filter(cmd => successfulIds.contains(cmd.id))
-
-        val failureIds = batchResult.getFailed.asScala.map(_.getId)
-        val failureMessages = batchResult.getFailed.asScala.map(_.getMessage)
-        val failures =
-          cmds.toList.filter(cmd => failureIds.contains(cmd.id)).zip(failureMessages).map {
-            case (cmd, msg) => (new Exception(msg), cmd)
-          }
-        SendBatchResult(successes, failures)
+        toSendBatchResult(batchResult, cmds)
       }
 
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
@@ -267,5 +258,20 @@ trait SqsConversions extends ProtobufConversions {
         fromPB(VinylDNSProto.RecordSetChange.parseFrom(messageBytes))
       case SqsZoneChangeMessage => fromPB(VinylDNSProto.ZoneChange.parseFrom(messageBytes))
     }
+  }
+
+  def toSendBatchResult[A <: ZoneCommand](
+      batchResult: SendMessageBatchResult,
+      cmds: NonEmptyList[A]): SendBatchResult = {
+    val successfulIds = batchResult.getSuccessful.asScala.map(_.getId)
+    val successes = cmds.toList.filter(cmd => successfulIds.contains(cmd.id))
+
+    val failureIds = batchResult.getFailed.asScala.map(_.getId)
+    val failureMessages = batchResult.getFailed.asScala.map(_.getMessage)
+    val failures =
+      cmds.toList.filter(cmd => failureIds.contains(cmd.id)).zip(failureMessages).map {
+        case (cmd, msg) => (new Exception(msg), cmd)
+      }
+    SendBatchResult(successes, failures)
   }
 }
