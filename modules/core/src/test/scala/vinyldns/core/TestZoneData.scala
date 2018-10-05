@@ -45,4 +45,7 @@ object TestZoneData {
   val zoneChangePending: ZoneChange =
     ZoneChange(okZone, "ok", ZoneChangeType.Update, ZoneChangeStatus.Pending)
 
+  def makeTestPendingZoneChange(zone: Zone): ZoneChange =
+    ZoneChange(zone, "userId", ZoneChangeType.Update, ZoneChangeStatus.Pending)
+
 }

@@ -43,12 +43,11 @@ import scala.concurrent.duration.FiniteDuration
 // is required for actions like removal and changing message timeout in AWS SQS
 final case class SqsMessageHandle(receiptHandle: String) extends MessageHandle
 
-case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
+class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     extends MessageQueue
-    with ProtobufConversions {
+    with SqsConversions {
 
-  import SqsMessageQueue._
-
+  // $COVERAGE-OFF$
   // Helper function for monitoring instrumentation
   private def monitored[A](name: String)(f: => IO[A]): IO[A] = {
     val monitor = Monitor(name)
@@ -68,6 +67,7 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
         IO.pure(ok)
     }
   }
+  // $COVERAGE-ON$
 
   // Helper for handling SQS requests and responses
   private def sqsAsync[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
@@ -82,6 +82,8 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
 
       f(request, asyncHandler)
     }
+
+  case class AwsException extends AmazonSQSException()
 
   def receive(count: MessageCount): IO[List[CommandMessage]] =
     monitored("sqs.receiveMessageBatch") {
@@ -146,7 +148,35 @@ case class SqsMessageQueue(queueUrl: String, client: AmazonSQSAsync)
       )).map(_ => ())
 }
 
-object SqsMessageQueue extends ProtobufConversions {
+object SqsMessageQueue {
+  def apply(config: Config = ConfigFactory.load().getConfig("sqs")): SqsMessageQueue = {
+    val accessKey = config.getString("access-key")
+    val secretKey = config.getString("secret-key")
+    val serviceEndpoint = config.getString("service-endpoint")
+    val signingRegion = config.getString("signing-region")
+    val queueUrl = config.getString("queue-url")
+
+    val client =
+      AmazonSQSAsyncClientBuilder
+        .standard()
+        .withClientConfiguration(
+          new ClientConfiguration()
+            .withRetryPolicy(new RetryPolicy(
+              RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
+              new ExponentialBackoffStrategy(2, 64), // Base delay and max back-off delay of 64
+              100, // Max error retry count (set to dead-letter count); default is 3
+              true
+            )))
+        .withEndpointConfiguration(new EndpointConfiguration(serviceEndpoint, signingRegion))
+        .withCredentials(new AWSStaticCredentialsProvider(
+          new BasicAWSCredentials(accessKey, secretKey)))
+        .build()
+
+    new SqsMessageQueue(queueUrl, client)
+  }
+}
+
+trait SqsConversions extends ProtobufConversions {
   private val logger = LoggerFactory.getLogger("vinyldns.sqs.queue.SqsMessageQueue")
 
   sealed abstract class SqsMessageType(val name: String)
@@ -177,31 +207,6 @@ object SqsMessageQueue extends ProtobufConversions {
               .withDataType("String")
           ).asJava
         )
-  }
-
-  def apply(config: Config = ConfigFactory.load().getConfig("sqs")): SqsMessageQueue = {
-    val accessKey = config.getString("access-key")
-    val secretKey = config.getString("secret-key")
-    val serviceEndpoint = config.getString("service-endpoint")
-    val signingRegion = config.getString("signing-region")
-    val queueUrl = config.getString("queue-url")
-
-    val client =
-      AmazonSQSAsyncClientBuilder
-        .standard()
-        .withClientConfiguration(new ClientConfiguration()
-        .withRetryPolicy(new RetryPolicy(
-          RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
-          new ExponentialBackoffStrategy(0, 64), // Base delay and max back-off delay of 64
-          100, // Max error retry count (set to dead-letter count); default is 3
-          true
-        )))
-        .withEndpointConfiguration(new EndpointConfiguration(serviceEndpoint, signingRegion))
-        .withCredentials(
-          new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-        .build()
-
-    new SqsMessageQueue(queueUrl, client)
   }
 
   // Helper function to serialize message body
