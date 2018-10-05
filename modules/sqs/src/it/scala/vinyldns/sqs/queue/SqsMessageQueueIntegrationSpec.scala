@@ -24,7 +24,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
-import vinyldns.core.domain.{RecordSetChange, ZoneCommand}
+import vinyldns.core.domain.RecordSetChange
 import vinyldns.core.queue.{CommandMessage, MessageCount}
 
 import scala.concurrent.duration.FiniteDuration
@@ -67,8 +67,8 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       }
 
       val result = queue.receive(MessageCount(4).right.value).unsafeRunSync()
-      result should have length 4
-      result.foreach(_.command shouldBe a[ZoneCommand])
+      result.map(_.command) should contain theSameElementsAs List(rsAddChange, rsAddChange, zoneChangePending,
+        zoneChangePending)
     }
 
     "succeed when attempting to remove item from empty queue" in {
