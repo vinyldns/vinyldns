@@ -38,7 +38,7 @@ userId        | string      | The unique identifier of the user that created the
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Optional comments about the batch change. |
 createdTimestamp | date-time      | The timestamp (in GMT) when the batch change was created. |
-changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](https://www.vinyldns.io/api/batchchange-model.html#singleaddchange-attributes) or a [SingleDeleteChange](https://www.vinyldns.io/api/batchchange-model.html#singledeletechange-). |
+changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model.html#singleaddchange-attributes) or a [SingleDeleteChange](../api/batchchange-model.html#singledeletechange-). |
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
 
