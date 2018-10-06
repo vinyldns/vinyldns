@@ -6,11 +6,11 @@ import org.joda.time.DateTime
 import org.scalatest._
 import scalikejdbc._
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.queue.MessageCount
+import vinyldns.core.queue.{CommandMessage, MessageCount}
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
-import vinyldns.mysql.queue.MySQLMessageQueue.{MessageAttemptsExceeded, MessageId}
+import vinyldns.mysql.queue.MySQLMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded, MessageId}
 import vinyldns.mysql.queue.{MySQLMessage, MySQLMessageQueue}
 
 import scala.concurrent.duration._
@@ -23,6 +23,8 @@ final case class RowData(
   updatedTime: DateTime,
   timeoutSecs: Int,
   attempts: Int)
+
+final case class InvalidMessage(command: ZoneCommand) extends CommandMessage
 
 class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
   with BeforeAndAfterEach with EitherMatchers with EitherValues with BeforeAndAfterAll with ProtobufConversions {
@@ -46,6 +48,13 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
   private val rsChangeBytes = toPB(rsChange).toByteArray
 
   private val testMessage: MySQLMessage = MySQLMessage(MessageId(rsChange.id), 0, 20.seconds, rsChange)
+
+  private val zoneChange: ZoneChange = ZoneChange(
+    okZone,
+    "ok",
+    ZoneChangeType.Create,
+    ZoneChangeStatus.Complete,
+    created = DateTime.now.minus(1000))
 
   private def clear(): Unit = DB.localTx { implicit s =>
     sql"DELETE FROM message_queue".update().apply()
@@ -106,11 +115,17 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
   }
 
   "send receive" should {
-    "send and receive a message" in {
+    "send and receive a record change" in {
       underTest.send(rsChange).unsafeRunSync()
       val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       r.headOption.map(_.command) shouldBe Some(rsChange)
+    }
+    "send and receive a zone change" in {
+      underTest.send(zoneChange).unsafeRunSync()
+      val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
+
+      r.headOption.map(_.command) shouldBe Some(zoneChange)
     }
     "send and receive a batch" in {
       val first = rsChange
@@ -137,6 +152,10 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
     "fail if attempts exceeds 100" in {
       val result = underTest.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 200, 10)
       result.left.value shouldBe (MessageAttemptsExceeded("foo"), MessageId("foo"))
+    }
+    "fail on invalid timeout" in {
+      val result = underTest.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 1, -1)
+      result.left.value shouldBe (InvalidMessageTimeout(-1), MessageId("foo"))
     }
   }
 
@@ -172,6 +191,9 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
       val r = underTest.changeMessageTimeout(testMessage, 100.seconds).attempt.unsafeRunSync()
       r shouldBe right
     }
+    "fail if the message provided is not a MySQLMessage" in {
+      underTest.changeMessageTimeout(InvalidMessage(rsChange), 100.seconds).attempt.unsafeRunSync() shouldBe left
+    }
   }
 
   "remove" should {
@@ -184,6 +206,9 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
     }
     "do nothing if the message does not exist" in {
       underTest.remove(testMessage).attempt.unsafeRunSync() shouldBe right
+    }
+    "fail if the message provided is not a MySQLMessage" in {
+      underTest.remove(InvalidMessage(rsChange)).attempt.unsafeRunSync() shouldBe left
     }
   }
 
@@ -204,6 +229,9 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
     }
     "do nothing if the message is not in the database" in {
       underTest.requeue(testMessage).attempt.unsafeRunSync() shouldBe right
+    }
+    "fail if the message provided is not a MySQLMessage" in {
+      underTest.requeue(InvalidMessage(rsChange)).attempt.unsafeRunSync() shouldBe left
     }
   }
 }

@@ -57,9 +57,9 @@ trait MessageQueue {
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit]
 
   // we need to track which messages failed and report that back to the caller
-  def send[B <: ZoneCommand](messages: NonEmptyList[B]): IO[SendBatchResult]
+  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult]
 
   // sends a single message, exceptions will be raised via IO
-  def send[B <: ZoneCommand](command: B): IO[Unit]
+  def send[A <: ZoneCommand](command: A): IO[Unit]
 }
 // $COVERAGE-ON$

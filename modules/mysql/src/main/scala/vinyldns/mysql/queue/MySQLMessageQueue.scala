@@ -33,15 +33,6 @@ import vinyldns.proto.VinylDNSProto
 
 import scala.concurrent.duration._
 
-object MySQLMessageQueue {
-  sealed abstract class MessageType(val value: Int)
-  final case class InvalidMessageHandle(msg: String) extends Throwable(msg)
-  final case class MessageAttemptsExceeded(msg: String) extends Throwable(msg)
-  final case class InvalidMessageTimeout(timeout: Int)
-      extends Throwable(s"Invalid message timeout $timeout")
-  final case class MessageId(value: String) extends AnyVal
-}
-
 object MessageType {
   case object RecordChangeMessageType extends MessageType(1)
   case object ZoneChangeMessageType extends MessageType(2)
@@ -77,6 +68,15 @@ object MySQLMessage {
       case other =>
         Left(UnsupportedCommandMessage(s"${other.getClass.getName} is unsupported for MySQL Queue"))
     }
+}
+
+object MySQLMessageQueue {
+  sealed abstract class MessageType(val value: Int)
+  final case class InvalidMessageHandle(msg: String) extends Throwable(msg)
+  final case class MessageAttemptsExceeded(msg: String) extends Throwable(msg)
+  final case class InvalidMessageTimeout(timeout: Int)
+      extends Throwable(s"Invalid message timeout $timeout")
+  final case class MessageId(value: String) extends AnyVal
 }
 
 class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConversions {
