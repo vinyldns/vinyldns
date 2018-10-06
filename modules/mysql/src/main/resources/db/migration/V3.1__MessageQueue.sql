@@ -16,5 +16,6 @@ CREATE TABLE message_queue (
   attempts INT NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   INDEX updated_index (updated),
+  INDEX inflight_index (in_flight),
   INDEX timeout_index (timeout_seconds)
 );

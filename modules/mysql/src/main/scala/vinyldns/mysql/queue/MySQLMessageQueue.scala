@@ -86,8 +86,9 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
 
   private val INSERT_MESSAGE =
     sql"""
-      |INSERT IGNORE INTO message_queue(id, message_type, in_flight, data, created, updated, timeout_seconds, attempts)
+      |INSERT INTO message_queue(id, message_type, in_flight, data, created, updated, timeout_seconds, attempts)
       |     VALUES ({id}, {messageType}, {inFlight}, {data}, {created}, {updated}, {timeoutSeconds}, {attempts})
+      |ON DUPLICATE KEY UPDATE updated={updated}
     """.stripMargin
 
   private val REQUEUE_MESSAGE =

@@ -1,6 +1,8 @@
 package vinyldns.mysql.repository
 
-import cats.data.NonEmptyList
+import cats.data._
+import cats.effect._
+import cats.implicits._
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest._
@@ -115,19 +117,19 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
   }
 
   "send receive" should {
-    "send and receive a record change" in {
+    "handle a record change" in {
       underTest.send(rsChange).unsafeRunSync()
       val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       r.headOption.map(_.command) shouldBe Some(rsChange)
     }
-    "send and receive a zone change" in {
+    "handle a zone change" in {
       underTest.send(zoneChange).unsafeRunSync()
       val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       r.headOption.map(_.command) shouldBe Some(zoneChange)
     }
-    "send and receive a batch" in {
+    "handle a batch" in {
       val first = rsChange
       val second = rsChange.copy(id = "second")
       val s = underTest.send(NonEmptyList.of(first, second)).unsafeRunSync()
@@ -135,6 +137,43 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
 
       val r = underTest.receive(MessageCount(2).right.value).unsafeRunSync()
       r.map(_.command) should contain theSameElementsAs List(first, second)
+    }
+    "be idempotent" in {
+      // Put the same change in twice, get one out
+      underTest.send(NonEmptyList.of(rsChange)).unsafeRunSync()
+      underTest.send(NonEmptyList.of(rsChange)).unsafeRunSync()
+      val r = underTest.receive(MessageCount(8).right.value).unsafeRunSync()
+      r should have length 1
+      r.headOption.map(_.command) shouldBe Some(rsChange)
+    }
+    "be idempotent for a batch" in {
+      // Send a batch
+      val first = rsChange
+      val second = rsChange.copy(id = "second")
+      underTest.send(NonEmptyList.of(first, second)).unsafeRunSync()
+
+      // Send another batch, with two new and two old
+      val third = rsChange.copy(id = "third")
+      val fourth = rsChange.copy(id = "fourth")
+      val r = underTest.send(NonEmptyList.of(first, third, second, fourth)).unsafeRunSync()
+      r.successes should contain theSameElementsAs List(first, third, second, fourth)
+
+      // Receive a batch, make sure we only get 4 out, no duplicates
+      val batch = underTest.receive(MessageCount(10).right.value).unsafeRunSync()
+      batch should have length 4
+      batch.map(_.command) should contain theSameElementsAs List(first, second, third, fourth)
+    }
+    "work in parallel" in {
+      // send 20 messages in parallel
+      val changes = for { i <- 0 to 8 } yield rsChange.copy(id = s"chg$i")
+      val sends = changes.map(rc => underTest.send(rc))
+
+      // receive 20 batches of 1 in parallel
+      val rcvs = for { _ <- 0 to 8 } yield underTest.receive(MessageCount(1).right.value)
+
+      // let's fire them both off, doesn't matter who finishes, as long as the IO does not fail
+      val result = IO.race(sends.toList.parSequence, rcvs.toList.parSequence).attempt.unsafeRunSync()
+      result shouldBe right
     }
   }
 
@@ -177,6 +216,22 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       findMessage(rsChange.id) should not be defined
+    }
+    "increment the attempt, timestamp, and in flight status" in {
+      val initialAttempts = 0
+      val initialTs = DateTime.now
+      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100, initialAttempts)
+
+      val oldMsg = findMessage(rsChange.id).getOrElse(fail)
+
+      // Wait a short time to ensure that the updated timestamp advances
+      Thread.sleep(50)
+      underTest.receive(MessageCount(1).right.value).unsafeRunSync()
+
+      val msg = findMessage(rsChange.id).getOrElse(fail)
+      msg.attempts shouldBe oldMsg.attempts + 1
+      msg.updatedTime.getMillis should be > oldMsg.updatedTime.getMillis
+      msg.inFlight shouldBe true
     }
   }
 
