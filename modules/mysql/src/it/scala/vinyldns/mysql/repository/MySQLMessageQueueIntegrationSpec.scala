@@ -235,13 +235,10 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
     }
     "increment the attempt, timestamp, and in flight status" in {
       val initialAttempts = 0
-      val initialTs = DateTime.now
+      val initialTs = DateTime.now.minusSeconds(20)
       insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100, initialAttempts)
 
       val oldMsg = findMessage(rsChange.id).getOrElse(fail)
-
-      // Wait a short time to ensure that the updated timestamp advances
-      Thread.sleep(50)
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
 
       val msg = findMessage(rsChange.id).getOrElse(fail)
@@ -285,7 +282,8 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
 
   "requeue" should {
     "reset the message in the database" in {
-      underTest.send(rsChange).unsafeRunSync()
+      val initialTs = DateTime.now.minusSeconds(20)
+      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100, 0)
       val raw = findMessage(rsChange.id)
       val rawMsg = raw.getOrElse(fail)
       val oldUpdated = rawMsg.updatedTime
@@ -294,9 +292,9 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
       val msg = r.headOption.getOrElse(fail)
       underTest.requeue(msg).unsafeRunSync()
 
-      val requeued = findMessage(msg.command.id).getOrElse(fail)
-      requeued.inFlight shouldBe false
-      requeued.updatedTime.isAfter(oldUpdated) shouldBe true
+      val req = findMessage(msg.command.id).getOrElse(fail)
+      req.inFlight shouldBe false
+      req.updatedTime.getMillis should be > oldUpdated.getMillis
     }
     "do nothing if the message is not in the database" in {
       underTest.requeue(testMessage).attempt.unsafeRunSync() shouldBe right
