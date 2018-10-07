@@ -84,14 +84,14 @@ SOA          | minimum     | long        |
 <br>         |             |             |
 SPF          | text        | string      |
 <br>         |             |             |
-SRV          | priority    | integer     | 
+SRV          | priority    | integer     |
 SRV          | weight      | integer     |
 SRV          | port        | integer     |
 SRV          | target      | string      |
 <br>         |             |             |
-SSHFP        | algorithm   | integer     | 
-SSHFP        | typ         | integer     |
-SSHFP        | fingerprint | string      | 
+SSHFP        | algorithm   | integer     |
+SSHFP        | type        | integer     |
+SSHFP        | fingerprint | string      |
 <br>         |             |             |
 TXT          | text        | string      |
 
@@ -104,7 +104,7 @@ Use the *@* symbol to point to the zone origin
 
 **CNAME records cannot point to the zone origin, thus the RecordSet name cannot be @ nor the zone origin**
 
-Individual SSHFP record: 
+Individual SSHFP record:
 
 ```
 {
@@ -126,7 +126,7 @@ Individual SSHFP record:
 }
 ```
 
-Multiple SSHFP records: 
+Multiple SSHFP records:
 
 ```
 {
