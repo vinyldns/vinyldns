@@ -28,11 +28,12 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
 import vinyldns.mysql.queue.MessageType.{RecordChangeMessageType, ZoneChangeMessageType}
-import vinyldns.mysql.queue.MySQLMessageQueue.{MessageId, MessageType}
+import vinyldns.mysql.queue.MySQLMessageQueue.MessageId
 import vinyldns.proto.VinylDNSProto
 
 import scala.concurrent.duration._
 
+sealed abstract class MessageType(val value: Int)
 object MessageType {
   case object RecordChangeMessageType extends MessageType(1)
   case object ZoneChangeMessageType extends MessageType(2)
@@ -66,12 +67,11 @@ object MySQLMessage {
     message match {
       case mysql: MySQLMessage => Right(mysql)
       case other =>
-        Left(UnsupportedCommandMessage(s"${other.getClass.getName} is unsupported for MySQL Queue"))
+        Left(UnsupportedCommandMessage(s"${other.getClass.getName} is unsupported for MySQL Message Queue"))
     }
 }
 
 object MySQLMessageQueue {
-  sealed abstract class MessageType(val value: Int)
   final case class InvalidMessageHandle(msg: String) extends Throwable(msg)
   final case class MessageAttemptsExceeded(msg: String) extends Throwable(msg)
   final case class InvalidMessageTimeout(timeout: Int)
@@ -153,10 +153,10 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
     (e, id)
   }
 
-  def fetchUnclaimed(limit: Int)(
+  def fetchUnclaimed(numMessages: Int)(
       implicit s: DBSession): List[Either[(Throwable, MessageId), MySQLMessage]] =
     FETCH_UNCLAIMED
-      .bind(limit)
+      .bind(numMessages)
       .map { rs =>
         val id = MessageId(rs.string(1))
         val typ = rs.int(2)
@@ -216,7 +216,7 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
   def receive(count: MessageCount): IO[List[CommandMessage]] =
     monitor("queue.JDBC.receive") {
       IO {
-        // Need a max count, we can just do 10
+        // Need a max count so the user doesn't try to take 1MM messages, 10 is sufficient
         val limit = Math.min(10, count.value)
 
         DB.localTx { implicit s =>

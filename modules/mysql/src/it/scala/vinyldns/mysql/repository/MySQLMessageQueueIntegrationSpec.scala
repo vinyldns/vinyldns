@@ -246,6 +246,13 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
       msg.updatedTime.getMillis should be > oldMsg.updatedTime.getMillis
       msg.inFlight shouldBe true
     }
+    "grab messages that are in flight but expired" in {
+      // put a message in whose updated timestamp was 100 seconds ago, set the timeout to 30 seconds
+      val initialTs = DateTime.now.minusSeconds(100)
+      insert(rsChange.id, RecordChangeMessageType.value, true, rsChangeBytes, initialTs, initialTs, 30, 1)
+      val msgs = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
+      msgs should have length 1
+    }
   }
 
   "changeMessageTimeout" should {
