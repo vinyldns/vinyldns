@@ -14,6 +14,7 @@ object Dependencies {
   lazy val scodecV = "1.1.5"
   lazy val playV = "2.6.19"
   lazy val awsV = "1.11.423"
+  lazy val jaxbV = "2.3.0"
 
   lazy val compileDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
@@ -58,8 +59,9 @@ object Dependencies {
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
-    "javax.xml.bind"            %  "jaxb-api"                       % "2.3.1" % "provided",
-    "com.sun.xml.bind"          %  "jaxb-impl"                      % "2.3.1"
+    "javax.xml.bind"            %  "jaxb-api"                       % jaxbV % "provided",
+    "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
+    "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV
   )
 
   lazy val dynamoDBDependencies = Seq(
