@@ -28,48 +28,9 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
 import vinyldns.mysql.queue.MessageType.{RecordChangeMessageType, ZoneChangeMessageType}
-import vinyldns.mysql.queue.MySQLMessageQueue.MessageId
 import vinyldns.proto.VinylDNSProto
 
 import scala.concurrent.duration._
-
-sealed abstract class MessageType(val value: Int)
-object MessageType {
-  case object RecordChangeMessageType extends MessageType(1)
-  case object ZoneChangeMessageType extends MessageType(2)
-  final case class InvalidMessageType(value: Int)
-      extends Throwable(s"$value is not a valid message type value")
-
-  def fromCommand(cmd: ZoneCommand): MessageType = cmd match {
-    case _: ZoneChange => ZoneChangeMessageType
-    case _: RecordSetChange => RecordChangeMessageType
-  }
-
-  def fromInt(i: Int): Either[InvalidMessageType, MessageType] = i match {
-    case 1 => Right(RecordChangeMessageType)
-    case 2 => Right(ZoneChangeMessageType)
-    case _ => Left(InvalidMessageType(i))
-  }
-}
-
-/* MySQL Command Message implementation */
-final case class MySQLMessage(
-    id: MessageId,
-    attempts: Int,
-    timeout: FiniteDuration,
-    command: ZoneCommand)
-    extends CommandMessage
-object MySQLMessage {
-  final case class UnsupportedCommandMessage(msg: String) extends Throwable(msg)
-
-  /* Casts a CommandMessage safely, if not a MySQLCommandMessage, then we fail */
-  def cast(message: CommandMessage): Either[UnsupportedCommandMessage, MySQLMessage] =
-    message match {
-      case mysql: MySQLMessage => Right(mysql)
-      case other =>
-        Left(UnsupportedCommandMessage(s"${other.getClass.getName} is unsupported for MySQL Message Queue"))
-    }
-}
 
 object MySQLMessageQueue {
   final case class InvalidMessageHandle(msg: String) extends Throwable(msg)
