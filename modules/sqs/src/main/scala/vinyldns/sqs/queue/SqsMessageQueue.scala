@@ -18,8 +18,9 @@ package vinyldns.sqs.queue
 
 import java.util.Base64
 
-import cats.data.NonEmptyList
+import cats.data._
 import cats.effect.IO
+import cats.implicits._
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
@@ -33,43 +34,19 @@ import org.slf4j.LoggerFactory
 import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
-import vinyldns.core.route.Monitor
-import vinyldns.proto.VinylDNSProto
+import vinyldns.core.route.Monitored
+import vinyldns.sqs.queue.SqsMessageType.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
-// Unique identifier corresponding to action of receiving the message, not the message itself. Only this info
-// is required for actions like removal and changing message timeout in AWS SQS
-final case class SqsMessageHandle(receiptHandle: String) extends MessageHandle
-
 class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
-    extends MessageQueue
-    with SqsConversions {
+    extends MessageQueue with Monitored {
 
-  // $COVERAGE-OFF$
-  // Helper function for monitoring instrumentation
-  private def monitored[A](name: String)(f: => IO[A]): IO[A] = {
-    val monitor = Monitor(name)
-    val startTime = System.currentTimeMillis
-
-    def timeAndRecord: Boolean => Unit = monitor.capture(monitor.duration(startTime), _)
-
-    def failed(): Unit = timeAndRecord(false)
-    def succeeded(): Unit = timeAndRecord(true)
-
-    f.attempt.flatMap {
-      case Left(error) =>
-        failed()
-        IO.raiseError(error)
-      case Right(ok) =>
-        succeeded()
-        IO.pure(ok)
-    }
-  }
+  import SqsMessageQueue._
 
   // Helper for handling SQS requests and responses
-  private def sqsAsync[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
+  def sqsAsync[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](
       request: A,
       f: (A, AsyncHandler[A, B]) => java.util.concurrent.Future[B]): IO[B] =
     IO.async[B] { complete: (Either[Throwable, B] => Unit) =>
@@ -81,10 +58,15 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
       f(request, asyncHandler)
     }
-  // $COVERAGE-ON$
 
+  /**
+  * Receiving messages could fail expectedly if a message on the queue is not well formed
+    *
+    * For each message pulled off, attempt to parse the message.  If that fails, log loudly and remove
+    * it from the message queue
+    */
   def receive(count: MessageCount): IO[List[CommandMessage]] =
-    monitored("sqs.receiveMessageBatch") {
+    monitor("queue.SQS.receiveMessageBatch") {
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         new ReceiveMessageRequest()
           .withMaxNumberOfMessages(count.value)
@@ -92,17 +74,43 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
           .withWaitTimeSeconds(1)
           .withQueueUrl(queueUrl),
         client.receiveMessageAsync
-      ).map(_.getMessages.asScala.toList.map(m =>
-        CommandMessage(SqsMessageHandle(m.getReceiptHandle), fromMessage(m))))
+      ).flatMap(batchResult => parseBatch(batchResult.getMessages.asScala.toList))
     }
 
+  def parseBatch(messages: List[Message]): IO[List[SqsMessage]] = {
+    // attempt to parse each message that arrives, failures will be removed and not returned
+    messages
+      .map(parse)
+      .sequence
+      .map { lst: List[Either[Throwable, (Message, ZoneCommand)]] =>
+        lst.collect {
+          case Right(parsedMessage) => parsedMessage
+        }
+      }
+  }
+
+  // If we cannot parse the message, remove it from the queue
+  def parse(message: Message): IO[Either[Throwable, SqsMessage]] = {
+    // This is tricky, we need to attempt to parse the message.  If we cannot, delete it; otherwise return ok
+    IO.fromEither(SqsMessage.parseSqsMessage(message)).attempt.flatMap {
+      case Left(e) =>
+        logger.error(s"Failed handling message with id '${message.getMessageId}'", e)
+        delete(message.getReceiptHandle).as(Left(e))
+      case Right(ok) => IO.pure(Right(ok))
+    }
+  }
+
+  def delete(receiptHandle: String): IO[Unit] = sqsAsync[DeleteMessageRequest, DeleteMessageResult](
+    new DeleteMessageRequest(queueUrl, receiptHandle),
+    client.deleteMessageAsync).as(())
+
   def remove(message: CommandMessage): IO[Unit] =
-    monitored("sqs.removeMessage")(
-      sqsAsync[DeleteMessageRequest, DeleteMessageResult](
-        new DeleteMessageRequest(
-          queueUrl,
-          message.handle.asInstanceOf[SqsMessageHandle].receiptHandle),
-        client.deleteMessageAsync)).map(_ => ())
+    monitor("queue.SQS.removeMessage") {
+      IO.fromEither(SqsMessage.cast(message))
+        .flatMap { sqsMsg =>
+          delete(sqsMsg.receiptHandle)
+      }
+    }.as(())
 
   // AWS SQS has no explicit requeue mechanism; need to delete and re-add while specifying
   // message visibility. AWS natively applies an exponential back-off retry mechanism
@@ -110,14 +118,14 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   def requeue(message: CommandMessage): IO[Unit] = IO.unit
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
-    monitored("sqs.sendMessage")(
+    monitor("queue.SQS.sendMessage")(
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
         client.sendMessageAsync)).map(_ => ())
 
-  def send[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
-    monitored("sqs.sendMessageBatch")(
+  def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
+    monitor("sqs.sendMessageBatch")(
       sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
         toSendMessageBatchRequest(cmds)
           .withQueueUrl(queueUrl),
@@ -127,17 +135,24 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       }
 
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
-    monitored("sqs.changeMessageTimeout")(
-      sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
-        new ChangeMessageVisibilityRequest()
-          .withReceiptHandle(message.handle.asInstanceOf[SqsMessageHandle].receiptHandle)
-          .withVisibilityTimeout(duration.toSeconds.toInt)
-          .withQueueUrl(queueUrl),
-        client.changeMessageVisibilityAsync
-      )).map(_ => ())
+    monitor("sqs.changeMessageTimeout") {
+      IO.fromEither(SqsMessage.cast(message))
+        .flatMap { sqsMsg =>
+          sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
+            new ChangeMessageVisibilityRequest()
+              .withReceiptHandle(sqsMsg.receiptHandle)
+              .withVisibilityTimeout(duration.toSeconds.toInt)
+              .withQueueUrl(queueUrl),
+            client.changeMessageVisibilityAsync
+          )
+        }
+        .as(())
+    }
 }
 
-object SqsMessageQueue {
+object SqsMessageQueue extends ProtobufConversions {
+  private val logger = LoggerFactory.getLogger("vinyldns.sqs.queue.SqsMessageQueue")
+
   def apply(config: Config = ConfigFactory.load().getConfig("sqs")): SqsMessageQueue = {
     val accessKey = config.getString("access-key")
     val secretKey = config.getString("secret-key")
@@ -163,40 +178,6 @@ object SqsMessageQueue {
 
     new SqsMessageQueue(queueUrl, client)
   }
-}
-
-trait SqsConversions extends ProtobufConversions {
-  private val logger = LoggerFactory.getLogger("vinyldns.sqs.queue.SqsMessageQueue")
-
-  sealed abstract class SqsMessageType(val name: String)
-  case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage")
-  case object SqsZoneChangeMessage extends SqsMessageType("SqsZoneChangeMessage")
-
-  implicit class AmazonWebServiceRequestImprovements[A <: AmazonWebServiceRequest](
-      baseMessage: SendMessageRequest) {
-    def withMessageType(messageTypeName: String): SendMessageRequest =
-      baseMessage
-        .withMessageAttributes(
-          Map(
-            "message-type" -> new MessageAttributeValue()
-              .withStringValue(messageTypeName)
-              .withDataType("String")
-          ).asJava
-        )
-  }
-
-  implicit class SendMessageBatchRequestEntryImprovements(
-      baseRequestEntry: SendMessageBatchRequestEntry) {
-    def withMessageType(messageTypeName: String): SendMessageBatchRequestEntry =
-      baseRequestEntry
-        .withMessageAttributes(
-          Map(
-            "message-type" -> new MessageAttributeValue()
-              .withStringValue(messageTypeName)
-              .withDataType("String")
-          ).asJava
-        )
-  }
 
   // Helper function to serialize message body
   def messageData[A <: ZoneCommand](cmd: A): String = cmd match {
@@ -204,33 +185,21 @@ trait SqsConversions extends ProtobufConversions {
     case zc: ZoneChange => Base64.getEncoder.encodeToString(toPB(zc).toByteArray)
   }
 
-  // Helper function to generate message type attribute
-  def messageType[A <: ZoneCommand](cmd: A): String = cmd match {
-    case _: RecordSetChange => SqsRecordSetChangeMessage.name
-    case _: ZoneChange => SqsZoneChangeMessage.name
-  }
-
-  def parseMessageType(messageType: String): SqsMessageType = messageType match {
-    case SqsRecordSetChangeMessage.name => SqsRecordSetChangeMessage
-    case SqsZoneChangeMessage.name => SqsZoneChangeMessage
-  }
-
   def toSendMessageRequest(zoneCommand: ZoneCommand): SendMessageRequest = {
     val messageTypeBytesTuple = zoneCommand match {
-      case rsc: RecordSetChange => (SqsRecordSetChangeMessage.name, toPB(rsc).toByteArray)
-      case zc: ZoneChange => (SqsZoneChangeMessage.name, toPB(zc).toByteArray)
+      case rsc: RecordSetChange => (SqsRecordSetChangeMessage, toPB(rsc).toByteArray)
+      case zc: ZoneChange => (SqsZoneChangeMessage, toPB(zc).toByteArray)
     }
 
     messageTypeBytesTuple match {
       case (messageType, messageBytes) =>
         new SendMessageRequest()
           .withMessageBody(Base64.getEncoder.encodeToString(messageBytes))
-          .withMessageType(messageType)
+          .withMessageAttributes(Map(messageType.messageAttribute).asJava)
     }
   }
 
-  def toSendMessageBatchRequest[A <: ZoneCommand](
-      commands: NonEmptyList[A]): SendMessageBatchRequest = {
+  def toSendMessageBatchRequest[A <: ZoneCommand](commands: NonEmptyList[A]): SendMessageBatchRequest = {
     // convert each message into an entry
     val entries = commands
       .map(cmd => (cmd, messageData(cmd)))
@@ -239,7 +208,7 @@ trait SqsConversions extends ProtobufConversions {
           new SendMessageBatchRequestEntry()
             .withMessageBody(msgBody)
             .withId(cmd.id)
-            .withMessageType(messageType(cmd))
+            .withMessageAttributes(Map(SqsMessageType.fromCommand(cmd).messageAttribute).asJava)
       }
       .toList
       .asJava
@@ -248,26 +217,15 @@ trait SqsConversions extends ProtobufConversions {
       .withEntries(entries)
   }
 
-  def fromMessage(message: Message): ZoneCommand = {
-    logger.info(
-      s"Received message with attributes ${message.getMessageAttributes.asScala}, ${message.getAttributes.asScala}")
-    val messageType = message.getMessageAttributes.asScala("message-type").getStringValue
-    val messageBytes = Base64.getDecoder.decode(message.getBody)
-    parseMessageType(messageType) match {
-      case SqsRecordSetChangeMessage =>
-        fromPB(VinylDNSProto.RecordSetChange.parseFrom(messageBytes))
-      case SqsZoneChangeMessage => fromPB(VinylDNSProto.ZoneChange.parseFrom(messageBytes))
-    }
-  }
-
   def toSendBatchResult[A <: ZoneCommand](
-      batchResult: SendMessageBatchResult,
-      cmds: NonEmptyList[A]): SendBatchResult = {
+                                           batchResult: SendMessageBatchResult,
+                                           cmds: NonEmptyList[A]): SendBatchResult = {
     val successfulIds = batchResult.getSuccessful.asScala.map(_.getId)
     val successes = cmds.toList.filter(cmd => successfulIds.contains(cmd.id))
 
-    val failureIds = batchResult.getFailed.asScala.map(_.getId)
-    val failureMessages = batchResult.getFailed.asScala.map(_.getMessage)
+    val failed = batchResult.getFailed.asScala.toList
+    val failureIds = failed.map(_.getId)
+    val failureMessages = failed.map(_.getMessage)
     val failures =
       cmds.toList.filter(cmd => failureIds.contains(cmd.id)).zip(failureMessages).map {
         case (cmd, msg) => (new Exception(msg), cmd)

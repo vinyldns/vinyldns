@@ -110,7 +110,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
       val messages = NonEmptyList.fromListUnsafe(commands)
 
-      val result = queue.send(messages).unsafeRunSync()
+      val result = queue.sendBatch(messages).unsafeRunSync()
 
       result.successes should contain theSameElementsAs commands
       result.failures shouldBe empty

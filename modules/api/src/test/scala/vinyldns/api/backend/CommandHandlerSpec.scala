@@ -29,17 +29,21 @@ import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneChangeType}
+import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneChangeType, ZoneCommand}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone._
+<<<<<<< HEAD
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
+=======
+import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
+>>>>>>> 568de2a... Look for comments on PR
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class CommandHandlerSpec
-    extends WordSpec
+  extends WordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
