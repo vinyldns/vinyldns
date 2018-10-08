@@ -117,7 +117,7 @@ Individual SSHFP record:
     "records": [
         {
             "algorithm": 1,
-            "typ": 3,
+            "type": 3,
             "fingerprint": "560c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         }
     ],
@@ -139,17 +139,17 @@ Multiple SSHFP records:
     "records": [
         {
           "algorithm": 1,
-          "typ": 2,
+          "type": 2,
           "fingerprint": "560c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         },
         {
           "algorithm": 3,
-          "typ": 1,
+          "type": 1,
           "fingerprint": "160c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         },
         {
           "algorithm": 4,
-          "typ": 1,
+          "type": 1,
           "fingerprint": "260c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         }
     ],
