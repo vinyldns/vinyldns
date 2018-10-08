@@ -13,7 +13,7 @@ object Dependencies {
   lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
   lazy val playV = "2.6.19"
-  lazy val awsV = "1.11.95"
+  lazy val awsV = "1.11.423"
 
   lazy val compileDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
