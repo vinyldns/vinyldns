@@ -205,9 +205,6 @@ vinyldns {
       # the jdbc driver, recommended to leave this as is
       driver = "org.mariadb.jdbc.Driver"
 
-      # the URL used to create the schema, typically this will be without the "database" name
-      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
-
       # the main connection URL
       url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
 
@@ -225,6 +222,11 @@ vinyldns {
 
       # The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit
       max-life-time = 600000
+      
+      migration-settings {
+        # the URL used to create the schema, typically this will be without the "database" name
+        migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+      }
     }
     
     repositories {
@@ -448,13 +450,15 @@ vinyldns {
     settings {
       name = "vinyldns"
       driver = "org.mariadb.jdbc.Driver"
-      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
       url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
       user = "root"
       password = "pass"
       pool-max-size = 20
       connection-timeout-millis = 1000
       max-life-time = 600000
+      migration-settings {
+        migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+      }
     }
     
     repositories {
