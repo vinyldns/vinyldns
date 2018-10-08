@@ -24,19 +24,27 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
+import vinyldns.sqs.queue.SqsMessageType._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
-class SqsMessageQueueSpec extends WordSpec with Matchers with MockitoSugar with SqsConversions {
+class SqsMessageQueueSpec
+    extends WordSpec
+    with Matchers
+    with MockitoSugar
+    with ProtobufConversions {
 
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
+  import SqsMessageQueue._
+
   "parseMessageType" should {
     "return the appropriate message type" in {
-      parseMessageType("SqsRecordSetChangeMessage") shouldBe SqsRecordSetChangeMessage
-      parseMessageType("SqsZoneChangeMessage") shouldBe SqsZoneChangeMessage
+      fromString("SqsRecordSetChangeMessage") shouldBe Right(SqsRecordSetChangeMessage)
+      fromString("SqsZoneChangeMessage") shouldBe Right(SqsZoneChangeMessage)
     }
   }
 
@@ -65,38 +73,6 @@ class SqsMessageQueueSpec extends WordSpec with Matchers with MockitoSugar with 
       val decoded = fromPB(VinylDNSProto.ZoneChange.parseFrom(messageBytes))
 
       decoded shouldBe zoneChangePending
-    }
-  }
-
-  "fromMessage" should {
-    "build the command for zone change correctly" in {
-      val bytes = toPB(zoneChangePending).toByteArray
-      val messageBody = Base64.getEncoder.encodeToString(bytes)
-      val msg = new Message()
-        .withBody(messageBody)
-        .withMessageAttributes(
-          Map(
-            "message-type" -> new MessageAttributeValue()
-              .withStringValue(SqsZoneChangeMessage.name)
-              .withDataType("String")
-          ).asJava)
-
-      fromMessage(msg) shouldBe zoneChangePending
-    }
-
-    "build the command for record set change correctly" in {
-      val bytes = toPB(pendingCreateAAAA).toByteArray
-      val messageBody = Base64.getEncoder.encodeToString(bytes)
-      val msg = new Message()
-        .withBody(messageBody)
-        .withMessageAttributes(
-          Map(
-            "message-type" -> new MessageAttributeValue()
-              .withStringValue(SqsRecordSetChangeMessage.name)
-              .withDataType("String")
-          ).asJava)
-
-      fromMessage(msg) shouldBe pendingCreateAAAA
     }
   }
 

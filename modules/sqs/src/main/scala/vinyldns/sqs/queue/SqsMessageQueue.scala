@@ -41,7 +41,8 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
 class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
-    extends MessageQueue with Monitored {
+    extends MessageQueue
+    with Monitored {
 
   import SqsMessageQueue._
 
@@ -60,12 +61,12 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     }
 
   /**
-  * Receiving messages could fail expectedly if a message on the queue is not well formed
+    * Receiving messages could fail expectedly if a message on the queue is not well formed
     *
     * For each message pulled off, attempt to parse the message.  If that fails, log loudly and remove
     * it from the message queue
     */
-  def receive(count: MessageCount): IO[List[CommandMessage]] =
+  def receive(count: MessageCount): IO[List[SqsMessage]] =
     monitor("queue.SQS.receiveMessageBatch") {
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         new ReceiveMessageRequest()
@@ -77,20 +78,19 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       ).flatMap(batchResult => parseBatch(batchResult.getMessages.asScala.toList))
     }
 
-  def parseBatch(messages: List[Message]): IO[List[SqsMessage]] = {
+  def parseBatch(messages: List[Message]): IO[List[SqsMessage]] =
     // attempt to parse each message that arrives, failures will be removed and not returned
     messages
       .map(parse)
       .sequence
-      .map { lst: List[Either[Throwable, (Message, ZoneCommand)]] =>
+      .map { lst: List[Either[Throwable, SqsMessage]] =>
         lst.collect {
-          case Right(parsedMessage) => parsedMessage
+          case Right(message) => message
         }
       }
-  }
 
   // If we cannot parse the message, remove it from the queue
-  def parse(message: Message): IO[Either[Throwable, SqsMessage]] = {
+  def parse(message: Message): IO[Either[Throwable, SqsMessage]] =
     // This is tricky, we need to attempt to parse the message.  If we cannot, delete it; otherwise return ok
     IO.fromEither(SqsMessage.parseSqsMessage(message)).attempt.flatMap {
       case Left(e) =>
@@ -98,18 +98,18 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         delete(message.getReceiptHandle).as(Left(e))
       case Right(ok) => IO.pure(Right(ok))
     }
-  }
 
-  def delete(receiptHandle: String): IO[Unit] = sqsAsync[DeleteMessageRequest, DeleteMessageResult](
-    new DeleteMessageRequest(queueUrl, receiptHandle),
-    client.deleteMessageAsync).as(())
+  def delete(receiptHandle: String): IO[Unit] =
+    sqsAsync[DeleteMessageRequest, DeleteMessageResult](
+      new DeleteMessageRequest(queueUrl, receiptHandle),
+      client.deleteMessageAsync).as(())
 
   def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.SQS.removeMessage") {
       IO.fromEither(SqsMessage.cast(message))
         .flatMap { sqsMsg =>
           delete(sqsMsg.receiptHandle)
-      }
+        }
     }.as(())
 
   // AWS SQS has no explicit requeue mechanism; need to delete and re-add while specifying
@@ -122,7 +122,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
-        client.sendMessageAsync)).map(_ => ())
+        client.sendMessageAsync)).as(())
 
   def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
     monitor("sqs.sendMessageBatch")(
@@ -199,7 +199,8 @@ object SqsMessageQueue extends ProtobufConversions {
     }
   }
 
-  def toSendMessageBatchRequest[A <: ZoneCommand](commands: NonEmptyList[A]): SendMessageBatchRequest = {
+  def toSendMessageBatchRequest[A <: ZoneCommand](
+      commands: NonEmptyList[A]): SendMessageBatchRequest = {
     // convert each message into an entry
     val entries = commands
       .map(cmd => (cmd, messageData(cmd)))
@@ -218,8 +219,8 @@ object SqsMessageQueue extends ProtobufConversions {
   }
 
   def toSendBatchResult[A <: ZoneCommand](
-                                           batchResult: SendMessageBatchResult,
-                                           cmds: NonEmptyList[A]): SendBatchResult = {
+      batchResult: SendMessageBatchResult,
+      cmds: NonEmptyList[A]): SendBatchResult = {
     val successfulIds = batchResult.getSuccessful.asScala.map(_.getId)
     val successes = cmds.toList.filter(cmd => successfulIds.contains(cmd.id))
 

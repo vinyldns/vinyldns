@@ -25,7 +25,7 @@ import org.scalatest._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.RecordSetChange
-import vinyldns.core.queue.{CommandMessage, MessageCount}
+import vinyldns.core.queue.MessageCount
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -72,7 +72,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     }
 
     "succeed when attempting to remove item from empty queue" in {
-      queue.remove(CommandMessage(SqsMessageHandle("does-not-exist"), makeTestAddChange(rsOk)))
+      queue.remove(SqsMessage("does-not-exist", makeTestAddChange(rsOk)))
         .attempt.unsafeRunSync() should beRight(())
     }
 
@@ -81,7 +81,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result.length shouldBe 1
 
-      queue.remove(CommandMessage(result(0).handle, makeTestAddChange(rsOk)))
+      queue.remove(SqsMessage(result(0).receiptHandle, makeTestAddChange(rsOk)))
         .attempt.unsafeRunSync() should beRight(())
     }
 
@@ -91,7 +91,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
       result should have length 1
 
-      queue.requeue(CommandMessage(result(0).handle, makeTestAddChange(rsOk)))
+      queue.requeue(SqsMessage(result(0).receiptHandle, makeTestAddChange(rsOk)))
         .attempt.unsafeRunSync() should beRight(())
     }
 
@@ -122,7 +122,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
       result should have length 1
 
-      queue.changeMessageTimeout(CommandMessage(result(0).handle, makeTestAddChange(rsOk)),
+      queue.changeMessageTimeout(SqsMessage(result(0).receiptHandle, makeTestAddChange(rsOk)),
         FiniteDuration(5, SECONDS)).attempt.unsafeRunSync() should beRight(())
     }
   }
