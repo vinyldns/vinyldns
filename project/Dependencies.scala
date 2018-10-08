@@ -58,7 +58,7 @@ object Dependencies {
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
-    "javax.xml.bind"            %  "jaxb-api"                      % "2.3.1",
+    "javax.xml.bind"            %  "jaxb-api"                       % "2.3.1" % "provided",
     "com.sun.xml.bind"          %  "jaxb-impl"                      % "2.3.1"
   )
 
