@@ -27,6 +27,8 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
+import scala.concurrent.duration._
+
 class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneRepository])
@@ -112,29 +114,13 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     *
     * If the zone is not deleted, we have to save both the zone itself, as well as the zone access entries.
     */
-  def save(zone: Zone): IO[Zone] =
-    zone.status match {
-      case ZoneStatus.Deleted =>
-        monitor("repo.ZoneJDBC.delete") {
-          IO {
-            DB.localTx { implicit s =>
-              deleteZone(zone)
-            }
-          }
-        }
-
-      case _ =>
-        monitor("repo.ZoneJDBC.save") {
-          IO {
-            DB.localTx { implicit s =>
-              deleteZoneAccess(zone)
-              putZone(zone)
-              putZoneAccess(zone)
-              zone
-            }
-          }
-        }
+  def save(zone: Zone): IO[Zone] = {
+    val sqlIO = zone.status match {
+      case ZoneStatus.Deleted => deleteTx(zone)
+      case _ => saveTx(zone)
     }
+    retryIOWithBackoff[Zone](sqlIO, 1.millis, 10)
+  }
 
   def getZone(zoneId: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZone") {
@@ -355,5 +341,35 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
   private def extractZone(columnIndex: Int): WrappedResultSet => Zone = res => {
     fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))
+  }
+
+  private def deleteTx(zone: Zone): IO[Zone] =
+    monitor("repo.ZoneJDBC.delete") {
+      IO {
+        DB.localTx { implicit s =>
+          deleteZone(zone)
+        }
+      }
+    }
+
+  private def saveTx(zone: Zone): IO[Zone] =
+    monitor("repo.ZoneJDBC.save") {
+      IO {
+        DB.localTx { implicit s =>
+          deleteZoneAccess(zone)
+          putZone(zone)
+          putZoneAccess(zone)
+          zone
+        }
+      }
+    }
+
+  private def retryIOWithBackoff[A](ioa: IO[A], delay: FiniteDuration, maxRetries: Int): IO[A] = {
+    ioa.handleErrorWith { error =>
+      if (maxRetries > 0)
+        IO.sleep(delay) *> retryIOWithBackoff(ioa, delay * 2, maxRetries - 1)
+      else
+        IO.raiseError(error)
+    }
   }
 }
