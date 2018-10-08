@@ -180,15 +180,15 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
       batch.map(_.command) should contain theSameElementsAs List(first, second, third, fourth)
     }
     "work in parallel" in {
-      // send 20 messages in parallel
+      // send multiple messages in parallel
       val changes = for { i <- 0 to 8 } yield rsChange.copy(id = s"chg$i")
       val sends = changes.map(rc => underTest.send(rc))
 
-      // receive 20 batches of 1 in parallel
-      val rcvs = for { _ <- 0 to 8 } yield underTest.receive(MessageCount(1).right.value)
+      // receive batches of 1 in parallel
+      val gets = for { _ <- 0 to 8 } yield underTest.receive(MessageCount(1).right.value)
 
       // let's fire them both off, doesn't matter who finishes, as long as the IO does not fail
-      val result = IO.race(sends.toList.parSequence, rcvs.toList.parSequence).attempt.unsafeRunSync()
+      val result = IO.race(sends.toList.parSequence, gets.toList.parSequence).attempt.unsafeRunSync()
       result shouldBe right
     }
   }
