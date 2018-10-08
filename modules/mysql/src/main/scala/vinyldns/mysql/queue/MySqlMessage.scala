@@ -16,28 +16,14 @@
 
 package vinyldns.mysql.queue
 import vinyldns.core.domain.zone.ZoneCommand
-import vinyldns.core.queue.CommandMessage
-import vinyldns.mysql.queue.MySQLMessageQueue.MessageId
+import vinyldns.core.queue.{CommandMessage, MessageId}
 
 import scala.concurrent.duration.FiniteDuration
 
 /* MySQL Command Message implementation */
-final case class MySQLMessage(
+final case class MySqlMessage(
     id: MessageId,
     attempts: Int,
     timeout: FiniteDuration,
     command: ZoneCommand)
     extends CommandMessage
-object MySQLMessage {
-  final case class UnsupportedCommandMessage(msg: String) extends Throwable(msg)
-
-  /* Casts a CommandMessage safely, if not a MySQLCommandMessage, then we fail */
-  def cast(message: CommandMessage): Either[UnsupportedCommandMessage, MySQLMessage] =
-    message match {
-      case mysql: MySQLMessage => Right(mysql)
-      case other =>
-        Left(
-          UnsupportedCommandMessage(
-            s"${other.getClass.getName} is unsupported for MySQL Message Queue"))
-    }
-}

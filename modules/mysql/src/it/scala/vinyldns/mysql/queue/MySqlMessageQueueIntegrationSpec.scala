@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.mysql.repository
+package vinyldns.mysql.queue
 
 import cats.data._
 import cats.effect._
@@ -26,10 +26,10 @@ import scalikejdbc._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.queue.{CommandMessage, MessageCount}
+import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId}
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
-import vinyldns.mysql.queue.MySQLMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded, MessageId}
-import vinyldns.mysql.queue.{MySQLMessage, MySQLMessageQueue}
+import vinyldns.mysql.queue.MySqlMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded}
+import vinyldns.mysql.repository.TestMySqlInstance
 
 import scala.concurrent.duration._
 
@@ -42,37 +42,24 @@ final case class RowData(
   timeoutSecs: Int,
   attempts: Int)
 
-final case class InvalidMessage(command: ZoneCommand) extends CommandMessage
+final case class InvalidMessage(command: ZoneCommand) extends CommandMessage {
+  def id: MessageId = MessageId(command.id)
+}
 
-class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
+class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
   with BeforeAndAfterEach with EitherMatchers with EitherValues with BeforeAndAfterAll with ProtobufConversions {
+  import vinyldns.core.TestRecordSetData._
+  import vinyldns.core.TestZoneData._
 
-  private val underTest = new MySQLMessageQueue()
+  private val underTest = new MySqlMessageQueue()
 
-  private val okZone: Zone = Zone("ok.zone.recordsets.", "test@test.com", adminGroupId = "group")
-
-  private val recordSet: RecordSet = RecordSet(
-    okZone.id,
-    "aaaa",
-    RecordType.AAAA,
-    200,
-    RecordSetStatus.Pending,
-    DateTime.now,
-    None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
-
-  private val rsChange: RecordSetChange = RecordSetChange(okZone, recordSet, "user", RecordSetChangeType.Create)
+  private val rsChange: RecordSetChange = pendingCreateAAAA
 
   private val rsChangeBytes = toPB(rsChange).toByteArray
 
-  private val testMessage: MySQLMessage = MySQLMessage(MessageId(rsChange.id), 0, 20.seconds, rsChange)
+  private val testMessage: MySqlMessage = MySqlMessage(MessageId(rsChange.id), 0, 20.seconds, rsChange)
 
-  private val zoneChange: ZoneChange = ZoneChange(
-    okZone,
-    "ok",
-    ZoneChangeType.Create,
-    ZoneChangeStatus.Complete,
-    created = DateTime.now.minus(1000))
+  private val zoneChange: ZoneChange = zoneChangePending
 
   private def clear(): Unit = DB.localTx { implicit s =>
     sql"DELETE FROM message_queue".update().apply()
@@ -148,7 +135,7 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
     "handle a batch" in {
       val first = rsChange
       val second = rsChange.copy(id = "second")
-      val s = underTest.send(NonEmptyList.of(first, second)).unsafeRunSync()
+      val s = underTest.sendBatch(NonEmptyList.of(first, second)).unsafeRunSync()
       s.successes should contain theSameElementsAs List(first, second)
 
       val r = underTest.receive(MessageCount(2).right.value).unsafeRunSync()
@@ -156,8 +143,8 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
     }
     "be idempotent" in {
       // Put the same change in twice, get one out
-      underTest.send(NonEmptyList.of(rsChange)).unsafeRunSync()
-      underTest.send(NonEmptyList.of(rsChange)).unsafeRunSync()
+      underTest.sendBatch(NonEmptyList.of(rsChange)).unsafeRunSync()
+      underTest.sendBatch(NonEmptyList.of(rsChange)).unsafeRunSync()
       val r = underTest.receive(MessageCount(8).right.value).unsafeRunSync()
       r should have length 1
       r.headOption.map(_.command) shouldBe Some(rsChange)
@@ -166,12 +153,12 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
       // Send a batch
       val first = rsChange
       val second = rsChange.copy(id = "second")
-      underTest.send(NonEmptyList.of(first, second)).unsafeRunSync()
+      underTest.sendBatch(NonEmptyList.of(first, second)).unsafeRunSync()
 
       // Send another batch, with two new and two old
       val third = rsChange.copy(id = "third")
       val fourth = rsChange.copy(id = "fourth")
-      val r = underTest.send(NonEmptyList.of(first, third, second, fourth)).unsafeRunSync()
+      val r = underTest.sendBatch(NonEmptyList.of(first, third, second, fourth)).unsafeRunSync()
       r.successes should contain theSameElementsAs List(first, third, second, fourth)
 
       // Receive a batch, make sure we only get 4 out, no duplicates
@@ -260,14 +247,25 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
       underTest.send(rsChange).unsafeRunSync()
       underTest.changeMessageTimeout(testMessage, 100.seconds).unsafeRunSync()
       val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
-      r.headOption.map(_.asInstanceOf[MySQLMessage].timeout) shouldBe Some(100.seconds)
+      r.headOption.map(_.asInstanceOf[MySqlMessage].timeout) shouldBe Some(100.seconds)
+    }
+    "re-deliver the message after updating the timeout" in {
+      // send and receive the message, receive a second time to ensure the message is delivered again
+      underTest.send(rsChange).unsafeRunSync()
+      val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
+
+      // second receive should not re-deliver
+      underTest.receive(MessageCount(1).right.value).unsafeRunSync() shouldBe empty
+
+      underTest.changeMessageTimeout(testMessage, 1.seconds).unsafeRunSync()
+      Thread.sleep(2000)
+      val r2 = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
+      r2 should have length 1
+      r.headOption shouldBe r2.headOption`
     }
     "do nothing if the message does not exist" in {
       val r = underTest.changeMessageTimeout(testMessage, 100.seconds).attempt.unsafeRunSync()
       r shouldBe right
-    }
-    "fail if the message provided is not a MySQLMessage" in {
-      underTest.changeMessageTimeout(InvalidMessage(rsChange), 100.seconds).attempt.unsafeRunSync() shouldBe left
     }
   }
 
@@ -282,32 +280,21 @@ class MySQLMessageQueueIntegrationSpec extends WordSpec with Matchers
     "do nothing if the message does not exist" in {
       underTest.remove(testMessage).attempt.unsafeRunSync() shouldBe right
     }
-    "fail if the message provided is not a MySQLMessage" in {
-      underTest.remove(InvalidMessage(rsChange)).attempt.unsafeRunSync() shouldBe left
-    }
   }
 
   "requeue" should {
     "reset the message in the database" in {
       val initialTs = DateTime.now.minusSeconds(20)
       insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100, 0)
-      val raw = findMessage(rsChange.id)
-      val rawMsg = raw.getOrElse(fail)
-      val oldUpdated = rawMsg.updatedTime
-
       val r = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
       val msg = r.headOption.getOrElse(fail)
       underTest.requeue(msg).unsafeRunSync()
 
       val req = findMessage(msg.command.id).getOrElse(fail)
       req.inFlight shouldBe false
-      req.updatedTime.getMillis should be > oldUpdated.getMillis
     }
     "do nothing if the message is not in the database" in {
       underTest.requeue(testMessage).attempt.unsafeRunSync() shouldBe right
-    }
-    "fail if the message provided is not a MySQLMessage" in {
-      underTest.requeue(InvalidMessage(rsChange)).attempt.unsafeRunSync() shouldBe left
     }
   }
 }

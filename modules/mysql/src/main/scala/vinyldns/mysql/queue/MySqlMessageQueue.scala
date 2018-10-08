@@ -32,30 +32,29 @@ import vinyldns.proto.VinylDNSProto
 
 import scala.concurrent.duration._
 
-object MySQLMessageQueue {
+object MySqlMessageQueue {
   final case class InvalidMessageHandle(msg: String) extends Throwable(msg)
   final case class MessageAttemptsExceeded(msg: String) extends Throwable(msg)
   final case class InvalidMessageTimeout(timeout: Int)
       extends Throwable(s"Invalid message timeout $timeout")
-  final case class MessageId(value: String) extends AnyVal
 }
 
-class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConversions {
-  import MySQLMessageQueue._
+class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConversions {
+  import MySqlMessageQueue._
 
-  private val logger = LoggerFactory.getLogger(classOf[MySQLMessageQueue])
+  private val logger = LoggerFactory.getLogger(classOf[MySqlMessageQueue])
 
   private val INSERT_MESSAGE =
     sql"""
       |INSERT INTO message_queue(id, message_type, in_flight, data, created, updated, timeout_seconds, attempts)
-      |     VALUES ({id}, {messageType}, {inFlight}, {data}, {created}, {updated}, {timeoutSeconds}, {attempts})
-      |ON DUPLICATE KEY UPDATE updated={updated}
+      |     VALUES ({id}, {messageType}, {inFlight}, {data}, {created}, NOW(), {timeoutSeconds}, {attempts})
+      |ON DUPLICATE KEY UPDATE created={created}
     """.stripMargin
 
   private val REQUEUE_MESSAGE =
     sql"""
       |UPDATE message_queue
-      |   SET in_flight = 0, updated = NOW()
+      |   SET in_flight = 0
       | WHERE id = ?
     """.stripMargin
 
@@ -68,24 +67,24 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
 
   private val FETCH_UNCLAIMED =
     sql"""
-         |SELECT id, message_type, data, attempts, timeout_seconds
-         |  FROM message_queue
-         | WHERE in_flight = 0
-         |    OR updated < DATE_SUB(NOW(),INTERVAL timeout_seconds SECOND)
-         | LIMIT ?
+      |SELECT id, message_type, data, attempts, timeout_seconds
+      |  FROM message_queue
+      | WHERE in_flight = 0
+      |    OR updated < DATE_SUB(NOW(),INTERVAL timeout_seconds SECOND)
+      | LIMIT ?
     """.stripMargin
 
   private val DELETE_MESSAGES =
     sql"""
-         |DELETE FROM message_queue WHERE id IN (?)
+      |DELETE FROM message_queue WHERE id IN (?)
     """.stripMargin
 
   // Important!  Make sure to update the updated timestamp to current, and increment the attempts!
   private val CLAIM_MESSAGES =
     sql"""
-         |UPDATE message_queue
-         |   SET in_flight=1, updated=NOW(), attempts=attempts+1
-         | WHERE id in (?)
+      |UPDATE message_queue
+      |   SET in_flight=1, updated=NOW(), attempts=attempts+1
+      | WHERE id in (?)
     """.stripMargin
 
   /* Parses a message from fields, returning the message id on failure, otherwise a good CommandMessage */
@@ -94,7 +93,7 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       typ: Int,
       data: Array[Byte],
       attempts: Int,
-      timeoutSeconds: Int): Either[(Throwable, MessageId), MySQLMessage] = {
+      timeoutSeconds: Int): Either[(Throwable, MessageId), MySqlMessage] = {
     // parse the type, if it cannot parse we fail with the message id, same with the data
     for {
       messageType <- MessageType.fromInt(typ)
@@ -108,14 +107,14 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       _ <- Either.cond(
         timeoutSeconds > 0,
         (),
-        MySQLMessageQueue.InvalidMessageTimeout(timeoutSeconds))
-    } yield MySQLMessage(id, attempts, timeoutSeconds.seconds, cmd)
+        MySqlMessageQueue.InvalidMessageTimeout(timeoutSeconds))
+    } yield MySqlMessage(id, attempts, timeoutSeconds.seconds, cmd)
   }.leftMap { e =>
     (e, id)
   }
 
   def fetchUnclaimed(numMessages: Int)(
-      implicit s: DBSession): List[Either[(Throwable, MessageId), MySQLMessage]] =
+      implicit s: DBSession): List[Either[(Throwable, MessageId), MySqlMessage]] =
     FETCH_UNCLAIMED
       .bind(numMessages)
       .map { rs =>
@@ -157,7 +156,6 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       'attempts -> 0,
       'data -> getBytes(cmd),
       'created -> ts,
-      'updated -> ts,
       'timeoutSeconds -> 30 // TODO: This needs to be configuration driven
     )
   }
@@ -206,40 +204,36 @@ class MySQLMessageQueue extends MessageQueue with Monitored with ProtobufConvers
 
   def requeue(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.requeue") {
-      IO.fromEither(MySQLMessage.cast(message)).map { mysql =>
+      IO {
         DB.localTx { implicit s =>
-          REQUEUE_MESSAGE.bind(mysql.id.value).update().apply()
+          REQUEUE_MESSAGE.bind(message.id.value).update().apply()
         }
       }
     }.as(())
 
   def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.remove") {
-      IO.fromEither(MySQLMessage.cast(message))
-        .map { mysql =>
-          DB.localTx { implicit s =>
-            deleteMessages(List(mysql.id))
-          }
+      IO {
+        DB.localTx { implicit s =>
+          deleteMessages(List(message.id))
         }
-        .as(())
+      }.as(())
     }
 
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.JDBC.changeMessageTimeout") {
-      IO.fromEither(MySQLMessage.cast(message))
-        .map { mysql =>
-          DB.localTx { implicit s =>
-            CHANGE_TIMEOUT.bind(duration.toSeconds, mysql.id.value).update().apply()
-          }
+      IO {
+        DB.localTx { implicit s =>
+          CHANGE_TIMEOUT.bind(duration.toSeconds, message.id.value).update().apply()
         }
-        .as(())
+      }.as(())
     }
 
-  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
+  def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
     monitor("queue.JDBC.sendBatch") {
       IO {
         DB.localTx { implicit s =>
-          // Note, we do replace into, so these really cannot fail, they all succeed or all fail
+          // Note, these really cannot fail, they all succeed or all fail
           // Other note, not doing a size check on the messages, but we should chunk these,
           // assuming a small number for right now which is not ideal
           INSERT_MESSAGE.batchByName(insertParams(messages): _*).apply()

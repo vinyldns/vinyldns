@@ -22,8 +22,11 @@ import vinyldns.core.domain.zone.ZoneCommand
 import scala.concurrent.duration.FiniteDuration
 
 // $COVERAGE-OFF$
+/* An identifier for a message, used typically to requeue and remove the message */
+final case class MessageId(value: String)
 trait CommandMessage {
   def command: ZoneCommand
+  def id: MessageId
 }
 
 // need to encode the possibility of one or more commands failing to send
@@ -34,7 +37,7 @@ final case class SendBatchResult(
 // Using types here to ensure we cannot pass in a negative or 0 count
 final case class MessageCount private (value: Int) extends AnyVal
 object MessageCount {
-  final case class NonPositiveMessageCountError(cnt: Int)
+  final case class NonPositiveMessageCountError(cnt: Int) extends Throwable
   def apply(cnt: Int): Either[NonPositiveMessageCountError, MessageCount] =
     if (cnt <= 0) Left(NonPositiveMessageCountError(cnt))
     else Right(new MessageCount(cnt))
@@ -57,7 +60,7 @@ trait MessageQueue {
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit]
 
   // we need to track which messages failed and report that back to the caller
-  def send[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult]
+  def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult]
 
   // sends a single message, exceptions will be raised via IO
   def send[A <: ZoneCommand](command: A): IO[Unit]
