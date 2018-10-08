@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package vinyldns.mysql.repository
+package vinyldns.mysql
 
-case class MySqlDataStoreSettings(
+case class MySqlConnectionSettings(
     name: String,
     driver: String,
-    migrationUrl: String,
     url: String,
     user: String,
     password: String,
     poolMaxSize: Int,
     connectionTimeoutMillis: Long,
     maxLifeTime: Long,
-    migrationSchemaTable: Option[String])
+    migrationSettings: Option[MySqlMigrationSettings]
+)
+
+case class MySqlMigrationSettings(
+    migrationUrl: String,
+    migrationSchemaTable: Option[String],
+    poolMaxSize: Int = 3
+)
