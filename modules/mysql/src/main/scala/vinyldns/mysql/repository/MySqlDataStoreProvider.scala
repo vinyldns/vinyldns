@@ -17,32 +17,33 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
-import com.zaxxer.hikari.HikariDataSource
-import javax.sql.DataSource
-import org.flywaydb.core.Flyway
-import org.slf4j.LoggerFactory
 import pureconfig.module.catseffect.loadConfigF
-
-import scala.collection.JavaConverters._
-import scalikejdbc.config.DBs
-import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.repository._
+import vinyldns.mysql.{MySqlConnectionSettings, MySqlConnector}
 
 class MySqlDataStoreProvider extends DataStoreProvider {
 
-  private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
   private val implementedRepositories =
     Set(RepositoryName.zone, RepositoryName.batchChange, RepositoryName.zoneChange)
 
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
     for {
-      settingsConfig <- loadConfigF[IO, MySqlDataStoreSettings](config.settings)
+      settingsConfig <- loadConfigF[IO, MySqlConnectionSettings](config.settings)
+      _ <- migrationsOn(settingsConfig)
       _ <- validateRepos(config.repositories)
-      _ <- runDBMigrations(settingsConfig)
-      _ <- setupDBConnection(settingsConfig)
+      _ <- MySqlConnector.runDBMigrations(settingsConfig)
+      _ <- MySqlConnector.setupDBConnection(settingsConfig)
       store <- initializeRepos()
     } yield store
+
+  def migrationsOn(settingsConfig: MySqlConnectionSettings): IO[Unit] =
+    IO.fromEither(
+      Either.cond(
+        settingsConfig.migrationSettings.isDefined,
+        (),
+        DataStoreStartupError("Migrations must be configured on if MySql database is enabled"))
+    )
 
   def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
     val invalid = reposConfig.keys.diff(implementedRepositories)
@@ -64,66 +65,4 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       batchChangeRepository = batchChanges,
       zoneChangeRepository = zoneChanges)
   }
-
-  def runDBMigrations(settings: MySqlDataStoreSettings): IO[Unit] = IO {
-    // Migration needs to happen on the base URL, not the table URL, thus the separate source
-    lazy val migrationDataSource: DataSource = {
-      val ds = new HikariDataSource()
-      ds.setDriverClassName(settings.driver)
-      ds.setJdbcUrl(settings.migrationUrl)
-      ds.setUsername(settings.user)
-      ds.setPassword(settings.password)
-      // migrations happen once on startup; without these settings the default number of connections
-      // will be created and maintained even though this datasource is no longer needed post-migration
-      ds.setMaximumPoolSize(3)
-      ds.setMinimumIdle(0)
-      ds
-    }
-
-    logger.info("Running migrations to ready the databases")
-
-    val migration = new Flyway()
-    migration.setDataSource(migrationDataSource)
-    // flyway changed the default schema table name in v5.0.0
-    // this allows to revert to an old naming convention if needed
-    settings.migrationSchemaTable.foreach { tableName =>
-      migration.setTable(tableName)
-    }
-
-    val placeholders = Map("dbName" -> settings.name)
-    migration.setPlaceholders(placeholders.asJava)
-    migration.setSchemas(settings.name)
-
-    // Runs flyway migrations
-    migration.migrate()
-    logger.info("migrations complete")
-  }
-
-  def setupDBConnection(settings: MySqlDataStoreSettings): IO[Unit] = IO {
-    val dataSource: DataSource = {
-      val ds = new HikariDataSource()
-      ds.setDriverClassName(settings.driver)
-      ds.setJdbcUrl(settings.url)
-      ds.setUsername(settings.user)
-      ds.setPassword(settings.password)
-      ds.setConnectionTimeout(settings.connectionTimeoutMillis)
-      ds.setMaximumPoolSize(settings.poolMaxSize)
-      ds.setMaxLifetime(settings.maxLifeTime)
-      ds.setRegisterMbeans(true)
-      ds
-    }
-
-    logger.info("configuring connection pool")
-
-    // Configure the connection pool
-    ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
-
-    logger.info("setting up databases")
-
-    // Sets up all databases with scalikejdbc
-    DBs.setupAll()
-
-    logger.info("database init complete")
-  }
-
 }

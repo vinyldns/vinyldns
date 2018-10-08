@@ -20,6 +20,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError}
+import vinyldns.mysql.MySqlConnectionSettings
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
   val mySqlConfig: Config = ConfigFactory.load().getConfig("mysql")
@@ -59,7 +60,37 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
           |    settings {
           |      name = "test-database"
           |      driver = "org.mariadb.jdbc.Driver"
-          |      migration-url = "test-url"
+          |      pool-max-size = 20
+          |      connection-timeout-millis = 1000
+          |      max-life-time = 600000
+          |      migration-settings {
+          |        migration-url = "migration.url"
+          |      }
+          |    }
+          |
+          |    repositories {
+          |      zone {},
+          |      batch-change {}
+          |    }
+          |    """.stripMargin)
+
+      val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
+
+      a[pureconfig.error.ConfigReaderException[MySqlConnectionSettings]] should be thrownBy underTest
+        .load(badSettings, crypto)
+        .unsafeRunSync()
+    }
+    "Fail if migration settings are not included" in {
+      val badConfig = ConfigFactory.parseString(
+        """
+          |    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
+          |
+          |    settings {
+          |      name = "test-database"
+          |      driver = "org.mariadb.jdbc.Driver"
+          |      url = "url"
+          |      user = "some-user"
+          |      password = "some-pass"
           |      pool-max-size = 20
           |      connection-timeout-millis = 1000
           |      max-life-time = 600000
@@ -73,9 +104,11 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
 
       val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
 
-      a[pureconfig.error.ConfigReaderException[MySqlDataStoreSettings]] should be thrownBy underTest
+      val err = the[DataStoreStartupError] thrownBy underTest
         .load(badSettings, crypto)
         .unsafeRunSync()
+
+      err.msg shouldBe "Migrations must be configured on if MySql database is enabled"
     }
     "Fail if validateRepos fails" in {
       val placeHolder = ConfigFactory.parseString("test=test")
