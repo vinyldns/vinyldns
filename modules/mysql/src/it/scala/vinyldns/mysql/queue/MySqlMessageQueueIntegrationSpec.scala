@@ -261,7 +261,7 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
       Thread.sleep(2000)
       val r2 = underTest.receive(MessageCount(1).right.value).unsafeRunSync()
       r2 should have length 1
-      r.headOption shouldBe r2.headOption`
+      r.headOption.map(_.id) shouldBe r2.headOption.map(_.id)
     }
     "do nothing if the message does not exist" in {
       val r = underTest.changeMessageTimeout(testMessage, 100.seconds).attempt.unsafeRunSync()
