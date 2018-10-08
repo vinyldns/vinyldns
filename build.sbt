@@ -173,9 +173,13 @@ lazy val portalPublishSettings = Seq(
   publishLocal := (publishLocal in Docker).value,
   publish := (publish in Docker).value,
   // for sbt-native-packager (docker) to exclude local.conf
-  mappings in Universal ~= (_.filterNot(_._1.name.equals("local.conf"))),
+  mappings in Universal ~= ( _.filterNot {
+    case (file, _) => file.getName.equals("local.conf")
+  }),
   // for local.conf to be excluded in jars
-  mappings in (Compile, packageBin) ~= { _.filter(!_._1.getName.equals("local.conf")) }
+  mappings in (Compile, packageBin) ~= ( _.filterNot {
+    case (file, _) => file.getName.equals("local.conf")
+  })
 )
 
 lazy val pbSettings = Seq(
