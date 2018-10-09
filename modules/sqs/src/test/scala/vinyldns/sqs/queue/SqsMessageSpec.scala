@@ -21,24 +21,13 @@ import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
 import org.scalatest.{EitherValues, Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData.pendingCreateAAAA
 import vinyldns.core.TestZoneData.zoneChangePending
-import vinyldns.core.domain.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.queue.CommandMessage
 import vinyldns.sqs.queue.SqsMessageType.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
 
 import scala.collection.JavaConverters._
 
 class SqsMessageSpec extends WordSpec with Matchers with EitherValues with ProtobufConversions {
   import SqsMessage._
-
-  case class InvalidCommandMessage(command: ZoneCommand) extends CommandMessage
-
-  "cast" should {
-    "fail with InvalidMessageType if an SqsMessage is not detected" in {
-      cast(InvalidCommandMessage(pendingCreateAAAA)).left.value shouldBe
-        InvalidMessageType(InvalidCommandMessage(pendingCreateAAAA).getClass.getName)
-    }
-  }
 
   "parseSqsMessage" should {
     "build the command for zone change correctly" in {
@@ -69,6 +58,19 @@ class SqsMessageSpec extends WordSpec with Matchers with EitherValues with Proto
           ).asJava)
 
       parseSqsMessage(msg).right.value.command shouldBe pendingCreateAAAA
+    }
+
+    "return EmptySqsMessageContents when processing an empty message" in {
+      val message = new Message()
+        .withMessageId("test-id")
+        .withMessageAttributes(
+          Map(
+            "message-type" -> new MessageAttributeValue()
+              .withStringValue(SqsZoneChangeMessage.name)
+              .withDataType("String")
+          ).asJava)
+
+      parseSqsMessage(message) shouldBe Left(EmptySqsMessageContents(message.getMessageId))
     }
   }
 }

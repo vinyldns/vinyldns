@@ -21,25 +21,20 @@ import cats.implicits._
 import com.amazonaws.services.sqs.model.Message
 import vinyldns.core.domain.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.queue.CommandMessage
+import vinyldns.core.queue.{CommandMessage, MessageId}
 import vinyldns.proto.VinylDNSProto
 import vinyldns.sqs.queue.SqsMessageType.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
 
-final case class SqsMessage(receiptHandle: String, command: ZoneCommand) extends CommandMessage
+final case class SqsMessage(id: MessageId, command: ZoneCommand) extends CommandMessage
 object SqsMessage extends ProtobufConversions {
-  sealed abstract class SqsMessageError(message: String) extends Exception(message)
+  sealed abstract class SqsMessageError(message: String) extends Throwable(message)
   final case class InvalidSqsMessageContents(messageId: String)
       extends SqsMessageError(s"Unable to parse SQS Message with ID '$messageId'")
   final case class EmptySqsMessageContents(messageId: String)
       extends SqsMessageError(s"No message body found for SQS message with ID '$messageId'")
 
   final case class InvalidMessageType(className: String)
-      extends Exception(s"Invalid command message type '$className'")
-
-  def cast(msg: CommandMessage): Either[InvalidMessageType, SqsMessage] = msg match {
-    case ok: SqsMessage => Right(ok)
-    case invalid => Left(InvalidMessageType(invalid.getClass.getName))
-  }
+      extends Throwable(s"Invalid command message type '$className'")
 
   def parseSqsMessage(message: Message): Either[Throwable, SqsMessage] =
     for {
@@ -56,5 +51,5 @@ object SqsMessage extends ProtobufConversions {
             case SqsZoneChangeMessage => fromPB(VinylDNSProto.ZoneChange.parseFrom(contents))
           }
         }
-    } yield SqsMessage(message.getReceiptHandle, cmd)
+    } yield SqsMessage(MessageId(message.getReceiptHandle), cmd)
 }

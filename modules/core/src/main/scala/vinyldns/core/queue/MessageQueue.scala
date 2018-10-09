@@ -35,7 +35,7 @@ final case class SendBatchResult(
     failures: List[(Exception, ZoneCommand)])
 
 // Using types here to ensure we cannot pass in a negative or 0 count
-final case class MessageCount private (value: Int) extends AnyVal
+final case class MessageCount private (value: Int)
 object MessageCount {
   final case class NonPositiveMessageCountError(cnt: Int) extends Throwable
   def apply(cnt: Int): Either[NonPositiveMessageCountError, MessageCount] =

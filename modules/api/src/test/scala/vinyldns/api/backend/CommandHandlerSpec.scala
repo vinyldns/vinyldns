@@ -43,7 +43,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class CommandHandlerSpec
-  extends WordSpec
+    extends WordSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach

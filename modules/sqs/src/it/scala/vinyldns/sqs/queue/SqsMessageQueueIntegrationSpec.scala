@@ -20,17 +20,20 @@ import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data.NonEmptyList
 import cats.scalatest.EitherMatchers
+import com.amazonaws.services.sqs.model.{AmazonSQSException, Message, SendMessageRequest, SendMessageResult}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.RecordSetChange
-import vinyldns.core.queue.MessageCount
+import vinyldns.core.protobuf.ProtobufConversions
+import vinyldns.core.queue.{MessageCount, MessageId}
 
 import scala.concurrent.duration.FiniteDuration
 
 class SqsMessageQueueIntegrationSpec extends WordSpec
-  with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach with Matchers with EitherMatchers with EitherValues {
+  with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach with Matchers with EitherMatchers with EitherValues
+  with ProtobufConversions {
 
   private val queue: SqsMessageQueue = SqsMessageQueue()
 
@@ -71,8 +74,19 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
         zoneChangePending)
     }
 
+    "drop malformed message from the queue" in {
+      queue.sqsAsync[SendMessageRequest, SendMessageResult](
+        new SendMessageRequest()
+          .withMessageBody("malformed data")
+          .withQueueUrl(queue.queueUrl),
+          queue.client.sendMessageAsync)
+
+      val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
+      result shouldBe empty
+    }
+
     "succeed when attempting to remove item from empty queue" in {
-      queue.remove(SqsMessage("does-not-exist", makeTestAddChange(rsOk)))
+      queue.remove(SqsMessage(MessageId("does-not-exist"), makeTestAddChange(rsOk)))
         .attempt.unsafeRunSync() should beRight(())
     }
 
@@ -81,7 +95,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result.length shouldBe 1
 
-      queue.remove(SqsMessage(result(0).receiptHandle, makeTestAddChange(rsOk)))
+      queue.remove(SqsMessage(MessageId(result(0).id.value), makeTestAddChange(rsOk)))
         .attempt.unsafeRunSync() should beRight(())
     }
 
@@ -91,7 +105,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
       result should have length 1
 
-      queue.requeue(SqsMessage(result(0).receiptHandle, makeTestAddChange(rsOk)))
+      queue.requeue(SqsMessage(MessageId(result(0).id.value), makeTestAddChange(rsOk)))
         .attempt.unsafeRunSync() should beRight(())
     }
 
@@ -122,8 +136,17 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
       result should have length 1
 
-      queue.changeMessageTimeout(SqsMessage(result(0).receiptHandle, makeTestAddChange(rsOk)),
+      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), makeTestAddChange(rsOk)),
         FiniteDuration(5, SECONDS)).attempt.unsafeRunSync() should beRight(())
+    }
+
+    "throw an error if there are issues parsing the message" in {
+      val message = new Message()
+
+      val queue = SqsMessageQueue()
+      assertThrows[AmazonSQSException] {
+        queue.parse(message).unsafeRunSync()
+      }
     }
   }
 }

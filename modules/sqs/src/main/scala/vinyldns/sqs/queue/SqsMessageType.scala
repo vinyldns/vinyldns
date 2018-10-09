@@ -28,7 +28,7 @@ sealed abstract class SqsMessageType(val name: String) {
 object SqsMessageType {
   case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage")
   case object SqsZoneChangeMessage extends SqsMessageType("SqsZoneChangeMessage")
-  sealed abstract class SqsMessageTypeError(message: String) extends Exception(message)
+  sealed abstract class SqsMessageTypeError(message: String) extends Throwable(message)
 
   final case class InvalidMessageTypeValue(value: String)
       extends SqsMessageTypeError(s"Invalid message-type value on sqs message '$value'")
@@ -47,7 +47,7 @@ object SqsMessageType {
       case invalid => Left(InvalidMessageTypeValue(invalid))
     }
 
-  def fromMessage(sqsMessage: Message): Either[SqsMessageTypeError, SqsMessageType] = {
+  def fromMessage(sqsMessage: Message): Either[SqsMessageTypeError, SqsMessageType] =
     // getMessageAttributes guarantees a map, but it could be empty
     // the message-type maybe present, but doesn't have a string value
     // the message-type could have a string value, but not a valid value
@@ -58,5 +58,4 @@ object SqsMessageType {
         .getOrElse(Left(MessageTypeNotFound))
       messageType <- fromString(messageTypeAttr)
     } yield messageType
-  }
 }

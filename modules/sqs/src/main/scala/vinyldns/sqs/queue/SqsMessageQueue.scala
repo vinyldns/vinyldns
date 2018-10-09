@@ -106,14 +106,11 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
   def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.SQS.removeMessage") {
-      IO.fromEither(SqsMessage.cast(message))
-        .flatMap { sqsMsg =>
-          delete(sqsMsg.receiptHandle)
-        }
+      IO(delete(message.id.value))
     }.as(())
 
-  // AWS SQS has no explicit requeue mechanism; need to delete and re-add while specifying
-  // message visibility. AWS natively applies an exponential back-off retry mechanism
+  // AWS SQS has no explicit requeue mechanism; It can be configured to
+  // natively apply an exponential back-off retry mechanism
   // (see: https://docs.aws.amazon.com/general/latest/gr/api-retries.html).
   def requeue(message: CommandMessage): IO[Unit] = IO.unit
 
@@ -125,7 +122,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         client.sendMessageAsync)).as(())
 
   def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
-    monitor("sqs.sendMessageBatch")(
+    monitor("queue.SQS.sendMessageBatch")(
       sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
         toSendMessageBatchRequest(cmds)
           .withQueueUrl(queueUrl),
@@ -135,18 +132,16 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       }
 
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
-    monitor("sqs.changeMessageTimeout") {
-      IO.fromEither(SqsMessage.cast(message))
-        .flatMap { sqsMsg =>
-          sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
-            new ChangeMessageVisibilityRequest()
-              .withReceiptHandle(sqsMsg.receiptHandle)
-              .withVisibilityTimeout(duration.toSeconds.toInt)
-              .withQueueUrl(queueUrl),
-            client.changeMessageVisibilityAsync
-          )
-        }
-        .as(())
+    monitor("queue.SQS.changeMessageTimeout") {
+      IO {
+        sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
+          new ChangeMessageVisibilityRequest()
+            .withReceiptHandle(message.id.value)
+            .withVisibilityTimeout(duration.toSeconds.toInt)
+            .withQueueUrl(queueUrl),
+          client.changeMessageVisibilityAsync
+        )
+      }.as(())
     }
 }
 
