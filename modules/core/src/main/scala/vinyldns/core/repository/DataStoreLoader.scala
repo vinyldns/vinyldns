@@ -44,7 +44,12 @@ object DataStoreLoader {
       _ <- IO(
         logger.error(
           s"Attempting to load repos ${config.repositories.keys} from ${config.className}"))
-      provider <- IO(Class.forName(config.className).newInstance.asInstanceOf[DataStoreProvider])
+      provider <- IO(
+        Class
+          .forName(config.className)
+          .getDeclaredConstructor()
+          .newInstance()
+          .asInstanceOf[DataStoreProvider])
       dataStore <- provider.load(config, crypto)
     } yield (config, dataStore)
 
