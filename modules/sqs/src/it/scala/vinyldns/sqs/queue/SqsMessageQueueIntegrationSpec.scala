@@ -55,7 +55,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
   val rsAddChange: RecordSetChange = makeTestAddChange(rsOk)
 
-  "SqsMessageQueueIntegrationSpec" should {
+  "SqsMessageQueue" should {
     "receive a single message from the queue" in {
       queue.send(rsAddChange).unsafeRunSync()
 
