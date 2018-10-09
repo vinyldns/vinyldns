@@ -24,7 +24,6 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.core.domain.RecordSetChange
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordChangeRepository
 import vinyldns.core.protobuf.ProtobufConversions

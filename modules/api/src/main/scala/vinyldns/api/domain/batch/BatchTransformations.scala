@@ -17,9 +17,8 @@
 package vinyldns.api.domain.batch
 
 import vinyldns.api.domain.dns.DnsConversions.{getIPv4NonDelegatedZoneName, getIPv6FullReverseName}
-import vinyldns.core.domain.RecordSetChange
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.record.RecordType.RecordType

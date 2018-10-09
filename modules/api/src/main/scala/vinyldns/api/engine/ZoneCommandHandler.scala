@@ -26,9 +26,10 @@ import fs2.async.mutable.Signal
 import org.slf4j.LoggerFactory
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.repository.ApiDataAccessor
-import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneChangeType}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global

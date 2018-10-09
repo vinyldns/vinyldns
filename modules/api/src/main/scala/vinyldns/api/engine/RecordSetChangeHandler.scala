@@ -24,7 +24,6 @@ import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.NoError
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.record.RecordSetHelpers._
-import vinyldns.core.domain._
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 
 import scala.concurrent.duration._

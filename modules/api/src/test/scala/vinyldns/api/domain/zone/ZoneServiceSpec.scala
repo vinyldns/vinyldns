@@ -27,7 +27,6 @@ import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import cats.effect._
 import vinyldns.api.repository.TestDataLoader
-import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._

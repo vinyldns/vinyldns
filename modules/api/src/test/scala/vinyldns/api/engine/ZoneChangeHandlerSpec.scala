@@ -23,8 +23,12 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
-import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus}
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.zone.{
+  ZoneChange,
+  ZoneChangeRepository,
+  ZoneChangeStatus,
+  ZoneRepository
+}
 
 import scala.concurrent.ExecutionContext
 

@@ -15,8 +15,8 @@
  */
 
 package vinyldns.mysql.queue
-import vinyldns.core.domain.{RecordSetChange, ZoneChange}
-import vinyldns.core.domain.ZoneCommand
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 
 sealed abstract class MessageType(val value: Int)
 object MessageType {

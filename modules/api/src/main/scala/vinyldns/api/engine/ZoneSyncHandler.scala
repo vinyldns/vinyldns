@@ -19,17 +19,16 @@ package vinyldns.api.engine
 import cats.effect.IO
 import cats.syntax.all._
 import org.joda.time.DateTime
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{Zone, ZoneStatus}
-import vinyldns.core.domain._
+import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneChangeStatus, ZoneStatus}
 import vinyldns.core.route.Monitored
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 
-  private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
+  private implicit val logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
 
   def apply(
       recordSetRepository: RecordSetRepository,

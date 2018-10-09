@@ -14,36 +14,28 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain
+package vinyldns.core.domain.record
 
 import java.util.UUID
 
 import org.joda.time.DateTime
-import vinyldns.core.domain.RecordSetChangeStatus.RecordSetChangeStatus
-import vinyldns.core.domain.RecordSetChangeType.RecordSetChangeType
-import vinyldns.core.domain.ZoneChangeStatus.ZoneChangeStatus
-import vinyldns.core.domain.ZoneChangeType.ZoneChangeType
-import vinyldns.core.domain.record.{RecordSet, RecordSetStatus}
-import vinyldns.core.domain.zone.Zone
-
-sealed trait ZoneCommand {
-  val id: String
-  val zoneId: String
-}
+import vinyldns.core.domain.zone.{Zone, ZoneCommand, ZoneCommandResult}
 
 object RecordSetChangeStatus extends Enumeration {
   type RecordSetChangeStatus = Value
   val Pending, Submitted, Validated, Applied, Verified, Complete, Failed = Value
 
-  def isDone(status: RecordSetChangeStatus): Boolean = status == Complete || status == Failed
+  def isDone(status: RecordSetChangeStatus): Boolean = (status == Complete || status == Failed)
 }
 
 object RecordSetChangeType extends Enumeration {
   type RecordSetChangeType = Value
   val Create, Update, Delete = Value
 }
+import RecordSetChangeStatus._
+import RecordSetChangeType._
 
-final case class RecordSetChange(
+case class RecordSetChange(
     zone: Zone,
     recordSet: RecordSet,
     userId: String,
@@ -99,43 +91,3 @@ final case class RecordSetChange(
     sb.toString
   }
 }
-
-object ZoneChangeStatus extends Enumeration {
-  type ZoneChangeStatus = Value
-  val Pending, Complete, Failed, Synced = Value
-}
-
-object ZoneChangeType extends Enumeration {
-  type ZoneChangeType = Value
-  val Create, Update, Delete, Sync = Value
-}
-
-final case class ZoneChange(
-    zone: Zone,
-    userId: String,
-    changeType: ZoneChangeType,
-    status: ZoneChangeStatus = ZoneChangeStatus.Pending,
-    created: DateTime = DateTime.now,
-    systemMessage: Option[String] = None,
-    id: String = UUID.randomUUID().toString)
-    extends ZoneCommand
-    with ZoneCommandResult {
-
-  val zoneId: String = zone.id
-
-  override def toString: String = {
-    val sb = new StringBuilder
-    sb.append("ZoneChange: [")
-    sb.append("id=\"").append(id).append("\"; ")
-    sb.append("userId=\"").append(userId).append("\"; ")
-    sb.append("changeType=\"").append(changeType.toString).append("\"; ")
-    sb.append("status=\"").append(status.toString).append("\"; ")
-    sb.append("systemMessage=\"").append(systemMessage.toString).append("\"; ")
-    sb.append("created=\"").append(created.getMillis.toString).append("\"; ")
-    sb.append(zone.toString)
-    sb.append(" ]")
-    sb.toString
-  }
-}
-
-trait ZoneCommandResult

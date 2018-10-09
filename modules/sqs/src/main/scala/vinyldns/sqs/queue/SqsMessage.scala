@@ -19,7 +19,7 @@ import java.util.Base64
 
 import cats.implicits._
 import com.amazonaws.services.sqs.model.Message
-import vinyldns.core.domain.ZoneCommand
+import vinyldns.core.domain.zone.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{CommandMessage, MessageId}
 import vinyldns.proto.VinylDNSProto

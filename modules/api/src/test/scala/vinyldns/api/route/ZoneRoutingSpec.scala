@@ -29,7 +29,6 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.record.RecordType
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
-import vinyldns.core.domain.{ZoneChange, ZoneChangeStatus, ZoneChangeType, ZoneCommandResult}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone._
 

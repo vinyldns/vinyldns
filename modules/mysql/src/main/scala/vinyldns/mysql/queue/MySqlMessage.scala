@@ -15,7 +15,7 @@
  */
 
 package vinyldns.mysql.queue
-import vinyldns.core.domain.ZoneCommand
+import vinyldns.core.domain.zone.ZoneCommand
 import vinyldns.core.queue.{CommandMessage, MessageId}
 
 import scala.concurrent.duration.FiniteDuration

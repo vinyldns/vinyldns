@@ -23,7 +23,8 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest._
 import scalikejdbc._
-import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneCommand}
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId}
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}

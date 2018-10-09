@@ -14,24 +14,11 @@
  * limitations under the License.
  */
 
-package vinyldns.api.engine
+package vinyldns.core.domain.zone
 
-import cats.effect.IO
-import vinyldns.core.domain.zone.{
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus,
-  ZoneRepository
+trait ZoneCommand {
+  val zoneId: String
+  val id: String
 }
 
-object ZoneChangeHandler {
-
-  def apply(
-      zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] = zoneChange => {
-    for {
-      _ <- zoneRepository.save(zoneChange.zone)
-      savedChange <- zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
-    } yield savedChange
-  }
-}
+trait ZoneCommandResult

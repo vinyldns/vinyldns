@@ -33,7 +33,6 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.api.engine.sqs.TestSqsService
-import vinyldns.core.domain.{ZoneChange, ZoneChangeType}
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 import vinyldns.core.domain.zone._
 

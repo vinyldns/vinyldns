@@ -22,7 +22,6 @@ import org.joda.time.DateTime
 import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetChangeGenerator}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.TestDataLoader
-import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, User}
 import vinyldns.core.domain.record._

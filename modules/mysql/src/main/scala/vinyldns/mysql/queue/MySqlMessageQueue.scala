@@ -22,8 +22,8 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import scalikejdbc._
-import vinyldns.core.domain.{RecordSetChange, ZoneChange}
-import vinyldns.core.domain.ZoneCommand
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored

@@ -16,7 +16,8 @@
 
 package vinyldns.sqs.queue
 import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
-import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneCommand}
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 
 sealed abstract class SqsMessageType(val name: String) {
   val messageAttribute: (String, MessageAttributeValue) =

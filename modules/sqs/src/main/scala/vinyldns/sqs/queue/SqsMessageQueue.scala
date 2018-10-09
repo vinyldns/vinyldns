@@ -31,7 +31,8 @@ import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult, ClientConfiguration}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
-import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneCommand}
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored

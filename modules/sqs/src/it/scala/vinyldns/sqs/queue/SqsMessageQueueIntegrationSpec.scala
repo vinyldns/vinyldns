@@ -25,7 +25,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
-import vinyldns.core.domain.RecordSetChange
+import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{MessageCount, MessageId}
 

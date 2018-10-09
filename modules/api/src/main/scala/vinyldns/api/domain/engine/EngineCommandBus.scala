@@ -18,7 +18,8 @@ package vinyldns.api.domain.engine
 
 import cats.effect._
 import vinyldns.api.Interfaces.Result
-import vinyldns.core.domain.{RecordSetChange, ZoneCommand, ZoneCommandResult}
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneCommand, ZoneCommandResult}
 
 trait EngineCommandBus {
   def sendZoneCommand(cmd: ZoneCommand): Result[ZoneCommandResult]

@@ -30,7 +30,6 @@ import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.{RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 import scala.collection.JavaConverters._

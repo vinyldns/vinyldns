@@ -17,7 +17,6 @@
 package vinyldns.core.domain.zone
 
 import cats.effect._
-import vinyldns.core.domain.ZoneChange
 import vinyldns.core.repository.Repository
 
 trait ZoneChangeRepository extends Repository {

@@ -27,7 +27,7 @@ import vinyldns.api.domain.batch.BatchTransformations.{
 }
 import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.record.RecordSetChangeGenerator
-import vinyldns.core.domain.{RecordSetChange, record}
+import vinyldns.core.domain.record
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
@@ -77,7 +77,7 @@ class BatchChangeConverter(
 
   def putChangesOnQueue(
       recordSetChanges: List[RecordSetChange]): BatchResult[List[RecordSetChange]] = {
-    sqsServiceAlgebra.sendRecordSetChanges(recordSetChanges).collectSuccesses()
+    sqsServiceAlgebra.sendRecordSetChanges(recordSetChanges).collectSuccesses
   }.toBatchResult
 
   def updateWithQueueingFailures(

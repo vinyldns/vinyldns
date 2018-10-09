@@ -17,8 +17,7 @@
 package vinyldns.api.domain.zone
 
 import vinyldns.api.domain.zone
-import vinyldns.core.domain.ZoneChange
-import vinyldns.core.domain.zone.ListZoneChangesResults
+import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange}
 
 case class ListZoneChangesResponse(
     zoneId: String,

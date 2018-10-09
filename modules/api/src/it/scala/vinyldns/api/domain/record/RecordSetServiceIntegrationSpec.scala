@@ -35,7 +35,6 @@ import vinyldns.core.domain.membership.{Group, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.api.engine.sqs.TestSqsService
-import vinyldns.core.domain.RecordSetChange
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 import vinyldns.core.domain.record._
 

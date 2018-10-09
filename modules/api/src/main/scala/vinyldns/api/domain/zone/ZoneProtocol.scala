@@ -17,12 +17,11 @@
 package vinyldns.api.domain.zone
 
 import org.joda.time.DateTime
-import vinyldns.core.domain.RecordSetChangeStatus.RecordSetChangeStatus
-import vinyldns.core.domain.RecordSetChangeType.RecordSetChangeType
-import vinyldns.core.domain._
+import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
+import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordData, RecordSet}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
 import vinyldns.core.domain.zone.{ACLRuleInfo, Zone, ZoneACL, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus

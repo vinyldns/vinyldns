@@ -15,7 +15,6 @@
  */
 
 package vinyldns.core.domain.record
-import vinyldns.core.domain.RecordSetChange
 
 case class ListRecordSetChangesResults(
     items: List[RecordSetChange] = List[RecordSetChange](),

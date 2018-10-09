@@ -22,9 +22,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import vinyldns.api.Interfaces.{result, _}
 import vinyldns.api.crypto.Crypto
-import vinyldns.core.domain.{RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 object DnsProtocol {
