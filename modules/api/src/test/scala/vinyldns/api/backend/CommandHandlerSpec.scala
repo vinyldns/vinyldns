@@ -33,11 +33,7 @@ import vinyldns.core.domain.{RecordSetChange, ZoneChange, ZoneChangeType, ZoneCo
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone._
-<<<<<<< HEAD
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
-=======
-import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
->>>>>>> 568de2a... Look for comments on PR
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
