@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.zone
+package vinyldns.mysql.queue
+import vinyldns.core.domain.zone.ZoneCommand
+import vinyldns.core.queue.{CommandMessage, MessageId}
 
-trait ZoneCommand {
-  val zoneId: String
-  val id: String
-}
+import scala.concurrent.duration.FiniteDuration
 
-trait ZoneCommandResult
+/* MySQL Command Message implementation */
+final case class MySqlMessage(
+    id: MessageId,
+    attempts: Int,
+    timeout: FiniteDuration,
+    command: ZoneCommand)
+    extends CommandMessage
