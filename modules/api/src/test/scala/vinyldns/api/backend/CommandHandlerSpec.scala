@@ -32,7 +32,7 @@ import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone._
-import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
+import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,7 +46,11 @@ class CommandHandlerSpec
     with EitherValues
     with EitherMatchers {
 
-  private case class TestCommandMessage(command: ZoneCommand, value: String) extends CommandMessage
+  private case class TestCommandMessage(command: ZoneCommand, value: String)
+      extends CommandMessage {
+    def id: MessageId = MessageId(value)
+  }
+
   private val mq = mock[MessageQueue]
   implicit val sched: Scheduler =
     Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
