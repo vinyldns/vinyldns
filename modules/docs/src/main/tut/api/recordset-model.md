@@ -84,14 +84,14 @@ SOA          | minimum     | long        |
 <br>         |             |             |
 SPF          | text        | string      |
 <br>         |             |             |
-SRV          | priority    | integer     | 
+SRV          | priority    | integer     |
 SRV          | weight      | integer     |
 SRV          | port        | integer     |
 SRV          | target      | string      |
 <br>         |             |             |
-SSHFP        | algorithm   | integer     | 
-SSHFP        | typ         | integer     |
-SSHFP        | fingerprint | string      | 
+SSHFP        | algorithm   | integer     |
+SSHFP        | type        | integer     |
+SSHFP        | fingerprint | string      |
 <br>         |             |             |
 TXT          | text        | string      |
 
@@ -104,7 +104,7 @@ Use the *@* symbol to point to the zone origin
 
 **CNAME records cannot point to the zone origin, thus the RecordSet name cannot be @ nor the zone origin**
 
-Individual SSHFP record: 
+Individual SSHFP record:
 
 ```
 {
@@ -117,7 +117,7 @@ Individual SSHFP record:
     "records": [
         {
             "algorithm": 1,
-            "typ": 3,
+            "type": 3,
             "fingerprint": "560c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         }
     ],
@@ -126,7 +126,7 @@ Individual SSHFP record:
 }
 ```
 
-Multiple SSHFP records: 
+Multiple SSHFP records:
 
 ```
 {
@@ -139,17 +139,17 @@ Multiple SSHFP records:
     "records": [
         {
           "algorithm": 1,
-          "typ": 2,
+          "type": 2,
           "fingerprint": "560c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         },
         {
           "algorithm": 3,
-          "typ": 1,
+          "type": 1,
           "fingerprint": "160c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         },
         {
           "algorithm": 4,
-          "typ": 1,
+          "type": 1,
           "fingerprint": "260c7d19d5da9a3a5c7c19992d1fbde15d8dad31"
         }
     ],
