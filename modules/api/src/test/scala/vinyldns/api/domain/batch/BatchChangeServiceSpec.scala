@@ -152,9 +152,8 @@ class BatchChangeServiceSpec
     override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] =
       IO.pure(dbZones.filter(zn => zoneNames.contains(zn.name)))
 
-    override def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = {
+    override def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] =
       IO.pure(dbZones.filter(z => zoneNames.exists(z.name.endsWith)))
-    }
   }
 
   private val underTest = new BatchChangeService(
