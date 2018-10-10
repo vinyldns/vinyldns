@@ -55,7 +55,6 @@ lazy val sharedSettings = Seq(
   scalacOptions in (Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
   wartremoverErrors ++= Seq(
-    Wart.ArrayEquals,
     Wart.EitherProjectionPartial,
     Wart.IsInstanceOf,
     Wart.JavaConversions,

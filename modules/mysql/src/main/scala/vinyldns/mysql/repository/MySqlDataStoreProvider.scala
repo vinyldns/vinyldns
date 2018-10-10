@@ -33,7 +33,11 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
   private val implementedRepositories =
-    Set(RepositoryName.zone, RepositoryName.batchChange, RepositoryName.zoneChange)
+    Set(
+      RepositoryName.zone,
+      RepositoryName.batchChange,
+      RepositoryName.zoneChange,
+      RepositoryName.recordSet)
 
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
     for {
@@ -59,10 +63,13 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val zones = Some(new MySqlZoneRepository())
     val batchChanges = Some(new MySqlBatchChangeRepository())
     val zoneChanges = Some(new MySqlZoneChangeRepository())
+    val recordSets = Some(new MySqlRecordSetRepository())
     DataStore(
       zoneRepository = zones,
       batchChangeRepository = batchChanges,
-      zoneChangeRepository = zoneChanges)
+      zoneChangeRepository = zoneChanges,
+      recordSetRepository = recordSets
+    )
   }
 
   def runDBMigrations(settings: MySqlDataStoreSettings): IO[Unit] = IO {

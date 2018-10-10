@@ -74,7 +74,8 @@ object Dependencies {
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.6",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
-    "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
+    "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
+    "ch.qos.logback"            %  "logback-classic"                % "1.0.7"
   )
 
   lazy val commonTestDependencies = Seq(
