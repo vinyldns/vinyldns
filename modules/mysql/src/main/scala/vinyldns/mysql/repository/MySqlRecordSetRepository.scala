@@ -73,8 +73,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     *
     * This method takes a sequence of records, and appropriately builds the batch prepared statement
     * using underlying JDBC things
+    *
+    * TODO: get clarification that we need to do this, instead of using scalikejdbc
     */
   private def insert(records: Seq[InsertRecord], conn: Connection): Seq[Int] = {
+    // Important!  We must do INSERT IGNORE here as we cannot do ON DUPLICATE KEY UPDATE
+    // with this mysql bulk insert.  To maintain idempotency, we must handle the possibility
+    // of the same insert happening multiple times
     val ps = conn.prepareStatement(
       "INSERT IGNORE INTO recordset (id, zone_id, name, type, data) VALUES (?, ?, ?, ?, ?)")
     records.foreach { r =>
@@ -281,6 +286,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
 
   def toRecordSet(rs: WrappedResultSet): RecordSet =
     fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1)))
+  
   def toRecordType(i: Int): Either[InvalidRecordType, RecordType] =
     recordTypeLookup.get(i).map(t => Right(t)).getOrElse(Left(InvalidRecordType(i)))
 
