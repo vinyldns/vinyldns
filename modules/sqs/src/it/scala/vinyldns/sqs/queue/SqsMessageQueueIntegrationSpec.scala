@@ -28,6 +28,7 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{MessageCount, MessageId}
+import vinyldns.sqs.queue.SqsMessageQueue.InvalidMessageTimeout
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -101,14 +102,12 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
     "succeed when attempting to requeue" in {
       val recordSetChange = makeTestAddChange(rsOk)
-      val zoneChange = makeTestPendingZoneChange(okZone)
-      queue.sendBatch(NonEmptyList.fromListUnsafe(List(recordSetChange, zoneChange))).unsafeRunSync()
+      queue.sendBatch(NonEmptyList.fromListUnsafe(List(recordSetChange))).unsafeRunSync()
 
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result.map(_.command) should contain theSameElementsAs List(recordSetChange, zoneChange)
+      result.map(_.command) should contain theSameElementsAs List(recordSetChange)
 
-      val requeueItem = result(1)
-      queue.requeue(SqsMessage(MessageId(requeueItem.id.value), requeueItem.command))
+      queue.requeue(SqsMessage(MessageId(result(0).id.value), recordSetChange))
         .attempt.unsafeRunSync() should beRight(())
 
       val immediateReceive = queue.receive(MessageCount(2).right.value).unsafeRunSync()
@@ -117,7 +116,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       Thread.sleep(10000)
 
       val requeueResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      requeueResult.map(_.command) shouldBe List(requeueItem.command)
+      requeueResult.map(_.command) shouldBe List(recordSetChange)
     }
 
     "send a single message request" in {
@@ -159,6 +158,14 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       // Once received, visibility timeout gets reset to the default value (of 30s)
       val defaultTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
       defaultTimeoutResult.map(_.command) shouldBe Nil
+    }
+
+    "throw an InvalidMessageTimeout when attempting to set invalid visibility timeout" in {
+      assertThrows[InvalidMessageTimeout] {
+        queue.changeMessageTimeout(
+          SqsMessage(MessageId("does-not-matter"), pendingCreateAAAA), new FiniteDuration(43201, SECONDS))
+          .unsafeRunSync()
+      }
     }
 
     "throw an error if there are issues parsing the message" in {

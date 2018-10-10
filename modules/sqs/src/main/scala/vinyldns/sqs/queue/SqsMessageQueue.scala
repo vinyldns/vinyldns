@@ -77,7 +77,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
           .withWaitTimeSeconds(1)
           .withQueueUrl(queueUrl),
         client.receiveMessageAsync
-      ).flatMap(batchResult => parseBatch(batchResult.getMessages.asScala.toList))
+      ).flatMap(receiveResult => parseBatch(receiveResult.getMessages.asScala.toList))
     }
 
   def parseBatch(messages: List[Message]): IO[List[SqsMessage]] =
@@ -132,20 +132,31 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         toSendBatchResult(batchResult, cmds)
       }
 
+  /* Change message visibility timeout. Valid values: 0 to 43200 seconds (ie. 12 hours) */
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.SQS.changeMessageTimeout") {
-      sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
-        new ChangeMessageVisibilityRequest()
-          .withReceiptHandle(message.id.value)
-          .withVisibilityTimeout(duration.toSeconds.toInt)
-          .withQueueUrl(queueUrl),
-        client.changeMessageVisibilityAsync
-      )
+      IO.fromEither(validateMessageTimeout(duration)).flatMap { validDuration =>
+        sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
+          new ChangeMessageVisibilityRequest()
+            .withReceiptHandle(message.id.value)
+            .withVisibilityTimeout(validDuration.toSeconds.toInt)
+            .withQueueUrl(queueUrl),
+          client.changeMessageVisibilityAsync
+        )
+      }
     }.as(())
 }
 
 object SqsMessageQueue extends ProtobufConversions {
   private val logger = LoggerFactory.getLogger("vinyldns.sqs.queue.SqsMessageQueue")
+
+  sealed abstract class SqsMessageQueueError(message: String) extends Throwable(message)
+  final case class InvalidMessageTimeout(duration: Long)
+      extends SqsMessageQueueError(
+        s"Invalid duration: $duration seconds. Duration must be between " +
+          s"$MINIMUM_VISIBILITY_TIMEOUT-$MAXIMUM_VISIBILITY_TIMEOUT seconds.")
+  final val MINIMUM_VISIBILITY_TIMEOUT = 0
+  final val MAXIMUM_VISIBILITY_TIMEOUT = 43200
 
   def apply(config: Config = ConfigFactory.load().getConfig("sqs")): SqsMessageQueue = {
     val accessKey = config.getString("access-key")
@@ -172,6 +183,14 @@ object SqsMessageQueue extends ProtobufConversions {
 
     new SqsMessageQueue(queueUrl, client)
   }
+
+  def validateMessageTimeout(
+      duration: FiniteDuration): Either[InvalidMessageTimeout, FiniteDuration] =
+    duration.toSeconds match {
+      case valid if valid >= MINIMUM_VISIBILITY_TIMEOUT && valid <= MAXIMUM_VISIBILITY_TIMEOUT =>
+        Right(duration)
+      case invalid => Left(InvalidMessageTimeout(invalid))
+    }
 
   // Helper function to serialize message body
   def messageData[A <: ZoneCommand](cmd: A): String = cmd match {
