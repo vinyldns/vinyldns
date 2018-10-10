@@ -1,77 +1,111 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
-import org.joda.time.DateTime
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.membership.LockStatus.LockStatus
-import vinyldns.core.domain.membership.{ListUsersResults, LockStatus, User, UserRepository}
+import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
 import vinyldns.core.route.Monitored
-
-import scala.util.Try
+import vinyldns.proto.VinylDNSProto
+import vinyldns.core.protobuf.ProtobufConversions
 
 class MySqlUserRepository
 (crypto: CryptoAlgebra)
   extends UserRepository
-    with Monitored {
+    with Monitored
+    with ProtobufConversions {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneChangeRepository])
 
   private final val PUT_USER =
     sql"""
-         | REPLACE INTO user
-         |  (user_id,
-         |   user_name,
-         |   created_timestamp,
-         |   access_key,
-         |   secret_key,
-         |   is_super,
-         |   lock_status,
-         |   first_name,
-         |   last_name,
-         |   email)
-         | VALUES
-         |  ({user_id},
-         |   {user_name},
-         |   {created_timestamp},
-         |   {access_key},
-         |   {secret_key},
-         |   {is_super},
-         |   {lock_status},
-         |   {first_name},
-         |   {last_name},
-         |   {email})
-       """
+         | REPLACE INTO user (id, user_name, created_timestamp, access_key, data)
+         |  VALUES ({id}, {userName}, {createdTimestamp}, {accessKey}, {data})
+       """.stripMargin
 
-  private final val GET_USER =
+  private final val GET_USER_BY_ID =
+    sql"""
+         | SELECT data
+         |  FROM user
+         |  WHERE id = ?
+       """.stripMargin
 
-  override def getUser(userId: String): IO[Option[User]] = ???
+  private final val GET_USER_BY_ACCESS_KEY =
+    sql"""
+         | SELECT data
+         |  FROM user
+         |  WHERE access_key = ?
+       """.stripMargin
+
+  private final val GET_USER_BY_USER_NAME =
+    sql"""
+         | SELECT data
+         |  FROM user
+         |  WHERE user_name = ?
+       """.stripMargin
+
+  private final val LIST_USERS =
+    sql"""
+         | SELECT data
+         |  FROM user
+         |  WHERE id = {id} AND created_timestamp <= {startFrom}
+         |  ORDER BY created_timestamp DESC
+         |  LIMIT {maxItems}
+       """.stripMargin
+
+  override def getUser(userId: String): IO[Option[User]] =
+    monitor("repo.User.getUser") {
+      IO {
+        DB.readOnly { implicit s =>
+          GET_USER_BY_ID
+            .bind(userId)
+            .map(extractUser(1))
+            .first()
+            .apply()
+        }
+      }
+    }
 
   override def getUsers(userIds: Set[String], exclusiveStartKey: Option[String], pageSize: Option[Int]): IO[ListUsersResults] = ???
 
-  override def getUserByAccessKey(accessKey: String): IO[Option[User]] = ???
+  override def getUserByAccessKey(accessKey: String): IO[Option[User]] =
+    monitor("repo.User.getUserByAccessKey") {
+      IO {
+        DB.readOnly { implicit s =>
+          GET_USER_BY_ACCESS_KEY
+            .bind(accessKey)
+            .map(extractUser(1))
+            .first()
+            .apply()
+        }
+      }
+    }
 
-  override def getUserByName(userName: String): IO[Option[User]] = ???
+  override def getUserByName(userName: String): IO[Option[User]] =
+    monitor("repo.User.getUserByName") {
+      IO {
+        DB.readOnly { implicit s =>
+          GET_USER_BY_USER_NAME
+            .bind(userName)
+            .map(extractUser(1))
+            .first()
+            .apply()
+        }
+      }
+    }
 
   override def save(user: User): IO[User] = {
     monitor("repo.User.save") {
       IO {
         logger.info(s"Saving user ${user.id}")
-        val mySqlUser = MySqlUser(user, crypto)
         DB.localTx { implicit s =>
           PUT_USER
             .bindByName(
-              'user_id -> mySqlUser.user_id,
-              'user_name -> mySqlUser.user_name,
-              'created_timestamp -> mySqlUser.created_timestamp,
-              'access_key -> mySqlUser.access_key,
-              'secret_key -> mySqlUser.secret_key,
-              'is_super -> mySqlUser.is_super,
-              'lock_status -> mySqlUser.lock_status,
-              'first_name -> mySqlUser.first_name,
-              'last_name -> mySqlUser.last_name,
-              'email -> mySqlUser.email
+              'id -> user.id,
+              'userName -> user.userName,
+              'createdTimestamp -> user.created.getMillis,
+              'accessKey -> user.accessKey,
+              'data -> toPB(user, crypto).toByteArray
             )
         }
         user
@@ -79,41 +113,8 @@ class MySqlUserRepository
     }
   }
 
-}
-
-case class MySqlUser(user_id: String,
-                     user_name: String,
-                     created_timestamp: Long,
-                     access_key: String,
-                     secret_key: String,
-                     is_super: Int,
-                     lock_status: String,
-                     first_name: Option[String],
-                     last_name: Option[String],
-                     email: Option[String])
-
-object MySqlUser {
-  def apply(user: User, crypto: CryptoAlgebra): MySqlUser = new MySqlUser(
-    user.id,
-    user.userName,
-    user.created.getMillis,
-    user.accessKey,
-    crypto.encrypt(user.secretKey),
-    toMySqlIsSuper(user.isSuper),
-    user.lockStatus.toString,
-    user.firstName,
-    user.lastName,
-    user.email)
-
-  def fromMySqlLockStatus(str: String, logger: Logger): LockStatus = Try(LockStatus.withName(str)).getOrElse {
-    logger.error(s"Invalid locked status value '$str'; defaulting to unlocked")
-    LockStatus.Unlocked
+  private def extractUser(colIndex: Int): WrappedResultSet => User = res => {
+    fromPB(VinylDNSProto.User.parseFrom(res.bytes(colIndex)))
   }
 
-  def toMySqlIsSuper(isSuper: Boolean): Int = {
-    if (isSuper) 1
-    else 0
-  }
-
-  def fromMySqlIsSuper(isSuper: Int): Boolean = isSuper == 1
 }

@@ -179,3 +179,16 @@ message SingleChange {
     optional string recordSetId = 11;
     optional SingleChangeData changeData = 12;
 }
+
+message User {
+    required string userName = 1;
+    required string accessKey = 2;
+    required string secretKey = 3;
+    optional string firstName = 4;
+    optional string lastName = 5;
+    optional string email = 6;
+    required int64 created = 7;
+    required string id = 8;
+    required bool isSuper = 9;
+    required string lockStatus = 10;
+}
