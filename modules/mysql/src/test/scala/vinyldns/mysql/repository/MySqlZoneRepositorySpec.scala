@@ -61,9 +61,10 @@ class MySqlZoneRepositorySpec
       a[RuntimeException] shouldBe thrownBy(repo.save(zoneInput).unsafeRunSync())
 
       verify(repo).save(zoneInput)
-      verify(repo, times(repo.MAX_RETRIES))
+      // initial call + max retries
+      verify(repo, times(repo.MAX_RETRIES + 1))
         .retryWithBackoff(any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
-      verify(repo, times(repo.MAX_RETRIES)).saveTx(zoneInput)
+      verify(repo, times(repo.MAX_RETRIES + 1)).saveTx(zoneInput)
     }
 
     "retry until saveTx is successful" in {
@@ -110,9 +111,10 @@ class MySqlZoneRepositorySpec
       a[RuntimeException] shouldBe thrownBy(repo.save(zoneInput).unsafeRunSync())
 
       verify(repo).save(zoneInput)
-      verify(repo, times(repo.MAX_RETRIES))
+      // initial call + max retries
+      verify(repo, times(repo.MAX_RETRIES + 1))
         .retryWithBackoff(any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
-      verify(repo, times(repo.MAX_RETRIES)).deleteTx(zoneInput)
+      verify(repo, times(repo.MAX_RETRIES + 1)).deleteTx(zoneInput)
     }
 
     "retry until deleteTx is successful" in {

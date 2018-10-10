@@ -36,6 +36,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   private final val MAX_ACCESSORS = 30
   private final val INITIAL_RETRY_DELAY = 1.millis
   final val MAX_RETRIES = 10
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
 
   /**
     * use INSERT INTO ON DUPLICATE KEY UPDATE for the zone, which will update the values if the zone already exists
@@ -366,13 +367,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-  def retryWithBackoff[A](f: A => IO[A], a: A, delay: FiniteDuration, maxRetries: Int): IO[A] = {
-    implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  def retryWithBackoff[A](f: A => IO[A], a: A, delay: FiniteDuration, maxRetries: Int): IO[A] =
     f(a).handleErrorWith { error =>
-      if (maxRetries > 1)
+      if (maxRetries > 0)
         IO.sleep(delay) *> retryWithBackoff(f, a, delay * 2, maxRetries - 1)
       else
         IO.raiseError(error)
     }
-  }
 }
