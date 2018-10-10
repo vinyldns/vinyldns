@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data.NonEmptyList
 import cats.scalatest.EitherMatchers
-import com.amazonaws.services.sqs.model.{AmazonSQSException, Message, SendMessageRequest, SendMessageResult}
+import com.amazonaws.services.sqs.model._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
 import vinyldns.core.TestRecordSetData._
@@ -100,13 +100,24 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     }
 
     "succeed when attempting to requeue" in {
-      queue.send(makeTestAddChange(rsOk)).unsafeRunSync()
+      val recordSetChange = makeTestAddChange(rsOk)
+      val zoneChange = makeTestPendingZoneChange(okZone)
+      queue.sendBatch(NonEmptyList.fromListUnsafe(List(recordSetChange, zoneChange))).unsafeRunSync()
 
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result should have length 1
+      result.map(_.command) should contain theSameElementsAs List(recordSetChange, zoneChange)
 
-      queue.requeue(SqsMessage(MessageId(result(0).id.value), makeTestAddChange(rsOk)))
+      val requeueItem = result(1)
+      queue.requeue(SqsMessage(MessageId(requeueItem.id.value), requeueItem.command))
         .attempt.unsafeRunSync() should beRight(())
+
+      val immediateReceive = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      immediateReceive shouldBe Nil
+
+      Thread.sleep(10000)
+
+      val requeueResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      requeueResult.map(_.command) shouldBe List(requeueItem.command)
     }
 
     "send a single message request" in {
@@ -130,14 +141,24 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       result.failures shouldBe empty
     }
 
-    "change message visibility timeouts" in {
-      queue.send(makeTestAddChange(rsOk)).unsafeRunSync()
+    "change message visibility timeout correctly" in {
+      val recordSetChange = makeTestAddChange(rsOk)
+      queue.send(recordSetChange).unsafeRunSync()
 
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result should have length 1
+      result.map(_.command) shouldBe List(recordSetChange)
 
-      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), makeTestAddChange(rsOk)),
-        FiniteDuration(5, SECONDS)).attempt.unsafeRunSync() should beRight(())
+      // Set next visibility of timeout for message
+      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), recordSetChange),
+        FiniteDuration(0, SECONDS)).attempt.unsafeRunSync() should beRight(())
+
+      // Test that we can immediately receive message after timeout adjustment
+      val adjustedTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      adjustedTimeoutResult.map(_.command) shouldBe List(recordSetChange)
+
+      // Once received, visibility timeout gets reset to the default value (of 30s)
+      val defaultTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      defaultTimeoutResult.map(_.command) shouldBe Nil
     }
 
     "throw an error if there are issues parsing the message" in {

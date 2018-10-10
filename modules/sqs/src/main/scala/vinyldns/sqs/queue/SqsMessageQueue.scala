@@ -17,6 +17,7 @@
 package vinyldns.sqs.queue
 
 import java.util.Base64
+import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data._
 import cats.effect.IO
@@ -110,10 +111,9 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       IO(delete(message.id.value))
     }.as(())
 
-  // AWS SQS has no explicit requeue mechanism; It can be configured to
-  // natively apply an exponential back-off retry mechanism
-  // (see: https://docs.aws.amazon.com/general/latest/gr/api-retries.html).
-  def requeue(message: CommandMessage): IO[Unit] = IO.unit
+  /* Explicitly make a message almost immediately available on the queue */
+  def requeue(message: CommandMessage): IO[Unit] =
+    changeMessageTimeout(message, new FiniteDuration(10, SECONDS))
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitor("queue.SQS.sendMessage")(
@@ -134,16 +134,14 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.SQS.changeMessageTimeout") {
-      IO {
-        sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
-          new ChangeMessageVisibilityRequest()
-            .withReceiptHandle(message.id.value)
-            .withVisibilityTimeout(duration.toSeconds.toInt)
-            .withQueueUrl(queueUrl),
-          client.changeMessageVisibilityAsync
-        )
-      }.as(())
-    }
+      sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
+        new ChangeMessageVisibilityRequest()
+          .withReceiptHandle(message.id.value)
+          .withVisibilityTimeout(duration.toSeconds.toInt)
+          .withQueueUrl(queueUrl),
+        client.changeMessageVisibilityAsync
+      )
+    }.as(())
 }
 
 object SqsMessageQueue extends ProtobufConversions {
