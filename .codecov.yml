@@ -5,4 +5,5 @@ coverage:
         threshold: 0.1
     patch:
       default:
-        threshold: 0.1
+        # minimum coverage at 0, should never fail, but will still report
+        target: 0
