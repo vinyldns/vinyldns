@@ -76,6 +76,25 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       requeueResult.map(_.command) shouldBe List(recordSetChange)
     }
 
+    "change message visibility timeout correctly" in {
+      queue.send(rsAddChange).unsafeRunSync()
+
+      val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      result.map(_.command) shouldBe List(rsAddChange)
+
+      // Set next visibility of timeout for message
+      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), rsAddChange),
+        FiniteDuration(0, SECONDS)).attempt.unsafeRunSync() should beRight(())
+
+      // Test that we can immediately receive message after timeout adjustment
+      val adjustedTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      adjustedTimeoutResult.map(_.command) shouldBe List(rsAddChange)
+
+      // Once received, visibility timeout gets reset to the default value (of 30s)
+      val defaultTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      defaultTimeoutResult.map(_.command) shouldBe Nil
+    }
+
     "receive a single message from the queue" in {
       queue.send(rsAddChange).unsafeRunSync()
 
@@ -153,25 +172,6 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
       result.successes should contain theSameElementsAs commands
       result.failures shouldBe empty
-    }
-
-    "change message visibility timeout correctly" in {
-      queue.send(rsAddChange).unsafeRunSync()
-
-      val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result.map(_.command) shouldBe List(rsAddChange)
-
-      // Set next visibility of timeout for message
-      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), rsAddChange),
-        FiniteDuration(0, SECONDS)).attempt.unsafeRunSync() should beRight(())
-
-      // Test that we can immediately receive message after timeout adjustment
-      val adjustedTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      adjustedTimeoutResult.map(_.command) shouldBe List(rsAddChange)
-
-      // Once received, visibility timeout gets reset to the default value (of 30s)
-      val defaultTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      defaultTimeoutResult.map(_.command) shouldBe Nil
     }
 
     "throw an InvalidMessageTimeout when attempting to set invalid visibility timeout" in {
