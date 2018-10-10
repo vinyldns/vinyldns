@@ -369,7 +369,8 @@ lazy val docSettings = Seq(
   micrositePushSiteWith := GitHub4s,
   micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),
   ghpagesNoJekyll := false,
-  fork in tut := true
+  fork in tut := true,
+  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/tut/{{ page.path }}"))
 )
 
 lazy val docs = (project in file("modules/docs"))
