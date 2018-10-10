@@ -57,11 +57,32 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
   val rsAddChange: RecordSetChange = makeTestAddChange(rsOk)
 
   "SqsMessageQueue" should {
+    "succeed when attempting to requeue" in {
+      val recordSetChange = makeTestAddChange(rsOk.copy(name = "requeue-attempt"))
+      queue.sendBatch(NonEmptyList.fromListUnsafe(List(recordSetChange))).unsafeRunSync()
+
+      val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      result.map(_.command) should contain theSameElementsAs List(recordSetChange)
+
+      queue.requeue(SqsMessage(MessageId(result(0).id.value), recordSetChange))
+        .attempt.unsafeRunSync() should beRight(())
+
+      val immediateReceive = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      immediateReceive shouldBe Nil
+
+      Thread.sleep(10000)
+
+      val requeueResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
+      requeueResult.map(_.command) shouldBe List(recordSetChange)
+    }
+
     "receive a single message from the queue" in {
       queue.send(rsAddChange).unsafeRunSync()
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result.map(_.command) should contain theSameElementsAs List(rsAddChange)
+
+      result.foreach(queue.remove(_).unsafeRunSync())
     }
 
     "receive up to MessageCount messages from the queue" in {
@@ -87,7 +108,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     }
 
     "succeed when attempting to remove item from empty queue" in {
-      queue.remove(SqsMessage(MessageId("does-not-exist"), makeTestAddChange(rsOk)))
+      queue.remove(SqsMessage(MessageId("does-not-exist"), rsAddChange))
         .attempt.unsafeRunSync() should beRight(())
     }
 
@@ -96,31 +117,12 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result.length shouldBe 1
 
-      queue.remove(SqsMessage(MessageId(result(0).id.value), makeTestAddChange(rsOk)))
+      queue.remove(SqsMessage(MessageId(result(0).id.value), rsAddChange))
         .attempt.unsafeRunSync() should beRight(())
-    }
-
-    "succeed when attempting to requeue" in {
-      val recordSetChange = makeTestAddChange(rsOk.copy(name = "requeue-attempt"))
-      queue.sendBatch(NonEmptyList.fromListUnsafe(List(recordSetChange))).unsafeRunSync()
-
-      val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result.map(_.command) should contain theSameElementsAs List(recordSetChange)
-
-      queue.requeue(SqsMessage(MessageId(result(0).id.value), recordSetChange))
-        .attempt.unsafeRunSync() should beRight(())
-
-      val immediateReceive = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      immediateReceive shouldBe Nil
-
-      Thread.sleep(10000)
-
-      val requeueResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      requeueResult.map(_.command) shouldBe List(recordSetChange)
     }
 
     "send a single message request" in {
-      queue.send(makeTestAddChange(rsOk)).attempt.unsafeRunSync() should beRight(())
+      queue.send(rsAddChange).attempt.unsafeRunSync() should beRight(())
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result should have length 1
@@ -154,19 +156,18 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     }
 
     "change message visibility timeout correctly" in {
-      val recordSetChange = makeTestAddChange(rsOk)
-      queue.send(recordSetChange).unsafeRunSync()
+      queue.send(rsAddChange).unsafeRunSync()
 
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      result.map(_.command) shouldBe List(recordSetChange)
+      result.map(_.command) shouldBe List(rsAddChange)
 
       // Set next visibility of timeout for message
-      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), recordSetChange),
+      queue.changeMessageTimeout(SqsMessage(MessageId(result(0).id.value), rsAddChange),
         FiniteDuration(0, SECONDS)).attempt.unsafeRunSync() should beRight(())
 
       // Test that we can immediately receive message after timeout adjustment
       val adjustedTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
-      adjustedTimeoutResult.map(_.command) shouldBe List(recordSetChange)
+      adjustedTimeoutResult.map(_.command) shouldBe List(rsAddChange)
 
       // Once received, visibility timeout gets reset to the default value (of 30s)
       val defaultTimeoutResult = queue.receive(MessageCount(2).right.value).unsafeRunSync()
