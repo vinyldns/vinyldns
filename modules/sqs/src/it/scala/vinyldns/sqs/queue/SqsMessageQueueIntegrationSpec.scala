@@ -45,7 +45,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
 
   override protected def afterEach(): Unit = {
     // Remove items from queue after each test
-    val result = queue.receive(MessageCount(100).right.value).unsafeRunSync()
+    val result = queue.receive(MessageCount(200).right.value).unsafeRunSync()
     result.foreach(queue.remove)
   }
 
@@ -101,7 +101,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     }
 
     "succeed when attempting to requeue" in {
-      val recordSetChange = makeTestAddChange(rsOk)
+      val recordSetChange = makeTestAddChange(rsOk.copy(name = "requeue-attempt"))
       queue.sendBatch(NonEmptyList.fromListUnsafe(List(recordSetChange))).unsafeRunSync()
 
       val result = queue.receive(MessageCount(2).right.value).unsafeRunSync()
