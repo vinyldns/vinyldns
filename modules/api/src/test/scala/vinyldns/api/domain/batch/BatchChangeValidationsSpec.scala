@@ -668,9 +668,7 @@ class BatchChangeValidationsSpec
       ExistingRecordSets(List()),
       okAuth)
 
-    result(0) shouldBe valid
-    result(1) shouldBe valid
-    result(2) shouldBe valid
+    result.map(_ shouldBe valid)
   }
 
   property("""validateChangesWithContext: should succeed for AddChangeForValidation
@@ -1072,9 +1070,7 @@ class BatchChangeValidationsSpec
       ExistingRecordSets(List(existingPtr)),
       okAuth)
 
-    result(0) shouldBe valid
-    result(1) shouldBe valid
-    result(2) shouldBe valid
+    result.map(_ shouldBe valid)
   }
 
   property("validateAddChangeInput: should succeed for a valid TXT addChangeInput") {

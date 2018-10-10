@@ -1851,7 +1851,7 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[1], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record1.")
         assert_successful_change_in_error_response(response[2], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record2.")
 
-    # independent validations: bad TTL, malformed host name/IP address, duplicate record
+        # independent validations: bad TTL, malformed host name/IP address, duplicate record
         assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91::abe", ttl=29, record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
         assert_failed_change_in_error_response(response[4], input_name="fd69:27cc:fe91::bae", record_type="PTR", record_data="$malformed.hostname.",
@@ -1863,7 +1863,7 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[6], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data="zone.discovery.error.",
                                                error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
 
-        # context validations: duplicates in batch, existing record sets pre-request
+        # context validations: existing record sets pre-request
         assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91::ffff", record_type="PTR", record_data="existing.ptr.",
                                                    error_messages=["Record \"fd69:27cc:fe91::ffff\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
 
