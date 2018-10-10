@@ -91,7 +91,7 @@ class SqsMessageQueueSpec
             .withMessage("error message")
         }.asJava)
       val cmds = NonEmptyList.fromListUnsafe(successes ++ failures)
-      val result = toSendBatchResult(batchResult, cmds)
+      val result = toSendBatchResult(List(batchResult), cmds)
 
       result.successes should contain theSameElementsAs successes
       result.failures.map(_._2) should contain theSameElementsAs failures

@@ -140,6 +140,19 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       result.failures shouldBe empty
     }
 
+    "send a message batch request with more than 256KB successfully" in {
+      val recordSet = aaaa.copy(name = "a"*100000, zoneId = "b"*10000)
+      val recordSetChanges = for (_ <- 0 to 99) yield makeTestAddChange(recordSet, zoneActive)
+      val commands = recordSetChanges.toList
+
+      val messages = NonEmptyList.fromListUnsafe(commands)
+
+      val result = queue.sendBatch(messages).unsafeRunSync()
+
+      result.successes should contain theSameElementsAs commands
+      result.failures shouldBe empty
+    }
+
     "change message visibility timeout correctly" in {
       val recordSetChange = makeTestAddChange(rsOk)
       queue.send(recordSetChange).unsafeRunSync()

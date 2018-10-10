@@ -123,14 +123,19 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         client.sendMessageAsync)).as(())
 
   def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
-    monitor("queue.SQS.sendMessageBatch")(
-      sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
-        toSendMessageBatchRequest(cmds)
-          .withQueueUrl(queueUrl),
-        client.sendMessageBatchAsync))
-      .map { batchResult =>
-        toSendBatchResult(batchResult, cmds)
-      }
+    monitor("queue.SQS.sendMessageBatch") {
+      toSendMessageBatchRequest(cmds)
+        .map { sendRequest =>
+          sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
+            sendRequest
+              .withQueueUrl(queueUrl),
+            client.sendMessageBatchAsync)
+        }
+        .parSequence
+        .map { sendResult =>
+          toSendBatchResult(sendResult, cmds)
+        }
+    }
 
   /* Change message visibility timeout. Valid values: 0 to 43200 seconds (ie. 12 hours) */
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
@@ -155,8 +160,14 @@ object SqsMessageQueue extends ProtobufConversions {
       extends SqsMessageQueueError(
         s"Invalid duration: $duration seconds. Duration must be between " +
           s"$MINIMUM_VISIBILITY_TIMEOUT-$MAXIMUM_VISIBILITY_TIMEOUT seconds.")
+
+  // AWS limits as specified at:
+  // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-limits.html
+  // $COVERAGE-OFF$
   final val MINIMUM_VISIBILITY_TIMEOUT = 0
   final val MAXIMUM_VISIBILITY_TIMEOUT = 43200
+  final val MAXIMUM_BATCH_SIZE = 262144
+  // $COVERAGE-ON$
 
   def apply(config: Config = ConfigFactory.load().getConfig("sqs")): SqsMessageQueue = {
     val accessKey = config.getString("access-key")
@@ -213,7 +224,7 @@ object SqsMessageQueue extends ProtobufConversions {
   }
 
   def toSendMessageBatchRequest[A <: ZoneCommand](
-      commands: NonEmptyList[A]): SendMessageBatchRequest = {
+      commands: NonEmptyList[A]): List[SendMessageBatchRequest] = {
     // convert each message into an entry
     val entries = commands
       .map(cmd => (cmd, messageData(cmd)))
@@ -225,19 +236,24 @@ object SqsMessageQueue extends ProtobufConversions {
             .withMessageAttributes(Map(SqsMessageType.fromCommand(cmd).messageAttribute).asJava)
       }
       .toList
-      .asJava
 
-    new SendMessageBatchRequest()
-      .withEntries(entries)
+    // Group entries into batches
+    val maxMessageSize = entries.map(_.getMessageBody.getBytes().length).max
+    entries
+      .grouped(math.floor(MAXIMUM_BATCH_SIZE.toDouble / maxMessageSize.toDouble).toInt)
+      .map { groupedEntries =>
+        new SendMessageBatchRequest().withEntries(groupedEntries.asJava)
+      }
+      .toList
   }
 
   def toSendBatchResult[A <: ZoneCommand](
-      batchResult: SendMessageBatchResult,
+      sendResultList: List[SendMessageBatchResult],
       cmds: NonEmptyList[A]): SendBatchResult = {
-    val successfulIds = batchResult.getSuccessful.asScala.map(_.getId)
+    val successfulIds = sendResultList.flatMap(_.getSuccessful.asScala.map(_.getId))
     val successes = cmds.toList.filter(cmd => successfulIds.contains(cmd.id))
 
-    val failed = batchResult.getFailed.asScala.toList
+    val failed = sendResultList.flatMap(_.getFailed.asScala.toList)
     val failureIds = failed.map(_.getId)
     val failureMessages = failed.map(_.getMessage)
     val failures =
