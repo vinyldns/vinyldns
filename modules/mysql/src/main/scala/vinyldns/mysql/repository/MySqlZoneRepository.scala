@@ -27,12 +27,15 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneRepository])
   private final val MAX_ACCESSORS = 30
+  private final val INITIAL_RETRY_DELAY = 1.millis
+  final val MAX_RETRIES = 10
 
   /**
     * use INSERT INTO ON DUPLICATE KEY UPDATE for the zone, which will update the values if the zone already exists
@@ -114,13 +117,12 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     *
     * If the zone is not deleted, we have to save both the zone itself, as well as the zone access entries.
     */
-  def save(zone: Zone): IO[Zone] = {
-    val sqlIO = zone.status match {
-      case ZoneStatus.Deleted => deleteTx(zone)
-      case _ => saveTx(zone)
+  def save(zone: Zone): IO[Zone] =
+    zone.status match {
+      case ZoneStatus.Deleted =>
+        retryWithBackoff(deleteTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
+      case _ => retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
     }
-    retryIOWithBackoff[Zone](sqlIO, 1.millis, 10)
-  }
 
   def getZone(zoneId: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZone") {
@@ -343,7 +345,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))
   }
 
-  private def deleteTx(zone: Zone): IO[Zone] =
+  def deleteTx(zone: Zone): IO[Zone] =
     monitor("repo.ZoneJDBC.delete") {
       IO {
         DB.localTx { implicit s =>
@@ -352,7 +354,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-  private def saveTx(zone: Zone): IO[Zone] =
+  def saveTx(zone: Zone): IO[Zone] =
     monitor("repo.ZoneJDBC.save") {
       IO {
         DB.localTx { implicit s =>
@@ -364,10 +366,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-  private def retryIOWithBackoff[A](ioa: IO[A], delay: FiniteDuration, maxRetries: Int): IO[A] = {
-    ioa.handleErrorWith { error =>
-      if (maxRetries > 0)
-        IO.sleep(delay) *> retryIOWithBackoff(ioa, delay * 2, maxRetries - 1)
+  def retryWithBackoff[A](f: A => IO[A], a: A, delay: FiniteDuration, maxRetries: Int): IO[A] = {
+    implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+    f(a).handleErrorWith { error =>
+      if (maxRetries > 1)
+        IO.sleep(delay) *> retryWithBackoff(f, a, delay * 2, maxRetries - 1)
       else
         IO.raiseError(error)
     }
