@@ -649,7 +649,7 @@ class BatchChangeValidationsSpec
         addDuplicateCname.inputChange.typ))
   }
 
-  property("""validateChangesWithContext: both PTR records should fail
+  property("""validateChangesWithContext: both PTR records should succeed
       |if there are duplicate PTR add change inputs""".stripMargin) {
     val addA = AddChangeForValidation(
       okZone,
@@ -668,13 +668,7 @@ class BatchChangeValidationsSpec
       ExistingRecordSets(List()),
       okAuth)
 
-    result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
-      RecordNameNotUniqueInBatch(addPtr.inputChange.inputName, addPtr.inputChange.typ))
-    result(2) should haveInvalid[DomainValidationError](
-      RecordNameNotUniqueInBatch(
-        addDuplicatePtr.inputChange.inputName,
-        addDuplicatePtr.inputChange.typ))
+    result.map(_ shouldBe valid)
   }
 
   property("""validateChangesWithContext: should succeed for AddChangeForValidation
@@ -1051,7 +1045,7 @@ class BatchChangeValidationsSpec
     result.map(_ shouldBe valid)
   }
 
-  property("validateChangesWithContext: should fail on PTR update including multiple adds") {
+  property("validateChangesWithContext: should succeed on PTR update including multiple adds") {
     val existingPtr = rsOk.copy(
       zoneId = validIp4ReverseZone.id,
       name = "193",
@@ -1076,11 +1070,7 @@ class BatchChangeValidationsSpec
       ExistingRecordSets(List(existingPtr)),
       okAuth)
 
-    result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](
-      RecordNameNotUniqueInBatch("192.0.2.193", RecordType.PTR))
-    result(2) should haveInvalid[DomainValidationError](
-      RecordNameNotUniqueInBatch("192.0.2.193", RecordType.PTR))
+    result.map(_ shouldBe valid)
   }
 
   property("validateAddChangeInput: should succeed for a valid TXT addChangeInput") {
