@@ -69,7 +69,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     * it from the message queue
     */
   def receive(count: MessageCount): IO[List[SqsMessage]] =
-    monitor("queue.SQS.receiveMessageBatch") {
+    monitor("queue.SQS.receive") {
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         new ReceiveMessageRequest()
           .withMaxNumberOfMessages(count.value)
@@ -94,7 +94,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   // If we cannot parse the message, remove it from the queue
   def parse(message: Message): IO[Either[Throwable, SqsMessage]] =
     // This is tricky, we need to attempt to parse the message.  If we cannot, delete it; otherwise return ok
-    IO.fromEither(SqsMessage.parseSqsMessage(message)).attempt.flatMap {
+    IO(SqsMessage.parseSqsMessage(message)).flatMap {
       case Left(e) =>
         logger.error(s"Failed handling message with id '${message.getMessageId}'", e)
         delete(message.getReceiptHandle).as(Left(e))
@@ -107,23 +107,25 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
       client.deleteMessageAsync).as(())
 
   def remove(message: CommandMessage): IO[Unit] =
-    monitor("queue.SQS.removeMessage") {
+    monitor("queue.SQS.remove") {
       IO(delete(message.id.value))
     }.as(())
 
   /* Explicitly make a message almost immediately available on the queue */
   def requeue(message: CommandMessage): IO[Unit] =
-    changeMessageTimeout(message, new FiniteDuration(10, SECONDS))
+    monitor("queue.SQS.requeue") {
+      changeMessageTimeout(message, new FiniteDuration(10, SECONDS))
+    }
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
-    monitor("queue.SQS.sendMessage")(
+    monitor("queue.SQS.send")(
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
         client.sendMessageAsync)).as(())
 
   def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
-    monitor("queue.SQS.sendMessageBatch") {
+    monitor("queue.SQS.sendBatch") {
       toSendMessageBatchRequest(cmds)
         .map { sendRequest =>
           sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
