@@ -80,7 +80,7 @@ class MySqlUserRepository(crypto: CryptoAlgebra)
     }
 
   /*
-   * exclusiveStartKey and pageSize where originally made to batch the search in the dynamodb implementation
+   * exclusiveStartKey and pageSize were originally made to batch the search in the dynamodb implementation
    */
   override def getUsers(
       userIds: Set[String],
