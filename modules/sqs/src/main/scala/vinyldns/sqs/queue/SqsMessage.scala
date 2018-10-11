@@ -39,9 +39,10 @@ object SqsMessage extends ProtobufConversions {
   def parseSqsMessage(message: Message): Either[Throwable, SqsMessage] =
     for {
       messageType <- SqsMessageType.fromMessage(message)
-      messageBytes <- Option(message.getBody)
-        .map(Right(_))
-        .getOrElse(Left(EmptySqsMessageContents(message.getMessageId)))
+      messageBytes <- Either.fromOption(
+        Option(message.getBody),
+        EmptySqsMessageContents(message.getMessageId)
+      )
       contents <- Either.catchNonFatal(Base64.getDecoder.decode(messageBytes))
       cmd <- Either
         .catchNonFatal {

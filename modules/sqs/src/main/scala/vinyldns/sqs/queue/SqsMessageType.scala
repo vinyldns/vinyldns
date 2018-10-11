@@ -15,9 +15,12 @@
  */
 
 package vinyldns.sqs.queue
+import cats.implicits._
 import com.amazonaws.services.sqs.model.{Message, MessageAttributeValue}
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
+
+import scala.util.Try
 
 sealed abstract class SqsMessageType(val name: String) {
   val messageAttribute: (String, MessageAttributeValue) =
@@ -48,15 +51,16 @@ object SqsMessageType {
       case invalid => Left(InvalidMessageTypeValue(invalid))
     }
 
-  def fromMessage(sqsMessage: Message): Either[SqsMessageTypeError, SqsMessageType] =
+  def fromMessage(sqsMessage: Message): Either[Throwable, SqsMessageType] = {
     // getMessageAttributes guarantees a map, but it could be empty
     // the message-type maybe present, but doesn't have a string value
     // the message-type could have a string value, but not a valid value
-    for {
-      messageTypeAttr <- Option(sqsMessage.getMessageAttributes.get("message-type"))
-        .flatMap(attr => Option(attr.getStringValue))
-        .map(Right(_))
-        .getOrElse(Left(MessageTypeNotFound))
-      messageType <- fromString(messageTypeAttr)
-    } yield messageType
+    val messageType = for {
+      messageTypeAttr <- Either.fromTry(
+        Try(sqsMessage.getMessageAttributes.get("message-type").getStringValue))
+      typeName <- fromString(messageTypeAttr)
+    } yield typeName
+
+    messageType.leftMap(_ => MessageTypeNotFound)
+  }
 }

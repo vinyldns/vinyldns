@@ -32,7 +32,6 @@ import vinyldns.sqs.queue.SqsMessageType._
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-import scala.math.floor
 
 class SqsMessageQueueSpec
     extends WordSpec
@@ -54,7 +53,7 @@ class SqsMessageQueueSpec
   "toSendMessageBatchRequest" should {
     "create a single batch request if total message payload is under 256KB" in {
       val messageSize = messageData(makeTestAddChange(rsOk, okZone)).getBytes().length
-      val requestMaxChanges = floor(MAXIMUM_BATCH_SIZE / messageSize).toInt
+      val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val recordSetChanges = for (_ <- 1 until requestMaxChanges)
         yield makeTestAddChange(rsOk, okZone)
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
@@ -63,7 +62,7 @@ class SqsMessageQueueSpec
 
     "create multiple batch requests if total message payload is over 256KB" in {
       val messageSize = messageData(makeTestAddChange(rsOk, okZone)).getBytes().length
-      val requestMaxChanges = floor(MAXIMUM_BATCH_SIZE / messageSize).toInt
+      val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val requestTotalChanges = requestMaxChanges * 4 // Create four batches
       val recordSetChanges = for (_ <- 1 until requestTotalChanges)
         yield makeTestAddChange(rsOk, okZone)

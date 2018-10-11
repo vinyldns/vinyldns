@@ -84,7 +84,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     // attempt to parse each message that arrives, failures will be removed and not returned
     messages
       .map(parse)
-      .sequence
+      .parSequence
       .map { lst: List[Either[Throwable, SqsMessage]] =>
         lst.collect {
           case Right(message) => message
@@ -228,21 +228,17 @@ object SqsMessageQueue extends ProtobufConversions {
   def toSendMessageBatchRequest[A <: ZoneCommand](
       commands: NonEmptyList[A]): List[SendMessageBatchRequest] = {
     // convert each message into an entry
-    val entries = commands
-      .map(cmd => (cmd, messageData(cmd)))
-      .map {
-        case (cmd, msgBody) =>
-          new SendMessageBatchRequestEntry()
-            .withMessageBody(msgBody)
-            .withId(cmd.id)
-            .withMessageAttributes(Map(SqsMessageType.fromCommand(cmd).messageAttribute).asJava)
-      }
-      .toList
+    val entries = commands.map { cmd =>
+      new SendMessageBatchRequestEntry()
+        .withMessageBody(messageData(cmd))
+        .withId(cmd.id)
+        .withMessageAttributes(Map(SqsMessageType.fromCommand(cmd).messageAttribute).asJava)
+    }.toList
 
     // Group entries into batches
     val maxMessageSize = entries.map(_.getMessageBody.getBytes().length).max
     entries
-      .grouped(math.floor(MAXIMUM_BATCH_SIZE.toDouble / maxMessageSize.toDouble).toInt)
+      .grouped((MAXIMUM_BATCH_SIZE.toDouble / maxMessageSize.toDouble).toInt)
       .map { groupedEntries =>
         new SendMessageBatchRequest().withEntries(groupedEntries.asJava)
       }
@@ -253,15 +249,20 @@ object SqsMessageQueue extends ProtobufConversions {
       sendResultList: List[SendMessageBatchResult],
       cmds: NonEmptyList[A]): SendBatchResult = {
     val successfulIds = sendResultList.flatMap(_.getSuccessful.asScala.map(_.getId))
-    val successes = cmds.toList.filter(cmd => successfulIds.contains(cmd.id))
+    val successes = cmds.filter(cmd => successfulIds.contains(cmd.id))
 
-    val failed = sendResultList.flatMap(_.getFailed.asScala.toList)
-    val failureIds = failed.map(_.getId)
-    val failureMessages = failed.map(_.getMessage)
-    val failures =
-      cmds.toList.filter(cmd => failureIds.contains(cmd.id)).zip(failureMessages).map {
-        case (cmd, msg) => (new Exception(msg), cmd)
+    val failed = sendResultList
+      .flatMap(_.getFailed.asScala.map { f =>
+        (f.getId, f.getMessage)
+      })
+      .toMap
+
+    val failures = cmds
+      .map(cmd => (failed.get(cmd.id), cmd))
+      .collect {
+        case (Some(msg), cmd) => (new Exception(msg), cmd)
       }
+
     SendBatchResult(successes, failures)
   }
 }

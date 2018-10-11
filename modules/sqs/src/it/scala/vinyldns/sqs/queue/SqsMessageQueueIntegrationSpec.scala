@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit.SECONDS
 import cats.data.NonEmptyList
 import cats.scalatest.EitherMatchers
 import com.amazonaws.services.sqs.model._
-import org.scalatest.mockito.MockitoSugar
 import org.scalatest._
+import org.scalatest.mockito.MockitoSugar
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.record.RecordSetChange
