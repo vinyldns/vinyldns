@@ -37,7 +37,9 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       RepositoryName.zone,
       RepositoryName.batchChange,
       RepositoryName.zoneChange,
-      RepositoryName.recordSet)
+      RepositoryName.recordSet,
+      RepositoryName.recordChange
+    )
 
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
     for {
@@ -64,11 +66,13 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val batchChanges = Some(new MySqlBatchChangeRepository())
     val zoneChanges = Some(new MySqlZoneChangeRepository())
     val recordSets = Some(new MySqlRecordSetRepository())
+    val recordChanges = Some(new MySqlRecordChangeRepository())
     DataStore(
       zoneRepository = zones,
       batchChangeRepository = batchChanges,
       zoneChangeRepository = zoneChanges,
-      recordSetRepository = recordSets
+      recordSetRepository = recordSets,
+      recordChangeRepository = recordChanges
     )
   }
 

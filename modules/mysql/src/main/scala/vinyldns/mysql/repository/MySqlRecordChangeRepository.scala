@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package vinyldns.mysql.repository
 
 import java.sql.Connection
@@ -12,7 +28,10 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-class MySqlRecordChangeRepository extends RecordChangeRepository with Monitored with ProtobufConversions {
+class MySqlRecordChangeRepository
+    extends RecordChangeRepository
+    with Monitored
+    with ProtobufConversions {
   import MySqlRecordChangeRepository._
 
   // Important!  MySQL 5.6 does not have sorted indexes, so this maybe slow
@@ -52,15 +71,16 @@ class MySqlRecordChangeRepository extends RecordChangeRepository with Monitored 
     records.foreach { r =>
       ps.setString(1, r.id)
       ps.setString(2, r.zoneId)
-      ps.setTimestamp(3, new java.sql.Timestamp(r.created.getMillis))
+      ps.setLong(3, r.created.getMillis)
       ps.setInt(4, fromChangeType(r.changeType))
-      ps.setBlob(6, new MariaDbBlob(toPB(r).toByteArray))
+      ps.setBlob(5, new MariaDbBlob(toPB(r).toByteArray))
       ps.addBatch()
     }
     ps.executeBatch().toSeq
   }
+
   /**
-  * We have the same issue with changes as record sets, namely we may have to save millions of them
+    * We have the same issue with changes as record sets, namely we may have to save millions of them
     *
     * We do not need to distinguish between create, update, delete so this is simpler
     */
@@ -75,29 +95,37 @@ class MySqlRecordChangeRepository extends RecordChangeRepository with Monitored 
       }.as(changeSet)
     }
 
-  def listRecordSetChanges(zoneId: String, startFrom: Option[String], maxItems: Int):
-    IO[ListRecordSetChangesResults] =
-      monitor("repo.RecordChange.listRecordSetChanges") {
-        IO {
-          DB.readOnly { implicit s =>
-            val changes = startFrom match {
-              case Some(start) =>
-                LIST_CHANGES_WITH_START.bind(zoneId, start, maxItems).map(toRecordSetChange).list().apply()
-              case None =>
-                LIST_CHANGES_NO_START.bind(zoneId, maxItems).map(toRecordSetChange).list().apply()
-            }
-
-            val nextId = if (changes.size < maxItems) None else changes.lastOption.map(_.created.getMillis.toString)
-
-            ListRecordSetChangesResults(
-              changes,
-              nextId,
-              startFrom,
-              maxItems
-            )
+  def listRecordSetChanges(
+      zoneId: String,
+      startFrom: Option[String],
+      maxItems: Int): IO[ListRecordSetChangesResults] =
+    monitor("repo.RecordChange.listRecordSetChanges") {
+      IO {
+        DB.readOnly { implicit s =>
+          val changes = startFrom match {
+            case Some(start) =>
+              LIST_CHANGES_WITH_START
+                .bind(zoneId, start.toLong, maxItems)
+                .map(toRecordSetChange)
+                .list()
+                .apply()
+            case None =>
+              LIST_CHANGES_NO_START.bind(zoneId, maxItems).map(toRecordSetChange).list().apply()
           }
+
+          val nextId =
+            if (changes.size < maxItems) None
+            else changes.lastOption.map(_.created.getMillis.toString)
+
+          ListRecordSetChangesResults(
+            changes,
+            nextId,
+            startFrom,
+            maxItems
+          )
         }
       }
+    }
 
   def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]] =
     monitor("repo.RecordChange.listRecordSetChanges") {

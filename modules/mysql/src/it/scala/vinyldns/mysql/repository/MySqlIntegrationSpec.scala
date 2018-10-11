@@ -20,7 +20,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
 
 trait MySqlIntegrationSpec {
@@ -39,6 +39,8 @@ trait MySqlIntegrationSpec {
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
   lazy val recordSetRepository: RecordSetRepository =
     instance.get[RecordSetRepository](RepositoryName.recordSet).get
+  lazy val recordChangeRepository: RecordChangeRepository =
+    instance.get[RecordChangeRepository](RepositoryName.recordChange).get
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {
