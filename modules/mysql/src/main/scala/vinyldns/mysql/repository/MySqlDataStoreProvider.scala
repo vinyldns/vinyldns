@@ -41,7 +41,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       _ <- validateRepos(config.repositories)
       _ <- runDBMigrations(settingsConfig)
       _ <- setupDBConnection(settingsConfig)
-      store <- initializeRepos()
+      store <- initializeRepos(cryptoAlgebra)
     } yield store
 
   def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
@@ -55,14 +55,16 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     }
   }
 
-  def initializeRepos(): IO[DataStore] = IO {
+  def initializeRepos(cryptoAlgebra: CryptoAlgebra): IO[DataStore] = IO {
     val zones = Some(new MySqlZoneRepository())
     val batchChanges = Some(new MySqlBatchChangeRepository())
     val zoneChanges = Some(new MySqlZoneChangeRepository())
+    val users = Some(new MySqlUserRepository(cryptoAlgebra))
     DataStore(
       zoneRepository = zones,
       batchChangeRepository = batchChanges,
-      zoneChangeRepository = zoneChanges)
+      zoneChangeRepository = zoneChanges,
+      userRepository = users)
   }
 
   def runDBMigrations(settings: MySqlDataStoreSettings): IO[Unit] = IO {
