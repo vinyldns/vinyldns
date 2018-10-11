@@ -86,7 +86,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     * a configuration setting
     */
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
-    monitor("repo.MySql.apply") {
+    monitor("repo.RecordSet.apply") {
       val byChangeType = changeSet.changes.groupBy(_.changeType)
       val inserts: Seq[Seq[Any]] = byChangeType.getOrElse(RecordSetChangeType.Create, Nil).map {
         i =>
@@ -147,7 +147,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       startFrom: Option[String],
       maxItems: Option[Int],
       recordNameFilter: Option[String]): IO[ListRecordSetResults] =
-    monitor("repo.MySql.listRecordSets") {
+    monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
           // make sure we sort ascending, so we can do the correct comparison later
@@ -187,7 +187,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   // TODO: Refactor this, need "getRecordSetsByNameAndType"
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
-    monitor("repo.MySql.getRecordSets") {
+    monitor("repo.RecordSet.getRecordSets") {
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ZONEID_NAME_TYPE
@@ -201,7 +201,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   // Note: In MySql we do not need the zone id, we can hit the key directly
   def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
-    monitor("repo.MySql.getRecordSet") {
+    monitor("repo.RecordSet.getRecordSet") {
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ID.bindByName('id -> recordSetId).map(toRecordSet).single().apply()
@@ -210,7 +210,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   def getRecordSetCount(zoneId: String): IO[Int] =
-    monitor("repo.MySql.getRecordSetCount") {
+    monitor("repo.RecordSet.getRecordSetCount") {
       IO {
         DB.readOnly { implicit s =>
           // this is a count query, so should always return a value.  However, scalikejdbc doesn't have this,
@@ -226,7 +226,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
-    monitor("repo.MySql.getRecordSetsByName") {
+    monitor("repo.RecordSet.getRecordSetsByName") {
       IO {
         DB.readOnly { implicit s =>
           // this is a count query, so should always return a value.  However, scalikejdbc doesn't have this,
@@ -241,7 +241,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   def getRecordSetsByFQDN(fqdns: List[FQDN]): IO[List[RecordSet]] =
-    monitor("repo.MySql.getRecordSetByFQDN") {
+    monitor("repo.RecordSet.getRecordSetsByFQDN") {
       IO {
         DB.readOnly { implicit s =>
           val inClause = " IN (" + fqdns.as("?").mkString(",") + ")"
