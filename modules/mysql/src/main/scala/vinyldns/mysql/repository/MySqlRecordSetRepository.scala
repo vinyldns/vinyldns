@@ -59,9 +59,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
          | WHERE zone_id = {zoneId}
     """.stripMargin
 
-  //private val INSERT_RECORDSET =
-  //  sql"INSERT INTO recordset (id, zone_id, name, type, data) VALUES (?, ?, ?, ?, ?)"
-
   private val UPDATE_RECORDSET =
     sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ? WHERE id = ?"
 
@@ -79,7 +76,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   private def insert(records: Seq[InsertRecord], conn: Connection): Seq[Int] = {
     // Important!  We must do INSERT IGNORE here as we cannot do ON DUPLICATE KEY UPDATE
     // with this mysql bulk insert.  To maintain idempotency, we must handle the possibility
-    // of the same insert happening multiple times
+    // of the same insert happening multiple times.  IGNORE will ignore all errors unfortunately,
+    // but I fear we have no choice in the matter
     val ps = conn.prepareStatement(
       "INSERT IGNORE INTO recordset (id, zone_id, name, type, data) VALUES (?, ?, ?, ?, ?)")
     records.foreach { r =>
@@ -103,15 +101,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     * The size of each group needs to be profiled.  Articles point to being able to do bulk
     * insert of 200,000 rows per second (for small rows of 26 bytes).  Our rows will be considerably
     * larger than that (maybe 500 bytes).  Attempting to do batches of 1000 and seeing where
-    * we can go from there
+    * we can go from there.  This will be adjusted as part of benchmark, we may opt to make it
+    * a configuration setting
     */
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.MySql.apply") {
       val byChangeType = changeSet.changes.groupBy(_.changeType)
       val inserts: Seq[InsertRecord] = byChangeType.getOrElse(RecordSetChangeType.Create, Nil).map {
         i =>
-          // to avoid overhead, we are just returning Seq[Any]
-          // id, zone_id, name, type, data
           InsertRecord(
             i.recordSet.id,
             i.zoneId,
@@ -157,11 +154,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   /**
-    *   maxItems is an option here because we use this to load all record sets in a zone, which could be very large
+    * maxItems is an option here because we use this to load all record sets in a zone, which could be very large
     * (millions of records).  This could cause memory issues for the application.
     *
-    * For DynamoDB, we can only get 100 at a time.  We will attempt to get 1000 at a time and
-    * tune from there
+    * For DynamoDB, we can only get 100 at a time.  We do not know what the "limit" is right now,
+    * so we will attempt to load all and tune this during benchmark
     */
   def listRecordSets(
       zoneId: String,
@@ -192,8 +189,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           // if size of results is less than the number returned, we don't have a next id
           // if maxItems is None, we don't have a next id
-          println(s"\r\n!!!! RESULTS LAST OPTION IS ${results.lastOption}")
-          println(s"\r\n!!!! MAX ITEMS IS $maxItems")
           val nextId =
             maxItems.filter(_ == results.size).flatMap(_ => results.lastOption.map(_.name))
 
