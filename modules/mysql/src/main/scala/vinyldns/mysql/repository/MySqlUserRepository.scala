@@ -63,7 +63,7 @@ class MySqlUserRepository(crypto: CryptoAlgebra)
     sql"""
          | SELECT data
          |  FROM user
-         |  WHERE id IN (${ids})
+         |  WHERE id IN ($ids)
        """.stripMargin
 
   override def getUser(userId: String): IO[Option[User]] =
