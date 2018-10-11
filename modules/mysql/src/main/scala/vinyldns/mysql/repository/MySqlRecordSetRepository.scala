@@ -65,6 +65,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
 
+  private val FIND_BY_FQDN =
+    """
+         |SELECT data
+         |  FROM recordset
+         | WHERE fqdn
+    """.stripMargin
+
   /**
     * Unsure if scalikejdbc is doing the correct thing by bulk insert in MySQL.
     *
@@ -79,13 +86,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     // of the same insert happening multiple times.  IGNORE will ignore all errors unfortunately,
     // but I fear we have no choice in the matter
     val ps = conn.prepareStatement(
-      "INSERT IGNORE INTO recordset (id, zone_id, name, type, data) VALUES (?, ?, ?, ?, ?)")
+      "INSERT IGNORE INTO recordset (id, zone_id, name, fqdn, type, data) VALUES (?, ?, ?, ?, ?, ?)")
     records.foreach { r =>
       ps.setString(1, r.id)
       ps.setString(2, r.zoneId)
       ps.setString(3, r.recordName)
-      ps.setInt(4, r.recordType)
-      ps.setBlob(5, new MariaDbBlob(r.data))
+      ps.setString(4, r.fqdn.value)
+      ps.setInt(5, r.recordType)
+      ps.setBlob(6, new MariaDbBlob(r.data))
       ps.addBatch()
     }
     ps.executeBatch().toSeq
@@ -113,6 +121,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             i.recordSet.id,
             i.zoneId,
             i.recordSet.name,
+            FQDN(i.recordSet.name, i.zone.name),
             fromRecordType(i.recordSet.typ),
             toPB(i.recordSet).toByteArray
           )
@@ -257,6 +266,17 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }
     }
+
+  def getRecordSetsByFQDN(fqdns: List[FQDN]): IO[List[RecordSet]] =
+    monitor("repo.MySql.getRecordSetByFQDN") {
+      IO {
+        DB.readOnly { implicit s =>
+          val inClause = " IN (" + fqdns.as("?").mkString(",") + ")"
+          val query = FIND_BY_FQDN + inClause
+          SQL(query).bind(fqdns.map(_.value): _*).map(toRecordSet).list().apply()
+        }
+      }
+    }
 }
 
 object MySqlRecordSetRepository extends ProtobufConversions {
@@ -267,6 +287,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
       id: String,
       zoneId: String,
       recordName: String,
+      fqdn: FQDN,
       recordType: Int,
       data: Array[Byte])
 
