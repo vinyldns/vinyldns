@@ -112,7 +112,7 @@ class MySqlUserRepositoryIntegrationSpec
     }
   }
 
-  "MySqlUserRepository.getUserName" should {
+  "MySqlUserRepository.getUserByName" should {
     "retrieve a user" in {
       repo.getUserByName(users.head.userName).unsafeRunSync() shouldBe Some(users.head)
     }
