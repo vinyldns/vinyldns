@@ -17,6 +17,7 @@
 package vinyldns.sqs.queue
 
 import java.util.Base64
+import java.util.concurrent.TimeUnit.{HOURS, SECONDS}
 
 import cats.data.NonEmptyList
 import com.amazonaws.services.sqs.model._
@@ -30,6 +31,8 @@ import vinyldns.sqs.queue.SqsMessageType._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
+import scala.math.floor
 
 class SqsMessageQueueSpec
     extends WordSpec
@@ -45,6 +48,27 @@ class SqsMessageQueueSpec
     "return the appropriate message type" in {
       fromString("SqsRecordSetChangeMessage") shouldBe Right(SqsRecordSetChangeMessage)
       fromString("SqsZoneChangeMessage") shouldBe Right(SqsZoneChangeMessage)
+    }
+  }
+
+  "toSendMessageBatchRequest" should {
+    "create a single batch request if total message payload is under 256KB" in {
+      val messageSize = messageData(makeTestAddChange(rsOk, okZone)).getBytes().length
+      val requestMaxChanges = floor(MAXIMUM_BATCH_SIZE / messageSize).toInt
+      val recordSetChanges = for (_ <- 1 until requestMaxChanges)
+        yield makeTestAddChange(rsOk, okZone)
+      val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+      toSendMessageBatchRequest(commands).length shouldBe 1
+    }
+
+    "create multiple batch requests if total message payload is over 256KB" in {
+      val messageSize = messageData(makeTestAddChange(rsOk, okZone)).getBytes().length
+      val requestMaxChanges = floor(MAXIMUM_BATCH_SIZE / messageSize).toInt
+      val requestTotalChanges = requestMaxChanges * 4 // Create four batches
+      val recordSetChanges = for (_ <- 1 until requestTotalChanges)
+        yield makeTestAddChange(rsOk, okZone)
+      val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+      toSendMessageBatchRequest(commands).length shouldBe 4
     }
   }
 
@@ -95,6 +119,23 @@ class SqsMessageQueueSpec
 
       result.successes should contain theSameElementsAs successes
       result.failures.map(_._2) should contain theSameElementsAs failures
+    }
+  }
+
+  "validateMessageTimeout" should {
+    "throw an InvalidMessageTimeout error when duration is negative" in {
+      val duration = new FiniteDuration(-1, SECONDS)
+      validateMessageTimeout(duration) shouldBe Left(InvalidMessageTimeout(duration.toSeconds))
+    }
+
+    "throw an InvalidMessageTimeout error when duration is greater than max (43200)" in {
+      val duration = new FiniteDuration(13, HOURS)
+      validateMessageTimeout(duration) shouldBe Left(InvalidMessageTimeout(duration.toSeconds))
+    }
+
+    "return a FiniteDuration when duration is valid" in {
+      val duration = new FiniteDuration(7, HOURS)
+      validateMessageTimeout(duration) shouldBe Right(duration)
     }
   }
 }
