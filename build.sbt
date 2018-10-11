@@ -298,6 +298,7 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     organization := "io.vinyldns",
+    fork in IntegrationTest := true,
   ).dependsOn(core % "compile->compile;test->test")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
