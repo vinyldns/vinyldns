@@ -17,18 +17,16 @@
 package vinyldns.mysql.repository
 
 import cats.effect._
-import cats.syntax.all._
+import cats.implicits._
 import com.zaxxer.hikari.HikariDataSource
-import javax.sql.DataSource
-import org.flywaydb.core.Flyway
 import org.slf4j.LoggerFactory
 import pureconfig.module.catseffect.loadConfigF
-
-import scala.collection.JavaConverters._
 import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceCloser, DataSourceConnectionPool}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.repository._
+import vinyldns.mysql.{MySqlConnectionConfig, MySqlDataSourceSettings}
+import vinyldns.mysql.MySqlConnector._
 
 class MySqlDataStoreProvider extends DataStoreProvider {
 
@@ -38,7 +36,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
     for {
-      settingsConfig <- loadConfigF[IO, MySqlDataStoreSettings](config.settings)
+      settingsConfig <- loadConfigF[IO, MySqlConnectionConfig](config.settings)
       _ <- validateRepos(config.repositories)
       _ <- runDBMigrations(settingsConfig)
       _ <- setupDBConnection(settingsConfig)
@@ -66,68 +64,22 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       zoneChangeRepository = zoneChanges)
   }
 
-  def runDBMigrations(settings: MySqlDataStoreSettings): IO[Unit] = IO {
-    // Migration needs to happen on the base URL, not the table URL, thus the separate source
-    lazy val migrationDataSource: DataSource = {
-      val ds = new HikariDataSource()
-      ds.setDriverClassName(settings.driver)
-      ds.setJdbcUrl(settings.migrationUrl)
-      ds.setUsername(settings.user)
-      ds.setPassword(settings.password)
-      // migrations happen once on startup; without these settings the default number of connections
-      // will be created and maintained even though this datasource is no longer needed post-migration
-      ds.setMaximumPoolSize(3)
-      ds.setMinimumIdle(0)
-      ds.setPoolName("flywayPool")
-      ds
+
+  def setupDBConnection(config: MySqlConnectionConfig): IO[Unit] = {
+    val dbConnectionSettings = MySqlDataSourceSettings(config)
+
+    IO.fromEither(getDataSource(dbConnectionSettings)).map { dataSource =>
+      logger.error("configuring connection pool")
+
+      // pulled out of DBs.setupAll since we're no longer using the db. structure for config
+      DBs.loadGlobalSettings()
+
+      // Configure the connection pool
+      ConnectionPool.singleton(
+        new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource)))
+
+      logger.error("database init complete")
     }
-
-    logger.info("Running migrations to ready the databases")
-
-    val migration = new Flyway()
-    migration.setDataSource(migrationDataSource)
-    // flyway changed the default schema table name in v5.0.0
-    // this allows to revert to an old naming convention if needed
-    settings.migrationSchemaTable.foreach { tableName =>
-      migration.setTable(tableName)
-    }
-
-    val placeholders = Map("dbName" -> settings.name)
-    migration.setPlaceholders(placeholders.asJava)
-    migration.setSchemas(settings.name)
-
-    // Runs flyway migrations
-    migration.migrate()
-    logger.info("migrations complete")
-  }
-
-  def setupDBConnection(settings: MySqlDataStoreSettings): IO[Unit] = IO {
-    val dataSource: HikariDataSource = {
-      val ds = new HikariDataSource()
-      ds.setDriverClassName(settings.driver)
-      ds.setJdbcUrl(settings.url)
-      ds.setUsername(settings.user)
-      ds.setPassword(settings.password)
-      ds.setConnectionTimeout(settings.connectionTimeoutMillis)
-      ds.setMaximumPoolSize(settings.poolMaxSize)
-      ds.setMaxLifetime(settings.maxLifeTime)
-      ds.setRegisterMbeans(true)
-      ds.setPoolName("mysqldbPool")
-      ds
-    }
-
-    logger.info("configuring connection pool")
-
-    // Configure the connection pool
-    ConnectionPool.singleton(
-      new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource)))
-
-    logger.info("setting up databases")
-
-    // Sets up all databases with scalikejdbc
-    DBs.setupAll()
-
-    logger.info("database init complete")
   }
 
   def shutdown(): IO[Unit] =

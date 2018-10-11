@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
-package vinyldns.mysql.repository
+package vinyldns.mysql
 
-case class MySqlDataStoreSettings(
+final case class MySqlConnectionConfig(
     name: String,
     driver: String,
     migrationUrl: String,
     url: String,
     user: String,
     password: String,
-    poolMaxSize: Int,
-    connectionTimeoutMillis: Long,
-    maxLifeTime: Long,
-    migrationSchemaTable: Option[String])
+    migrationSchemaTable: Option[String],
+    // Optional hikari settings
+    // see https://github.com/brettwooldridge/HikariCP#frequently-used
+    connectionTimeoutMillis: Option[Long],
+    idleTimeout: Option[Long],
+    minimumIdle: Option[Int],
+    maximumPoolSize: Option[Int],
+    maxLifeTime: Option[Long],
+    registerMbeans: Boolean = false,
+    // MySql performance settings, should be stored in a .properties file
+    // see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration
+    mySqlProperties: Map[String, String] = Map(),
+)
