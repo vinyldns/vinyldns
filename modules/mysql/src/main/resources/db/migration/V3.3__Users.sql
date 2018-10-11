@@ -8,10 +8,9 @@ Create the User table
 CREATE TABLE user (
     id CHAR(36) NOT NULL,
     user_name VARCHAR(256) NOT NULL,
-    created_timestamp BIGINT(13) NOT NULL,
     access_key VARCHAR(256) NOT NULL,
     data BLOB NOT NULL,
-    PRIMARY KEY (user_id),
+    PRIMARY KEY (id),
     INDEX access_key_index (access_key),
     INDEX user_name_index (user_name)
 );
