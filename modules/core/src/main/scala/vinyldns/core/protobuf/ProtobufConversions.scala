@@ -364,7 +364,7 @@ trait ProtobufConversions {
 
     user.firstName.foreach(fn => builder.setFirstName(fn))
     user.lastName.foreach(ln => builder.setLastName(ln))
-    user.email.foreach(e => builder.setFirstName(e))
+    user.email.foreach(e => builder.setEmail(e))
 
     builder.build()
   }

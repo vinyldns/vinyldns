@@ -18,6 +18,8 @@ package vinyldns.api.protobuf
 
 import org.joda.time.DateTime
 import org.scalatest.{Assertion, Matchers, OptionValues, WordSpec}
+import vinyldns.core.crypto.NoOpCrypto
+import vinyldns.core.domain.membership.{LockStatus, User}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf.ProtobufConversions
@@ -733,6 +735,91 @@ class ProtobufConversionsSpec
       val chg = rsChange(sshfp).copy(updates = None)
       toPB(chg).hasUpdates shouldBe false
       fromPB(toPB(chg)).updates should not be defined
+    }
+  }
+
+  "User conversion" should {
+    "convert to/from protobuf with user defaults" in {
+      val user = User("testName", "testAccess", "testSecret")
+      val crypto = new NoOpCrypto()
+      val pb = toPB(user, crypto)
+
+      pb.getUserName shouldBe user.userName
+      pb.getAccessKey shouldBe user.accessKey
+      pb.getSecretKey shouldBe crypto.encrypt(user.secretKey)
+      pb.hasFirstName shouldBe false
+      pb.hasLastName shouldBe false
+      pb.hasEmail shouldBe false
+      pb.getCreated shouldBe user.created.getMillis
+      pb.getId shouldBe user.id
+      pb.getIsSuper shouldBe user.isSuper
+      pb.getLockStatus shouldBe "Unlocked"
+
+      fromPB(pb) shouldBe user
+    }
+
+    "convert to/from protobuf with firstname, lastname, and email" in {
+      val user = User(
+        "testName",
+        "testAccess",
+        "testSecret",
+        firstName = Some("testFirstName"),
+        lastName = Some("testLastName"),
+        email = Some("testEmail")
+      )
+      val crypto = new NoOpCrypto()
+      val pb = toPB(user, crypto)
+
+      pb.getUserName shouldBe user.userName
+      pb.getAccessKey shouldBe user.accessKey
+      pb.getSecretKey shouldBe crypto.encrypt(user.secretKey)
+      pb.getFirstName shouldBe user.firstName.get
+      pb.getLastName shouldBe user.lastName.get
+      pb.getEmail shouldBe user.email.get
+      pb.getCreated shouldBe user.created.getMillis
+      pb.getId shouldBe user.id
+      pb.getIsSuper shouldBe user.isSuper
+      pb.getLockStatus shouldBe "Unlocked"
+
+      fromPB(pb) shouldBe user
+    }
+
+    "convert to/from protobuf with superUser true" in {
+      val user = User("testName", "testAccess", "testSecret", isSuper = true)
+      val crypto = new NoOpCrypto()
+      val pb = toPB(user, crypto)
+
+      pb.getUserName shouldBe user.userName
+      pb.getAccessKey shouldBe user.accessKey
+      pb.getSecretKey shouldBe crypto.encrypt(user.secretKey)
+      pb.hasFirstName shouldBe false
+      pb.hasLastName shouldBe false
+      pb.hasEmail shouldBe false
+      pb.getCreated shouldBe user.created.getMillis
+      pb.getId shouldBe user.id
+      pb.getIsSuper shouldBe user.isSuper
+      pb.getLockStatus shouldBe "Unlocked"
+
+      fromPB(pb) shouldBe user
+    }
+
+    "convert to/from protobuf with locked user" in {
+      val user = User("testName", "testAccess", "testSecret", lockStatus = LockStatus.Locked)
+      val crypto = new NoOpCrypto()
+      val pb = toPB(user, crypto)
+
+      pb.getUserName shouldBe user.userName
+      pb.getAccessKey shouldBe user.accessKey
+      pb.getSecretKey shouldBe crypto.encrypt(user.secretKey)
+      pb.hasFirstName shouldBe false
+      pb.hasLastName shouldBe false
+      pb.hasEmail shouldBe false
+      pb.getCreated shouldBe user.created.getMillis
+      pb.getId shouldBe user.id
+      pb.getIsSuper shouldBe user.isSuper
+      pb.getLockStatus shouldBe "Locked"
+
+      fromPB(pb) shouldBe user
     }
   }
 }
