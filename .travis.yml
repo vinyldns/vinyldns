@@ -16,9 +16,11 @@ services:
   - docker
 
 cache:
+  pip: true
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    - node_modules
   timeout: 900
 
 before_cache:
