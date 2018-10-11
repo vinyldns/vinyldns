@@ -35,14 +35,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     sql"""
       |SELECT data
       |  FROM recordset
-      | WHERE zone_id = {zoneId}, name = {name}, type = {type}
+      | WHERE zone_id = {zoneId} AND name = {name} AND type = {type}
     """.stripMargin
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
          |SELECT data
          |  FROM recordset
-         | WHERE zone_id = {zoneId}, name = {name}
+         | WHERE zone_id = {zoneId} AND name = {name}
     """.stripMargin
 
   private val FIND_BY_ID =
@@ -144,8 +144,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       IO {
         DB.localTx { implicit s =>
           inserts.grouped(1000).foreach { group =>
-            val r = insert(group, s.connection)
-            println(r)
+            insert(group, s.connection)
           }
           updates.grouped(1000).foreach { group =>
             UPDATE_RECORDSET.batch(group: _*).apply()
@@ -173,14 +172,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       IO {
         DB.readOnly { implicit s =>
           // make sure we sort ascending, so we can do the correct comparison later
-          val opts = (startFrom.as("AND name > {name}") ++
-            recordNameFilter.as("AND name LIKE '%{filter}'") ++
-            Some(" ORDER BY name ASC ") ++
+          val opts = (startFrom.as("AND name > {startFrom}") ++
+            recordNameFilter.as("AND name LIKE {nameFilter}") ++
+            Some("ORDER BY name ASC") ++
             maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
           val params = (Some('zoneId -> zoneId) ++
-            startFrom.map(n => 'name -> n) ++
-            recordNameFilter.map(f => 'filter -> f) ++
+            startFrom.map(n => 'startFrom -> n) ++
+            recordNameFilter.map(f => 'nameFilter -> s"%$f%") ++
             maxItems.map(m => 'maxItems -> m)).toSeq
 
           val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
@@ -191,9 +190,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .list()
             .apply()
 
+          // if size of results is less than the number returned, we don't have a next id
+          // if maxItems is None, we don't have a next id
+          println(s"\r\n!!!! RESULTS LAST OPTION IS ${results.lastOption}")
+          println(s"\r\n!!!! MAX ITEMS IS $maxItems")
+          val nextId =
+            maxItems.filter(_ == results.size).flatMap(_ => results.lastOption.map(_.name))
+
           ListRecordSetResults(
             recordSets = results,
-            nextId = results.lastOption.map(_.name),
+            nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
             recordNameFilter = recordNameFilter
@@ -202,12 +208,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
+  // TODO: Refactor this, need "getRecordSetsByNameAndType"
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.MySql.getRecordSets") {
       IO {
         DB.readOnly { implicit s =>
           FIND_BY_ZONEID_NAME_TYPE
-            .bindByName('zoneId -> zoneId, 'name -> name, 'type -> typ)
+            .bindByName('zoneId -> zoneId, 'name -> name, 'type -> fromRecordType(typ))
             .map(toRecordSet)
             .list()
             .apply()
@@ -286,7 +293,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
 
   def toRecordSet(rs: WrappedResultSet): RecordSet =
     fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1)))
-  
+
   def toRecordType(i: Int): Either[InvalidRecordType, RecordType] =
     recordTypeLookup.get(i).map(t => Right(t)).getOrElse(Left(InvalidRecordType(i)))
 
