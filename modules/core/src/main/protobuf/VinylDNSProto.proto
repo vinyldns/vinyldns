@@ -184,11 +184,11 @@ message User {
     required string userName = 1;
     required string accessKey = 2;
     required string secretKey = 3;
-    optional string firstName = 4;
-    optional string lastName = 5;
-    optional string email = 6;
-    required int64 created = 7;
-    required string id = 8;
-    required bool isSuper = 9;
-    required string lockStatus = 10;
+    required int64 created = 4;
+    required string id = 5;
+    required bool isSuper = 6;
+    required string lockStatus = 7;
+    optional string firstName = 8;
+    optional string lastName = 9;
+    optional string email = 10;
 }

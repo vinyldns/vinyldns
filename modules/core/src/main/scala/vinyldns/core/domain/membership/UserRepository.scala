@@ -26,8 +26,8 @@ trait UserRepository extends Repository {
 
   def getUsers(
       userIds: Set[String],
-      exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): IO[ListUsersResults]
+      startFrom: Option[String],
+      maxItems: Option[Int]): IO[ListUsersResults]
 
   def getUserByAccessKey(accessKey: String): IO[Option[User]]
 

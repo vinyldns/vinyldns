@@ -189,8 +189,8 @@ class DynamoDBUserRepository private[repository] (
 
   def getUsers(
       userIds: Set[String],
-      exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): IO[ListUsersResults] = {
+      startFrom: Option[String],
+      maxItems: Option[Int]): IO[ListUsersResults] = {
 
     def toBatchGetItemRequest(userIds: List[String]): BatchGetItemRequest = {
       val allKeys = new util.ArrayList[util.Map[String, AttributeValue]]()
@@ -224,12 +224,12 @@ class DynamoDBUserRepository private[repository] (
 
       val sortedUserIds = userIds.toList.sorted
 
-      val filtered = exclusiveStartKey match {
+      val filtered = startFrom match {
         case None => sortedUserIds
         case Some(startId) => sortedUserIds.filter(startId < _)
       }
 
-      val page = pageSize match {
+      val page = maxItems match {
         case None => filtered
         case Some(size) => filtered.take(size)
       }

@@ -17,7 +17,6 @@
 package vinyldns.core.protobuf
 
 import org.joda.time.DateTime
-import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{LockStatus, User}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
@@ -351,12 +350,12 @@ trait ProtobufConversions {
       LockStatus.withName(data.getLockStatus)
     )
 
-  def toPB(user: User, crypto: CryptoAlgebra): VinylDNSProto.User = {
+  def toPB(user: User): VinylDNSProto.User = {
     val builder = VinylDNSProto.User
       .newBuilder()
       .setUserName(user.userName)
       .setAccessKey(user.accessKey)
-      .setSecretKey(crypto.encrypt(user.secretKey))
+      .setSecretKey(user.secretKey)
       .setCreated(user.created.getMillis)
       .setId(user.id)
       .setIsSuper(user.isSuper)

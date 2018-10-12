@@ -25,7 +25,7 @@ import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 import vinyldns.core.protobuf.ProtobufConversions
 
-class MySqlUserRepository(crypto: CryptoAlgebra)
+class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     extends UserRepository
     with Monitored
     with ProtobufConversions {
@@ -66,13 +66,13 @@ class MySqlUserRepository(crypto: CryptoAlgebra)
          |  WHERE id IN ($ids)
        """.stripMargin
 
-  override def getUser(userId: String): IO[Option[User]] =
+  def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID
             .bind(userId)
-            .map(extractUser(1))
+            .map(toUser(1))
             .first()
             .apply()
         }
@@ -80,18 +80,19 @@ class MySqlUserRepository(crypto: CryptoAlgebra)
     }
 
   /*
-   * exclusiveStartKey and pageSize were originally made to batch the search in the dynamodb implementation
+   * startFrom and maxItems were originally made to batch the search in the dynamodb implementation,
+   * this function is not used directly as an API route
    */
-  override def getUsers(
+  def getUsers(
       userIds: Set[String],
-      exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): IO[ListUsersResults] =
+      startFrom: Option[String],
+      maxItems: Option[Int]): IO[ListUsersResults] =
     monitor("repo.User.getUsers") {
       logger.info(s"Getting users with ids: $userIds")
       IO {
         val users = DB.readOnly { implicit s =>
           getUsersSqlBuilder(userIds)
-            .map(extractUser(1))
+            .map(toUser(1))
             .list()
             .apply()
         }
@@ -99,35 +100,35 @@ class MySqlUserRepository(crypto: CryptoAlgebra)
       }
     }
 
-  override def getUserByAccessKey(accessKey: String): IO[Option[User]] =
+  def getUserByAccessKey(accessKey: String): IO[Option[User]] =
     monitor("repo.User.getUserByAccessKey") {
       IO {
         logger.info(s"Getting user with accessKey: $accessKey")
         DB.readOnly { implicit s =>
           GET_USER_BY_ACCESS_KEY
             .bind(accessKey)
-            .map(extractUser(1))
+            .map(toUser(1))
             .first()
             .apply()
         }
       }
     }
 
-  override def getUserByName(userName: String): IO[Option[User]] =
+  def getUserByName(userName: String): IO[Option[User]] =
     monitor("repo.User.getUserByName") {
       IO {
         logger.info(s"Getting user with userName: $userName")
         DB.readOnly { implicit s =>
           GET_USER_BY_USER_NAME
             .bind(userName)
-            .map(extractUser(1))
+            .map(toUser(1))
             .first()
             .apply()
         }
       }
     }
 
-  override def save(user: User): IO[User] =
+  def save(user: User): IO[User] =
     monitor("repo.User.save") {
       IO {
         logger.info(s"Saving user with id: ${user.id}")
@@ -137,7 +138,7 @@ class MySqlUserRepository(crypto: CryptoAlgebra)
               'id -> user.id,
               'userName -> user.userName,
               'accessKey -> user.accessKey,
-              'data -> toPB(user, crypto).toByteArray
+              'data -> toPB(user.withEncryptedSecretKey(cryptoAlgebra)).toByteArray
             )
             .update()
             .apply()
@@ -146,8 +147,7 @@ class MySqlUserRepository(crypto: CryptoAlgebra)
       }
     }
 
-  private def extractUser(colIndex: Int): WrappedResultSet => User = res => {
+  private def toUser(colIndex: Int): WrappedResultSet => User = res => {
     fromPB(VinylDNSProto.User.parseFrom(res.bytes(colIndex)))
   }
-
 }
