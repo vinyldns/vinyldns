@@ -1,0 +1,8 @@
+version: "3.0"
+services:
+  elasticmq:
+    image: s12v/elasticmq:0.13.8
+    ports:
+    - "19005:9324"
+    volumes:
+    - ./custom.conf:/etc/elasticmq/elasticmq.conf
