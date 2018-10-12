@@ -29,6 +29,7 @@ import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType, ZoneCommand}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone._

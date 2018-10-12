@@ -205,6 +205,7 @@ lazy val api = (project in file("modules/api"))
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
   .dependsOn(core, dynamodb % "compile->compile;it->it", mysql % "compile->compile;it->it")
+  .dependsOn(sqs % "compile->compile;it->it")
 
 val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")
 lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
@@ -220,7 +221,7 @@ lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb, mysql)
+  .aggregate(core, api, portal, dynamodb, mysql, sqs)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
@@ -273,7 +274,6 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .settings(name := "dynamodb")
   .settings(corePublishSettings)
   .settings(testSettings)
   .settings(Defaults.itSettings)
@@ -284,6 +284,7 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
     parallelExecution in Test := true,
     parallelExecution in IntegrationTest := true
   ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "dynamodb")
 
 lazy val mysql = (project in file("modules/mysql"))
   .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
@@ -291,7 +292,6 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .settings(name := "mysql")
   .settings(corePublishSettings)
   .settings(testSettings)
   .settings(Defaults.itSettings)
@@ -300,6 +300,23 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(
     organization := "io.vinyldns",
   ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "mysql")
+
+lazy val sqs = (project in file("modules/sqs"))
+  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .configs(IntegrationTest)
+  .settings(sharedSettings)
+  .settings(headerSettings(IntegrationTest))
+  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
+  .settings(corePublishSettings)
+  .settings(testSettings)
+  .settings(Defaults.itSettings)
+  .settings(libraryDependencies ++= sqsDependencies ++ commonTestDependencies.map(_ % "test, it"))
+  .settings(scalaStyleCompile ++ scalaStyleTest)
+  .settings(
+    organization := "io.vinyldns",
+  ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "sqs")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")
@@ -460,11 +477,13 @@ addCommandAlias("validate", "; root/clean; " +
   "api/headerCheck api/test:headerCheck api/it:headerCheck " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
+  "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
   "portal/headerCheck portal/test:headerCheck; " +
   "all core/scalastyle core/test:scalastyle " +
   "api/scalastyle api/test:scalastyle api/it:scalastyle " +
   "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle" +
   "mysql/scalastyle mysql/test:scalastyle mysql/it:scalastyle" +
+  "sqs/scalastyle sqs/test:scalastyle sqs/it:scalastyle" +
   "portal/scalastyle portal/test:scalastyle;" +
   "portal/createJsHeaders;portal/checkJsHeaders;" +
   "root/compile;root/test:compile;root/it:compile"
@@ -472,8 +491,10 @@ addCommandAlias("validate", "; root/clean; " +
 
 addCommandAlias("verify", "; project root; killDocker; " +
   "project api; dockerComposeUp; project dynamodb; dockerComposeUp; project mysql; dockerComposeUp; " +
+  "project sqs; dockerComposeUp;" +
   "project root; coverage; " +
-  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test; " +
+  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test " +
+  "sqs/test sqs/it:test; " +
   "project root; coverageReport; coverageAggregate; killDocker"
 )
 

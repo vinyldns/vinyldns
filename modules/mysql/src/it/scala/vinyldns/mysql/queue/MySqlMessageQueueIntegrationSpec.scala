@@ -23,8 +23,8 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest._
 import scalikejdbc._
-import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId}
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
@@ -223,7 +223,8 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
     "increment the attempt, timestamp, and in flight status" in {
       val initialAttempts = 0
       val initialTs = DateTime.now.minusSeconds(20)
-      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100, initialAttempts)
+      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100,
+        initialAttempts)
 
       val oldMsg = findMessage(rsChange.id).getOrElse(fail)
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()
