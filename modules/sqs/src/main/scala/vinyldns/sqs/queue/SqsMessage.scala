@@ -32,9 +32,8 @@ object SqsMessage extends ProtobufConversions {
       extends SqsMessageError(s"Unable to parse SQS Message with ID '$messageId'")
   final case class EmptySqsMessageContents(messageId: String)
       extends SqsMessageError(s"No message body found for SQS message with ID '$messageId'")
-
   final case class InvalidMessageType(className: String)
-      extends Throwable(s"Invalid command message type '$className'")
+      extends SqsMessageError(s"Invalid command message type '$className'")
 
   def parseSqsMessage(message: Message): Either[Throwable, SqsMessage] =
     for {

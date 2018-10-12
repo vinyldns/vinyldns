@@ -71,8 +71,11 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   def receive(count: MessageCount): IO[List[SqsMessage]] =
     monitor("queue.SQS.receive") {
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
+        // Can return 1-10 messages.
+        // (see: https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/
+        // com/amazonaws/services/sqs/model/ReceiveMessageRequest.html)
         new ReceiveMessageRequest()
-          .withMaxNumberOfMessages(count.value)
+          .withMaxNumberOfMessages(math.min(10, count.value))
           .withMessageAttributeNames(".*")
           .withWaitTimeSeconds(1)
           .withQueueUrl(queueUrl),
