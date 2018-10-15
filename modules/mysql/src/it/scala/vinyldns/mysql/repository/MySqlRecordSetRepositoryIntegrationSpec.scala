@@ -20,7 +20,7 @@ import java.util.UUID
 import cats.scalatest.EitherMatchers
 import org.scalatest._
 import scalikejdbc.DB
-import vinyldns.core.domain.record.{ChangeSet, FQDN, RecordSetChange}
+import vinyldns.core.domain.record.{ChangeSet, RecordSetChange}
 import vinyldns.core.domain.zone.Zone
 
 class MySqlRecordSetRepositoryIntegrationSpec
@@ -77,14 +77,14 @@ class MySqlRecordSetRepositoryIntegrationSpec
       repo.apply(bigPendingChangeSet).attempt.unsafeRunSync() shouldBe right
     }
     "work for multiple inserts" in {
-      val pendingChanges = generateInserts(okZone, 1000)
+      val pendingChanges = generateInserts(okZone, 20)
 
       val bigPendingChangeSet = ChangeSet(pendingChanges)
       repo.apply(bigPendingChangeSet).unsafeRunSync()
 
       // let's make sure we have all 1000 records
       val recordCount = repo.getRecordSetCount(okZone.id).unsafeRunSync()
-      recordCount shouldBe 1000
+      recordCount shouldBe 20
     }
     "works for deletes, updates, and inserts" in {
       // create some record sets to be updated

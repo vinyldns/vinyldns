@@ -16,11 +16,8 @@
 
 package vinyldns.mysql.repository
 
-import java.sql.Connection
-
 import cats.effect._
 import cats.implicits._
-import org.mariadb.jdbc.MariaDbBlob
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
@@ -59,8 +56,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
          | WHERE zone_id = {zoneId}
     """.stripMargin
 
+  private val INSERT_RECORDSET =
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, fqdn, type, data) VALUES (?, ?, ?, ?, ?, ?)"
+
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, fqdn = ?, type = ?, data = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
@@ -71,33 +71,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
          |  FROM recordset
          | WHERE fqdn
     """.stripMargin
-
-  /**
-    * Unsure if scalikejdbc is doing the correct thing by bulk insert in MySQL.
-    *
-    * This method takes a sequence of records, and appropriately builds the batch prepared statement
-    * using underlying JDBC things
-    *
-    * TODO: get clarification that we need to do this, instead of using scalikejdbc
-    */
-  private def insert(records: Seq[InsertRecord], conn: Connection): Seq[Int] = {
-    // Important!  We must do INSERT IGNORE here as we cannot do ON DUPLICATE KEY UPDATE
-    // with this mysql bulk insert.  To maintain idempotency, we must handle the possibility
-    // of the same insert happening multiple times.  IGNORE will ignore all errors unfortunately,
-    // but I fear we have no choice in the matter
-    val ps = conn.prepareStatement(
-      "INSERT IGNORE INTO recordset (id, zone_id, name, fqdn, type, data) VALUES (?, ?, ?, ?, ?, ?)")
-    records.foreach { r =>
-      ps.setString(1, r.id)
-      ps.setString(2, r.zoneId)
-      ps.setString(3, r.recordName)
-      ps.setString(4, r.fqdn.value)
-      ps.setInt(5, r.recordType)
-      ps.setBlob(6, new MariaDbBlob(r.data))
-      ps.addBatch()
-    }
-    ps.executeBatch().toSeq
-  }
 
   /**
     * This is going to be tricky.  We need to generate INSERT INTO IGNORE VALUES
@@ -115,9 +88,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.MySql.apply") {
       val byChangeType = changeSet.changes.groupBy(_.changeType)
-      val inserts: Seq[InsertRecord] = byChangeType.getOrElse(RecordSetChangeType.Create, Nil).map {
+      val inserts: Seq[Seq[Any]] = byChangeType.getOrElse(RecordSetChangeType.Create, Nil).map {
         i =>
-          InsertRecord(
+          Seq[Any](
             i.recordSet.id,
             i.zoneId,
             i.recordSet.name,
@@ -129,10 +102,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
       val updates: Seq[Seq[Any]] = byChangeType.getOrElse(RecordSetChangeType.Update, Nil).map {
         u =>
-          // zone_id, name, type, data, id
           Seq[Any](
             u.zoneId,
             u.recordSet.name,
+            FQDN(u.recordSet.name, u.zone.name),
             fromRecordType(u.recordSet.typ),
             toPB(u.recordSet).toByteArray,
             u.recordSet.id)
@@ -150,7 +123,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       IO {
         DB.localTx { implicit s =>
           inserts.grouped(1000).foreach { group =>
-            insert(group, s.connection)
+            INSERT_RECORDSET.batch(group: _*).apply()
           }
           updates.grouped(1000).foreach { group =>
             UPDATE_RECORDSET.batch(group: _*).apply()
@@ -282,14 +255,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 object MySqlRecordSetRepository extends ProtobufConversions {
   final case class InvalidRecordType(value: Int)
       extends Throwable(s"Invalid record type value $value")
-
-  final case class InsertRecord(
-      id: String,
-      zoneId: String,
-      recordName: String,
-      fqdn: FQDN,
-      recordType: Int,
-      data: Array[Byte])
 
   val unknownRecordType: Int = 100
   val recordTypeLookup: Map[Int, RecordType] = Map(

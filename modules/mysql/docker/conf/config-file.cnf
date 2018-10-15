@@ -1,0 +1,3 @@
+[mysqld]
+# Turn this on to record queries
+general_log = 1

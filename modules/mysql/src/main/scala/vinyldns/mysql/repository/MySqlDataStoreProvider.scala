@@ -117,6 +117,17 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       ds.setMaximumPoolSize(settings.poolMaxSize)
       ds.setMaxLifetime(settings.maxLifeTime)
       ds.setRegisterMbeans(true)
+
+      // rewriteBatchedStatements is critical to bulk inserts
+      // the others come recommended by HikariCP
+      ds.addDataSourceProperty("rewriteBatchedStatements", true)
+      ds.addDataSourceProperty("cachePrepStmts", true)
+      ds.addDataSourceProperty("useServerPrepStmts", true)
+      ds.addDataSourceProperty("useLocalSessionState", true)
+      ds.addDataSourceProperty("cacheResultSetMetadata", true)
+      ds.addDataSourceProperty("cacheServerConfiguration", true)
+      ds.addDataSourceProperty("prepStmtCacheSize", 250)
+      ds.addDataSourceProperty("prepStmtCacheSqlLimit", 4096)
       ds
     }
 
