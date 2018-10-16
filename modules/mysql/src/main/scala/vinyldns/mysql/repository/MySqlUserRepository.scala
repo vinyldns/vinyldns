@@ -68,6 +68,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
+      logger.info(s"Getting user with id: $userId")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID
@@ -81,7 +82,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
 
   /*
    * startFrom and maxItems were originally made to batch the search in the dynamodb implementation,
-   * this function is not used directly as an API route
+   * not needed here with the current sql statement. This function is not exposed by an API route
    */
   def getUsers(
       userIds: Set[String],

@@ -125,7 +125,7 @@ class MySqlUserRepositoryIntegrationSpec
   "MySqlUserRepository.getUsers" should {
     "omits all non existing users" in {
       val result = repo.getUsers(Set("no-existo", users.head.id), None, None).unsafeRunSync()
-      result.users.map(_.id) shouldBe List(testUserIds.head)
+      result.users shouldBe List(users.head)
     }
 
     "returns all users" in {
