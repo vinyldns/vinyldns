@@ -17,11 +17,18 @@ services:
 
 cache:
   pip: true
+  bundler: true
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
     - node_modules
   timeout: 900
+
+before_install:
+  - gem update --system
+
+install:
+  - gem install sass jekyll:3.2.1
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
