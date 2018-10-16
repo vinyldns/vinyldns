@@ -135,6 +135,13 @@ class MySqlRecordChangeRepository
         }
       }
     }
+
+  def getTotalRecordChangeCount(): IO[Int] =
+    IO {
+      DB.readOnly { implicit s =>
+        sql"SELECT COUNT(*) FROM record_change".map(_.int(1)).single().apply().getOrElse(-1)
+      }
+    }
 }
 
 object MySqlRecordChangeRepository extends ProtobufConversions {

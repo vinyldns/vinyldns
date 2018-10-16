@@ -18,11 +18,14 @@ package vinyldns.core.domain.record
 
 import cats.effect._
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.zone.Zone
 import vinyldns.core.repository.Repository
 
 trait RecordSetRepository extends Repository {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet]
+
+  def insert(zone: Zone, recordSets: List[RecordSet]): IO[Unit]
 
   def listRecordSets(
       zoneId: String,

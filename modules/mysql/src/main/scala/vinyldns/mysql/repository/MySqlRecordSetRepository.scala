@@ -21,11 +21,14 @@ import cats.implicits._
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
+class MySqlRecordSetRepository(insertBatchSize: Int = 1000)
+    extends RecordSetRepository
+    with Monitored {
   import MySqlRecordSetRepository._
 
   private val FIND_BY_ZONEID_NAME_TYPE =
@@ -122,17 +125,47 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       // both the INSERT SQL as well as how we are using scalikejdbc
       IO {
         DB.localTx { implicit s =>
-          inserts.grouped(1000).foreach { group =>
+          inserts.grouped(insertBatchSize).foreach { group =>
             INSERT_RECORDSET.batch(group: _*).apply()
           }
-          updates.grouped(1000).foreach { group =>
+          updates.grouped(insertBatchSize).foreach { group =>
             UPDATE_RECORDSET.batch(group: _*).apply()
           }
-          deletes.grouped(1000).foreach { group =>
+          deletes.grouped(insertBatchSize).foreach { group =>
             DELETE_RECORDSET.batch(group: _*).apply()
           }
         }
       }.as(changeSet)
+    }
+
+  def clear(): IO[Unit] =
+    IO {
+      DB.localTx { implicit s =>
+        println(s"\r\n!!! deleting recordsets!!!")
+        sql"TRUNCATE TABLE recordset".update().apply()
+        println(s"\r\n!!! recordsets deleted!!!")
+      }
+    }.as(())
+
+  def insert(zone: Zone, recordSets: List[RecordSet]): IO[Unit] =
+    monitor("repo.RecordSet.insert") {
+      IO {
+        val inserts: Seq[Seq[Any]] = recordSets.map { i =>
+          Seq[Any](
+            i.id,
+            i.zoneId,
+            i.name,
+            FQDN(i.name, zone.name),
+            fromRecordType(i.typ),
+            toPB(i).toByteArray
+          )
+        }
+        DB.localTx { implicit s =>
+          inserts.grouped(insertBatchSize).foreach { group =>
+            INSERT_RECORDSET.batch(group: _*).apply()
+          }
+        }
+      }
     }
 
   /**
@@ -248,6 +281,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val query = FIND_BY_FQDN + inClause
           SQL(query).bind(fqdns.map(_.value): _*).map(toRecordSet).list().apply()
         }
+      }
+    }
+
+  def getTotalRecordCount(): IO[Int] =
+    IO {
+      DB.readOnly { implicit s =>
+        sql"SELECT COUNT(*) FROM recordset".map(_.int(1)).single().apply().getOrElse(-1)
       }
     }
 }

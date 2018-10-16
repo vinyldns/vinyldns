@@ -25,6 +25,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
+import vinyldns.core.domain.zone.Zone
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 
@@ -123,6 +124,24 @@ class DynamoDBRecordSetRepository private[repository] (
       // Assuming we succeeded, then return the change set with a status of applied
       result.map(_ => changeSet)
     }
+
+  def insert(zone: Zone, recordSets: List[RecordSet]): IO[Unit] = {
+    monitor("repo.RecordSet.insert") {
+      val writeItems = recordSets.map(toWriteRequest)
+      val batchWrites = writeItems
+        .grouped(25)
+        .map(group => dynamoDBHelper.toBatchWriteItemRequest(group, recordSetTableName))
+
+      // Fold left will attempt each batch sequentially, and fail fast on error
+      val result = batchWrites.foldLeft(IO.pure(List.empty[BatchWriteItemResult])) {
+        case (acc, req) =>
+          acc.flatMap { lst =>
+            dynamoDBHelper.batchWriteItem(recordSetTableName, req).map(result => result :: lst)
+          }
+      }
+      result.as(())
+    }
+  }
 
   def putRecordSet(recordSet: RecordSet): IO[RecordSet] = { //TODO remove me
     val item = toItem(recordSet)

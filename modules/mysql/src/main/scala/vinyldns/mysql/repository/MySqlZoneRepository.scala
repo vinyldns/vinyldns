@@ -376,4 +376,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       else
         IO.raiseError(error)
     }
+
+  def getZoneCount(): IO[Int] =
+    IO {
+      DB.readOnly { implicit s =>
+        sql"SELECT COUNT(*) FROM zone".map(_.int(1)).single().apply().getOrElse(-1)
+      }
+    }
 }
