@@ -65,7 +65,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val zones = Some(new MySqlZoneRepository())
     val batchChanges = Some(new MySqlBatchChangeRepository())
     val zoneChanges = Some(new MySqlZoneChangeRepository())
-    val recordSets = Some(new MySqlRecordSetRepository())
+    val recordSets = Some(new MySqlRecordSetRepository(500))
     val recordChanges = Some(new MySqlRecordChangeRepository())
     DataStore(
       zoneRepository = zones,
@@ -135,7 +135,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       ds
     }
 
-    logger.info("configuring connection pool")
+    logger.info("configuring connection pool for url " + settings.url)
 
     // Configure the connection pool
     ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))

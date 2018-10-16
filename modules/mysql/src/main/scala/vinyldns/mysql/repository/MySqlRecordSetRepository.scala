@@ -21,11 +21,14 @@ import cats.implicits._
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
+class MySqlRecordSetRepository(insertBatchSize: Int = 1000)
+    extends RecordSetRepository
+    with Monitored {
   import MySqlRecordSetRepository._
 
   private val FIND_BY_ZONEID_NAME_TYPE =
@@ -122,17 +125,47 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       // both the INSERT SQL as well as how we are using scalikejdbc
       IO {
         DB.localTx { implicit s =>
-          inserts.grouped(1000).foreach { group =>
+          inserts.grouped(insertBatchSize).foreach { group =>
             INSERT_RECORDSET.batch(group: _*).apply()
           }
-          updates.grouped(1000).foreach { group =>
+          updates.grouped(insertBatchSize).foreach { group =>
             UPDATE_RECORDSET.batch(group: _*).apply()
           }
-          deletes.grouped(1000).foreach { group =>
+          deletes.grouped(insertBatchSize).foreach { group =>
             DELETE_RECORDSET.batch(group: _*).apply()
           }
         }
       }.as(changeSet)
+    }
+
+  def clear(): IO[Unit] =
+    IO {
+      DB.localTx { implicit s =>
+        println(s"\r\n!!! deleting recordsets!!!")
+        sql"TRUNCATE TABLE recordset".update().apply()
+        println(s"\r\n!!! recordsets deleted!!!")
+      }
+    }.as(())
+
+  def insert(zone: Zone, recordSets: List[RecordSet]): IO[Unit] =
+    monitor("repo.RecordSet.insert") {
+      IO {
+        val inserts: Seq[Seq[Any]] = recordSets.map { i =>
+          Seq[Any](
+            i.id,
+            i.zoneId,
+            i.name,
+            FQDN(i.name, zone.name),
+            fromRecordType(i.typ),
+            toPB(i).toByteArray
+          )
+        }
+        DB.localTx { implicit s =>
+          inserts.grouped(insertBatchSize).foreach { group =>
+            INSERT_RECORDSET.batch(group: _*).apply()
+          }
+        }
+      }
     }
 
   /**
@@ -148,40 +181,64 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       maxItems: Option[Int],
       recordNameFilter: Option[String]): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
-      IO {
-        DB.readOnly { implicit s =>
-          // make sure we sort ascending, so we can do the correct comparison later
-          val opts = (startFrom.as("AND name > {startFrom}") ++
-            recordNameFilter.as("AND name LIKE {nameFilter}") ++
-            Some("ORDER BY name ASC") ++
-            maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
+      // if no max items, we have to load all!  oof!
+      if (maxItems.isEmpty) getAllRecordSets(zoneId)
+      else {
+        IO {
+          DB.readOnly { implicit s =>
+            // make sure we sort ascending, so we can do the correct comparison later
+            val opts = (startFrom.as("AND name > {startFrom}") ++
+              recordNameFilter.as("AND name LIKE {nameFilter}") ++
+              Some("ORDER BY name ASC") ++
+              maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
-          val params = (Some('zoneId -> zoneId) ++
-            startFrom.map(n => 'startFrom -> n) ++
-            recordNameFilter.map(f => 'nameFilter -> s"%$f%") ++
-            maxItems.map(m => 'maxItems -> m)).toSeq
+            val params = (Some('zoneId -> zoneId) ++
+              startFrom.map(n => 'startFrom -> n) ++
+              recordNameFilter.map(f => 'nameFilter -> s"%$f%") ++
+              maxItems.map(m => 'maxItems -> m)).toSeq
 
-          val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
+            val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
 
-          val results = SQL(query)
-            .bindByName(params: _*)
+            val results = SQL(query)
+              .bindByName(params: _*)
+              .map(toRecordSet)
+              .list()
+              .apply()
+
+            // if size of results is less than the number returned, we don't have a next id
+            // if maxItems is None, we don't have a next id
+            val nextId =
+              maxItems.filter(_ == results.size).flatMap(_ => results.lastOption.map(_.name))
+
+            ListRecordSetResults(
+              recordSets = results,
+              nextId = nextId,
+              startFrom = startFrom,
+              maxItems = maxItems,
+              recordNameFilter = recordNameFilter
+            )
+          }
+        }
+      }
+    }
+
+  // special purpose to load all record sets, as we have to make several queries
+  def getAllRecordSets(zoneId: String): IO[ListRecordSetResults] =
+    IO {
+      DB.readOnly { implicit s =>
+        // how big do we group?  Let's start at 10,000 and go from there
+        val maxSize = 10000
+        def loop(acc: List[RecordSet]): List[RecordSet] = {
+          val results = sql"SELECT data FROM recordset WHERE zone_id = ? LIMIT ?, 10000"
+            .bind(zoneId, acc.size)
             .map(toRecordSet)
             .list()
             .apply()
-
-          // if size of results is less than the number returned, we don't have a next id
-          // if maxItems is None, we don't have a next id
-          val nextId =
-            maxItems.filter(_ == results.size).flatMap(_ => results.lastOption.map(_.name))
-
-          ListRecordSetResults(
-            recordSets = results,
-            nextId = nextId,
-            startFrom = startFrom,
-            maxItems = maxItems,
-            recordNameFilter = recordNameFilter
-          )
+          if (results.length < maxSize) acc ++ results
+          else loop(acc ++ results)
         }
+        val records = loop(Nil)
+        ListRecordSetResults(records)
       }
     }
 
@@ -248,6 +305,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val query = FIND_BY_FQDN + inClause
           SQL(query).bind(fqdns.map(_.value): _*).map(toRecordSet).list().apply()
         }
+      }
+    }
+
+  def getTotalRecordCount(): IO[Int] =
+    IO {
+      DB.readOnly { implicit s =>
+        sql"SELECT COUNT(*) FROM recordset".map(_.int(1)).single().apply().getOrElse(-1)
       }
     }
 }

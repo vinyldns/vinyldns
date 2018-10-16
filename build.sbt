@@ -301,6 +301,27 @@ lazy val mysql = (project in file("modules/mysql"))
     fork in IntegrationTest := true,
   ).dependsOn(core % "compile->compile;test->test")
 
+lazy val benchmark = (project in file("modules/benchmark"))
+  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .configs(IntegrationTest)
+  .settings(sharedSettings)
+  .settings(headerSettings(IntegrationTest))
+  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
+  .settings(corePublishSettings)
+  .settings(testSettings)
+  .settings(Defaults.itSettings)
+  .settings(scalaStyleCompile ++ scalaStyleTest)
+  .settings(
+    name := "benchmark",
+    fork in IntegrationTest := true,
+    libraryDependencies ++= Seq(
+      "co.fs2" %% "fs2-core" % "1.0.0",
+      "org.typelevel" %% "cats-effect" % "1.0.0",
+      "org.typelevel" %% "cats-core" % "1.4.0",
+    ),
+    fork in run := true
+  ).dependsOn(core, mysql)
+
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")
 val createJsHeaders = TaskKey[Unit]("createJsHeaders", "Runs script to prepend APL 2.0 license headers to files")
