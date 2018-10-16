@@ -119,6 +119,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       s.executeUpdate("DELETE FROM single_change")
     }
 
+  override protected def afterAll(): Unit = TestMySqlInstance.shutdown()
+
   private def areSame(a: Option[BatchChange], e: Option[BatchChange]): Assertion = {
     a shouldBe defined
     e shouldBe defined

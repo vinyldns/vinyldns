@@ -58,6 +58,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
     )
   }
 
+  def shutdown(): IO[Unit] = IO.unit
 }
 
 class AlternateMockDataStoreProvider extends MockDataStoreProvider
@@ -65,4 +66,7 @@ class AlternateMockDataStoreProvider extends MockDataStoreProvider
 class FailDataStoreProvider extends DataStoreProvider {
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
     IO.raiseError(new RuntimeException("ruh roh"))
+
+  def shutdown(): IO[Unit] = IO.unit
+
 }

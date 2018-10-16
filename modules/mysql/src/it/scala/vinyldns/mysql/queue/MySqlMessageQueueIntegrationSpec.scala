@@ -73,6 +73,8 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
     ()
   }
 
+  override protected def afterAll(): Unit = TestMySqlInstance.shutdown()
+
   private def insert(id: String, messageType: Int, inFlight: Boolean,
                      data: Array[Byte], created: DateTime, updated: DateTime,
                      timeoutSeconds: Int, attempts: Int): Unit = {

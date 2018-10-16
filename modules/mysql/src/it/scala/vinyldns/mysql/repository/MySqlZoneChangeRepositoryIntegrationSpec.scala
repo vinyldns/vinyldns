@@ -88,6 +88,7 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       s.executeUpdate("DELETE FROM zone_change")
     }
     super.afterAll()
+    TestMySqlInstance.shutdown()
   }
 
   "MySqlZoneChangeRepository" should {

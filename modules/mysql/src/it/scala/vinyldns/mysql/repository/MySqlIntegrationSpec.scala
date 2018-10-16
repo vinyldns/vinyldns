@@ -36,6 +36,8 @@ trait MySqlIntegrationSpec {
     instance.get[ZoneRepository](RepositoryName.zone).get
   lazy val zoneChangeRepository: ZoneChangeRepository =
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
+
+  def shutdown(): Unit = new MySqlDataStoreProvider().shutdown().unsafeRunSync()
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {

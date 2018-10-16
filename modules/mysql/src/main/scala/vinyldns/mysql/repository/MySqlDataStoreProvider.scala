@@ -16,7 +16,8 @@
 
 package vinyldns.mysql.repository
 
-import cats.effect.IO
+import cats.effect._
+import cats.syntax.all._
 import com.zaxxer.hikari.HikariDataSource
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
@@ -126,4 +127,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     logger.info("database init complete")
   }
 
+  def shutdown(): IO[Unit] =
+    IO(DBs.closeAll())
+      .handleError(e => logger.info(s"exception=${e.getMessage} occurred while shutting down"))
 }
