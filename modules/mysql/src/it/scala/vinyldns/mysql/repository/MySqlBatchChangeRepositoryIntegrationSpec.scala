@@ -26,6 +26,7 @@ import vinyldns.core.domain.record.{AAAAData, AData, RecordData, RecordType}
 import vinyldns.core.domain.batch._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData.okAuth
+import vinyldns.mysql.TestMySqlInstance
 
 @DoNotDiscover
 class MySqlBatchChangeRepositoryIntegrationSpec

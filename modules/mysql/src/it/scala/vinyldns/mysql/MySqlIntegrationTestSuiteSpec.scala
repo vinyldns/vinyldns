@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package vinyldns.mysql.repository
+package vinyldns.mysql
 
 import com.typesafe.config.Config
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import vinyldns.mysql.queue.MySqlMessageQueueIntegrationSpec
+import vinyldns.mysql.repository._
 
 class MySqlIntegrationTestSuiteSpec
     extends Suite

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package vinyldns.mysql.repository
+package vinyldns.mysql
 
 import com.typesafe.config.{Config, ConfigFactory}
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
+import vinyldns.mysql.repository.MySqlDataStoreProvider
 
 trait MySqlIntegrationSpec {
   def mysqlConfig: Config

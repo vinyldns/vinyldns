@@ -24,9 +24,9 @@ import scalikejdbc.DB
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
-
 import vinyldns.core.TestZoneData.okZone
-import vinyldns.core.TestMembershipData.{dummyAuth, dummyUser, oneUserDummyGroup, okUser, okGroup}
+import vinyldns.core.TestMembershipData.{dummyAuth, dummyUser, okGroup, okUser, oneUserDummyGroup}
+import vinyldns.mysql.TestMySqlInstance
 
 @DoNotDiscover
 class MySqlZoneRepositoryIntegrationSpec

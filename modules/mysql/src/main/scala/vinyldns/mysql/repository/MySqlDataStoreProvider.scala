@@ -129,5 +129,5 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   def shutdown(): IO[Unit] =
     IO(DBs.close())
-      .handleError(e => logger.info(s"exception=${e.getMessage} occurred while shutting down"))
+      .handleError(e => logger.error(s"exception=${e.getMessage} occurred while shutting down"))
 }
