@@ -27,8 +27,9 @@ trait MySqlIntegrationSpec {
 
   lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
 
-  lazy val instance: DataStore =
-    new MySqlDataStoreProvider().load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val provider =  new MySqlDataStoreProvider()
+
+  lazy val instance: DataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
 
   lazy val batchChangeRepository: BatchChangeRepository =
     instance.get[BatchChangeRepository](RepositoryName.batchChange).get
@@ -37,7 +38,7 @@ trait MySqlIntegrationSpec {
   lazy val zoneChangeRepository: ZoneChangeRepository =
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
 
-  def shutdown(): Unit = new MySqlDataStoreProvider().shutdown().unsafeRunSync()
+  def shutdown(): Unit = provider.shutdown().unsafeRunSync()
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {

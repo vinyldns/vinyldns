@@ -27,6 +27,7 @@ import vinyldns.core.domain.batch._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData.okAuth
 
+@DoNotDiscover
 class MySqlBatchChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
@@ -118,8 +119,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       s.executeUpdate("DELETE FROM batch_change")
       s.executeUpdate("DELETE FROM single_change")
     }
-
-  override protected def afterAll(): Unit = TestMySqlInstance.shutdown()
 
   private def areSame(a: Option[BatchChange], e: Option[BatchChange]): Assertion = {
     a shouldBe defined

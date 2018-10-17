@@ -28,6 +28,7 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData.{dummyAuth, dummyUser, oneUserDummyGroup, okUser, okGroup}
 
+@DoNotDiscover
 class MySqlZoneRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
@@ -44,8 +45,6 @@ class MySqlZoneRepositoryIntegrationSpec
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM zone")
     }
-
-  override protected def afterAll(): Unit = TestMySqlInstance.shutdown()
 
   private val groups = (0 until 10)
     .map(num => okGroup.copy(name = num.toString, id = UUID.randomUUID().toString))

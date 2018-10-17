@@ -31,6 +31,7 @@ import vinyldns.core.TestZoneData.testConnection
 import scala.concurrent.duration._
 import scala.util.Random
 
+@DoNotDiscover
 class MySqlZoneChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
@@ -88,7 +89,6 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       s.executeUpdate("DELETE FROM zone_change")
     }
     super.afterAll()
-    TestMySqlInstance.shutdown()
   }
 
   "MySqlZoneChangeRepository" should {

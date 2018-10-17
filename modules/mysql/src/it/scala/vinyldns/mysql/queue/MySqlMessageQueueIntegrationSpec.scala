@@ -29,7 +29,6 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId}
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
 import vinyldns.mysql.queue.MySqlMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded}
-import vinyldns.mysql.repository.TestMySqlInstance
 
 import scala.concurrent.duration._
 
@@ -46,8 +45,9 @@ final case class InvalidMessage(command: ZoneCommand) extends CommandMessage {
   def id: MessageId = MessageId(command.id)
 }
 
+@DoNotDiscover
 class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
-  with BeforeAndAfterEach with EitherMatchers with EitherValues with BeforeAndAfterAll with ProtobufConversions {
+  with BeforeAndAfterEach with EitherMatchers with EitherValues with ProtobufConversions {
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
 
@@ -66,14 +66,6 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
     ()
   }
   override protected def beforeEach(): Unit = clear()
-
-  override protected def beforeAll(): Unit = {
-    // load the data store
-    TestMySqlInstance.instance
-    ()
-  }
-
-  override protected def afterAll(): Unit = TestMySqlInstance.shutdown()
 
   private def insert(id: String, messageType: Int, inFlight: Boolean,
                      data: Array[Byte], created: DateTime, updated: DateTime,
