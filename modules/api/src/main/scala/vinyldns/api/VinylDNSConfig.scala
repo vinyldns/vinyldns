@@ -17,7 +17,7 @@
 package vinyldns.api
 
 import akka.actor.ActorSystem
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import pureconfig.module.catseffect.loadConfigF
@@ -29,6 +29,9 @@ import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.repository.DataStoreConfig
 
 object VinylDNSConfig {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   lazy val config: Config = ConfigFactory.load()
   lazy val vinyldnsConfig: Config = config.getConfig("vinyldns")
