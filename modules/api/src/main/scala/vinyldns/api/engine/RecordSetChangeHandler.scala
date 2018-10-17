@@ -16,28 +16,30 @@
 
 package vinyldns.api.engine
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import fs2._
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.NoError
-import vinyldns.core.domain.record._
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
+import vinyldns.core.domain.record._
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object RecordSetChangeHandler {
 
   private val logger = LoggerFactory.getLogger("vinyldns.api.engine.RecordSetChangeHandler")
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def apply(
       recordSetRepository: RecordSetRepository,
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository)(
-      implicit scheduler: Scheduler): (DnsConnection, RecordSetChange) => IO[RecordSetChange] =
+      implicit timer: Timer[IO]): (DnsConnection, RecordSetChange) => IO[RecordSetChange] =
     (conn, recordSetChange) => {
       process(
         recordSetRepository,
@@ -52,7 +54,7 @@ object RecordSetChangeHandler {
       recordChangeRepository: RecordChangeRepository,
       batchChangeRepository: BatchChangeRepository,
       conn: DnsConnection,
-      recordSetChange: RecordSetChange)(implicit scheduler: Scheduler): IO[RecordSetChange] =
+      recordSetChange: RecordSetChange)(implicit timer: Timer[IO]): IO[RecordSetChange] =
     for {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
       completedState <- fsm(Pending(recordSetChange), conn, wildCardExists)
@@ -144,8 +146,7 @@ object RecordSetChangeHandler {
   }
 
   private def fsm(state: ProcessorState, conn: DnsConnection, wildcardExists: Boolean)(
-      implicit
-      scheduler: Scheduler): IO[ProcessorState] = {
+      implicit timer: Timer[IO]): IO[ProcessorState] = {
 
     /**
       * If there is a wildcard record with the same type, then we skip validation and verification steps.

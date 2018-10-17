@@ -16,13 +16,16 @@
 
 package vinyldns.api.repository
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership._
 
 // $COVERAGE-OFF$
 object TestDataLoader {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   final val testUser = User(
     userName = "testuser",

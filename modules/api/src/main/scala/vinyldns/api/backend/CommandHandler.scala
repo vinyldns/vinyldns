@@ -16,9 +16,9 @@
 
 package vinyldns.api.backend
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import fs2._
-import fs2.async.mutable.Signal
+import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.engine.{RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncHandler}
@@ -27,12 +27,13 @@ import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, Rec
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object CommandHandler {
 
   private val logger = LoggerFactory.getLogger("vinyldns.api.backend.CommandHandler")
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   /* The outcome of handling the message */
   sealed trait MessageOutcome {
@@ -48,8 +49,8 @@ object CommandHandler {
       mq: MessageQueue,
       count: MessageCount,
       pollingInterval: FiniteDuration,
-      pauseSignal: Signal[IO, Boolean],
-      defaultConn: ZoneConnection)(implicit scheduler: Scheduler): Stream[IO, Unit] = {
+      pauseSignal: SignallingRef[IO, Boolean],
+      defaultConn: ZoneConnection)(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
     // Polls queue for message batches, connected to the signal which is toggled in the status endpoint
     val messageSource = startPolling(mq, count, pollingInterval).pauseWhen(pauseSignal)
@@ -66,7 +67,7 @@ object CommandHandler {
     // concurrently run 4 message batches, so we can have 40 messages max running concurrently
     def flow(): Stream[IO, Unit] =
       messageSource
-        .join(4)
+        .parJoin(4)
         .observe(increaseTimeoutWhenSyncing)
         .through(changeRequestProcessor)
         .to(updateQueue)
@@ -82,13 +83,13 @@ object CommandHandler {
 
   /* Polls Message Queue for messages */
   def startPolling(mq: MessageQueue, count: MessageCount, pollingInterval: FiniteDuration)(
-      implicit scheduler: Scheduler): Stream[IO, Stream[IO, CommandMessage]] = {
+      implicit timer: Timer[IO]): Stream[IO, Stream[IO, CommandMessage]] = {
 
     def pollingStream(): Stream[IO, Stream[IO, CommandMessage]] =
       // every delay duration, we poll
-      scheduler
+      Stream
         .fixedDelay[IO](pollingInterval)
-        .evalMap[Chunk[CommandMessage]] { _ =>
+        .evalMap[IO, Chunk[CommandMessage]] { _ =>
           // get the messages from the queue, transform them to a Chunk of messages
           mq.receive(count).map(msgs => Chunk(msgs: _*))
         }
@@ -110,7 +111,7 @@ object CommandHandler {
 
   /* We should only change visibility timeout for zone syncs and creates, which could take minutes */
   def changeVisibilityTimeoutWhenSyncing(mq: MessageQueue): Sink[IO, CommandMessage] =
-    _.evalMap { message =>
+    _.evalMap[IO, Any] { message =>
       message.command match {
         case sync: ZoneChange
             if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
@@ -129,7 +130,7 @@ object CommandHandler {
       recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange],
       defaultConn: ZoneConnection): Pipe[IO, CommandMessage, MessageOutcome] =
-    _.evalMap[MessageOutcome] { message =>
+    _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
         case sync: ZoneChange
             if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
@@ -169,7 +170,7 @@ object CommandHandler {
 
   /* On success, delete the message; on failure retry */
   def messageSink(mq: MessageQueue): Sink[IO, MessageOutcome] =
-    _.evalMap[Any] {
+    _.evalMap[IO, Any] {
       case DeleteMessage(msg) =>
         mq.remove(msg)
       case RetryMessage(msg) =>
@@ -181,14 +182,14 @@ object CommandHandler {
   def run(
       mq: MessageQueue,
       msgsPerPoll: MessageCount,
-      processingSignal: Signal[IO, Boolean],
+      processingSignal: SignallingRef[IO, Boolean],
       pollingInterval: FiniteDuration,
       zoneRepo: ZoneRepository,
       zoneChangeRepo: ZoneChangeRepository,
       recordSetRepo: RecordSetRepository,
       recordChangeRepo: RecordChangeRepository,
       batchChangeRepo: BatchChangeRepository,
-      defaultConn: ZoneConnection)(implicit scheduler: Scheduler): IO[Unit] = {
+      defaultConn: ZoneConnection)(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
       ZoneChangeHandler(zoneRepo, zoneChangeRepo)

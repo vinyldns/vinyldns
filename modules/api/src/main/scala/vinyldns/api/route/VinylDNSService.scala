@@ -23,7 +23,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server.directives.LogEntry
 import cats.effect.IO
-import fs2.async.mutable.Signal
+import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
@@ -101,7 +101,7 @@ object VinylDNSService {
 // $COVERAGE-OFF$
 class VinylDNSService(
     val membershipService: MembershipServiceAlgebra,
-    val processingDisabled: Signal[IO, Boolean],
+    val processingDisabled: SignallingRef[IO, Boolean],
     val zoneService: ZoneServiceAlgebra,
     val healthService: HealthService,
     val recordSetService: RecordSetServiceAlgebra,
