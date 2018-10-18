@@ -26,7 +26,7 @@ import pureconfig.module.catseffect.loadConfigF
 
 import scala.collection.JavaConverters._
 import scalikejdbc.config.DBs
-import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
+import scalikejdbc.{ConnectionPool, DataSourceCloser, DataSourceConnectionPool}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.repository._
 
@@ -78,6 +78,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       // will be created and maintained even though this datasource is no longer needed post-migration
       ds.setMaximumPoolSize(3)
       ds.setMinimumIdle(0)
+      ds.setPoolName("flywayPool")
       ds
     }
 
@@ -101,7 +102,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   }
 
   def setupDBConnection(settings: MySqlDataStoreSettings): IO[Unit] = IO {
-    val dataSource: DataSource = {
+    val dataSource: HikariDataSource = {
       val ds = new HikariDataSource()
       ds.setDriverClassName(settings.driver)
       ds.setJdbcUrl(settings.url)
@@ -111,13 +112,15 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       ds.setMaximumPoolSize(settings.poolMaxSize)
       ds.setMaxLifetime(settings.maxLifeTime)
       ds.setRegisterMbeans(true)
+      ds.setPoolName("mysqldbPool")
       ds
     }
 
     logger.info("configuring connection pool")
 
     // Configure the connection pool
-    ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
+    ConnectionPool.singleton(
+      new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource)))
 
     logger.info("setting up databases")
 
@@ -128,6 +131,10 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   }
 
   def shutdown(): IO[Unit] =
-    IO(DBs.close())
+    IO(DBs.closeAll())
       .handleError(e => logger.error(s"exception=${e.getMessage} occurred while shutting down"))
+
+  class HikariCloser(dataSource: HikariDataSource) extends DataSourceCloser {
+    override def close(): Unit = dataSource.close()
+  }
 }

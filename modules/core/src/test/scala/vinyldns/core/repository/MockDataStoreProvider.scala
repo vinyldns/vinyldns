@@ -61,7 +61,11 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
   def shutdown(): IO[Unit] = IO.unit
 }
 
-class AlternateMockDataStoreProvider extends MockDataStoreProvider
+class AlternateMockDataStoreProvider extends MockDataStoreProvider {
+
+  override def shutdown(): IO[Unit] =
+    IO.raiseError(new RuntimeException("oh no"))
+}
 
 class FailDataStoreProvider extends DataStoreProvider {
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
