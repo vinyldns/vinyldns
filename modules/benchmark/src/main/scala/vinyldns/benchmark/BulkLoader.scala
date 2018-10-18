@@ -16,6 +16,8 @@
 
 package vinyldns.benchmark
 
+import java.util.concurrent.atomic.AtomicLong
+
 import cats.effect._
 import cats.implicits._
 import fs2.{Chunk, Sink, Stream}
@@ -27,11 +29,7 @@ import vinyldns.core.domain.record.{
   RecordSetRepository
 }
 import vinyldns.core.domain.zone.ZoneRepository
-import vinyldns.mysql.repository.{
-  MySqlRecordChangeRepository,
-  MySqlRecordSetRepository,
-  MySqlZoneRepository
-}
+import vinyldns.core.route.Monitor
 
 object BulkLoader {
   import ZoneGeneration._
@@ -68,22 +66,29 @@ object BulkLoader {
     zoneStreams(config)
       .observe(saveThatZone)
       .map { zg =>
-        zg.records.chunkN(10000).map(Stream.emit(_).covary[IO].to(recordSink)).parJoinUnbounded
+        val startTime = new AtomicLong()
+        Stream
+          .eval(IO { startTime.set(System.currentTimeMillis) })
+          .flatMap { _ =>
+            zg.records.chunkN(10000).map(Stream.emit(_).covary[IO].to(recordSink)).parJoinUnbounded
+          }
+          .evalMap { _ =>
+            IO {
+              val runTime = System.currentTimeMillis - startTime.get
+              // add the latency to zone duration for this size
+              Monitor(s"bulkLoad.zone").latency += runTime
+              Monitor(s"bulkLoad.zone.${zg.size.value}").latency += runTime
+            }
+          }
       }
       .parJoinUnbounded
   }
 
-  def run(config: BenchmarkConfig): Unit = {
-    val recordRepo = IO(TestMySqlInstance.recordSetRepository)
-      .unsafeRunSync()
-      .asInstanceOf[MySqlRecordSetRepository]
-    val zoneRepo = IO(TestMySqlInstance.zoneRepository)
-      .unsafeRunSync()
-      .asInstanceOf[MySqlZoneRepository]
-    val changeRepo = IO(TestMySqlInstance.recordChangeRepository)
-      .unsafeRunSync()
-      .asInstanceOf[MySqlRecordChangeRepository]
-
+  def run(
+      config: BenchmarkConfig,
+      zoneRepo: ZoneRepository,
+      recordRepo: RecordSetRepository,
+      changeRepo: RecordChangeRepository): Unit = {
     val program = benchmarkFlow(config, zoneRepo, recordRepo, changeRepo).compile.drain
 
     // run our program
@@ -92,19 +97,5 @@ object BulkLoader {
     program.unsafeRunSync()
     val duration = System.currentTimeMillis() - startTime
     logger.info(s"FINISHED LOADING, took ${duration.toDouble / 1000.0} SECONDS!!!")
-
-    val zoneCount = zoneRepo
-      .getZoneCount()
-      .unsafeRunSync()
-    val recordCount = recordRepo
-      .getTotalRecordCount()
-      .unsafeRunSync()
-    val changeCount = changeRepo
-      .getTotalRecordChangeCount()
-      .unsafeRunSync()
-
-    logger.info(s"TOTAL ZONES SAVED = $zoneCount")
-    logger.info(s"TOTAL RECORDS SAVED = $recordCount")
-    logger.info(s"TOTAL CHANGES SAVED = $changeCount")
   }
 }

@@ -38,18 +38,21 @@ object NameGenerators {
     "logier")
   val zoneTLD = Seq("net", "com", "foo", "bar", "pop", "mom", "you", "can", "dan", "she")
 
-  val rnd = new Random
   def generateRecordName(idx: Int): String = {
-    val r1 = rnd.nextInt(10)
-    val r2 = rnd.nextInt(10)
-
-    "r" + idx + "-" + rList1(r1) + "-" + rList2(r2)
+    val nameIdx = idx % 10
+    "r" + idx + "-" + rList1(nameIdx) + "-" + rList2(nameIdx)
   }
+
+  def recordNamePermutations: Seq[String] =
+    for {
+      r1 <- rList1
+      r2 <- rList2
+    } yield r1 + "-" + r2
 
   val zoneRnd = new Random
   def generateZoneName(zoneSize: ZoneSize, idx: Int): String = {
     val r1 = zoneRnd.nextInt(10)
-    val r2 = rnd.nextInt(10)
+    val r2 = zoneRnd.nextInt(10)
     val sb = new StringBuilder
 
     // Important, zone name follows z.xl.100.floaty.net., as subsequent processing depends on this zone name

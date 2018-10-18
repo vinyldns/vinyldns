@@ -24,7 +24,7 @@ import com.amazonaws.services.dynamodbv2.model._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
+import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -253,4 +253,9 @@ class DynamoDBRecordSetRepository private[repository] (
 
       responseFuture.map(resp => resp.asInstanceOf[QueryResponseCount].count)
     }
+
+  // NOT SUPPORTED!
+  def getRecordSetsByFQDN(fqdns: List[FQDN]): IO[List[RecordSet]] = IO {
+    Nil
+  }
 }

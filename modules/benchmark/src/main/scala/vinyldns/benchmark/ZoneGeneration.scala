@@ -23,7 +23,7 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 
-final case class ZoneGenerator(zone: Zone, records: fs2.Stream[IO, RecordSetChange])
+final case class ZoneGenerator(zone: Zone, size: ZoneSize, records: fs2.Stream[IO, RecordSetChange])
 
 sealed abstract class ZoneSize(val value: String, val recordCount: Int)
 object ZoneSize {
@@ -124,7 +124,7 @@ object ZoneGeneration {
         case exhausted if exhausted > zoneCount => None
         case offset =>
           val z = generateZone(zoneSize, offset)
-          val generator = ZoneGenerator(z, recordSetStream(z, zoneSize.recordCount))
+          val generator = ZoneGenerator(z, zoneSize, recordSetStream(z, zoneSize.recordCount))
           Some(generator, offset + 1) // be sure to advance
       }
 

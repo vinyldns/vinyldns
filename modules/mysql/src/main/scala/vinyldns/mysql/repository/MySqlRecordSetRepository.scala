@@ -181,40 +181,64 @@ class MySqlRecordSetRepository(insertBatchSize: Int = 1000)
       maxItems: Option[Int],
       recordNameFilter: Option[String]): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
-      IO {
-        DB.readOnly { implicit s =>
-          // make sure we sort ascending, so we can do the correct comparison later
-          val opts = (startFrom.as("AND name > {startFrom}") ++
-            recordNameFilter.as("AND name LIKE {nameFilter}") ++
-            Some("ORDER BY name ASC") ++
-            maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
+      // if no max items, we have to load all!  oof!
+      if (maxItems.isEmpty) getAllRecordSets(zoneId)
+      else {
+        IO {
+          DB.readOnly { implicit s =>
+            // make sure we sort ascending, so we can do the correct comparison later
+            val opts = (startFrom.as("AND name > {startFrom}") ++
+              recordNameFilter.as("AND name LIKE {nameFilter}") ++
+              Some("ORDER BY name ASC") ++
+              maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
-          val params = (Some('zoneId -> zoneId) ++
-            startFrom.map(n => 'startFrom -> n) ++
-            recordNameFilter.map(f => 'nameFilter -> s"%$f%") ++
-            maxItems.map(m => 'maxItems -> m)).toSeq
+            val params = (Some('zoneId -> zoneId) ++
+              startFrom.map(n => 'startFrom -> n) ++
+              recordNameFilter.map(f => 'nameFilter -> s"%$f%") ++
+              maxItems.map(m => 'maxItems -> m)).toSeq
 
-          val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
+            val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
 
-          val results = SQL(query)
-            .bindByName(params: _*)
+            val results = SQL(query)
+              .bindByName(params: _*)
+              .map(toRecordSet)
+              .list()
+              .apply()
+
+            // if size of results is less than the number returned, we don't have a next id
+            // if maxItems is None, we don't have a next id
+            val nextId =
+              maxItems.filter(_ == results.size).flatMap(_ => results.lastOption.map(_.name))
+
+            ListRecordSetResults(
+              recordSets = results,
+              nextId = nextId,
+              startFrom = startFrom,
+              maxItems = maxItems,
+              recordNameFilter = recordNameFilter
+            )
+          }
+        }
+      }
+    }
+
+  // special purpose to load all record sets, as we have to make several queries
+  def getAllRecordSets(zoneId: String): IO[ListRecordSetResults] =
+    IO {
+      DB.readOnly { implicit s =>
+        // how big do we group?  Let's start at 10,000 and go from there
+        val maxSize = 10000
+        def loop(acc: List[RecordSet]): List[RecordSet] = {
+          val results = sql"SELECT data FROM recordset WHERE zone_id = ? LIMIT ?, 10000"
+            .bind(zoneId, acc.size)
             .map(toRecordSet)
             .list()
             .apply()
-
-          // if size of results is less than the number returned, we don't have a next id
-          // if maxItems is None, we don't have a next id
-          val nextId =
-            maxItems.filter(_ == results.size).flatMap(_ => results.lastOption.map(_.name))
-
-          ListRecordSetResults(
-            recordSets = results,
-            nextId = nextId,
-            startFrom = startFrom,
-            maxItems = maxItems,
-            recordNameFilter = recordNameFilter
-          )
+          if (results.length < maxSize) acc ++ results
+          else loop(acc ++ results)
         }
+        val records = loop(Nil)
+        ListRecordSetResults(records)
       }
     }
 

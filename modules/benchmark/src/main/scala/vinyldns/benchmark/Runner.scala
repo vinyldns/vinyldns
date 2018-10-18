@@ -15,11 +15,47 @@
  */
 
 package vinyldns.benchmark
+import java.io.File
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
+import cats.effect.IO
+import com.codahale.metrics.CsvReporter
+import vinyldns.core.VinylDNSMetrics
+import vinyldns.mysql.repository.{
+  MySqlRecordChangeRepository,
+  MySqlRecordSetRepository,
+  MySqlZoneRepository
+}
 
 object Runner {
 
   def main(args: Array[String]): Unit = {
+    // kick off our CSV recording
+    val reporter = CsvReporter
+      .forRegistry(VinylDNSMetrics.metricsRegistry)
+      .formatFor(Locale.US)
+      .convertRatesTo(TimeUnit.SECONDS)
+      .convertDurationsTo(TimeUnit.MILLISECONDS)
+      .build(new File(("target/")))
+
+    reporter.start(1, TimeUnit.SECONDS)
+
     val config = BenchmarkConfig().unsafeRunSync()
-    BulkLoader.run(config)
+    val recordRepo = IO(TestMySqlInstance.recordSetRepository)
+      .unsafeRunSync()
+      .asInstanceOf[MySqlRecordSetRepository]
+    val zoneRepo = IO(TestMySqlInstance.zoneRepository)
+      .unsafeRunSync()
+      .asInstanceOf[MySqlZoneRepository]
+    val changeRepo = IO(TestMySqlInstance.recordChangeRepository)
+      .unsafeRunSync()
+      .asInstanceOf[MySqlRecordChangeRepository]
+    BulkLoader.run(config, zoneRepo, recordRepo, changeRepo)
+    RecordSetQueryTester.run(zoneRepo, recordRepo)
+
+    // sleep a little to allow the reporter to output some things
+    println("FINISHED BENCHMARK!")
+    Thread.sleep(5000)
   }
 }
