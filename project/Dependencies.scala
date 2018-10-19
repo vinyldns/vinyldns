@@ -16,13 +16,12 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
 
-  lazy val compileDependencies = Seq(
+  lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
     "com.typesafe.akka"         %% "akka-http-spray-json"           % akkaHttpV,
     "de.heikoseeberger"         %% "akka-http-json4s"               % "1.21.0",
     "com.typesafe.akka"         %% "akka-slf4j"                     % akkaV,
     "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
-    "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "com.aaronbedra"            %  "orchard"                        % "0.1.1",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
@@ -60,7 +59,8 @@ object Dependencies {
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
     "javax.xml.bind"            %  "jaxb-api"                       % jaxbV % "provided",
     "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
-    "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV
+    "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
+    "ch.qos.logback"            %  "logback-classic"                % "1.0.7"
   )
 
   lazy val dynamoDBDependencies = Seq(
