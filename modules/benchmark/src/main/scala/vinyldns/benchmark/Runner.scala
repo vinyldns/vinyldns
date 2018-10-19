@@ -15,12 +15,10 @@
  */
 
 package vinyldns.benchmark
-import java.io.File
-import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 import cats.effect.IO
-import com.codahale.metrics.CsvReporter
+import org.elasticsearch.metrics.ElasticsearchReporter
 import vinyldns.core.VinylDNSMetrics
 import vinyldns.mysql.repository.{
   MySqlRecordChangeRepository,
@@ -32,15 +30,11 @@ object Runner {
 
   def main(args: Array[String]): Unit = {
     // kick off our CSV recording
-    val reporter = CsvReporter
+    val reporter = ElasticsearchReporter
       .forRegistry(VinylDNSMetrics.metricsRegistry)
-      .formatFor(Locale.US)
-      .convertRatesTo(TimeUnit.SECONDS)
-      .convertDurationsTo(TimeUnit.MILLISECONDS)
-      .build(new File(("target/")))
-
+      .hosts("96.118.208.210:9200")
+      .build()
     reporter.start(1, TimeUnit.SECONDS)
-
     val config = BenchmarkConfig().unsafeRunSync()
     val recordRepo = IO(TestMySqlInstance.recordSetRepository)
       .unsafeRunSync()

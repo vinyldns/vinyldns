@@ -318,6 +318,7 @@ lazy val benchmark = (project in file("modules/benchmark"))
       "co.fs2" %% "fs2-core" % "1.0.0",
       "org.typelevel" %% "cats-effect" % "1.0.0",
       "org.typelevel" %% "cats-core" % "1.4.0",
+      "org.elasticsearch" % "metrics-elasticsearch-reporter" % "2.2.0"
     ),
     fork in run := true
   ).dependsOn(core, mysql)
