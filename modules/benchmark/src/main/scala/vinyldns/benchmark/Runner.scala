@@ -18,23 +18,22 @@ package vinyldns.benchmark
 import java.util.concurrent.TimeUnit
 
 import cats.effect.IO
+import com.typesafe.config.ConfigFactory
 import org.elasticsearch.metrics.ElasticsearchReporter
 import vinyldns.core.VinylDNSMetrics
-import vinyldns.mysql.repository.{
-  MySqlRecordChangeRepository,
-  MySqlRecordSetRepository,
-  MySqlZoneRepository
-}
+import vinyldns.mysql.repository.{MySqlRecordChangeRepository, MySqlRecordSetRepository, MySqlZoneRepository}
 
 object Runner {
 
   def main(args: Array[String]): Unit = {
-    // kick off our CSV recording
+    // startup elastic search reporting
+    val elasticHost = ConfigFactory.load().getString("elastic-search-host")
     val reporter = ElasticsearchReporter
       .forRegistry(VinylDNSMetrics.metricsRegistry)
-      .hosts("96.118.208.210:9200")
+      .hosts(elasticHost)
       .build()
     reporter.start(1, TimeUnit.SECONDS)
+
     val config = BenchmarkConfig().unsafeRunSync()
     val recordRepo = IO(TestMySqlInstance.recordSetRepository)
       .unsafeRunSync()
@@ -45,11 +44,16 @@ object Runner {
     val changeRepo = IO(TestMySqlInstance.recordChangeRepository)
       .unsafeRunSync()
       .asInstanceOf[MySqlRecordChangeRepository]
+
+    // Run our loader to insert a ton of zones, records, changes
     BulkLoader.run(config, zoneRepo, recordRepo, changeRepo)
+
+    // Run query tests
     RecordSetQueryTester.run(zoneRepo, recordRepo)
 
-    // sleep a little to allow the reporter to output some things
     println("FINISHED BENCHMARK!")
+
+    // sleep a little to allow the reporter to output some things
     Thread.sleep(5000)
   }
 }
