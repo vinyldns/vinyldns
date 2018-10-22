@@ -87,7 +87,7 @@ lazy val testSettings = Seq(
 
 lazy val apiSettings = Seq(
   name := "api",
-  libraryDependencies ++= compileDependencies ++ apiTestDependencies.map(_ % "test, it"),
+  libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
   coverageExcludedPackages := ".*Boot.*"
