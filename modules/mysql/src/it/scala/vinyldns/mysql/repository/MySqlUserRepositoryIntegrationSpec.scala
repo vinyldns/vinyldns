@@ -132,5 +132,10 @@ class MySqlUserRepositoryIntegrationSpec
       val result = repo.getUsers(testUserIds.toSet, None, None).unsafeRunSync()
       result.users should contain theSameElementsAs users
     }
+
+    "returns empty list when given no ids" in {
+      val result = repo.getUsers(Set[String](), None, None).unsafeRunSync()
+      result.users should contain theSameElementsAs List()
+    }
   }
 }
