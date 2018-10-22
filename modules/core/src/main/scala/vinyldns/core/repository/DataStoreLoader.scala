@@ -34,7 +34,7 @@ object DataStoreLoader {
     val accessorTuple: (DataStoreConfig, DataStore) = (dataStoreConfig, dataStore)
   }
 
-  class LoaderResponse[A](val accessor: A, shutdownHook: => List[IO[Unit]]) {
+  class DataLoaderResponse[A](val accessor: A, shutdownHook: => List[IO[Unit]]) {
     def shutdown(): Unit = shutdownHook.parSequence.unsafeRunSync()
   }
 
@@ -43,12 +43,12 @@ object DataStoreLoader {
   def loadAll[A <: DataAccessor](
       configs: List[DataStoreConfig],
       crypto: CryptoAlgebra,
-      dataAccessorProvider: DataAccessorProvider[A]): IO[LoaderResponse[A]] =
+      dataAccessorProvider: DataAccessorProvider[A]): IO[DataLoaderResponse[A]] =
     for {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs, dataAccessorProvider.repoNames))
       dataStores <- activeConfigs.map(load(_, crypto)).parSequence
       accessor <- IO.fromEither(generateAccessor(dataStores, dataAccessorProvider))
-    } yield new LoaderResponse[A](accessor, dataStores.map(_.dataStoreProvider.shutdown()))
+    } yield new DataLoaderResponse[A](accessor, dataStores.map(_.dataStoreProvider.shutdown()))
 
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStoreInfo] =
     for {

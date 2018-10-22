@@ -24,7 +24,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership.UserRepository
-import vinyldns.core.repository.DataStoreLoader.LoaderResponse
+import vinyldns.core.repository.DataStoreLoader.DataLoaderResponse
 import vinyldns.core.repository.RepositoryName._
 
 import scala.collection.JavaConverters._
@@ -92,7 +92,7 @@ class DataStoreLoaderSpec
     "return a data accessor for valid config for one datastore" in {
       val loadCall = DataStoreLoader.loadAll(List(goodConfig), crypto, TestAccessorProvider)
       val loaderResponse = loadCall.unsafeRunSync()
-      loaderResponse shouldBe a[LoaderResponse[_]]
+      loaderResponse shouldBe a[DataLoaderResponse[_]]
       loaderResponse.accessor shouldBe a[TestDataAccessor]
     }
 
@@ -114,7 +114,7 @@ class DataStoreLoaderSpec
 
       val loadCall = DataStoreLoader.loadAll(List(config1, config2), crypto, TestAccessorProvider)
       val loaderResponse = loadCall.unsafeRunSync()
-      loaderResponse shouldBe a[LoaderResponse[_]]
+      loaderResponse shouldBe a[DataLoaderResponse[_]]
       loaderResponse.accessor shouldBe a[TestDataAccessor]
     }
 
