@@ -23,9 +23,9 @@ final case class MySqlDataSourceSettings(
     password: String,
     connectionTimeoutMillis: Option[Long] = None,
     idleTimeout: Option[Long] = None,
-    minimumIdle: Option[Int] = None,
+    maxLifetime: Option[Long] = None,
     maximumPoolSize: Option[Int] = None,
-    maxLifeTime: Option[Long] = None,
+    minimumIdle: Option[Int] = None,
     registerMbeans: Boolean = false,
     mySqlProperties: Map[String, String] = Map()
 )
@@ -39,9 +39,9 @@ object MySqlDataSourceSettings {
       config.password,
       config.connectionTimeoutMillis,
       config.idleTimeout,
-      config.minimumIdle,
+      config.maxLifetime,
       config.maximumPoolSize,
-      config.maxLifeTime,
+      config.minimumIdle,
       config.registerMbeans,
       config.mySqlProperties
     )

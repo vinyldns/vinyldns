@@ -69,9 +69,9 @@ object MySqlConnector {
 
       settings.connectionTimeoutMillis.foreach(dsConfig.setConnectionTimeout)
       settings.idleTimeout.foreach(dsConfig.setIdleTimeout)
-      settings.minimumIdle.foreach(dsConfig.setMinimumIdle)
       settings.maximumPoolSize.foreach(dsConfig.setMaximumPoolSize)
-      settings.maxLifeTime.foreach(dsConfig.setMaxLifetime)
+      settings.maxLifetime.foreach(dsConfig.setMaxLifetime)
+      settings.minimumIdle.foreach(dsConfig.setMinimumIdle)
       dsConfig.setRegisterMbeans(settings.registerMbeans)
 
       settings.mySqlProperties.foreach {

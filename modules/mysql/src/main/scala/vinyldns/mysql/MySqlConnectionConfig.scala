@@ -24,13 +24,13 @@ final case class MySqlConnectionConfig(
     user: String,
     password: String,
     migrationSchemaTable: Option[String],
-    // Optional hikari settings
+    // Optional settings, will use Hikari defaults if unset
     // see https://github.com/brettwooldridge/HikariCP#frequently-used
     connectionTimeoutMillis: Option[Long],
     idleTimeout: Option[Long],
-    minimumIdle: Option[Int],
+    maxLifetime: Option[Long],
     maximumPoolSize: Option[Int],
-    maxLifeTime: Option[Long],
+    minimumIdle: Option[Int],
     registerMbeans: Boolean = false,
     // MySql performance settings, should be stored in a .properties file
     // see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration
