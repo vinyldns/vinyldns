@@ -132,7 +132,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   def shutdown(): IO[Unit] =
     IO(DBs.closeAll())
-      .handleError(e => logger.error(s"exception=${e.getMessage} occurred while shutting down"))
+      .handleError(e => logger.error(s"exception occurred while shutting down", e))
 
   class HikariCloser(dataSource: HikariDataSource) extends DataSourceCloser {
     override def close(): Unit = dataSource.close()
