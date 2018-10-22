@@ -59,12 +59,22 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
          |  WHERE user_name = ?
        """.stripMargin
 
-  private final def getUsersSqlBuilder(ids: Set[String]) =
-    sql"""
-         | SELECT data
-         |  FROM user
-         |  WHERE id IN ($ids)
-       """.stripMargin
+  final val BASE_GET_USERS: String =
+    """
+      | SELECT data
+      |  FROM user
+      |  WHERE id IN
+      """.stripMargin
+
+  final def buildGetUsersQuery(set: Set[String]): String = {
+    val stringBuilder = new StringBuilder().append("(")
+    set.toList.zipWithIndex.foreach {
+      case (element, count) if count < set.size - 1 => stringBuilder.append(s"'$element', ")
+      case (element, _) => stringBuilder.append(s"'$element'")
+    }
+    stringBuilder.append(")")
+    BASE_GET_USERS + stringBuilder.toString()
+  }
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
@@ -91,13 +101,17 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     monitor("repo.User.getUsers") {
       logger.info(s"Getting users with ids: $userIds")
       IO {
-        val users = DB.readOnly { implicit s =>
-          getUsersSqlBuilder(userIds)
-            .map(toUser(1))
-            .list()
-            .apply()
+        if (userIds.isEmpty)
+          ListUsersResults(List[User](), None)
+        else {
+          val users = DB.readOnly { implicit s =>
+            SQL(buildGetUsersQuery(userIds))
+              .map(toUser(1))
+              .list()
+              .apply()
+          }
+          ListUsersResults(users, None)
         }
-        ListUsersResults(users, None)
       }
     }
 
