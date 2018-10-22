@@ -32,7 +32,6 @@ import vinyldns.mysql.TestMySqlInstance
 import scala.concurrent.duration._
 import scala.util.Random
 
-@DoNotDiscover
 class MySqlZoneChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll

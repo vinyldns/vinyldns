@@ -28,7 +28,6 @@ import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.mysql.TestMySqlInstance
 
-@DoNotDiscover
 class MySqlBatchChangeRepositoryIntegrationSpec
     extends WordSpec
     with BeforeAndAfterAll
