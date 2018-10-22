@@ -68,7 +68,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   def setupDBConnection(config: MySqlConnectionConfig): IO[Unit] = {
     val dbConnectionSettings = MySqlDataSourceSettings(config)
 
-    IO.fromEither(getDataSource(dbConnectionSettings)).map { dataSource =>
+    getDataSource(dbConnectionSettings).map { dataSource =>
       logger.error("configuring connection pool")
 
       // pulled out of DBs.setupAll since we're no longer using the db. structure for config

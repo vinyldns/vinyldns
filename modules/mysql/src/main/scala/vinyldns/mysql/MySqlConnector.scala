@@ -17,7 +17,6 @@
 package vinyldns.mysql
 
 import cats.effect.IO
-import cats.implicits._
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import org.flywaydb.core.Flyway
 import org.slf4j.LoggerFactory
@@ -36,7 +35,7 @@ object MySqlConnector {
       config.password,
       minimumIdle = Some(3))
 
-    IO.fromEither(getDataSource(migrationConnectionSettings)).map { migrationDataSource =>
+    getDataSource(migrationConnectionSettings).map { migrationDataSource =>
       logger.info("Running migrations to ready the databases")
 
       val migration = new Flyway()
@@ -57,27 +56,29 @@ object MySqlConnector {
     }
   }
 
-  def getDataSource(settings: MySqlDataSourceSettings): Either[Throwable, HikariDataSource] =
-    Either.catchNonFatal {
-      val dsConfig = new HikariConfig()
+  def getDataSource(settings: MySqlDataSourceSettings): IO[HikariDataSource] = IO {
 
-      dsConfig.setDriverClassName(settings.driver)
-      dsConfig.setJdbcUrl(settings.url)
-      dsConfig.setUsername(settings.user)
-      dsConfig.setPassword(settings.password)
-      // TODO pool name
+    logger.error(s"Initializing data source with settings: $settings")
 
-      settings.connectionTimeoutMillis.foreach(dsConfig.setConnectionTimeout)
-      settings.idleTimeout.foreach(dsConfig.setIdleTimeout)
-      settings.maximumPoolSize.foreach(dsConfig.setMaximumPoolSize)
-      settings.maxLifetime.foreach(dsConfig.setMaxLifetime)
-      settings.minimumIdle.foreach(dsConfig.setMinimumIdle)
-      dsConfig.setRegisterMbeans(settings.registerMbeans)
+    val dsConfig = new HikariConfig()
 
-      settings.mySqlProperties.foreach {
-        case (k, v) => dsConfig.addDataSourceProperty(k, v)
-      }
+    dsConfig.setDriverClassName(settings.driver)
+    dsConfig.setJdbcUrl(settings.url)
+    dsConfig.setUsername(settings.user)
+    dsConfig.setPassword(settings.password)
+    // TODO pool name
 
-      new HikariDataSource(dsConfig)
+    settings.connectionTimeoutMillis.foreach(dsConfig.setConnectionTimeout)
+    settings.idleTimeout.foreach(dsConfig.setIdleTimeout)
+    settings.maximumPoolSize.foreach(dsConfig.setMaximumPoolSize)
+    settings.maxLifetime.foreach(dsConfig.setMaxLifetime)
+    settings.minimumIdle.foreach(dsConfig.setMinimumIdle)
+    dsConfig.setRegisterMbeans(settings.registerMbeans)
+
+    settings.mySqlProperties.foreach {
+      case (k, v) => dsConfig.addDataSourceProperty(k, v)
     }
+
+    new HikariDataSource(dsConfig)
+  }
 }

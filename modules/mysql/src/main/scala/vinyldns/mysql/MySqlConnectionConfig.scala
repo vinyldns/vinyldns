@@ -32,7 +32,7 @@ final case class MySqlConnectionConfig(
     maximumPoolSize: Option[Int],
     minimumIdle: Option[Int],
     registerMbeans: Boolean = false,
-    // MySql performance settings, should be stored in a .properties file
+    // MySql performance settings
     // see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration
     mySqlProperties: Map[String, String] = Map(),
 )

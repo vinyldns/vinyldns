@@ -28,7 +28,32 @@ final case class MySqlDataSourceSettings(
     minimumIdle: Option[Int] = None,
     registerMbeans: Boolean = false,
     mySqlProperties: Map[String, String] = Map()
-)
+) {
+
+  override def toString: String = {
+    val sb = new StringBuilder
+    def addNamedField(name: String, field: Any): Unit =
+      sb.append(name).append("=\"").append(field).append("\"; ")
+
+    sb.append("MySqlDataSourceSettings: [")
+    addNamedField("driver", driver)
+    addNamedField("user", user)
+    val maskedUrl = url.split('?').headOption.getOrElse("")
+    addNamedField("urlQueryExcluded", maskedUrl)
+
+    connectionTimeoutMillis.foreach(addNamedField("connectionTimeoutMillis", _))
+    idleTimeout.foreach(addNamedField("idleTimeout", _))
+    maxLifetime.foreach(addNamedField("maxLifetime", _))
+    maximumPoolSize.foreach(addNamedField("maximumPoolSize", _))
+    minimumIdle.foreach(addNamedField("minimumIdle", _))
+
+    addNamedField("registerMbeans", registerMbeans)
+    addNamedField("mySqlProperties", mySqlProperties)
+    sb.append("]")
+
+    sb.toString
+  }
+}
 
 object MySqlDataSourceSettings {
   def apply(config: MySqlConnectionConfig): MySqlDataSourceSettings =
