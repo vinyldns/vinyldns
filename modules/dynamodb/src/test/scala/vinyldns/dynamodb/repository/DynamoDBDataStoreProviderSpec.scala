@@ -130,5 +130,13 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
         .loadRepoConfigs(repoSettings)
         .unsafeRunSync()
     }
+
+    "Return unit upon Shutdown" in {
+      val response: Unit = underTest
+        .shutdown()
+        .unsafeRunSync()
+
+      response shouldBe (())
+    }
   }
 }

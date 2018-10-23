@@ -77,7 +77,7 @@ lazy val sharedSettings = Seq(
 lazy val testSettings = Seq(
   parallelExecution in Test := true,
   parallelExecution in IntegrationTest := false,
-  fork in IntegrationTest := false,
+  fork in IntegrationTest := true,
   testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
   logBuffered in Test := false,
   // Hide stack traces in tests

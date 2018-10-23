@@ -114,4 +114,5 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     ).parMapN { DataStore.apply }
   }
 
+  def shutdown(): IO[Unit] = IO.unit
 }
