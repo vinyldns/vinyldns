@@ -18,7 +18,7 @@ package controllers
 
 import java.net.URI
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import play.api.{ConfigLoader, Configuration}
@@ -27,7 +27,11 @@ import vinyldns.core.repository.DataStoreConfig
 
 import scala.collection.JavaConverters._
 
+// $COVERAGE-OFF$
 class Settings(private val config: Configuration) {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   val ldapUser: String = config.get[String]("LDAP.user")
   val ldapPwd: String = config.get[String]("LDAP.password")
@@ -59,5 +63,5 @@ class Settings(private val config: Configuration) {
       }
     }
 }
-
+// $COVERAGE-ON$
 object Settings extends Settings(Configuration(ConfigFactory.load()))

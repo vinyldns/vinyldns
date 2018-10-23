@@ -16,15 +16,19 @@
 
 package vinyldns.dynamodb.repository
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
 import com.typesafe.config.ConfigFactory
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.membership.{User, LockStatus}
+import vinyldns.core.domain.membership.{LockStatus, User}
+
 import scala.concurrent.duration._
 
 class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   private val userTable = "users-live"
 
   private val tableConfig = DynamoDBRepositorySettings(s"$userTable", 30, 30)

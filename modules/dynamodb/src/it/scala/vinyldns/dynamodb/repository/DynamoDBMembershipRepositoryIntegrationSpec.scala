@@ -16,11 +16,15 @@
 
 package vinyldns.dynamodb.repository
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 
 import scala.concurrent.duration._
 
 class DynamoDBMembershipRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   private val membershipTable = "membership-live"
 
   private val tableConfig = DynamoDBRepositorySettings(s"$membershipTable", 30, 30)

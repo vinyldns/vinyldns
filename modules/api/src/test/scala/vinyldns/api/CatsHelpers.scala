@@ -25,9 +25,12 @@ import scala.concurrent.duration._
 import org.scalatest.Assertions._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 trait CatsHelpers {
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def await[E, T](f: => IO[T], duration: FiniteDuration = 1.second): T = {
     val i: IO[Either[E, T]] = f.attempt.map {

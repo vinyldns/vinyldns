@@ -16,6 +16,7 @@
 
 package vinyldns.dynamodb.repository
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
@@ -26,6 +27,9 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 class DynamoDBGroupChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   private implicit def dateTimeOrdering: Ordering[DateTime] = Ordering.fromLessThan(_.isAfter(_))
 
   private val GROUP_CHANGES_TABLE = "group-changes-live"

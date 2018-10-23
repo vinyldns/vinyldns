@@ -16,6 +16,7 @@
 
 package vinyldns.dynamodb.repository
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
@@ -29,6 +30,9 @@ import scala.util.Random
 
 class DynamoDBZoneChangeRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+  
   private val zoneChangeTable = "zone-changes-live"
 
   private val tableConfig = DynamoDBRepositorySettings(s"$zoneChangeTable", 30, 30)

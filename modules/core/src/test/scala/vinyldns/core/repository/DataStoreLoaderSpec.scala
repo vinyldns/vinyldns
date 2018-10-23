@@ -17,7 +17,7 @@
 package vinyldns.core.repository
 
 import cats.data._
-import cats.implicits._
+import cats.syntax.validated._
 import cats.scalatest.{EitherMatchers, EitherValues, ValidatedMatchers}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.mockito.MockitoSugar

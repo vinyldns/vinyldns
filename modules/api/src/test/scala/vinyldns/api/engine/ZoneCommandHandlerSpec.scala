@@ -17,11 +17,9 @@
 package vinyldns.api.engine
 
 import java.util.Base64
-import java.util.concurrent.Executors
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import com.amazonaws.services.sqs.model._
-import fs2.Scheduler
 import org.mockito.Matchers.{eq => sameas, _}
 import org.mockito.Mockito._
 import org.mockito.{ArgumentCaptor, Mockito}
@@ -29,10 +27,10 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.engine.sqs.SqsConverters.{SqsRecordSetChangeMessage, SqsZoneChangeMessage}
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
 import vinyldns.core.protobuf.ProtobufConversions
 
 import scala.collection.JavaConverters._
@@ -59,9 +57,9 @@ class ZoneCommandHandlerSpec
 
   private def rmrIO = IO.pure(mockRmr)
 
-  private implicit val ec: ExecutionContext = ExecutionContext.global
-  private implicit val sched: Scheduler =
-    Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   override def beforeEach(): Unit = {
     reset(mockRmr, mockSqs, mockMsg, zcp, rcp, zsp)
@@ -79,7 +77,7 @@ class ZoneCommandHandlerSpec
 
   "pollingStream" should {
     "poll for ReceiveMessageResults" in {
-      val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+      val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
       val test = startPolling(mockSqs, 80.millis).interruptWhen(stop)
 
       test.compile.drain.unsafeToFuture()
@@ -97,7 +95,7 @@ class ZoneCommandHandlerSpec
         .when(fetchFail)
         .receiveMessageBatch(any[ReceiveMessageRequest])
 
-      val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+      val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
       val test = startPolling(fetchFail, 80.millis).interruptWhen(stop)
 
       test.compile.drain.unsafeToFuture()
@@ -210,7 +208,7 @@ class ZoneCommandHandlerSpec
 
       doReturn(List(msg1, msg2).asJava).when(mockRmr).getMessages
 
-      val test = fs2.Stream.eval(IO.pure(mockRmr)).through(genMessageStreams).join(1)
+      val test = fs2.Stream.eval(IO.pure(mockRmr)).through(genMessageStreams).parJoin(1)
       val result = test.compile.toVector.unsafeRunSync()
 
       result should contain theSameElementsAs List(msg1, msg2)
