@@ -13,18 +13,17 @@ object Dependencies {
   lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
   lazy val playV = "2.6.19"
-  lazy val awsV = "1.11.95"
+  lazy val awsV = "1.11.423"
+  lazy val jaxbV = "2.3.0"
 
-  lazy val compileDependencies = Seq(
+  lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
     "com.typesafe.akka"         %% "akka-http-spray-json"           % akkaHttpV,
     "de.heikoseeberger"         %% "akka-http-json4s"               % "1.21.0",
     "com.typesafe.akka"         %% "akka-slf4j"                     % akkaV,
     "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
-    "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "com.aaronbedra"            %  "orchard"                        % "0.1.1",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-sqs"                % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
@@ -57,7 +56,11 @@ object Dependencies {
     "nl.grons"                  %% "metrics-scala"                  % metricsScalaV,
     "org.apache.commons"        %  "commons-text"                   % "1.4",
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
-    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV
+    "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
+    "javax.xml.bind"            %  "jaxb-api"                       % jaxbV % "provided",
+    "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
+    "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
+    "ch.qos.logback"            %  "logback-classic"                % "1.0.7"
   )
 
   lazy val dynamoDBDependencies = Seq(
@@ -71,6 +74,11 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
+  )
+
+  lazy val sqsDependencies = Seq(
+    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-sqs"               % awsV withSources()
   )
 
   lazy val commonTestDependencies = Seq(

@@ -218,7 +218,7 @@ vinyldns {
       password = "pass"
 
       # the maximum number of connections to scale the connection pool to
-      pool-max-size = 20
+      maximum-pool-size = 20
 
       # the maximum number of seconds to wait for a connection from the connection pool
       connection-timeout-millis = 1000

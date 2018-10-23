@@ -24,6 +24,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.repository.DataStoreLoader.DataLoaderResponse
 import vinyldns.core.repository.RepositoryName._
 
 import scala.collection.JavaConverters._
@@ -90,7 +91,14 @@ class DataStoreLoaderSpec
   "loadAll" should {
     "return a data accessor for valid config for one datastore" in {
       val loadCall = DataStoreLoader.loadAll(List(goodConfig), crypto, TestAccessorProvider)
-      loadCall.unsafeRunSync() shouldBe a[TestDataAccessor]
+      val loaderResponse = loadCall.unsafeRunSync()
+      loaderResponse shouldBe a[DataLoaderResponse[_]]
+      loaderResponse.accessor shouldBe a[TestDataAccessor]
+    }
+
+    "return a unit when datastore is shutdown" in {
+      val loadCall = DataStoreLoader.loadAll(List(goodConfig), crypto, TestAccessorProvider)
+      noException should be thrownBy loadCall.unsafeRunSync().shutdown()
     }
 
     "return a data accessor for valid config for multiple datastores" in {
@@ -105,7 +113,9 @@ class DataStoreLoaderSpec
         allDisabledReposConfig.copy(user = enabled))
 
       val loadCall = DataStoreLoader.loadAll(List(config1, config2), crypto, TestAccessorProvider)
-      loadCall.unsafeRunSync() shouldBe a[TestDataAccessor]
+      val loaderResponse = loadCall.unsafeRunSync()
+      loaderResponse shouldBe a[DataLoaderResponse[_]]
+      loaderResponse.accessor shouldBe a[TestDataAccessor]
     }
 
     "throw an exception if getValidatedConfigs fails" in {
@@ -131,6 +141,17 @@ class DataStoreLoaderSpec
       val loadCall = DataStoreLoader.loadAll(List(goodConfig), crypto, FailAccessorProvider)
       val thrown = the[DataStoreStartupError] thrownBy loadCall.unsafeRunSync()
       thrown.getMessage shouldBe "create failure"
+    }
+
+    "throw an exception when shutdown is called" in {
+      val config = DataStoreConfig(
+        "vinyldns.core.repository.AlternateMockDataStoreProvider",
+        placeholderConfig,
+        allEnabledReposConfig)
+
+      val loadCall = DataStoreLoader.loadAll(List(config), crypto, TestAccessorProvider)
+      val thrown = the[RuntimeException] thrownBy loadCall.unsafeRunSync().shutdown()
+      thrown.getMessage should include("oh no")
     }
   }
 

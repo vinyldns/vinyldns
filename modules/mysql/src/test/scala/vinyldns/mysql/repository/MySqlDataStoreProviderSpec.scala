@@ -20,6 +20,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError}
+import vinyldns.mysql.MySqlConnectionConfig
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
   val mySqlConfig: Config = ConfigFactory.load().getConfig("mysql")
@@ -60,7 +61,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
           |      name = "test-database"
           |      driver = "org.mariadb.jdbc.Driver"
           |      migration-url = "test-url"
-          |      pool-max-size = 20
+          |      maximum-pool-size = 20
           |      connection-timeout-millis = 1000
           |      max-life-time = 600000
           |    }
@@ -73,7 +74,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
 
       val badSettings = pureconfig.loadConfigOrThrow[DataStoreConfig](badConfig)
 
-      a[pureconfig.error.ConfigReaderException[MySqlDataStoreSettings]] should be thrownBy underTest
+      a[pureconfig.error.ConfigReaderException[MySqlConnectionConfig]] should be thrownBy underTest
         .load(badSettings, crypto)
         .unsafeRunSync()
     }
@@ -85,6 +86,14 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
       a[DataStoreStartupError] should be thrownBy underTest
         .load(badSettings, crypto)
         .unsafeRunSync()
+    }
+
+    "Return unit upon Shutdown" in {
+      val response: Unit = underTest
+        .shutdown()
+        .unsafeRunSync()
+
+      response shouldBe (())
     }
   }
 }

@@ -77,7 +77,7 @@ lazy val sharedSettings = Seq(
 lazy val testSettings = Seq(
   parallelExecution in Test := true,
   parallelExecution in IntegrationTest := false,
-  fork in IntegrationTest := false,
+  fork in IntegrationTest := true,
   testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
   logBuffered in Test := false,
   // Hide stack traces in tests
@@ -87,7 +87,7 @@ lazy val testSettings = Seq(
 
 lazy val apiSettings = Seq(
   name := "api",
-  libraryDependencies ++= compileDependencies ++ apiTestDependencies.map(_ % "test, it"),
+  libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
   coverageExcludedPackages := ".*Boot.*"
@@ -171,7 +171,15 @@ lazy val apiPublishSettings = Seq(
 lazy val portalPublishSettings = Seq(
   publishArtifact := false,
   publishLocal := (publishLocal in Docker).value,
-  publish := (publish in Docker).value
+  publish := (publish in Docker).value,
+  // for sbt-native-packager (docker) to exclude local.conf
+  mappings in Universal ~= ( _.filterNot {
+    case (file, _) => file.getName.equals("local.conf")
+  }),
+  // for local.conf to be excluded in jars
+  mappings in (Compile, packageBin) ~= ( _.filterNot {
+    case (file, _) => file.getName.equals("local.conf")
+  })
 )
 
 lazy val pbSettings = Seq(
@@ -197,6 +205,7 @@ lazy val api = (project in file("modules/api"))
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
   .dependsOn(core, dynamodb % "compile->compile;it->it", mysql % "compile->compile;it->it")
+  .dependsOn(sqs % "compile->compile;it->it")
 
 val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")
 lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
@@ -212,7 +221,7 @@ lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb, mysql)
+  .aggregate(core, api, portal, dynamodb, mysql, sqs)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
@@ -265,7 +274,6 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .settings(name := "dynamodb")
   .settings(corePublishSettings)
   .settings(testSettings)
   .settings(Defaults.itSettings)
@@ -276,6 +284,7 @@ lazy val dynamodb = (project in file("modules/dynamodb"))
     parallelExecution in Test := true,
     parallelExecution in IntegrationTest := true
   ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "dynamodb")
 
 lazy val mysql = (project in file("modules/mysql"))
   .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
@@ -283,7 +292,6 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(sharedSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .settings(name := "mysql")
   .settings(corePublishSettings)
   .settings(testSettings)
   .settings(Defaults.itSettings)
@@ -292,6 +300,23 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(
     organization := "io.vinyldns",
   ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "mysql")
+
+lazy val sqs = (project in file("modules/sqs"))
+  .enablePlugins(DockerComposePlugin, AutomateHeaderPlugin)
+  .configs(IntegrationTest)
+  .settings(sharedSettings)
+  .settings(headerSettings(IntegrationTest))
+  .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
+  .settings(corePublishSettings)
+  .settings(testSettings)
+  .settings(Defaults.itSettings)
+  .settings(libraryDependencies ++= sqsDependencies ++ commonTestDependencies.map(_ % "test, it"))
+  .settings(scalaStyleCompile ++ scalaStyleTest)
+  .settings(
+    organization := "io.vinyldns",
+  ).dependsOn(core % "compile->compile;test->test")
+  .settings(name := "sqs")
 
 val preparePortal = TaskKey[Unit]("preparePortal", "Runs NPM to prepare portal for start")
 val checkJsHeaders = TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")
@@ -361,7 +386,8 @@ lazy val docSettings = Seq(
   micrositePushSiteWith := GitHub4s,
   micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),
   ghpagesNoJekyll := false,
-  fork in tut := true
+  fork in tut := true,
+  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/tut/{{ page.path }}"))
 )
 
 lazy val docs = (project in file("modules/docs"))
@@ -451,11 +477,13 @@ addCommandAlias("validate", "; root/clean; " +
   "api/headerCheck api/test:headerCheck api/it:headerCheck " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
+  "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
   "portal/headerCheck portal/test:headerCheck; " +
   "all core/scalastyle core/test:scalastyle " +
   "api/scalastyle api/test:scalastyle api/it:scalastyle " +
   "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle" +
   "mysql/scalastyle mysql/test:scalastyle mysql/it:scalastyle" +
+  "sqs/scalastyle sqs/test:scalastyle sqs/it:scalastyle" +
   "portal/scalastyle portal/test:scalastyle;" +
   "portal/createJsHeaders;portal/checkJsHeaders;" +
   "root/compile;root/test:compile;root/it:compile"
@@ -463,8 +491,10 @@ addCommandAlias("validate", "; root/clean; " +
 
 addCommandAlias("verify", "; project root; killDocker; " +
   "project api; dockerComposeUp; project dynamodb; dockerComposeUp; project mysql; dockerComposeUp; " +
+  "project sqs; dockerComposeUp;" +
   "project root; coverage; " +
-  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test; " +
+  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test " +
+  "sqs/test sqs/it:test; " +
   "project root; coverageReport; coverageAggregate; killDocker"
 )
 

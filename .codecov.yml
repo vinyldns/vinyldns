@@ -1,0 +1,9 @@
+coverage:
+  status:
+    project:
+      default:
+        threshold: 0.1
+    patch:
+      default:
+        # minimum coverage at 0, should never fail, but will still report
+        target: 0

@@ -26,7 +26,12 @@ object MessageQueueLoader {
   def load(config: MessageQueueConfig): IO[MessageQueue] =
     for {
       _ <- IO(logger.error(s"Attempting to load queue ${config.className}"))
-      provider <- IO(Class.forName(config.className).newInstance.asInstanceOf[MessageQueueProvider])
+      provider <- IO(
+        Class
+          .forName(config.className)
+          .getDeclaredConstructor()
+          .newInstance()
+          .asInstanceOf[MessageQueueProvider])
       queue <- provider.load(config)
     } yield queue
 }

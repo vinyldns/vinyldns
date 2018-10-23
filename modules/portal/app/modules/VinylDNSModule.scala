@@ -49,9 +49,10 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       cryptoConf <- settings.cryptoConfig
       crypto <- CryptoAlgebra.load(cryptoConf)
       repoConfigs <- settings.dataStoreConfigs
-      repositories <- DataStoreLoader
+      loaderResponse <- DataStoreLoader
         .loadAll[PortalDataAccessor](repoConfigs, crypto, PortalDataAccessorProvider)
     } yield {
+      val repositories = loaderResponse.accessor
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
       bind(classOf[Authenticator]).toInstance(authenticator())
       bind(classOf[UserRepository]).toInstance(repositories.userRepository)

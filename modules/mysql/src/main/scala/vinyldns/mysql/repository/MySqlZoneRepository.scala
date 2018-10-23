@@ -27,10 +27,16 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+
 class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneRepository])
   private final val MAX_ACCESSORS = 30
+  private final val INITIAL_RETRY_DELAY = 1.millis
+  final val MAX_RETRIES = 10
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
 
   /**
     * use INSERT INTO ON DUPLICATE KEY UPDATE for the zone, which will update the values if the zone already exists
@@ -115,25 +121,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   def save(zone: Zone): IO[Zone] =
     zone.status match {
       case ZoneStatus.Deleted =>
-        monitor("repo.ZoneJDBC.delete") {
-          IO {
-            DB.localTx { implicit s =>
-              deleteZone(zone)
-            }
-          }
-        }
-
-      case _ =>
-        monitor("repo.ZoneJDBC.save") {
-          IO {
-            DB.localTx { implicit s =>
-              deleteZoneAccess(zone)
-              putZone(zone)
-              putZoneAccess(zone)
-              zone
-            }
-          }
-        }
+        retryWithBackoff(deleteTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
+      case _ => retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
     }
 
   def getZone(zoneId: String): IO[Option[Zone]] =
@@ -356,4 +345,33 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   private def extractZone(columnIndex: Int): WrappedResultSet => Zone = res => {
     fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))
   }
+
+  def deleteTx(zone: Zone): IO[Zone] =
+    monitor("repo.ZoneJDBC.delete") {
+      IO {
+        DB.localTx { implicit s =>
+          deleteZone(zone)
+        }
+      }
+    }
+
+  def saveTx(zone: Zone): IO[Zone] =
+    monitor("repo.ZoneJDBC.save") {
+      IO {
+        DB.localTx { implicit s =>
+          deleteZoneAccess(zone)
+          putZone(zone)
+          putZoneAccess(zone)
+          zone
+        }
+      }
+    }
+
+  def retryWithBackoff[A](f: A => IO[A], a: A, delay: FiniteDuration, maxRetries: Int): IO[A] =
+    f(a).handleErrorWith { error =>
+      if (maxRetries > 0)
+        IO.sleep(delay) *> retryWithBackoff(f, a, delay * 2, maxRetries - 1)
+      else
+        IO.raiseError(error)
+    }
 }
