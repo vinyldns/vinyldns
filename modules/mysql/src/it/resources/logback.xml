@@ -1,0 +1,16 @@
+<configuration>
+    <!-- Test configuration, log to console so we can get the docker logs -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d [test] %-5p | \(%logger{4}:%line\) | %msg %n %nopexception </pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.flywaydb" level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="ERROR">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
