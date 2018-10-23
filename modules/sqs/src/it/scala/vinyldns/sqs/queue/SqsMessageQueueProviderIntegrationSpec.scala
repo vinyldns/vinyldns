@@ -17,12 +17,12 @@
 package vinyldns.sqs.queue
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.core.queue.MessageQueueConfig
+import vinyldns.core.queue.{MessageQueueConfig, MessageQueueLoader}
 
 class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
   val sqsConfig: Config = ConfigFactory.load().getConfig("sqs")
 
-  import SqsMessageQueueProvider._
+  val undertest = new SqsMessageQueueProvider()
 
   "load" should {
     "fail if a required setting is not provided" in {
@@ -40,7 +40,7 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
 
       val badSettings = pureconfig.loadConfigOrThrow[MessageQueueConfig](badConfig)
 
-      a[pureconfig.error.ConfigReaderException[MessageQueueConfig]] should be thrownBy load(badSettings)
+      a[pureconfig.error.ConfigReaderException[MessageQueueConfig]] should be thrownBy undertest.load(badSettings)
         .unsafeRunSync()
     }
 
@@ -59,12 +59,34 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
           |    """.stripMargin)
 
       val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](nonExistentQueueConfig)
-      val messageQueue = load(messageConfig).unsafeRunSync()
+      val messageQueue = undertest.load(messageConfig).unsafeRunSync()
 
       noException should be thrownBy messageQueue
         .asInstanceOf[SqsMessageQueue]
         .client
         .getQueueUrl("new-queue")
+    }
+  }
+
+  "MessageQueueLoader" should {
+    "invoke SQS provider properly" in {
+      val nonExistentQueueConfig =
+        ConfigFactory.parseString("""
+          |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |
+          |    settings {
+          |      access-key = "x"
+          |      secret-key = "x"
+          |      signing-region = "x"
+          |      service-endpoint = "http://localhost:19005/"
+          |      queue-name = "new-queue"
+          |    }
+          |    """.stripMargin)
+
+      val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](nonExistentQueueConfig)
+      val queue = MessageQueueLoader.load(messageConfig).unsafeRunSync()
+
+      queue shouldBe a[SqsMessageQueue]
     }
   }
 }

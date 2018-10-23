@@ -43,9 +43,10 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
   private val sqsConfig = pureconfig.loadConfigOrThrow[SqsMessageQueueSettings](
     sqsMessageQueueSettings.settings)
 
-  private val queueName = SqsMessageQueueProvider.DEFAULT_QUEUE_NAME
-
-  private val queue: SqsMessageQueue = SqsMessageQueue(sqsConfig, queueName)
+  private val provider = new SqsMessageQueueProvider()
+  private val client = provider.setupClient(sqsConfig).unsafeRunSync()
+  private val queueUrl = provider.setupQueue(client, sqsConfig.queueName).unsafeRunSync()
+  private val queue: SqsMessageQueue = SqsMessageQueue(queueUrl, client)
 
   // Re-create queue before tests
   override protected def beforeAll(): Unit = {
@@ -194,7 +195,6 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     "throw an error if there are issues parsing the message" in {
       val message = new Message()
 
-      val queue = SqsMessageQueue(sqsConfig, queueName)
       assertThrows[AmazonSQSException] {
         queue.parse(message).unsafeRunSync()
       }

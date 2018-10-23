@@ -22,14 +22,10 @@ import java.util.concurrent.TimeUnit.SECONDS
 import cats.data._
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.retry.PredefinedBackoffStrategies.ExponentialBackoffStrategy
-import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.sqs.model._
-import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
-import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult, ClientConfiguration}
+import com.amazonaws.services.sqs.AmazonSQSAsync
+import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
@@ -174,40 +170,8 @@ object SqsMessageQueue extends ProtobufConversions {
   final val MAXIMUM_VISIBILITY_TIMEOUT = 43200
   final val MAXIMUM_BATCH_SIZE = 262144
   // $COVERAGE-ON$
-
-  def apply(
-      sqsMessageQueueSettings: SqsMessageQueueSettings,
-      queueName: String): SqsMessageQueue = {
-    val client =
-      AmazonSQSAsyncClientBuilder
-        .standard()
-        .withClientConfiguration(
-          new ClientConfiguration()
-            .withRetryPolicy(new RetryPolicy(
-              RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
-              new ExponentialBackoffStrategy(2, 64), // Base delay and max back-off delay of 64
-              100, // Max error retry count (set to dead-letter count); default is 3
-              true
-            )))
-        .withEndpointConfiguration(new EndpointConfiguration(
-          sqsMessageQueueSettings.serviceEndpoint,
-          sqsMessageQueueSettings.signingRegion))
-        .withCredentials(
-          new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials(
-              sqsMessageQueueSettings.accessKey,
-              sqsMessageQueueSettings.secretKey)))
-        .build()
-
-    // Create queue if it doesn't exist
-    val queueUrl = try {
-      client.getQueueUrl(queueName).getQueueUrl
-    } catch {
-      case _: QueueDoesNotExistException => client.createQueue(queueName).getQueueUrl
-    }
-
+  def apply(queueUrl: String, client: AmazonSQSAsync): SqsMessageQueue =
     new SqsMessageQueue(queueUrl, client)
-  }
 
   def validateMessageTimeout(
       duration: FiniteDuration): Either[InvalidMessageTimeout, FiniteDuration] =

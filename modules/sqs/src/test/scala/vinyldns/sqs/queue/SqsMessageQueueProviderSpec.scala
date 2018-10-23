@@ -18,41 +18,24 @@ package vinyldns.sqs.queue
 import org.scalatest.{Matchers, WordSpec}
 
 class SqsMessageQueueProviderSpec extends WordSpec with Matchers {
+  val undertest = new SqsMessageQueueProvider()
   import SqsMessageQueueProvider._
-
-  "getConfigName" should {
-    "use DEFAULT_QUEUE_NAME if queue-name is not provided in config settings" in {
-      val settings =
-        SqsMessageQueueSettings("accessKey", "secretKey", "serviceEndpoint", "signingRegion", None)
-      getQueueName(settings) shouldBe Right(DEFAULT_QUEUE_NAME)
-    }
-
-    "use queue-name if specified in config settings" in {
-      val queueName = "override-queue-name"
-      val settings = SqsMessageQueueSettings(
-        "accessKey",
-        "secretKey",
-        "serviceEndpoint",
-        "signingRegion",
-        Some(queueName))
-      getQueueName(settings) shouldBe Right(queueName)
-    }
-  }
 
   "validateQueueName" should {
     "succeed if queue name fully matches regex" in {
       val queueName = "valid-queue-name"
-      validateQueueName(queueName) shouldBe Right(queueName)
+      undertest.validateQueueName(queueName) shouldBe Right(queueName)
     }
 
     "succeed if queue name ends in '.fifo'" in {
       val queueName = "queue.fifo"
-      validateQueueName(queueName) shouldBe Right(queueName)
+      undertest.validateQueueName(queueName) shouldBe Right(queueName)
     }
 
     "fail if queue name does not match regex" in {
       val invalidQueueName = "a" * 81
-      validateQueueName(invalidQueueName) shouldBe Left(InvalidQueueName(invalidQueueName))
+      undertest.validateQueueName(invalidQueueName) shouldBe Left(
+        InvalidQueueName(invalidQueueName))
     }
   }
 }

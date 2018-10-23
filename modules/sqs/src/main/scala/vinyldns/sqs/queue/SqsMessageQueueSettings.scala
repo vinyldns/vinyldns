@@ -21,4 +21,4 @@ case class SqsMessageQueueSettings(
     secretKey: String,
     serviceEndpoint: String,
     signingRegion: String,
-    queueName: Option[String])
+    queueName: String)
