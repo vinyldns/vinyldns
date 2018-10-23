@@ -16,6 +16,18 @@
 
 package vinyldns.mysql
 
+import com.typesafe.config.ConfigObject
+import pureconfig.ConfigReader
+
+object MySqlConnectionConfig {
+
+  import scala.collection.JavaConverters._
+
+  val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] = {
+    ConfigReader[Option[ConfigObject]].map(_.map(_.unwrapped().asScala.toMap).getOrElse(Map()))
+  }
+}
+
 final case class MySqlConnectionConfig(
     name: String,
     driver: String,
@@ -34,5 +46,5 @@ final case class MySqlConnectionConfig(
     registerMbeans: Boolean = false,
     // MySql performance settings
     // see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration
-    mySqlProperties: Map[String, AnyRef] = Map(),
+    mySqlProperties: Map[String, AnyRef] = Map()
 )

@@ -20,6 +20,7 @@ import cats.effect._
 import cats.implicits._
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
+import pureconfig.ConfigReader
 import pureconfig.module.catseffect.loadConfigF
 import scalikejdbc.config.DBs
 import scalikejdbc.{ConnectionPool, DataSourceCloser, DataSourceConnectionPool}
@@ -33,6 +34,9 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
   private val implementedRepositories =
     Set(RepositoryName.zone, RepositoryName.batchChange, RepositoryName.zoneChange)
+
+  implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
+    MySqlConnectionConfig.mySqlPropertiesReader
 
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
     for {
