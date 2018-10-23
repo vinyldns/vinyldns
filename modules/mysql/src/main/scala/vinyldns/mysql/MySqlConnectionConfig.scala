@@ -34,5 +34,5 @@ final case class MySqlConnectionConfig(
     registerMbeans: Boolean = false,
     // MySql performance settings
     // see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration
-    mySqlProperties: Map[String, String] = Map(),
+    mySqlProperties: Map[String, AnyRef] = Map(),
 )

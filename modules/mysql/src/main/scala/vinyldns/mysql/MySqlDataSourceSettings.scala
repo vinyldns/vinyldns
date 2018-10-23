@@ -28,7 +28,7 @@ final case class MySqlDataSourceSettings(
     maximumPoolSize: Option[Int] = None,
     minimumIdle: Option[Int] = None,
     registerMbeans: Boolean = false,
-    mySqlProperties: Map[String, String] = Map()
+    mySqlProperties: Map[String, AnyRef] = Map()
 ) {
 
   override def toString: String = {
