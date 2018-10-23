@@ -34,9 +34,9 @@ class MySqlConnectionConfigSpec extends WordSpec with Matchers {
   "loading MySqlConnectionConfig" should {
     "include all specified properties" in {
       val configProperties = Map[String, AnyRef](
-        "cachePrepStmts" -> new java.lang.Boolean(true),
-        "prepStmtCacheSize" -> new Integer(250),
-        "prepStmtCacheSqlLimit" -> new Integer(2048))
+        "cachePrepStmts" -> java.lang.Boolean.TRUE,
+        "prepStmtCacheSize" -> Integer.valueOf(250),
+        "prepStmtCacheSqlLimit" -> Integer.valueOf(2048))
 
       val settingsConfig =
         loadConfigF[IO, MySqlConnectionConfig](dataStoreSettings.settings).unsafeRunSync()
@@ -46,8 +46,7 @@ class MySqlConnectionConfigSpec extends WordSpec with Matchers {
 
     "store an empty map as mySqlProperties if excluded" in {
 
-      val conf = ConfigFactory.parseString(
-        """
+      val conf = ConfigFactory.parseString("""
           |  {
           |    name = "vinyldns"
           |    driver = "some.test.driver"
