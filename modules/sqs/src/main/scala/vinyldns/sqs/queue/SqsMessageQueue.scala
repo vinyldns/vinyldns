@@ -30,7 +30,6 @@ import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult, ClientConfiguration}
-import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
@@ -176,13 +175,9 @@ object SqsMessageQueue extends ProtobufConversions {
   final val MAXIMUM_BATCH_SIZE = 262144
   // $COVERAGE-ON$
 
-  def apply(config: Config = ConfigFactory.load().getConfig("sqs")): SqsMessageQueue = {
-    val accessKey = config.getString("access-key")
-    val secretKey = config.getString("secret-key")
-    val serviceEndpoint = config.getString("service-endpoint")
-    val signingRegion = config.getString("signing-region")
-    val queueUrl = config.getString("queue-url")
-
+  def apply(
+      sqsMessageQueueSettings: SqsMessageQueueSettings,
+      queueName: String): SqsMessageQueue = {
     val client =
       AmazonSQSAsyncClientBuilder
         .standard()
@@ -194,10 +189,22 @@ object SqsMessageQueue extends ProtobufConversions {
               100, // Max error retry count (set to dead-letter count); default is 3
               true
             )))
-        .withEndpointConfiguration(new EndpointConfiguration(serviceEndpoint, signingRegion))
-        .withCredentials(new AWSStaticCredentialsProvider(
-          new BasicAWSCredentials(accessKey, secretKey)))
+        .withEndpointConfiguration(new EndpointConfiguration(
+          sqsMessageQueueSettings.serviceEndpoint,
+          sqsMessageQueueSettings.signingRegion))
+        .withCredentials(
+          new AWSStaticCredentialsProvider(
+            new BasicAWSCredentials(
+              sqsMessageQueueSettings.accessKey,
+              sqsMessageQueueSettings.secretKey)))
         .build()
+
+    // Create queue if it doesn't exist
+    val queueUrl = try {
+      client.getQueueUrl(queueName).getQueueUrl
+    } catch {
+      case _: QueueDoesNotExistException => client.createQueue(queueName).getQueueUrl
+    }
 
     new SqsMessageQueue(queueUrl, client)
   }
