@@ -29,7 +29,7 @@ trait MySqlIntegrationSpec {
 
   lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
 
-  lazy val provider =  new MySqlDataStoreProvider()
+  lazy val provider = new MySqlDataStoreProvider()
 
   lazy val instance: DataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
 

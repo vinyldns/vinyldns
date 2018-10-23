@@ -20,16 +20,16 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
+import com.typesafe.config.{Config, ConfigFactory}
 import org.joda.time.DateTime
 import org.scalatest._
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId}
-import vinyldns.mysql.TestMySqlInstance
+import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueueConfig}
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
-import vinyldns.mysql.queue.MySqlMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded}
+import vinyldns.mysql.queue.MySqlMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded, QUEUE_CONNECTION_NAME}
 
 import scala.concurrent.duration._
 
@@ -47,14 +47,18 @@ final case class InvalidMessage(command: ZoneCommand) extends CommandMessage {
 }
 
 class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
-  with BeforeAndAfterEach with EitherMatchers with BeforeAndAfterAll with EitherValues with ProtobufConversions {
+  with BeforeAndAfterEach with EitherMatchers with EitherValues with ProtobufConversions {
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
 
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  private val underTest = new MySqlMessageQueue()
+  private val config: Config = ConfigFactory.load().getConfig("queue")
+  lazy val queueConfig: MessageQueueConfig =
+    pureconfig.loadConfigOrThrow[MessageQueueConfig](config)
+
+  private val underTest = new MySqlMessageQueueProvider().load(queueConfig).unsafeRunSync()
 
   private val rsChange: RecordSetChange = pendingCreateAAAA
 
@@ -64,22 +68,17 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
 
   private val zoneChange: ZoneChange = zoneChangePending
 
-  private def clear(): Unit = DB.localTx { implicit s =>
+  private def clear(): Unit = NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
     sql"DELETE FROM message_queue".update().apply()
     ()
   }
-  override protected def beforeEach(): Unit = clear()
 
-  override protected def beforeAll(): Unit = {
-    // load the data store
-    TestMySqlInstance.instance
-    ()
-  }
+  override protected def beforeEach(): Unit = clear()
 
   private def insert(id: String, messageType: Int, inFlight: Boolean,
                      data: Array[Byte], created: DateTime, updated: DateTime,
                      timeoutSeconds: Int, attempts: Int): Unit = {
-    DB.localTx { implicit s =>
+    NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
       val inF = if (inFlight) 1 else 0
       val insertSql = sql"""
          |INSERT INTO message_queue(id, message_type, in_flight, created, updated, timeout_seconds, attempts, data)
@@ -101,7 +100,7 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
   }
 
   private def findMessage(id: String): Option[RowData] =
-    DB.readOnly { implicit s =>
+    NamedDB(QUEUE_CONNECTION_NAME).readOnly { implicit s =>
       val findSql =
         sql"""
           |SELECT id, message_type, in_flight, created, updated, timeout_seconds, attempts
@@ -184,22 +183,23 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
   }
 
   "parseMessage" should {
+    val withoutConnections = new MySqlMessageQueue()
     "fail on invalid message type" in {
-      val result = underTest.parseMessage(MessageId("foo"), -2, rsChangeBytes, 1, 10)
+      val result = withoutConnections.parseMessage(MessageId("foo"), -2, rsChangeBytes, 1, 10)
       result.left.value shouldBe (InvalidMessageType(-2), MessageId("foo"))
     }
     "fail on invalid bytes" in {
-      val result = underTest.parseMessage(MessageId("foo"), ZoneChangeMessageType.value, "bar".getBytes, 1, 10)
+      val result = withoutConnections.parseMessage(MessageId("foo"), ZoneChangeMessageType.value, "bar".getBytes, 1, 10)
       val (err, id) = result.left.value
       id shouldBe MessageId("foo")
       err shouldBe an[Exception]
     }
     "fail if attempts exceeds 100" in {
-      val result = underTest.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 200, 10)
+      val result = withoutConnections.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 200, 10)
       result.left.value shouldBe (MessageAttemptsExceeded("foo"), MessageId("foo"))
     }
     "fail on invalid timeout" in {
-      val result = underTest.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 1, -1)
+      val result = withoutConnections.parseMessage(MessageId("foo"), RecordChangeMessageType.value, rsChangeBytes, 1, -1)
       result.left.value shouldBe (InvalidMessageTimeout(-1), MessageId("foo"))
     }
   }
