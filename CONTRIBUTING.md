@@ -114,7 +114,7 @@ For specifics on our tests, see the [Testing](DEVELOPER_GUIDE.md#testing) sectio
 #### Documentation Edits
 Documentation for the VinylDNS project lives in files such as this one in the root of the project directory, as well
 as in `modules/docs/src/main/tut` for the docs you see on [vinyldns.io](https://vinyldns.io). Many changes, such as those that impact
-an API endpoint, config, portal usage, etc, will also need corresponding documentation edited to prevent it from going stale. This [document](https://github.com/vinyldns/vinyldns/tree/gh-pages#vinyldns-documentation-site) has information on how to run and edit the documentation page. Include those changes in the Pull Request. 
+an API endpoint, config, portal usage, etc, will also need corresponding documentation edited to prevent it from going stale. The VinylDNS [gh-pages branch README](https://github.com/vinyldns/vinyldns/tree/gh-pages#vinyldns-documentation-site) has information on how to run and edit the documentation page.
 
 #### Style Guides
 * For Scala code we use [Scalastyle](https://www.scalastyle.org/). The configs are `scalastyle-config.xml` and 
