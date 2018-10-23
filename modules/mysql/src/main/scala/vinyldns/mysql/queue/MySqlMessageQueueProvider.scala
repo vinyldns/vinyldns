@@ -1,0 +1,43 @@
+package vinyldns.mysql.queue
+
+
+import cats.effect.IO
+import org.slf4j.LoggerFactory
+import pureconfig.module.catseffect.loadConfigF
+import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
+import scalikejdbc.config.DBs
+import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider}
+import vinyldns.mysql.{HikariCloser, MySqlConnectionConfig, MySqlDataSourceSettings}
+import vinyldns.mysql.MySqlConnector._
+
+class MySqlMessageQueueProvider extends MessageQueueProvider {
+
+  private val logger = LoggerFactory.getLogger(classOf[MySqlMessageQueueProvider])
+  private val queueConnectionName = 'queue
+
+  def load(config: MessageQueueConfig): IO[MessageQueue] =
+    for {
+      connectionSettings <- loadConfigF[IO, MySqlConnectionConfig](config.settings)
+      _ <- runDBMigrations(connectionSettings)
+      _ <- setupQueueConnection(connectionSettings)
+    } yield new MySqlMessageQueue()
+
+  def setupQueueConnection(config: MySqlConnectionConfig): IO[Unit] = {
+    val queueConnectionSettings = MySqlDataSourceSettings(config, "mysqlQueuePool")
+
+    getDataSource(queueConnectionSettings).map { dataSource =>
+      logger.error("configuring connection pool for queue")
+
+      // note this is being called 2x in the case you use the mysql datastores and
+      // loader. That should be ok
+      DBs.loadGlobalSettings()
+
+      // Configure the connection pool
+      ConnectionPool.add(queueConnectionName,
+        new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource)))
+
+      logger.error("queue connection pool init complete")
+    }
+  }
+
+}

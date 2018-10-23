@@ -18,15 +18,14 @@ package vinyldns.mysql.repository
 
 import cats.effect._
 import cats.implicits._
-import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import pureconfig.ConfigReader
 import pureconfig.module.catseffect.loadConfigF
 import scalikejdbc.config.DBs
-import scalikejdbc.{ConnectionPool, DataSourceCloser, DataSourceConnectionPool}
+import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.repository._
-import vinyldns.mysql.{MySqlConnectionConfig, MySqlDataSourceSettings}
+import vinyldns.mysql.{HikariCloser, MySqlConnectionConfig, MySqlDataSourceSettings}
 import vinyldns.mysql.MySqlConnector._
 
 class MySqlDataStoreProvider extends DataStoreProvider {
@@ -92,10 +91,6 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   }
 
   def shutdown(): IO[Unit] =
-    IO(DBs.closeAll())
+    IO(DBs.close())
       .handleError(e => logger.error(s"exception occurred while shutting down", e))
-
-  class HikariCloser(dataSource: HikariDataSource) extends DataSourceCloser {
-    override def close(): Unit = dataSource.close()
-  }
 }
