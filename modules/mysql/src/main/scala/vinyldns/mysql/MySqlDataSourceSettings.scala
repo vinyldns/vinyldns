@@ -17,6 +17,7 @@
 package vinyldns.mysql
 
 final case class MySqlDataSourceSettings(
+    poolName: String,
     driver: String,
     url: String,
     user: String,
@@ -36,6 +37,7 @@ final case class MySqlDataSourceSettings(
       sb.append(name).append("=\"").append(field).append("\"; ")
 
     sb.append("MySqlDataSourceSettings: [")
+    addNamedField("poolName", poolName)
     addNamedField("driver", driver)
     addNamedField("user", user)
     val maskedUrl = url.split('?').headOption.getOrElse("")
@@ -56,8 +58,9 @@ final case class MySqlDataSourceSettings(
 }
 
 object MySqlDataSourceSettings {
-  def apply(config: MySqlConnectionConfig): MySqlDataSourceSettings =
+  def apply(config: MySqlConnectionConfig, poolName: String): MySqlDataSourceSettings =
     new MySqlDataSourceSettings(
+      poolName,
       config.driver,
       config.url,
       config.user,

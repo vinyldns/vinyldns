@@ -29,6 +29,7 @@ object MySqlConnector {
 
   def runDBMigrations(config: MySqlConnectionConfig): IO[Unit] = {
     val migrationConnectionSettings = MySqlDataSourceSettings(
+      "flywayConnectionPool",
       config.driver,
       config.migrationUrl,
       config.user,
@@ -62,11 +63,11 @@ object MySqlConnector {
 
     val dsConfig = new HikariConfig()
 
+    dsConfig.setPoolName(settings.poolName)
     dsConfig.setDriverClassName(settings.driver)
     dsConfig.setJdbcUrl(settings.url)
     dsConfig.setUsername(settings.user)
     dsConfig.setPassword(settings.password)
-    // TODO pool name
 
     settings.connectionTimeoutMillis.foreach(dsConfig.setConnectionTimeout)
     settings.idleTimeout.foreach(dsConfig.setIdleTimeout)
