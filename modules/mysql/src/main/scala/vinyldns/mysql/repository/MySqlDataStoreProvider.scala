@@ -64,7 +64,6 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       zoneChangeRepository = zoneChanges)
   }
 
-
   def setupDBConnection(config: MySqlConnectionConfig): IO[Unit] = {
     val dbConnectionSettings = MySqlDataSourceSettings(config, "mysqlDbPool")
 
