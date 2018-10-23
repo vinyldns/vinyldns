@@ -27,9 +27,9 @@ import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId}
+import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
 import vinyldns.mysql.queue.MySqlMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded}
-import vinyldns.mysql.repository.TestMySqlInstance
 
 import scala.concurrent.duration._
 
@@ -47,7 +47,7 @@ final case class InvalidMessage(command: ZoneCommand) extends CommandMessage {
 }
 
 class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
-  with BeforeAndAfterEach with EitherMatchers with EitherValues with BeforeAndAfterAll with ProtobufConversions {
+  with BeforeAndAfterEach with EitherMatchers with BeforeAndAfterAll with EitherValues with ProtobufConversions {
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
 

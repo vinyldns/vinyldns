@@ -62,8 +62,9 @@ object Boot extends App {
       banner <- vinyldnsBanner()
       crypto <- IO(Crypto.instance) // load crypto
       repoConfigs <- VinylDNSConfig.dataStoreConfigs
-      repositories <- DataStoreLoader
+      loaderResponse <- DataStoreLoader
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
+      repositories = loaderResponse.accessor
       _ <- TestDataLoader.loadTestData(repositories.userRepository)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
@@ -117,6 +118,9 @@ object Boot extends App {
 
         // shutdown sqs gracefully
         sqsConnection.shutdown()
+
+        //shutdown data store provider
+        loaderResponse.shutdown()
 
         // exit JVM when ActorSystem has been terminated
         system.registerOnTermination(System.exit(0))
