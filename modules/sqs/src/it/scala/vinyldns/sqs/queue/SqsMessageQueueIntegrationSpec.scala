@@ -46,12 +46,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
   private val provider = new SqsMessageQueueProvider()
   private val client = provider.setupClient(sqsConfig).unsafeRunSync()
   private val queueUrl = provider.setupQueue(client, sqsConfig.queueName).unsafeRunSync()
-  private val queue: SqsMessageQueue = SqsMessageQueue(queueUrl, client)
-
-  // Re-create queue before tests
-  override protected def beforeAll(): Unit = {
-    queue.client.createQueue("sqs")
-  }
+  private val queue: SqsMessageQueue = new SqsMessageQueue(queueUrl, client)
 
   override protected def afterEach(): Unit = {
     // Remove items from queue after each test

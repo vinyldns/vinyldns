@@ -170,8 +170,6 @@ object SqsMessageQueue extends ProtobufConversions {
   final val MAXIMUM_VISIBILITY_TIMEOUT = 43200
   final val MAXIMUM_BATCH_SIZE = 262144
   // $COVERAGE-ON$
-  def apply(queueUrl: String, client: AmazonSQSAsync): SqsMessageQueue =
-    new SqsMessageQueue(queueUrl, client)
 
   def validateMessageTimeout(
       duration: FiniteDuration): Either[InvalidMessageTimeout, FiniteDuration] =

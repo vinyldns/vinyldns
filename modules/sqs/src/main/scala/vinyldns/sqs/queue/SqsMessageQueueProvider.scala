@@ -16,6 +16,7 @@
 
 package vinyldns.sqs.queue
 import cats.effect.IO
+import cats.implicits._
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
@@ -38,7 +39,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       _ <- IO.fromEither(validateQueueName(settingsConfig.queueName))
       client <- setupClient(settingsConfig)
       queueUrl <- setupQueue(client, settingsConfig.queueName)
-    } yield SqsMessageQueue(queueUrl, client)
+    } yield new SqsMessageQueue(queueUrl, client)
 
   def validateQueueName(queueName: String): Either[InvalidQueueName, String] = {
 
@@ -81,10 +82,8 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
     // Create queue if it doesn't exist
     IO {
       client.getQueueUrl(queueName).getQueueUrl
-    }.attempt.unsafeRunSync() match {
-      case Left(_: QueueDoesNotExistException) => IO.pure(client.createQueue(queueName).getQueueUrl)
-      case Right(queueUrl) => IO.pure(queueUrl)
-      case Left(e) => IO.raiseError(e)
+    }.recoverWith {
+      case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)
     }
   }
 }
