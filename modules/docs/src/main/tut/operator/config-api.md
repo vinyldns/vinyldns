@@ -217,14 +217,34 @@ vinyldns {
       # the password to connect to MySQL
       password = "pass"
 
+      ## see https://github.com/brettwooldridge/HikariCP for more detail on the following fields
       # the maximum number of connections to scale the connection pool to
       maximum-pool-size = 20
 
-      # the maximum number of seconds to wait for a connection from the connection pool
+      # the maximum number of milliseconds to wait for a connection from the connection pool
       connection-timeout-millis = 1000
+      
+      # the minimum number of idle connections that HikariCP tries to maintain in the pool
+      minimum-idle = 10
+            
+      # the maximum number of milliseconds that a connection is can sit idle in the pool
+      idle-timeout = 10000
 
       # The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit
-      max-life-time = 600000
+      max-lifetime = 600000
+      
+      # controls whether JMX MBeans are registered
+      register-mbeans = true
+      
+      # my-sql-properties allows you to include any additional mysql performance settings you want.
+      # Note that the properties within my-sql-properties must be camel case!
+      # see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration for guidance
+      my-sql-properties {
+        prepStmtCacheSize = 300
+        prepStmtCacheSqlLimit = 2048
+        cachePrepStmts = true
+        useServerPrepStmts = true
+      }
     }
     
     repositories {
@@ -452,9 +472,18 @@ vinyldns {
       url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
       user = "root"
       password = "pass"
-      pool-max-size = 20
+      maximum-pool-size = 20
+      minimum-idle = 10
       connection-timeout-millis = 1000
-      max-life-time = 600000
+      idle-timeout = 10000
+      max-lifetime = 600000
+      register-mbeans = true
+      my-sql-properties {
+        prepStmtCacheSize = 300
+        prepStmtCacheSqlLimit = 2048
+        cachePrepStmts = true
+        useServerPrepStmts = true
+      }
     }
     
     repositories {
