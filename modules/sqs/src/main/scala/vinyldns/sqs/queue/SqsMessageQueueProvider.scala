@@ -83,7 +83,8 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
     IO {
       client.getQueueUrl(queueName).getQueueUrl
     }.recoverWith {
-      case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)
+      case _: QueueDoesNotExistException if !queueName.endsWith(".fifo") =>
+        IO(client.createQueue(queueName).getQueueUrl)
     }
   }
 }
@@ -93,5 +94,5 @@ object SqsMessageQueueProvider {
       extends Throwable(
         s"Invalid queue name: $queueName. Must be 1-80 alphanumeric, hyphen or underscore characters.")
 
-  private val logger = LoggerFactory.getLogger("SqsMessageQueueProvider")
+  private val logger = LoggerFactory.getLogger(classOf[SqsMessageQueueProvider])
 }
