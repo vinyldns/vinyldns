@@ -15,13 +15,12 @@
  */
 
 package vinyldns.sqs.queue
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.queue.{MessageQueueConfig, MessageQueueLoader}
+import vinyldns.sqs.queue.SqsMessageQueueProvider.InvalidQueueName
 
 class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
-  val sqsConfig: Config = ConfigFactory.load().getConfig("sqs")
-
   val undertest = new SqsMessageQueueProvider()
 
   "load" should {
@@ -65,6 +64,24 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
         .asInstanceOf[SqsMessageQueue]
         .client
         .getQueueUrl("new-queue")
+    }
+
+    "fail with InvalidQueueName if an invalid queue name is given" in {
+      val invalidQueueNameConfig =
+        ConfigFactory.parseString("""
+          |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |
+          |    settings {
+          |      access-key = "x"
+          |      secret-key = "x"
+          |      signing-region = "x"
+          |      service-endpoint = "http://localhost:19005/"
+          |      queue-name = "bad*queue*name"
+          |    }
+          |    """.stripMargin)
+
+      val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](invalidQueueNameConfig)
+      assertThrows[InvalidQueueName](undertest.load(messageConfig).unsafeRunSync())
     }
   }
 
