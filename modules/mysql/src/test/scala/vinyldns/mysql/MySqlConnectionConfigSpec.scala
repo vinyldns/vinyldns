@@ -37,7 +37,8 @@ class MySqlConnectionConfigSpec extends WordSpec with Matchers {
         "cachePrepStmts" -> java.lang.Boolean.TRUE,
         "rewriteBatchedStatements" -> java.lang.Boolean.TRUE,
         "prepStmtCacheSize" -> Integer.valueOf(250),
-        "prepStmtCacheSqlLimit" -> Integer.valueOf(2048))
+        "prepStmtCacheSqlLimit" -> Integer.valueOf(2048)
+      )
 
       val settingsConfig =
         loadConfigF[IO, MySqlConnectionConfig](dataStoreSettings.settings).unsafeRunSync()

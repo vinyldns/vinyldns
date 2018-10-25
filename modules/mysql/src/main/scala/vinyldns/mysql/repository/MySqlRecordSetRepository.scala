@@ -240,27 +240,23 @@ object MySqlRecordSetRepository extends ProtobufConversions {
       extends Throwable(s"Invalid record type value $value")
 
   val unknownRecordType: Int = 100
-  val recordTypeLookup: Map[Int, RecordType] = Map(
-    1 -> RecordType.A,
-    2 -> RecordType.AAAA,
-    3 -> RecordType.CNAME,
-    4 -> RecordType.MX,
-    5 -> RecordType.NS,
-    6 -> RecordType.PTR,
-    7 -> RecordType.SPF,
-    8 -> RecordType.SRV,
-    9 -> RecordType.SSHFP,
-    10 -> RecordType.TXT,
-    unknownRecordType -> RecordType.UNKNOWN
+  val recordTypeLookup: Map[RecordType, Int] = Map(
+    RecordType.A -> 1,
+    RecordType.AAAA -> 2,
+    RecordType.CNAME -> 3,
+    RecordType.MX -> 4,
+    RecordType.NS -> 5,
+    RecordType.PTR -> 6,
+    RecordType.SPF -> 7,
+    RecordType.SRV -> 8,
+    RecordType.SSHFP -> 9,
+    RecordType.TXT -> 10,
+    RecordType.UNKNOWN -> unknownRecordType
   )
-  val inverseRecordTypeLookup: Map[RecordType, Int] = recordTypeLookup.map { case (i, t) => t -> i }
 
   def toRecordSet(rs: WrappedResultSet): RecordSet =
     fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1)))
 
-  def toRecordType(i: Int): Either[InvalidRecordType, RecordType] =
-    recordTypeLookup.get(i).map(t => Right(t)).getOrElse(Left(InvalidRecordType(i)))
-
   def fromRecordType(typ: RecordType): Int =
-    inverseRecordTypeLookup.getOrElse(typ, unknownRecordType)
+    recordTypeLookup.getOrElse(typ, unknownRecordType)
 }
