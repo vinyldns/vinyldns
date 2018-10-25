@@ -17,11 +17,8 @@
 package vinyldns.sqs.queue
 import cats.effect.IO
 import cats.implicits._
-import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
-import com.amazonaws.retry.PredefinedBackoffStrategies.ExponentialBackoffStrategy
-import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.slf4j.LoggerFactory
@@ -56,21 +53,10 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       .getOrElse(Left(InvalidQueueName(queueName)))
   }
 
-  def clientConfiguration: ClientConfiguration =
-    new ClientConfiguration()
-      .withRetryPolicy(
-        new RetryPolicy(
-          RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
-          new ExponentialBackoffStrategy(2, 64), // Base delay and max back-off delay of 64
-          100, // Max error retry count (set to dead-letter count); default is 3
-          true
-        ))
-
   def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] =
     IO {
       AmazonSQSAsyncClientBuilder
         .standard()
-        .withClientConfiguration(clientConfiguration)
         .withEndpointConfiguration(
           new EndpointConfiguration(
             sqsMessageQueueSettings.serviceEndpoint,

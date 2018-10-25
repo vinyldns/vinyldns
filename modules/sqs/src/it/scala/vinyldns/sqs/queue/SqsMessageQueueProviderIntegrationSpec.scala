@@ -83,6 +83,24 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
       val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](invalidQueueNameConfig)
       assertThrows[InvalidQueueName](undertest.load(messageConfig).unsafeRunSync())
     }
+
+    "fail with InvalidQueueName if a FIFO queue is specified" in {
+      val fifoQueueName =
+        ConfigFactory.parseString("""
+          |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |
+          |    settings {
+          |      access-key = "x"
+          |      secret-key = "x"
+          |      signing-region = "x"
+          |      service-endpoint = "http://localhost:19005/"
+          |      queue-name = "queue.fifo"
+          |    }
+          |    """.stripMargin)
+
+      val messageConfig = pureconfig.loadConfigOrThrow[MessageQueueConfig](fifoQueueName)
+      assertThrows[InvalidQueueName](undertest.load(messageConfig).unsafeRunSync())
+    }
   }
 
   "MessageQueueLoader" should {
