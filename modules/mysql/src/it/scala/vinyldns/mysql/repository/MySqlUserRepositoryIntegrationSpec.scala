@@ -19,6 +19,7 @@ package vinyldns.mysql.repository
 import org.scalatest._
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.{LockStatus, User, UserRepository}
+import vinyldns.mysql.TestMySqlInstance
 
 class MySqlUserRepositoryIntegrationSpec
   extends WordSpec

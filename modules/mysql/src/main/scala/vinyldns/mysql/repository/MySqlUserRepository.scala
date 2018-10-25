@@ -17,6 +17,7 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
+import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.crypto.CryptoAlgebra
@@ -63,18 +64,8 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     """
       | SELECT data
       |  FROM user
-      |  WHERE id IN
+      |  WHERE id
       """.stripMargin
-
-  final def buildGetUsersQuery(set: Set[String]): String = {
-    val stringBuilder = new StringBuilder().append("(")
-    set.toList.zipWithIndex.foreach {
-      case (element, count) if count < set.size - 1 => stringBuilder.append(s"'$element', ")
-      case (element, _) => stringBuilder.append(s"'$element'")
-    }
-    stringBuilder.append(")")
-    BASE_GET_USERS + stringBuilder.toString()
-  }
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
@@ -105,7 +96,10 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
           ListUsersResults(List[User](), None)
         else {
           val users = DB.readOnly { implicit s =>
-            SQL(buildGetUsersQuery(userIds))
+            val inClause = " IN (" + userIds.toList.as("?").mkString(",") + ")"
+            val query = BASE_GET_USERS + inClause
+            SQL(query)
+              .bind(userIds.toList: _*)
               .map(toUser(1))
               .list()
               .apply()

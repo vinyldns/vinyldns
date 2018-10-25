@@ -33,7 +33,11 @@ class MySqlDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
   private val implementedRepositories =
-    Set(RepositoryName.zone, RepositoryName.batchChange, RepositoryName.zoneChange, RepositoryName.user)
+    Set(
+      RepositoryName.zone,
+      RepositoryName.batchChange,
+      RepositoryName.zoneChange,
+      RepositoryName.user)
 
   implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
     MySqlConnectionConfig.mySqlPropertiesReader
