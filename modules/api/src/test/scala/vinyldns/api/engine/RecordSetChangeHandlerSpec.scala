@@ -16,10 +16,7 @@
 
 package vinyldns.api.engine
 
-import java.util.concurrent.Executors
-
-import cats.effect.IO
-import fs2.Scheduler
+import cats.effect.{IO, Timer}
 import org.joda.time.DateTime
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
@@ -29,12 +26,12 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused}
-import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetRepository, _}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.{CatsHelpers, Interfaces, VinylDNSTestData}
 import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetRepository, _}
 
 import scala.concurrent.ExecutionContext
 
@@ -46,6 +43,7 @@ class RecordSetChangeHandlerSpec
     with BeforeAndAfterEach
     with CatsHelpers {
 
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   private val mockConn = mock[DnsConnection]
   private val mockRsRepo = mock[RecordSetRepository]
   private val mockChangeRepo = mock[RecordChangeRepository]
@@ -90,8 +88,6 @@ class RecordSetChangeHandlerSpec
     completeCreateAAAA.copy(singleBatchChangeIds = completeCreateAAAASingleChanges.map(_.id))
   private val cs = ChangeSet(rsChange)
 
-  implicit val sched: Scheduler =
-    Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private val underTest = RecordSetChangeHandler(mockRsRepo, mockChangeRepo, batchRepo)

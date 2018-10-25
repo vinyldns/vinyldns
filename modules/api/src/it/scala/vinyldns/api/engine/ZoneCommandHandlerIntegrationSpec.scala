@@ -16,37 +16,35 @@
 
 package vinyldns.api.engine
 
-import java.util.concurrent.Executors
-
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import fs2.{Scheduler, Stream}
+import fs2.Stream
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
-import vinyldns.api.{DynamoDBApiIntegrationSpec, MySqlApiIntegrationSpec, VinylDNSTestData}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
-import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.repository.ApiDataAccessor
-import vinyldns.dynamodb.repository.{
-  DynamoDBRecordChangeRepository,
-  DynamoDBRecordSetRepository,
-  DynamoDBRepositorySettings,
-  DynamoDBZoneChangeRepository
-}
+import vinyldns.api.{DynamoDBApiIntegrationSpec, MySqlApiIntegrationSpec, VinylDNSTestData}
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
   GroupRepository,
   MembershipRepository,
   UserRepository
 }
+import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.dynamodb.repository.{
+  DynamoDBRecordChangeRepository,
+  DynamoDBRecordSetRepository,
+  DynamoDBRepositorySettings,
+  DynamoDBZoneChangeRepository
+}
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 class ZoneCommandHandlerIntegrationSpec
     extends DynamoDBApiIntegrationSpec
@@ -57,8 +55,9 @@ class ZoneCommandHandlerIntegrationSpec
 
   import vinyldns.api.engine.sqs.SqsConverters._
 
-  private implicit val sched: Scheduler =
-    Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   private val zoneName = "vinyldns."
   private val zoneChangeTable = "zoneChangesTest"
@@ -71,12 +70,11 @@ class ZoneCommandHandlerIntegrationSpec
 
   private implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
-  private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private var repositories: ApiDataAccessor = _
   private var sqsConn: SqsConnection = _
   private var str: Stream[IO, Unit] = _
-  private val stopSignal = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+  private val stopSignal = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   // Items to seed in DB
   private val testZone = Zone(

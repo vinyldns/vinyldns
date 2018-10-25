@@ -51,6 +51,9 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
   private val underTest = new MySqlMessageQueue()
 
   private val rsChange: RecordSetChange = pendingCreateAAAA

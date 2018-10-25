@@ -16,6 +16,7 @@
 
 package vinyldns.dynamodb.repository
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import vinyldns.core.domain.membership.{Group, GroupStatus}
@@ -24,6 +25,10 @@ import vinyldns.core.TestMembershipData._
 import scala.concurrent.duration._
 
 class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
   private val GROUP_TABLE = "groups-live"
 
   private val tableConfig = DynamoDBRepositorySettings(s"$GROUP_TABLE", 30, 30)

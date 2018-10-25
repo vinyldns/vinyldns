@@ -20,7 +20,7 @@ import java.util.Base64
 import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data._
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
@@ -47,6 +47,8 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     with Monitored {
 
   import SqsMessageQueue._
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   // Helper for handling SQS requests and responses
   def sqsAsync[A <: AmazonWebServiceRequest, B <: AmazonWebServiceResult[_]](

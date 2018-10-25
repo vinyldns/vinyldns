@@ -66,7 +66,7 @@ trait Monitored {
   */
 object Monitor {
 
-  lazy val monitors: mutable.Map[String, Monitor] = concurrent.TrieMap.empty
+  lazy val monitors: mutable.Map[String, Monitor] = scala.collection.concurrent.TrieMap.empty
 
   def apply(name: String): Monitor = monitors.getOrElseUpdate(name, new Monitor(name))
 

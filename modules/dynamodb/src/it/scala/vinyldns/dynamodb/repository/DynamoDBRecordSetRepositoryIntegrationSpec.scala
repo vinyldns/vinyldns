@@ -18,6 +18,7 @@ package vinyldns.dynamodb.repository
 
 import java.util.UUID
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
@@ -33,6 +34,8 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
     extends DynamoDBIntegrationSpec
     with DynamoDBRecordSetConversions {
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   private val recordSetTable = "record-sets-live"
   private[repository] val recordSetTableName: String = recordSetTable
 

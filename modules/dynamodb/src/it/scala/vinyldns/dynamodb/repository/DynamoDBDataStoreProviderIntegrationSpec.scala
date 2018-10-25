@@ -16,7 +16,7 @@
 
 package vinyldns.dynamodb.repository
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest
 import com.typesafe.config.{Config, ConfigFactory}
@@ -31,6 +31,8 @@ import vinyldns.core.repository.RepositoryName._
 
 class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   val config: Config = ConfigFactory.load()
   val dynamoDBConfig: DataStoreConfig =
     pureconfig.loadConfigOrThrow[DataStoreConfig](config, "dynamodb")

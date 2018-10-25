@@ -17,7 +17,7 @@
 package vinyldns.core.repository
 
 import cats.data._
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import vinyldns.core.crypto.CryptoAlgebra
 import org.slf4j.LoggerFactory
@@ -39,6 +39,7 @@ object DataStoreLoader {
   }
 
   private val logger = LoggerFactory.getLogger("DataStoreLoader")
+  implicit val cs: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def loadAll[A <: DataAccessor](
       configs: List[DataStoreConfig],

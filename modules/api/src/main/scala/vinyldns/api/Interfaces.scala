@@ -20,10 +20,14 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object Interfaces {
+
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   /* Our standard business error type */
   type Result[A] = EitherT[IO, Throwable, A]
@@ -104,7 +108,6 @@ object Interfaces {
       case None => result[A](ifNone)
     }
   }
-
 }
 
 object Result {
