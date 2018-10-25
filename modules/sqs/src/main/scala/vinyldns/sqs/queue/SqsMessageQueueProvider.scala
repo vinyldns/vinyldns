@@ -83,7 +83,8 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
 object SqsMessageQueueProvider {
   final case class InvalidQueueName(queueName: String)
       extends Throwable(
-        s"Invalid queue name: $queueName. Must be 1-80 alphanumeric, hyphen or underscore characters.")
+        s"Invalid queue name: $queueName. Must be 1-80 alphanumeric, hyphen or underscore characters. FIFO queues " +
+        "(queue names ending in \".fifo\") are not supported.")
 
   private val logger = LoggerFactory.getLogger(classOf[SqsMessageQueueProvider])
 }
