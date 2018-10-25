@@ -35,6 +35,7 @@ class MySqlConnectionConfigSpec extends WordSpec with Matchers {
     "include all specified properties" in {
       val configProperties = Map[String, AnyRef](
         "cachePrepStmts" -> java.lang.Boolean.TRUE,
+        "rewriteBatchedStatements" -> java.lang.Boolean.TRUE,
         "prepStmtCacheSize" -> Integer.valueOf(250),
         "prepStmtCacheSqlLimit" -> Integer.valueOf(2048))
 
