@@ -45,10 +45,10 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
 
     /** Queue name restrictions:
         - Up to 80 characters (alphanumeric, hyphens and underscores)
-        - Name of a FIFO queue must end with ".fifo" suffix
+        - FIFO (exactly-once processing) queues are not supported
 
       see: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-limits.html#limits-queues */
-    val validQueueNameRegex: Regex = """^([\w\-]{1,80})$|^([\w\-]{1,75}\.fifo)$""".r
+    val validQueueNameRegex: Regex = """^([\w\-]{1,80})$""".r
 
     validQueueNameRegex
       .findFirstIn(queueName)
@@ -56,24 +56,30 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       .getOrElse(Left(InvalidQueueName(queueName)))
   }
 
+  def clientConfiguration: ClientConfiguration =
+    new ClientConfiguration()
+      .withRetryPolicy(
+        new RetryPolicy(
+          RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
+          new ExponentialBackoffStrategy(2, 64), // Base delay and max back-off delay of 64
+          100, // Max error retry count (set to dead-letter count); default is 3
+          true
+        ))
+
   def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] =
     IO {
       AmazonSQSAsyncClientBuilder
         .standard()
-        .withClientConfiguration(
-          new ClientConfiguration()
-            .withRetryPolicy(new RetryPolicy(
-              RetryPolicy.RetryCondition.NO_RETRY_CONDITION,
-              new ExponentialBackoffStrategy(2, 64), // Base delay and max back-off delay of 64
-              100, // Max error retry count (set to dead-letter count); default is 3
-              true
-            )))
-        .withEndpointConfiguration(new EndpointConfiguration(
-          sqsMessageQueueSettings.serviceEndpoint,
-          sqsMessageQueueSettings.signingRegion))
-        .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(
-          sqsMessageQueueSettings.accessKey,
-          sqsMessageQueueSettings.secretKey)))
+        .withClientConfiguration(clientConfiguration)
+        .withEndpointConfiguration(
+          new EndpointConfiguration(
+            sqsMessageQueueSettings.serviceEndpoint,
+            sqsMessageQueueSettings.signingRegion))
+        .withCredentials(
+          new AWSStaticCredentialsProvider(
+            new BasicAWSCredentials(
+              sqsMessageQueueSettings.accessKey,
+              sqsMessageQueueSettings.secretKey)))
         .build()
     }
 
@@ -83,8 +89,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
     IO {
       client.getQueueUrl(queueName).getQueueUrl
     }.recoverWith {
-      case _: QueueDoesNotExistException if !queueName.endsWith(".fifo") =>
-        IO(client.createQueue(queueName).getQueueUrl)
+      case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)
     }
   }
 }
