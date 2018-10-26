@@ -7,7 +7,7 @@ object Dependencies {
   lazy val pureConfigV = "0.9.2"
   lazy val metricsScalaV = "3.5.9"
   lazy val prometheusV = "0.4.0"
-  lazy val catsEffectV = "0.10.1"
+  lazy val catsEffectV = "1.0.0"
   lazy val configV = "1.3.2"
   lazy val scalikejdbcV = "3.3.1"
   lazy val scalaTestV = "3.0.4"
@@ -16,16 +16,14 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
 
-  lazy val compileDependencies = Seq(
+  lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
     "com.typesafe.akka"         %% "akka-http-spray-json"           % akkaHttpV,
     "de.heikoseeberger"         %% "akka-http-json4s"               % "1.21.0",
     "com.typesafe.akka"         %% "akka-slf4j"                     % akkaV,
     "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
-    "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
     "com.aaronbedra"            %  "orchard"                        % "0.1.1",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
-    "com.amazonaws"             %  "aws-java-sdk-sqs"                % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",
     "com.google.protobuf"       %  "protobuf-java"                  % "2.6.1",
@@ -39,7 +37,7 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "org.slf4j"                 %  "slf4j-api"                      % "1.7.7",
-    "co.fs2"                    %% "fs2-core"                       % "0.10.5",
+    "co.fs2"                    %% "fs2-core"                       % "1.0.0",
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
     "io.prometheus"             % "simpleclient_hotspot"            % prometheusV,
@@ -61,7 +59,8 @@ object Dependencies {
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
     "javax.xml.bind"            %  "jaxb-api"                       % jaxbV % "provided",
     "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
-    "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV
+    "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
+    "ch.qos.logback"            %  "logback-classic"                % "1.0.7"
   )
 
   lazy val dynamoDBDependencies = Seq(
@@ -75,6 +74,11 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
+  )
+
+  lazy val sqsDependencies = Seq(
+    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-sqs"               % awsV withSources()
   )
 
   lazy val commonTestDependencies = Seq(

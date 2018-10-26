@@ -48,6 +48,8 @@ object DynamoDBUserRepository {
   private[repository] val USER_NAME_INDEX_NAME = "username_index"
   private[repository] val ACCESS_KEY_INDEX_NAME = "access_key_index"
   private val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBUserRepository])
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def apply(
       config: DynamoDBRepositorySettings,

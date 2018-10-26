@@ -33,12 +33,13 @@ import vinyldns.api.VinylDNSTestData
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 class SqsConvertersSpec extends WordSpec with Matchers with VinylDNSTestData with MockitoSugar {
 
   import vinyldns.api.engine.sqs.SqsConverters._
 
-  implicit val ec = scala.concurrent.ExecutionContext.global
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   "parseMessageType" should {
     "return the appropriate message type" in {

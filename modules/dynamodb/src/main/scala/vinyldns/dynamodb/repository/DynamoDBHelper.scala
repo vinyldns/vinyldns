@@ -28,7 +28,7 @@ import org.slf4j.Logger
 import vinyldns.core.VinylDNSMetrics
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 private class RetryStateHolder(var retries: Int = 10, var backoff: FiniteDuration = 1.millis)
@@ -48,6 +48,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
   private[repository] val retryCount: Int = 10
   private val retryBackoff: FiniteDuration = 1.millis
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
 
   private[repository] val provisionedThroughputMeter =
     VinylDNSMetrics.metricsRegistry.meter("dynamo.provisionedThroughput")

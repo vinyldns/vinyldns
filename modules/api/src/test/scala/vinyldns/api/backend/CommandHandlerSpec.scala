@@ -15,15 +15,13 @@
  */
 
 package vinyldns.api.backend
-import java.util.concurrent.Executors
-
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import cats.scalatest.EitherMatchers
 import fs2._
 import org.mockito
 import org.mockito.Matchers._
-import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito._
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
@@ -31,11 +29,11 @@ import vinyldns.api.backend.CommandHandler.{DeleteMessage, RetryMessage}
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType, ZoneCommand, _}
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class CommandHandlerSpec
     extends WordSpec
@@ -52,8 +50,9 @@ class CommandHandlerSpec
   }
 
   private val mq = mock[MessageQueue]
-  implicit val sched: Scheduler =
-    Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   private val messages = for { i <- 0 to 10 } yield
     TestCommandMessage(pendingCreateAAAA, i.toString)
   private val count = MessageCount(10).right.value
@@ -249,7 +248,7 @@ class CommandHandlerSpec
 
   "main flow" should {
     "process successfully" in {
-      val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+      val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
       val cmd = TestCommandMessage(pendingCreateAAAA, "foo")
 
       // stage pulling from the message queue
@@ -287,18 +286,17 @@ class CommandHandlerSpec
       verify(mq).remove(cmd)
     }
     "continue processing on unexpected failure" in {
-      val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+      val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
       val cmd = TestCommandMessage(pendingCreateAAAA, "foo")
 
-      // stage pulling from the message queue, make sure we always return our command
-      doReturn(IO.pure(List(cmd)))
+      // stage pulling from the message queue, return an error then our command
+      doReturn(IO.raiseError(new RuntimeException("fail")))
         .doReturn(IO.pure(List(cmd)))
         .when(mq)
         .receive(count)
 
-      // stage our record change processing failure, and then a success
-      doReturn(IO.raiseError(new RuntimeException("fail")))
-        .doReturn(IO.pure(cmd.command))
+      // stage our record change processing our command
+      doReturn(IO.pure(cmd.command))
         .when(mockRecordChangeProcessor)
         .apply(any[DnsConnection], any[RecordSetChange])
 
@@ -325,9 +323,9 @@ class CommandHandlerSpec
       // verify our interactions
       verify(mq, atLeastOnce()).receive(count)
 
-      // verify that our record was attempted two times
-      verify(mockRecordChangeProcessor, times(2))
-        .apply(any[DnsConnection], mockito.Matchers.eq(pendingCreateAAAA))
+      // verify that our message queue was polled twice
+      verify(mq, times(2))
+        .receive(count)
       verify(mq).remove(cmd)
     }
   }
@@ -335,7 +333,7 @@ class CommandHandlerSpec
   "run" should {
     "process a zone update change through the flow" in {
       // testing the run method, which does nothing more than simplify construction of the main flow
-      val stop = fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+      val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
       val cmd = TestCommandMessage(zoneUpdate, "foo")
 
       val zoneRepo = mock[ZoneRepository]

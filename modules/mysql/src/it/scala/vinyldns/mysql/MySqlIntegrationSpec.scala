@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package vinyldns.mysql.repository
+package vinyldns.mysql
 
 import com.typesafe.config.{Config, ConfigFactory}
+import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
+import vinyldns.mysql.repository.MySqlDataStoreProvider
 
 trait MySqlIntegrationSpec {
   def mysqlConfig: Config
 
   lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
 
-  lazy val instance: DataStore =
-    new MySqlDataStoreProvider().load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val provider =  new MySqlDataStoreProvider()
+
+  lazy val instance: DataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
 
   lazy val batchChangeRepository: BatchChangeRepository =
     instance.get[BatchChangeRepository](RepositoryName.batchChange).get
@@ -36,6 +38,8 @@ trait MySqlIntegrationSpec {
     instance.get[ZoneRepository](RepositoryName.zone).get
   lazy val zoneChangeRepository: ZoneChangeRepository =
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
+
+  def shutdown(): Unit = provider.shutdown().unsafeRunSync()
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {

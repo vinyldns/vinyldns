@@ -16,7 +16,7 @@
 
 package vinyldns.api.engine
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
@@ -29,6 +29,8 @@ import vinyldns.core.route.Monitored
 object ZoneSyncHandler extends DnsConversions with Monitored {
 
   private implicit val logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def apply(
       recordSetRepository: RecordSetRepository,

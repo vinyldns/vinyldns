@@ -20,7 +20,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives
 import akka.util.Timeout
 import cats.effect.IO
-import fs2.async.mutable.Signal
+import fs2.concurrent.SignallingRef
 import vinyldns.api.VinylDNSConfig
 
 import scala.concurrent.duration._
@@ -43,7 +43,7 @@ trait StatusRoute extends Directives {
 
   implicit val timeout = Timeout(10.seconds)
 
-  def processingDisabled: Signal[IO, Boolean]
+  def processingDisabled: SignallingRef[IO, Boolean]
 
   val statusRoute =
     (get & path("status")) {

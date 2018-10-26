@@ -23,13 +23,13 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest._
 import scalikejdbc._
-import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId}
+import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.queue.MessageType.{InvalidMessageType, RecordChangeMessageType, ZoneChangeMessageType}
 import vinyldns.mysql.queue.MySqlMessageQueue.{InvalidMessageTimeout, MessageAttemptsExceeded}
-import vinyldns.mysql.repository.TestMySqlInstance
 
 import scala.concurrent.duration._
 
@@ -47,9 +47,12 @@ final case class InvalidMessage(command: ZoneCommand) extends CommandMessage {
 }
 
 class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
-  with BeforeAndAfterEach with EitherMatchers with EitherValues with BeforeAndAfterAll with ProtobufConversions {
+  with BeforeAndAfterEach with EitherMatchers with BeforeAndAfterAll with EitherValues with ProtobufConversions {
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   private val underTest = new MySqlMessageQueue()
 
@@ -223,7 +226,8 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
     "increment the attempt, timestamp, and in flight status" in {
       val initialAttempts = 0
       val initialTs = DateTime.now.minusSeconds(20)
-      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100, initialAttempts)
+      insert(rsChange.id, RecordChangeMessageType.value, false, rsChangeBytes, initialTs, initialTs, 100,
+        initialAttempts)
 
       val oldMsg = findMessage(rsChange.id).getOrElse(fail)
       underTest.receive(MessageCount(1).right.value).unsafeRunSync()

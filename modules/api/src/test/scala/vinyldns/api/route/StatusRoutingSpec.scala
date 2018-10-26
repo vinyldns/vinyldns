@@ -20,8 +20,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import cats.effect.IO
-import fs2.async.mutable.Signal
+import cats.effect.{ContextShift, IO}
+import fs2.concurrent.SignallingRef
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 
@@ -38,8 +38,11 @@ class StatusRoutingSpec
 
   def actorRefFactory: ActorSystem = system
 
-  val processingDisabled: Signal[IO, Boolean] =
-    fs2.async.signalOf[IO, Boolean](false).unsafeRunSync()
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+  val processingDisabled: SignallingRef[IO, Boolean] =
+    fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
 
   "GET /status" should {
     "return the current status of true" in {

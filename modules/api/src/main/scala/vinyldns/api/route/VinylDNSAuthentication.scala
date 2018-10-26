@@ -19,7 +19,6 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.RequestContext
 import cats.effect._
-import cats.syntax.all._
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.core.crypto.CryptoAlgebra

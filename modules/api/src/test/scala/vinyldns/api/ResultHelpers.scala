@@ -23,13 +23,16 @@ import cats.implicits._
 import cats.scalatest.ValidatedMatchers
 import org.scalatest.{Matchers, PropSpec}
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.reflect.ClassTag
 
 final case class TimeoutException(message: String) extends Throwable(message)
 
 trait ResultHelpers {
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def await[T](f: => IO[_], duration: FiniteDuration = 1.second): T =
     awaitResultOf[T](f.map(_.asInstanceOf[T]).attempt, duration).toOption.get

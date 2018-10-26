@@ -18,6 +18,7 @@ package vinyldns.mysql.repository
 
 import java.util.UUID
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest._
@@ -27,6 +28,7 @@ import vinyldns.core.domain.zone.ZoneChangeStatus.ZoneChangeStatus
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestZoneData.testConnection
+import vinyldns.mysql.TestMySqlInstance
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -39,6 +41,8 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     with Inspectors
     with OptionValues {
 
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
   private var repo: ZoneChangeRepository = _
 
   object TestData {

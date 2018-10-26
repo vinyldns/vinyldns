@@ -19,7 +19,8 @@ package vinyldns.api
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
+import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
@@ -46,6 +47,7 @@ object Boot extends App {
   private implicit val system: ActorSystem = VinylDNSConfig.system
   private implicit val materializer: Materializer = ActorMaterializer()
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+  private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
 
   def vinyldnsBanner(): IO[String] = IO {
     val stream = getClass.getResourceAsStream("/vinyldns-ascii.txt")
@@ -62,19 +64,21 @@ object Boot extends App {
       banner <- vinyldnsBanner()
       crypto <- IO(Crypto.instance) // load crypto
       repoConfigs <- VinylDNSConfig.dataStoreConfigs
-      repositories <- DataStoreLoader
+      loaderResponse <- DataStoreLoader
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
+      repositories = loaderResponse.accessor
       _ <- TestDataLoader.loadTestData(repositories.userRepository)
       sqsConfig <- IO(VinylDNSConfig.sqsConfig)
       sqsConnection <- IO(SqsConnection(sqsConfig))
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))
-      processingSignal <- fs2.async.signalOf[IO, Boolean](processingDisabled)
+      processingSignal <- SignallingRef[IO, Boolean](processingDisabled)
       restHost <- IO(VinylDNSConfig.restConfig.getString("host"))
       restPort <- IO(VinylDNSConfig.restConfig.getInt("port"))
       batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
-      _ <- fs2.async.start(
-        ProductionZoneCommandHandler.run(sqsConnection, processingSignal, repositories, sqsConfig))
+      _ <- ProductionZoneCommandHandler
+        .run(sqsConnection, processingSignal, repositories, sqsConfig)
+        .start
     } yield {
       val zoneValidations = new ZoneValidations(syncDelay)
       val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
@@ -117,6 +121,9 @@ object Boot extends App {
 
         // shutdown sqs gracefully
         sqsConnection.shutdown()
+
+        //shutdown data store provider
+        loaderResponse.shutdown()
 
         // exit JVM when ActorSystem has been terminated
         system.registerOnTermination(System.exit(0))

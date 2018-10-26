@@ -17,7 +17,7 @@
 package vinyldns.dynamodb.repository
 
 import cats.implicits._
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import org.slf4j.LoggerFactory
 import vinyldns.core.repository._
 import pureconfig.module.catseffect.loadConfigF
@@ -33,6 +33,8 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
   private val logger = LoggerFactory.getLogger("DynamoDBDataStoreProvider")
   private val implementedRepositories =
     Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange, userChange)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
     for {
@@ -114,4 +116,5 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     ).parMapN { DataStore.apply }
   }
 
+  def shutdown(): IO[Unit] = IO.unit
 }

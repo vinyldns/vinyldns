@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package vinyldns.mysql.repository
+package vinyldns.sqs.queue
 
-case class MySqlDataStoreSettings(
-    name: String,
-    driver: String,
-    migrationUrl: String,
-    url: String,
-    user: String,
-    password: String,
-    poolMaxSize: Int,
-    connectionTimeoutMillis: Long,
-    maxLifeTime: Long,
-    migrationSchemaTable: Option[String])
+case class SqsMessageQueueSettings(
+    accessKey: String,
+    secretKey: String,
+    serviceEndpoint: String,
+    signingRegion: String,
+    queueName: String)
