@@ -236,9 +236,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 }
 
 object MySqlRecordSetRepository extends ProtobufConversions {
-  final case class InvalidRecordType(value: Int)
-      extends Throwable(s"Invalid record type value $value")
-
   val unknownRecordType: Int = 100
   val recordTypeLookup: Map[RecordType, Int] = Map(
     RecordType.A -> 1,
