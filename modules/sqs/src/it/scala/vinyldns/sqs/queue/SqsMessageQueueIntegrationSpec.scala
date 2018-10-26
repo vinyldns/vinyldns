@@ -21,13 +21,14 @@ import java.util.concurrent.TimeUnit.SECONDS
 import cats.data.NonEmptyList
 import cats.scalatest.EitherMatchers
 import com.amazonaws.services.sqs.model._
+import com.typesafe.config.ConfigFactory
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.queue.{MessageCount, MessageId}
+import vinyldns.core.queue.{MessageCount, MessageId, MessageQueueConfig}
 import vinyldns.sqs.queue.SqsMessageQueue.InvalidMessageTimeout
 
 import scala.concurrent.duration.FiniteDuration
@@ -36,12 +37,12 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
   with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach with Matchers with EitherMatchers with EitherValues
   with ProtobufConversions {
 
-  private val queue: SqsMessageQueue = SqsMessageQueue()
+  private val sqsMessageQueueSettings: MessageQueueConfig =
+    pureconfig.loadConfigOrThrow[MessageQueueConfig](ConfigFactory.load().getConfig("sqs"))
 
-  // Re-create queue before tests
-  override protected def beforeAll(): Unit = {
-    queue.client.createQueue("sqs")
-  }
+  private val provider = new SqsMessageQueueProvider()
+  private val queue: SqsMessageQueue =
+    provider.load(sqsMessageQueueSettings).map(_.asInstanceOf[SqsMessageQueue]).unsafeRunSync()
 
   override protected def afterEach(): Unit = {
     // Remove items from queue after each test
@@ -185,7 +186,6 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     "throw an error if there are issues parsing the message" in {
       val message = new Message()
 
-      val queue = SqsMessageQueue()
       assertThrows[AmazonSQSException] {
         queue.parse(message).unsafeRunSync()
       }
