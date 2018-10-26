@@ -14,7 +14,7 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <root level="ERROR">
+    <root level="OFF">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>
