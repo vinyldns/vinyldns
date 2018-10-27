@@ -48,6 +48,8 @@ object DynamoDBUserRepository {
   private[repository] val USER_NAME_INDEX_NAME = "username_index"
   private[repository] val ACCESS_KEY_INDEX_NAME = "access_key_index"
   private val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBUserRepository])
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def apply(
       config: DynamoDBRepositorySettings,
@@ -189,8 +191,8 @@ class DynamoDBUserRepository private[repository] (
 
   def getUsers(
       userIds: Set[String],
-      exclusiveStartKey: Option[String],
-      pageSize: Option[Int]): IO[ListUsersResults] = {
+      startFrom: Option[String],
+      maxItems: Option[Int]): IO[ListUsersResults] = {
 
     def toBatchGetItemRequest(userIds: List[String]): BatchGetItemRequest = {
       val allKeys = new util.ArrayList[util.Map[String, AttributeValue]]()
@@ -224,12 +226,12 @@ class DynamoDBUserRepository private[repository] (
 
       val sortedUserIds = userIds.toList.sorted
 
-      val filtered = exclusiveStartKey match {
+      val filtered = startFrom match {
         case None => sortedUserIds
         case Some(startId) => sortedUserIds.filter(startId < _)
       }
 
-      val page = pageSize match {
+      val page = maxItems match {
         case None => filtered
         case Some(size) => filtered.take(size)
       }

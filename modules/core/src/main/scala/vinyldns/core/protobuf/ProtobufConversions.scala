@@ -17,6 +17,7 @@
 package vinyldns.core.protobuf
 
 import org.joda.time.DateTime
+import vinyldns.core.domain.membership.{LockStatus, User}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -331,6 +332,38 @@ trait ProtobufConversions {
       .setZone(toPB(zoneChange.zone))
 
     zoneChange.systemMessage.map(builder.setSystemMessage)
+
+    builder.build()
+  }
+
+  def fromPB(data: VinylDNSProto.User): User =
+    User(
+      data.getUserName,
+      data.getAccessKey,
+      data.getSecretKey,
+      if (data.hasFirstName) Some(data.getFirstName) else None,
+      if (data.hasLastName) Some(data.getLastName) else None,
+      if (data.hasEmail) Some(data.getEmail) else None,
+      new DateTime(data.getCreated),
+      data.getId,
+      data.getIsSuper,
+      LockStatus.withName(data.getLockStatus)
+    )
+
+  def toPB(user: User): VinylDNSProto.User = {
+    val builder = VinylDNSProto.User
+      .newBuilder()
+      .setUserName(user.userName)
+      .setAccessKey(user.accessKey)
+      .setSecretKey(user.secretKey)
+      .setCreated(user.created.getMillis)
+      .setId(user.id)
+      .setIsSuper(user.isSuper)
+      .setLockStatus(user.lockStatus.toString)
+
+    user.firstName.foreach(fn => builder.setFirstName(fn))
+    user.lastName.foreach(ln => builder.setLastName(ln))
+    user.email.foreach(e => builder.setEmail(e))
 
     builder.build()
   }

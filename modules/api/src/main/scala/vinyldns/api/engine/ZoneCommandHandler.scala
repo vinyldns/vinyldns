@@ -16,23 +16,23 @@
 
 package vinyldns.api.engine
 
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.TimeUnit
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO, Timer}
 import com.amazonaws.services.sqs.model._
 import com.typesafe.config.Config
 import fs2._
-import fs2.async.mutable.Signal
+import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.domain.record.RecordSetChange
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 object ZoneCommandHandler {
@@ -40,6 +40,8 @@ object ZoneCommandHandler {
   import vinyldns.api.engine.sqs.SqsConverters._
 
   private val logger = LoggerFactory.getLogger("vinyldns.api.sqs.ZoneCommandHandler")
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   /* The outcome of handling the message */
   sealed trait MessageOutcome {
@@ -66,7 +68,7 @@ object ZoneCommandHandler {
       dataAccessor: ApiDataAccessor,
       sqsConnection: SqsConnection,
       pollingInterval: FiniteDuration,
-      pauseSignal: Signal[IO, Boolean])(implicit scheduler: Scheduler): Stream[IO, Unit] = {
+      pauseSignal: SignallingRef[IO, Boolean])(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
     // Polls SQS for message batches, connected to the signal which is toggled in the status endpoint
     val sqsMessageSource = startPolling(sqsConnection, pollingInterval).pauseWhen(pauseSignal)
@@ -95,7 +97,7 @@ object ZoneCommandHandler {
     def flow(): Stream[IO, Unit] =
       sqsMessageSource
         .through(genMessageStreams)
-        .join(4)
+        .parJoin(4)
         .through(genChangeRequests)
         .observe(increaseTimeoutForZoneSyncs)
         .through(changeRequestProcessor)
@@ -112,12 +114,12 @@ object ZoneCommandHandler {
 
   /* Polls SQS for messages */
   def startPolling(sqsConnection: SqsConnection, pollingInterval: FiniteDuration)(
-      implicit scheduler: Scheduler): Stream[IO, ReceiveMessageResult] = {
+      implicit timer: Timer[IO]): Stream[IO, ReceiveMessageResult] = {
 
     def pollingStream(): Stream[IO, ReceiveMessageResult] =
-      scheduler
+      Stream
         .fixedDelay[IO](pollingInterval)
-        .evalMap[ReceiveMessageResult] { _ =>
+        .evalMap[IO, ReceiveMessageResult] { _ =>
           sqsConnection.receiveMessageBatch(
             new ReceiveMessageRequest()
               .withMaxNumberOfMessages(10)
@@ -135,7 +137,7 @@ object ZoneCommandHandler {
 
   /* We should only change visibility timeout for zone syncs, which could take minutes */
   def changeVisibilityTimeoutForZoneSyncs(sqsConnection: SqsConnection): Sink[IO, ChangeRequest] =
-    _.evalMap[Any] {
+    _.evalMap[IO, Any] {
       case ZoneSyncRequest(sync, msg) =>
         logger.info(
           s"Updating visibility timeout for zone sync; changeId=${sync.id} messageId=${msg.getMessageId}")
@@ -178,7 +180,7 @@ object ZoneCommandHandler {
       zoneChangeProcessor: ZoneChange => IO[ZoneChange],
       recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange]): Pipe[IO, ChangeRequest, MessageOutcome] =
-    _.evalMap[MessageOutcome] {
+    _.evalMap[IO, MessageOutcome] {
       case zsr @ ZoneSyncRequest(_, _) =>
         val doSync =
           for {
@@ -219,7 +221,7 @@ object ZoneCommandHandler {
 
   /* On success, delete the message; on failure, do nothing and allow it to retry */
   def messageSink(sqsConnection: SqsConnection): Sink[IO, MessageOutcome] =
-    _.evalMap[Any] {
+    _.evalMap[IO, Any] {
       case DeleteMessage(msg) =>
         sqsConnection.deleteMessage(
           new DeleteMessageRequest().withReceiptHandle(msg.getReceiptHandle))
@@ -237,11 +239,10 @@ object ProductionZoneCommandHandler {
 
   def run(
       sqsConnection: SqsConnection,
-      processingSignal: Signal[IO, Boolean],
+      processingSignal: SignallingRef[IO, Boolean],
       dataAccessor: ApiDataAccessor,
       config: Config): IO[Unit] = {
-    implicit val scheduler: Scheduler =
-      Scheduler.fromScheduledExecutorService(Executors.newScheduledThreadPool(2))
+    implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
 
     for {
       pollingInterval <- IO.pure(

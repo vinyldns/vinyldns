@@ -37,6 +37,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   private final val INITIAL_RETRY_DELAY = 1.millis
   final val MAX_RETRIES = 10
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   /**
     * use INSERT INTO ON DUPLICATE KEY UPDATE for the zone, which will update the values if the zone already exists

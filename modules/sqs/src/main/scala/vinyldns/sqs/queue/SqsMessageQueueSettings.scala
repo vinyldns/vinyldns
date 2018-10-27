@@ -14,24 +14,11 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.membership
+package vinyldns.sqs.queue
 
-import cats.effect._
-import vinyldns.core.repository.Repository
-
-trait UserRepository extends Repository {
-
-  /*Looks up a user.  If the user is not found, or if the user's status is Deleted, will return None */
-  def getUser(userId: String): IO[Option[User]]
-
-  def getUsers(
-      userIds: Set[String],
-      startFrom: Option[String],
-      maxItems: Option[Int]): IO[ListUsersResults]
-
-  def getUserByAccessKey(accessKey: String): IO[Option[User]]
-
-  def getUserByName(userName: String): IO[Option[User]]
-
-  def save(user: User): IO[User]
-}
+case class SqsMessageQueueSettings(
+    accessKey: String,
+    secretKey: String,
+    serviceEndpoint: String,
+    signingRegion: String,
+    queueName: String)
