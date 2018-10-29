@@ -37,6 +37,7 @@ object MySqlMessageQueue {
   final case class MessageAttemptsExceeded(msg: String) extends Throwable(msg)
   final case class InvalidMessageTimeout(timeout: Int)
       extends Throwable(s"Invalid message timeout $timeout")
+  final val QUEUE_CONNECTION_NAME = 'queue
 }
 
 class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConversions {
@@ -178,7 +179,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
         // Need a max count so the user doesn't try to take 1MM messages, 10 is sufficient
         val limit = Math.min(10, count.value)
 
-        DB.localTx { implicit s =>
+        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
           // get unclaimed messages, note these could fail during retrieval
           val claimed = fetchUnclaimed(limit)
 
@@ -205,7 +206,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
   def requeue(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.requeue") {
       IO {
-        DB.localTx { implicit s =>
+        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
           REQUEUE_MESSAGE.bind(message.id.value).update().apply()
         }
       }
@@ -214,7 +215,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
   def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.remove") {
       IO {
-        DB.localTx { implicit s =>
+        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
           deleteMessages(List(message.id))
         }
       }.as(())
@@ -223,7 +224,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.JDBC.changeMessageTimeout") {
       IO {
-        DB.localTx { implicit s =>
+        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
           CHANGE_TIMEOUT.bind(duration.toSeconds, message.id.value).update().apply()
         }
       }.as(())
@@ -232,7 +233,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
   def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
     monitor("queue.JDBC.sendBatch") {
       IO {
-        DB.localTx { implicit s =>
+        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
           // Note, these really cannot fail, they all succeed or all fail
           // Other note, not doing a size check on the messages, but we should chunk these,
           // assuming a small number for right now which is not ideal
@@ -245,7 +246,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitor("queue.JDBC.send") {
       IO {
-        DB.localTx { implicit s =>
+        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
           INSERT_MESSAGE.bindByName(insertParams(command): _*).update().apply()
         }
       }

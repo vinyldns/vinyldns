@@ -40,7 +40,8 @@ class ZoneServiceSpec
     with VinylDNSTestData
     with ResultHelpers
     with BeforeAndAfterEach
-    with GroupTestData {
+    with GroupTestData
+    with EitherValues {
 
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupRepo = mock[GroupRepository]
@@ -256,8 +257,8 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
 
       val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), abcGroup.name)
-      val result: ZoneInfo = rightResultOf(underTest.getZone(abcZone.id, abcAuth).value)
-      result shouldBe expectedZoneInfo
+      val result = underTest.getZone(abcZone.id, abcAuth).value.unsafeRunSync()
+      result.right.value shouldBe expectedZoneInfo
     }
 
     "filter out ACL rules that have no matching group or user" in {
