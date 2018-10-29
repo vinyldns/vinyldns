@@ -16,14 +16,18 @@ services:
   - docker
 
 cache:
+  pip: true
+  bundler: true
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    - node_modules
   timeout: 900
 
-install:
-  - rvm use 2.2.8 --install --fuzzy
+before_install:
   - gem update --system
+
+install:
   - gem install sass jekyll:3.2.1
 
 before_cache:
