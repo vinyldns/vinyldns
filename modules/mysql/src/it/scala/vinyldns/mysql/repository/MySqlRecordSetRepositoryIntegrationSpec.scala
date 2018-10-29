@@ -27,6 +27,7 @@ import vinyldns.mysql.TestMySqlInstance
 class MySqlRecordSetRepositoryIntegrationSpec
   extends WordSpec
     with BeforeAndAfterEach
+    with BeforeAndAfterAll
     with Matchers
     with Inspectors
     with OptionValues with EitherMatchers {
@@ -35,7 +36,11 @@ class MySqlRecordSetRepositoryIntegrationSpec
   import vinyldns.core.TestZoneData._
   private val repo = TestMySqlInstance.recordSetRepository.asInstanceOf[MySqlRecordSetRepository]
 
-  override protected def beforeEach(): Unit =
+  override protected def beforeEach(): Unit = clear()
+
+  override protected def afterAll(): Unit = clear()
+
+  def clear(): Unit =
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM recordset")
     }
