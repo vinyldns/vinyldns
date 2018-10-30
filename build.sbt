@@ -297,8 +297,7 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(libraryDependencies ++= mysqlDependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
-    organization := "io.vinyldns",
-    fork in IntegrationTest := true,
+    organization := "io.vinyldns"
   ).dependsOn(core % "compile->compile;test->test")
   .settings(name := "mysql")
 

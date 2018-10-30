@@ -37,40 +37,33 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val FIND_BY_ZONEID_NAME =
     sql"""
-         |SELECT data
-         |  FROM recordset
-         | WHERE zone_id = {zoneId} AND name = {name}
+      |SELECT data
+      |  FROM recordset
+      | WHERE zone_id = {zoneId} AND name = {name}
     """.stripMargin
 
   private val FIND_BY_ID =
     sql"""
-         |SELECT data
-         |  FROM recordset
-         | WHERE id = {id}
+      |SELECT data
+      |  FROM recordset
+      | WHERE id = {id}
     """.stripMargin
 
   private val COUNT_RECORDSETS_IN_ZONE =
     sql"""
-         |SELECT count(*)
-         |  FROM recordset
-         | WHERE zone_id = {zoneId}
+      |SELECT count(*)
+      |  FROM recordset
+      | WHERE zone_id = {zoneId}
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, fqdn, type, data) VALUES (?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data) VALUES (?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, fqdn = ?, type = ?, data = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
-
-  private val FIND_BY_FQDN =
-    """
-         |SELECT data
-         |  FROM recordset
-         | WHERE fqdn
-    """.stripMargin
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
@@ -81,7 +74,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             i.recordSet.id,
             i.recordSet.zoneId,
             i.recordSet.name,
-            FQDN(i.recordSet.name, i.zone.name).value,
             fromRecordType(i.recordSet.typ),
             toPB(i.recordSet).toByteArray
           )
@@ -92,7 +84,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           Seq[Any](
             u.zoneId,
             u.recordSet.name,
-            FQDN(u.recordSet.name, u.zone.name).value,
             fromRecordType(u.recordSet.typ),
             toPB(u.recordSet).toByteArray,
             u.recordSet.id)
@@ -222,38 +213,26 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }
     }
-
-  def getRecordSetsByFQDN(fqdns: List[FQDN]): IO[List[RecordSet]] =
-    monitor("repo.RecordSet.getRecordSetsByFQDN") {
-      IO {
-        DB.readOnly { implicit s =>
-          val inClause = " IN (" + fqdns.as("?").mkString(",") + ")"
-          val query = FIND_BY_FQDN + inClause
-          SQL(query).bind(fqdns.map(_.value): _*).map(toRecordSet).list().apply()
-        }
-      }
-    }
 }
 
 object MySqlRecordSetRepository extends ProtobufConversions {
   val unknownRecordType: Int = 100
-  val recordTypeLookup: Map[RecordType, Int] = Map(
-    RecordType.A -> 1,
-    RecordType.AAAA -> 2,
-    RecordType.CNAME -> 3,
-    RecordType.MX -> 4,
-    RecordType.NS -> 5,
-    RecordType.PTR -> 6,
-    RecordType.SPF -> 7,
-    RecordType.SRV -> 8,
-    RecordType.SSHFP -> 9,
-    RecordType.TXT -> 10,
-    RecordType.UNKNOWN -> unknownRecordType
-  )
 
   def toRecordSet(rs: WrappedResultSet): RecordSet =
     fromPB(VinylDNSProto.RecordSet.parseFrom(rs.bytes(1)))
 
   def fromRecordType(typ: RecordType): Int =
-    recordTypeLookup.getOrElse(typ, unknownRecordType)
+    typ match {
+      case RecordType.A => 1
+      case RecordType.AAAA => 2
+      case RecordType.CNAME => 3
+      case RecordType.MX => 4
+      case RecordType.NS => 5
+      case RecordType.PTR => 6
+      case RecordType.SPF => 7
+      case RecordType.SRV => 8
+      case RecordType.SSHFP => 9
+      case RecordType.TXT => 10
+      case RecordType.UNKNOWN => unknownRecordType
+    }
 }

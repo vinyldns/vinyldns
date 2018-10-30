@@ -20,7 +20,7 @@ import java.util.UUID
 import cats.scalatest.EitherMatchers
 import org.scalatest._
 import scalikejdbc.DB
-import vinyldns.core.domain.record.{ChangeSet, FQDN, RecordSetChange}
+import vinyldns.core.domain.record.{ChangeSet, RecordSetChange}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 
@@ -29,8 +29,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with Matchers
-    with Inspectors
-    with OptionValues with EitherMatchers {
+    with EitherMatchers {
 
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
@@ -230,23 +229,6 @@ class MySqlRecordSetRepositoryIntegrationSpec
       insert(okZone, 1).map(_.recordSet)
       val results = repo.getRecordSetsByName(okZone.id, "not-there").unsafeRunSync()
       results shouldBe empty
-    }
-  }
-  "get by fqdn" should {
-    "return all record sets matching an fqdn" in {
-      val newRecordSets = List(
-        aaaa.copy(name = "foo"),
-        rsOk.copy(name = "foo"),
-        aaaa.copy(name = "bar"),
-        rsOk.copy(name = "bar")
-      )
-      val changes = newRecordSets.map(makeTestAddChange(_, okZone))
-      val expected = changes.map(_.recordSet)
-      repo.apply(ChangeSet(changes)).unsafeRunSync()
-
-      val fqdns = List(FQDN("foo", okZone.name), FQDN("bar", okZone.name))
-      val results = repo.getRecordSetsByFQDN(fqdns).unsafeRunSync()
-      results should contain theSameElementsAs expected
     }
   }
 }

@@ -73,8 +73,7 @@ object Dependencies {
     "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.3.0",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
-    "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
-    "ch.qos.logback"            %  "logback-classic"                % "1.0.7"
+    "com.zaxxer"                %  "HikariCP"                       % "3.2.0"
   )
 
   lazy val sqsDependencies = Seq(
