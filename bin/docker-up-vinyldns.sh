@@ -3,9 +3,30 @@
 # Starts up the api, portal, and dependent services via
 # docker-compose. The api will be available on localhost:9000 and the
 # portal will be on localhost:9001
+#
+# Options:
+#   -t, --timeout seconds: overwrite default timeout, default of 60
 ######################################################################
 
 DIR=$( cd $(dirname $0) ; pwd -P )
+TIMEOUT=60
+
+function usage {
+    printf "usage: docker-up-vinyldns.sh [OPTIONS]\n\n"
+    printf "starts up a local VinylDNS installation using docker compose\n\n"
+    printf "options:\n"
+    printf "\t-t, --timeout seconds: overwrite the timeout used when waiting for components to startup, default of 60\n"
+}
+
+while [ "$1" != "" ]; do
+    case "$1" in
+        -t | --timeout ) TIMEOUT="$2";  shift;;
+        * ) usage; exit;;
+    esac
+    shift
+done
+
+echo "timeout set to $TIMEOUT"
 
 set -a # Required in order to source docker/.env
 # Source customizable env files
@@ -17,7 +38,7 @@ docker-compose -f "$DIR"/../docker/docker-compose-build.yml up -d
 
 echo "Waiting for API to be ready at ${VINYLDNS_API_URL} ..."
 DATA=""
-RETRY=40
+RETRY="$TIMEOUT"
 while [ "$RETRY" -gt 0 ]
 do
     DATA=$(curl -I -s "${VINYLDNS_API_URL}/ping" -o /dev/null -w "%{http_code}")
@@ -41,7 +62,7 @@ done
 
 echo "Waiting for portal to be ready at ${VINYLDNS_PORTAL_URL} ..."
 DATA=""
-RETRY=40
+RETRY="$TIMEOUT"
 while [ "$RETRY" -gt 0 ]
 do
     DATA=$(curl -I -s "${VINYLDNS_PORTAL_URL}" -o /dev/null -w "%{http_code}")
