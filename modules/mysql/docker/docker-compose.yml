@@ -7,3 +7,5 @@ services:
     - MYSQL_ROOT_HOST=% # this is required as mysql is currently locked down to localhost
     ports:
     - "19004:3306"
+    volumes:
+    - ./conf:/etc/mysql/conf.d

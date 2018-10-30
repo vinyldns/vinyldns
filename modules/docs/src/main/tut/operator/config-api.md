@@ -244,6 +244,7 @@ vinyldns {
         prepStmtCacheSqlLimit = 2048
         cachePrepStmts = true
         useServerPrepStmts = true
+        rewriteBatchedStatements = true
       }
     }
     
@@ -483,6 +484,7 @@ vinyldns {
         prepStmtCacheSqlLimit = 2048
         cachePrepStmts = true
         useServerPrepStmts = true
+        rewriteBatchedStatements = true
       }
     }
     

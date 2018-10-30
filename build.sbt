@@ -55,7 +55,6 @@ lazy val sharedSettings = Seq(
   scalacOptions in (Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
   wartremoverErrors ++= Seq(
-    Wart.ArrayEquals,
     Wart.EitherProjectionPartial,
     Wart.IsInstanceOf,
     Wart.JavaConversions,
@@ -298,7 +297,7 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(libraryDependencies ++= mysqlDependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
-    organization := "io.vinyldns",
+    organization := "io.vinyldns"
   ).dependsOn(core % "compile->compile;test->test")
   .settings(name := "mysql")
 
