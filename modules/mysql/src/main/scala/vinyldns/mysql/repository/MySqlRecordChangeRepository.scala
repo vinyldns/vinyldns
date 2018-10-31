@@ -35,26 +35,26 @@ class MySqlRecordChangeRepository
     sql"""
       |SELECT data
       |  FROM record_change
-      | WHERE zone_id = ?
-      |   AND created < ?
+      | WHERE zone_id = {zoneId}
+      |   AND created < {created}
       |  ORDER BY created DESC
-      |  LIMIT ?
+      |  LIMIT {limit}
     """.stripMargin
 
   private val LIST_CHANGES_NO_START =
     sql"""
       |SELECT data
       |  FROM record_change
-      | WHERE zone_id = ?
+      | WHERE zone_id = {zoneId}
       |  ORDER BY created DESC
-      |  LIMIT ?
+      |  LIMIT {limit}
     """.stripMargin
 
   private val GET_CHANGE =
     sql"""
       |SELECT data
       |  FROM record_change
-      | WHERE id = ?
+      | WHERE id = {id}
     """.stripMargin
 
   private val INSERT_CHANGES =
@@ -98,12 +98,16 @@ class MySqlRecordChangeRepository
           val changes = startFrom match {
             case Some(start) =>
               LIST_CHANGES_WITH_START
-                .bind(zoneId, start.toLong, maxItems)
+                .bindByName('zoneId -> zoneId, 'created -> start.toLong, 'limit -> maxItems)
                 .map(toRecordSetChange)
                 .list()
                 .apply()
             case None =>
-              LIST_CHANGES_NO_START.bind(zoneId, maxItems).map(toRecordSetChange).list().apply()
+              LIST_CHANGES_NO_START
+                .bindByName('zoneId -> zoneId, 'limit -> maxItems)
+                .map(toRecordSetChange)
+                .list()
+                .apply()
           }
 
           val nextId =
@@ -124,7 +128,7 @@ class MySqlRecordChangeRepository
     monitor("repo.RecordChange.listRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>
-          GET_CHANGE.bind(changeId).map(toRecordSetChange).single().apply()
+          GET_CHANGE.bindByName('id -> changeId).map(toRecordSetChange).single().apply()
         }
       }
     }
