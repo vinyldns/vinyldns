@@ -406,7 +406,7 @@ class MembershipServiceSpec
     "delete a group" should {
       "return the deleted group with a status of Deleted" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        doReturn(IO.pure(okGroup)).when(mockGroupRepo).save(any[Group])
+        doReturn(IO.pure(okGroup)).when(mockGroupRepo).delete(any[Group])
         doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
         doReturn(IO.pure(okGroupChangeDelete))
           .when(mockGroupChangeRepo)
@@ -420,7 +420,7 @@ class MembershipServiceSpec
 
         val groupCaptor = ArgumentCaptor.forClass(classOf[Group])
         val groupChangeCaptor = ArgumentCaptor.forClass(classOf[GroupChange])
-        verify(mockGroupRepo).save(groupCaptor.capture())
+        verify(mockGroupRepo).delete(groupCaptor.capture())
         verify(mockGroupChangeRepo).save(groupChangeCaptor.capture())
         verify(mockMembershipRepo).removeMembers(okGroup.id, okGroup.memberIds)
 

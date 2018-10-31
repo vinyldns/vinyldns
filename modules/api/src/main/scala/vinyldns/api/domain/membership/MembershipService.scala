@@ -94,7 +94,7 @@ class MembershipService(
         .removeMembers(existingGroup.id, existingGroup.memberIds)
         .toResult[Set[String]]
       deletedGroup = existingGroup.copy(status = GroupStatus.Deleted)
-      _ <- groupRepo.save(deletedGroup).toResult[Group]
+      _ <- groupRepo.delete(deletedGroup).toResult[Group]
     } yield deletedGroup
 
   def getGroup(id: String, authPrincipal: AuthPrincipal): Result[Group] =

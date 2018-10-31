@@ -19,6 +19,7 @@ package vinyldns.mysql
 import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.domain.membership.GroupRepository
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.record.RecordSetRepository
@@ -44,6 +45,8 @@ trait MySqlIntegrationSpec {
     instance.get[UserRepository](RepositoryName.user).get
   lazy val recordSetRepository: RecordSetRepository =
     instance.get[RecordSetRepository](RepositoryName.recordSet).get
+  lazy val groupRepository: GroupRepository =
+    instance.get[GroupRepository](RepositoryName.group).get
 
   def shutdown(): Unit = provider.shutdown().unsafeRunSync()
 }

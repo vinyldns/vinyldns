@@ -23,6 +23,8 @@ trait GroupRepository extends Repository {
 
   def save(group: Group): IO[Group]
 
+  def delete(group: Group): IO[Group]
+
   /*Looks up a group.  If the group is not found, or if the group's status is Deleted, will return None */
   def getGroup(groupId: String): IO[Option[Group]]
 
