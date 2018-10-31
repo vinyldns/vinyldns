@@ -32,42 +32,42 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
 
   private final val PUT_GROUP =
     sql"""
-         | REPLACE INTO groups(id, name, data)
-         |  VALUES ({id}, {name}, {data})
+         |REPLACE INTO groups(id, name, data)
+         | VALUES ({id}, {name}, {data})
        """.stripMargin
 
   private final val DELETE_GROUP =
     sql"""
-         | DELETE FROM groups
-         |  WHERE id = ?
+         |DELETE FROM groups
+         | WHERE id = ?
        """.stripMargin
 
   private final val GET_GROUP_BY_ID =
     sql"""
-         | SELECT data
-         |   FROM groups
-         |  WHERE id = ?
+         |SELECT data
+         |  FROM groups
+         | WHERE id = ?
        """.stripMargin
 
   private final val GET_GROUP_BY_NAME =
     sql"""
-         | SELECT data
-         |   FROM groups
-         |  WHERE name = ?
+         |SELECT data
+         |  FROM groups
+         | WHERE name = ?
        """.stripMargin
 
-  final val BASE_GET_GROUPS_BY_IDS =
-    """
-      | SELECT data
-      |   FROM groups
-      |  WHERE id
-    """.stripMargin
-
-  final val GET_ALL_GROUPS =
+  private final val GET_ALL_GROUPS =
     sql"""
-         | SELECT data
-         |   FROM groups
+         |SELECT data
+         |  FROM groups
        """.stripMargin
+
+  private val BASE_GET_GROUPS_BY_IDS =
+    """
+      |SELECT data
+      |  FROM groups
+      | WHERE id
+    """.stripMargin
 
   def save(group: Group): IO[Group] =
     monitor("repo.Group.save") {

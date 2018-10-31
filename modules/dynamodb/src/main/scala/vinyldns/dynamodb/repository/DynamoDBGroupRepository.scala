@@ -98,7 +98,6 @@ class DynamoDBGroupRepository private[repository] (
       dynamoDBHelper.putItem(request).map(_ => group)
     }
 
-  // TODO: Delete group for real in dynamo table
   def delete(group: Group): IO[Group] = {
     save(group.copy(status = GroupStatus.Deleted))
   }
