@@ -32,7 +32,7 @@ class HealthService(dataStoreHealthChecks: List[IO[Unit]]) {
       .as((): Unit)
       .handleErrorWith { e =>
         IO {
-          logger.error(s"Health check error raised: $e")
+          logger.error(s"DataStore health check error raised: $e")
         }.flatMap(_ => IO.raiseError[Unit](e))
       }
       .attempt

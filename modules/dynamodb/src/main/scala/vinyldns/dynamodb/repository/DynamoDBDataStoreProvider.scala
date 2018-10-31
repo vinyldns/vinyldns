@@ -42,7 +42,7 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
       _ <- validateRepos(config.repositories)
       repoConfigs <- loadRepoConfigs(config.repositories)
       dataStore <- initializeRepos(settingsConfig, repoConfigs, crypto)
-    } yield new LoadedDataStore(dataStore, IO.unit, IO.unit)
+    } yield new LoadedDataStore(dataStore, IO.unit, checkHealth(settingsConfig))
 
   def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
     val invalid = reposConfig.keys.diff(implementedRepositories)
@@ -116,9 +116,9 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     ).parMapN { DataStore.apply }
   }
 
-//  def checkHealth(dynamoConfig: DynamoDBDataStoreSettings): IO[Unit] = {
-//    val dynamoDBHelper = new DynamoDBHelper(
-//      DynamoDBClient(dynamoConfig),
-//      LoggerFactory.getLogger("DynamoDBMembershipRepository"))
-//  }
+  private def checkHealth(dynamoConfig: DynamoDBDataStoreSettings): IO[Unit] =
+    IO {
+      val client = DynamoDBClient(dynamoConfig)
+      client.listTables(1)
+    }.map(_ => ())
 }
