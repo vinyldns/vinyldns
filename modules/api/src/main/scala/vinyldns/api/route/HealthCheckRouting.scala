@@ -41,7 +41,8 @@ trait HealthCheckRoute extends Directives {
       onSuccess(healthService.checkHealth().unsafeToFuture()) {
         case Right(_) =>
           complete(StatusCodes.OK)
-        case Left(e) => failWith(e)
+        case Left(e) =>
+          failWith(e)
       }
     }
 
