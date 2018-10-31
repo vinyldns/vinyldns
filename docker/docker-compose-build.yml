@@ -38,7 +38,7 @@ services:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
   api:
-    image: "vinyldns/api:0.8.0"
+    image: "vinyldns/api:0.8.0-SNAPSHOT"
     env_file:
       .env
     container_name: "vinyldns-api"
@@ -51,14 +51,14 @@ services:
       - dynamodb-local
 
   portal:
-    image: "vinyldns/portal:0.8.0"
+    image: "vinyldns/portal:0.8.0-SNAPSHOT"
     env_file:
       .env
     ports:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     container_name: "vinyldns-portal"
     volumes:
-      - ./portal/application.conf:/opt/docker/conf/application.conf
+      - ./portal/local.conf:/opt/docker/conf/local.conf
       - ./portal/application.ini:/opt/docker/conf/application.ini
     depends_on:
       - api
