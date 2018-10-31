@@ -1,41 +1,43 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ######################################################################
-# Copies the contents of `docker` into target/scala-2.12
-# to start up dependent services via docker compose.  Once
-# dependent services are started up, the fat jar built by sbt assembly
-# is loaded into a docker container.  The api will be available
-# by default on port 9000
+# Starts up the API and dependent services via
+# docker-compose. The API will be available on localhost:9000
+#
+# Options:
+#   -t, --timeout seconds: overwrite default timeout, default of 60
 ######################################################################
-
 
 DIR=$( cd $(dirname $0) ; pwd -P )
+TIMEOUT=60
+
+function usage {
+    printf "usage: docker-up-api-server.sh [OPTIONS]\n\n"
+    printf "starts up a local VinylDNS API installation using docker compose\n\n"
+    printf "options:\n"
+    printf "\t-t, --timeout seconds: overwrite the timeout used when waiting for components to startup, default of 60\n"
+}
+
+while [ "$1" != "" ]; do
+    case "$1" in
+        -t | --timeout ) TIMEOUT="$2";  shift;;
+        * ) usage; exit;;
+    esac
+    shift
+done
+
+echo "timeout set to $TIMEOUT"
 
 set -a # Required in order to source docker/.env
 # Source customizable env files
 source "$DIR"/.env
 source "$DIR"/../docker/.env
 
-WORK_DIR="$DIR"/../target/scala-2.12
-mkdir -p "$WORK_DIR"
-
-echo "Copy all Docker to the target directory so we can start up properly and the Docker context is small..."
-cp -af "$DIR"/../docker "$WORK_DIR"/
-
-echo "Copy the vinyldns.jar to the API Docker folder so it is in context..."
-if [[ ! -f "$DIR"/../modules/api/target/scala-2.12/vinyldns.jar ]]; then
-    echo "vinyldns.jar not found, building..."
-    cd "$DIR"/../
-    sbt api/clean api/assembly
-    cd "$DIR"
-fi
-cp -f "$DIR"/../modules/api/target/scala-2.12/vinyldns.jar "$WORK_DIR"/docker/api
-
 echo "Starting API server and all dependencies in the background..."
-docker-compose -f "$WORK_DIR"/docker/docker-compose-func-test.yml --project-directory "$WORK_DIR"/docker up --build -d api
+docker-compose -f "$DIR"/../docker/docker-compose-api.yml up -d
 
 echo "Waiting for API to be ready at ${VINYLDNS_API_URL} ..."
 DATA=""
-RETRY=40
+RETRY="$TIMEOUT"
 while [ "$RETRY" -gt 0 ]
 do
     DATA=$(curl -I -s "${VINYLDNS_API_URL}/ping" -o /dev/null -w "%{http_code}")

@@ -1,0 +1,51 @@
+version: "3.0"
+services:
+  mysql:
+    image: "mysql:5.7"
+    env_file:
+      .env
+    container_name: "vinyldns-mysql"
+    ports:
+      - "19002:3306"
+
+  dynamodb-local:
+    image: "cnadiminti/dynamodb-local:2017-02-16"
+    env_file:
+      .env
+    container_name: "vinyldns-dynamodb"
+    ports:
+      - "19000:8000"
+    command: "--sharedDb --inMemory"
+
+  bind9:
+    image: "vinyldns/bind9:0.0.1"
+    env_file:
+      .env
+    container_name: "vinyldns-bind9"
+    ports:
+      - "19001:53/udp"
+      - "19001:53"
+    volumes:
+      - ./bind9/etc:/var/cache/bind/config
+      - ./bind9/zones:/var/cache/bind/zones
+
+  elasticmq:
+    image: s12v/elasticmq:0.13.8
+    container_name: "vinyldns-elasticmq"
+    ports:
+      - "9324:9324"
+    volumes:
+      - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
+
+  api:
+    image: "vinyldns/api:0.8.0"
+    env_file:
+      .env
+    container_name: "vinyldns-api"
+    ports:
+      - "${REST_PORT}:${REST_PORT}"
+    depends_on:
+      - mysql
+      - bind9
+      - elasticmq
+      - dynamodb-local
