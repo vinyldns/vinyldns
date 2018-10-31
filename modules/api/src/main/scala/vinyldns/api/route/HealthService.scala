@@ -16,15 +16,24 @@
 
 package vinyldns.api.route
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import vinyldns.api.Interfaces._
-import vinyldns.core.domain.zone.ZoneRepository
+import org.slf4j.LoggerFactory
 
-class HealthService(zoneRepository: ZoneRepository) {
+class HealthService(dataStoreHealthChecks: List[IO[Unit]]) {
 
-  def checkHealth(): Result[Unit] =
-    zoneRepository
-      .getZone("notFound")
-      .map(_ => ().asRight)
-      .toResult
+  private val logger = LoggerFactory.getLogger(classOf[HealthService])
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+  def checkHealth(): IO[Either[Throwable, Unit]] =
+    dataStoreHealthChecks.parSequence
+      .as((): Unit)
+      .handleErrorWith { e =>
+        IO {
+          logger.error(s"Health check error raised: $e")
+        }.flatMap(_ => IO.raiseError[Unit](e))
+      }
+      .attempt
 }
