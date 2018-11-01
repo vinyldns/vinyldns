@@ -52,6 +52,7 @@ class RecordSetServiceSpec
   doReturn(IO.pure(Some(zoneNotAuthorized)))
     .when(mockZoneRepo)
     .getZone(zoneNotAuthorized.id)
+  doReturn(IO.unit).when(mockMessageQueue).send(any[RecordSetChange])
 
   val underTest = new RecordSetService(
     mockZoneRepo,

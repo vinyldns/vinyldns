@@ -74,6 +74,7 @@ class ZoneServiceSpec
   override protected def beforeEach(): Unit = {
     reset(mockGroupRepo, mockZoneRepo, mockUserRepo)
     doReturn(IO.pure(Some(grp))).when(mockGroupRepo).getGroup(anyString)
+    doReturn(IO.unit).when(mockMessageQueue).send(any[ZoneChange])
   }
 
   "Creating Zones" should {

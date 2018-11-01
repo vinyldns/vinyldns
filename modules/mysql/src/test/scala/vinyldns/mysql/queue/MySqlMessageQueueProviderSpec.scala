@@ -30,6 +30,8 @@ class MySqlMessageQueueProviderSpec extends WordSpec with Matchers {
       val badConfig =
         ConfigFactory.parseString("""
             |  class-name = "vinyldns.mysql.queue.MySqlMessageQueueProvider"
+            |    polling-interval = 250.millis
+            |    messages-per-poll = 10
             |
             |  settings = {
             |    name = "vinyldns"

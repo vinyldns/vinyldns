@@ -67,7 +67,7 @@ class ZoneService(
       _ <- adminGroupExists(zone.adminGroupId)
       _ <- userIsMemberOfGroup(zone.adminGroupId, auth).toResult
       createZoneChange <- ZoneChangeGenerator.forAdd(zone, auth).toResult
-      _ <- result[Unit](messageQueue.send(createZoneChange))
+      _ <- messageQueue.send(createZoneChange).toResult[Unit]
     } yield createZoneChange
 
   def updateZone(newZone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] =
@@ -79,7 +79,7 @@ class ZoneService(
       _ <- adminGroupExists(newZone.adminGroupId)
       _ <- userIsMemberOfGroup(newZone.adminGroupId, auth).toResult
       updateZoneChange <- ZoneChangeGenerator.forUpdate(newZone, existingZone, auth).toResult
-      _ <- result[Unit](messageQueue.send(updateZoneChange))
+      _ <- messageQueue.send(updateZoneChange).toResult[Unit]
     } yield updateZoneChange
 
   def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
@@ -96,7 +96,7 @@ class ZoneService(
       _ <- canChangeZone(auth, zone).toResult
       _ <- outsideSyncDelay(zone).toResult
       syncZoneChange <- ZoneChangeGenerator.forSync(zone, auth).toResult
-      _ <- result[Unit](messageQueue.send(syncZoneChange))
+      _ <- messageQueue.send(syncZoneChange).toResult[Unit]
     } yield syncZoneChange
 
   def getZone(zoneId: String, auth: AuthPrincipal): Result[ZoneInfo] =
@@ -165,7 +165,7 @@ class ZoneService(
           authPrincipal = authPrincipal
         )
         .toResult
-      _ <- result[Unit](messageQueue.send(zoneChange))
+      _ <- messageQueue.send(zoneChange).toResult[Unit]
     } yield zoneChange
   }
 
@@ -184,7 +184,7 @@ class ZoneService(
           authPrincipal = authPrincipal
         )
         .toResult
-      _ <- result[Unit](messageQueue.send(zoneChange))
+      _ <- messageQueue.send(zoneChange).toResult[Unit]
     } yield zoneChange
   }
 

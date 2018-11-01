@@ -69,7 +69,7 @@ class RecordSetService(
         .toResult[List[RecordSet]]
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificAddValidations(rsForValidations, existingRecordsWithName, zone).toResult
-      _ <- result[Unit](messageQueue.send(change))
+      _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
@@ -89,7 +89,7 @@ class RecordSetService(
       _ <- isUniqueUpdate(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificEditValidations(rsForValidations, existing, existingRecordsWithName, zone).toResult
-      _ <- result[Unit](messageQueue.send(change))
+      _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
   def deleteRecordSet(
@@ -103,7 +103,7 @@ class RecordSetService(
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
-      _ <- result[Unit](messageQueue.send(change))
+      _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
   def getRecordSet(
