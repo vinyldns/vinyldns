@@ -63,7 +63,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
           |      migration-url = "test-url"
           |      maximum-pool-size = 20
           |      connection-timeout-millis = 1000
-          |      max-life-time = 600000
+          |      max-life-time = 600000SqsMessageQueueSpec
           |    }
           |
           |    repositories {
@@ -86,14 +86,6 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
       a[DataStoreStartupError] should be thrownBy underTest
         .load(badSettings, crypto)
         .unsafeRunSync()
-    }
-
-    "Return unit upon Shutdown" in {
-      val response: Unit = underTest
-        .shutdown()
-        .unsafeRunSync()
-
-      response shouldBe (())
     }
   }
 }

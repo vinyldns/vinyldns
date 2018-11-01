@@ -33,7 +33,7 @@ trait MySqlIntegrationSpec {
 
   lazy val provider = new MySqlDataStoreProvider()
 
-  lazy val instance: DataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val instance: DataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync().dataStore
 
   lazy val batchChangeRepository: BatchChangeRepository =
     instance.get[BatchChangeRepository](RepositoryName.batchChange).get
@@ -47,8 +47,13 @@ trait MySqlIntegrationSpec {
     instance.get[RecordSetRepository](RepositoryName.recordSet).get
   lazy val groupRepository: GroupRepository =
     instance.get[GroupRepository](RepositoryName.group).get
+<<<<<<< HEAD
 
   def shutdown(): Unit = provider.shutdown().unsafeRunSync()
+=======
+  lazy val recordChangeRepository: RecordChangeRepository =
+    instance.get[RecordChangeRepository](RepositoryName.recordChange).get
+>>>>>>> 2f4b2f95... fix tests
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {

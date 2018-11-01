@@ -40,7 +40,7 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
   val crypto: CryptoAlgebra = new NoOpCrypto()
 
   logger.info("Loading all dynamodb tables in DynamoDBDataStoreProviderSpec")
-  val dataStore: DataStore = provider.load(dynamoDBConfig, crypto).unsafeRunSync()
+  val dataStore: DataStore = provider.load(dynamoDBConfig, crypto).unsafeRunSync().dataStore
   logger.info("DynamoDBDataStoreProviderSpec load complete")
 
   def setup(): Unit = ()
