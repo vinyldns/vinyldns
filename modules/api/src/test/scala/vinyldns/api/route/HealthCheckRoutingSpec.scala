@@ -16,15 +16,12 @@
 
 package vinyldns.api.route
 
-import java.io.IOException
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
-import vinyldns.core.domain.zone.ZoneRepository
 import cats.effect._
 
 class HealthCheckRoutingSpec
@@ -37,21 +34,20 @@ class HealthCheckRoutingSpec
     with Matchers
     with MockitoSugar {
 
-  private val mockZoneRepo = mock[ZoneRepository]
-  val healthService = new HealthService(mockZoneRepo)
+  val healthService: HealthService = mock[HealthService]
 
   "GET on the healthcheck" should {
-    "return OK when the zone manager returns a positive result" in {
-      doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notFound")
-
+    "return OK when all datastores return a positive result" in {
+      doReturn(IO.unit.attempt).when(healthService).checkHealth()
       Get("/health") ~> healthCheckRoute ~> check {
         status shouldBe StatusCodes.OK
       }
     }
 
     "return a 500 when the zone manager returns any error" in {
-      doReturn(IO.raiseError(new IOException("fail"))).when(mockZoneRepo).getZone("notFound")
-
+      doReturn(IO.raiseError(new RuntimeException("bad!")).attempt)
+        .when(healthService)
+        .checkHealth()
       Get("/health") ~> healthCheckRoute ~> check {
         status shouldBe StatusCodes.InternalServerError
       }

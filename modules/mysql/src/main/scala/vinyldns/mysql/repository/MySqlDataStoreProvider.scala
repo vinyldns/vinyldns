@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import pureconfig.ConfigReader
 import pureconfig.module.catseffect.loadConfigF
 import scalikejdbc.config.DBs
-import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
+import scalikejdbc._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.repository._
 import vinyldns.mysql.{HikariCloser, MySqlConnectionConfig, MySqlDataSourceSettings}
@@ -30,7 +30,7 @@ import vinyldns.mysql.MySqlConnector._
 
 class MySqlDataStoreProvider extends DataStoreProvider {
 
-  private val logger = LoggerFactory.getLogger("MySqlDataStoreProvider")
+  private val logger = LoggerFactory.getLogger(classOf[MySqlDataStoreProvider])
   private val implementedRepositories =
     Set(
       RepositoryName.zone,
@@ -46,14 +46,14 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
     MySqlConnectionConfig.mySqlPropertiesReader
 
-  def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[DataStore] =
+  def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[LoadedDataStore] =
     for {
       settingsConfig <- loadConfigF[IO, MySqlConnectionConfig](config.settings)
       _ <- validateRepos(config.repositories)
       _ <- runDBMigrations(settingsConfig)
       _ <- setupDBConnection(settingsConfig)
       store <- initializeRepos(cryptoAlgebra)
-    } yield store
+    } yield new LoadedDataStore(store, shutdown(), checkHealth())
 
   def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
     val invalid = reposConfig.keys.diff(implementedRepositories)
@@ -104,7 +104,22 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     }
   }
 
-  def shutdown(): IO[Unit] =
+  private def shutdown(): IO[Unit] =
     IO(DBs.close())
       .handleError(e => logger.error(s"exception occurred while shutting down", e))
+
+  private final val HEALTH_CHECK =
+    sql"""
+         |SELECT 1
+         |  FROM zone
+         |
+      """.stripMargin
+
+  private def checkHealth(): IO[Unit] =
+    IO {
+      DB.readOnly { implicit s =>
+        HEALTH_CHECK.map(_ => ()).first().apply()
+      }
+    }.map(_ => ())
+
 }

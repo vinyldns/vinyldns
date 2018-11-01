@@ -30,19 +30,19 @@ import vinyldns.core.repository.RepositoryName._
 
 class DynamoDBDataStoreProvider extends DataStoreProvider {
 
-  private val logger = LoggerFactory.getLogger("DynamoDBDataStoreProvider")
+  private val logger = LoggerFactory.getLogger(classOf[DynamoDBDataStoreProvider])
   private val implementedRepositories =
     Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange, userChange)
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[LoadedDataStore] =
     for {
       settingsConfig <- loadConfigF[IO, DynamoDBDataStoreSettings](config.settings)
       _ <- validateRepos(config.repositories)
       repoConfigs <- loadRepoConfigs(config.repositories)
       dataStore <- initializeRepos(settingsConfig, repoConfigs, crypto)
-    } yield dataStore
+    } yield new LoadedDataStore(dataStore, IO.unit, checkHealth(settingsConfig))
 
   def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
     val invalid = reposConfig.keys.diff(implementedRepositories)
@@ -116,5 +116,9 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
     ).parMapN { DataStore.apply }
   }
 
-  def shutdown(): IO[Unit] = IO.unit
+  private def checkHealth(dynamoConfig: DynamoDBDataStoreSettings): IO[Unit] =
+    IO {
+      val client = DynamoDBClient(dynamoConfig)
+      client.listTables(1)
+    }.map(_ => ())
 }

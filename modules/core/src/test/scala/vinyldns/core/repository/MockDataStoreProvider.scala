@@ -31,7 +31,7 @@ import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 
 class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 
-  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] = {
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[LoadedDataStore] = {
     val repoConfig = config.repositories
 
     val user = repoConfig.user.map(_ => mock[UserRepository])
@@ -45,32 +45,34 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
     val batchChange = repoConfig.batchChange.map(_ => mock[BatchChangeRepository])
 
     IO.pure(
-      DataStore(
-        user,
-        group,
-        membership,
-        groupChange,
-        recordSet,
-        recordChange,
-        zoneChange,
-        zone,
-        batchChange)
+      new LoadedDataStore(
+        DataStore(
+          user,
+          group,
+          membership,
+          groupChange,
+          recordSet,
+          recordChange,
+          zoneChange,
+          zone,
+          batchChange),
+        IO.unit,
+        IO.unit
+      )
     )
   }
-
-  def shutdown(): IO[Unit] = IO.unit
 }
 
 class AlternateMockDataStoreProvider extends MockDataStoreProvider {
 
-  override def shutdown(): IO[Unit] =
+  override def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[LoadedDataStore] =
+    IO.pure(new LoadedDataStore(DataStore(), shutdown(), IO.unit))
+
+  def shutdown(): IO[Unit] =
     IO.raiseError(new RuntimeException("oh no"))
 }
 
 class FailDataStoreProvider extends DataStoreProvider {
-  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStore] =
+  def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[LoadedDataStore] =
     IO.raiseError(new RuntimeException("ruh roh"))
-
-  def shutdown(): IO[Unit] = IO.unit
-
 }

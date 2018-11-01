@@ -16,35 +16,30 @@
 
 package vinyldns.api.route
 
-import cats.scalatest.EitherMatchers
-import org.mockito.Mockito.doReturn
-import org.scalatest.mockito.MockitoSugar
+import cats.scalatest.{EitherMatchers, EitherValues}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
-import vinyldns.core.domain.zone.ZoneRepository
-
 import cats.effect._
 
 class HealthServiceSpec
     extends WordSpec
     with Matchers
-    with MockitoSugar
     with ResultHelpers
-    with EitherMatchers {
-
-  private val mockZoneRepo = mock[ZoneRepository]
-  val underTest = new HealthService(mockZoneRepo)
+    with EitherMatchers
+    with EitherValues {
 
   "Checking Status" should {
     "return an error if the zone repository could not be reached" in {
-      doReturn(IO.raiseError(new RuntimeException("fail"))).when(mockZoneRepo).getZone("notFound")
-      val result = leftResultOf(underTest.checkHealth().value)
-      result shouldBe a[RuntimeException]
+      val dsHealthCheck = List(IO.unit, IO.raiseError(new RuntimeException("bad!")))
+      val underTest = new HealthService(dsHealthCheck)
+      val result = underTest.checkHealth().unsafeRunSync()
+      result.leftValue shouldBe a[RuntimeException]
     }
 
     "return success if the zone repository returns appropriately" in {
-      doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notFound")
-      val result = awaitResultOf(underTest.checkHealth().value)
+      val dsHealthCheck = List(IO.unit)
+      val underTest = new HealthService(dsHealthCheck)
+      val result = underTest.checkHealth().unsafeRunSync()
       result should be(right)
     }
   }
