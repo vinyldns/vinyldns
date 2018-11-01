@@ -17,19 +17,19 @@
 package vinyldns.api.domain.zone
 
 import cats.implicits._
-import vinyldns.api.Interfaces._
+import vinyldns.api.Interfaces
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.zone._
+import vinyldns.core.queue.MessageQueue
 
 object ZoneService {
   def apply(
       dataAccessor: ApiDataAccessor,
       connectionValidator: ZoneConnectionValidatorAlgebra,
-      commandBus: EngineCommandBus,
+      messageQueue: MessageQueue,
       zoneValidations: ZoneValidations,
       accessValidation: AccessValidationAlgebra): ZoneService =
     new ZoneService(
@@ -38,7 +38,7 @@ object ZoneService {
       dataAccessor.userRepository,
       dataAccessor.zoneChangeRepository,
       connectionValidator,
-      commandBus,
+      messageQueue,
       zoneValidations,
       accessValidation
     )
@@ -50,13 +50,14 @@ class ZoneService(
     userRepository: UserRepository,
     zoneChangeRepository: ZoneChangeRepository,
     connectionValidator: ZoneConnectionValidatorAlgebra,
-    commandBus: EngineCommandBus,
+    messageQueue: MessageQueue,
     zoneValidations: ZoneValidations,
     accessValidation: AccessValidationAlgebra)
     extends ZoneServiceAlgebra {
 
   import accessValidation._
   import zoneValidations._
+  import Interfaces._
 
   def connectToZone(zone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
@@ -66,8 +67,8 @@ class ZoneService(
       _ <- adminGroupExists(zone.adminGroupId)
       _ <- userIsMemberOfGroup(zone.adminGroupId, auth).toResult
       createZoneChange <- ZoneChangeGenerator.forAdd(zone, auth).toResult
-      send <- commandBus.sendZoneCommand(createZoneChange)
-    } yield send
+      _ <- result[Unit](messageQueue.send(createZoneChange))
+    } yield createZoneChange
 
   def updateZone(newZone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
@@ -78,16 +79,16 @@ class ZoneService(
       _ <- adminGroupExists(newZone.adminGroupId)
       _ <- userIsMemberOfGroup(newZone.adminGroupId, auth).toResult
       updateZoneChange <- ZoneChangeGenerator.forUpdate(newZone, existingZone, auth).toResult
-      send <- commandBus.sendZoneCommand(updateZoneChange)
-    } yield send
+      _ <- result[Unit](messageQueue.send(updateZoneChange))
+    } yield updateZoneChange
 
   def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZoneOrFail(zoneId)
       _ <- canChangeZone(auth, zone).toResult
       deleteZoneChange <- ZoneChangeGenerator.forDelete(zone, auth).toResult
-      send <- commandBus.sendZoneCommand(deleteZoneChange)
-    } yield send
+      _ <- result[Unit](messageQueue.send(deleteZoneChange))
+    } yield deleteZoneChange
 
   def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
@@ -95,8 +96,8 @@ class ZoneService(
       _ <- canChangeZone(auth, zone).toResult
       _ <- outsideSyncDelay(zone).toResult
       syncZoneChange <- ZoneChangeGenerator.forSync(zone, auth).toResult
-      send <- commandBus.sendZoneCommand(syncZoneChange)
-    } yield send
+      _ <- result[Unit](messageQueue.send(syncZoneChange))
+    } yield syncZoneChange
 
   def getZone(zoneId: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
@@ -164,8 +165,8 @@ class ZoneService(
           authPrincipal = authPrincipal
         )
         .toResult
-      send <- commandBus.sendZoneCommand(zoneChange)
-    } yield send
+      _ <- result[Unit](messageQueue.send(zoneChange))
+    } yield zoneChange
   }
 
   def deleteACLRule(
@@ -183,8 +184,8 @@ class ZoneService(
           authPrincipal = authPrincipal
         )
         .toResult
-      send <- commandBus.sendZoneCommand(zoneChange)
-    } yield send
+      _ <- result[Unit](messageQueue.send(zoneChange))
+    } yield zoneChange
   }
 
   def zoneDoesNotExist(zone: Zone): Result[Unit] =
@@ -216,7 +217,7 @@ class ZoneService(
   def getZoneOrFail(zoneId: String): Result[Zone] =
     zoneRepository
       .getZone(zoneId)
-      .orFail(ZoneNotFoundError(s"Zone with id ${zoneId} does not exists"))
+      .orFail(ZoneNotFoundError(s"Zone with id $zoneId does not exists"))
       .toResult[Zone]
 
   def validateZoneConnectionIfChanged(newZone: Zone, existingZone: Zone): Result[Unit] =

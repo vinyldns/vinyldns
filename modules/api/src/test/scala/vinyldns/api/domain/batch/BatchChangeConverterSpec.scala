@@ -20,13 +20,12 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.{ExistingRecordSets, ExistingZones}
+import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
-import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.repository._
-import cats.effect._
 import vinyldns.api.{CatsHelpers, GroupTestData, VinylDNSTestData}
 import vinyldns.core.domain.batch.{
   BatchChange,
@@ -108,7 +107,7 @@ class BatchChangeConverterSpec
     makeSingleAddChange("mxToUpdate", MXData(1, "update.com."), MX)
   )
 
-  private val singleChangesOneBadSqs = List(
+  private val singleChangesOneBad = List(
     makeSingleAddChange("one", AData("1.1.1.1")),
     makeSingleAddChange("two", AData("1.1.1.2")),
     makeSingleAddChange("bad", AData("1.1.1.1"))
@@ -206,16 +205,8 @@ class BatchChangeConverterSpec
         mxToUpdate,
         mxToDelete))
 
-  object SqsWithFail extends TestSqsService {
-    override def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]] =
-      cmds.map {
-        case ch if ch.recordSet.name == "bad" => IO.raiseError(new RuntimeException("BOO"))
-        case ch => IO.pure(ch)
-      }
-  }
-
   private val batchChangeRepo = new InMemoryBatchChangeRepository
-  private val underTest = new BatchChangeConverter(batchChangeRepo, SqsWithFail)
+  private val underTest = new BatchChangeConverter(batchChangeRepo, TestMessageQueue)
 
   "convertAndSendBatchForProcessing" should {
     "successfully generate add RecordSetChange and map IDs for all adds" in {
@@ -329,18 +320,18 @@ class BatchChangeConverterSpec
     }
 
     "set status to failure for changes with queueing issues" in {
-      val batchChangeWithBadSqs =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneBadSqs)
+      val batchWithBadChange =
+        BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneBad)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchChangeWithBadSqs, existingZones, existingRecordSets)
+          .sendBatchForProcessing(batchWithBadChange, existingZones, existingRecordSets)
           .value)
       val rsChanges = result.recordSetChanges
 
       rsChanges.length shouldBe 3
       List("one", "two").foreach { rName =>
-        validateRecordSetChange(rName, rsChanges, batchChangeWithBadSqs, RecordSetChangeType.Create)
-        validateRecordDataCombination(rName, rsChanges, batchChangeWithBadSqs)
+        validateRecordSetChange(rName, rsChanges, batchWithBadChange, RecordSetChangeType.Create)
+        validateRecordDataCombination(rName, rsChanges, batchWithBadChange)
       }
 
       val returnedBatch = result.batchChange
@@ -352,12 +343,12 @@ class BatchChangeConverterSpec
       failedChange.systemMessage shouldBe Some("Error queueing RecordSetChange for processing")
 
       // validate other changes have no update
-      returnedBatch.changes(0) shouldBe singleChangesOneBadSqs(0)
-      returnedBatch.changes(1) shouldBe singleChangesOneBadSqs(1)
+      returnedBatch.changes(0) shouldBe singleChangesOneBad(0)
+      returnedBatch.changes(1) shouldBe singleChangesOneBad(1)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
-        await(batchChangeRepo.getBatchChange(batchChangeWithBadSqs.id))
+        await(batchChangeRepo.getBatchChange(batchWithBadChange.id))
       savedBatch shouldBe Some(returnedBatch)
     }
 

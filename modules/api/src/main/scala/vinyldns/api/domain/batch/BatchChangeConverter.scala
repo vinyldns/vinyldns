@@ -25,16 +25,14 @@ import vinyldns.api.domain.batch.BatchTransformations.{
   ExistingRecordSets,
   ExistingZones
 }
-import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
+import vinyldns.core.queue.MessageQueue
 
-class BatchChangeConverter(
-    batchChangeRepo: BatchChangeRepository,
-    sqsServiceAlgebra: EngineCommandBus)
+class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
   private val logger = LoggerFactory.getLogger("BatchChangeConverter")
@@ -77,7 +75,10 @@ class BatchChangeConverter(
 
   def putChangesOnQueue(
       recordSetChanges: List[RecordSetChange]): BatchResult[List[RecordSetChange]] = {
-    sqsServiceAlgebra.sendRecordSetChanges(recordSetChanges).collectSuccesses
+    messageQueue
+      .sendBatch(NonEmptyList.fromListUnsafe(recordSetChanges))
+      .map(_.successes
+        .asInstanceOf[List[RecordSetChange]])
   }.toBatchResult
 
   def updateWithQueueingFailures(

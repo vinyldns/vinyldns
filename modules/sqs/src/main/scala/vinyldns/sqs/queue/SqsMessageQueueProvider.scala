@@ -53,7 +53,8 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       .getOrElse(Left(InvalidQueueName(queueName)))
   }
 
-  def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] =
+  def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] = {
+    logger.error(s"Setting up queue client")
     IO {
       AmazonSQSAsyncClientBuilder
         .standard()
@@ -68,9 +69,10 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
               sqsMessageQueueSettings.secretKey)))
         .build()
     }
+  }
 
   def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] = {
-    logger.info(s"Setting up queue...")
+    logger.error(s"Setting up queue")
     // Create queue if it doesn't exist
     IO {
       client.getQueueUrl(queueName).getQueueUrl

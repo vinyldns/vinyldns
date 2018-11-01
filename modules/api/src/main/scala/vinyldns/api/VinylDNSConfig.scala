@@ -26,6 +26,7 @@ import vinyldns.api.crypto.Crypto
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
 import vinyldns.core.domain.zone.ZoneConnection
+import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
 
 object VinylDNSConfig {
@@ -48,7 +49,8 @@ object VinylDNSConfig {
 
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
-  lazy val sqsConfig: Config = vinyldnsConfig.getConfig("sqs")
+  lazy val messageQueueConfig: IO[MessageQueueConfig] =
+    loadConfigF[IO, MessageQueueConfig](vinyldnsConfig.getConfig("queue"))
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
   lazy val approvedNameServers: List[Regex] =
