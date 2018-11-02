@@ -17,21 +17,28 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
-import vinyldns.core.domain.zone.{
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus,
-  ZoneRepository
-}
+import vinyldns.core.domain.zone._
 
 object ZoneChangeHandler {
 
   def apply(
       zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] = zoneChange => {
-    for {
-      _ <- zoneRepository.save(zoneChange.zone)
-      savedChange <- zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
-    } yield savedChange
-  }
+      zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] =
+    zoneChange =>
+      zoneRepository
+        .getZoneByName(zoneChange.zone.name)
+        .flatMap {
+          case Some(_)
+              if zoneChange.zone.status == ZoneStatus.Syncing && zoneChange.changeType == ZoneChangeType.Create =>
+            for {
+              failedChange <- zoneChangeRepository.save(
+                zoneChange.copy(status = ZoneChangeStatus.Failed))
+            } yield failedChange
+          case _ =>
+            for {
+              _ <- zoneRepository.save(zoneChange.zone)
+              savedChange <- zoneChangeRepository.save(
+                zoneChange.copy(status = ZoneChangeStatus.Synced))
+            } yield savedChange
+      }
 }

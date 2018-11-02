@@ -26,10 +26,11 @@ import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.domain.zone.ZoneAlreadyExistsError
 import vinyldns.api.engine.sqs.SqsConnection
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeType}
+import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeStatus, ZoneChangeType}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
@@ -184,7 +185,8 @@ object ZoneCommandHandler {
       case zsr @ ZoneSyncRequest(_, _) =>
         val doSync =
           for {
-            _ <- zoneChangeProcessor(zsr.zoneChange) // make sure zone is updated to a syncing status
+            updatedZoneChange <- zoneChangeProcessor(zsr.zoneChange) // make sure zone is updated to a syncing status
+            _ <- checkZoneChangeStatus(updatedZoneChange) // raise error if ZoneChange status is Failed
             syncChange <- zoneSyncProcessor(zsr.zoneChange)
             _ <- zoneChangeProcessor(syncChange) // update zone to Active
           } yield syncChange
@@ -200,6 +202,14 @@ object ZoneCommandHandler {
         outcomeOf(rcr)(recordChangeProcessor(dnsConn, rcr.recordSetChange))
     }
 
+  private def checkZoneChangeStatus(zoneChange: ZoneChange): IO[ZoneChange] =
+    zoneChange.status match {
+      case ZoneChangeStatus.Failed =>
+        IO.raiseError(
+          ZoneAlreadyExistsError(s"Zone with name ${zoneChange.zone.name} already exists"))
+      case _ => IO.pure(zoneChange)
+    }
+
   private def outcomeOf[A](changeRequest: ChangeRequest)(p: => IO[A]): IO[MessageOutcome] =
     IO.pure(logger.info(
         s"Running change request $changeRequest; messageId=${changeRequest.message.getMessageId}"))
@@ -211,11 +221,16 @@ object ZoneCommandHandler {
       }
       .attempt
       .map {
-        case Left(e) =>
-          logger.warn(
-            s"Failed processing message need to retry; ; messageId=${changeRequest.message.getMessageId}",
-            e)
-          RetryMessage(changeRequest.message)
+        case Left(e) => {
+          e match {
+            case ZoneAlreadyExistsError(_) => IO.raiseError(e).unsafeRunSync()
+            case _ =>
+              logger.warn(
+                s"Failed processing message need to retry; ; messageId=${changeRequest.message.getMessageId}",
+                e)
+              RetryMessage(changeRequest.message)
+          }
+        }
         case Right(ok) => ok
       }
 
