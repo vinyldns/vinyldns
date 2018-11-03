@@ -102,9 +102,11 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     }
 
   def delete(receiptHandle: String): IO[Unit] =
-    sqsAsync[DeleteMessageRequest, DeleteMessageResult](
-      new DeleteMessageRequest(queueUrl, receiptHandle),
-      client.deleteMessageAsync).as(())
+    monitor("queue.SQS.delete") {
+      sqsAsync[DeleteMessageRequest, DeleteMessageResult](
+        new DeleteMessageRequest(queueUrl, receiptHandle),
+        client.deleteMessageAsync).as(())
+    }
 
   def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.SQS.remove") {
