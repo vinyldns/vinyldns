@@ -58,7 +58,7 @@ services:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     container_name: "vinyldns-portal"
     volumes:
-      - ./portal/local.conf:/opt/docker/conf/local.conf
+      - ./portal/docker.conf:/opt/docker/conf/docker.conf
       - ./portal/application.ini:/opt/docker/conf/application.ini
     depends_on:
       - api

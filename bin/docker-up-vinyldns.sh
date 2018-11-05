@@ -4,7 +4,7 @@
 # docker-compose. The api will be available on localhost:9000 and the
 # portal will be on localhost:9001
 #
-# Relevant variable overrides can be found at ./.env and ../docker/.env
+# Relevant overrides can be found at ./.env, ../docker/.env, and ../docker/portal/docker.conf
 #
 # Options:
 #	-t, --timeout seconds: overwrite ping timeout, default of 60
