@@ -48,12 +48,12 @@ in a flat file is a security vulnerability for your installation.  To demonstrat
 snippet...
 
 ```yaml
-  sqs {
+  queue.settings {
     access-key = ${AWS_ACCESS_KEY}
     secret-key = ${AWS_SECRET_ACCESS_KEY}
     signing-region = ${SQS_REGION}
     service-endpoint = ${SQS_ENDPOINT}
-    queue-url = ${SQS_QUEUE_URL}
+    queue-name = ${SQS_QUEUE_NAME}
   }
 ```
 
@@ -431,14 +431,26 @@ sync-delay = 10000
 # own settings
 vinyldns {
 
-  # connection information to sqs
-  sqs {
-    # aws access key and secret.  Not needed for docker-compose setup
-    access-key = "x"
-    secret-key = "x"
-    signing-region = "x"
-    service-endpoint = "http://vinyldns-elasticmq:9324/"
-    queue-url = "http://vinyldns-elasticmq:9324/queue/vinyldns"
+  queue {
+    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+
+    messages-per-poll = 10
+    polling-interval = 250.millis
+
+    settings {
+      # AWS access key and secret.
+      access-key = "x"
+      secret-key = "x"
+
+      # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your queue is housed.
+      signing-region = "x"
+
+      # Endpoint to access queue
+      service-endpoint = "http://localhost:9324/"
+
+      # Queue name. Should be used in conjunction with service endpoint, rather than using a queue url which is subject to change.
+      queue-name = "vinyldns"
+    }
   }
 
   # host and port the server binds to.  This should not be changed
