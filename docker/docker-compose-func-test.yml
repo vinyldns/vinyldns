@@ -34,7 +34,7 @@ services:
       .env
     container_name: "vinyldns-elasticmq"
     ports:
-      - "19005:9324"
+      - "9324:9324"
     volumes:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
