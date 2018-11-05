@@ -21,10 +21,7 @@ import vinyldns.api.ResultHelpers
 import cats.effect._
 import vinyldns.core.route.HealthCheck._
 
-class HealthServiceSpec
-    extends WordSpec
-    with Matchers
-    with ResultHelpers {
+class HealthServiceSpec extends WordSpec with Matchers with ResultHelpers {
 
   "Checking Status" should {
     val successCheck: HealthCheckResponse = IO.unit.attempt.asHealthCheckResponse
