@@ -67,6 +67,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     */
   def receive(count: MessageCount): IO[List[SqsMessage]] =
     monitor("queue.SQS.receive") {
+      logger.info(s"Receiving $count messages.\n")
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         // Can return 1-10 messages.
         // (see: https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/
@@ -103,6 +104,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
   def delete(receiptHandle: String): IO[Unit] =
     monitor("queue.SQS.delete") {
+      logger.info(s"Deleting message with receipt handle: $receiptHandle.\n")
       sqsAsync[DeleteMessageRequest, DeleteMessageResult](
         new DeleteMessageRequest(queueUrl, receiptHandle),
         client.deleteMessageAsync).as(())
@@ -110,7 +112,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
   def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.SQS.remove") {
-      IO(delete(message.id.value))
+      delete(message.id.value)
     }.as(())
 
   /* Explicitly make a message almost immediately available on the queue */
@@ -120,11 +122,13 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     }
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
-    monitor("queue.SQS.send")(
+    monitor("queue.SQS.send") {
+      logger.info(s"Sending command: $command.\n")
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
-        client.sendMessageAsync)).as(())
+        client.sendMessageAsync)
+    }.as(())
 
   def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
     monitor("queue.SQS.sendBatch") {
@@ -144,6 +148,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   /* Change message visibility timeout. Valid values: 0 to 43200 seconds (ie. 12 hours) */
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.SQS.changeMessageTimeout") {
+      logger.info(s"Updating visibility timeout for message: $message.\n")
       IO.fromEither(validateMessageTimeout(duration)).flatMap { validDuration =>
         sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
           new ChangeMessageVisibilityRequest()
