@@ -97,7 +97,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
           change
         }
         .getOrElse {
-          // failure here means there was an SQS issue for this change
+          // failure here means there was a message queue issue for this change
           change.withFailureMessage("Error queueing RecordSetChange for processing")
         }
     }
