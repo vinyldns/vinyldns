@@ -292,21 +292,47 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
   }
 
-  private def putZone(zone: Zone)(implicit session: DBSession): Zone = {
-    PUT_ZONE
-      .bindByName(
-        Seq(
-          'id -> zone.id,
-          'name -> zone.name,
-          'adminGroupId -> zone.adminGroupId,
-          'data -> toPB(zone).toByteArray
-        ): _*
-      )
-      .update()
-      .apply()
+  private def putZone(zone: Zone)(implicit session: DBSession): Zone =
+    getZoneByName(zone.name).unsafeRunSync() match {
+      case Some(existingZone) => {
+        logger.error("FOUND EXISTING ZONE")
+        logger.error(s"ATTEMPTED ZONE name: ${zone.name} id: ${zone.id}")
+        logger.error(s"EXISTING ZONE name: ${existingZone.name} id: ${existingZone.id}")
 
-    zone
-  }
+        PUT_ZONE
+          .bindByName(
+            Seq(
+              'id -> existingZone.id,
+              'name -> existingZone.name,
+              'adminGroupId -> zone.adminGroupId,
+              'data -> toPB(zone).toByteArray
+            ): _*
+          )
+          .update()
+          .apply()
+
+        deleteZoneAccess(existingZone)
+        existingZone
+      }
+      case None => {
+        logger.error("NEW ZONE CREATED")
+
+        PUT_ZONE
+          .bindByName(
+            Seq(
+              'id -> zone.id,
+              'name -> zone.name,
+              'adminGroupId -> zone.adminGroupId,
+              'data -> toPB(zone).toByteArray
+            ): _*
+          )
+          .update()
+          .apply()
+
+        logger.error(s"NEW CREATED ZONE name: ${zone.name} id: ${zone.id}")
+        zone
+      }
+    }
 
   /**
     * The zone_access table holds a pair of accessor_id -> zone_id
@@ -361,10 +387,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     monitor("repo.ZoneJDBC.save") {
       IO {
         DB.localTx { implicit s =>
+          logger.error(s"INITIAL ZONE INFO. zone name: ${zone.name} zone id: ${zone.id}")
           deleteZoneAccess(zone)
-          putZone(zone)
-          putZoneAccess(zone)
-          zone
+          val savedZone = putZone(zone)
+          putZoneAccess(savedZone)
+          savedZone
         }
       }
     }
