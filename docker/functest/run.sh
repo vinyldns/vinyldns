@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 
-VINYLDNS_URL="http://vinyldns-api:9000"
+# Assume defaults of local docker-compose if not set
+if [ -z "${VINYLDNS_URL}" ]; then
+  VINYLDNS_URL="http://vinyldns-api:9000"
+fi
+if [ -z "${DNS_IP}" ]; then
+  DNS_IP=$(dig +short vinyldns-bind9)
+fi
+
+# Assume all tests if not specified
+if [ -z "${TEST_PATTERN}" ]; then
+  TEST_PATTERN=
+else
+  TEST_PATTERN="-k ${TEST_PATTERN}"
+fi
+
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
@@ -25,8 +39,7 @@ do
     fi
 done
 
-DNS_IP=$(dig +short vinyldns-bind9)
 echo "Running live tests against ${VINYLDNS_URL} and DNS server ${DNS_IP}"
 
 cd /app
-./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP}
+./run-tests.py live_tests -v ${TEST_PATTERN} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP}
