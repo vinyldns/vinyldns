@@ -70,32 +70,77 @@ The most important configuration is around your system dependencies. Presently, 
 
 **We are actively working on supporting different message queues and data stores.  Look for those to become available shortly**
 
-## AWS SQS
-Be sure to follow the [AWS SQS Setup Guide](setup-sqs) first to get the values you need to configure here.
+## Queue Configuration
+VinylDNS supports both SQS and MySQL queue implementations.
+
+There are a couple of implementation-dependent settings that need to be specified:
+* `messages-per-poll`: Number of messages retrieved in a single queue receive request. Valid values are 1 through 10 (default).
+* `polling-interval`: Interval to delay between each poll for messages.
+
+If using SQS, be sure to follow the [AWS SQS Setup Guide](setup-sqs) first to get the values you need to configure here.
+
+If using MySQL, follow the [MySQL Setup Guide](setup-mysql) first to get the values you need to configure here.
+
+The following in a sample SQS config:
 
 ```yaml
 vinyldns {
 
-  # connection information to sqs
-  sqs {
-    # AWS_ACCESS_KEY, credential needed to access the SQS queue
-    access-key = "XXXXXXXXX"
+  queue {
+    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
 
-    # AWS_SECRET_ACCESS_KEY, for accessing the SQS queue
-    secret-key = "XXXXXXXXX"
+    messages-per-poll = 10
+    polling-interval = 250.millis
+    
+    # connection information to SQS
+    settings {
+      # AWS access key and secret.
+      access-key = "x"
+      secret-key = "x"
+      
+      # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your queue is housed.
+      signing-region = "x"
+      
+      # Endpoint to access queue
+      service-endpoint = "http://vinyldns-elasticmq:9324/"
+      
+      # Queue name. Should be used in conjunction with service endpoint, rather than using a queue url which is subject to change.
+      queue-name = "vinyldns"
+    }
+  }
+}
+```
 
-    # AWS Signing Region for the SQS queue, for example "us-east-1".  The region where the sqs queue lives
-    signing-region = "us-east-1"
+The following is a sample MySQL queue config:
 
-    # The base URL for sqs, example https://sqs.us-east-1.amazonaws.com
-    service-endpoint = "https://sqs.us-east-1.amazonaws.com"
+```yaml
+queue {
+  class-name = "vinyldns.mysql.queue.MySqlMessageQueueProvider"
+  
+  polling-interval = 250.millis
+  messages-per-poll = 10
 
-    # The full URL to the sqs queue
-    queue-url = "https://sqs.us-east-1.amazonaws.com/1111111111/my-vinyldns-queue"
+  settings = {
+    name = "vinyldns"
+    driver = "org.mariadb.jdbc.Driver"
+    migration-url = "jdbc:mariadb://localhost:19004/?user=root&password=pass"
+    url = "jdbc:mariadb://localhost:19004/vinyldns?user=root&password=pass"
+    user = "root"
+    password = "pass"
 
-    # The polling interval.  You can increase this to lower the cost of SQS, possibly into the free tier.
-    # Set to 5seconds for example
-    polling-interval = 250millis
+    # see https://github.com/brettwooldridge/HikariCP
+    connection-timeout-millis = 1000
+    idle-timeout = 10000
+    max-lifetime = 30000
+    maximum-pool-size = 5
+    minimum-idle = 0
+
+    my-sql-properties = {
+      cachePrepStmts=true
+      prepStmtCacheSize=250
+      prepStmtCacheSqlLimit=2048
+      rewriteBatchedStatements=true
+    }
   }
 }
 ```
