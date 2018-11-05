@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -120,31 +121,38 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     *
     * If the zone is not deleted, we have to save both the zone itself, as well as the zone access entries.
     */
-  def save(zone: Zone): IO[Zone] =
+  def save(zone: Zone): IO[Either[DuplicateZoneError, Zone]] =
     zone.status match {
       case ZoneStatus.Deleted =>
-        retryWithBackoff(deleteTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
+        val doDelete: Zone => IO[Either[DuplicateZoneError, Zone]] = z => deleteTx(z).map(Right(_))
+        retryWithBackoff(doDelete, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
       case _ => retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
     }
+
+  private def getZoneById(id: String)(implicit s: DBSession): Option[Zone] =
+    GET_ZONE
+      .bind(id)
+      .map(res => fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(1))))
+      .first()
+      .apply()
 
   def getZone(zoneId: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZone") {
       IO {
         DB.readOnly { implicit s =>
-          GET_ZONE
-            .bind(zoneId)
-            .map(res => fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(1))))
-            .first()
-            .apply()
+          getZoneById(zoneId)
         }
       }
     }
+
+  private def getZoneByNameInSession(name: String)(implicit s: DBSession): Option[Zone] =
+    GET_ZONE_BY_NAME.bind(name).map(extractZone(1)).first().apply()
 
   def getZoneByName(zoneName: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZoneByName") {
       IO {
         DB.readOnly { implicit s =>
-          GET_ZONE_BY_NAME.bind(zoneName).map(extractZone(1)).first().apply()
+          getZoneByNameInSession(zoneName)
         }
       }
     }
@@ -357,19 +365,28 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-  def saveTx(zone: Zone): IO[Zone] =
+  def saveTx(zone: Zone): IO[Either[DuplicateZoneError, Zone]] =
     monitor("repo.ZoneJDBC.save") {
       IO {
         DB.localTx { implicit s =>
-          deleteZoneAccess(zone)
-          putZone(zone)
-          putZoneAccess(zone)
-          zone
+          getZoneByNameInSession(zone.name) match {
+            case None =>
+              deleteZoneAccess(zone)
+              putZone(zone)
+              putZoneAccess(zone)
+              zone.asRight[DuplicateZoneError]
+            case Some(_) =>
+              DuplicateZoneError(s"Zone with name ${zone.name} already exists").asLeft[Zone]
+          }
         }
       }
     }
 
-  def retryWithBackoff[A](f: A => IO[A], a: A, delay: FiniteDuration, maxRetries: Int): IO[A] =
+  def retryWithBackoff[E, A](
+      f: A => IO[Either[E, A]],
+      a: A,
+      delay: FiniteDuration,
+      maxRetries: Int): IO[Either[E, A]] =
     f(a).handleErrorWith { error =>
       if (maxRetries > 0)
         IO.sleep(delay) *> retryWithBackoff(f, a, delay * 2, maxRetries - 1)
