@@ -20,6 +20,7 @@ import cats.scalatest.{EitherMatchers, EitherValues}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
 import cats.effect._
+import vinyldns.core.route.HealthCheck._
 
 class HealthServiceSpec
     extends WordSpec
@@ -29,18 +30,23 @@ class HealthServiceSpec
     with EitherValues {
 
   "Checking Status" should {
-    "return an error if the zone repository could not be reached" in {
-      val dsHealthCheck = List(IO.unit, IO.raiseError(new RuntimeException("bad!")))
+    val successCheck: HealthCheckResponse = IO.unit.attempt.asHealthCheckResponse
+    val failCheck: HealthCheckResponse =
+      IO.raiseError(new RuntimeException("bad!")).attempt.asHealthCheckResponse
+
+    "return all health check failures" in {
+      val dsHealthCheck = List(successCheck, failCheck)
       val underTest = new HealthService(dsHealthCheck)
       val result = underTest.checkHealth().unsafeRunSync()
-      result.leftValue shouldBe a[RuntimeException]
+      result.length shouldBe 1
+      result.head.message shouldBe "bad!"
     }
 
-    "return success if the zone repository returns appropriately" in {
-      val dsHealthCheck = List(IO.unit)
+    "return an empty list when no errors" in {
+      val dsHealthCheck = List(successCheck, successCheck)
       val underTest = new HealthService(dsHealthCheck)
       val result = underTest.checkHealth().unsafeRunSync()
-      result should be(right)
+      result shouldBe Nil
     }
   }
 }

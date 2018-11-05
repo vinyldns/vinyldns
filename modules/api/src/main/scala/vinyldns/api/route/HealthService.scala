@@ -19,21 +19,23 @@ package vinyldns.api.route
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.slf4j.LoggerFactory
+import vinyldns.core.route.HealthCheck.{HealthCheckError, HealthCheckResponse}
 
-class HealthService(dataStoreHealthChecks: List[IO[Unit]]) {
+class HealthService(healthChecks: List[HealthCheckResponse]) {
 
   private val logger = LoggerFactory.getLogger(classOf[HealthService])
 
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  def checkHealth(): IO[Either[Throwable, Unit]] =
-    dataStoreHealthChecks.parSequence
-      .as((): Unit)
-      .handleErrorWith { e =>
-        IO {
-          logger.error(s"DataStore health check error raised: $e")
-        }.flatMap(_ => IO.raiseError[Unit](e))
+  def checkHealth(): IO[List[HealthCheckError]] =
+    healthChecks.parSequence
+      .map {
+        _.collect {
+          case Left(err) => {
+            logger.error(s"Health Check Failure: ${err.message}")
+            err
+          }
+        }
       }
-      .attempt
 }

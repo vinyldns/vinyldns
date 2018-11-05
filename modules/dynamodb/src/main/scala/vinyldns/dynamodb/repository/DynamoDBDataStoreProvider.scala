@@ -27,6 +27,7 @@ import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName._
+import vinyldns.core.route.HealthCheck._
 
 class DynamoDBDataStoreProvider extends DataStoreProvider {
 
@@ -113,12 +114,14 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
       initializeSingleRepo[UserChangeRepository](
         userChange,
         DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto))
-    ).parMapN { DataStore.apply }
+    ).parMapN {
+      DataStore.apply
+    }
   }
 
-  private def checkHealth(dynamoConfig: DynamoDBDataStoreSettings): IO[Unit] =
+  private def checkHealth(dynamoConfig: DynamoDBDataStoreSettings): HealthCheckResponse =
     IO {
       val client = DynamoDBClient(dynamoConfig)
       client.listTables(1)
-    }.map(_ => ())
+    }.attempt.asHealthCheckResponse
 }

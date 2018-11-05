@@ -40,7 +40,7 @@ trait MySqlIntegrationSpec {
     instance.get[ZoneRepository](RepositoryName.zone).get
   lazy val zoneChangeRepository: ZoneChangeRepository =
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
-  lazy val userRepository: UserRepository =MySqlDataStoreProvider.scala
+  lazy val userRepository: UserRepository =
     instance.get[UserRepository](RepositoryName.user).get
   lazy val recordSetRepository: RecordSetRepository =
     instance.get[RecordSetRepository](RepositoryName.recordSet).get

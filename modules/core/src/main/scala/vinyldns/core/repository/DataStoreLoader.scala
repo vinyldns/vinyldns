@@ -22,6 +22,7 @@ import cats.implicits._
 import vinyldns.core.crypto.CryptoAlgebra
 import org.slf4j.LoggerFactory
 import vinyldns.core.repository.RepositoryName._
+import vinyldns.core.route.HealthCheck.HealthCheckResponse
 
 import scala.reflect.ClassTag
 
@@ -31,14 +32,14 @@ object DataStoreLoader {
       val dataStoreConfig: DataStoreConfig,
       val dataStore: DataStore,
       val shutdownHook: IO[Unit],
-      val healthCheck: IO[Unit]) {
+      val healthCheck: HealthCheckResponse) {
     val accessorTuple: (DataStoreConfig, DataStore) = (dataStoreConfig, dataStore)
   }
 
   class DataLoaderResponse[A](
       val accessor: A,
       shutdownHook: List[IO[Unit]],
-      val healthChecks: List[IO[Unit]]) {
+      val healthChecks: List[HealthCheckResponse]) {
     def shutdown(): Unit = shutdownHook.parSequence.unsafeRunSync()
   }
 

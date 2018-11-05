@@ -39,9 +39,8 @@ trait HealthCheckRoute extends Directives {
   val healthCheckRoute =
     (get & path("health")) {
       onSuccess(healthService.checkHealth().unsafeToFuture()) {
-        case Right(_) =>
-          complete(StatusCodes.OK)
-        case Left(e) => failWith(e)
+        case head :: _ => failWith(head)
+        case _ => complete(StatusCodes.OK)
       }
     }
 

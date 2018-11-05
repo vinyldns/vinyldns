@@ -23,6 +23,7 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import cats.effect._
+import vinyldns.core.route.HealthCheck.HealthCheckError
 
 class HealthCheckRoutingSpec
     extends WordSpec
@@ -38,16 +39,15 @@ class HealthCheckRoutingSpec
 
   "GET on the healthcheck" should {
     "return OK when all datastores return a positive result" in {
-      doReturn(IO.unit.attempt).when(healthService).checkHealth()
+      doReturn(IO.pure(List())).when(healthService).checkHealth()
       Get("/health") ~> healthCheckRoute ~> check {
         status shouldBe StatusCodes.OK
       }
     }
 
     "return a 500 when the zone manager returns any error" in {
-      doReturn(IO.raiseError(new RuntimeException("bad!")).attempt)
-        .when(healthService)
-        .checkHealth()
+      val err = HealthCheckError("an error!")
+      doReturn(IO.pure(List(err))).when(healthService).checkHealth()
       Get("/health") ~> healthCheckRoute ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
