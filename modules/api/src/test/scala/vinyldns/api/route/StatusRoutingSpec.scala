@@ -18,7 +18,6 @@ package vinyldns.api.route
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.effect.{ContextShift, IO}
 import fs2.concurrent.SignallingRef
@@ -28,7 +27,6 @@ import org.scalatest.mockito.MockitoSugar
 class StatusRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with Directives
     with StatusRoute
     with OneInstancePerTest
     with VinylDNSJsonProtocol

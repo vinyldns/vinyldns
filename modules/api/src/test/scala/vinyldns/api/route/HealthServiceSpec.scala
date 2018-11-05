@@ -16,7 +16,6 @@
 
 package vinyldns.api.route
 
-import cats.scalatest.{EitherMatchers, EitherValues}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
 import cats.effect._
@@ -25,9 +24,7 @@ import vinyldns.core.route.HealthCheck._
 class HealthServiceSpec
     extends WordSpec
     with Matchers
-    with ResultHelpers
-    with EitherMatchers
-    with EitherValues {
+    with ResultHelpers {
 
   "Checking Status" should {
     val successCheck: HealthCheckResponse = IO.unit.attempt.asHealthCheckResponse

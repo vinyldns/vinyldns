@@ -18,14 +18,12 @@ package vinyldns.api.route
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{Matchers, WordSpec}
 
 class BlueGreenRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with Directives
     with BlueGreenRoute
     with Matchers {
 

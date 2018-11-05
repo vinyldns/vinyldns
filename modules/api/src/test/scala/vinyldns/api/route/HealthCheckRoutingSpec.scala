@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
@@ -28,9 +27,7 @@ import vinyldns.core.route.HealthCheck.HealthCheckError
 class HealthCheckRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with Directives
     with HealthCheckRoute
-    with VinylDNSJsonProtocol
     with OneInstancePerTest
     with Matchers
     with MockitoSugar {
