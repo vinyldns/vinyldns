@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package vinyldns.core.route
+package vinyldns.core.health
 
 import cats.effect.IO
 
 object HealthCheck {
 
-  type HealthCheckResponse = IO[Either[HealthCheckError, Unit]]
+  type HealthCheck = IO[Either[HealthCheckError, Unit]]
 
   case class HealthCheckError(message: String) extends Throwable(message)
 
   implicit class HealthCheckImprovements(io: IO[Either[Throwable, _]]) {
-    def asHealthCheckResponse: HealthCheckResponse =
+    def asHealthCheck: HealthCheck =
       io.map {
         case Left(err) =>
           Left(HealthCheckError(Option(err.getMessage).getOrElse("no message from error")))

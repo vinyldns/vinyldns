@@ -25,7 +25,7 @@ import scalikejdbc.config.DBs
 import scalikejdbc._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.repository._
-import vinyldns.core.route.HealthCheck._
+import vinyldns.core.health.HealthCheck._
 import vinyldns.mysql.{HikariCloser, MySqlConnectionConfig, MySqlDataSourceSettings}
 import vinyldns.mysql.MySqlConnector._
 
@@ -112,14 +112,13 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   private final val HEALTH_CHECK =
     sql"""
          |SELECT 1
-         |  FROM zone
-         |
+         |  FROM DUAL
       """.stripMargin
 
-  private def checkHealth(): HealthCheckResponse =
+  private def checkHealth(): HealthCheck =
     IO {
       DB.readOnly { implicit s =>
         HEALTH_CHECK.map(_ => ()).first.apply()
       }
-    }.attempt.asHealthCheckResponse
+    }.attempt.asHealthCheck
 }

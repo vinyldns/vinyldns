@@ -22,14 +22,14 @@ import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName.RepositoryName
-import vinyldns.core.route.HealthCheck.HealthCheckResponse
+import vinyldns.core.health.HealthCheck.HealthCheck
 
 import scala.reflect.ClassTag
 
 class LoadedDataStore(
     val dataStore: DataStore,
     val shutdownHook: IO[Unit],
-    val healthCheck: HealthCheckResponse)
+    val healthCheck: HealthCheck)
 
 object DataStore {
   def apply(

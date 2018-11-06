@@ -19,14 +19,14 @@ package vinyldns.api.route
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
 import cats.effect._
-import vinyldns.core.route.HealthCheck._
+import vinyldns.core.health.HealthCheck._
 
 class HealthServiceSpec extends WordSpec with Matchers with ResultHelpers {
 
   "Checking Status" should {
-    val successCheck: HealthCheckResponse = IO.unit.attempt.asHealthCheckResponse
-    val failCheck: HealthCheckResponse =
-      IO.raiseError(new RuntimeException("bad!")).attempt.asHealthCheckResponse
+    val successCheck: HealthCheck = IO.unit.attempt.asHealthCheck
+    val failCheck: HealthCheck =
+      IO.raiseError(new RuntimeException("bad!")).attempt.asHealthCheck
 
     "return all health check failures" in {
       val dsHealthCheck = List(successCheck, failCheck)

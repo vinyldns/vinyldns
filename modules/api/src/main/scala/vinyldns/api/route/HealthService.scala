@@ -19,9 +19,9 @@ package vinyldns.api.route
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.slf4j.LoggerFactory
-import vinyldns.core.route.HealthCheck.{HealthCheckError, HealthCheckResponse}
+import vinyldns.core.health.HealthCheck.{HealthCheck, HealthCheckError}
 
-class HealthService(healthChecks: List[HealthCheckResponse]) {
+class HealthService(healthChecks: List[HealthCheck]) {
 
   private val logger = LoggerFactory.getLogger(classOf[HealthService])
 

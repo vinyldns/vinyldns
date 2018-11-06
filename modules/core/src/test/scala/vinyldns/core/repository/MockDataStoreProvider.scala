@@ -28,7 +28,7 @@ import vinyldns.core.domain.membership.{
 }
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.route.HealthCheck.HealthCheckResponse
+import vinyldns.core.health.HealthCheck.HealthCheck
 
 class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
 
@@ -63,7 +63,7 @@ class MockDataStoreProvider extends DataStoreProvider with MockitoSugar {
     )
   }
 
-  def checkHealth(): HealthCheckResponse = IO.pure(Right((): Unit))
+  def checkHealth(): HealthCheck = IO.pure(Right((): Unit))
 }
 
 class AlternateMockDataStoreProvider extends MockDataStoreProvider {

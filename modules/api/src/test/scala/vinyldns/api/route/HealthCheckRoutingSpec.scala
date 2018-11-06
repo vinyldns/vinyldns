@@ -22,7 +22,7 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import cats.effect._
-import vinyldns.core.route.HealthCheck.HealthCheckError
+import vinyldns.core.health.HealthCheck.HealthCheckError
 
 class HealthCheckRoutingSpec
     extends WordSpec
