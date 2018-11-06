@@ -26,7 +26,7 @@ import scalikejdbc._
 class MySqlMembershipRepository extends MembershipRepository with Monitored {
   private final val logger = LoggerFactory.getLogger(classOf[MySqlMembershipRepository])
 
-  private final val BASE_ADD_MEMBERS = "REPLACE INTO membership (user_id, group_id)"
+  private final val BASE_ADD_MEMBERS = "INSERT IGNORE INTO membership (user_id, group_id)"
 
   private final val BASE_REMOVE_MEMBERS = "DELETE FROM membership WHERE group_id = ?"
 
