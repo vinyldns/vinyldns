@@ -39,7 +39,9 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       RepositoryName.user,
       RepositoryName.recordSet,
       RepositoryName.group,
-      RepositoryName.recordChange)
+      RepositoryName.recordChange,
+      RepositoryName.membership
+    )
 
   implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
     MySqlConnectionConfig.mySqlPropertiesReader
@@ -72,6 +74,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val recordSets = Some(new MySqlRecordSetRepository())
     val groups = Some(new MySqlGroupRepository())
     val recordChanges = Some(new MySqlRecordChangeRepository())
+    val membership = Some(new MySqlMembershipRepository())
     DataStore(
       zoneRepository = zones,
       batchChangeRepository = batchChanges,
@@ -79,7 +82,9 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       userRepository = users,
       recordSetRepository = recordSets,
       groupRepository = groups,
-      recordChangeRepository = recordChanges)
+      recordChangeRepository = recordChanges,
+      membershipRepository = membership
+    )
   }
 
   def setupDBConnection(config: MySqlConnectionConfig): IO[Unit] = {
