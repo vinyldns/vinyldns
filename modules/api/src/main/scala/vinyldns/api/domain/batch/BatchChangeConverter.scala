@@ -17,6 +17,7 @@
 package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
+import cats.syntax.list._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
@@ -74,12 +75,18 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   }
 
   def putChangesOnQueue(
-      recordSetChanges: List[RecordSetChange]): BatchResult[List[RecordSetChange]] = {
-    messageQueue
-      .sendBatch(NonEmptyList.fromListUnsafe(recordSetChanges))
-      .map(_.successes
-        .asInstanceOf[List[RecordSetChange]])
-  }.toBatchResult
+      recordSetChanges: List[RecordSetChange]): BatchResult[List[RecordSetChange]] =
+    recordSetChanges.toNel match {
+      case None =>
+        recordSetChanges.toRightBatchResult // If list is empty, return normally without queueing
+      case Some(rsc) =>
+        messageQueue
+          .sendBatch(rsc)
+          .map(
+            _.successes
+              .asInstanceOf[List[RecordSetChange]])
+          .toBatchResult
+    }
 
   def updateWithQueueingFailures(
       batchChange: BatchChange,

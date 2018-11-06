@@ -87,7 +87,7 @@ class ZoneService(
       zone <- getZoneOrFail(zoneId)
       _ <- canChangeZone(auth, zone).toResult
       deleteZoneChange <- ZoneChangeGenerator.forDelete(zone, auth).toResult
-      _ <- result[Unit](messageQueue.send(deleteZoneChange))
+      _ <- messageQueue.send(deleteZoneChange).toResult[Unit]
     } yield deleteZoneChange
 
   def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
