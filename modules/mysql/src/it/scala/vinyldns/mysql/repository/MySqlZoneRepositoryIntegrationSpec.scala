@@ -26,6 +26,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData.{dummyAuth, dummyUser, okGroup, okUser, oneUserDummyGroup}
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlZoneRepositoryIntegrationSpec
@@ -109,7 +110,27 @@ class MySqlZoneRepositoryIntegrationSpec
 
   "MySqlZoneRepository" should {
     "return the zone when it is saved" in {
-      repo.save(okZone).unsafeRunSync() shouldBe okZone
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+    }
+
+    "return the updated zone when it is saved with a new name" in {
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+      val newZone = okZone.copy(name = "newname.")
+      repo.save(newZone).unsafeRunSync() shouldBe Right(newZone)
+    }
+
+    "return an error when attempting to save a duplicate zone" in {
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+      repo.save(okZone.copy(id = "newId")).unsafeRunSync() shouldBe
+        Left(DuplicateZoneError("Zone with name ok.zone.recordsets. already exists."))
+    }
+
+    "return an error when attempting to save a zone with mismatched ID and name" in {
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+      val testZoneOne = testZone("testzone.")
+      repo.save(testZoneOne).unsafeRunSync() shouldBe Right(testZoneOne)
+      repo.save(testZoneOne.copy(name = okZone.name)).unsafeRunSync() shouldBe
+        Left(DuplicateZoneError("Incorrect ID for Zone with name ok.zone.recordsets."))
     }
 
     "get a zone by id" in {

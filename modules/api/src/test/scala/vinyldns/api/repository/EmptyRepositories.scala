@@ -20,8 +20,8 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.{Zone, ZoneRepository}
-
 import cats.effect._
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
 // Empty implementations let our other test classes just edit with the methods they need
 
@@ -50,7 +50,7 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
 
 trait EmptyZoneRepo extends ZoneRepository {
 
-  def save(zone: Zone): IO[Zone] = IO.pure(zone)
+  def save(zone: Zone): IO[Either[DuplicateZoneError, Zone]] = IO.pure(Right(zone))
 
   def getZone(zoneId: String): IO[Option[Zone]] = IO.pure(None)
 

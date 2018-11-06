@@ -63,7 +63,7 @@ class ZoneService(
     for {
       _ <- isValidZoneAcl(zone.acl).toResult
       _ <- connectionValidator.validateZoneConnections(zone)
-//      _ <- zoneDoesNotExist(zone)
+      _ <- zoneDoesNotExist(zone)
       _ <- adminGroupExists(zone.adminGroupId)
       _ <- userIsMemberOfGroup(zone.adminGroupId, auth).toResult
       createZoneChange <- ZoneChangeGenerator.forAdd(zone, auth).toResult

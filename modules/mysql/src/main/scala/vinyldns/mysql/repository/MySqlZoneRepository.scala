@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -120,34 +121,39 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     *
     * If the zone is not deleted, we have to save both the zone itself, as well as the zone access entries.
     */
-  def save(zone: Zone): IO[Zone] =
+  def save(zone: Zone): IO[Either[DuplicateZoneError, Zone]] =
     zone.status match {
       case ZoneStatus.Deleted =>
-        retryWithBackoff(deleteTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
-      case _ => retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
+        val doDelete: Zone => IO[Either[DuplicateZoneError, Zone]] = z => deleteTx(z).map(Right(_))
+        retryWithBackoff(doDelete, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
+      case _ => {
+        retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
+      }
     }
 
   def getZone(zoneId: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZone") {
       IO {
         DB.readOnly { implicit s =>
-          GET_ZONE
-            .bind(zoneId)
-            .map(res => fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(1))))
-            .first()
-            .apply()
+          getZoneByIdInSession(zoneId)
         }
       }
     }
+
+  private def getZoneByIdInSession(zoneId: String)(implicit session: DBSession): Option[Zone] =
+    GET_ZONE.bind(zoneId).map(extractZone(1)).first().apply()
 
   def getZoneByName(zoneName: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZoneByName") {
       IO {
         DB.readOnly { implicit s =>
-          GET_ZONE_BY_NAME.bind(zoneName).map(extractZone(1)).first().apply()
+          getZoneByNameInSession(zoneName)
         }
       }
     }
+
+  private def getZoneByNameInSession(zoneName: String)(implicit session: DBSession): Option[Zone] =
+    GET_ZONE_BY_NAME.bind(zoneName).map(extractZone(1)).first().apply()
 
   private def getZonesByNamesGroup(zoneNames: List[String]): IO[List[Zone]] =
     monitor("repo.ZoneJDBC.getZonesByNames") {
@@ -292,47 +298,21 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
   }
 
-  private def putZone(zone: Zone)(implicit session: DBSession): Zone =
-    getZoneByName(zone.name).unsafeRunSync() match {
-      case Some(existingZone) => {
-        logger.error("FOUND EXISTING ZONE")
-        logger.error(s"ATTEMPTED ZONE name: ${zone.name} id: ${zone.id}")
-        logger.error(s"EXISTING ZONE name: ${existingZone.name} id: ${existingZone.id}")
+  private def putZone(zone: Zone)(implicit session: DBSession): Zone = {
+    PUT_ZONE
+      .bindByName(
+        Seq(
+          'id -> zone.id,
+          'name -> zone.name,
+          'adminGroupId -> zone.adminGroupId,
+          'data -> toPB(zone).toByteArray
+        ): _*
+      )
+      .update()
+      .apply()
 
-        PUT_ZONE
-          .bindByName(
-            Seq(
-              'id -> existingZone.id,
-              'name -> existingZone.name,
-              'adminGroupId -> zone.adminGroupId,
-              'data -> toPB(zone).toByteArray
-            ): _*
-          )
-          .update()
-          .apply()
-
-        deleteZoneAccess(existingZone)
-        existingZone
-      }
-      case None => {
-        logger.error("NEW ZONE CREATED")
-
-        PUT_ZONE
-          .bindByName(
-            Seq(
-              'id -> zone.id,
-              'name -> zone.name,
-              'adminGroupId -> zone.adminGroupId,
-              'data -> toPB(zone).toByteArray
-            ): _*
-          )
-          .update()
-          .apply()
-
-        logger.error(s"NEW CREATED ZONE name: ${zone.name} id: ${zone.id}")
-        zone
-      }
-    }
+    zone
+  }
 
   /**
     * The zone_access table holds a pair of accessor_id -> zone_id
@@ -383,20 +363,41 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-  def saveTx(zone: Zone): IO[Zone] =
+  def saveTx(zone: Zone): IO[Either[DuplicateZoneError, Zone]] =
     monitor("repo.ZoneJDBC.save") {
       IO {
         DB.localTx { implicit s =>
-          logger.error(s"INITIAL ZONE INFO. zone name: ${zone.name} zone id: ${zone.id}")
-          deleteZoneAccess(zone)
-          val savedZone = putZone(zone)
-          putZoneAccess(savedZone)
-          savedZone
+          val zoneById = getZoneByIdInSession(zone.id)
+          val zoneByName = getZoneByNameInSession(zone.name)
+          (zoneById, zoneByName) match {
+            case (Some(foundZoneById), Some(foundZoneByName)) => {
+              if (foundZoneById.id == foundZoneByName.id) {
+                saveZoneProcess(zone).asRight
+              } else
+                DuplicateZoneError(s"Incorrect ID for Zone with name ${zone.name}").asLeft
+            }
+            case (None, None) => saveZoneProcess(zone).asRight
+            case (Some(_), None) => saveZoneProcess(zone).asRight
+            case (None, Some(_)) =>
+              DuplicateZoneError(s"Zone with name ${zone.name} already exists.").asLeft
+          }
         }
       }
     }
 
-  def retryWithBackoff[A](f: A => IO[A], a: A, delay: FiniteDuration, maxRetries: Int): IO[A] =
+  def saveZoneProcess(zone: Zone): Zone =
+    DB.localTx { implicit s =>
+      deleteZoneAccess(zone)
+      putZone(zone)
+      putZoneAccess(zone)
+      zone
+    }
+
+  def retryWithBackoff[E, A](
+      f: A => IO[Either[E, A]],
+      a: A,
+      delay: FiniteDuration,
+      maxRetries: Int): IO[Either[E, A]] =
     f(a).handleErrorWith { error =>
       if (maxRetries > 0)
         IO.sleep(delay) *> retryWithBackoff(f, a, delay * 2, maxRetries - 1)

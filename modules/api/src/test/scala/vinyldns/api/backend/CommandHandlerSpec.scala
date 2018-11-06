@@ -352,7 +352,7 @@ class CommandHandlerSpec
         .receive(count)
 
       // stage processing for a zone update, the simplest of cases
-      doReturn(IO.pure(zoneUpdate.zone)).when(zoneRepo).save(zoneUpdate.zone)
+      doReturn(IO.pure(Right(zoneUpdate.zone))).when(zoneRepo).save(zoneUpdate.zone)
       doReturn(IO.pure(zoneUpdate)).when(zoneChangeRepo).save(any[ZoneChange])
 
       // stage removing from the queue
