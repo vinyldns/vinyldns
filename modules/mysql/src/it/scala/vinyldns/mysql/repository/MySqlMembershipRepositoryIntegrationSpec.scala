@@ -26,9 +26,7 @@ class MySqlMembershipRepositoryIntegrationSpec
   extends WordSpec
     with BeforeAndAfterAll
     with BeforeAndAfterEach
-    with Matchers
-    with Inspectors
-    with OptionValues {
+    with Matchers {
 
   private val repo: MembershipRepository = TestMySqlInstance.membershipRepository
 
@@ -50,13 +48,12 @@ class MySqlMembershipRepositoryIntegrationSpec
     ids.toSet
   }
 
-  private def getAllRecords: Set[(String, String)] =
+  private def getAllRecords: List[(String, String)] =
     DB.localTx { implicit s =>
       sql"SELECT user_id, group_id FROM membership"
         .map(res => Tuple2[String, String](res.string(1), res.string(2)))
         .list()
         .apply()
-        .toSet
     }
 
   "MySqlMembershipRepo.addMembers" should {
@@ -71,6 +68,16 @@ class MySqlMembershipRepositoryIntegrationSpec
       val expectedGetAllResult = Set(Tuple2(userIds.head, groupId))
 
       getAllResult should contain theSameElementsAs expectedGetAllResult
+    }
+
+    "ignore if membership is a duplicate" in {
+      val groupId = "group-id-1"
+      val userIds = Set("user-id-1")
+
+      repo.addMembers(groupId, userIds).unsafeRunSync() should contain theSameElementsAs userIds
+      repo.addMembers(groupId, userIds).unsafeRunSync() should contain theSameElementsAs userIds
+
+      getAllRecords should contain theSameElementsAs List(Tuple2(userIds.head, groupId))
     }
 
     "add multiple members successfully" in {
@@ -107,7 +114,7 @@ class MySqlMembershipRepositoryIntegrationSpec
       getAllRecords should contain theSameElementsAs Set(Tuple2(userIds.head, groupId))
 
       repo.removeMembers(groupId, userIds).unsafeRunSync() should contain theSameElementsAs userIds
-      getAllRecords shouldBe Set()
+      getAllRecords shouldBe List()
     }
 
     "remove multiple members successfully from group" in {
