@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
+import vinyldns.core.health.HealthCheck._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
@@ -87,6 +88,12 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       |   SET in_flight=1, updated=NOW(), attempts=attempts+1
       | WHERE id in (?)
     """.stripMargin
+
+  private final val HEALTH_CHECK =
+    sql"""
+         |SELECT 1
+         |  FROM DUAL
+      """.stripMargin
 
   /* Parses a message from fields, returning the message id on failure, otherwise a good CommandMessage */
   def parseMessage(
@@ -251,4 +258,11 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
         }
       }
     }
+
+  def healthCheck(): HealthCheck =
+    IO {
+      NamedDB(QUEUE_CONNECTION_NAME).readOnly { implicit s =>
+        HEALTH_CHECK.map(_ => ()).first.apply()
+      }
+    }.attempt.asHealthCheck
 }
