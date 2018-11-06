@@ -319,6 +319,15 @@ class BatchChangeConverterSpec
       savedBatch shouldBe Some(batchChange)
     }
 
+    "successfully return for an empty batch" in {
+      val batchChange =
+        BatchChange(okUser.id, okUser.userName, None, DateTime.now, List())
+      val result = rightResultOf(
+        underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
+
+      result.batchChange shouldBe batchChange
+    }
+
     "set status to failure for changes with queueing issues" in {
       val batchWithBadChange =
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneBad)
