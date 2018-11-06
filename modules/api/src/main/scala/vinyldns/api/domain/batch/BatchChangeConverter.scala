@@ -82,9 +82,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       case Some(rsc) =>
         messageQueue
           .sendBatch(rsc)
-          .map(
-            _.successes
-              .asInstanceOf[List[RecordSetChange]])
+          .map(_.successes)
           .toBatchResult
     }
 

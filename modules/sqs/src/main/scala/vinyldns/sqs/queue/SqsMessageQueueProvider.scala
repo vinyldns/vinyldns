@@ -75,7 +75,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
     logger.error(s"Setting up queue")
     // Create queue if it doesn't exist
     IO {
-      logger.error(s"Queue name: $queueName")
+      logger.error(s"Setting up queue with name [$queueName]")
       client.getQueueUrl(queueName).getQueueUrl
     }.recoverWith {
       case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)

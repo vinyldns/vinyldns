@@ -33,7 +33,7 @@ object TestMessageQueue extends MessageQueue {
   override def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     IO.unit
 
-  override def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] = {
+  override def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult[A]] = {
     val badRecords = messages.filter {
       case bad: RecordSetChange if bad.recordSet.name == "bad" => true
       case _ => false

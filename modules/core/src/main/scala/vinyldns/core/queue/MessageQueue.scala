@@ -30,9 +30,9 @@ trait CommandMessage {
 }
 
 // need to encode the possibility of one or more commands failing to send
-final case class SendBatchResult(
-    successes: List[ZoneCommand],
-    failures: List[(Exception, ZoneCommand)])
+final case class SendBatchResult[A <: ZoneCommand](
+    successes: List[A],
+    failures: List[(Exception, A)])
 
 // Using types here to ensure we cannot pass in a negative or 0 count
 final case class MessageCount private (value: Int)
@@ -60,7 +60,7 @@ trait MessageQueue {
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit]
 
   // we need to track which messages failed and report that back to the caller
-  def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult]
+  def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult[A]]
 
   // sends a single message, exceptions will be raised via IO
   def send[A <: ZoneCommand](command: A): IO[Unit]

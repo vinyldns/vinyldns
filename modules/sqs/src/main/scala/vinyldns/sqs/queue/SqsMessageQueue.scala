@@ -130,7 +130,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         client.sendMessageAsync)
     }.as(())
 
-  def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
+  def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult[A]] =
     monitor("queue.SQS.sendBatch") {
       toSendMessageBatchRequest(cmds)
         .map { sendRequest =>
@@ -228,7 +228,7 @@ object SqsMessageQueue extends ProtobufConversions {
 
   def toSendBatchResult[A <: ZoneCommand](
       sendResultList: List[SendMessageBatchResult],
-      cmds: NonEmptyList[A]): SendBatchResult = {
+      cmds: NonEmptyList[A]): SendBatchResult[A] = {
     val successfulIds = sendResultList.flatMap(_.getSuccessful.asScala.map(_.getId))
     val successes = cmds.filter(cmd => successfulIds.contains(cmd.id))
 
