@@ -32,17 +32,6 @@ import vinyldns.mysql.MySqlConnector._
 class MySqlDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger(classOf[MySqlDataStoreProvider])
-  private val implementedRepositories =
-    Set(
-      RepositoryName.zone,
-      RepositoryName.batchChange,
-      RepositoryName.zoneChange,
-      RepositoryName.user,
-      RepositoryName.recordSet,
-      RepositoryName.group,
-      RepositoryName.recordChange,
-      RepositoryName.membership
-    )
 
   implicit val mySqlPropertiesReader: ConfigReader[Map[String, AnyRef]] =
     MySqlConnectionConfig.mySqlPropertiesReader
@@ -50,22 +39,10 @@ class MySqlDataStoreProvider extends DataStoreProvider {
   def load(config: DataStoreConfig, cryptoAlgebra: CryptoAlgebra): IO[LoadedDataStore] =
     for {
       settingsConfig <- loadConfigF[IO, MySqlConnectionConfig](config.settings)
-      _ <- validateRepos(config.repositories)
       _ <- runDBMigrations(settingsConfig)
       _ <- setupDBConnection(settingsConfig)
       store <- initializeRepos(cryptoAlgebra)
     } yield new LoadedDataStore(store, shutdown(), checkHealth())
-
-  def validateRepos(reposConfig: RepositoriesConfig): IO[Unit] = {
-    val invalid = reposConfig.keys.diff(implementedRepositories)
-
-    if (invalid.isEmpty) {
-      IO.unit
-    } else {
-      val error = s"Invalid config provided to mysql; unimplemented repos included: $invalid"
-      IO.raiseError(DataStoreStartupError(error))
-    }
-  }
 
   def initializeRepos(cryptoAlgebra: CryptoAlgebra): IO[DataStore] = IO {
     val zones = Some(new MySqlZoneRepository())
@@ -76,6 +53,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val groups = Some(new MySqlGroupRepository())
     val recordChanges = Some(new MySqlRecordChangeRepository())
     val membership = Some(new MySqlMembershipRepository())
+    val groupChanges = Some(new MySqlGroupChangeRepository())
     DataStore(
       zoneRepository = zones,
       batchChangeRepository = batchChanges,
@@ -84,7 +62,8 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       recordSetRepository = recordSets,
       groupRepository = groups,
       recordChangeRepository = recordChanges,
-      membershipRepository = membership
+      membershipRepository = membership,
+      groupChangeRepository = groupChanges
     )
   }
 
