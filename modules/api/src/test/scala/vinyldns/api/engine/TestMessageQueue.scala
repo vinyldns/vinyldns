@@ -34,18 +34,14 @@ object TestMessageQueue extends MessageQueue {
     IO.unit
 
   override def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult[A]] = {
-    val badRecords = messages.filter {
-      case bad: RecordSetChange if bad.recordSet.name == "bad" => true
-      case _ => false
+    val partition = messages.toList.partition {
+      case bad: RecordSetChange if bad.recordSet.name == "bad" => false
+      case _ => true
     }
-    if (badRecords.isEmpty) {
-      IO(SendBatchResult(messages.toList, List()))
-    } else {
-      IO(
-        SendBatchResult(
-          messages.filterNot(x => badRecords.map(_.id).contains(x.id)),
-          badRecords.map((new RuntimeException("BOO"), _))))
+    IO {
+      SendBatchResult(partition._1, partition._2.map((new RuntimeException("BOO"), _)))
     }
   }
+
   override def send[A <: ZoneCommand](command: A): IO[Unit] = IO.unit
 }

@@ -111,9 +111,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     }
 
   def remove(message: CommandMessage): IO[Unit] =
-    monitor("queue.SQS.remove") {
-      delete(message.id.value)
-    }.as(())
+    delete(message.id.value).as(())
 
   /* Explicitly make a message almost immediately available on the queue */
   def requeue(message: CommandMessage): IO[Unit] =
@@ -148,7 +146,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   /* Change message visibility timeout. Valid values: 0 to 43200 seconds (ie. 12 hours) */
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.SQS.changeMessageTimeout") {
-      logger.info(s"Updating visibility timeout for message: $message.\n")
+      logger.info(s"Updating visibility timeout to $duration for message: $message.\n")
       IO.fromEither(validateMessageTimeout(duration)).flatMap { validDuration =>
         sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
           new ChangeMessageVisibilityRequest()

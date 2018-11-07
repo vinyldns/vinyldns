@@ -71,8 +71,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
         .build()
     }
 
-  def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] = {
-    logger.error(s"Setting up queue")
+  def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] =
     // Create queue if it doesn't exist
     IO {
       logger.error(s"Setting up queue with name [$queueName]")
@@ -80,7 +79,6 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
     }.recoverWith {
       case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)
     }
-  }
 }
 
 object SqsMessageQueueProvider {
