@@ -32,10 +32,9 @@ class HealthService(healthChecks: List[HealthCheck]) {
     healthChecks.parSequence
       .map {
         _.collect {
-          case Left(err) => {
+          case Left(err) =>
             logger.error(s"Health Check Failure: ${err.message}")
             err
-          }
         }
       }
 }

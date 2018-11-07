@@ -29,7 +29,7 @@ object HealthCheck {
       io.map {
         case Left(err) =>
           Left(HealthCheckError(Option(err.getMessage).getOrElse("no message from error")))
-        case _ => Right((): Unit)
+        case _ => Right(())
       }
   }
 
