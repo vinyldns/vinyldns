@@ -22,7 +22,7 @@ import vinyldns.core.domain.membership.{GroupRepository, MembershipRepository, U
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
-import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
+import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore, RepositoryName}
 import vinyldns.mysql.repository.MySqlDataStoreProvider
 
 trait MySqlIntegrationSpec {
@@ -32,7 +32,8 @@ trait MySqlIntegrationSpec {
 
   lazy val provider = new MySqlDataStoreProvider()
 
-  lazy val instance: DataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val providerLoad: LoadedDataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val instance: DataStore = providerLoad.dataStore
 
   lazy val batchChangeRepository: BatchChangeRepository =
     instance.get[BatchChangeRepository](RepositoryName.batchChange).get
@@ -50,8 +51,6 @@ trait MySqlIntegrationSpec {
     instance.get[RecordChangeRepository](RepositoryName.recordChange).get
   lazy val membershipRepository: MembershipRepository =
     instance.get[MembershipRepository](RepositoryName.membership).get
-
-  def shutdown(): Unit = provider.shutdown().unsafeRunSync()
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {

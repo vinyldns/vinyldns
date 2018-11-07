@@ -22,6 +22,7 @@ import cats.implicits._
 import vinyldns.core.crypto.CryptoAlgebra
 import org.slf4j.LoggerFactory
 import vinyldns.core.repository.RepositoryName._
+import vinyldns.core.health.HealthCheck.HealthCheck
 
 import scala.reflect.ClassTag
 
@@ -30,11 +31,15 @@ object DataStoreLoader {
   class DataStoreInfo(
       val dataStoreConfig: DataStoreConfig,
       val dataStore: DataStore,
-      val dataStoreProvider: DataStoreProvider) {
+      val shutdownHook: IO[Unit],
+      val healthCheck: HealthCheck) {
     val accessorTuple: (DataStoreConfig, DataStore) = (dataStoreConfig, dataStore)
   }
 
-  class DataLoaderResponse[A](val accessor: A, shutdownHook: => List[IO[Unit]]) {
+  class DataLoaderResponse[A](
+      val accessor: A,
+      shutdownHook: List[IO[Unit]],
+      val healthChecks: List[HealthCheck]) {
     def shutdown(): Unit = shutdownHook.parSequence.unsafeRunSync()
   }
 
@@ -49,7 +54,12 @@ object DataStoreLoader {
       activeConfigs <- IO.fromEither(getValidatedConfigs(configs, dataAccessorProvider.repoNames))
       dataStores <- activeConfigs.map(load(_, crypto)).parSequence
       accessor <- IO.fromEither(generateAccessor(dataStores, dataAccessorProvider))
-    } yield new DataLoaderResponse[A](accessor, dataStores.map(_.dataStoreProvider.shutdown()))
+    } yield
+      new DataLoaderResponse[A](
+        accessor,
+        dataStores.map(_.shutdownHook),
+        dataStores.map(_.healthCheck)
+      )
 
   def load(config: DataStoreConfig, crypto: CryptoAlgebra): IO[DataStoreInfo] =
     for {
@@ -62,8 +72,13 @@ object DataStoreLoader {
           .getDeclaredConstructor()
           .newInstance()
           .asInstanceOf[DataStoreProvider])
-      dataStore <- provider.load(config, crypto)
-    } yield new DataStoreInfo(config, dataStore, provider)
+      loadResponse <- provider.load(config, crypto)
+    } yield
+      new DataStoreInfo(
+        config,
+        loadResponse.dataStore,
+        loadResponse.shutdownHook,
+        loadResponse.healthCheck)
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only

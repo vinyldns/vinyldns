@@ -19,7 +19,6 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.util.Timeout
-import vinyldns.api.Interfaces._
 
 import scala.concurrent.duration._
 
@@ -39,13 +38,10 @@ trait HealthCheckRoute extends Directives {
   // perform a query against, fail with an ok if we can get zones from the zone manager
   val healthCheckRoute =
     (get & path("health")) {
-      onSuccess(checkStatus.value.unsafeToFuture()) {
-        case Right(_) =>
-          complete(StatusCodes.OK)
-        case Left(e) => failWith(e)
+      onSuccess(healthService.checkHealth().unsafeToFuture()) {
+        case head :: _ => failWith(head)
+        case _ => complete(StatusCodes.OK)
       }
     }
 
-  private def checkStatus: Result[Unit] =
-    healthService.checkHealth()
 }

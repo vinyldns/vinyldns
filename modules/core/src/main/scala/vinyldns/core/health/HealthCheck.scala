@@ -14,29 +14,23 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.core.health
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{Matchers, WordSpec}
+import cats.effect.IO
 
-class BlueGreenRoutingSpec
-    extends WordSpec
-    with ScalatestRouteTest
-    with BlueGreenRoute
-    with Matchers {
+object HealthCheck {
 
-  def actorRefFactory: ActorSystem = system
+  type HealthCheck = IO[Either[HealthCheckError, Unit]]
 
-  "GET color" should {
-    "return blue" in {
-      Get("/color") ~> colorRoute ~> check {
-        response.status shouldBe StatusCodes.OK
+  case class HealthCheckError(message: String) extends Throwable(message)
 
-        // set in the application.conf in src/test/resources
-        responseAs[String] shouldBe "blue"
+  implicit class HealthCheckImprovements(io: IO[Either[Throwable, _]]) {
+    def asHealthCheck: HealthCheck =
+      io.map {
+        case Left(err) =>
+          Left(HealthCheckError(Option(err.getMessage).getOrElse("no message from error")))
+        case _ => Right(())
       }
-    }
   }
+
 }

@@ -18,7 +18,7 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -35,7 +35,6 @@ import vinyldns.core.domain.zone._
 class ZoneRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with Directives
     with ZoneRoute
     with JsonValidationRejection
     with VinylDNSDirectives

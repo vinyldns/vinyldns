@@ -93,7 +93,7 @@ object Boot extends App {
         commandBus,
         zoneValidations,
         AccessValidations)
-      val healthService = new HealthService(repositories.zoneRepository)
+      val healthService = new HealthService(loaderResponse.healthChecks)
       val batchChangeConverter =
         new BatchChangeConverter(repositories.batchChangeRepository, commandBus)
       val batchChangeService =
