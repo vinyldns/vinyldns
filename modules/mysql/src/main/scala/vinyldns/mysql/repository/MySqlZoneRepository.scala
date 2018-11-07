@@ -126,9 +126,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       case ZoneStatus.Deleted =>
         val doDelete: Zone => IO[Either[DuplicateZoneError, Zone]] = z => deleteTx(z).map(Right(_))
         retryWithBackoff(doDelete, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
-      case _ => {
-        retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
-      }
+      case _ => retryWithBackoff(saveTx, zone, INITIAL_RETRY_DELAY, MAX_RETRIES)
     }
 
   def getZone(zoneId: String): IO[Option[Zone]] =
