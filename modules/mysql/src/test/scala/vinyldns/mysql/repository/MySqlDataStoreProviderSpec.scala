@@ -40,13 +40,13 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
     }
     "Fail if an unimplemented repo is enabled" in {
       val placeHolder = ConfigFactory.parseString("test=test")
-      val badRepos = dataStoreSettings.repositories.copy(membership = Some(placeHolder))
+      val badRepos = dataStoreSettings.repositories.copy(groupChange = Some(placeHolder))
 
       val thrown = the[DataStoreStartupError] thrownBy underTest
         .validateRepos(badRepos)
         .unsafeRunSync()
 
-      thrown.msg shouldBe "Invalid config provided to mysql; unimplemented repos included: Set(membership)"
+      thrown.msg shouldBe "Invalid config provided to mysql; unimplemented repos included: Set(groupChange)"
     }
   }
   "load" should {
@@ -80,7 +80,7 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
     }
     "Fail if validateRepos fails" in {
       val placeHolder = ConfigFactory.parseString("test=test")
-      val badRepos = dataStoreSettings.repositories.copy(membership = Some(placeHolder))
+      val badRepos = dataStoreSettings.repositories.copy(groupChange = Some(placeHolder))
       val badSettings = dataStoreSettings.copy(repositories = badRepos)
 
       a[DataStoreStartupError] should be thrownBy underTest
