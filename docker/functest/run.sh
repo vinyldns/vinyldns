@@ -15,6 +15,13 @@ else
   TEST_PATTERN="-k ${TEST_PATTERN}"
 fi
 
+# If we are to skip tests not suitable for prod environments, set to true or omit
+if [ -z "${FOR_PROD}" ]; then
+  SKIP_TAGS=
+else
+  SKIP_TAGS="-m \"not skip_production\""
+fi
+
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
@@ -42,4 +49,4 @@ done
 echo "Running live tests against ${VINYLDNS_URL} and DNS server ${DNS_IP}"
 
 cd /app
-./run-tests.py live_tests -v ${TEST_PATTERN} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP}
+./run-tests.py live_tests -v ${TEST_PATTERN} ${SKIP_TAGS} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP}
