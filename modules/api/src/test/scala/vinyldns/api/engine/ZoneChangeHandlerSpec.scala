@@ -23,6 +23,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone.{
   ZoneChange,
   ZoneChangeRepository,
@@ -54,5 +55,24 @@ class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar wit
       val savedChange = changeCaptor.getValue
       savedChange.status shouldBe ZoneChangeStatus.Synced
     }
+  }
+
+  "save the zone change as failed if the zone does not save" in {
+    val mockZoneRepo = mock[ZoneRepository]
+    val mockChangeRepo = mock[ZoneChangeRepository]
+    val change = zoneChangePending
+
+    doReturn(IO.pure(Left(DuplicateZoneError("message")))).when(mockZoneRepo).save(change.zone)
+    doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
+
+    val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo)
+    test(change).unsafeRunSync()
+
+    val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+    verify(mockChangeRepo).save(changeCaptor.capture())
+
+    val savedChange = changeCaptor.getValue
+    savedChange.status shouldBe ZoneChangeStatus.Failed
+    savedChange.systemMessage shouldBe Some("message")
   }
 }
