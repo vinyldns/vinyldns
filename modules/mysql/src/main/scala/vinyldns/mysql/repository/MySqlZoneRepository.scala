@@ -133,13 +133,10 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     monitor("repo.ZoneJDBC.getZone") {
       IO {
         DB.readOnly { implicit s =>
-          getZoneByIdInSession(zoneId)
+          GET_ZONE.bind(zoneId).map(extractZone(1)).first().apply()
         }
       }
     }
-
-  private def getZoneByIdInSession(zoneId: String)(implicit session: DBSession): Option[Zone] =
-    GET_ZONE.bind(zoneId).map(extractZone(1)).first().apply()
 
   def getZoneByName(zoneName: String): IO[Option[Zone]] =
     monitor("repo.ZoneJDBC.getZoneByName") {
@@ -365,19 +362,14 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     monitor("repo.ZoneJDBC.save") {
       IO {
         DB.localTx { implicit s =>
-          val zoneById = getZoneByIdInSession(zone.id)
           val zoneByName = getZoneByNameInSession(zone.name)
-          (zoneById, zoneByName) match {
-            case (Some(foundZoneById), Some(foundZoneByName)) => {
-              if (foundZoneById.id == foundZoneByName.id) {
+          zoneByName match {
+            case Some(foundZoneByName) =>
+              if (zone.id == foundZoneByName.id) {
                 saveZoneProcess(zone).asRight
               } else
-                DuplicateZoneError(s"Incorrect ID for Zone with name ${zone.name}").asLeft
-            }
-            case (None, None) => saveZoneProcess(zone).asRight
-            case (Some(_), None) => saveZoneProcess(zone).asRight
-            case (None, Some(_)) =>
-              DuplicateZoneError(s"Zone with name ${zone.name} already exists.").asLeft
+                DuplicateZoneError(zone.name).asLeft
+            case None => saveZoneProcess(zone).asRight
           }
         }
       }

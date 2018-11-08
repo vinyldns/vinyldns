@@ -73,6 +73,6 @@ class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar wit
 
     val savedChange = changeCaptor.getValue
     savedChange.status shouldBe ZoneChangeStatus.Failed
-    savedChange.systemMessage shouldBe Some("message")
+    savedChange.systemMessage shouldBe Some("Zone with name \"message\" already exists.")
   }
 }

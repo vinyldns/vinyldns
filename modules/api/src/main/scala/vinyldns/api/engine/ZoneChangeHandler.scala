@@ -17,8 +17,12 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
-import vinyldns.core.domain.zone.{ZoneChange, ZoneChangeRepository, ZoneChangeStatus, ZoneRepository}
-import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
+import vinyldns.core.domain.zone.{
+  ZoneChange,
+  ZoneChangeRepository,
+  ZoneChangeStatus,
+  ZoneRepository
+}
 
 object ZoneChangeHandler {
   def apply(
@@ -26,9 +30,11 @@ object ZoneChangeHandler {
       zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] =
     zoneChange =>
       zoneRepository.save(zoneChange.zone).flatMap {
-        case Left(DuplicateZoneError(msg)) =>
+        case Left(duplicateZoneError) =>
           zoneChangeRepository.save(
-            zoneChange.copy(status = ZoneChangeStatus.Failed, systemMessage = Some(msg))
+            zoneChange.copy(
+              status = ZoneChangeStatus.Failed,
+              systemMessage = Some(duplicateZoneError.message))
           )
         case Right(_) =>
           zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))

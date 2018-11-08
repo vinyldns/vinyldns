@@ -44,5 +44,7 @@ trait ZoneRepository extends Repository {
 }
 
 object ZoneRepository {
-  final case class DuplicateZoneError(message: String)
+  final case class DuplicateZoneError(zoneName: String) {
+    def message: String = s"""Zone with name "$zoneName" already exists."""
+  }
 }

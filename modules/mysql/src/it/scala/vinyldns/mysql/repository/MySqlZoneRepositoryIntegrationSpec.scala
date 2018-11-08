@@ -122,15 +122,7 @@ class MySqlZoneRepositoryIntegrationSpec
     "return an error when attempting to save a duplicate zone" in {
       repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
       repo.save(okZone.copy(id = "newId")).unsafeRunSync() shouldBe
-        Left(DuplicateZoneError("Zone with name ok.zone.recordsets. already exists."))
-    }
-
-    "return an error when attempting to save a zone with mismatched ID and name" in {
-      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
-      val testZoneOne = testZone("testzone.")
-      repo.save(testZoneOne).unsafeRunSync() shouldBe Right(testZoneOne)
-      repo.save(testZoneOne.copy(name = okZone.name)).unsafeRunSync() shouldBe
-        Left(DuplicateZoneError("Incorrect ID for Zone with name ok.zone.recordsets."))
+        Left(DuplicateZoneError("ok.zone.recordsets."))
     }
 
     "get a zone by id" in {
