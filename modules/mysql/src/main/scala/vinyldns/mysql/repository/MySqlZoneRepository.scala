@@ -362,10 +362,9 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     monitor("repo.ZoneJDBC.save") {
       IO {
         DB.localTx { implicit s =>
-          val zoneByName = getZoneByNameInSession(zone.name)
-          zoneByName match {
-            case Some(foundZoneByName) =>
-              if (zone.id == foundZoneByName.id) {
+          getZoneByNameInSession(zone.name) match {
+            case Some(foundZone) =>
+              if (zone.id == foundZone.id) {
                 saveZoneProcess(zone).asRight
               } else
                 DuplicateZoneError(zone.name).asLeft
