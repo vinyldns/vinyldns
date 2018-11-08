@@ -87,13 +87,5 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
         .load(badSettings, crypto)
         .unsafeRunSync()
     }
-
-    "Return unit upon Shutdown" in {
-      val response: Unit = underTest
-        .shutdown()
-        .unsafeRunSync()
-
-      response shouldBe (())
-    }
   }
 }

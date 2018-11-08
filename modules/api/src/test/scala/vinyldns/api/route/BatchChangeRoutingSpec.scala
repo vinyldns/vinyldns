@@ -18,7 +18,7 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.data.EitherT
 import cats.implicits._
@@ -38,7 +38,6 @@ import vinyldns.core.domain.batch._
 class BatchChangeRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with Directives
     with BatchChangeRoute
     with JsonValidationRejection
     with VinylDNSDirectives

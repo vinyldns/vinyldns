@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{HttpProtocol, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
@@ -28,7 +27,6 @@ import vinyldns.core.VinylDNSMetrics
 class PrometheusRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with Directives
     with PrometheusRoute
     with BeforeAndAfterEach
     with MockitoSugar

@@ -25,7 +25,7 @@ import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.repository.{DataStore, DataStoreConfig}
+import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore}
 import vinyldns.core.repository.RepositoryName._
 
 
@@ -40,7 +40,8 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
   val crypto: CryptoAlgebra = new NoOpCrypto()
 
   logger.info("Loading all dynamodb tables in DynamoDBDataStoreProviderSpec")
-  val dataStore: DataStore = provider.load(dynamoDBConfig, crypto).unsafeRunSync()
+  val providerLoad: LoadedDataStore = provider.load(dynamoDBConfig, crypto).unsafeRunSync()
+  val dataStore: DataStore = providerLoad.dataStore
   logger.info("DynamoDBDataStoreProviderSpec load complete")
 
   def setup(): Unit = ()
@@ -85,6 +86,9 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
 
       val get = userRepo.map(_.getUser(testUser.id)).sequence[IO, Option[User]]
       get.unsafeRunSync().flatten shouldBe Some(testUser)
+    }
+    "include a health check IO" in {
+      providerLoad.healthCheck.unsafeRunSync() shouldBe ().asRight
     }
   }
 }

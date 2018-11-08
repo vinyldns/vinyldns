@@ -17,7 +17,7 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCodes}
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
@@ -39,7 +39,6 @@ import scala.util.Random
 class RecordSetRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with Directives
     with RecordSetRoute
     with VinylDNSJsonProtocol
     with JsonValidationRejection

@@ -14,29 +14,17 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.mysql.repository
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.scalatest.EitherMatchers
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.mysql.TestMySqlInstance
 
-class BlueGreenRoutingSpec
-    extends WordSpec
-    with ScalatestRouteTest
-    with BlueGreenRoute
-    with Matchers {
+class MySqlDataStoreProviderIntegrationSpec extends WordSpec with Matchers with EitherMatchers {
 
-  def actorRefFactory: ActorSystem = system
-
-  "GET color" should {
-    "return blue" in {
-      Get("/color") ~> colorRoute ~> check {
-        response.status shouldBe StatusCodes.OK
-
-        // set in the application.conf in src/test/resources
-        responseAs[String] shouldBe "blue"
-      }
+  "MySqlDataStoreProvider" should {
+    "Successfully healthcheck" in {
+      TestMySqlInstance.providerLoad.healthCheck.unsafeRunSync() shouldBe right
     }
   }
 }
