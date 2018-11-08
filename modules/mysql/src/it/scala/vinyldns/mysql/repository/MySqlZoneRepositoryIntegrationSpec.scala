@@ -113,10 +113,12 @@ class MySqlZoneRepositoryIntegrationSpec
       repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
     }
 
-    "return the updated zone when it is saved with a new name" in {
+    "return the updated zone when it is saved with new values" in {
       repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
-      val newZone = okZone.copy(name = "newname.")
-      repo.save(newZone).unsafeRunSync() shouldBe Right(newZone)
+      val updatedZone = okZone.copy(adminGroupId = "newestGroup")
+      repo.save(updatedZone).unsafeRunSync() shouldBe Right(updatedZone)
+
+      repo.getZoneByName(updatedZone.name).unsafeRunSync().get.adminGroupId shouldBe "newestGroup"
     }
 
     "return an error when attempting to save a duplicate zone" in {
