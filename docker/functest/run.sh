@@ -15,13 +15,6 @@ else
   TEST_PATTERN="-k ${TEST_PATTERN}"
 fi
 
-# If we are to skip tests not suitable for prod environments, set to true or omit
-if [ -z "${FOR_PROD}" ]; then
-  SKIP_TAGS=
-else
-  SKIP_TAGS="-m \"not skip_production\""
-fi
-
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
@@ -49,4 +42,13 @@ done
 echo "Running live tests against ${VINYLDNS_URL} and DNS server ${DNS_IP}"
 
 cd /app
-./run-tests.py live_tests -v ${TEST_PATTERN} ${SKIP_TAGS} --url=${VINYLDNS_URL} --dns-ip=${DNS_IP}
+
+# If PROD_ENV is unset, we are in a local docker environment so do not skip anything
+if [ -z "${PROD_ENV}" ]; then
+    echo "./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+    ./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+else
+    # -m plays havoc with -k, using variables is a headache, so doing this by hand
+    echo "./run-tests.py live_tests -m \"not skip_production\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
+    ./run-tests.py live_tests -v -m "not skip_production" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+fi
