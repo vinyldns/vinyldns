@@ -44,7 +44,7 @@ echo "Running live tests against ${VINYLDNS_URL} and DNS server ${DNS_IP}"
 cd /app
 
 # If PROD_ENV is unset, we are in a local docker environment so do not skip anything
-if [ -z "${PROD_ENV}" ]; then
+if [ "${PROD_ENV}" != "true"]; then
     echo "./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
     ./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
 else
