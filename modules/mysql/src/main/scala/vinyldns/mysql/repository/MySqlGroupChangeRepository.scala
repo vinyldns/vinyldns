@@ -31,7 +31,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
 
   private final val PUT_GROUP_CHANGE =
     sql"""
-      |REPLACE INTO group_change (group_change_id, group_id, created_timestamp, data)
+      |INSERT INTO ON DUPLICATE KEY UPDATE group_change (id, group_id, created_timestamp, data)
       | VALUES ({group_change_id}, {group_id}, {created_timestamp}, {data})
     """.stripMargin
 
@@ -39,7 +39,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
     sql"""
       |SELECT data
       |  FROM group_change
-      | WHERE group_change_id = ?
+      | WHERE id = ?
     """.stripMargin
 
   private final val LIST_GROUP_CHANGES_WITH_START =
