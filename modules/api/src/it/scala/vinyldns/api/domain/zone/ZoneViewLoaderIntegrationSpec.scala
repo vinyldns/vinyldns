@@ -17,7 +17,8 @@
 package vinyldns.api.domain.zone
 
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.core.domain.zone.Zone
+import org.xbill.DNS.ZoneTransferException
+import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
 class ZoneViewLoaderIntegrationSpec extends WordSpec with Matchers {
   "ZoneViewLoader" should {
@@ -25,6 +26,23 @@ class ZoneViewLoaderIntegrationSpec extends WordSpec with Matchers {
       DnsZoneViewLoader(Zone("vinyldns.", "test@test.com"))
         .load()
         .unsafeRunSync() shouldBe a[ZoneView]
+    }
+
+    "return a failure if the transfer connection is bad" in {
+      assertThrows[IllegalArgumentException](
+        DnsZoneViewLoader(
+          Zone("vinyldns.", "bad@transfer.connection")
+            .copy(transferConnection =
+              Some(ZoneConnection("invalid-connection.", "bad-key", "invalid-key", "10.1.1.1"))))
+          .load()
+          .unsafeRunSync())
+    }
+
+    "return a failure if the zone doesn't exist in the DNS backend" in {
+      assertThrows[ZoneTransferException](
+        DnsZoneViewLoader(Zone("non-existent-zone", "bad@zone.test"))
+          .load()
+          .unsafeRunSync())
     }
   }
 }
