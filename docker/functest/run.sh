@@ -44,7 +44,7 @@ echo "Running live tests against ${VINYLDNS_URL} and DNS server ${DNS_IP}"
 cd /app
 
 # If PROD_ENV is not true, we are in a local docker environment so do not skip anything
-if [ "${PROD_ENV}" = "true"]; then
+if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
     echo "./run-tests.py live_tests -m \"not skip_production\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
     ./run-tests.py live_tests -v -m "not skip_production" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
