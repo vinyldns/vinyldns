@@ -363,12 +363,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       IO {
         DB.localTx { implicit s =>
           getZoneByNameInSession(zone.name) match {
-            case Some(foundZone) =>
-              if (zone.id == foundZone.id) {
-                saveZoneProcess(zone).asRight
-              } else
-                DuplicateZoneError(zone.name).asLeft
-            case None => saveZoneProcess(zone).asRight
+            case Some(foundZone) if zone.id != foundZone.id => DuplicateZoneError(zone.name).asLeft
+            case _ => saveZoneProcess(zone).asRight
           }
         }
       }
