@@ -67,6 +67,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     */
   def receive(count: MessageCount): IO[List[SqsMessage]] =
     monitor("queue.SQS.receive") {
+      logger.info(s"Receiving $count messages.\n")
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         // Can return 1-10 messages.
         // (see: https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/
@@ -102,14 +103,15 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     }
 
   def delete(receiptHandle: String): IO[Unit] =
-    sqsAsync[DeleteMessageRequest, DeleteMessageResult](
-      new DeleteMessageRequest(queueUrl, receiptHandle),
-      client.deleteMessageAsync).as(())
+    monitor("queue.SQS.delete") {
+      logger.info(s"Deleting message with receipt handle: $receiptHandle.\n")
+      sqsAsync[DeleteMessageRequest, DeleteMessageResult](
+        new DeleteMessageRequest(queueUrl, receiptHandle),
+        client.deleteMessageAsync).as(())
+    }
 
   def remove(message: CommandMessage): IO[Unit] =
-    monitor("queue.SQS.remove") {
-      IO(delete(message.id.value))
-    }.as(())
+    delete(message.id.value).as(())
 
   /* Explicitly make a message almost immediately available on the queue */
   def requeue(message: CommandMessage): IO[Unit] =
@@ -118,13 +120,15 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     }
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
-    monitor("queue.SQS.send")(
+    monitor("queue.SQS.send") {
+      logger.info(s"Sending command: $command.\n")
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
-        client.sendMessageAsync)).as(())
+        client.sendMessageAsync)
+    }.as(())
 
-  def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult] =
+  def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult[A]] =
     monitor("queue.SQS.sendBatch") {
       toSendMessageBatchRequest(cmds)
         .map { sendRequest =>
@@ -142,6 +146,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   /* Change message visibility timeout. Valid values: 0 to 43200 seconds (ie. 12 hours) */
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.SQS.changeMessageTimeout") {
+      logger.info(s"Updating visibility timeout to $duration for message: $message.\n")
       IO.fromEither(validateMessageTimeout(duration)).flatMap { validDuration =>
         sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
           new ChangeMessageVisibilityRequest()
@@ -221,7 +226,7 @@ object SqsMessageQueue extends ProtobufConversions {
 
   def toSendBatchResult[A <: ZoneCommand](
       sendResultList: List[SendMessageBatchResult],
-      cmds: NonEmptyList[A]): SendBatchResult = {
+      cmds: NonEmptyList[A]): SendBatchResult[A] = {
     val successfulIds = sendResultList.flatMap(_.getSuccessful.asScala.map(_.getId))
     val successes = cmds.filter(cmd => successfulIds.contains(cmd.id))
 

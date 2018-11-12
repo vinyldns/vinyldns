@@ -230,7 +230,7 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
       }.as(())
     }
 
-  def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult] =
+  def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult[A]] =
     monitor("queue.JDBC.sendBatch") {
       IO {
         NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>

@@ -36,6 +36,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       _ <- IO.fromEither(validateQueueName(settingsConfig.queueName))
       client <- setupClient(settingsConfig)
       queueUrl <- setupQueue(client, settingsConfig.queueName)
+      _ <- IO(logger.error(s"Queue URL: $queueUrl\n"))
     } yield new SqsMessageQueue(queueUrl, client)
 
   def validateQueueName(queueName: String): Either[InvalidQueueName, String] = {
@@ -55,6 +56,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
 
   def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] =
     IO {
+      logger.error(s"Setting up queue client SqsMessageQueueSettings: $sqsMessageQueueSettings")
       AmazonSQSAsyncClientBuilder
         .standard()
         .withEndpointConfiguration(
@@ -69,15 +71,14 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
         .build()
     }
 
-  def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] = {
-    logger.info(s"Setting up queue...")
+  def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] =
     // Create queue if it doesn't exist
     IO {
+      logger.error(s"Setting up queue with name [$queueName]")
       client.getQueueUrl(queueName).getQueueUrl
     }.recoverWith {
       case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)
     }
-  }
 }
 
 object SqsMessageQueueProvider {

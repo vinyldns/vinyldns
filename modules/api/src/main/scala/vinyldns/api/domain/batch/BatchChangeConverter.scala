@@ -17,6 +17,7 @@
 package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
+import cats.syntax.list._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
@@ -25,16 +26,14 @@ import vinyldns.api.domain.batch.BatchTransformations.{
   ExistingRecordSets,
   ExistingZones
 }
-import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.record
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
+import vinyldns.core.queue.MessageQueue
 
-class BatchChangeConverter(
-    batchChangeRepo: BatchChangeRepository,
-    sqsServiceAlgebra: EngineCommandBus)
+class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
     extends BatchChangeConverterAlgebra {
 
   private val logger = LoggerFactory.getLogger("BatchChangeConverter")
@@ -76,9 +75,16 @@ class BatchChangeConverter(
   }
 
   def putChangesOnQueue(
-      recordSetChanges: List[RecordSetChange]): BatchResult[List[RecordSetChange]] = {
-    sqsServiceAlgebra.sendRecordSetChanges(recordSetChanges).collectSuccesses
-  }.toBatchResult
+      recordSetChanges: List[RecordSetChange]): BatchResult[List[RecordSetChange]] =
+    recordSetChanges.toNel match {
+      case None =>
+        recordSetChanges.toRightBatchResult // If list is empty, return normally without queueing
+      case Some(rsc) =>
+        messageQueue
+          .sendBatch(rsc)
+          .map(_.successes)
+          .toBatchResult
+    }
 
   def updateWithQueueingFailures(
       batchChange: BatchChange,
@@ -96,7 +102,7 @@ class BatchChangeConverter(
           change
         }
         .getOrElse {
-          // failure here means there was an SQS issue for this change
+          // failure here means there was a message queue issue for this change
           change.withFailureMessage("Error queueing RecordSetChange for processing")
         }
     }
