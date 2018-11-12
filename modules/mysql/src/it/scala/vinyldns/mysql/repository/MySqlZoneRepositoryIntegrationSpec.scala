@@ -26,6 +26,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData.{dummyAuth, dummyUser, okGroup, okUser, oneUserDummyGroup}
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlZoneRepositoryIntegrationSpec
@@ -109,7 +110,21 @@ class MySqlZoneRepositoryIntegrationSpec
 
   "MySqlZoneRepository" should {
     "return the zone when it is saved" in {
-      repo.save(okZone).unsafeRunSync() shouldBe okZone
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+    }
+
+    "return the updated zone when it is saved with new values" in {
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+      val updatedZone = okZone.copy(adminGroupId = "newestGroup")
+      repo.save(updatedZone).unsafeRunSync() shouldBe Right(updatedZone)
+
+      repo.getZoneByName(updatedZone.name).unsafeRunSync().get.adminGroupId shouldBe "newestGroup"
+    }
+
+    "return an error when attempting to save a duplicate zone" in {
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+      repo.save(okZone.copy(id = "newId")).unsafeRunSync() shouldBe
+        Left(DuplicateZoneError("ok.zone.recordsets."))
     }
 
     "get a zone by id" in {

@@ -25,13 +25,18 @@ import vinyldns.core.domain.zone.{
 }
 
 object ZoneChangeHandler {
-
   def apply(
       zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] = zoneChange => {
-    for {
-      _ <- zoneRepository.save(zoneChange.zone)
-      savedChange <- zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
-    } yield savedChange
-  }
+      zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] =
+    zoneChange =>
+      zoneRepository.save(zoneChange.zone).flatMap {
+        case Left(duplicateZoneError) =>
+          zoneChangeRepository.save(
+            zoneChange.copy(
+              status = ZoneChangeStatus.Failed,
+              systemMessage = Some(duplicateZoneError.message))
+          )
+        case Right(_) =>
+          zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
+    }
 }
