@@ -21,6 +21,7 @@ import org.scalatest._
 import scalikejdbc.DB
 import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType}
 import vinyldns.mysql.TestMySqlInstance
+import org.joda.time.DateTime
 
 class MySqlGroupChangeRepositoryIntegrationSpec
   extends WordSpec
@@ -54,6 +55,16 @@ class MySqlGroupChangeRepositoryIntegrationSpec
       val groupChange = generateGroupChanges("group-1", 1).head
       repo.save(groupChange).unsafeRunSync() shouldBe groupChange
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
+    }
+
+    "on duplicate key update a group change" in {
+      val groupChange = generateGroupChanges("group-1", 1).head
+      repo.save(groupChange).unsafeRunSync() shouldBe groupChange
+      repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
+
+      val groupChangeUpdate = groupChange.copy(created = DateTime.now().plusSeconds(10000), userId = "updated")
+      repo.save(groupChangeUpdate).unsafeRunSync() shouldBe groupChangeUpdate
+      repo.getGroupChange(groupChangeUpdate.id).unsafeRunSync() shouldBe Some(groupChangeUpdate)
     }
   }
 

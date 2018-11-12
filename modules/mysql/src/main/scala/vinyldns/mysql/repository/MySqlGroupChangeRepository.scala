@@ -31,8 +31,9 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
 
   private final val PUT_GROUP_CHANGE =
     sql"""
-      |INSERT INTO ON DUPLICATE KEY UPDATE group_change (id, group_id, created_timestamp, data)
-      | VALUES ({group_change_id}, {group_id}, {created_timestamp}, {data})
+      |INSERT INTO group_change (id, group_id, created_timestamp, data)
+      | VALUES ({id}, {group_id}, {created_timestamp}, {data})
+      | ON DUPLICATE KEY UPDATE group_id = {group_id}, created_timestamp = {created_timestamp}, data = {data}
     """.stripMargin
 
   private final val GET_GROUP_CHANGE =
@@ -69,7 +70,7 @@ class MySqlGroupChangeRepository extends GroupChangeRepository with Monitored {
         DB.localTx { implicit s =>
           PUT_GROUP_CHANGE
             .bindByName(
-              'group_change_id -> groupChange.id,
+              'id -> groupChange.id,
               'group_id -> groupChange.newGroup.id,
               'created_timestamp -> groupChange.created.getMillis,
               'data -> fromGroupChange(groupChange)
