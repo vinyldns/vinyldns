@@ -364,18 +364,14 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
         DB.localTx { implicit s =>
           getZoneByNameInSession(zone.name) match {
             case Some(foundZone) if zone.id != foundZone.id => DuplicateZoneError(zone.name).asLeft
-            case _ => saveZoneProcess(zone).asRight
+            case _ =>
+              deleteZoneAccess(zone)
+              putZone(zone)
+              putZoneAccess(zone)
+              zone.asRight
           }
         }
       }
-    }
-
-  def saveZoneProcess(zone: Zone): Zone =
-    DB.localTx { implicit s =>
-      deleteZoneAccess(zone)
-      putZone(zone)
-      putZoneAccess(zone)
-      zone
     }
 
   def retryWithBackoff[E, A](
