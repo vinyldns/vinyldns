@@ -301,4 +301,11 @@ class MySqlMessageQueueIntegrationSpec extends WordSpec with Matchers
       underTest.requeue(testMessage).attempt.unsafeRunSync() shouldBe right
     }
   }
+
+  "healthCheck" should {
+    "succeed if connections are working" in {
+      val check = underTest.healthCheck().unsafeRunSync()
+      check shouldBe right
+    }
+  }
 }

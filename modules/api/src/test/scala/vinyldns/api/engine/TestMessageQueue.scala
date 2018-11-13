@@ -19,7 +19,9 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.ZoneCommand
+import vinyldns.core.health.HealthCheck.HealthCheck
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue, SendBatchResult}
+import vinyldns.core.health.HealthCheck._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -44,4 +46,6 @@ object TestMessageQueue extends MessageQueue {
   }
 
   override def send[A <: ZoneCommand](command: A): IO[Unit] = IO.unit
+
+  override def healthCheck(): HealthCheck = IO.unit.attempt.asHealthCheck
 }

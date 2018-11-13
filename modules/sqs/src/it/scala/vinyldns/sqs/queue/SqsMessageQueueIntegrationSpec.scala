@@ -121,7 +121,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
         new SendMessageRequest()
           .withMessageBody("malformed data")
           .withQueueUrl(queue.queueUrl),
-          queue.client.sendMessageAsync)
+        queue.client.sendMessageAsync)
 
       val result = queue.receive(MessageCount(1).right.value).unsafeRunSync()
       result shouldBe empty
@@ -163,7 +163,7 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
     }
 
     "send a message batch request with more than 256KB successfully" in {
-      val recordSet = aaaa.copy(name = "a"*100000, zoneId = "b"*10000)
+      val recordSet = aaaa.copy(name = "a" * 100000, zoneId = "b" * 10000)
       val recordSetChanges = for (_ <- 0 to 99) yield makeTestAddChange(recordSet, zoneActive)
       val commands = recordSetChanges.toList
 
@@ -189,6 +189,11 @@ class SqsMessageQueueIntegrationSpec extends WordSpec
       assertThrows[AmazonSQSException] {
         queue.parse(message).unsafeRunSync()
       }
+    }
+
+    "have a valid healthcheck if we can connect to SQS" in {
+      val check = queue.healthCheck().unsafeRunSync()
+      check shouldBe right
     }
   }
 }
