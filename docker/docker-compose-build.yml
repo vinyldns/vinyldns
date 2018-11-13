@@ -31,6 +31,8 @@ services:
 
   elasticmq:
     image: s12v/elasticmq:0.13.8
+    env_file:
+      .env
     container_name: "vinyldns-elasticmq"
     ports:
       - "9324:9324"
