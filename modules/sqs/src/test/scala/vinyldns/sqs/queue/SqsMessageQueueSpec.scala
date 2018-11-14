@@ -91,7 +91,17 @@ class SqsMessageQueueSpec
       result.head.getEntries.size shouldBe requestTotalChanges
     }
 
-    "allow at most MAXIMUM_BATCH_ENTRY_COUNT items in a batch" in {
+    "partition batches with more than ten items into groups of ten" in {
+      val recordSetChanges = for (_ <- 1 to 100)
+        yield makeTestAddChange(rsOk, okZone)
+      val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+
+      val result = toSendMessageBatchRequest(commands)
+      result.length shouldBe 10
+      result.foreach(_.getEntries.size() shouldBe SqsMessageQueue.MAXIMUM_BATCH_ENTRY_COUNT)
+    }
+
+    "allow up to ten items in a batch" in {
       val rsChange = makeTestAddChange(rsOk, okZone).copy(singleBatchChangeIds = List("a" * 1800))
       val messageSize = messageData(rsChange).getBytes().length
 
