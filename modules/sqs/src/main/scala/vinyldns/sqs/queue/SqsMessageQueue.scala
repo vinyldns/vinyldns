@@ -173,8 +173,12 @@ object SqsMessageQueue extends ProtobufConversions {
   // $COVERAGE-OFF$
   final val MINIMUM_VISIBILITY_TIMEOUT = 0
   final val MAXIMUM_VISIBILITY_TIMEOUT = 43200
+
+  // AWS SQS limits specified at:
+  // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/
+  // sqs-client-side-buffering-request-batching.html#configuring-buffered-async-client
   final val MAXIMUM_BATCH_SIZE = 262144
-  final val MAXIMUM_BATCH_ENTRY_COUNT = 10 // Hard limit on the max entries per message batch
+  final val MAXIMUM_BATCH_ENTRY_COUNT = 10
   // $COVERAGE-ON$
 
   def validateMessageTimeout(
