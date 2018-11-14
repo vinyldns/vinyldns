@@ -173,7 +173,12 @@ object SqsMessageQueue extends ProtobufConversions {
   // $COVERAGE-OFF$
   final val MINIMUM_VISIBILITY_TIMEOUT = 0
   final val MAXIMUM_VISIBILITY_TIMEOUT = 43200
+
+  // AWS SQS limits specified at:
+  // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/
+  // sqs-client-side-buffering-request-batching.html#configuring-buffered-async-client
   final val MAXIMUM_BATCH_SIZE = 262144
+  final val MAXIMUM_BATCH_ENTRY_COUNT = 10
   // $COVERAGE-ON$
 
   def validateMessageTimeout(
@@ -214,10 +219,15 @@ object SqsMessageQueue extends ProtobufConversions {
         .withMessageAttributes(Map(SqsMessageType.fromCommand(cmd).messageAttribute).asJava)
     }.toList
 
-    // Group entries into batches
-    val maxMessageSize = entries.map(_.getMessageBody.getBytes().length).max
+    // Determine maximum message per batch based off of payload limits
+    val maxMessageGroupCount = (MAXIMUM_BATCH_SIZE.toDouble /
+      entries.map(_.getMessageBody.getBytes().length).max.toDouble).toInt
+
+    // Take lower of size and count constraint
+    val groupCount = Math.min(maxMessageGroupCount, MAXIMUM_BATCH_ENTRY_COUNT)
+
     entries
-      .grouped((MAXIMUM_BATCH_SIZE.toDouble / maxMessageSize.toDouble).toInt)
+      .grouped(groupCount)
       .map { groupedEntries =>
         new SendMessageBatchRequest().withEntries(groupedEntries.asJava)
       }

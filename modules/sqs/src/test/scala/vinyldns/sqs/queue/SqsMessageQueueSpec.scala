@@ -25,6 +25,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.proto.VinylDNSProto
 import vinyldns.sqs.queue.SqsMessageType._
@@ -43,6 +44,9 @@ class SqsMessageQueueSpec
 
   import SqsMessageQueue._
 
+  implicit val largeRsChange: RecordSetChange =
+    makeTestAddChange(rsOk, okZone).copy(singleBatchChangeIds = List("a" * 20000))
+
   "parseMessageType" should {
     "return the appropriate message type" in {
       fromString("SqsRecordSetChangeMessage") shouldBe Right(SqsRecordSetChangeMessage)
@@ -52,22 +56,65 @@ class SqsMessageQueueSpec
 
   "toSendMessageBatchRequest" should {
     "create a single batch request if total message payload is under 256KB" in {
-      val messageSize = messageData(makeTestAddChange(rsOk, okZone)).getBytes().length
+      val messageSize = messageData(largeRsChange).getBytes().length
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val recordSetChanges = for (_ <- 1 until requestMaxChanges)
-        yield makeTestAddChange(rsOk, okZone)
+        yield
+          makeTestAddChange(rsOk, okZone).copy(
+            singleBatchChangeIds = largeRsChange.singleBatchChangeIds)
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+
       toSendMessageBatchRequest(commands).length shouldBe 1
     }
 
     "create multiple batch requests if total message payload is over 256KB" in {
-      val messageSize = messageData(makeTestAddChange(rsOk, okZone)).getBytes().length
+      val messageSize = messageData(largeRsChange).getBytes().length
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val requestTotalChanges = requestMaxChanges * 4 // Create four batches
       val recordSetChanges = for (_ <- 1 until requestTotalChanges)
-        yield makeTestAddChange(rsOk, okZone)
+        yield
+          makeTestAddChange(rsOk, okZone).copy(
+            singleBatchChangeIds = largeRsChange.singleBatchChangeIds)
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
       toSendMessageBatchRequest(commands).length shouldBe 4
+    }
+
+    "send a single batch if batch contains fewer than ten items and total payload size is less than 256KB" in {
+      val requestTotalChanges = 7
+      val recordSetChanges = for (_ <- 1 to requestTotalChanges)
+        yield makeTestAddChange(rsOk, okZone)
+      val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+
+      val result = toSendMessageBatchRequest(commands)
+
+      result.length shouldBe 1
+      result.head.getEntries.size shouldBe requestTotalChanges
+    }
+
+    "partition batches with more than ten items into groups of ten" in {
+      val recordSetChanges = for (_ <- 1 to 100)
+        yield makeTestAddChange(rsOk, okZone)
+      val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+
+      val result = toSendMessageBatchRequest(commands)
+      result.length shouldBe 10
+      result.foreach(_.getEntries.size() shouldBe SqsMessageQueue.MAXIMUM_BATCH_ENTRY_COUNT)
+    }
+
+    "allow up to ten items in a batch" in {
+      val rsChange = makeTestAddChange(rsOk, okZone).copy(singleBatchChangeIds = List("a" * 1800))
+      val messageSize = messageData(rsChange).getBytes().length
+
+      val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
+      val requestTotalChanges = requestMaxChanges * 2
+      val recordSetChanges = for (_ <- 1 until requestTotalChanges)
+        yield
+          makeTestAddChange(rsOk, okZone).copy(singleBatchChangeIds = rsChange.singleBatchChangeIds)
+      val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+
+      val result = toSendMessageBatchRequest(commands)
+      result.head.getEntries.size() shouldBe 10
+      result.foreach(_.getEntries.size() should be <= SqsMessageQueue.MAXIMUM_BATCH_ENTRY_COUNT)
     }
   }
 
