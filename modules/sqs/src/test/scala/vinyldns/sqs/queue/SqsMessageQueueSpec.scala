@@ -79,6 +79,18 @@ class SqsMessageQueueSpec
       toSendMessageBatchRequest(commands).length shouldBe 4
     }
 
+    "send a single batch if batch contains fewer than ten items and total payload size is less than 256KB" in {
+      val requestTotalChanges = 7
+      val recordSetChanges = for (_ <- 1 to requestTotalChanges)
+        yield makeTestAddChange(rsOk, okZone)
+      val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
+
+      val result = toSendMessageBatchRequest(commands)
+
+      result.length shouldBe 1
+      result.head.getEntries.size shouldBe requestTotalChanges
+    }
+
     "allow at most MAXIMUM_BATCH_ENTRY_COUNT items in a batch" in {
       val rsChange = makeTestAddChange(rsOk, okZone).copy(singleBatchChangeIds = List("a" * 1800))
       val messageSize = messageData(rsChange).getBytes().length
@@ -91,6 +103,7 @@ class SqsMessageQueueSpec
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
       val result = toSendMessageBatchRequest(commands)
+      result.head.getEntries.size() shouldBe 10
       result.foreach(_.getEntries.size() should be <= SqsMessageQueue.MAXIMUM_BATCH_ENTRY_COUNT)
     }
   }
