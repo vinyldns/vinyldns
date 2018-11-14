@@ -121,4 +121,9 @@ final case class RecordInReverseZoneError(name: String, typ: String) extends Dom
     "Invalid Record Type In Reverse Zone: record with name " +
       s""""$name" and type "$typ" is not allowed in a reverse zone."""
 }
+
+final case class HighValueDomainError(name: String) extends DomainValidationError {
+  def message: String =
+    s"""Record name "$name" is configured as a High Value Domain, cannot be created, updated, or deleted"""
+}
 // $COVERAGE-ON$

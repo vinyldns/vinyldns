@@ -25,6 +25,8 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 import vinyldns.core.domain.batch.{BatchChange, RecordKey}
+import vinyldns.api.VinylDNSConfig
+import vinyldns.api.domain.zone.ZoneRecordValidations
 
 trait BatchChangeValidationsAlgebra {
 
@@ -89,9 +91,20 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateInputName(change: ChangeInput): SingleValidation[Unit] =
     change.typ match {
       case A | AAAA | MX =>
-        validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
-      case CNAME | TXT => validateHostName(change.inputName).asUnit
-      case PTR => validatePtrIp(change.inputName)
+        validateHostName(change.inputName).asUnit |+| notInReverseZone(change) |+|
+          ZoneRecordValidations
+            .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
+            .asUnit
+      case CNAME | TXT =>
+        validateHostName(change.inputName).asUnit |+|
+          ZoneRecordValidations
+            .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
+            .asUnit
+      case PTR =>
+        validatePtrIp(change.inputName) |+|
+          ZoneRecordValidations
+            .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
+            .asUnit
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
 

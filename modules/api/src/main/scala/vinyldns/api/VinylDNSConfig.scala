@@ -55,6 +55,8 @@ object VinylDNSConfig {
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
   lazy val approvedNameServers: List[Regex] =
     vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)
+  lazy val highValueDomains: List[Regex] =
+    vinyldnsConfig.getStringList("high-value-domains").asScala.toList.map(n => n.r)
 
   lazy val defaultZoneConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")
