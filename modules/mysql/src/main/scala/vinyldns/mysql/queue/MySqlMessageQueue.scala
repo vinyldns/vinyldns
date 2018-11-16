@@ -91,9 +91,9 @@ class MySqlMessageQueue extends MessageQueue with Monitored with ProtobufConvers
 
   private final val HEALTH_CHECK =
     sql"""
-         |SELECT 1
-         |  FROM DUAL
-      """.stripMargin
+      |SELECT 1
+      |  FROM DUAL
+     """.stripMargin
 
   /* Parses a message from fields, returning the message id on failure, otherwise a good CommandMessage */
   def parseMessage(
