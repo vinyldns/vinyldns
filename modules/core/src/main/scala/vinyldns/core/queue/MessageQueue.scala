@@ -18,6 +18,7 @@ package vinyldns.core.queue
 import cats.data.NonEmptyList
 import cats.effect.IO
 import vinyldns.core.domain.zone.ZoneCommand
+import vinyldns.core.health.HealthCheck.HealthCheck
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -64,6 +65,8 @@ trait MessageQueue {
 
   // sends a single message, exceptions will be raised via IO
   def send[A <: ZoneCommand](command: A): IO[Unit]
+
+  def healthCheck(): HealthCheck
 
 }
 // $COVERAGE-ON$

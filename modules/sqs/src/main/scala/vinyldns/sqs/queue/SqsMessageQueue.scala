@@ -29,6 +29,7 @@ import com.amazonaws.{AmazonWebServiceRequest, AmazonWebServiceResult}
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
+import vinyldns.core.health.HealthCheck._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
@@ -42,6 +43,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     with Monitored {
 
   import SqsMessageQueue._
+
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
@@ -157,6 +159,12 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
         )
       }
     }.as(())
+
+  def healthCheck(): HealthCheck =
+    sqsAsync[ListQueuesRequest, ListQueuesResult](
+      new ListQueuesRequest(),
+      client.listQueuesAsync
+    ).as(()).attempt.asHealthCheck
 }
 
 object SqsMessageQueue extends ProtobufConversions {
