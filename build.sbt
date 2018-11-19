@@ -332,7 +332,6 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
-    javaOptions in run += "-Dhttp.port=9001 -Dconfig.file=modules/portal/conf/application.conf",
 
     // adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
     // directory and lay down any dependencies that are required when deploying
