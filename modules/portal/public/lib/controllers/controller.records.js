@@ -126,17 +126,14 @@ angular.module('controller.records', [])
     };
 
     $scope.viewRecordInfo = function(record) {
-        $q.all([loadZonesPromise, loadRecordsPromise])
-            .then(function(){
-                $scope.currentRecord = recordsService.toDisplayRecord(record);
-                $scope.recordModal = {
-                    action: $scope.recordModalState.VIEW_DETAILS,
-                    title: "Record Info",
-                    basics: $scope.recordModalParams.readOnly,
-                    details: $scope.recordModalParams.readOnly
-                };
-                $("#record_modal").modal("show");
-            });
+        $scope.currentRecord = recordsService.toDisplayRecord(record);
+        $scope.recordModal = {
+            action: $scope.recordModalState.VIEW_DETAILS,
+            title: "Record Info",
+            basics: $scope.recordModalParams.readOnly,
+            details: $scope.recordModalParams.readOnly
+        };
+        $("#record_modal").modal("show");
     };
 
     /**
