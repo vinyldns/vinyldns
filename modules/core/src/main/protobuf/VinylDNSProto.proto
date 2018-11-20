@@ -192,3 +192,12 @@ message User {
     optional string lastName = 9;
     optional string email = 10;
 }
+
+message UserChange {
+    required User newUser = 1;
+    required string madeByUserId = 2;
+    required int64 created = 3;
+    optional User oldUser = 4;
+    required string id = 5;
+    required string changeType = 6;
+}
