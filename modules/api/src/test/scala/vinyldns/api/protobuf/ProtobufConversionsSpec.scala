@@ -18,7 +18,8 @@ package vinyldns.api.protobuf
 
 import org.joda.time.DateTime
 import org.scalatest.{Assertion, Matchers, OptionValues, WordSpec}
-import vinyldns.core.domain.membership.{LockStatus, User}
+import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
+import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf.ProtobufConversions
@@ -815,6 +816,59 @@ class ProtobufConversionsSpec
       pb.getLockStatus shouldBe "Locked"
 
       fromPB(pb) shouldBe user
+    }
+  }
+
+  "User change conversion" should {
+    "convert to/from protobuf for CreateUser" in {
+      val user = User("createUser", "createUserAccess", "createUserSecret")
+      val createChange = CreateUser(user, "createUserId", user.created)
+      val pb = toPb(createChange)
+
+      pb.getChangeType shouldBe UserChangeType.Create.value
+
+      new User(
+        pb.getNewUser.getUserName,
+        pb.getNewUser.getAccessKey,
+        pb.getNewUser.getSecretKey,
+        created = user.created,
+        id = user.id) shouldBe user
+
+      pb.getMadeByUserId shouldBe createChange.madeByUserId
+      pb.getCreated shouldBe createChange.created.getMillis
+      pb.getId shouldBe createChange.id
+
+      fromPb(pb) shouldBe createChange
+    }
+
+    "convert to/from protobuf for UpdateUser" in {
+      val oldUser = User("updateUser", "updateUserAccess", "updateUserSecret")
+      val newUser = oldUser.copy(userName = "updateUserNewName")
+      val updateChange = UpdateUser(newUser, "createUserId", newUser.created, oldUser)
+      val pb = toPb(updateChange)
+
+      pb.getChangeType shouldBe UserChangeType.Update.value
+
+      new User(
+        pb.getNewUser.getUserName,
+        pb.getNewUser.getAccessKey,
+        pb.getNewUser.getSecretKey,
+        created = newUser.created,
+        id = newUser.id) shouldBe newUser
+
+      pb.getMadeByUserId shouldBe updateChange.madeByUserId
+      pb.getCreated shouldBe updateChange.created.getMillis
+
+      new User(
+        pb.getOldUser.getUserName,
+        pb.getOldUser.getAccessKey,
+        pb.getOldUser.getSecretKey,
+        created = oldUser.created,
+        id = oldUser.id) shouldBe oldUser
+
+      pb.getId shouldBe updateChange.id
+
+      fromPb(pb) shouldBe updateChange
     }
   }
 }
