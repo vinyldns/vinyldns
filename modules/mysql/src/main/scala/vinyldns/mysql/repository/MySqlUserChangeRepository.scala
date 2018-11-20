@@ -32,8 +32,11 @@ class MySqlUserChangeRepository
 
   private final val PUT_USER_CHANGE =
     sql"""
-         |  REPLACE INTO user_change (change_id, user_id, data, created_timestamp)
-         |   VALUES ({changeId}, {userId}, {data}, {createdTimestamp})
+         |  INSERT INTO user_change (change_id, user_id, data, created_timestamp)
+         |       VALUES ({changeId}, {userId}, {data}, {createdTimestamp}) ON DUPLICATE KEY
+         |       UPDATE user_id=VALUES(user_id),
+         |              data=VALUES(data),
+         |              created_timestamp=VALUES(created_timestamp)
        """.stripMargin
 
   private final val GET_USER_CHANGE_BY_ID =
