@@ -32,6 +32,7 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
       fromRecordType(RecordType.SRV) shouldBe 8
       fromRecordType(RecordType.SSHFP) shouldBe 9
       fromRecordType(RecordType.TXT) shouldBe 10
+      fromRecordType(RecordType.SOA) shouldBe 11
       fromRecordType(RecordType.UNKNOWN) shouldBe unknownRecordType
     }
   }

@@ -233,6 +233,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
       case RecordType.SRV => 8
       case RecordType.SSHFP => 9
       case RecordType.TXT => 10
+      case RecordType.SOA => 11
       case RecordType.UNKNOWN => unknownRecordType
     }
 }
