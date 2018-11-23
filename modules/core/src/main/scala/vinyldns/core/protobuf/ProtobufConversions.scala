@@ -17,7 +17,8 @@
 package vinyldns.core.protobuf
 
 import org.joda.time.DateTime
-import vinyldns.core.domain.membership.{LockStatus, User}
+import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
+import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChangeType}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -364,6 +365,46 @@ trait ProtobufConversions {
     user.firstName.foreach(fn => builder.setFirstName(fn))
     user.lastName.foreach(ln => builder.setLastName(ln))
     user.email.foreach(e => builder.setEmail(e))
+
+    builder.build()
+  }
+
+  def fromPb(data: VinylDNSProto.UserChange): UserChange =
+    if (data.getChangeType.equals(UserChangeType.Create.value)) {
+      CreateUser(
+        fromPB(data.getNewUser),
+        data.getMadeByUserId,
+        new DateTime(data.getCreated),
+        data.getId
+      )
+    } else {
+      UpdateUser(
+        fromPB(data.getNewUser),
+        data.getMadeByUserId,
+        new DateTime(data.getCreated),
+        fromPB(data.getOldUser),
+        data.getId
+      )
+    }
+
+  def toPb(userChange: UserChange): VinylDNSProto.UserChange = {
+    val builder = VinylDNSProto.UserChange
+      .newBuilder()
+      .setNewUser(toPB(userChange.newUser))
+      .setCreated(userChange.created.getMillis)
+      .setId(userChange.id)
+      .setMadeByUserId(userChange.madeByUserId)
+
+    userChange match {
+      case _: CreateUser =>
+        builder
+          .setChangeType(UserChangeType.Create.value)
+
+      case u: UpdateUser =>
+        builder
+          .setChangeType(UserChangeType.Update.value)
+          .setOldUser(toPB(u.oldUser))
+    }
 
     builder.build()
   }

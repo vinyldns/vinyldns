@@ -18,7 +18,7 @@ package vinyldns.mysql
 
 import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{GroupRepository, MembershipRepository, UserRepository, GroupChangeRepository}
+import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
@@ -53,6 +53,8 @@ trait MySqlIntegrationSpec {
     instance.get[MembershipRepository](RepositoryName.membership).get
   lazy val groupChangeRepository: GroupChangeRepository =
     instance.get[GroupChangeRepository](RepositoryName.groupChange).get
+  lazy val userChangeRepository: UserChangeRepository =
+    instance.get[UserChangeRepository](RepositoryName.userChange).get
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {
