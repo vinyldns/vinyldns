@@ -674,6 +674,11 @@ class VinylDNSClient(object):
         change = zone_change
         retries = MAX_RETRIES
         while change[u'status'] != expected_status and retries > 0:
+            latest_changes = self.list_zone_changes(change['zone']['id'])
+            if latest_changes[u'zoneChanges']:
+                change = latest_changes[u'zoneChanges'][0]
+            else:
+                change = change
             time.sleep(RETRY_WAIT)
             retries -= 1
 
