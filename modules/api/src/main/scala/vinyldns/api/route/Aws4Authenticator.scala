@@ -136,6 +136,7 @@ class Aws4Authenticator {
       signedHeaderNames: Set[String]): TreeMap[String, Seq[String]] = {
     def getHeaderValue(name: String): Option[String] = name match {
       case "content-type" => Some(req.entity.contentType.value)
+      case "content-length" => req.entity.contentLengthOption.map(_.toString)
       case _ => req.headers.find(_.name.toLowerCase == name).map(_.value)
     }
 
