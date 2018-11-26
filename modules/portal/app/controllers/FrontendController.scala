@@ -18,7 +18,7 @@ package controllers
 
 import actions.FrontendAction
 import javax.inject.{Inject, Singleton}
-import models.CustomLinks
+import models.{CustomLinks, Meta}
 import org.slf4j.LoggerFactory
 import play.api.Logger
 import play.api.mvc._
@@ -40,6 +40,7 @@ class FrontendController @Inject()(
   private val userAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
+  implicit lazy val meta: Meta = Meta(configuration)
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
 
   def loginPage(): Action[AnyContent] = Action { implicit request =>
