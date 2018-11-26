@@ -157,8 +157,8 @@ message GroupChange {
 }
 
 message SingleAddChange {
-    required int64 ttl = 1;
-    required RecordData recordData = 2;
+  required int64 ttl = 1;
+  required RecordData recordData = 2;
 }
 
 message SingleChangeData {
@@ -166,29 +166,38 @@ message SingleChangeData {
 }
 
 message SingleChange {
-    required string id = 1;
-    required string status = 2;
-    required string zoneId = 3;
-    required string recordName = 4;
-    required string changeType = 5;
-    required string inputName = 6;
-    required string zoneName = 7;
-    required string recordType = 8;
-    optional string systemMessage = 9;
-    optional string recordChangeId = 10;
-    optional string recordSetId = 11;
-    optional SingleChangeData changeData = 12;
+  required string id = 1;
+  required string status = 2;
+  required string zoneId = 3;
+  required string recordName = 4;
+  required string changeType = 5;
+  required string inputName = 6;
+  required string zoneName = 7;
+  required string recordType = 8;
+  optional string systemMessage = 9;
+  optional string recordChangeId = 10;
+  optional string recordSetId = 11;
+  optional SingleChangeData changeData = 12;
 }
 
 message User {
-    required string userName = 1;
-    required string accessKey = 2;
-    required string secretKey = 3;
-    required int64 created = 4;
-    required string id = 5;
-    required bool isSuper = 6;
-    required string lockStatus = 7;
-    optional string firstName = 8;
-    optional string lastName = 9;
-    optional string email = 10;
+  required string userName = 1;
+  required string accessKey = 2;
+  required string secretKey = 3;
+  required int64 created = 4;
+  required string id = 5;
+  required bool isSuper = 6;
+  required string lockStatus = 7;
+  optional string firstName = 8;
+  optional string lastName = 9;
+  optional string email = 10;
+}
+
+message UserChange {
+  required User newUser = 1;
+  required string madeByUserId = 2;
+  required int64 created = 3;
+  required string id = 4;
+  required string changeType = 5;
+  optional User oldUser = 6;
 }
