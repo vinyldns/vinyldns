@@ -21,7 +21,7 @@ import cats.scalatest.ValidatedMatchers
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
-import vinyldns.api.{VinylDNSConfig, VinylDNSTestData}
+import vinyldns.api.{VinylDNSTestData}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.api.repository.TestDataLoader
@@ -133,7 +133,7 @@ class BatchChangeValidationsSpec
              |if inputName is a High Value Domain""".stripMargin) {
     val change = AddChangeInput("dont.touch.me.", RecordType.A, 300, AData("1.1.1.1"))
     val result = validateInputName(change)
-    result should haveInvalid[DomainValidationError](HighValueDomainError("dont.touch.me"))
+    result should haveInvalid[DomainValidationError](HighValueDomainError("dont.touch.me."))
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes

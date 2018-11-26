@@ -20,6 +20,7 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
+import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
@@ -192,4 +193,12 @@ object RecordSetValidations {
   private def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
 
+  def isNotHighValueDomain(recordName: String, zoneName: String): Either[Throwable, Unit] = {
+    val name = DnsConversions.recordDnsName(recordName, zoneName).toString
+    ZoneRecordValidations
+      .isNotHighValueDomain(VinylDNSConfig.highValueDomains, name)
+      .toEither
+      .map(_ => ())
+      .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
+  }
 }

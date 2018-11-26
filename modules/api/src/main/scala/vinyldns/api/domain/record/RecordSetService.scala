@@ -60,6 +60,7 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
+      _ <- isNotHighValueDomain(recordSet.name, zone.name).toResult
       _ <- recordSetDoesNotExist(rsForValidations, zone)
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult

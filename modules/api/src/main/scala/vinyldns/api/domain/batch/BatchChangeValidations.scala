@@ -94,17 +94,14 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change) |+|
           ZoneRecordValidations
             .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
-            .asUnit
       case CNAME | TXT =>
         validateHostName(change.inputName).asUnit |+|
           ZoneRecordValidations
             .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
-            .asUnit
       case PTR =>
         validatePtrIp(change.inputName) |+|
           ZoneRecordValidations
             .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
-            .asUnit
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
 

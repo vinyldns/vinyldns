@@ -21,7 +21,7 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.AccessValidations
+import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
@@ -114,6 +114,23 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe a[InvalidRequest]
+    }
+    "fail if the record is a high value domain" in {
+      val record = aaaa.copy(
+        name = "dont-touch-me",
+        zoneId = zoneAuthorized.id,
+        status = RecordSetStatus.Active)
+
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSets(zoneAuthorized.id, record.name, record.typ)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zoneAuthorized.id, record.name)
+
+      val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
+      result shouldBe InvalidRequest(
+        HighValueDomainError(s"dont-touch-me.${zoneAuthorized.name}").message)
     }
     "succeed if record is apex with dot" in {
       val name = zoneAuthorized.name

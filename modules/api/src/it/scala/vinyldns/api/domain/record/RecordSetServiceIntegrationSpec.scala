@@ -22,14 +22,9 @@ import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.{
-  DynamoDBApiIntegrationSpec,
-  MySqlApiIntegrationSpec,
-  ResultHelpers,
-  VinylDNSTestData
-}
-import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.zone.RecordSetAlreadyExists
+import vinyldns.api._
+import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
+import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists}
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, User, UserRepository}
@@ -309,6 +304,18 @@ class RecordSetServiceIntegrationSpec
       whenReady(result, timeout) { out =>
         leftValue(out) shouldBe a[RecordSetAlreadyExists]
       }
+    }
+
+    "fail to add a dns record whose name is a high value domain" in {
+      val highValueRecord = subTestRecordA.copy(name = "dont-touch-me")
+      val result =
+        testRecordSetService
+          .addRecordSet(highValueRecord, auth)
+          .value
+          .unsafeRunSync()
+
+      leftValue(result) shouldBe InvalidRequest(
+        HighValueDomainError("dont-touch-me.live-zone-test.").message)
     }
   }
 
