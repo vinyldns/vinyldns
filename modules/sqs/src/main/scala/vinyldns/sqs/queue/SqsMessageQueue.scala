@@ -161,9 +161,11 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     }.as(())
 
   def healthCheck(): HealthCheck =
-    sqsAsync[ListQueuesRequest, ListQueuesResult](
-      new ListQueuesRequest(),
-      client.listQueuesAsync
+    sqsAsync[GetQueueAttributesRequest, GetQueueAttributesResult](
+      new GetQueueAttributesRequest()
+        .withAttributeNames(QueueAttributeName.CreatedTimestamp)
+        .withQueueUrl(queueUrl),
+      client.getQueueAttributesAsync
     ).as(()).attempt.asHealthCheck
 }
 
