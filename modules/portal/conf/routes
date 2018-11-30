@@ -17,6 +17,7 @@ GET           /batchchanges/new                  @controllers.FrontendController
 GET           /batchchanges/:id                  @controllers.FrontendController.viewBatchChange(id: String)
 
 ### Routes to process requests, get data ###
+GET           /health                            @controllers.HealthController.health
 POST          /login                             @controllers.VinylDNS.login
 GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCredsFile(fileName)
 POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds

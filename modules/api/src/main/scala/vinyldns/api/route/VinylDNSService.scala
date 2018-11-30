@@ -31,6 +31,7 @@ import vinyldns.api.domain.membership.MembershipServiceAlgebra
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
 import vinyldns.core.domain.membership.{MembershipRepository, UserRepository}
+import vinyldns.core.health.HealthService
 
 import scala.util.matching.Regex
 

@@ -26,6 +26,8 @@ import play.api.libs.json.{JsObject, JsValue, Json}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record._
+import vinyldns.core.health.HealthService
+
 import scala.util.Success
 
 trait TestApplicationData { this: Mockito =>
@@ -239,7 +241,8 @@ trait TestApplicationData { this: Mockito =>
         bind[Authenticator].to(mockAuth),
         bind[UserRepository].to(mockUserRepo),
         bind[UserChangeRepository].to(mockUserChangeRepo),
-        bind[CryptoAlgebra].to(new NoOpCrypto())
+        bind[CryptoAlgebra].to(new NoOpCrypto()),
+        bind[HealthService].to(new HealthService(List()))
       )
       .configure(testConfig)
       .build()
