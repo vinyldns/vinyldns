@@ -124,6 +124,9 @@ lazy val apiDockerSettings = Seq(
   bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""", // adds logback
   bashScriptExtraDefines += "(cd ${app_home} && ./wait-for-dependencies.sh && cd -)",
+  javaOptions in Universal ++= Seq(
+    s"-Dvinyldns.base-version=${(version in ThisBuild).value}"
+  ),
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials")),
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
@@ -148,7 +151,10 @@ lazy val portalDockerSettings = Seq(
   // adds config file to mount
   bashScriptExtraDefines += """addJava "-Dconfig.file=/opt/docker/conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"""",
-  credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
+  credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials")),
+  javaOptions in Universal ++= Seq(
+    s"-Dvinyldns.base-version=${(version in ThisBuild).value}"
+  ),
 )
 
 lazy val dynamoDBDockerSettings = Seq(
