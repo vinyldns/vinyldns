@@ -20,5 +20,5 @@ import play.api.Configuration
 case class Meta(version: String)
 object Meta {
   def apply(config: Configuration): Meta =
-    Meta(config.getOptional[String]("version").getOrElse("unknown"))
+    Meta(config.getOptional[String]("vinyldns.version").getOrElse("unknown"))
 }
