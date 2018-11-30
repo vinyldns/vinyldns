@@ -22,7 +22,7 @@ import play.api.Configuration
 class MetaSpec extends Specification with Mockito {
   "Meta" should {
     "load from config" in {
-      val config = Map("version" -> "foo-bar")
+      val config = Map("vinyldns.version" -> "foo-bar")
       Meta(Configuration.from(config)).version must beEqualTo("foo-bar")
     }
   }
