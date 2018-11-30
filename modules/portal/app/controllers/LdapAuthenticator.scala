@@ -18,9 +18,12 @@ package controllers
 
 import java.util
 
+import cats.effect.IO
+import cats.implicits._
 import controllers.LdapAuthenticator.LdapByDomainAuthenticator
 import javax.naming.Context
 import javax.naming.directory._
+import vinyldns.core.health.HealthCheck._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Try}
@@ -198,11 +201,24 @@ class LdapAuthenticator(
   def lookup(username: String): Try[UserDetails] =
     findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount))
 
+  def checkHealth(): HealthCheck =
+    IO {
+      searchBase.headOption
+        .map { domain =>
+          Either
+            .fromTry(authenticator.lookup(domain, "healthlookup", serviceAccount))
+            .recoverWith {
+              case _: UserDoesNotExistException => ().asRight
+            }
+        }
+        .getOrElse(().asRight)
+    }.asHealthCheck
 }
 
 trait Authenticator {
   def authenticate(username: String, password: String): Try[UserDetails]
   def lookup(username: String): Try[UserDetails]
+  def checkHealth(): HealthCheck
 }
 
 /**
@@ -237,6 +253,8 @@ class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
       case "testuser" => Try(testUserDetails)
       case _ => authenticator.lookup(username)
     }
+
+  def checkHealth(): HealthCheck = authenticator.checkHealth()
 }
 
 case class LdapSearchDomain(organization: String, domainName: String)
