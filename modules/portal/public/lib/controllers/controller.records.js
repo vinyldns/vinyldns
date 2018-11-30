@@ -15,7 +15,7 @@
  */
 
 angular.module('controller.records', [])
-    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService) {
+    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
 
     /**
       * Scope data initial setup
@@ -34,6 +34,9 @@ angular.module('controller.records', [])
     $scope.recordsetChanges = {};
     $scope.currentRecord = {};
     $scope.zoneInfo = {};
+
+    var loadZonesPromise;
+    var loadRecordsPromise;
 
     $scope.recordModalState = {
         CREATE: 0,
@@ -391,17 +394,20 @@ angular.module('controller.records', [])
     };
 
     function updateRecordDisplay(records) {
-        var newRecords = [];
-        angular.forEach(records, function(record) {
-            newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
-        });
-        $scope.records = newRecords;
-        if($scope.records.length > 0) {
-          $("td.dataTables_empty").hide();
-        } else {
-          $("td.dataTables_empty").show();
-        }
-    }
+        $q.all([loadZonesPromise, loadRecordsPromise])
+            .then(function(){
+                var newRecords = [];
+                angular.forEach(records, function(record) {
+                    newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
+                });
+                $scope.records = newRecords;
+                if($scope.records.length > 0) {
+                  $("td.dataTables_empty").hide();
+                } else {
+                  $("td.dataTables_empty").show();
+                }
+            });
+    };
 
     /**
      * Recordset paging
@@ -447,7 +453,6 @@ angular.module('controller.records', [])
             });
     };
 
-
     /**
      * Record change paging
      */
@@ -492,8 +497,8 @@ angular.module('controller.records', [])
             });
     };
 
-    $timeout($scope.refreshZone, 0);
-    $timeout($scope.refreshRecords, 0);
+    loadZonesPromise = $timeout($scope.refreshZone, 0);
+    loadRecordsPromise = $timeout($scope.refreshRecords, 0);
     $timeout($scope.refreshRecordChangesPreview, 0);
     $timeout($scope.refreshRecordChanges, 0);
 
