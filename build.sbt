@@ -88,7 +88,10 @@ lazy val apiSettings = Seq(
   name := "api",
   libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
-  javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
+  javaOptions in reStart ++= Seq(
+    "-Dlogback.configurationFile=test/logback.xml",
+    s"""-Dvinyldns.base-version=${(version in ThisBuild).value}"""
+  ),
   coverageExcludedPackages := ".*Boot.*"
 )
 
@@ -338,6 +341,9 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
+    
+    // ads the version when working locally with sbt run
+    PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
 
     // adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
     // directory and lay down any dependencies that are required when deploying
