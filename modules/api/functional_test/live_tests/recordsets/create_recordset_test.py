@@ -1674,3 +1674,26 @@ def test_create_ipv4_ptr_recordset_in_classless_outside_cidr(shared_zone_test_co
 
     error = client.create_recordset(new_rs, status=422)
     assert_that(error, is_('RecordSet 190 does not specify a valid IP address in zone 192/30.2.0.192.in-addr.arpa.'))
+
+
+def test_create_high_value_domain_fails(shared_zone_test_context):
+    """
+    Test that creating a record configured as a High Value Domain fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+    new_rs = {
+        'zoneId': zone['id'],
+        'name': 'dont-touch-me',
+        'type': 'A',
+        'ttl': 100,
+        'records': [
+            {
+                'address': '1.1.1.1'
+            }
+        ]
+    }
+
+    error = client.create_recordset(new_rs, status=422)
+    assert_that(error, is_('Record name "dont-touch-me.ok." is configured as a High Value Domain, cannot be modified'))

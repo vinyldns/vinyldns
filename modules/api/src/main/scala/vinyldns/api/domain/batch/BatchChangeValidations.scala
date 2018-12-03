@@ -92,16 +92,11 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     change.typ match {
       case A | AAAA | MX =>
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change) |+|
-          ZoneRecordValidations
-            .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
+          isNotHighValueDomain(change.inputName)
       case CNAME | TXT =>
-        validateHostName(change.inputName).asUnit |+|
-          ZoneRecordValidations
-            .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
+        validateHostName(change.inputName).asUnit |+| isNotHighValueDomain(change.inputName)
       case PTR =>
-        validatePtrIp(change.inputName) |+|
-          ZoneRecordValidations
-            .isNotHighValueDomain(VinylDNSConfig.highValueDomains, change.inputName)
+        validatePtrIp(change.inputName) |+| isNotHighValueDomain(change.inputName)
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
 
@@ -340,4 +335,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
     }
+
+  def isNotHighValueDomain(inputName: String): SingleValidation[Unit] =
+    ZoneRecordValidations
+      .isNotHighValueDomain(VinylDNSConfig.highValueDomains, inputName)
+      .asUnit
 }

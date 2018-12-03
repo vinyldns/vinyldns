@@ -292,6 +292,25 @@ class RecordSetServiceSpec
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
+    "fail if the record is a high value domain" in {
+      val oldRecord = aaaa.copy(
+        name = "dont-touch-me",
+        zoneId = zoneAuthorized.id,
+        status = RecordSetStatus.Active)
+
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneAuthorized.id, newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
+
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
+      result shouldBe InvalidRequest(
+        HighValueDomainError(s"dont-touch-me.${zoneAuthorized.name}").message)
+    }
   }
 
   "deleteRecordSet" should {
@@ -318,6 +337,21 @@ class RecordSetServiceSpec
       val result =
         leftResultOf(underTest.deleteRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
+    }
+    "fail if the record is a high value domain" in {
+      val record = aaaa.copy(
+        name = "dont-touch-me",
+        zoneId = zoneAuthorized.id,
+        status = RecordSetStatus.Active)
+
+      doReturn(IO.pure(Some(record)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneAuthorized.id, record.id)
+
+      val result =
+        leftResultOf(underTest.deleteRecordSet(record.id, zoneAuthorized.id, okAuth).value)
+      result shouldBe InvalidRequest(
+        HighValueDomainError(s"dont-touch-me.${zoneAuthorized.name}").message)
     }
   }
 

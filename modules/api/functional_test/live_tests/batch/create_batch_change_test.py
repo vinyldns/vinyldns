@@ -625,6 +625,52 @@ def test_create_batch_change_with_missing_input_name_fails(shared_zone_test_cont
     assert_error(errors, error_messages=["Missing BatchChangeInput.changes.inputName"])
 
 
+def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_context):
+    """
+    Test creating a batch change with a high value domain as an inputName fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            {
+                "changeType": "Add",
+                "type": "A",
+                "ttl": 200,
+                "inputName": "dont-touch-me.example.bar.",
+                "record": {
+                    "address": "1.1.1.1"
+                }
+            }
+        ]
+    }
+
+    errors = client.create_batch_change(batch_change_input, status=400)[0]
+
+    assert_error(errors, error_messages=['Record name "dont-touch-me.example.bar." is configured as a High Value Domain, cannot be modified'])
+
+
+def test_delete_batch_change_with_high_value_domain_fails(shared_zone_test_context):
+    """
+    Test creating a batch change with a high value domain as an inputName fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            {
+                "changeType": "DeleteRecordSet",
+                "type": "A",
+                "inputName": "dont-touch-me.example.bar.",
+            }
+        ]
+    }
+
+    errors = client.create_batch_change(batch_change_input, status=400)[0]
+
+    assert_error(errors, error_messages=['Record name "dont-touch-me.example.bar." is configured as a High Value Domain, cannot be modified'])
+
+
 def test_create_batch_change_with_unsupported_record_type_fails(shared_zone_test_context):
     """
     Test creating a batch change with unsupported record type fails
