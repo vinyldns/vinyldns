@@ -351,7 +351,7 @@ trait ProtobufConversions {
       data.getId,
       data.getIsSuper,
       LockStatus.withName(data.getLockStatus),
-      data.getIsSupport,
+      data.getIsSupport
     )
 
   def toPB(user: User): VinylDNSProto.User = {
