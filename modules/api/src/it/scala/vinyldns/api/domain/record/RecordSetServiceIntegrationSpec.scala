@@ -144,6 +144,17 @@ class RecordSetServiceIntegrationSpec
     connection = testConnection,
     adminGroupId = group.id)
 
+  private val highValueDomainRecord = RecordSet(
+    zone.id,
+    "dont-touch-me",
+    A,
+    38400,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("1.1.1.1"))
+  )
+
   def setup(): Unit = {
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
@@ -159,7 +170,8 @@ class RecordSetServiceIntegrationSpec
       subTestRecordAAAA,
       subTestRecordNS,
       apexTestRecordNameConflict,
-      subTestRecordNameConflict
+      subTestRecordNameConflict,
+      highValueDomainRecord
     )
     records.map(record => waitForSuccess(recordSetRepo.putRecordSet(record)))
 
@@ -307,12 +319,34 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail to add a dns record whose name is a high value domain" in {
-      val highValueRecord = subTestRecordA.copy(name = "dont-touch-me")
+      val highValueRecord = subTestRecordA.copy(name = "dont-touch-me-2")
       val result =
         testRecordSetService
           .addRecordSet(highValueRecord, auth)
           .value
           .unsafeRunSync()
+
+      leftValue(result) shouldBe InvalidRequest(
+        HighValueDomainError("dont-touch-me-2.live-zone-test.").message)
+    }
+
+    "fail to update a record whose name is a high value domain" in {
+      val newRecord = highValueDomainRecord.copy(ttl = highValueDomainRecord.ttl + 1000)
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe InvalidRequest(
+        HighValueDomainError("dont-touch-me.live-zone-test.").message)
+    }
+
+    "fail to delete a record whose name is a high value domain" in {
+      val result = testRecordSetService
+        .deleteRecordSet(highValueDomainRecord.id, highValueDomainRecord.zoneId, auth)
+        .value
+        .unsafeRunSync()
 
       leftValue(result) shouldBe InvalidRequest(
         HighValueDomainError("dont-touch-me.live-zone-test.").message)

@@ -1933,3 +1933,21 @@ def test_update_fails_for_unapplied_unsynced_record_change(shared_zone_test_cont
             client.wait_until_recordset_change_status(delete_result, 'Complete')
         except:
             pass
+
+
+def test_update_fails_for_high_value_domain(shared_zone_test_context):
+    """
+    Update should fail if record is a high value domain
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+
+    list_results_page = client.list_recordsets(zone['id'],  status=200)['recordSets']
+
+    record = [item for item in list_results_page if item['name'] == 'dont-touch-me'][0]
+
+    record['ttl'] = record['ttl'] + 100
+
+    errors = client.update_recordset(record, status=422)
+    assert_that(errors ,is_('Record name "dont-touch-me.ok." is configured as a High Value Domain, cannot be modified'))

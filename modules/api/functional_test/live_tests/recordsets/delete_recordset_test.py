@@ -585,7 +585,7 @@ def test_ns_delete_existing_ns_origin_fails(shared_zone_test_context):
 
 def test_delete_dotted_a_record_apex_succeeds(shared_zone_test_context):
     """
-    Test that creating an apex A record set containing dots succeeds.
+    Test that deleting an apex A record set containing dots succeeds.
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -606,3 +606,19 @@ def test_delete_dotted_a_record_apex_succeeds(shared_zone_test_context):
     finally:
         delete_result = client.delete_recordset(apex_a_rs['zoneId'], apex_a_rs['id'], status=202)
         client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_delete_high_value_domain_fails(shared_zone_test_context):
+    """
+    Test that deleting a high value domain fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+
+    list_results_page = client.list_recordsets(zone['id'],  status=200)['recordSets']
+
+    record = [item for item in list_results_page if item['name'] == 'dont-touch-me'][0]
+
+    errors = client.delete_recordset(record['zoneId'], record['id'], status=422)
+    assert_that(errors ,is_('Record name "dont-touch-me.ok." is configured as a High Value Domain, cannot be modified'))
