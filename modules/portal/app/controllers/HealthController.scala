@@ -29,9 +29,9 @@ class HealthController @Inject()(components: ControllerComponents, healthService
     healthService
       .checkHealth()
       .map {
-        case head :: _ =>
+        case Nil => Ok("OK").withHeaders(cacheHeaders: _*)
+        case _ =>
           InternalServerError("There was an internal server error.").withHeaders(cacheHeaders: _*)
-        case _ => Ok("OK").withHeaders(cacheHeaders: _*)
       }
       .unsafeRunSync()
   }
