@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.core.health
 
 import cats.effect.{ContextShift, IO}
 import cats.implicits._

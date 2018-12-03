@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.core.health
 
-import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.ResultHelpers
 import cats.effect._
+import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.health.HealthCheck._
 
-class HealthServiceSpec extends WordSpec with Matchers with ResultHelpers {
+class HealthServiceSpec extends WordSpec with Matchers {
 
   "Checking Status" should {
     val successCheck: HealthCheck = IO.unit.attempt.asHealthCheck
