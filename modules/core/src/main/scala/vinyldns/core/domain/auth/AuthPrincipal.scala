@@ -23,6 +23,9 @@ case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
   def isAuthorized(adminGroupId: String): Boolean =
     signedInUser.isSuper || memberGroupIds.contains(adminGroupId)
 
+  def readOnlyAuthorization(adminGroupId: String): Boolean =
+    signedInUser.isSuper || signedInUser.isSupport || memberGroupIds.contains(adminGroupId)
+
   val secretKey: String = signedInUser.secretKey
 
   val userId: String = signedInUser.id

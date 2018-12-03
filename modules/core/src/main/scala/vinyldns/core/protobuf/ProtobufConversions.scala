@@ -350,7 +350,8 @@ trait ProtobufConversions {
       new DateTime(data.getCreated),
       data.getId,
       data.getIsSuper,
-      LockStatus.withName(data.getLockStatus)
+      LockStatus.withName(data.getLockStatus),
+      data.getIsSupport,
     )
 
   def toPB(user: User): VinylDNSProto.User = {
@@ -363,6 +364,7 @@ trait ProtobufConversions {
       .setId(user.id)
       .setIsSuper(user.isSuper)
       .setLockStatus(user.lockStatus.toString)
+      .setIsSupport(user.isSupport)
 
     user.firstName.foreach(fn => builder.setFirstName(fn))
     user.lastName.foreach(ln => builder.setLastName(ln))

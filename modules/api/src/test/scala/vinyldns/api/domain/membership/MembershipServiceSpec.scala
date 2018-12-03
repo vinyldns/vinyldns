@@ -570,6 +570,16 @@ class MembershipServiceSpec
           GroupInfo(dummyGroup),
           GroupInfo(okGroup))
       }
+      "return groups from the database for support users" in {
+        val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
+        doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
+        val result: ListMyGroupsResponse =
+          rightResultOf(underTest.listMyGroups(None, None, 100, supportAuth).value)
+        verify(mockGroupRepo).getAllGroups()
+        result.groups should contain theSameElementsAs Seq(
+          GroupInfo(dummyGroup),
+          GroupInfo(okGroup))
+      }
       "do not return deleted groups" in {
         doReturn(IO.pure(Set(deletedGroup)))
           .when(mockGroupRepo)

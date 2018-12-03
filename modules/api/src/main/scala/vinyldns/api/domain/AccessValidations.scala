@@ -34,7 +34,7 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      hasZoneAdminAccess(auth, zone) || userHasAclRules(auth, zone))
+      hasReadZoneAccess(auth, zone) || userHasAclRules(auth, zone))
 
   def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
@@ -102,7 +102,7 @@ object AccessValidations extends AccessValidationAlgebra {
             zone,
             rule)
         }
-        getPrioritizedAccessLevel(recordType, validRules)
+        getPrioritizedAccessLevel(auth, zone, recordType, validRules)
       }
 
       recordSets.map { rs =>
@@ -112,6 +112,9 @@ object AccessValidations extends AccessValidationAlgebra {
     }
 
   /* Non-algebra methods */
+  def hasReadZoneAccess(auth: AuthPrincipal, zone: Zone): Boolean =
+    auth.readOnlyAuthorization(zone.adminGroupId)
+
   def hasZoneAdminAccess(auth: AuthPrincipal, zone: Zone): Boolean =
     auth.isAuthorized(zone.adminGroupId)
 
@@ -127,7 +130,7 @@ object AccessValidations extends AccessValidationAlgebra {
         zone,
         rule)
     }
-    getPrioritizedAccessLevel(recordType, validRules)
+    getPrioritizedAccessLevel(auth, zone, recordType, validRules)
   }
 
   def userHasAclRules(auth: AuthPrincipal, zone: Zone): Boolean =
@@ -159,9 +162,14 @@ object AccessValidations extends AccessValidationAlgebra {
   def ruleAppliesToRecordType(recordType: RecordType, rule: ACLRule): Boolean =
     rule.recordTypes.isEmpty || rule.recordTypes.contains(recordType)
 
-  def getPrioritizedAccessLevel(recordType: RecordType, rules: Set[ACLRule]): AccessLevel =
+  def getPrioritizedAccessLevel(
+      auth: AuthPrincipal,
+      zone: Zone,
+      recordType: RecordType,
+      rules: Set[ACLRule]): AccessLevel =
     if (rules.isEmpty) {
-      AccessLevel.NoAccess
+      if (hasReadZoneAccess(auth, zone)) AccessLevel.Read
+      else AccessLevel.NoAccess
     } else {
       implicit val ruleOrder: ACLRuleOrdering =
         if (recordType == RecordType.PTR) PTRACLRuleOrdering else ACLRuleOrdering
