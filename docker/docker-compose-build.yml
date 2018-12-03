@@ -40,7 +40,7 @@ services:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
 
   api:
-    image: "vinyldns/api:0.8.0-SNAPSHOT"
+    image: "vinyldns/api:0.8.0"
     env_file:
       .env
     container_name: "vinyldns-api"
@@ -53,7 +53,7 @@ services:
       - dynamodb-local
 
   portal:
-    image: "vinyldns/portal:0.8.0-SNAPSHOT"
+    image: "vinyldns/portal:0.8.0"
     env_file:
       .env
     ports:
