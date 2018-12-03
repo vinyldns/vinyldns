@@ -102,6 +102,7 @@ It will be the one that didn't show up when you ran step one of this section
 | Key ID | Name |
 |------------------------------------------------------------------|----------------|
 | 66027c822d68133da859f6639983d6d3d9643226b3f7259fc6420964993b499a | Nima Eskandary |
+| 04285e24d3b9a8b614b34da229669de1f75c9faa471057e8b4a7d60aac0d5bf5 | Rebecca Star   |
 | | |
 
 #### Pushing a Signed Image with your Delegation Key
