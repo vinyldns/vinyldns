@@ -679,7 +679,7 @@ class VinylDNSClient(object):
 
         while change[u'status'] != expected_status and retries > 0:
             latest_changes = self.list_zone_changes(change['zone']['id'])
-            if latest_changes[u'zoneChanges']:
+            if type(latest_changes).__name__  == 'dict' and latest_changes[u'zoneChanges']:
                 matching_changes = filter(change_id_match, latest_changes[u'zoneChanges'])
                 if len(matching_changes) > 0:
                     change = matching_changes[0]
