@@ -419,7 +419,7 @@ lazy val setSonatypeReleaseSettings = ReleaseStep(action = oldState => {
     val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
       "project core" ::
       "publish" ::
-      "releaseSonatype" ::
+      "sonatypeRelease" ::
       _
     }
 
