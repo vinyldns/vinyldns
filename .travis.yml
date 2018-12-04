@@ -18,10 +18,11 @@ services:
 cache:
   pip: true
   bundler: true
+  npm: true
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
-    - node_modules
+    - $HOME/.m2
   timeout: 900
 
 before_install:
