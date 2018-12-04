@@ -24,7 +24,7 @@ import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodbv2.model._
 import com.amazonaws.services.dynamodbv2.util.TableUtils
-import org.slf4j.Logger
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.VinylDNSMetrics
 
 import scala.collection.JavaConverters._
@@ -66,6 +66,8 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
         req: CreateTableRequest): IO[Boolean] =
       IO(TableUtils.createTableIfNotExists(dynamoDB, req))
   }
+
+  val logger: Logger = LoggerFactory.getLogger(classOf[DynamoDBHelper])
 
   def shutdown(): Unit = dynamoDB.shutdown()
 
@@ -173,7 +175,14 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
     send[QueryRequest, QueryResult](aws, dynamoDB.query)
 
   def scan(aws: ScanRequest): IO[ScanResult] =
-    send[ScanRequest, ScanResult](aws, dynamoDB.scan)
+    for {
+      start <- IO.pure(System.currentTimeMillis())
+      scan <- send[ScanRequest, ScanResult](aws, dynamoDB.scan)
+      end <- IO.pure(System.currentTimeMillis())
+      _ <- IO(
+        logger.debug(
+          s"Individual scan duration: [${start - end} millis] on table: [${aws.getTableName}]"))
+    } yield scan
 
   def putItem(aws: PutItemRequest): IO[PutItemResult] =
     send[PutItemRequest, PutItemResult](aws, dynamoDB.putItem)
@@ -188,12 +197,16 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
     send[DeleteItemRequest, DeleteItemResult](aws, dynamoDB.deleteItem)
 
   def scanAll(aws: ScanRequest): IO[List[ScanResult]] =
-    scan(aws).flatMap(result => continueScanning(aws, result, List(result)))
+    scan(aws).flatMap(result => continueScanning(aws, result, (List(result), 1))).map {
+      case (lst, scanNum) =>
+        logger.debug(s"Completed $scanNum scans in scanAll on table: [${aws.getTableName}]")
+        lst
+    }
 
   private def continueScanning(
       request: ScanRequest,
       result: ScanResult,
-      acc: List[ScanResult]): IO[List[ScanResult]] =
+      acc: (List[ScanResult], Int)): IO[(List[ScanResult], Int)] =
     result.getLastEvaluatedKey match {
 
       case lastEvaluatedKey if lastEvaluatedKey == null || lastEvaluatedKey.isEmpty =>
@@ -207,8 +220,12 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
         // re-run the query, continue querying if need be, be sure to accumulate the result
         scan(continuedQuery)
-          .flatMap(continuedResult =>
-            continueScanning(continuedQuery, continuedResult, acc :+ continuedResult))
+          .flatMap { continuedResult =>
+            val accumulated = acc match {
+              case (lst, num) => (lst :+ continuedResult, num + 1)
+            }
+            continueScanning(continuedQuery, continuedResult, accumulated)
+          }
     }
 
   def queryAll(aws: QueryRequest): IO[List[QueryResult]] =
