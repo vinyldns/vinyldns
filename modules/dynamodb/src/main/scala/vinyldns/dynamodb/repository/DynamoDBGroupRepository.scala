@@ -175,14 +175,14 @@ class DynamoDBGroupRepository private[repository] (
       log.info(s"getting all group IDs")
       val scanRequest = new ScanRequest().withTableName(groupTableName)
 
-      val groups = for {
+      val scan = for {
         start <- IO.pure(System.currentTimeMillis())
         groupsScan <- dynamoDBHelper.scanAll(scanRequest)
         end <- IO.pure(System.currentTimeMillis())
         _ <- IO(log.info(s"getAllGroups groups scan time: ${start - end} millis"))
       } yield groupsScan
 
-      groups.map { results =>
+      scan.map { results =>
         val startTime = System.currentTimeMillis()
         val groups = results
           .flatMap(_.getItems.asScala.map(fromItem))
