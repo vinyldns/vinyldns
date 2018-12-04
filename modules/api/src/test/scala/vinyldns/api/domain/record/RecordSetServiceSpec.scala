@@ -24,13 +24,13 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
-import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import cats.effect._
 import vinyldns.core.domain.membership.{ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{AccessLevel, ZoneRepository}
+import vinyldns.core.queue.MessageQueue
 
 class RecordSetServiceSpec
     extends WordSpec
@@ -46,18 +46,20 @@ class RecordSetServiceSpec
   private val mockRecordRepo = mock[RecordSetRepository]
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
+  private val mockMessageQueue = mock[MessageQueue]
 
   doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(zoneAuthorized.id)
   doReturn(IO.pure(Some(zoneNotAuthorized)))
     .when(mockZoneRepo)
     .getZone(zoneNotAuthorized.id)
+  doReturn(IO.unit).when(mockMessageQueue).send(any[RecordSetChange])
 
   val underTest = new RecordSetService(
     mockZoneRepo,
     mockRecordRepo,
     mockRecordChangeRepo,
     mockUserRepo,
-    TestSqsService,
+    mockMessageQueue,
     AccessValidations)
 
   "addRecordSet" should {

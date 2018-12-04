@@ -36,7 +36,7 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
-    "org.slf4j"                 %  "slf4j-api"                      % "1.7.7",
+    "org.slf4j"                 %  "slf4j-api"                      % "1.7.25",
     "co.fs2"                    %% "fs2-core"                       % "1.0.0",
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
@@ -70,7 +70,7 @@ object Dependencies {
 
   lazy val mysqlDependencies = Seq(
     "org.flywaydb"              %  "flyway-core"                    % "5.1.4",
-    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.2.6",
+    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.3.0",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0"

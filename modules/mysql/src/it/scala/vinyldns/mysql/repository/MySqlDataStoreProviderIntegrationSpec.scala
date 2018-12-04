@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain.engine
+package vinyldns.mysql.repository
 
-import cats.effect._
-import vinyldns.api.Interfaces.Result
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneCommand, ZoneCommandResult}
+import cats.scalatest.EitherMatchers
+import org.scalatest.{Matchers, WordSpec}
+import vinyldns.mysql.TestMySqlInstance
 
-trait EngineCommandBus {
-  def sendZoneCommand(cmd: ZoneCommand): Result[ZoneCommandResult]
-  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]]
+class MySqlDataStoreProviderIntegrationSpec extends WordSpec with Matchers with EitherMatchers {
+
+  "MySqlDataStoreProvider" should {
+    "Successfully healthcheck" in {
+      TestMySqlInstance.providerLoad.healthCheck.unsafeRunSync() shouldBe right
+    }
+  }
 }

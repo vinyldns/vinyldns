@@ -18,4 +18,10 @@ package vinyldns.core.queue
 
 import com.typesafe.config.Config
 
-final case class MessageQueueConfig(className: String, settings: Config)
+import scala.concurrent.duration.FiniteDuration
+
+final case class MessageQueueConfig(
+    className: String,
+    pollingInterval: FiniteDuration,
+    messagesPerPoll: Int,
+    settings: Config)

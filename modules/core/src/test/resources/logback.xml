@@ -10,7 +10,11 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <root level="ERROR">
+    <logger name="vinyldns.core.route.Monitor" level="OFF">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="OFF">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

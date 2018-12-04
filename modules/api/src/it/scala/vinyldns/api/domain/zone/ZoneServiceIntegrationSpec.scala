@@ -29,10 +29,10 @@ import vinyldns.api.{
 }
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record._
-import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 import vinyldns.core.domain.zone._
 
@@ -117,7 +117,7 @@ class ZoneServiceIntegrationSpec
       mock[UserRepository],
       mock[ZoneChangeRepository],
       mock[ZoneConnectionValidator],
-      TestSqsService,
+      TestMessageQueue,
       new ZoneValidations(1000),
       AccessValidations
     )

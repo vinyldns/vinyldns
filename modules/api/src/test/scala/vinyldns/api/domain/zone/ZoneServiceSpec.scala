@@ -23,13 +23,13 @@ import org.scalatest.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.AccessValidations
-import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import cats.effect._
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._
+import vinyldns.core.queue.MessageQueue
 
 import scala.concurrent.duration._
 
@@ -40,12 +40,14 @@ class ZoneServiceSpec
     with VinylDNSTestData
     with ResultHelpers
     with BeforeAndAfterEach
-    with GroupTestData {
+    with GroupTestData
+    with EitherValues {
 
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupRepo = mock[GroupRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockZoneChangeRepo = mock[ZoneChangeRepository]
+  private val mockMessageQueue = mock[MessageQueue]
   private val badConnection = ZoneConnection("bad", "bad", "bad", "bad")
   private val abcZoneSummary = ZoneSummaryInfo(abcZone, abcGroup.name)
   private val xyzZoneSummary = ZoneSummaryInfo(xyzZone, xyzGroup.name)
@@ -65,13 +67,14 @@ class ZoneServiceSpec
     mockUserRepo,
     mockZoneChangeRepo,
     TestConnectionValidator,
-    TestSqsService,
+    mockMessageQueue,
     new ZoneValidations(1000),
     AccessValidations)
 
   override protected def beforeEach(): Unit = {
     reset(mockGroupRepo, mockZoneRepo, mockUserRepo)
     doReturn(IO.pure(Some(grp))).when(mockGroupRepo).getGroup(anyString)
+    doReturn(IO.unit).when(mockMessageQueue).send(any[ZoneChange])
   }
 
   "Creating Zones" should {
@@ -256,8 +259,8 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
 
       val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), abcGroup.name)
-      val result: ZoneInfo = rightResultOf(underTest.getZone(abcZone.id, abcAuth).value)
-      result shouldBe expectedZoneInfo
+      val result = underTest.getZone(abcZone.id, abcAuth).value.unsafeRunSync()
+      result.right.value shouldBe expectedZoneInfo
     }
 
     "filter out ACL rules that have no matching group or user" in {

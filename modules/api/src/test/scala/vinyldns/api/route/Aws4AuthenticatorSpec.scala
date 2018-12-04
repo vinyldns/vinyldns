@@ -32,5 +32,15 @@ class Aws4AuthenticatorSpec extends WordSpec with Matchers {
       canonicalHeaders.keys should contain("content-type")
       canonicalHeaders("content-type") should contain("application/json")
     }
+    "pull the content-length" in {
+      val entity = HttpEntity(ContentTypes.`application/json`, "")
+      val req = HttpRequest(
+        entity = entity
+      )
+
+      val canonicalHeaders = new Aws4Authenticator().canonicalHeaders(req, Set("content-length"))
+      canonicalHeaders.keys should contain("content-length")
+      canonicalHeaders("content-length") should contain("0")
+    }
   }
 }

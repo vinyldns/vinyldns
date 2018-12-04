@@ -28,6 +28,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
       val badConfig =
         ConfigFactory.parseString("""
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |    polling-interval = 250.millis
+          |    messages-per-poll = 10
           |
           |    settings {
           |      access-key = "x"
@@ -47,6 +49,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
       val nonExistentQueueConfig =
         ConfigFactory.parseString("""
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |    polling-interval = 250.millis
+          |    messages-per-poll = 10
           |
           |    settings {
           |      access-key = "x"
@@ -70,6 +74,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
       val invalidQueueNameConfig =
         ConfigFactory.parseString("""
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |    polling-interval = 250.millis
+          |    messages-per-poll = 10
           |
           |    settings {
           |      access-key = "x"
@@ -88,6 +94,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
       val fifoQueueName =
         ConfigFactory.parseString("""
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |    polling-interval = 250.millis
+          |    messages-per-poll = 10
           |
           |    settings {
           |      access-key = "x"
@@ -108,6 +116,8 @@ class SqsMessageQueueProviderIntegrationSpec extends WordSpec with Matchers {
       val nonExistentQueueConfig =
         ConfigFactory.parseString("""
           |    class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |    polling-interval = 250.millis
+          |    messages-per-poll = 10
           |
           |    settings {
           |      access-key = "x"

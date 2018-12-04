@@ -21,7 +21,9 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.scalatest.mockito.MockitoSugar
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
+
 import scala.concurrent.duration._
 
 class MySqlZoneRepositorySpec
@@ -38,17 +40,21 @@ class MySqlZoneRepositorySpec
     "only call retryWithBackoff once if saveTx is successful" in {
       val zoneInput = Zone("ok.", "test@test.com", ZoneStatus.Active)
 
-      doReturn(IO.pure(zoneInput))
+      doReturn(IO.pure(Right(zoneInput)))
         .when(repo)
         .saveTx(zoneInput)
 
       val result = repo.save(zoneInput).unsafeRunSync()
       verify(repo).save(zoneInput)
       verify(repo)
-        .retryWithBackoff[Zone](any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
+        .retryWithBackoff[DuplicateZoneError, Zone](
+          any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
+          any[Zone],
+          any[FiniteDuration],
+          any[Int])
       verify(repo).saveTx(zoneInput)
 
-      result shouldEqual zoneInput
+      result shouldEqual Right(zoneInput)
     }
 
     "only retry the max amount if saveTx is unsuccessful" in {
@@ -63,7 +69,11 @@ class MySqlZoneRepositorySpec
       verify(repo).save(zoneInput)
       // initial call + max retries
       verify(repo, times(repo.MAX_RETRIES + 1))
-        .retryWithBackoff(any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
+        .retryWithBackoff[DuplicateZoneError, Zone](
+          any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
+          any[Zone],
+          any[FiniteDuration],
+          any[Int])
       verify(repo, times(repo.MAX_RETRIES + 1)).saveTx(zoneInput)
     }
 
@@ -72,17 +82,21 @@ class MySqlZoneRepositorySpec
 
       doReturn(IO.raiseError(new RuntimeException))
         .doReturn(IO.raiseError(new RuntimeException))
-        .doReturn(IO.pure(zoneInput))
+        .doReturn(IO.pure(Right(zoneInput)))
         .when(repo)
         .saveTx(zoneInput)
 
       val result = repo.save(zoneInput).unsafeRunSync()
       verify(repo).save(zoneInput)
       verify(repo, times(3))
-        .retryWithBackoff[Zone](any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
+        .retryWithBackoff[DuplicateZoneError, Zone](
+          any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
+          any[Zone],
+          any[FiniteDuration],
+          any[Int])
       verify(repo, times(3)).saveTx(zoneInput)
 
-      result shouldEqual zoneInput
+      result shouldEqual Right(zoneInput)
     }
 
     "only call retryWithBackoff once if deleteTx is successful" in {
@@ -95,10 +109,14 @@ class MySqlZoneRepositorySpec
       val result = repo.save(zoneInput).unsafeRunSync()
       verify(repo).save(zoneInput)
       verify(repo)
-        .retryWithBackoff[Zone](any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
+        .retryWithBackoff[DuplicateZoneError, Zone](
+          any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
+          any[Zone],
+          any[FiniteDuration],
+          any[Int])
       verify(repo).deleteTx(zoneInput)
 
-      result shouldEqual zoneInput
+      result shouldEqual Right(zoneInput)
     }
 
     "only retry the max amount if deleteTx is unsuccessful" in {
@@ -113,7 +131,11 @@ class MySqlZoneRepositorySpec
       verify(repo).save(zoneInput)
       // initial call + max retries
       verify(repo, times(repo.MAX_RETRIES + 1))
-        .retryWithBackoff(any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
+        .retryWithBackoff[DuplicateZoneError, Zone](
+          any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
+          any[Zone],
+          any[FiniteDuration],
+          any[Int])
       verify(repo, times(repo.MAX_RETRIES + 1)).deleteTx(zoneInput)
     }
 
@@ -129,10 +151,14 @@ class MySqlZoneRepositorySpec
       val result = repo.save(zoneInput).unsafeRunSync()
       verify(repo).save(zoneInput)
       verify(repo, times(3))
-        .retryWithBackoff[Zone](any[Zone => IO[Zone]](), any[Zone], any[FiniteDuration], any[Int])
+        .retryWithBackoff[DuplicateZoneError, Zone](
+          any[Zone => IO[Either[DuplicateZoneError, Zone]]](),
+          any[Zone],
+          any[FiniteDuration],
+          any[Int])
       verify(repo, times(3)).deleteTx(zoneInput)
 
-      result shouldEqual zoneInput
+      result shouldEqual Right(zoneInput)
     }
   }
 

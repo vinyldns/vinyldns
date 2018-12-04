@@ -55,7 +55,6 @@ lazy val sharedSettings = Seq(
   scalacOptions in (Compile, doc) += "-no-link-warnings",
   // Use wart remover to eliminate code badness
   wartremoverErrors ++= Seq(
-    Wart.ArrayEquals,
     Wart.EitherProjectionPartial,
     Wart.IsInstanceOf,
     Wart.JavaConversions,
@@ -78,7 +77,7 @@ lazy val testSettings = Seq(
   parallelExecution in Test := true,
   parallelExecution in IntegrationTest := false,
   fork in IntegrationTest := true,
-  testOptions in Test += Tests.Argument("-oDNCXEHPQRMIK"),
+  testOptions in Test += Tests.Argument("-oDNCXEPQRMIK"),
   logBuffered in Test := false,
   // Hide stack traces in tests
   traceLevel in Test := -1,
@@ -297,7 +296,7 @@ lazy val mysql = (project in file("modules/mysql"))
   .settings(libraryDependencies ++= mysqlDependencies ++ commonTestDependencies.map(_ % "test, it"))
   .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
-    organization := "io.vinyldns",
+    organization := "io.vinyldns"
   ).dependsOn(core % "compile->compile;test->test")
   .settings(name := "mysql")
 
@@ -332,7 +331,6 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
-    javaOptions in run += "-Dhttp.port=9001 -Dconfig.file=modules/portal/conf/application.conf",
 
     // adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
     // directory and lay down any dependencies that are required when deploying
@@ -361,7 +359,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     // change the name of the output to portal.zip
     packageName in Universal := "portal"
   )
-  .dependsOn(dynamodb)
+  .dependsOn(dynamodb, mysql)
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",
@@ -408,7 +406,7 @@ lazy val setSonatypeReleaseSettings = ReleaseStep(action = oldState => {
     val sonatypeCommand = Command.command("sonatypeReleaseCommand") {
       "project core" ::
       "publish" ::
-      "releaseSonatype" ::
+      "sonatypeRelease" ::
       _
     }
 

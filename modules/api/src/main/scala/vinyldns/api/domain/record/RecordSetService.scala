@@ -19,25 +19,25 @@ package vinyldns.api.domain.record
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.api.domain.engine.EngineCommandBus
 import vinyldns.core.domain.membership.{User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
+import vinyldns.core.queue.MessageQueue
 
 object RecordSetService {
   def apply(
       dataAccessor: ApiDataAccessor,
-      commandBus: EngineCommandBus,
+      messageQueue: MessageQueue,
       accessValidation: AccessValidationAlgebra): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
       dataAccessor.recordChangeRepository,
       dataAccessor.userRepository,
-      commandBus,
+      messageQueue,
       accessValidation
     )
 }
@@ -47,7 +47,7 @@ class RecordSetService(
     recordSetRepository: RecordSetRepository,
     recordChangeRepository: RecordChangeRepository,
     userRepository: UserRepository,
-    commandBus: EngineCommandBus,
+    messageQueue: MessageQueue,
     accessValidation: AccessValidationAlgebra)
     extends RecordSetServiceAlgebra {
 
@@ -69,8 +69,8 @@ class RecordSetService(
         .toResult[List[RecordSet]]
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificAddValidations(rsForValidations, existingRecordsWithName, zone).toResult
-      send <- commandBus.sendZoneCommand(change)
-    } yield send
+      _ <- messageQueue.send(change).toResult[Unit]
+    } yield change
 
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
@@ -89,8 +89,8 @@ class RecordSetService(
       _ <- isUniqueUpdate(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificEditValidations(rsForValidations, existing, existingRecordsWithName, zone).toResult
-      send <- commandBus.sendZoneCommand(change)
-    } yield send
+      _ <- messageQueue.send(change).toResult[Unit]
+    } yield change
 
   def deleteRecordSet(
       recordSetId: String,
@@ -103,8 +103,8 @@ class RecordSetService(
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
-      send <- commandBus.sendZoneCommand(change)
-    } yield send
+      _ <- messageQueue.send(change).toResult[Unit]
+    } yield change
 
   def getRecordSet(
       recordSetId: String,

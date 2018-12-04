@@ -17,11 +17,12 @@
 package vinyldns.mysql
 
 import com.typesafe.config.{Config, ConfigFactory}
-import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.UserRepository
+import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
-import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoryName}
+import vinyldns.core.crypto.NoOpCrypto
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
+import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore, RepositoryName}
 import vinyldns.mysql.repository.MySqlDataStoreProvider
 
 trait MySqlIntegrationSpec {
@@ -29,9 +30,10 @@ trait MySqlIntegrationSpec {
 
   lazy val dataStoreConfig: DataStoreConfig = pureconfig.loadConfigOrThrow[DataStoreConfig](mysqlConfig)
 
-  lazy val provider =  new MySqlDataStoreProvider()
+  lazy val provider = new MySqlDataStoreProvider()
 
-  lazy val instance: DataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val providerLoad: LoadedDataStore = provider.load(dataStoreConfig, new NoOpCrypto()).unsafeRunSync()
+  lazy val instance: DataStore = providerLoad.dataStore
 
   lazy val batchChangeRepository: BatchChangeRepository =
     instance.get[BatchChangeRepository](RepositoryName.batchChange).get
@@ -41,8 +43,18 @@ trait MySqlIntegrationSpec {
     instance.get[ZoneChangeRepository](RepositoryName.zoneChange).get
   lazy val userRepository: UserRepository =
     instance.get[UserRepository](RepositoryName.user).get
-
-  def shutdown(): Unit = provider.shutdown().unsafeRunSync()
+  lazy val recordSetRepository: RecordSetRepository =
+    instance.get[RecordSetRepository](RepositoryName.recordSet).get
+  lazy val groupRepository: GroupRepository =
+    instance.get[GroupRepository](RepositoryName.group).get
+  lazy val recordChangeRepository: RecordChangeRepository =
+    instance.get[RecordChangeRepository](RepositoryName.recordChange).get
+  lazy val membershipRepository: MembershipRepository =
+    instance.get[MembershipRepository](RepositoryName.membership).get
+  lazy val groupChangeRepository: GroupChangeRepository =
+    instance.get[GroupChangeRepository](RepositoryName.groupChange).get
+  lazy val userChangeRepository: UserChangeRepository =
+    instance.get[UserChangeRepository](RepositoryName.userChange).get
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {

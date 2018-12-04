@@ -36,6 +36,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       _ <- IO.fromEither(validateQueueName(settingsConfig.queueName))
       client <- setupClient(settingsConfig)
       queueUrl <- setupQueue(client, settingsConfig.queueName)
+      _ <- IO(logger.error(s"Queue URL: $queueUrl\n"))
     } yield new SqsMessageQueue(queueUrl, client)
 
   def validateQueueName(queueName: String): Either[InvalidQueueName, String] = {
@@ -55,6 +56,10 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
 
   def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] =
     IO {
+      logger.error(s"Setting up queue client with settings: " +
+        s"service endpoint: ${sqsMessageQueueSettings.serviceEndpoint}; " +
+        s"signing region: ${sqsMessageQueueSettings.serviceEndpoint}; " +
+        s"queue name: ${sqsMessageQueueSettings.queueName}")
       AmazonSQSAsyncClientBuilder
         .standard()
         .withEndpointConfiguration(
@@ -69,22 +74,21 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
         .build()
     }
 
-  def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] = {
-    logger.info(s"Setting up queue...")
+  def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] =
     // Create queue if it doesn't exist
     IO {
+      logger.error(s"Setting up queue with name [$queueName]")
       client.getQueueUrl(queueName).getQueueUrl
     }.recoverWith {
       case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)
     }
-  }
 }
 
 object SqsMessageQueueProvider {
   final case class InvalidQueueName(queueName: String)
       extends Throwable(
         s"Invalid queue name: $queueName. Must be 1-80 alphanumeric, hyphen or underscore characters. FIFO queues " +
-        "(queue names ending in \".fifo\") are not supported.")
+          "(queue names ending in \".fifo\") are not supported.")
 
   private val logger = LoggerFactory.getLogger(classOf[SqsMessageQueueProvider])
 }

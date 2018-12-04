@@ -18,6 +18,7 @@ package vinyldns.api.domain.dns
 
 import java.net.InetAddress
 
+import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
@@ -25,6 +26,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import org.xbill.DNS
+import org.xbill.DNS.{Lookup, Name}
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.core.domain.record.RecordType._
@@ -39,7 +41,8 @@ class DnsConnectionSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with EitherMatchers {
 
   private val zoneConnection =
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
@@ -79,7 +82,11 @@ class DnsConnectionSpec
         name: String,
         zoneName: String,
         typ: RecordType): Either[Throwable, DnsQuery] =
-      Right(mockDnsQuery)
+      name match {
+        case "try-again" =>
+          Right(new DnsQuery(new Lookup("try-again.vinyldns.", 0, 0), new Name(testZone.name)))
+        case _ => Right(mockDnsQuery)
+      }
   }
   private val dnsQueryTest = new DnsConnection(mockResolver)
 
@@ -522,6 +529,34 @@ class DnsConnectionSpec
       zoneRRset.getName.toString shouldBe "vinyldns."
 
       result shouldBe a[NoError]
+    }
+  }
+
+  "applyChange" should {
+    "yield a successful DNS response for a create if there are no errors" in {
+      underTest.applyChange(addRsChange()).value.unsafeRunSync() shouldBe Right(
+        NoError(mockMessage))
+    }
+
+    "yield a successful DNS response for an update if there are no errors" in {
+      underTest.applyChange(updateRsChange()).value.unsafeRunSync() shouldBe Right(
+        NoError(mockMessage))
+    }
+
+    "yield a successful DNS response for a delete if there are no errors" in {
+      underTest.applyChange(deleteRsChange()).value.unsafeRunSync() shouldBe Right(
+        NoError(mockMessage))
+    }
+  }
+
+  "runQuery" should {
+    "return an error if receiving TRY_AGAIN from lookup error" in {
+      val rsc = addRsChange(rs = testA.copy(name = "try-again"))
+
+      underTest
+        .resolve(rsc.recordSet.name, rsc.zone.name, rsc.recordSet.typ)
+        .value
+        .unsafeRunSync() shouldBe left
     }
   }
 }

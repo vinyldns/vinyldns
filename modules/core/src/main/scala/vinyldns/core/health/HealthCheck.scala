@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-package vinyldns.api.engine.sqs
+package vinyldns.core.health
 
-import vinyldns.api.Interfaces._
-import vinyldns.api.domain.engine.EngineCommandBus
-import vinyldns.core.domain.record.RecordSetChange
-import vinyldns.core.domain.zone.{ZoneCommand, ZoneCommandResult}
+import cats.effect.IO
 
-import cats.effect._
+object HealthCheck {
 
-// Test SQS service that returns what it's given always
-trait TestSqsService extends EngineCommandBus {
-  def sendZoneCommand(cmd: ZoneCommand): Result[ZoneCommandResult] =
-    result(cmd.asInstanceOf[ZoneCommandResult])
+  type HealthCheck = IO[Either[HealthCheckError, Unit]]
 
-  def sendRecordSetChanges(cmds: List[RecordSetChange]): List[IO[RecordSetChange]] =
-    cmds.map(IO.pure)
+  case class HealthCheckError(message: String) extends Throwable(message)
+
+  implicit class HealthCheckImprovements(io: IO[Either[Throwable, _]]) {
+    def asHealthCheck: HealthCheck =
+      io.map {
+        case Left(err) =>
+          Left(HealthCheckError(Option(err.getMessage).getOrElse("no message from error")))
+        case _ => Right(())
+      }
+  }
+
 }
-
-object TestSqsService extends TestSqsService

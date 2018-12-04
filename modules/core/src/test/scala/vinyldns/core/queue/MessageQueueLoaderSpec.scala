@@ -21,6 +21,8 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 
+import scala.concurrent.duration._
+
 object MockMessageQueueProvider extends MockitoSugar {
 
   val mockMessageQueue: MessageQueue = mock[MessageQueue]
@@ -44,18 +46,24 @@ class FailMessageQueueProvider extends MessageQueueProvider {
 class MessageQueueLoaderSpec extends WordSpec with Matchers {
 
   val placeholderConfig: Config = ConfigFactory.parseString("{}")
+  private val pollingInterval = 250.millis
+  private val messagesPerPoll = 10
 
   "load" should {
     "return the correct queue if properly configured" in {
       val config =
-        MessageQueueConfig("vinyldns.core.queue.MockMessageQueueProvider", placeholderConfig)
+        MessageQueueConfig(
+          "vinyldns.core.queue.MockMessageQueueProvider",
+          pollingInterval,
+          messagesPerPoll,
+          placeholderConfig)
 
       val loadCall = MessageQueueLoader.load(config)
       loadCall.unsafeRunSync() shouldBe MockMessageQueueProvider.mockMessageQueue
     }
     "Error if the configured provider cannot be found" in {
       val config =
-        MessageQueueConfig("bad.class", placeholderConfig)
+        MessageQueueConfig("bad.class", pollingInterval, messagesPerPoll, placeholderConfig)
 
       val loadCall = MessageQueueLoader.load(config)
 
@@ -63,7 +71,11 @@ class MessageQueueLoaderSpec extends WordSpec with Matchers {
     }
     "Error if an error is returned from external load" in {
       val config =
-        MessageQueueConfig("vinyldns.core.queue.FailMessageQueueProvider", placeholderConfig)
+        MessageQueueConfig(
+          "vinyldns.core.queue.FailMessageQueueProvider",
+          pollingInterval,
+          messagesPerPoll,
+          placeholderConfig)
 
       val loadCall = MessageQueueLoader.load(config)
 

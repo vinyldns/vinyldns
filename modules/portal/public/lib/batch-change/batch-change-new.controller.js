@@ -28,7 +28,6 @@
             $scope.formStatus = "pendingSubmit";
 
             $scope.addSingleChange = function() {
-                event.preventDefault();
                 $scope.newBatch.changes.push({changeType: "Add", type: "A", ttl: 200});
                 var changesLength =$scope.newBatch.changes.length;
                 $timeout(function() {document.getElementsByClassName("changeType")[changesLength - 1].focus()});
@@ -75,13 +74,11 @@
             };
 
             $scope.deleteSingleChange = function(changeNumber) {
-                event.preventDefault();
                 $('.batch-change-delete').blur();
                 $scope.newBatch.changes.splice(changeNumber, 1);
             };
 
             $scope.submitChange = function() {
-                event.preventDefault();
                 $scope.formStatus = "pendingConfirm";
             }
 

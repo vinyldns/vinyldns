@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package vinyldns.api.route
+package vinyldns.mysql
 
-import cats.implicits._
-import vinyldns.api.Interfaces._
-import vinyldns.core.domain.zone.ZoneRepository
+import com.zaxxer.hikari.HikariDataSource
+import scalikejdbc.DataSourceCloser
 
-class HealthService(zoneRepository: ZoneRepository) {
-
-  def checkHealth(): Result[Unit] =
-    zoneRepository
-      .getZone("notFound")
-      .map(_ => ().asRight)
-      .toResult
+class HikariCloser(dataSource: HikariDataSource) extends DataSourceCloser {
+  override def close(): Unit = dataSource.close()
 }

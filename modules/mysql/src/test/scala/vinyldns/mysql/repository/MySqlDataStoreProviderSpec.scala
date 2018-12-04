@@ -19,7 +19,7 @@ package vinyldns.mysql.repository
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
-import vinyldns.core.repository.{DataStoreConfig, DataStoreStartupError}
+import vinyldns.core.repository.{DataStoreConfig}
 import vinyldns.mysql.MySqlConnectionConfig
 
 class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
@@ -32,23 +32,6 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
 
   val crypto: CryptoAlgebra = new NoOpCrypto()
 
-  "validateRepos" should {
-    "Return successfully if all configured repos are implemented" in {
-      noException should be thrownBy underTest
-        .validateRepos(dataStoreSettings.repositories)
-        .unsafeRunSync()
-    }
-    "Fail if an unimplemented repo is enabled" in {
-      val placeHolder = ConfigFactory.parseString("test=test")
-      val badRepos = dataStoreSettings.repositories.copy(membership = Some(placeHolder))
-
-      val thrown = the[DataStoreStartupError] thrownBy underTest
-        .validateRepos(badRepos)
-        .unsafeRunSync()
-
-      thrown.msg shouldBe "Invalid config provided to mysql; unimplemented repos included: Set(membership)"
-    }
-  }
   "load" should {
     // Note: success here will actually startup the repos. if the integration tests pass, that is working
     // as those are calling MySqlDataStoreProvider.load
@@ -77,23 +60,6 @@ class MySqlDataStoreProviderSpec extends WordSpec with Matchers {
       a[pureconfig.error.ConfigReaderException[MySqlConnectionConfig]] should be thrownBy underTest
         .load(badSettings, crypto)
         .unsafeRunSync()
-    }
-    "Fail if validateRepos fails" in {
-      val placeHolder = ConfigFactory.parseString("test=test")
-      val badRepos = dataStoreSettings.repositories.copy(membership = Some(placeHolder))
-      val badSettings = dataStoreSettings.copy(repositories = badRepos)
-
-      a[DataStoreStartupError] should be thrownBy underTest
-        .load(badSettings, crypto)
-        .unsafeRunSync()
-    }
-
-    "Return unit upon Shutdown" in {
-      val response: Unit = underTest
-        .shutdown()
-        .unsafeRunSync()
-
-      response shouldBe (())
     }
   }
 }

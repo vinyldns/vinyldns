@@ -96,15 +96,25 @@ angular.module('controller.zones', [])
     /* Set total number of zones  */
 
     $scope.addZoneConnection = function () {
+        if ($scope.processing) {
+            $log.log('zoneConnection::processing is true; exiting');
+            return;
+        }
+
+        //flag to prevent multiple clicks until previous promise has resolved.
+        $scope.processing = true;
+
         zonesService.sendZone($scope.currentZone)
             .then(function () {
                 $timeout($scope.refreshZones(), 1000);
                 $("#zone_connection_modal").modal("hide");
+                $scope.processing = false;
             })
             .catch(function (error){
                 $("#zone_connection_modal").modal("hide");
                 $scope.zoneError = true;
                 handleError(error, 'zonesService::sendZone-failure');
+                $scope.processing = false;
             });
     };
 

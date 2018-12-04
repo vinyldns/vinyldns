@@ -18,11 +18,12 @@ package vinyldns.core.domain.zone
 
 import cats.effect._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.repository.Repository
 
 trait ZoneRepository extends Repository {
 
-  def save(zone: Zone): IO[Zone]
+  def save(zone: Zone): IO[Either[DuplicateZoneError, Zone]]
 
   def getZone(zoneId: String): IO[Option[Zone]]
 
@@ -40,4 +41,10 @@ trait ZoneRepository extends Repository {
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 
+}
+
+object ZoneRepository {
+  final case class DuplicateZoneError(zoneName: String) {
+    def message: String = s"""Zone with name "$zoneName" already exists."""
+  }
 }

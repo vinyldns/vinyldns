@@ -19,23 +19,24 @@ package vinyldns.api
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
+import vinyldns.api.backend.CommandHandler
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
-import vinyldns.api.engine.ProductionZoneCommandHandler
-import vinyldns.api.engine.sqs.{SqsCommandBus, SqsConnection}
 import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
-import vinyldns.api.route.{HealthService, VinylDNSService}
+import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
+import vinyldns.core.health.HealthService
+import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 import vinyldns.core.repository.DataStoreLoader
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,6 +49,7 @@ object Boot extends App {
   private implicit val materializer: Materializer = ActorMaterializer()
   private implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private implicit val cs: ContextShift[IO] = IO.contextShift(ec)
+  private implicit val timer: Timer[IO] = IO.timer(ec)
 
   def vinyldnsBanner(): IO[String] = IO {
     val stream = getClass.getResourceAsStream("/vinyldns-ascii.txt")
@@ -68,34 +70,45 @@ object Boot extends App {
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
       repositories = loaderResponse.accessor
       _ <- TestDataLoader.loadTestData(repositories.userRepository)
-      sqsConfig <- IO(VinylDNSConfig.sqsConfig)
-      sqsConnection <- IO(SqsConnection(sqsConfig))
+      queueConfig <- VinylDNSConfig.messageQueueConfig
+      messageQueue <- MessageQueueLoader.load(queueConfig)
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))
       processingSignal <- SignallingRef[IO, Boolean](processingDisabled)
       restHost <- IO(VinylDNSConfig.restConfig.getString("host"))
       restPort <- IO(VinylDNSConfig.restConfig.getInt("port"))
       batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
-      _ <- ProductionZoneCommandHandler
-        .run(sqsConnection, processingSignal, repositories, sqsConfig)
+      msgsPerPoll <- IO.fromEither(MessageCount(queueConfig.messagesPerPoll))
+      _ <- CommandHandler
+        .run(
+          messageQueue,
+          msgsPerPoll,
+          processingSignal,
+          queueConfig.pollingInterval,
+          repositories.zoneRepository,
+          repositories.zoneChangeRepository,
+          repositories.recordSetRepository,
+          repositories.recordChangeRepository,
+          repositories.batchChangeRepository,
+          VinylDNSConfig.defaultZoneConnection
+        )
         .start
     } yield {
       val zoneValidations = new ZoneValidations(syncDelay)
       val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
-      val commandBus = new SqsCommandBus(sqsConnection)
       val membershipService = MembershipService(repositories)
       val connectionValidator =
         new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection)
-      val recordSetService = RecordSetService(repositories, commandBus, AccessValidations)
+      val recordSetService = RecordSetService(repositories, messageQueue, AccessValidations)
       val zoneService = ZoneService(
         repositories,
         connectionValidator,
-        commandBus,
+        messageQueue,
         zoneValidations,
         AccessValidations)
-      val healthService = new HealthService(repositories.zoneRepository)
+      val healthService = new HealthService(messageQueue.healthCheck :: loaderResponse.healthChecks)
       val batchChangeConverter =
-        new BatchChangeConverter(repositories.batchChangeRepository, commandBus)
+        new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
       val batchChangeService =
         BatchChangeService(repositories, batchChangeValidations, batchChangeConverter)
       val collectorRegistry = CollectorRegistry.defaultRegistry
@@ -118,9 +131,6 @@ object Boot extends App {
       // running locally.
       sys.ShutdownHookThread {
         logger.error("STOPPING VINYLDNS SERVER...")
-
-        // shutdown sqs gracefully
-        sqsConnection.shutdown()
 
         //shutdown data store provider
         loaderResponse.shutdown()

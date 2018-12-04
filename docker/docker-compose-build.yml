@@ -31,6 +31,8 @@ services:
 
   elasticmq:
     image: s12v/elasticmq:0.13.8
+    env_file:
+      .env
     container_name: "vinyldns-elasticmq"
     ports:
       - "9324:9324"
@@ -58,7 +60,6 @@ services:
       - "${PORTAL_PORT}:${PORTAL_PORT}"
     container_name: "vinyldns-portal"
     volumes:
-      - ./portal/application.conf:/opt/docker/conf/application.conf
       - ./portal/application.ini:/opt/docker/conf/application.ini
     depends_on:
       - api

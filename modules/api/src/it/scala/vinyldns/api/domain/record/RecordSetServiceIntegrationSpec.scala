@@ -30,11 +30,11 @@ import vinyldns.api.{
 }
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.zone.RecordSetAlreadyExists
+import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
-import vinyldns.api.engine.sqs.TestSqsService
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
 import vinyldns.core.domain.record._
 
@@ -173,7 +173,7 @@ class RecordSetServiceIntegrationSpec
       recordSetRepo,
       mock[RecordChangeRepository],
       mock[UserRepository],
-      TestSqsService,
+      TestMessageQueue,
       AccessValidations)
   }
 
