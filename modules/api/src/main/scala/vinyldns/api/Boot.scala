@@ -33,8 +33,9 @@ import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
-import vinyldns.api.route.{HealthService, VinylDNSService}
+import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
+import vinyldns.core.health.HealthService
 import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 import vinyldns.core.repository.DataStoreLoader
 

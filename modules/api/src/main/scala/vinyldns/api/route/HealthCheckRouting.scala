@@ -19,6 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.util.Timeout
+import vinyldns.core.health.HealthService
 
 import scala.concurrent.duration._
 

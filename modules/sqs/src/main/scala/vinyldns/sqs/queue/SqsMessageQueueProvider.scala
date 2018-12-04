@@ -56,7 +56,10 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
 
   def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] =
     IO {
-      logger.error(s"Setting up queue client SqsMessageQueueSettings: $sqsMessageQueueSettings")
+      logger.error(s"Setting up queue client with settings: " +
+        s"service endpoint: ${sqsMessageQueueSettings.serviceEndpoint}; " +
+        s"signing region: ${sqsMessageQueueSettings.serviceEndpoint}; " +
+        s"queue name: ${sqsMessageQueueSettings.queueName}")
       AmazonSQSAsyncClientBuilder
         .standard()
         .withEndpointConfiguration(
