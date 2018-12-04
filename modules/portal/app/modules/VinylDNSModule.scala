@@ -53,7 +53,7 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       loaderResponse <- DataStoreLoader
         .loadAll[PortalDataAccessor](repoConfigs, crypto, PortalDataAccessorProvider)
       auth = authenticator()
-      healthService = new HealthService(auth.checkHealth() :: loaderResponse.healthChecks)
+      healthService = new HealthService(auth.healthCheck() :: loaderResponse.healthChecks)
     } yield {
       val repositories = loaderResponse.accessor
       bind(classOf[CryptoAlgebra]).toInstance(crypto)

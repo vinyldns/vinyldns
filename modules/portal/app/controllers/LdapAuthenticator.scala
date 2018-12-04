@@ -201,7 +201,7 @@ class LdapAuthenticator(
   def lookup(username: String): Try[UserDetails] =
     findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount))
 
-  def checkHealth(): HealthCheck =
+  def healthCheck(): HealthCheck =
     IO {
       searchBase.headOption
         .map { domain =>
@@ -218,7 +218,7 @@ class LdapAuthenticator(
 trait Authenticator {
   def authenticate(username: String, password: String): Try[UserDetails]
   def lookup(username: String): Try[UserDetails]
-  def checkHealth(): HealthCheck
+  def healthCheck(): HealthCheck
 }
 
 /**
@@ -254,7 +254,7 @@ class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
       case _ => authenticator.lookup(username)
     }
 
-  def checkHealth(): HealthCheck = authenticator.checkHealth()
+  def healthCheck(): HealthCheck = authenticator.healthCheck()
 }
 
 case class LdapSearchDomain(organization: String, domainName: String)
