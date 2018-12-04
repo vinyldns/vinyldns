@@ -48,7 +48,7 @@ def test_update_zone_success(shared_zone_test_context):
         result_zone['email'] = 'foo@bar.com'
         result_zone['acl']['rules'] = [acl_rule]
         update_result = client.update_zone(result_zone, status=202)
-        client.wait_until_zone_change_status(update_result, 'Synced')
+        client.wait_until_zone_change_status_synced(update_result)
 
         assert_that(update_result['changeType'], is_('Update'))
         assert_that(update_result['userId'], is_('ok'))
@@ -617,7 +617,7 @@ def test_update_reverse_v4_zone(shared_zone_test_context):
     import json
     print json.dumps(zone, indent=4)
     update_result = client.update_zone(zone, status=202)
-    client.wait_until_zone_change_status(update_result, 'Synced')
+    client.wait_until_zone_change_status_synced(update_result)
 
     assert_that(update_result['changeType'], is_('Update'))
     assert_that(update_result['userId'], is_('ok'))
@@ -641,7 +641,7 @@ def test_update_reverse_v6_zone(shared_zone_test_context):
     zone['email'] = 'update-test@bar.com'
 
     update_result = client.update_zone(zone, status=202)
-    client.wait_until_zone_change_status(update_result, 'Synced')
+    client.wait_until_zone_change_status_synced(update_result)
 
     assert_that(update_result['changeType'], is_('Update'))
     assert_that(update_result['userId'], is_('ok'))
@@ -738,7 +738,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
         zone_update['adminGroupId'] = group['id']
 
         result = client.update_zone(zone_update, status=202)
-        client.wait_until_zone_change_status(result, 'Synced')
+        client.wait_until_zone_change_status_synced(result)
     finally:
         if zone:
             client.delete_zone(zone['id'], status=202)

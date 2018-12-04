@@ -64,7 +64,7 @@ def test_toggle_processing(shared_zone_test_context):
     assert_that(record_change['status'], is_('Pending'))
 
     # Make sure that the changes are processed
-    client.wait_until_zone_change_status(zone_change_result, 'Synced')
+    client.wait_until_zone_change_status_synced(zone_change_result)
     client.wait_until_recordset_change_status(record_change, 'Complete')
 
     recordset_length = len(client.list_recordsets(ok_zone['id'])['recordSets'])

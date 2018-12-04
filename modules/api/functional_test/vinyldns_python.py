@@ -612,7 +612,7 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         rule = self.add_zone_acl_rule(zone_id, acl_rule, sign_request, **kwargs)
-        self.wait_until_zone_change_status(rule, 'Synced')
+        self.wait_until_zone_change_status_synced(rule)
 
         return rule
 
@@ -638,7 +638,7 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         rule = self.delete_zone_acl_rule(zone_id, acl_rule, sign_request, **kwargs)
-        self.wait_until_zone_change_status(rule, 'Synced')
+        self.wait_until_zone_change_status_synced(rule)
 
         return rule
 
@@ -667,28 +667,23 @@ class VinylDNSClient(object):
 
         return response == 404
 
-    def wait_until_zone_change_status(self, zone_change, expected_status):
+    def wait_until_zone_change_status_synced(self, zone_change):
         """
-        Waits until the zone change status matches the expected status
+        Waits until the zone change status is Synced
         """
-        change = zone_change
+        latest_change = zone_change
         retries = MAX_RETRIES
 
-        def change_id_match(change):
-            return change[u'id'] == zone_change[u'id']
-
-        while change[u'status'] != expected_status and retries > 0:
-            latest_changes = self.list_zone_changes(change['zone']['id'])
-            if type(latest_changes).__name__  == 'dict' and latest_changes[u'zoneChanges']:
-                matching_changes = filter(change_id_match, latest_changes[u'zoneChanges'])
+        while latest_change[u'status'] != 'Synced' and retries > 0:
+            changes = self.list_zone_changes(zone_change['zone']['id'])
+            if u'zoneChanges' in changes:
+                matching_changes = filter(lambda change: change[u'id'] == zone_change[u'id'], changes[u'zoneChanges'])
                 if len(matching_changes) > 0:
-                    change = matching_changes[0]
-            else:
-                change = change
+                    latest_change = matching_changes[0]
             time.sleep(RETRY_WAIT)
             retries -= 1
 
-        return change[u'status'] == expected_status
+        return latest_change[u'status'] == 'Synced'
 
     def wait_until_zone_deleted(self, zone_id, **kwargs):
         """

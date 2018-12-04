@@ -262,70 +262,70 @@ def remove_rules_from_zone(zone, deleted_rules):
 def add_ok_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.ok_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def add_ip4_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.ip4_reverse_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def add_ip6_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.ip6_reverse_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def add_classless_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.classless_zone_delegation_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def remove_ok_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.ok_zone['id'])['zone']
     updated_zone = remove_rules_from_zone(zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def remove_ip4_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.ip4_reverse_zone['id'])['zone']
     updated_zone = remove_rules_from_zone(zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def remove_ip6_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.ip6_reverse_zone['id'])['zone']
     updated_zone = remove_rules_from_zone(zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def remove_classless_acl_rules(test_context, rules):
     zone = test_context.ok_vinyldns_client.get_zone(test_context.classless_zone_delegation_zone['id'])['zone']
     updated_zone = remove_rules_from_zone(zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def clear_ok_acl_rules(test_context):
     zone = test_context.ok_zone
     zone['acl']['rules'] = []
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def clear_ip4_acl_rules(test_context):
     zone = test_context.ip4_reverse_zone
     zone['acl']['rules'] = []
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def clear_ip6_acl_rules(test_context):
     zone = test_context.ip6_reverse_zone
     zone['acl']['rules'] = []
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def clear_classless_acl_rules(test_context):
     zone = test_context.classless_zone_delegation_zone
     zone['acl']['rules'] = []
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
-    test_context.ok_vinyldns_client.wait_until_zone_change_status(update_change, 'Synced')
+    test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def seed_text_recordset(client, record_name, zone, records=[{'text':'someText'}]):
     new_rs = {
