@@ -683,7 +683,7 @@ class VinylDNSClient(object):
             time.sleep(RETRY_WAIT)
             retries -= 1
 
-        return latest_change[u'status'] == 'Synced'
+        assert_that(latest_change[u'status'], is_('Synced'))
 
     def wait_until_zone_deleted(self, zone_id, **kwargs):
         """
