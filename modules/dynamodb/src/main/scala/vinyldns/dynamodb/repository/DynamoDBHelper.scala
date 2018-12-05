@@ -78,7 +78,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
     def sendSingle(retryState: RetryStateHolder): IO[Out] =
       IO {
-        callRateMeter.mark()
+        //callRateMeter.mark()
         func(aws)
       }.handleErrorWith {
         case _: ProvisionedThroughputExceededException if retryState.retries > 0 =>
@@ -181,7 +181,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
       end <- IO.pure(System.currentTimeMillis())
       _ <- IO(
         logger.debug(
-          s"Individual scan duration: [${start - end} millis] on table: [${aws.getTableName}]"))
+          s"Individual scan duration: [${end - start} millis] on table: [${aws.getTableName}]"))
     } yield scan
 
   def putItem(aws: PutItemRequest): IO[PutItemResult] =

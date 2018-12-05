@@ -186,7 +186,7 @@ class DynamoDBGroupRepository private[repository] (
         start <- IO.pure(System.currentTimeMillis())
         groupsScan <- dynamoDBHelper.scanAll(scanRequest)
         end <- IO.pure(System.currentTimeMillis())
-        _ <- IO(log.info(s"getAllGroups groups scan time: ${start - end} millis"))
+        _ <- IO(log.info(s"getAllGroups groups scan time: ${end - start} millis"))
       } yield groupsScan
 
       scan.map { results =>

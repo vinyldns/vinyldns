@@ -48,11 +48,15 @@ object VinylDNSService {
       .filter(_.name.toLowerCase != "authorization")
       .map(h => s"${h.name}='${h.value}'")
       .mkString(", ")
+    val errorResponse = if (res.status.intValue() > 202) {
+      s"Response: ${res.entity}"
+    } else ""
     Seq(
       s"Headers: [$requestHeadersNoAuth]",
       s"Request: protocol=${req.protocol.value}, method=${req.method.value}, path=${sanitizePath(req.uri)}",
       s"Response: status=${res.status.intValue}",
-      s"Duration: request_duration=$duration"
+      s"Duration: request_duration=$duration",
+      errorResponse
     ).mkString(" | ")
   }
 
