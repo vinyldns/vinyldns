@@ -88,7 +88,10 @@ lazy val apiSettings = Seq(
   name := "api",
   libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
   mainClass := Some("vinyldns.api.Boot"),
-  javaOptions in reStart += "-Dlogback.configurationFile=test/logback.xml",
+  javaOptions in reStart ++= Seq(
+    "-Dlogback.configurationFile=test/logback.xml",
+    s"""-Dvinyldns.base-version=${(version in ThisBuild).value}"""
+  ),
   coverageExcludedPackages := ".*Boot.*"
 )
 
@@ -123,6 +126,9 @@ lazy val apiDockerSettings = Seq(
   // adds config file to mount
   bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""", // adds logback
+
+  // this is the default version, can be overridden
+  bashScriptExtraDefines += s"""addJava "-Dvinyldns.base-version=${(version in ThisBuild).value}"""",
   bashScriptExtraDefines += "(cd ${app_home} && ./wait-for-dependencies.sh && cd -)",
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials")),
   dockerCommands ++= Seq(
@@ -148,6 +154,9 @@ lazy val portalDockerSettings = Seq(
   // adds config file to mount
   bashScriptExtraDefines += """addJava "-Dconfig.file=/opt/docker/conf/application.conf"""",
   bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"""",
+
+  // this is the default version, can be overridden
+  bashScriptExtraDefines += s"""addJava "-Dvinyldns.base-version=${(version in ThisBuild).value}"""",
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
 )
 
@@ -332,6 +341,9 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
+    
+    // ads the version when working locally with sbt run
+    PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
 
     // adds an extra classpath to the portal loading so we can externalize jars, make sure to create the lib_extra
     // directory and lay down any dependencies that are required when deploying

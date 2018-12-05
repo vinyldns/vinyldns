@@ -50,7 +50,7 @@ class StatusRoutingSpec
         resultStatus.processingDisabled shouldBe false
         resultStatus.color shouldBe "blue"
         resultStatus.keyName shouldBe "vinyldns."
-        resultStatus.version shouldBe "unknown"
+        resultStatus.version shouldBe "unset"
       }
     }
   }
