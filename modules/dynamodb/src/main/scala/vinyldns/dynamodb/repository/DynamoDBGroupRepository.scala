@@ -173,7 +173,14 @@ class DynamoDBGroupRepository private[repository] (
   def getAllGroups(): IO[Set[Group]] =
     monitor("repo.Group.getAllGroups") {
       log.info(s"getting all group IDs")
-      val scanRequest = new ScanRequest().withTableName(groupTableName)
+
+      // filtering NOT Deleted because there is no case insensitive filter. we later filter
+      // the response in case anything got through
+      val scanRequest = new ScanRequest()
+        .withTableName(groupTableName)
+        .withFilterExpression(s"NOT (#filtername = :del)")
+        .withExpressionAttributeNames(Map("#filtername" -> STATUS).asJava)
+        .withExpressionAttributeValues(Map(":del" -> new AttributeValue("Deleted")).asJava)
 
       val scan = for {
         start <- IO.pure(System.currentTimeMillis())
