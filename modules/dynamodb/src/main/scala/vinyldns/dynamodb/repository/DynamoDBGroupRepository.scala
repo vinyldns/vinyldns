@@ -186,7 +186,7 @@ class DynamoDBGroupRepository private[repository] (
         start <- IO(System.currentTimeMillis())
         groupsScan <- dynamoDBHelper.scanAll(scanRequest)
         end <- IO(System.currentTimeMillis())
-        _ <- IO(log.info(s"getAllGroups groups scan time: ${end - start} millis"))
+        _ <- IO(log.debug(s"getAllGroups groups scan time: ${end - start} millis"))
       } yield groupsScan
 
       scan.map { results =>
@@ -196,7 +196,7 @@ class DynamoDBGroupRepository private[repository] (
           .filter(_.status == GroupStatus.Active)
           .toSet
         val duration = System.currentTimeMillis() - startTime
-        log.info(s"getAllGroups fromItem duration = $duration millis")
+        log.debug(s"getAllGroups fromItem duration = $duration millis")
 
         groups
       }

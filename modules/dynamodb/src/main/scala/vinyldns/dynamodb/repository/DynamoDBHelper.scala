@@ -24,7 +24,7 @@ import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodbv2.model._
 import com.amazonaws.services.dynamodbv2.util.TableUtils
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 import vinyldns.core.VinylDNSMetrics
 
 import scala.collection.JavaConverters._
@@ -67,8 +67,6 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
       IO(TableUtils.createTableIfNotExists(dynamoDB, req))
   }
 
-  val logger: Logger = LoggerFactory.getLogger(classOf[DynamoDBHelper])
-
   def shutdown(): Unit = dynamoDB.shutdown()
 
   private[repository] def send[In <: AmazonWebServiceRequest, Out](aws: In, func: In => Out)(
@@ -78,13 +76,8 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
     def sendSingle(retryState: RetryStateHolder): IO[Out] =
       IO {
-        val start = System.currentTimeMillis()
         callRateMeter.mark()
-        val markEnd = System.currentTimeMillis()
-        log.debug(s"Call meter time: ${markEnd - start}")
-        val f = func(aws)
-        log.debug(s"AWS func time: ${System.currentTimeMillis() - markEnd}")
-        f
+        func(aws)
       }.handleErrorWith {
         case _: ProvisionedThroughputExceededException if retryState.retries > 0 =>
           provisionedThroughputMeter.mark()
@@ -180,14 +173,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
     send[QueryRequest, QueryResult](aws, dynamoDB.query)
 
   def scan(aws: ScanRequest): IO[ScanResult] =
-    for {
-      start <- IO(System.currentTimeMillis())
-      scan <- send[ScanRequest, ScanResult](aws, dynamoDB.scan)
-      end <- IO(System.currentTimeMillis())
-      _ <- IO(
-        logger.debug(
-          s"Individual scan duration: [${end - start} millis] on table: [${aws.getTableName}]"))
-    } yield scan
+    send[ScanRequest, ScanResult](aws, dynamoDB.scan)
 
   def putItem(aws: PutItemRequest): IO[PutItemResult] =
     send[PutItemRequest, PutItemResult](aws, dynamoDB.putItem)
@@ -204,7 +190,7 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
   def scanAll(aws: ScanRequest): IO[List[ScanResult]] =
     scan(aws).flatMap(result => continueScanning(aws, result, (List(result), 1))).map {
       case (lst, scanNum) =>
-        logger.debug(s"Completed $scanNum scans in scanAll on table: [${aws.getTableName}]")
+        log.debug(s"Completed $scanNum scans in scanAll on table: [${aws.getTableName}]")
         lst
     }
 
