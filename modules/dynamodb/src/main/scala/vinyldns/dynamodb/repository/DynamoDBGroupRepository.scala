@@ -183,9 +183,9 @@ class DynamoDBGroupRepository private[repository] (
         .withExpressionAttributeValues(Map(":del" -> new AttributeValue("Deleted")).asJava)
 
       val scan = for {
-        start <- IO.pure(System.currentTimeMillis())
+        start <- IO(System.currentTimeMillis())
         groupsScan <- dynamoDBHelper.scanAll(scanRequest)
-        end <- IO.pure(System.currentTimeMillis())
+        end <- IO(System.currentTimeMillis())
         _ <- IO(log.info(s"getAllGroups groups scan time: ${end - start} millis"))
       } yield groupsScan
 

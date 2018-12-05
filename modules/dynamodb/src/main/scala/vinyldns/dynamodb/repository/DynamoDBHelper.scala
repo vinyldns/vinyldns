@@ -78,8 +78,13 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
     def sendSingle(retryState: RetryStateHolder): IO[Out] =
       IO {
-        //callRateMeter.mark()
-        func(aws)
+        val start = System.currentTimeMillis()
+        callRateMeter.mark()
+        val markEnd = System.currentTimeMillis()
+        log.debug(s"Call meter time: ${markEnd - start}")
+        val f = func(aws)
+        log.debug(s"AWS func time: ${System.currentTimeMillis() - markEnd}")
+        f
       }.handleErrorWith {
         case _: ProvisionedThroughputExceededException if retryState.retries > 0 =>
           provisionedThroughputMeter.mark()
@@ -176,9 +181,9 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
   def scan(aws: ScanRequest): IO[ScanResult] =
     for {
-      start <- IO.pure(System.currentTimeMillis())
+      start <- IO(System.currentTimeMillis())
       scan <- send[ScanRequest, ScanResult](aws, dynamoDB.scan)
-      end <- IO.pure(System.currentTimeMillis())
+      end <- IO(System.currentTimeMillis())
       _ <- IO(
         logger.debug(
           s"Individual scan duration: [${end - start} millis] on table: [${aws.getTableName}]"))
