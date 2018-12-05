@@ -35,57 +35,57 @@ records_in_dns = [
      'type': u'A',
      'records': [{u'address': u'6.6.6.6'}]}]
 
-# def test_create_zone_success(shared_zone_test_context):
-#     """
-#     Test successfully creating a zone
-#     """
-#     client = shared_zone_test_context.ok_vinyldns_client
-#     result_zone = None
-#     try:
-#         zone_name = 'one-time'
-#
-#         zone = {
-#             'name': zone_name,
-#             'email': 'test@test.com',
-#             'adminGroupId': shared_zone_test_context.ok_group['id'],
-#             'connection': {
-#                 'name': 'vinyldns.',
-#                 'keyName': VinylDNSTestContext.dns_key_name,
-#                 'key': VinylDNSTestContext.dns_key,
-#                 'primaryServer': VinylDNSTestContext.dns_ip
-#             },
-#             'transferConnection': {
-#                 'name': 'vinyldns.',
-#                 'keyName': VinylDNSTestContext.dns_key_name,
-#                 'key': VinylDNSTestContext.dns_key,
-#                 'primaryServer': VinylDNSTestContext.dns_ip
-#             }
-#         }
-#         result = client.create_zone(zone, status=202)
-#         result_zone = result['zone']
-#         client.wait_until_zone_change_status_synced(result)
-#
-#         get_result = client.get_zone(result_zone['id'])
-#
-#         get_zone = get_result['zone']
-#         assert_that(get_zone['name'], is_(zone['name']+'.'))
-#         assert_that(get_zone['email'], is_(zone['email']))
-#         assert_that(get_zone['adminGroupId'], is_(zone['adminGroupId']))
-#         assert_that(get_zone['latestSync'], is_not(none()))
-#         assert_that(get_zone['status'], is_('Active'))
-#
-#         # confirm that the recordsets in DNS have been saved in vinyldns
-#         recordsets = client.list_recordsets(result_zone['id'])['recordSets']
-#
-#         assert_that(len(recordsets), is_(7))
-#         for rs in recordsets:
-#             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
-#             small_rs['records'] = sorted(small_rs['records'])
-#             assert_that(records_in_dns, has_item(small_rs))
-#
-#     finally:
-#         if result_zone:
-#             client.abandon_zones([result_zone['id']], status=202)
+def test_create_zone_success(shared_zone_test_context):
+    """
+    Test successfully creating a zone
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = 'one-time'
+
+        zone = {
+            'name': zone_name,
+            'email': 'test@test.com',
+            'adminGroupId': shared_zone_test_context.ok_group['id'],
+            'connection': {
+                'name': 'vinyldns.',
+                'keyName': VinylDNSTestContext.dns_key_name,
+                'key': VinylDNSTestContext.dns_key,
+                'primaryServer': VinylDNSTestContext.dns_ip
+            },
+            'transferConnection': {
+                'name': 'vinyldns.',
+                'keyName': VinylDNSTestContext.dns_key_name,
+                'key': VinylDNSTestContext.dns_key,
+                'primaryServer': VinylDNSTestContext.dns_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result['zone']
+        client.wait_until_zone_change_status_synced(result)
+
+        get_result = client.get_zone(result_zone['id'])
+
+        get_zone = get_result['zone']
+        assert_that(get_zone['name'], is_(zone['name']+'.'))
+        assert_that(get_zone['email'], is_(zone['email']))
+        assert_that(get_zone['adminGroupId'], is_(zone['adminGroupId']))
+        assert_that(get_zone['latestSync'], is_not(none()))
+        assert_that(get_zone['status'], is_('Active'))
+
+        # confirm that the recordsets in DNS have been saved in vinyldns
+        recordsets = client.list_recordsets(result_zone['id'])['recordSets']
+
+        assert_that(len(recordsets), is_(7))
+        for rs in recordsets:
+            small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
+            small_rs['records'] = sorted(small_rs['records'])
+            assert_that(records_in_dns, has_item(small_rs))
+
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone['id']], status=202)
 
 
 @pytest.mark.skip_production
