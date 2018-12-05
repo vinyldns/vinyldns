@@ -23,6 +23,7 @@ import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.health.HealthCheck._
 
 import scala.concurrent.duration._
 
@@ -34,6 +35,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
     extends ZoneConnectionValidatorAlgebra {
 
   import ZoneRecordValidations._
+  import ZoneConnectionValidator._
 
   val opTimeout: FiniteDuration = 6.seconds
 
@@ -85,5 +87,14 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
     }
   }
 
+  def healthCheck(): HealthCheck =
+    dnsConnection(defaultConnection)
+      .queryDnsBackend(healthCheckRecordName, defaultConnection.name, RecordType.A)
+      .asHealthCheck
+
   private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
+}
+
+object ZoneConnectionValidator {
+  private[zone] val healthCheckRecordName = "maybe-exists"
 }

@@ -23,11 +23,13 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
+import vinyldns.api.domain.dns.DnsProtocol.{TypeNotFound, Unrecoverable}
+import vinyldns.api.domain.zone.ZoneConnectionValidator.healthCheckRecordName
 import vinyldns.core.domain.record._
 import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import cats.effect._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.health.HealthCheck.HealthCheckError
 
 import scala.concurrent.duration._
 
@@ -64,7 +66,8 @@ class ZoneConnectionValidatorSpec
       IO.pure(mockZoneView)
   }
 
-  private def testDefaultConnection = mock[ZoneConnection]
+  private def testDefaultConnection =
+    ZoneConnection("test-name", "test-key-name", "test-key", "10.0.0.1")
 
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(
@@ -219,6 +222,26 @@ class ZoneConnectionValidatorSpec
       val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("Transfer connection invalid")
+    }
+
+    "respond with a success if health check passes" in {
+      doReturn(IO(Right(List(mockRecordSet))))
+        .when(mockDnsConnection)
+        .queryDnsBackend(healthCheckRecordName, testDefaultConnection.name, RecordType.A)
+
+      val result = underTest.healthCheck().unsafeRunSync()
+      result should beRight(())
+    }
+
+    "respond with a failure if health check fails" in {
+      val failure = Unrecoverable("unrecoverable error")
+
+      doReturn(IO(Left(failure)))
+        .when(mockDnsConnection)
+        .queryDnsBackend(healthCheckRecordName, testDefaultConnection.name, RecordType.A)
+
+      val result = underTest.healthCheck().unsafeRunSync()
+      result should beLeft(HealthCheckError(failure.message))
     }
   }
 }

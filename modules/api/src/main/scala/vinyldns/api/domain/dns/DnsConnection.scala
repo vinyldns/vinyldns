@@ -97,12 +97,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
   }
 
   def resolve(name: String, zoneName: String, typ: RecordType): Result[List[RecordSet]] =
-    IO {
-      for {
-        query <- toQuery(name, zoneName, typ)
-        records <- runQuery(query)
-      } yield records
-    }.toResult
+    queryDnsBackend(name, zoneName, typ).toResult
 
   private[dns] def toQuery(
       name: String,
@@ -194,6 +189,17 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
       case DNS.Lookup.SUCCESSFUL => Right(toFlattenedRecordSets(answers, query.zoneName))
     }
   }
+
+  private[domain] def queryDnsBackend(
+      name: String,
+      zoneName: String,
+      typ: RecordType): IO[Either[Throwable, List[RecordSet]]] =
+    IO {
+      for {
+        query <- toQuery(name, zoneName, typ)
+        records <- runQuery(query)
+      } yield records
+    }
 }
 
 object DnsConnection {

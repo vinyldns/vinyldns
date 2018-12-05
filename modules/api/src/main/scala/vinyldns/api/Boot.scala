@@ -106,7 +106,9 @@ object Boot extends App {
         messageQueue,
         zoneValidations,
         AccessValidations)
-      val healthService = new HealthService(messageQueue.healthCheck :: loaderResponse.healthChecks)
+      val healthService = new HealthService(
+        messageQueue.healthCheck :: connectionValidator.healthCheck ::
+          loaderResponse.healthChecks)
       val batchChangeConverter =
         new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
       val batchChangeService =
