@@ -188,12 +188,16 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
     send[DeleteItemRequest, DeleteItemResult](aws, dynamoDB.deleteItem)
 
   def scanAll(aws: ScanRequest): IO[List[ScanResult]] =
-    scan(aws).flatMap(result => continueScanning(aws, result, List(result)))
+    scan(aws).flatMap(result => continueScanning(aws, result, (List(result), 1))).map {
+      case (lst, scanNum) =>
+        log.debug(s"Completed $scanNum scans in scanAll on table: [${aws.getTableName}]")
+        lst
+    }
 
   private def continueScanning(
       request: ScanRequest,
       result: ScanResult,
-      acc: List[ScanResult]): IO[List[ScanResult]] =
+      acc: (List[ScanResult], Int)): IO[(List[ScanResult], Int)] =
     result.getLastEvaluatedKey match {
 
       case lastEvaluatedKey if lastEvaluatedKey == null || lastEvaluatedKey.isEmpty =>
@@ -207,8 +211,12 @@ class DynamoDBHelper(dynamoDB: AmazonDynamoDBClient, log: Logger) {
 
         // re-run the query, continue querying if need be, be sure to accumulate the result
         scan(continuedQuery)
-          .flatMap(continuedResult =>
-            continueScanning(continuedQuery, continuedResult, acc :+ continuedResult))
+          .flatMap { continuedResult =>
+            val accumulated = acc match {
+              case (lst, num) => (lst :+ continuedResult, num + 1)
+            }
+            continueScanning(continuedQuery, continuedResult, accumulated)
+          }
     }
 
   def queryAll(aws: QueryRequest): IO[List[QueryResult]] =
