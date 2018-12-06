@@ -26,7 +26,7 @@ import javax.naming.directory._
 import vinyldns.core.health.HealthCheck._
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 case class UserDetails(
     nameInNamespace: String,
@@ -188,9 +188,9 @@ class LdapAuthenticator(
     extends Authenticator {
 
   private def findUserDetails(
-      domains: List[LdapSearchDomain],
-      userName: String,
-      f: LdapSearchDomain => Try[UserDetails]): Try[UserDetails] = domains match {
+                               domains: List[LdapSearchDomain],
+                               userName: String,
+                               f: LdapSearchDomain => Try[UserDetails]): Try[UserDetails] = domains match {
     case Nil => Failure(new UserDoesNotExistException(s"[$userName] LDAP entity does not exist"))
     case h :: t => f(h).recoverWith { case _ => findUserDetails(t, userName, f) }
   }
@@ -204,14 +204,11 @@ class LdapAuthenticator(
   def healthCheck(): HealthCheck =
     IO {
       searchBase.headOption
-        .map { domain =>
-          Either
-            .fromTry(authenticator.lookup(domain, "healthlookup", serviceAccount))
-            .recoverWith {
-              case _: UserDoesNotExistException => ().asRight
-            }
-        }
-        .getOrElse(().asRight)
+        .map(authenticator.lookup(_, "healthlookup", serviceAccount)) match {
+        case Some(Failure(_: UserDoesNotExistException)) => ().asRight
+        case Some(Failure(e)) => e.asLeft
+        case _ => ().asRight
+      }
     }.asHealthCheck
 }
 
