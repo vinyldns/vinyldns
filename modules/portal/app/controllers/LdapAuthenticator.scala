@@ -176,10 +176,10 @@ object LdapAuthenticator {
 class UserDoesNotExistException(message: String) extends Exception(message: String)
 
 /**
-  * Top level ldap authenticator that tries authenticating on both the cable and corphq domains. Authentication is
+  * Top level ldap authenticator that tries authenticating on multiple domains. Authentication is
   * delegated to [LdapByDomainAuthenticator]
   *
-  * @param authenticator does authentication by domain (ie cable vs corphq)
+  * @param authenticator does authentication by domain
   */
 class LdapAuthenticator(
     searchBase: List[LdapSearchDomain],
