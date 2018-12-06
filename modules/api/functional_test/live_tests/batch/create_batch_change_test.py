@@ -629,46 +629,27 @@ def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_conte
     """
     Test creating a batch change with a high value domain as an inputName fails
     """
+
     client = shared_zone_test_context.ok_vinyldns_client
     batch_change_input = {
+
         "comments": "this is optional",
         "changes": [
-            {
-                "changeType": "Add",
-                "type": "A",
-                "ttl": 200,
-                "inputName": "dont-touch-me.example.bar.",
-                "record": {
-                    "address": "1.1.1.1"
-                }
-            }
+            get_change_A_AAAA_json("dont-touch-me-add.ok.", address="1.1.1.1"),
+            get_change_A_AAAA_json("dont-touch-me-update.ok.", address="1.1.1.1", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("dont-touch-me-update.ok.", address="1.1.1.1"),
+            get_change_A_AAAA_json("dont-touch-me-delete.ok.", address="1.1.1.1", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("i-can-be-touched.ok.", address="1.1.1.1")
         ]
     }
 
-    errors = client.create_batch_change(batch_change_input, status=400)[0]
+    response = client.create_batch_change(batch_change_input, status=400)
 
-    assert_error(errors, error_messages=['Record name "dont-touch-me.example.bar." is configured as a High Value Domain, cannot be modified'])
-
-
-def test_delete_batch_change_with_high_value_domain_fails(shared_zone_test_context):
-    """
-    Test creating a batch change with a high value domain as an inputName fails
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    batch_change_input = {
-        "comments": "this is optional",
-        "changes": [
-            {
-                "changeType": "DeleteRecordSet",
-                "type": "A",
-                "inputName": "dont-touch-me.example.bar.",
-            }
-        ]
-    }
-
-    errors = client.create_batch_change(batch_change_input, status=400)[0]
-
-    assert_error(errors, error_messages=['Record name "dont-touch-me.example.bar." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[0], error_messages=['Record name "dont-touch-me-add.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[1], error_messages=['Record name "dont-touch-me-update.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[2], error_messages=['Record name "dont-touch-me-update.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[3], error_messages=['Record name "dont-touch-me-delete.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_that(response[4], is_not(has_key("errors")))
 
 
 def test_create_batch_change_with_unsupported_record_type_fails(shared_zone_test_context):

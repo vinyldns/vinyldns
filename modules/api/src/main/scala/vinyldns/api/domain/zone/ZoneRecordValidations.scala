@@ -74,7 +74,7 @@ object ZoneRecordValidations {
   def isNotHighValueDomain(
       highValueDomainList: List[Regex],
       name: String): ValidatedNel[DomainValidationError, Unit] =
-    if (!ZoneRecordValidations.isStringInRegexList(highValueDomainList, name)) {
+    if (!isStringInRegexList(highValueDomainList, name)) {
       ().validNel
     } else {
       HighValueDomainError(name).invalidNel

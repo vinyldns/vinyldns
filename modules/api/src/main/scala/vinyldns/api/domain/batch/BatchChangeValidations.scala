@@ -88,17 +88,18 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
 
-  def validateInputName(change: ChangeInput): SingleValidation[Unit] =
-    change.typ match {
+  def validateInputName(change: ChangeInput): SingleValidation[Unit] = {
+    val typedChecks = change.typ match {
       case A | AAAA | MX =>
-        validateHostName(change.inputName).asUnit |+| notInReverseZone(change) |+|
-          isNotHighValueDomain(change.inputName)
+        validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
       case CNAME | TXT =>
-        validateHostName(change.inputName).asUnit |+| isNotHighValueDomain(change.inputName)
+        validateHostName(change.inputName).asUnit
       case PTR =>
-        validatePtrIp(change.inputName) |+| isNotHighValueDomain(change.inputName)
+        validatePtrIp(change.inputName)
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
+    typedChecks |+| isNotHighValueDomain(change.inputName)
+  }
 
   def validatePtrIp(ip: String): SingleValidation[Unit] = {
     val validIpv4 = validateIpv4Address(ip).asUnit
