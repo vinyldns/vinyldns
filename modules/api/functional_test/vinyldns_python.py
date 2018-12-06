@@ -736,7 +736,6 @@ class VinylDNSClient(object):
 
         while u'latestSync' not in something and retries > 0:
             something = self.get_zone(zone_id)
-            print(something)
             time.sleep(RETRY_WAIT)
             retries -= 1
 
