@@ -732,14 +732,14 @@ class VinylDNSClient(object):
         """
         zone_id = zone_change[u'zone'][u'id']
         retries = MAX_RETRIES
-        something = self.get_zone(zone_id)
+        zone = self.get_zone(zone_id)
 
-        while u'latestSync' not in something and retries > 0:
-            something = self.get_zone(zone_id)
+        while u'latestSync' not in zone and retries > 0:
+            zone = self.get_zone(zone_id)
             time.sleep(RETRY_WAIT)
             retries -= 1
 
-        assert_that(something[u'zone']['latestSync'], is_not(none()))
+        assert_that(zone[u'zone']['latestSync'], is_not(none()))
 
     def wait_until_recordset_exists(self, zone_id, record_set_id, **kwargs):
         """
