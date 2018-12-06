@@ -769,6 +769,7 @@ class ProtobufConversionsSpec
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
+      pb.getIsSupport shouldBe user.isSupport
 
       fromPB(pb) shouldBe user
     }
@@ -794,6 +795,7 @@ class ProtobufConversionsSpec
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
+      pb.getIsSupport shouldBe user.isSupport
 
       fromPB(pb) shouldBe user
     }
@@ -830,6 +832,25 @@ class ProtobufConversionsSpec
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Locked"
+
+      fromPB(pb) shouldBe user
+    }
+
+    "convert to/from protobuf with supportAdmin true" in {
+      val user = User("testName", "testAccess", "testSecret", isSupport = true)
+      val pb = toPB(user)
+
+      pb.getUserName shouldBe user.userName
+      pb.getAccessKey shouldBe user.accessKey
+      pb.getSecretKey shouldBe user.secretKey
+      pb.hasFirstName shouldBe false
+      pb.hasLastName shouldBe false
+      pb.hasEmail shouldBe false
+      pb.getCreated shouldBe user.created.getMillis
+      pb.getId shouldBe user.id
+      pb.getIsSuper shouldBe user.isSuper
+      pb.getLockStatus shouldBe "Unlocked"
+      pb.getIsSupport shouldBe true
 
       fromPB(pb) shouldBe user
     }
