@@ -65,6 +65,8 @@ def test_create_zone_success(shared_zone_test_context):
         result_zone = result['zone']
         client.wait_until_zone_change_status_synced(result)
 
+        time.sleep(1)
+
         get_result = client.get_zone(result_zone['id'])
 
         get_zone = get_result['zone']
