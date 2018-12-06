@@ -470,6 +470,7 @@ class ProtobufConversionsSpec
       pb.getTtl shouldBe aRs.ttl
       pb.getTyp shouldBe aRs.typ.toString
       pb.getZoneId shouldBe aRs.zoneId
+      pb.hasOwnerGroupId shouldBe false
 
       pb.getRecordCount shouldBe 2
     }
@@ -479,6 +480,21 @@ class ProtobufConversionsSpec
       val rs = fromPB(pb)
 
       rs shouldBe aRs
+    }
+
+    "convert to protobuf for a recordset with ownerGroupId defined" in {
+      val rs = aRs.copy(ownerGroupId = Some("ownerGroupId"))
+      val pb = toPB(rs)
+
+      pb.hasOwnerGroupId shouldBe true
+      Some(pb.getOwnerGroupId) shouldBe rs.ownerGroupId
+    }
+
+    "convert from protobuf for a recordset with ownerGroupId defined" in {
+      val rs = aRs.copy(ownerGroupId = Some("ownerGroupId"))
+      val pb = toPB(rs)
+
+      fromPB(pb) shouldBe rs
     }
 
     "convert from protobuf for AAAA recordset" in {

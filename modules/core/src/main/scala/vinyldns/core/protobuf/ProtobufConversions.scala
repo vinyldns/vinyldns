@@ -72,7 +72,8 @@ trait ProtobufConversions {
       id = rs.getId,
       records =
         rs.getRecordList.asScala.map(rd => fromPB(rd, RecordType.withName(rs.getTyp))).toList,
-      account = rs.getAccount
+      account = rs.getAccount,
+      ownerGroupId = if (rs.hasOwnerGroupId) Some(rs.getOwnerGroupId) else None
     )
 
   def fromPB(zn: VinylDNSProto.Zone): Zone =
@@ -286,6 +287,7 @@ trait ProtobufConversions {
       .setAccount(rs.account)
 
     rs.updated.foreach(dt => builder.setUpdated(dt.getMillis))
+    rs.ownerGroupId.foreach(id => builder.setOwnerGroupId(id))
 
     // Map the records, first map to bytes, and then map the bytes to a record data instance
     rs.records.map(toRecordData).foreach(rd => builder.addRecord(rd))

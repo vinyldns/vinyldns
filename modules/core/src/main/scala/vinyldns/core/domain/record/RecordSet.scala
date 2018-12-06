@@ -43,7 +43,8 @@ case class RecordSet(
     updated: Option[DateTime] = None,
     records: List[RecordData] = List.empty,
     id: String = UUID.randomUUID().toString,
-    account: String = "system") {
+    account: String = "system",
+    ownerGroupId: Option[String] = None) {
 
   def isPending: Boolean =
     (status == RecordSetStatus.Pending
