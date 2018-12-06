@@ -63,6 +63,12 @@ class MembershipValidationsSpec
         val superAuth = AuthPrincipal(user, Seq())
         isGroupAdmin(okGroup, superAuth) should be(right)
       }
+      "return an error when the user is a support admin only" in {
+        val user = User("some", "new", "user", isSupport = true)
+        val supportAuth = AuthPrincipal(user, Seq())
+        val error = leftValue(isGroupAdmin(okGroup, supportAuth))
+        error shouldBe an[NotAuthorizedError]
+      }
       "return an error when the user has no access and is not super" in {
         val user = User("some", "new", "user")
         val nonSuperAuth = AuthPrincipal(user, Seq())
