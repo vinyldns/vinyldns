@@ -94,6 +94,13 @@ class AccessValidationsSpec
 
       accessValidationTest.canSeeZone(okUserAuth, zoneIn) should be(right)
     }
+
+    "return true if the user is a support admin" in {
+      val supportAuth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty)
+      accessValidationTest.canSeeZone(supportAuth, memberOkZoneAuthorized) should be(right)
+    }
   }
 
   "canChangeZone" should {
@@ -104,6 +111,14 @@ class AccessValidationsSpec
 
     "return true if the user is an admin or super user" in {
       accessValidationTest.canChangeZone(okUserAuth, memberOkZoneAuthorized) should be(right)
+    }
+
+    "return a NotAuthorizedError if the user is a support user" in {
+      val auth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty)
+      val error = leftValue(accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized))
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
@@ -308,28 +323,28 @@ class AccessValidationsSpec
     }
 
     "return false if the user is not support (membership auth)" in {
-      val auth = okGroupAuth.copy(
+      val supportAuth = okGroupAuth.copy(
         signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
-      val result = accessValidationTest.hasZoneAdminAccess(auth, memberOkZoneAuthorized)
+      val result = accessValidationTest.hasZoneAdminAccess(supportAuth, memberOkZoneAuthorized)
       result shouldBe false
     }
   }
 
   "hasReadZoneAccess" should {
     "return false if the user is not admin/super/support (membership auth)" in {
-      val auth = okGroupAuth.copy(
+      val supportAuth = okGroupAuth.copy(
         signedInUser = okGroupAuth.signedInUser.copy(isSupport = false),
         memberGroupIds = Seq.empty)
-      val result = accessValidationTest.hasReadZoneAccess(auth, memberZoneNotAuthorized)
+      val result = accessValidationTest.hasReadZoneAccess(supportAuth, memberZoneNotAuthorized)
       result shouldBe false
     }
 
     "return true if the user is support (membership auth)" in {
-      val auth = okGroupAuth.copy(
+      val supportAuth = okGroupAuth.copy(
         signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
-      val result = accessValidationTest.hasReadZoneAccess(auth, memberZoneNotAuthorized)
+      val result = accessValidationTest.hasReadZoneAccess(supportAuth, memberZoneNotAuthorized)
       result shouldBe true
     }
 
@@ -840,6 +855,22 @@ class AccessValidationsSpec
       val result = accessValidationTest.getListAccessLevels(okUserAuth, recordList, zone)
 
       val expected = recordList.map(RecordSetInfo(_, AccessLevel.NoAccess))
+      result shouldBe expected
+    }
+
+    "return access level Read if there is no ACL rule for the user and user is a support admin" in {
+      val supportAuth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty)
+
+      val recordList = List("rs1", "rs2", "rs3").map {
+        RecordSet("zoneId", _, RecordType.A, 100, RecordSetStatus.Active, DateTime.now())
+      }
+      val zone = Zone("test", "test")
+
+      val result = accessValidationTest.getListAccessLevels(supportAuth, recordList, zone)
+
+      val expected = recordList.map(RecordSetInfo(_, AccessLevel.Read))
       result shouldBe expected
     }
 
