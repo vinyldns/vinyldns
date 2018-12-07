@@ -24,7 +24,6 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.{TypeNotFound, Unrecoverable}
-import vinyldns.api.domain.zone.ZoneConnectionValidator.healthCheckRecordName
 import vinyldns.core.domain.record._
 import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import cats.effect._
@@ -66,8 +65,7 @@ class ZoneConnectionValidatorSpec
       IO.pure(mockZoneView)
   }
 
-  private def testDefaultConnection =
-    ZoneConnection("test-name", "test-key-name", "test-key", "10.0.0.1")
+  private def testDefaultConnection = mock[ZoneConnection]
 
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(
@@ -225,9 +223,9 @@ class ZoneConnectionValidatorSpec
     }
 
     "respond with a success if health check passes" in {
-      doReturn(IO(Right(List(mockRecordSet))))
+      doReturn(IO(Right(List(mockRecordSet))).toResult)
         .when(mockDnsConnection)
-        .queryDnsBackend(healthCheckRecordName, testDefaultConnection.name, RecordType.A)
+        .resolve("maybe-exists-record", "vinyldns.", RecordType.A)
 
       val result = underTest.healthCheck().unsafeRunSync()
       result should beRight(())
@@ -236,9 +234,9 @@ class ZoneConnectionValidatorSpec
     "respond with a failure if health check fails" in {
       val failure = Unrecoverable("unrecoverable error")
 
-      doReturn(IO(Left(failure)))
+      doReturn(IO(Left(failure)).toResult)
         .when(mockDnsConnection)
-        .queryDnsBackend(healthCheckRecordName, testDefaultConnection.name, RecordType.A)
+        .resolve("maybe-exists-record", "vinyldns.", RecordType.A)
 
       val result = underTest.healthCheck().unsafeRunSync()
       result should beLeft(HealthCheckError(failure.message))

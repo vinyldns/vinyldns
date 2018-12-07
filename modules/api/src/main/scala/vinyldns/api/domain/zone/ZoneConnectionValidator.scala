@@ -35,7 +35,6 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
     extends ZoneConnectionValidatorAlgebra {
 
   import ZoneRecordValidations._
-  import ZoneConnectionValidator._
 
   val opTimeout: FiniteDuration = 6.seconds
 
@@ -89,12 +88,9 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
 
   def healthCheck(): HealthCheck =
     dnsConnection(defaultConnection)
-      .queryDnsBackend(healthCheckRecordName, defaultConnection.name, RecordType.A)
+      .resolve("maybe-exists-record", "vinyldns.", RecordType.A)
+      .value
       .asHealthCheck
 
   private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
-}
-
-object ZoneConnectionValidator {
-  private[zone] val healthCheckRecordName = "maybe-exists"
 }
