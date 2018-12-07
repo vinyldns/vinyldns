@@ -724,7 +724,7 @@ class VinylDNSClient(object):
 
         return response == 200
 
-    def wait_until_zone_synced(self, zone_change):
+    def wait_until_zone_active(self, zone_change):
         """
         Waits a period of time for the zone sync to complete.
 
