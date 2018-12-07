@@ -23,7 +23,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
-import vinyldns.api.domain.dns.DnsProtocol.{TypeNotFound, Unrecoverable}
+import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
 import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import cats.effect._
@@ -31,6 +31,7 @@ import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 import vinyldns.core.health.HealthCheck.HealthCheckError
 
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 class ZoneConnectionValidatorSpec
     extends WordSpec
@@ -223,23 +224,23 @@ class ZoneConnectionValidatorSpec
     }
 
     "respond with a success if health check passes" in {
-      doReturn(IO(Right(List(mockRecordSet))).toResult)
+      doReturn(Success(()))
         .when(mockDnsConnection)
-        .resolve("maybe-exists-record", "vinyldns.", RecordType.A)
+        .healthCheck()
 
       val result = underTest.healthCheck().unsafeRunSync()
       result should beRight(())
     }
 
     "respond with a failure if health check fails" in {
-      val failure = Unrecoverable("unrecoverable error")
+      val failure = Failure(new IllegalArgumentException("connect: The address can't be null"))
 
-      doReturn(IO(Left(failure)).toResult)
+      doReturn(failure)
         .when(mockDnsConnection)
-        .resolve("maybe-exists-record", "vinyldns.", RecordType.A)
+        .healthCheck()
 
       val result = underTest.healthCheck().unsafeRunSync()
-      result should beLeft(HealthCheckError(failure.message))
+      result should beLeft(HealthCheckError(failure.exception.getMessage))
     }
   }
 }

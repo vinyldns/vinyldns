@@ -16,15 +16,20 @@
 
 package vinyldns.api.domain.dns
 
+import java.net.InetSocketAddress
+
 import cats.effect._
 import cats.syntax.all._
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import vinyldns.api.Interfaces.{result, _}
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+
+import scala.util.Try
 
 object DnsProtocol {
 
@@ -103,6 +108,21 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
         records <- runQuery(query)
       } yield records
     }.toResult
+
+  def healthCheck(): Try[Unit] = {
+    val socket = new java.net.Socket()
+    val address = VinylDNSConfig.dnsBackendHealthCheckConfig.getString("address")
+    val port = VinylDNSConfig.dnsBackendHealthCheckConfig.getInt("port")
+    val socketTimeout = VinylDNSConfig.dnsBackendHealthCheckConfig.getInt("timeout")
+
+    val result = for {
+      socketConnectionAttempt <- Try(
+        socket.connect(new InetSocketAddress(address, port), socketTimeout))
+    } yield socketConnectionAttempt
+    socket.close()
+
+    result
+  }
 
   private[dns] def toQuery(
       name: String,

@@ -87,10 +87,11 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
   }
 
   def healthCheck(): HealthCheck =
-    dnsConnection(defaultConnection)
-      .resolve("maybe-exists-record", "vinyldns.", RecordType.A)
-      .value
-      .asHealthCheck
+    IO {
+      dnsConnection(defaultConnection)
+        .healthCheck()
+        .toEither
+    }.asHealthCheck
 
   private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
 }

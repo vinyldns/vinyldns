@@ -73,4 +73,7 @@ object VinylDNSConfig {
     val primaryServer = connectionConfig.getString("primaryServer")
     ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
+
+  lazy val dnsBackendHealthCheckConfig: Config =
+    vinyldnsConfig.getConfig("health-check.dns-backend")
 }
