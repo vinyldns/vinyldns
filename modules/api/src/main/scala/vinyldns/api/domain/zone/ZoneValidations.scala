@@ -30,7 +30,7 @@ class ZoneValidations(syncDelayMillis: Int) {
 
   def userIsMemberOfGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(InvalidZoneAdminError(s"User is not a member of $groupId."))(
-      authPrincipal.isAuthorized(groupId))
+      authPrincipal.canEditAll(groupId))
 
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {

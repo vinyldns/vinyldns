@@ -343,6 +343,29 @@ class RecordSetServiceSpec
           .value)
       result.recordSets shouldBe List(RecordSetInfo(aaaa, AccessLevel.Delete))
     }
+    "return the recordSet for support admin" in {
+      doReturn(IO.pure(ListRecordSetResults(List(aaaa))))
+        .when(mockRecordRepo)
+        .listRecordSets(
+          zoneId = zoneAuthorized.id,
+          startFrom = None,
+          maxItems = None,
+          recordNameFilter = None)
+
+      val result: ListRecordSetsResponse = rightResultOf(
+        underTest
+          .listRecordSets(
+            zoneAuthorized.id,
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = None,
+            authPrincipal = okAuth.copy(
+              signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+              memberGroupIds = Seq.empty)
+          )
+          .value)
+      result.recordSets shouldBe List(RecordSetInfo(aaaa, AccessLevel.Read))
+    }
     "fails when the account is not authorized" in {
       val result = leftResultOf(
         underTest

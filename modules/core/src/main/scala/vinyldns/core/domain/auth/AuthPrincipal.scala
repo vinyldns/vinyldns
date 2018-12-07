@@ -19,12 +19,11 @@ package vinyldns.core.domain.auth
 import vinyldns.core.domain.membership.User
 
 case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
-
-  def isAuthorized(adminGroupId: String): Boolean =
+  def canEditAll(adminGroupId: String): Boolean =
     signedInUser.isSuper || memberGroupIds.contains(adminGroupId)
 
-  def readOnlyAuthorization(adminGroupId: String): Boolean =
-    signedInUser.isSuper || signedInUser.isSupport || memberGroupIds.contains(adminGroupId)
+  def canReadAll(adminGroupId: String): Boolean =
+    canEditAll(adminGroupId: String) || signedInUser.isSupport
 
   val secretKey: String = signedInUser.secretKey
 

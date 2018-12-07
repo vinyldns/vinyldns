@@ -45,6 +45,6 @@ object MembershipValidations {
 
   def canSeeGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized")) {
-      authPrincipal.isAuthorized(groupId) || authPrincipal.signedInUser.isSupport
+      authPrincipal.canReadAll(groupId)
     }
 }
