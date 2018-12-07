@@ -61,7 +61,8 @@ case class RecordSet(
     sb.append("ttl=\"").append(ttl.toString).append("\"; ")
     sb.append("account=\"").append(account).append("\"; ")
     sb.append("status=\"").append(status.toString).append("\"; ")
-    sb.append("records=\"").append(records.toString).append("\"")
+    sb.append("records=\"").append(records.toString).append("\"; ")
+    sb.append("ownerGroupId=\"").append(ownerGroupId).append("\"")
     sb.append("]")
 
     sb.toString
