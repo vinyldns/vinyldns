@@ -696,7 +696,9 @@ class VinylDNSClient(object):
         retries = MAX_RETRIES
         url = urljoin(self.index_url, u'/zones/{0}'.format(zone_id))
         response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
+        print("RESPONSE: " + str(response))
         while response != 404 and retries > 0:
+            print("RESPONSE: " + str(response))
             url = urljoin(self.index_url, u'/zones/{0}'.format(zone_id))
             response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
             retries -= 1
