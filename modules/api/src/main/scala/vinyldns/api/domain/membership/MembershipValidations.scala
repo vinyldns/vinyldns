@@ -38,11 +38,6 @@ object MembershipValidations {
       authPrincipal.signedInUser.isSuper
     }
 
-  def isSupportAdmin(authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
-    ensuring(NotAuthorizedError("Not authorized")) {
-      authPrincipal.signedInUser.isSupport
-    }
-
   def canSeeGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized")) {
       authPrincipal.canReadAll(groupId)
