@@ -360,8 +360,6 @@ class VinylDNSClient(object):
         """
         url = urljoin(self.index_url, u'/zones/{0}/sync'.format(zone_id))
         response, data = self.make_request(url, u'POST', self.headers, not_found_ok=True, **kwargs)
-        print("SYNC RESPONSE: " + str(response))
-        print("TIME NOW: ") + str(datetime.datetime.now())
         return data
 
     def delete_zone(self, zone_id, **kwargs):
