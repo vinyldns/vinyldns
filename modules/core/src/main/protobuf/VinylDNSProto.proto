@@ -110,6 +110,7 @@ message RecordSet {
   optional int64 updated = 8;
   repeated RecordData record = 9;
   required string account = 10;
+  optional string ownerGroupId = 11;
 }
 
 message RecordSetChange {
