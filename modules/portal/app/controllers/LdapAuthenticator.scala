@@ -18,12 +18,15 @@ package controllers
 
 import java.util
 
+import cats.effect.IO
+import cats.implicits._
 import controllers.LdapAuthenticator.LdapByDomainAuthenticator
 import javax.naming.Context
 import javax.naming.directory._
+import vinyldns.core.health.HealthCheck._
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 case class UserDetails(
     nameInNamespace: String,
@@ -173,10 +176,10 @@ object LdapAuthenticator {
 class UserDoesNotExistException(message: String) extends Exception(message: String)
 
 /**
-  * Top level ldap authenticator that tries authenticating on both the cable and corphq domains. Authentication is
+  * Top level ldap authenticator that tries authenticating on multiple domains. Authentication is
   * delegated to [LdapByDomainAuthenticator]
   *
-  * @param authenticator does authentication by domain (ie cable vs corphq)
+  * @param authenticator does authentication by domain
   */
 class LdapAuthenticator(
     searchBase: List[LdapSearchDomain],
@@ -185,12 +188,12 @@ class LdapAuthenticator(
     extends Authenticator {
 
   private def findUserDetails(
-      domains: List[LdapSearchDomain],
-      userName: String,
-      f: LdapSearchDomain => Try[UserDetails]): Try[UserDetails] = domains match {
-    case Nil => Failure(new UserDoesNotExistException(s"[$userName] LDAP entity does not exist"))
-    case h :: t => f(h).recoverWith { case _ => findUserDetails(t, userName, f) }
-  }
+    domains: List[LdapSearchDomain],
+    userName: String,
+    f: LdapSearchDomain => Try[UserDetails]): Try[UserDetails] = domains match {
+      case Nil => Failure(new UserDoesNotExistException(s"[$userName] LDAP entity does not exist"))
+      case h :: t => f(h).recoverWith { case _ => findUserDetails(t, userName, f) }
+    }
 
   def authenticate(username: String, password: String): Try[UserDetails] =
     findUserDetails(searchBase, username, authenticator.authenticate(_, username, password))
@@ -198,11 +201,21 @@ class LdapAuthenticator(
   def lookup(username: String): Try[UserDetails] =
     findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount))
 
+  def healthCheck(): HealthCheck =
+    IO {
+      searchBase.headOption
+        .map(authenticator.lookup(_, "healthlookup", serviceAccount)) match {
+        case Some(Failure(_: UserDoesNotExistException)) => ().asRight
+        case Some(Failure(e)) => e.asLeft
+        case _ => ().asRight
+      }
+    }.asHealthCheck
 }
 
 trait Authenticator {
   def authenticate(username: String, password: String): Try[UserDetails]
   def lookup(username: String): Try[UserDetails]
+  def healthCheck(): HealthCheck
 }
 
 /**
@@ -237,6 +250,8 @@ class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
       case "testuser" => Try(testUserDetails)
       case _ => authenticator.lookup(username)
     }
+
+  def healthCheck(): HealthCheck = authenticator.healthCheck()
 }
 
 case class LdapSearchDomain(organization: String, domainName: String)
