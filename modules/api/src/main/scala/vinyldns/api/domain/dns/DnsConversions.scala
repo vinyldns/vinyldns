@@ -70,6 +70,16 @@ trait DnsConversions {
   def getIPv6FullReverseName(ip: String): Option[String] =
     Try(DNS.ReverseMap.fromAddress(ip, DNS.Address.IPv6)).toOption.map(_.toString)
 
+  /*
+    normalizes ipv6 and ipv4 to use all fields with minimal zeros, e.g. 1:0::b8 -> 1:0:0:0:0:0:0:b8. according
+    to inetaddress spec InetAddress.getByName on a literal ip does not issue a DNS lookup, just validates that it is a
+    valid ip. If the inputted ip is not valid it will return None
+
+    https://docs.oracle.com/javase/8/docs/api/java/net/InetAddress.html#getByName-java.lang.String-
+   */
+  def getValidNormalizedIpAddress(ip: String): Option[String] =
+    Try(InetAddress.getByName(ip).getHostAddress).toOption
+
   def recordDnsName(recordName: String, zoneName: String): DNS.Name =
     if (omitTrailingDot(recordName) == omitTrailingDot(zoneName))
       zoneDnsName(zoneName)

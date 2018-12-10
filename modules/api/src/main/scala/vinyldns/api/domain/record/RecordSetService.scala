@@ -60,7 +60,7 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      _ <- isNotHighValueDomain(recordSet.name, zone.name).toResult
+      _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- recordSetDoesNotExist(rsForValidations, zone)
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -80,7 +80,7 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
-      _ <- isNotHighValueDomain(recordSet.name, zone.name).toResult
+      _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
@@ -101,7 +101,7 @@ class RecordSetService(
     for {
       zone <- getZone(zoneId)
       existing <- getRecordSet(recordSetId, zone)
-      _ <- isNotHighValueDomain(existing.name, zone.name).toResult
+      _ <- isNotHighValueDomain(existing, zone).toResult
       _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone).toResult
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult

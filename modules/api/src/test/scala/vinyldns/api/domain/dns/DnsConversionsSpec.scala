@@ -600,4 +600,38 @@ class DnsConversionsSpec
       getIPv6FullReverseName("2001::42::8329") shouldBe None
     }
   }
+
+  "getValidNormalizedIpAddress" should {
+    "normalize ipv4" in {
+      val ip1 = "000.01.001.011"
+      val ip2 = "10.2.013.255"
+
+      getValidNormalizedIpAddress(ip1) shouldBe Some("0.1.1.11")
+      getValidNormalizedIpAddress(ip2) shouldBe Some("10.2.13.255")
+    }
+
+    "normalize ipv6" in {
+      val ip1 = "1:b:0b:02b:a2b:0a2b:fa2b:0010"
+      val ip2 = "10:0::0:1:ab"
+      val ip3 = "::01"
+      val ip4 = "10::"
+
+      getValidNormalizedIpAddress(ip1) shouldBe Some("1:b:b:2b:a2b:a2b:fa2b:10")
+      getValidNormalizedIpAddress(ip2) shouldBe Some("10:0:0:0:0:0:1:ab")
+      getValidNormalizedIpAddress(ip3) shouldBe Some("0:0:0:0:0:0:0:1")
+      getValidNormalizedIpAddress(ip4) shouldBe Some("10:0:0:0:0:0:0:0")
+    }
+
+    "return None if ip is not valid" in {
+      val ip1 = "1.1.1.900"
+      val ip2 = "2.1.1.0.3"
+      val ip3 = "1:::8"
+      val ip4 = "1:0:0:0:0:0:0:0:1:1:1:1:1:1"
+
+      getValidNormalizedIpAddress(ip1) shouldBe None
+      getValidNormalizedIpAddress(ip2) shouldBe None
+      getValidNormalizedIpAddress(ip3) shouldBe None
+      getValidNormalizedIpAddress(ip4) shouldBe None
+    }
+  }
 }

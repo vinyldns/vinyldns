@@ -26,6 +26,7 @@ import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 import vinyldns.core.domain.batch.{BatchChange, RecordKey}
 import vinyldns.api.VinylDNSConfig
+import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.zone.ZoneRecordValidations
 
 trait BatchChangeValidationsAlgebra {
@@ -98,7 +99,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
         validatePtrIp(change.inputName)
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
-    typedChecks |+| isNotHighValueDomain(change.inputName)
+    typedChecks |+| isNotHighValueDomain(change)
   }
 
   def validatePtrIp(ip: String): SingleValidation[Unit] = {
@@ -337,8 +338,16 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       UserNotAuthorizedError(batchChange.id).asLeft
     }
 
-  def isNotHighValueDomain(inputName: String): SingleValidation[Unit] =
+  def isNotHighValueDomain(change: ChangeInput): SingleValidation[Unit] = {
+    val name = change.typ match {
+      case RecordType.PTR =>
+        // if dns conversions thinks its an invalid ip just use original
+        DnsConversions.getValidNormalizedIpAddress(change.inputName).getOrElse(change.inputName)
+      case _ => change.inputName
+    }
+
     ZoneRecordValidations
-      .isNotHighValueDomain(VinylDNSConfig.highValueDomains, inputName)
+      .isNotHighValueDomain(VinylDNSConfig.highValueDomains, name)
       .asUnit
+  }
 }

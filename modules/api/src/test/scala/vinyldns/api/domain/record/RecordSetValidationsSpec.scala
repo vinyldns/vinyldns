@@ -284,5 +284,28 @@ class RecordSetValidationsSpec
         error shouldBe a[InvalidRequest]
       }
     }
+
+    "reverseNameToIp" should {
+      "convert ptr to ipv4 address" in {
+        val zone = okZone.copy(name = "0.162.198.in-addr.arpa.")
+        val record = ptrIp4.copy(name = "30")
+
+        reverseNameToIp(record.name, zone) shouldBe "198.162.0.30"
+      }
+
+      "convert classless delegation record to ipv4 address" in {
+        val zone = okZone.copy(name = "10/30.0.162.198.in-addr.arpa.")
+        val record = ptrIp4.copy(name = "30")
+
+        reverseNameToIp(record.name, zone) shouldBe "198.162.0.30"
+      }
+
+      "convert ptr to ipv6 address" in {
+        val zone = okZone.copy(name = "3.2.1.9.8.7.6.5.4.3.2.1.ip6.arpa.")
+        val record = ptrIp6.copy(name = "5.4.3.2.1.9.8.7.6.5.4.3.2.1.9.8.7.6.5.4")
+
+        reverseNameToIp(record.name, zone) shouldBe "1234:5678:9123:4567:8912:3456:7891:2345"
+      }
+    }
   }
 }
