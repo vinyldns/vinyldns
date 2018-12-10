@@ -29,19 +29,19 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      auth.canReadAll(zone.adminGroupId) || userHasAclRules(auth, zone))
+      auth.canReadAll || auth.isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
 
   def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot modify zone '${zone.name}'"))(
-      auth.canEditAll(zone.adminGroupId))
+      auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
 
   def canAddRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
       zone: Zone): Either[Throwable, Unit] = {
-    val accessLevel = getFullAccessLevel(auth, recordName, recordType, zone)
+    val accessLevel = getAccessLevel(auth, recordName, recordType, zone)
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to create " +
         s"$recordName.${zone.name}"))(
@@ -53,7 +53,7 @@ object AccessValidations extends AccessValidationAlgebra {
       recordName: String,
       recordType: RecordType,
       zone: Zone): Either[Throwable, Unit] = {
-    val accessLevel = getFullAccessLevel(auth, recordName, recordType, zone)
+    val accessLevel = getAccessLevel(auth, recordName, recordType, zone)
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to update " +
         s"$recordName.${zone.name}"))(
@@ -68,7 +68,7 @@ object AccessValidations extends AccessValidationAlgebra {
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to delete " +
         s"$recordName.${zone.name}"))(
-      getFullAccessLevel(auth, recordName, recordType, zone) == AccessLevel.Delete)
+      getAccessLevel(auth, recordName, recordType, zone) == AccessLevel.Delete)
 
   def canViewRecordSet(
       auth: AuthPrincipal,
@@ -78,13 +78,14 @@ object AccessValidations extends AccessValidationAlgebra {
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to view " +
         s"$recordName.${zone.name}"))(
-      getReadAccessLevel(auth, recordName, recordType, zone) != AccessLevel.NoAccess)
+      getAccessLevel(auth, recordName, recordType, zone) != AccessLevel.NoAccess)
 
   def getListAccessLevels(
       auth: AuthPrincipal,
       recordSets: List[RecordSet],
       zone: Zone): List[RecordSetInfo] =
-    if (auth.canEditAll(zone.adminGroupId)) recordSets.map(RecordSetInfo(_, AccessLevel.Delete))
+    if (auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
+      recordSets.map(RecordSetInfo(_, AccessLevel.Delete))
     else {
       val rulesForUser = zone.acl.rules.filter(ruleAppliesToUser(auth, _))
 
@@ -166,19 +167,17 @@ object AccessValidations extends AccessValidationAlgebra {
       topRule.accessLevel
     }
 
-  def getFullAccessLevel(
+  def getAccessLevel(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): AccessLevel =
-    if (auth.canEditAll(zone.adminGroupId)) AccessLevel.Delete
-    else getAccessFromAcl(auth, recordName, recordType, zone)
-
-  def getReadAccessLevel(
-      auth: AuthPrincipal,
-      recordName: String,
-      recordType: RecordType,
-      zone: Zone): AccessLevel =
-    if (auth.canReadAll(zone.adminGroupId)) AccessLevel.Read
-    else getAccessFromAcl(auth, recordName, recordType, zone)
+      zone: Zone): AccessLevel = auth match {
+    case superUser if superUser.canEditAll => AccessLevel.Delete
+    case groupMember if groupMember.isGroupMember(zone.adminGroupId) => AccessLevel.Delete
+    case supportUser if supportUser.canReadAll => {
+      val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
+      if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
+    }
+    case _ => getAccessFromAcl(auth, recordName, recordType, zone)
+  }
 }

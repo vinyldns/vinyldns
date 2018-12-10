@@ -20,17 +20,12 @@ import cats.syntax.either._
 import com.aaronbedra.orchard.CIDR
 import org.joda.time.DateTime
 import vinyldns.api.Interfaces.ensuring
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
 
 import scala.util.{Failure, Success, Try}
 
 class ZoneValidations(syncDelayMillis: Int) {
-
-  def userIsMemberOfGroup(groupId: String, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
-    ensuring(InvalidZoneAdminError(s"User is not a member of $groupId."))(
-      authPrincipal.canEditAll(groupId))
 
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
