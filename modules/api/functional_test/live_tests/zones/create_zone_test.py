@@ -440,7 +440,7 @@ def test_user_cannot_create_zone_with_nonmember_admin_group(shared_zone_test_con
         }
     }
 
-    shared_zone_test_context.ok_vinyldns_client.create_zone(zone, status=400)
+    shared_zone_test_context.ok_vinyldns_client.create_zone(zone, status=403)
 
 
 def test_user_cannot_create_zone_with_failed_validations(shared_zone_test_context):
