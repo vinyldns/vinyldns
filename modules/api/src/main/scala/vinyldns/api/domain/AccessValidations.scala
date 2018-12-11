@@ -34,7 +34,7 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      (hasZoneAdminAccess(auth, zone) || zone.shared) || userHasAclRules(auth, zone))
+      hasZoneAdminAccess(auth, zone) || userHasAclRules(auth, zone))
 
   def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
