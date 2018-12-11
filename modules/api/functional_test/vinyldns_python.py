@@ -674,7 +674,7 @@ class VinylDNSClient(object):
         latest_change = zone_change
         retries = MAX_RETRIES
 
-        while latest_change[u'status'] != 'Synced' and retries > 0:
+        while (latest_change[u'status'] != 'Synced' and retries > 0) and latest_change[u'status'] != 'Failed':
             changes = self.list_zone_changes(zone_change['zone']['id'])
             if u'zoneChanges' in changes:
                 matching_changes = filter(lambda change: change[u'id'] == zone_change[u'id'], changes[u'zoneChanges'])
