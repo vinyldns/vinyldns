@@ -163,9 +163,7 @@ def test_sync_zone_success(shared_zone_test_context):
         time.sleep(10)
 
         # sync again
-        change = client.sync_zone(zone['id'], status=202)
-        client.wait_until_zone_change_status_synced(change)
-
+        client.sync_zone(zone['id'], status=202)
         wait_for_zone_sync_to_complete(client, zone['id'], latest_sync)
 
         # confirm cannot again sync without waiting

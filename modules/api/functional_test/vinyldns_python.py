@@ -2,7 +2,6 @@ import json
 import time
 import logging
 import collections
-import datetime
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -674,7 +673,7 @@ class VinylDNSClient(object):
         latest_change = zone_change
         retries = MAX_RETRIES
 
-        while (latest_change[u'status'] != 'Synced' and retries > 0) and latest_change[u'status'] != 'Failed':
+        while latest_change[u'status'] != 'Synced' and latest_change[u'status'] != 'Failed' and retries > 0:
             changes = self.list_zone_changes(zone_change['zone']['id'])
             if u'zoneChanges' in changes:
                 matching_changes = filter(lambda change: change[u'id'] == zone_change[u'id'], changes[u'zoneChanges'])
@@ -696,9 +695,7 @@ class VinylDNSClient(object):
         retries = MAX_RETRIES
         url = urljoin(self.index_url, u'/zones/{0}'.format(zone_id))
         response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
-        print("RESPONSE: " + str(response))
         while response != 404 and retries > 0:
-            print("RESPONSE: " + str(response))
             url = urljoin(self.index_url, u'/zones/{0}'.format(zone_id))
             response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
             retries -= 1
@@ -735,7 +732,7 @@ class VinylDNSClient(object):
         retries = MAX_RETRIES
         zone_request = self.get_zone(zone_id)
 
-        while ('status' not in zone_request or zone_request[u'zone'][u'status'] != 'Active') and retries > 0:
+        while (u'zone' not in zone_request or zone_request[u'zone'][u'status'] != 'Active') and retries > 0:
             zone_request = self.get_zone(zone_id)
             time.sleep(RETRY_WAIT)
             retries -= 1
