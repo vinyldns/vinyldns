@@ -112,8 +112,7 @@ def test_sync_zone_success(shared_zone_test_context):
     try:
         zone_change = client.create_zone(zone, status=202)
         zone = zone_change['zone']
-        client.wait_until_zone_exists(zone_change)
-        client.wait_until_zone_change_status_synced(zone_change)
+        client.wait_until_zone_active(zone_change)
 
         time.sleep(.5)
 
@@ -152,9 +151,6 @@ def test_sync_zone_success(shared_zone_test_context):
         # sync again
         change = client.sync_zone(zone['id'], status=202)
         client.wait_until_zone_change_status_synced(change)
-
-        # confirm cannot again sync without waiting
-        client.sync_zone(zone['id'], status=403)
 
         # validate zone
         get_result = client.get_zone(zone['id'])

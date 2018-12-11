@@ -741,7 +741,7 @@ class VinylDNSClient(object):
             time.sleep(RETRY_WAIT)
             retries -= 1
 
-        assert_that(zone[u'zone']['latestSync'], is_not(none()))
+        assert_that(zone[u'zone']['status'], is_('Active'))
 
     def wait_until_recordset_exists(self, zone_id, record_set_id, **kwargs):
         """
