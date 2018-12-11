@@ -359,7 +359,6 @@ class VinylDNSClient(object):
         """
         url = urljoin(self.index_url, u'/zones/{0}/sync'.format(zone_id))
         response, data = self.make_request(url, u'POST', self.headers, not_found_ok=True, **kwargs)
-
         return data
 
     def delete_zone(self, zone_id, **kwargs):
@@ -383,39 +382,6 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, **kwargs)
 
         return data
-
-    def get_zone_history(self, zone_id, **kwargs):
-        """
-        Gets the zone history for the given zone id
-        :param zone_id: the id of the zone to retrieve
-        :return: the zone, or will 404 if not found
-        """
-        url = urljoin(self.index_url, u'/zones/{0}/history'.format(zone_id))
-
-        response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, **kwargs)
-        return data
-
-    def get_zone_change(self, zone_change, **kwargs):
-        """
-        Gets a zone change with the provided id
-
-        Unfortunately, there is no endpoint, so we have to get all zone history and parse
-        """
-        zone_change_id = zone_change[u'id']
-        change = None
-
-        def change_id_match(possible_match):
-            return possible_match[u'id'] == zone_change_id
-
-        history = self.get_zone_history(zone_change[u'zone'][u'id'])
-        if u'zoneChanges' in history:
-            zone_changes = history[u'zoneChanges']
-            matching_changes = filter(change_id_match, zone_changes)
-
-            if len(matching_changes) > 0:
-                change = matching_changes[0]
-
-        return change
 
     def list_zone_changes(self, zone_id, start_from=None, max_items=None, **kwargs):
         """
@@ -645,7 +611,7 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         rule = self.add_zone_acl_rule(zone_id, acl_rule, sign_request, **kwargs)
-        self.wait_until_zone_change_status(rule, 'Synced')
+        self.wait_until_zone_change_status_synced(rule)
 
         return rule
 
@@ -671,7 +637,7 @@ class VinylDNSClient(object):
         :return: the content of the response
         """
         rule = self.delete_zone_acl_rule(zone_id, acl_rule, sign_request, **kwargs)
-        self.wait_until_zone_change_status(rule, 'Synced')
+        self.wait_until_zone_change_status_synced(rule)
 
         return rule
 
@@ -700,30 +666,23 @@ class VinylDNSClient(object):
 
         return response == 404
 
-    def wait_until_zone_change_status(self, zone_change, expected_status):
+    def wait_until_zone_change_status_synced(self, zone_change):
         """
-        Waits until the zone change status matches the expected status
+        Waits until the zone change status is Synced
         """
-        zone_change_id = zone_change[u'id']
-
-        def change_id_match(change):
-            return change[u'id'] == zone_change_id
-
-        change = zone_change
+        latest_change = zone_change
         retries = MAX_RETRIES
-        while change[u'status'] != expected_status and retries > 0:
-            history = self.get_zone_history(zone_change[u'zone'][u'id'])
 
-            if u'zoneChanges' in history:
-                zone_changes = history[u'zoneChanges']
-                matching_changes = filter(change_id_match, zone_changes)
-
+        while latest_change[u'status'] != 'Synced' and latest_change[u'status'] != 'Failed' and retries > 0:
+            changes = self.list_zone_changes(zone_change['zone']['id'])
+            if u'zoneChanges' in changes:
+                matching_changes = filter(lambda change: change[u'id'] == zone_change[u'id'], changes[u'zoneChanges'])
                 if len(matching_changes) > 0:
-                    change = matching_changes[0]
+                    latest_change = matching_changes[0]
             time.sleep(RETRY_WAIT)
             retries -= 1
 
-        return change[u'status'] == expected_status
+        assert_that(latest_change[u'status'], is_('Synced'))
 
     def wait_until_zone_deleted(self, zone_id, **kwargs):
         """
@@ -763,6 +722,22 @@ class VinylDNSClient(object):
             time.sleep(RETRY_WAIT)
 
         return response == 200
+
+    def wait_until_zone_active(self, zone_id):
+        """
+        Waits a period of time for the zone sync to complete.
+
+        :param zone_id: the ID for the zone.
+        """
+        retries = MAX_RETRIES
+        zone_request = self.get_zone(zone_id)
+
+        while (u'zone' not in zone_request or zone_request[u'zone'][u'status'] != 'Active') and retries > 0:
+            zone_request = self.get_zone(zone_id)
+            time.sleep(RETRY_WAIT)
+            retries -= 1
+
+        assert_that(zone_request[u'zone'][u'status'], is_('Active'))
 
     def wait_until_recordset_exists(self, zone_id, record_set_id, **kwargs):
         """
