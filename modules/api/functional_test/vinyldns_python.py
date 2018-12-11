@@ -726,22 +726,21 @@ class VinylDNSClient(object):
 
         return response == 200
 
-    def wait_until_zone_active(self, zone_change):
+    def wait_until_zone_active(self, zone_id):
         """
         Waits a period of time for the zone sync to complete.
 
-        :param zone_change: the create zone change for the zone that has been created.
+        :param zone_id: the ID for the zone.
         """
-        zone_id = zone_change[u'zone'][u'id']
         retries = MAX_RETRIES
-        zone = self.get_zone(zone_id)
+        zone_request = self.get_zone(zone_id)
 
-        while u'latestSync' not in zone and retries > 0:
-            zone = self.get_zone(zone_id)
+        while ('status' not in zone_request or zone_request[u'zone'][u'status'] != 'Active') and retries > 0:
+            zone_request = self.get_zone(zone_id)
             time.sleep(RETRY_WAIT)
             retries -= 1
 
-        assert_that(zone[u'zone']['status'], is_('Active'))
+        assert_that(zone_request[u'zone'][u'status'], is_('Active'))
 
     def wait_until_recordset_exists(self, zone_id, record_set_id, **kwargs):
         """

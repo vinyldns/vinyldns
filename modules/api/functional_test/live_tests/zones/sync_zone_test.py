@@ -112,7 +112,7 @@ def test_sync_zone_success(shared_zone_test_context):
     try:
         zone_change = client.create_zone(zone, status=202)
         zone = zone_change['zone']
-        client.wait_until_zone_active(zone_change)
+        client.wait_until_zone_active(zone['id'])
 
         time.sleep(.5)
 
