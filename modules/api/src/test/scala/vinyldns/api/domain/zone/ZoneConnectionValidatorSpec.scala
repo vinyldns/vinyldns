@@ -28,10 +28,8 @@ import vinyldns.core.domain.record._
 import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import cats.effect._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
-import vinyldns.core.health.HealthCheck.HealthCheckError
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 class ZoneConnectionValidatorSpec
     extends WordSpec
@@ -66,7 +64,8 @@ class ZoneConnectionValidatorSpec
       IO.pure(mockZoneView)
   }
 
-  private def testDefaultConnection = mock[ZoneConnection]
+  private def testDefaultConnection: ZoneConnection =
+    ZoneConnection("name", "key-name", "key", "localhost:19001")
 
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(
@@ -221,26 +220,6 @@ class ZoneConnectionValidatorSpec
       val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("Transfer connection invalid")
-    }
-
-    "respond with a success if health check passes" in {
-      doReturn(Success(()))
-        .when(mockDnsConnection)
-        .healthCheck()
-
-      val result = underTest.healthCheck().unsafeRunSync()
-      result should beRight(())
-    }
-
-    "respond with a failure if health check fails" in {
-      val failure = Failure(new IllegalArgumentException("connect: The address can't be null"))
-
-      doReturn(failure)
-        .when(mockDnsConnection)
-        .healthCheck()
-
-      val result = underTest.healthCheck().unsafeRunSync()
-      result should beLeft(HealthCheckError(failure.exception.getMessage))
     }
   }
 }

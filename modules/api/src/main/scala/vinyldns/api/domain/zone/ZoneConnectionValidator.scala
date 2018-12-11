@@ -16,6 +16,8 @@
 
 package vinyldns.api.domain.zone
 
+import java.net.{InetSocketAddress, Socket}
+
 import cats.effect._
 import cats.syntax.all._
 import vinyldns.api.Interfaces._
@@ -37,6 +39,10 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
   import ZoneRecordValidations._
 
   val opTimeout: FiniteDuration = 6.seconds
+
+  val (healthCheckAddress, healthCheckPort) =
+    DnsConnection.parseHostAndPort(defaultConnection.primaryServer)
+  val healthCheckSocketTimeout: Int = VinylDNSConfig.dnsBackendHealthCheckConfig.getInt("timeout")
 
   def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
@@ -87,11 +93,16 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
   }
 
   def healthCheck(): HealthCheck =
-    IO {
-      dnsConnection(defaultConnection)
-        .healthCheck()
-        .toEither
-    }.asHealthCheck
+    Resource
+      .fromAutoCloseable(IO(new Socket()))
+      .use(
+        socket =>
+          IO(
+            socket.connect(
+              new InetSocketAddress(healthCheckAddress, healthCheckPort),
+              healthCheckSocketTimeout)))
+      .attempt
+      .asHealthCheck
 
   private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
 }
