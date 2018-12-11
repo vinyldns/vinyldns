@@ -42,7 +42,6 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
 
   val (healthCheckAddress, healthCheckPort) =
     DnsConnection.parseHostAndPort(defaultConnection.primaryServer)
-  val healthCheckSocketTimeout: Int = VinylDNSConfig.dnsBackendHealthCheckConfig.getInt("timeout")
 
   def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
@@ -92,15 +91,11 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
     }
   }
 
-  def healthCheck(): HealthCheck =
+  def healthCheck(timeout: Int): HealthCheck =
     Resource
       .fromAutoCloseable(IO(new Socket()))
-      .use(
-        socket =>
-          IO(
-            socket.connect(
-              new InetSocketAddress(healthCheckAddress, healthCheckPort),
-              healthCheckSocketTimeout)))
+      .use(socket =>
+        IO(socket.connect(new InetSocketAddress(healthCheckAddress, healthCheckPort), timeout)))
       .attempt
       .asHealthCheck
 

@@ -20,6 +20,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.{ActorMaterializer, Materializer}
 import cats.effect.{ContextShift, IO, Timer}
+import pureconfig.module.catseffect.loadConfigF
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
@@ -79,6 +80,9 @@ object Boot extends App {
       batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
       msgsPerPoll <- IO.fromEither(MessageCount(queueConfig.messagesPerPoll))
+      healthCheckTimeout <- loadConfigF[IO, Option[Int]](
+        VinylDNSConfig.vinyldnsConfig,
+        "health-check-timeout")
       _ <- CommandHandler
         .run(
           messageQueue,
@@ -107,7 +111,8 @@ object Boot extends App {
         zoneValidations,
         AccessValidations)
       val healthService = new HealthService(
-        messageQueue.healthCheck :: connectionValidator.healthCheck ::
+        messageQueue.healthCheck :: connectionValidator.healthCheck(
+          healthCheckTimeout.getOrElse(10000)) ::
           loaderResponse.healthChecks)
       val batchChangeConverter =
         new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
