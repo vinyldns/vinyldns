@@ -24,7 +24,7 @@ class ZoneConnectionValidatorIntegrationSpec extends WordSpec with Matchers with
   "ZoneConnectionValidatorIntegrationSpec" should {
     "have a valid health check if we can connect to DNS backend" in {
       val check = new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection)
-        .healthCheck()
+        .healthCheck(10000)
         .unsafeRunSync()
       check should beRight(())
     }
@@ -33,7 +33,7 @@ class ZoneConnectionValidatorIntegrationSpec extends WordSpec with Matchers with
       val result =
         new ZoneConnectionValidator(
           VinylDNSConfig.defaultZoneConnection.copy(primaryServer = "localhost:1234"))
-          .healthCheck()
+          .healthCheck(10000)
           .unsafeRunSync()
       result should beLeft(HealthCheckError("Connection refused (Connection refused)"))
     }
