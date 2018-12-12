@@ -113,7 +113,14 @@ class AccessValidationsSpec
       accessValidationTest.canChangeZone(okUserAuth, memberOkZoneAuthorized) should be(right)
     }
 
-    "return a NotAuthorizedError if the user is a support user" in {
+    "return true if the user is an admin and a support user" in {
+      val auth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq(okGroup.id))
+      accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized) should be(right)
+    }
+
+    "return a NotAuthorizedError if the user is a support user only" in {
       val auth = okAuth.copy(
         signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
