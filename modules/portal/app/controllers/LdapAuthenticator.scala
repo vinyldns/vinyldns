@@ -188,12 +188,12 @@ class LdapAuthenticator(
     extends Authenticator {
 
   private def findUserDetails(
-    domains: List[LdapSearchDomain],
-    userName: String,
-    f: LdapSearchDomain => Try[UserDetails]): Try[UserDetails] = domains match {
-      case Nil => Failure(new UserDoesNotExistException(s"[$userName] LDAP entity does not exist"))
-      case h :: t => f(h).recoverWith { case _ => findUserDetails(t, userName, f) }
-    }
+      domains: List[LdapSearchDomain],
+      userName: String,
+      f: LdapSearchDomain => Try[UserDetails]): Try[UserDetails] = domains match {
+    case Nil => Failure(new UserDoesNotExistException(s"[$userName] LDAP entity does not exist"))
+    case h :: t => f(h).recoverWith { case _ => findUserDetails(t, userName, f) }
+  }
 
   def authenticate(username: String, password: String): Try[UserDetails] =
     findUserDetails(searchBase, username, authenticator.authenticate(_, username, password))

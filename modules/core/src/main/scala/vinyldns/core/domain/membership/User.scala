@@ -38,7 +38,8 @@ final case class User(
     created: DateTime = DateTime.now,
     id: String = UUID.randomUUID().toString,
     isSuper: Boolean = false,
-    lockStatus: LockStatus = LockStatus.Unlocked
+    lockStatus: LockStatus = LockStatus.Unlocked,
+    isTest: Boolean = false
 ) {
 
   def updateUserLockStatus(lockStatus: LockStatus): User =
