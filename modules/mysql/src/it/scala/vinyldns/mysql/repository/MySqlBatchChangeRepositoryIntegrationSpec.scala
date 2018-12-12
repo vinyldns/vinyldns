@@ -85,7 +85,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         sc2.copy(id = UUID.randomUUID().toString),
         sc3.copy(id = UUID.randomUUID().toString),
         deleteChange.copy(id = UUID.randomUUID().toString)
-      )
+      ),
+      Some("some-owner-group")
     )
 
     val bcARecords: BatchChange = randomBatchChange
@@ -139,6 +140,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.userId shouldBe expected.userId
     actual.userName shouldBe expected.userId
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
+    actual.ownerGroupId shouldBe expected.ownerGroupId
   }
 
   private def areSame(actual: BatchChangeSummary, expected: BatchChangeSummary): Assertion = {
@@ -148,6 +150,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.userId shouldBe expected.userId
     actual.userName shouldBe expected.userId
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
+    actual.ownerGroupId shouldBe expected.ownerGroupId
   }
 
   private def areSame(
@@ -173,6 +176,17 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         } yield retrieved
 
       areSame(f.unsafeRunSync(), Some(bcARecords))
+    }
+
+    "save/get a batch change with empty comments, ownerGroup" in {
+      val testBatch = randomBatchChange.copy(comments = None, ownerGroupId = None)
+      val f =
+        for {
+          _ <- repo.save(testBatch)
+          retrieved <- repo.getBatchChange(testBatch.id)
+        } yield retrieved
+
+      areSame(f.unsafeRunSync(), Some(testBatch))
     }
 
     "return none if a batch change is not found by ID" in {
