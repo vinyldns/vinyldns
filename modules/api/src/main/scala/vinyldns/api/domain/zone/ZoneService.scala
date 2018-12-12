@@ -66,6 +66,7 @@ class ZoneService(
       _ <- zoneDoesNotExist(zone)
       _ <- adminGroupExists(zone.adminGroupId)
       _ <- canChangeZone(auth, zone).toResult
+      _ <- checkSharedZone(zone, auth.signedInUser).toResult
       createZoneChange <- ZoneChangeGenerator.forAdd(zone, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
     } yield createZoneChange

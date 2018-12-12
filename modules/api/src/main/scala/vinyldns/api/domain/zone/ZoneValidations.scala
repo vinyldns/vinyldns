@@ -20,6 +20,7 @@ import cats.syntax.either._
 import com.aaronbedra.orchard.CIDR
 import org.joda.time.DateTime
 import vinyldns.api.Interfaces.ensuring
+import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
 
@@ -69,4 +70,8 @@ class ZoneValidations(syncDelayMillis: Int) {
         }
       case None => ().asRight
     }
+
+  def checkSharedZone(zone: Zone, user: User): Either[Throwable, Unit] =
+    ensuring(UnauthorizedSharedZoneAction("Only super users are allowed to create shared zones."))(
+      !zone.shared || user.isSuper)
 }

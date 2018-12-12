@@ -69,6 +69,30 @@ case class Zone(
   }
 }
 
+object Zone {
+  def apply(createZoneInput: CreateZoneInput): Zone = {
+    import createZoneInput._
+
+    Zone(
+      name,
+      email,
+      connection = connection,
+      transferConnection = transferConnection,
+      shared = shared.getOrElse(false),
+      acl = acl,
+      adminGroupId = adminGroupId)
+  }
+}
+
+case class CreateZoneInput(
+    name: String,
+    email: String,
+    connection: Option[ZoneConnection] = None,
+    transferConnection: Option[ZoneConnection] = None,
+    shared: Option[Boolean] = None,
+    acl: ZoneACL = ZoneACL(),
+    adminGroupId: String)
+
 case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
   def addRule(newRule: ACLRule): ZoneACL = copy(rules = rules + newRule)

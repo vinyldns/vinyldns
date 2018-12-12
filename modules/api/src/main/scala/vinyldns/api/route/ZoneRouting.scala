@@ -23,7 +23,7 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.{ACLRuleInfo, Zone}
+import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
 
@@ -43,8 +43,8 @@ trait ZoneRoute extends Directives {
 
   val zoneRoute = { authPrincipal: AuthPrincipal =>
     (post & path("zones") & monitor("Endpoint.createZone")) {
-      entity(as[Zone]) { zone =>
-        execute(zoneService.connectToZone(encrypt(zone), authPrincipal)) { chg =>
+      entity(as[CreateZoneInput]) { createZoneInput =>
+        execute(zoneService.connectToZone(encrypt(Zone(createZoneInput)), authPrincipal)) { chg =>
           complete(StatusCodes.Accepted, chg)
         }
       }
@@ -94,7 +94,7 @@ trait ZoneRoute extends Directives {
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
-                s"maxItems was ${maxItems}, maxItems must be between 0 exclusive and $DEFAULT_MAX_ITEMS inclusive") {
+                s"maxItems was $maxItems, maxItems must be between 0 exclusive and $DEFAULT_MAX_ITEMS inclusive") {
                 execute(zoneService.listZoneChanges(id, authPrincipal, startFrom, maxItems)) {
                   changes =>
                     complete(StatusCodes.OK, changes)
@@ -155,6 +155,7 @@ trait ZoneRoute extends Directives {
       case Left(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
       case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
       case Left(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(UnauthorizedSharedZoneAction(msg)) => complete(StatusCodes.Forbidden, msg)
       case Left(e) => failWith(e)
     }
 }
