@@ -90,6 +90,7 @@ class BatchChangeRoutingSpec
             None,
             "singleDeleteChangeId")
         ),
+        None,
         "batchId"
       )
 
