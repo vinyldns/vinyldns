@@ -79,6 +79,7 @@ object Boot extends App {
       batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
       msgsPerPoll <- IO.fromEither(MessageCount(queueConfig.messagesPerPoll))
+      healthCheckTimeout <- VinylDNSConfig.healthCheckTimeout
       _ <- CommandHandler
         .run(
           messageQueue,
@@ -106,7 +107,9 @@ object Boot extends App {
         messageQueue,
         zoneValidations,
         AccessValidations)
-      val healthService = new HealthService(messageQueue.healthCheck :: loaderResponse.healthChecks)
+      val healthService = new HealthService(
+        messageQueue.healthCheck :: connectionValidator.healthCheck(healthCheckTimeout) ::
+          loaderResponse.healthChecks)
       val batchChangeConverter =
         new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
       val batchChangeService =

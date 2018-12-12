@@ -73,4 +73,8 @@ object VinylDNSConfig {
     val primaryServer = connectionConfig.getString("primaryServer")
     ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
+
+  lazy val healthCheckTimeout: IO[Int] =
+    loadConfigF[IO, Option[Int]](vinyldnsConfig, "health-check-timeout").map(_.getOrElse(10000))
+
 }

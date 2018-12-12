@@ -342,8 +342,16 @@ VinylDNS has **2** connections for each zone:
 VinylDNS supports the ability to provide _default_ connections, so keys do not need to be generated for _every_ zone.  This assumes a
 "default" DNS backend.
 
+VinylDNS also ties in testing network connectivity to the default zone connection's primary server into its API health checks. A value
+for the health check connection timeout in milliseconds can be specified using `health-check-timeout`; a default value of 10000 will
+be used if not provided.
+
 ```yaml
 vinyldns {
+
+    # timeout for DNS backend connectivity health check
+    health-check-timeout = 5000
+
   # the DDNS connection information for the default dns backend
   defaultZoneConnection {
     # this is not really used, but must be set, usually set to the keyName itself, or a descriptive name if you are interested
