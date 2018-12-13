@@ -35,7 +35,7 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
   private var repo: DynamoDBUserRepository = _
 
-  private val testUserIds = (for { i <- 0 to 100 } yield s"test-user-$i").toList.sorted
+  private val testUserIds = (for {i <- 0 to 100} yield s"test-user-$i").toList.sorted
   private val users = testUserIds.map { id =>
     User(id = id, userName = "name" + id, accessKey = s"abc$id", secretKey = "123")
   }
@@ -175,6 +175,25 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
       f shouldBe Some(users.head)
       f.get.isSupport shouldBe false
+    }
+    "returns the test flag when true" in {
+      val testUser = User(
+        userName = "test",
+        accessKey = "test",
+        secretKey = "test",
+        isTest = true)
+
+      val saved = repo.save(testUser).unsafeRunSync()
+      val result = repo.getUser(saved.id).unsafeRunSync()
+
+      result shouldBe Some(testUser)
+      result.get.isTest shouldBe true
+    }
+    "returns the test flag when false (default)" in {
+      val f = repo.getUserByAccessKey(users.head.accessKey).unsafeRunSync()
+
+      f shouldBe Some(users.head)
+      f.get.isTest shouldBe false
     }
   }
 }
