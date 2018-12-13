@@ -770,6 +770,7 @@ class ProtobufConversionsSpec
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
       pb.getIsSupport shouldBe false
+      pb.getIsTest shouldBe false
 
       fromPB(pb) shouldBe user
     }
@@ -797,6 +798,7 @@ class ProtobufConversionsSpec
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
       pb.getIsSupport shouldBe true
+      pb.getIsTest shouldBe false
 
       fromPB(pb) shouldBe user
     }
@@ -815,6 +817,7 @@ class ProtobufConversionsSpec
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
+      pb.getIsTest shouldBe false
 
       fromPB(pb) shouldBe user
     }
@@ -833,6 +836,26 @@ class ProtobufConversionsSpec
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Locked"
+      pb.getIsTest shouldBe false
+
+      fromPB(pb) shouldBe user
+    }
+
+    "convert to/from protobuf with test user" in {
+      val user = User("testName", "testAccess", "testSecret", isTest = true)
+      val pb = toPB(user)
+
+      pb.getUserName shouldBe user.userName
+      pb.getAccessKey shouldBe user.accessKey
+      pb.getSecretKey shouldBe user.secretKey
+      pb.hasFirstName shouldBe false
+      pb.hasLastName shouldBe false
+      pb.hasEmail shouldBe false
+      pb.getCreated shouldBe user.created.getMillis
+      pb.getId shouldBe user.id
+      pb.getIsSuper shouldBe false
+      pb.getLockStatus shouldBe "Unlocked"
+      pb.getIsTest shouldBe true
 
       fromPB(pb) shouldBe user
     }
