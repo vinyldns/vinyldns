@@ -108,6 +108,17 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       randomBatchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
         ++ randomBatchChange.changes.drop(2).map(_.withFailureMessage("failed"))
     ).copy(createdTimestamp = DateTime.now.plusMillis(1000000))
+
+
+    // listing/ordering changes
+    val timeBase: DateTime = DateTime.now
+    val change_one: BatchChange = pendingBatchChange.copy(createdTimestamp = timeBase)
+    val change_two: BatchChange =
+      completeBatchChange.copy(createdTimestamp = timeBase.plus(1000), ownerGroupId = None)
+    val otherUserBatchChange: BatchChange =
+      randomBatchChange.copy(userId = "Other", createdTimestamp = timeBase.plus(50000))
+    val change_three: BatchChange = failedBatchChange.copy(createdTimestamp = timeBase.plus(100000))
+    val change_four: BatchChange = partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
   }
 
   import TestData._
@@ -260,14 +271,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "get batch change summary by user ID" in {
-      val change_one = pendingBatchChange.copy(createdTimestamp = DateTime.now)
-      val change_two = completeBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(1000))
-      val otherUserBatchChange =
-        randomBatchChange.copy(userId = "Other", createdTimestamp = DateTime.now.plusMillis(50000))
-      val change_three = failedBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(100000))
-      val change_four =
-        partialFailureBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(1000000))
-
       val f =
         for {
           _ <- repo.save(change_one)
@@ -292,14 +295,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "get batch change summary by user ID with maxItems" in {
-      val change_one = pendingBatchChange.copy(createdTimestamp = DateTime.now)
-      val change_two = completeBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(1000))
-      val otherUserBatchChange =
-        randomBatchChange.copy(userId = "Other", createdTimestamp = DateTime.now.plusMillis(50000))
-      val change_three = failedBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(100000))
-      val change_four =
-        partialFailureBatchChange.copy(createdTimestamp = DateTime.now.plusMillis(1000000))
-
       val f =
         for {
           _ <- repo.save(change_one)
@@ -326,14 +321,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "get batch change summary by user ID with explicit startFrom" in {
-      val timeBase = DateTime.now
-      val change_one = pendingBatchChange.copy(createdTimestamp = timeBase)
-      val change_two = completeBatchChange.copy(createdTimestamp = timeBase.plus(1000))
-      val otherUserBatchChange =
-        randomBatchChange.copy(userId = "Other", createdTimestamp = timeBase.plus(50000))
-      val change_three = failedBatchChange.copy(createdTimestamp = timeBase.plus(100000))
-      val change_four = partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
-
       val f =
         for {
           _ <- repo.save(change_one)
@@ -365,14 +352,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "get batch change summary by user ID with explicit startFrom and maxItems" in {
-      val timeBase = DateTime.now
-      val change_one = pendingBatchChange.copy(createdTimestamp = timeBase)
-      val change_two = completeBatchChange.copy(createdTimestamp = timeBase.plus(1000))
-      val otherUserBatchChange =
-        randomBatchChange.copy(userId = "Other", createdTimestamp = timeBase.plus(50000))
-      val change_three = failedBatchChange.copy(createdTimestamp = timeBase.plus(100000))
-      val change_four = partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
-
       val f =
         for {
           _ <- repo.save(change_one)
@@ -397,14 +376,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "get second page of batch change summaries by user ID" in {
-      val timeBase = DateTime.now
-      val change_one = pendingBatchChange.copy(createdTimestamp = timeBase)
-      val change_two = completeBatchChange.copy(createdTimestamp = timeBase.plus(1000))
-      val otherUserBatchChange =
-        randomBatchChange.copy(userId = "Other", createdTimestamp = timeBase.plus(50000))
-      val change_three = failedBatchChange.copy(createdTimestamp = timeBase.plus(100000))
-      val change_four = partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
-
       val f =
         for {
           _ <- repo.save(change_one)
