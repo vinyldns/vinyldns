@@ -192,7 +192,7 @@ message User {
   optional string firstName = 8;
   optional string lastName = 9;
   optional string email = 10;
-  required bool isSupport = 11;
+  optional bool isSupport = 11 [default = false];
 }
 
 message UserChange {

@@ -769,19 +769,20 @@ class ProtobufConversionsSpec
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
-      pb.getIsSupport shouldBe user.isSupport
+      pb.getIsSupport shouldBe false
 
       fromPB(pb) shouldBe user
     }
 
-    "convert to/from protobuf with firstname, lastname, and email" in {
+    "convert to/from protobuf with firstname, lastname, email, and isSupport" in {
       val user = User(
         "testName",
         "testAccess",
         "testSecret",
         firstName = Some("testFirstName"),
         lastName = Some("testLastName"),
-        email = Some("testEmail")
+        email = Some("testEmail"),
+        isSupport = Some(true)
       )
       val pb = toPB(user)
 
@@ -795,7 +796,7 @@ class ProtobufConversionsSpec
       pb.getId shouldBe user.id
       pb.getIsSuper shouldBe user.isSuper
       pb.getLockStatus shouldBe "Unlocked"
-      pb.getIsSupport shouldBe user.isSupport
+      pb.getIsSupport shouldBe true
 
       fromPB(pb) shouldBe user
     }
@@ -837,7 +838,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with supportAdmin true" in {
-      val user = User("testName", "testAccess", "testSecret", isSupport = true)
+      val user = User("testName", "testAccess", "testSecret", isSupport = Some(true))
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName

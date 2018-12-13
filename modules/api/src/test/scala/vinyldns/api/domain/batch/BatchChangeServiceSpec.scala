@@ -221,7 +221,7 @@ class BatchChangeServiceSpec
       val batchChange = BatchChange("badID", "badUN", None, DateTime.now, List())
       batchChangeRepo.save(batchChange)
 
-      val authSuper = notAuth.copy(signedInUser = notAuth.signedInUser.copy(isSupport = true))
+      val authSuper = notAuth.copy(signedInUser = notAuth.signedInUser.copy(isSupport = Some(true)))
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, authSuper).value)
 
