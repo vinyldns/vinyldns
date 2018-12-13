@@ -64,7 +64,8 @@ class ZoneConnectionValidatorSpec
       IO.pure(mockZoneView)
   }
 
-  private def testDefaultConnection = mock[ZoneConnection]
+  private def testDefaultConnection: ZoneConnection =
+    ZoneConnection("name", "key-name", "key", "localhost:19001")
 
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(

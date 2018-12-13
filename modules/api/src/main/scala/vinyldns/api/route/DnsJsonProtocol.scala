@@ -178,7 +178,8 @@ trait DnsJsonProtocol extends JsonValidation {
         recordType
           .andThen(extractRecords(_, js \ "records")),
         (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "account").default[String]("system")
+        (js \ "account").default[String]("system"),
+        (js \ "ownerGroupId").optional[String]
       ).mapN(RecordSet.apply)
 
       // Put additional record set level checks below
@@ -200,7 +201,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("updated" -> Extraction.decompose(rs.updated)) ~
         ("records" -> Extraction.decompose(rs.records)) ~
         ("id" -> rs.id) ~
-        ("account" -> rs.account)
+        ("account" -> rs.account) ~
+        ("ownerGroupId" -> rs.ownerGroupId)
   }
 
   case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
@@ -221,7 +223,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("records" -> Extraction.decompose(rs.records)) ~
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
-        ("accessLevel" -> rs.accessLevel.toString)
+        ("accessLevel" -> rs.accessLevel.toString) ~
+        ("ownerGroupId" -> rs.ownerGroupId)
   }
 
   def extractRecords(typ: RecordType, js: JValue): ValidatedNel[String, List[RecordData]] =

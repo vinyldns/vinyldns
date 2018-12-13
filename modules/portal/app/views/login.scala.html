@@ -1,5 +1,5 @@
 @import helper.CSRF
-@(alertMessage: Option[String] = None)(implicit requestHeader: RequestHeader, customLinks: models.CustomLinks)
+@(alertMessage: Option[String] = None)(implicit requestHeader: RequestHeader, customLinks: models.CustomLinks, meta: models.Meta)
 <!DOCTYPE html>
 <html lang="en" class="body-full-height">
     <head>
@@ -42,7 +42,7 @@
                 </div>
                 <div class="vinyldns-login-footer">
                     <div class="pull-left">
-                        VinylDNS, for all your DNS needs.
+                        VinylDNS (version @{meta.version})
                         <ul class="login-links">
                             @*****************************************
                             * Custom links from application config *

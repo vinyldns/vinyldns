@@ -111,7 +111,8 @@ case class RecordSetInfo(
     records: List[RecordData],
     id: String,
     account: String,
-    accessLevel: AccessLevel)
+    accessLevel: AccessLevel,
+    ownerGroupId: Option[String])
 object RecordSetInfo {
   def apply(recordSet: RecordSet, accessLevel: AccessLevel): RecordSetInfo = RecordSetInfo(
     zoneId = recordSet.zoneId,
@@ -124,7 +125,8 @@ object RecordSetInfo {
     records = recordSet.records,
     id = recordSet.id,
     account = recordSet.account,
-    accessLevel = accessLevel
+    accessLevel = accessLevel,
+    ownerGroupId = recordSet.ownerGroupId
   )
 }
 

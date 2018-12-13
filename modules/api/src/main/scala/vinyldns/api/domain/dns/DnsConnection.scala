@@ -211,7 +211,7 @@ object DnsConnection {
     resolver
   }
 
-  private def parseHostAndPort(primaryServer: String): (String, Int) = {
+  def parseHostAndPort(primaryServer: String): (String, Int) = {
     val parts = primaryServer.trim().split(':')
     if (parts.length < 2)
       (primaryServer, 53)

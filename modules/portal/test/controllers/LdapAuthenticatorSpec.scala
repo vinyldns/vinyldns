@@ -19,12 +19,14 @@ package controllers
 import javax.naming.NamingEnumeration
 import javax.naming.directory._
 import controllers.LdapAuthenticator.{ContextCreator, LdapByDomainAuthenticator}
+import org.specs2.matcher.EitherMatchers
 import org.specs2.mock.Mockito
 import org.specs2.mock.mockito.ArgumentCapture
 import org.specs2.mutable.Specification
 import play.api.{Configuration, Environment}
 import play.api.test.WithApplication
 import play.api.inject.guice.GuiceApplicationBuilder
+import vinyldns.core.health.HealthCheck.HealthCheckError
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
@@ -82,7 +84,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
       underTest must beAnInstanceOf[TestAuthenticator]
     }
     ".authenticate" should {
-      "authenticate first with cable" in {
+      "authenticate first with 1st domain" in {
         val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
         byDomainAuthenticator
           .authenticate(testDomain1, "foo", "bar")
@@ -99,11 +101,11 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         }
       }
 
-      "authenticate with corphq if cable fails" in {
+      "authenticate with 2nd domain if 1st fails" in {
         val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
         byDomainAuthenticator
           .authenticate(testDomain1, "foo", "bar")
-          .returns(Failure(new RuntimeException("cable failed")))
+          .returns(Failure(new RuntimeException("first failed")))
         byDomainAuthenticator
           .authenticate(testDomain2, "foo", "bar")
           .returns(Success(UserDetails("", "", None, None, None)))
@@ -122,14 +124,14 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         }
       }
 
-      "return error message if both domains fail" in {
+      "return error message if all domains fail" in {
         val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
         byDomainAuthenticator
           .authenticate(testDomain1, "foo", "bar")
-          .returns(Failure(new RuntimeException("cable failed")))
+          .returns(Failure(new RuntimeException("first failed")))
         byDomainAuthenticator
           .authenticate(testDomain2, "foo", "bar")
-          .returns(Failure(new RuntimeException("corphq failed")))
+          .returns(Failure(new RuntimeException("second failed")))
         val authenticator = new LdapAuthenticator(
           List(testDomain1, testDomain2),
           byDomainAuthenticator,
@@ -146,9 +148,9 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
       }
     }
     ".lookup" should {
-      "lookup first with cable" in {
+      "lookup first with 1st domain" in {
         val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
-        val serviceAccount = ServiceAccount("cable", "foo", "bar")
+        val serviceAccount = ServiceAccount("first", "foo", "bar")
         byDomainAuthenticator
           .lookup(testDomain1, "foo", serviceAccount)
           .returns(Success(UserDetails("", "", None, None, None)))
@@ -168,12 +170,12 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         }
       }
 
-      "lookup with corphq if cable fails" in {
+      "lookup with 2nd domain if 1st fails" in {
         val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
         val serviceAccount = mock[ServiceAccount]
         byDomainAuthenticator
           .lookup(testDomain1, "foo", serviceAccount)
-          .returns(Failure(new RuntimeException("cable failed")))
+          .returns(Failure(new RuntimeException("first failed")))
         byDomainAuthenticator
           .lookup(testDomain2, "foo", serviceAccount)
           .returns(Success(UserDetails("", "", None, None, None)))
@@ -193,15 +195,15 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         }
       }
 
-      "return error message if both domains fail" in {
+      "return error message if all domains fail" in {
         val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
         val serviceAccount = mock[ServiceAccount]
         byDomainAuthenticator
           .lookup(testDomain1, "foo", serviceAccount)
-          .returns(Failure(new RuntimeException("cable failed")))
+          .returns(Failure(new RuntimeException("first failed")))
         byDomainAuthenticator
           .lookup(testDomain2, "foo", serviceAccount)
-          .returns(Failure(new RuntimeException("corphq failed")))
+          .returns(Failure(new RuntimeException("second failed")))
         val authenticator =
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
@@ -216,6 +218,59 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         "and return error message" in {
           response must beAFailedTry
         }
+      }
+    }
+    ".healthCheck" should {
+      "fail if there is some unexpected error" in {
+        val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
+        val serviceAccount = mock[ServiceAccount]
+        byDomainAuthenticator
+          .lookup(testDomain1, "healthlookup", serviceAccount)
+          .returns(Failure(new RuntimeException("some failure")))
+        val authenticator =
+          new LdapAuthenticator(
+            List(testDomain1, testDomain2),
+            byDomainAuthenticator,
+            serviceAccount)
+
+        authenticator.healthCheck()
+        val response = authenticator.healthCheck().unsafeRunSync()
+
+        response should beLeft[HealthCheckError]
+      }
+      "succeed if the dummy user cant be found" in {
+        val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
+        val serviceAccount = mock[ServiceAccount]
+        byDomainAuthenticator
+          .lookup(testDomain1, "healthlookup", serviceAccount)
+          .returns(Failure(new UserDoesNotExistException("does not exist")))
+        val authenticator =
+          new LdapAuthenticator(
+            List(testDomain1, testDomain2),
+            byDomainAuthenticator,
+            serviceAccount)
+
+        authenticator.healthCheck()
+        val response = authenticator.healthCheck().unsafeRunSync()
+
+        response should beRight[Unit]
+      }
+      "succeed if the dummy user can be found" in {
+        val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
+        val serviceAccount = mock[ServiceAccount]
+        byDomainAuthenticator
+          .lookup(testDomain1, "healthlookup", serviceAccount)
+          .returns(Success(UserDetails("", "", None, None, None)))
+        val authenticator =
+          new LdapAuthenticator(
+            List(testDomain1, testDomain2),
+            byDomainAuthenticator,
+            serviceAccount)
+
+        authenticator.healthCheck()
+        val response = authenticator.healthCheck().unsafeRunSync()
+
+        response should beRight[Unit]
       }
     }
   }
@@ -307,12 +362,12 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
     "lookup a user" should {
       "return a user it can find" in {
         val mocks = createMocks
-        val serviceAccount = ServiceAccount("corphq", "serviceuser", "servicepass")
+        val serviceAccount = ServiceAccount("second", "serviceuser", "servicepass")
         val response = mocks.byDomainAuthenticator.lookup(testDomain1, "foo", serviceAccount)
 
         response must beASuccessfulTry
         "call contextCreator.apply" in {
-          there.was(one(mocks.contextCreator).apply("corphq\\serviceuser", "servicepass"))
+          there.was(one(mocks.contextCreator).apply("second\\serviceuser", "servicepass"))
         }
 
         "call the correct search on context" in {
@@ -356,7 +411,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
       }
       "return a Failure if the user does not exist" in {
         val mocks = createMocks
-        val serviceAccount = ServiceAccount("cable", "foo", "bar")
+        val serviceAccount = ServiceAccount("first", "foo", "bar")
         mocks.searchResults.hasMore.returns(false)
         val response = mocks.byDomainAuthenticator.lookup(testDomain1, "foo", serviceAccount)
 
@@ -364,7 +419,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
       }
       "return a Failure when the service user credentials are incorrect" in {
         val mocks = createMocks
-        val serviceAccount = ServiceAccount("cable", "foo", "bar")
+        val serviceAccount = ServiceAccount("first", "foo", "bar")
         mocks.contextCreator
           .apply(anyString, anyString)
           .returns(Failure(new RuntimeException("oops")))
