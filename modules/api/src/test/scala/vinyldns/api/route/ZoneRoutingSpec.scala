@@ -48,6 +48,8 @@ class ZoneRoutingSpec
   private val notFound = Zone("not.found.", "not-found@test.com")
   private val notAuthorized = Zone("not.authorized.", "not-authorized@test.com")
   private val badAdminId = Zone("bad.admin.", "bad-admin@test.com")
+  private val nonSuperUserSharedZone =
+    Zone("non-super-user-shared-zone.", "non-super-user-shared-zone@test.com")
 
   private val userAclRule = ACLRule(
     AccessLevel.Read,
@@ -135,6 +137,8 @@ class ZoneRoutingSpec
         case connectionFailed.email => Left(ConnectionFailed(zone, "fail"))
         case zoneValidationFailed.email =>
           Left(ZoneValidationFailed(zone, List("fail"), "failure message"))
+        case nonSuperUserSharedZone.email =>
+          Left(UnauthorizedSharedZoneAction("unauth"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
@@ -645,6 +649,12 @@ class ZoneRoutingSpec
     "return 400 BadRequest if the zone adminGroupId is invalid" in {
       post(badAdminId) ~> zoneRoute(okAuth) ~> check {
         status shouldBe BadRequest
+      }
+    }
+
+    "return 403 Forbidden if the zone is shared and user is not authorized" in {
+      post(nonSuperUserSharedZone) ~> zoneRoute(okAuth) ~> check {
+        status shouldBe Forbidden
       }
     }
 

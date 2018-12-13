@@ -32,7 +32,7 @@ trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
 
   val dnsSerializers = Seq(
-    ZoneCreateInputSerializer,
+    CreateZoneInputSerializer,
     ZoneSerializer,
     ZoneConnectionSerializer,
     RecordSetSerializer,
@@ -89,7 +89,7 @@ trait DnsJsonProtocol extends JsonValidation {
       ).mapN(RecordSetChange.apply)
   }
 
-  case object ZoneCreateInputSerializer extends ValidationSerializer[CreateZoneInput] {
+  case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
     override def fromJson(js: JValue): ValidatedNel[String, CreateZoneInput] =
       (
         (js \ "name")
