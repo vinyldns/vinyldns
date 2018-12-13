@@ -77,7 +77,7 @@ class ZoneService(
       _ <- validateZoneConnectionIfChanged(newZone, existingZone)
       _ <- canChangeZone(auth, existingZone).toResult
       _ <- adminGroupExists(newZone.adminGroupId)
-      _ <- canChangeZone(auth, newZone).toResult
+      _ <- canChangeZone(auth, newZone).toResult //if admin group changes this confirms user has access to new group
       updateZoneChange <- ZoneChangeGenerator.forUpdate(newZone, existingZone, auth).toResult
       _ <- messageQueue.send(updateZoneChange).toResult[Unit]
     } yield updateZoneChange
