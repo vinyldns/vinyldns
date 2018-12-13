@@ -86,7 +86,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         sc3.copy(id = UUID.randomUUID().toString),
         deleteChange.copy(id = UUID.randomUUID().toString)
       ),
-      Some("some-owner-group")
+      Some(UUID.randomUUID().toString)
     )
 
     val bcARecords: BatchChange = randomBatchChange
