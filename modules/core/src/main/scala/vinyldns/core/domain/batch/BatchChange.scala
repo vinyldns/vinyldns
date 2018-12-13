@@ -27,6 +27,7 @@ case class BatchChange(
     comments: Option[String],
     createdTimestamp: DateTime,
     changes: List[SingleChange],
+    ownerGroupId: Option[String] = None,
     id: String = UUID.randomUUID().toString) {
   val status: BatchChangeStatus = {
     val singleStatuses = changes.map(_.status)

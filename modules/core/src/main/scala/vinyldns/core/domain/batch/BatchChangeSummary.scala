@@ -28,6 +28,7 @@ case class BatchChangeSummary(
     createdTimestamp: DateTime,
     totalChanges: Int,
     status: BatchChangeStatus,
+    ownerGroupId: Option[String],
     id: String = UUID.randomUUID().toString) {}
 
 object BatchChangeSummary {
@@ -39,6 +40,7 @@ object BatchChangeSummary {
       batchchange.createdTimestamp,
       batchchange.changes.length,
       batchchange.status,
+      batchchange.ownerGroupId,
       batchchange.id
     )
 }

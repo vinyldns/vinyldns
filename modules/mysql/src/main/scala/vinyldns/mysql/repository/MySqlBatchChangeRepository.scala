@@ -43,8 +43,8 @@ class MySqlBatchChangeRepository
 
   private final val PUT_BATCH_CHANGE =
     sql"""
-         |INSERT INTO batch_change(id, user_id, user_name, created_time, comments)
-         |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments})
+         |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id)
+         |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId})
         """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =
@@ -57,14 +57,14 @@ class MySqlBatchChangeRepository
 
   private final val GET_BATCH_CHANGE_METADATA =
     sql"""
-         |SELECT user_id, user_name, created_time, comments
+         |SELECT user_id, user_name, created_time, comments, owner_group_id
          |  FROM batch_change bc
          | WHERE bc.id = ?
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_SUMMARY =
     sql"""
-         |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments,
+         |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
          |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
          |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
          |              SUM( case sc.status when 'Complete' then 1 else 0 end )  AS complete_count
@@ -200,6 +200,7 @@ class MySqlBatchChangeRepository
                 new org.joda.time.DateTime(res.timestamp("created_time")),
                 pending + failed + complete,
                 BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
+                Option(res.string("owner_group_id")),
                 res.string("id")
               )
             }
@@ -226,6 +227,7 @@ class MySqlBatchChangeRepository
                 Option(result.string("comments")),
                 new org.joda.time.DateTime(result.timestamp("created_time")),
                 Nil,
+                Option(result.string("owner_group_id")),
                 batchChangeId
               )
             }
@@ -244,7 +246,8 @@ class MySqlBatchChangeRepository
           'userId -> batchChange.userId,
           'userName -> batchChange.userName,
           'createdTime -> batchChange.createdTimestamp,
-          'comments -> batchChange.comments
+          'comments -> batchChange.comments,
+          'ownerGroupId -> batchChange.ownerGroupId
         ): _*
       )
       .update()
