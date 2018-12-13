@@ -571,7 +571,7 @@ class MembershipServiceSpec
           GroupInfo(okGroup))
       }
       "return groups from the database for support users" in {
-        val supportAuth = AuthPrincipal(okUser.copy(isSupport = Some(true)), Seq())
+        val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
           rightResultOf(underTest.listMyGroups(None, None, 100, supportAuth).value)
@@ -646,7 +646,7 @@ class MembershipServiceSpec
         val testListUsersResult = ListUsersResults(testUsers, Some("1"))
         val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
         val supportAuth = okAuth.copy(
-          signedInUser = dummyUserAuth.signedInUser.copy(isSupport = Some(true)),
+          signedInUser = dummyUserAuth.signedInUser.copy(isSupport = true),
           memberGroupIds = Seq.empty)
 
         doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
@@ -841,7 +841,7 @@ class MembershipServiceSpec
 
       "return an error if the signed in user is only a support admin" in {
         val supportAuth = okAuth.copy(
-          signedInUser = dummyUserAuth.signedInUser.copy(isSupport = Some(true)),
+          signedInUser = dummyUserAuth.signedInUser.copy(isSupport = true),
           memberGroupIds = Seq.empty)
         val error = leftResultOf(
           underTest

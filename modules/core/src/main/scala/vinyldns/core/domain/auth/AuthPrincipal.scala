@@ -24,7 +24,7 @@ case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
     signedInUser.isSuper
 
   def canReadAll: Boolean =
-    signedInUser.isSuper || signedInUser.isSupport.get
+    signedInUser.isSuper || signedInUser.isSupport
 
   def isGroupAdmin(group: Group): Boolean =
     group.adminUserIds.contains(signedInUser.id)

@@ -162,19 +162,19 @@ class DynamoDBUserRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
         userName = "testSuper",
         accessKey = "testSuper",
         secretKey = "testUser",
-        isSupport = Some(true))
+        isSupport = true)
 
       val saved = repo.save(testUser).unsafeRunSync()
       val result = repo.getUser(saved.id).unsafeRunSync()
 
       result shouldBe Some(testUser)
-      result.get.isSupport shouldBe Some(true)
+      result.get.isSupport shouldBe true
     }
     "returns the support flag when false" in {
       val f = repo.getUserByAccessKey(users.head.accessKey).unsafeRunSync()
 
       f shouldBe Some(users.head)
-      f.get.isSupport shouldBe Some(false)
+      f.get.isSupport shouldBe false
     }
   }
 }

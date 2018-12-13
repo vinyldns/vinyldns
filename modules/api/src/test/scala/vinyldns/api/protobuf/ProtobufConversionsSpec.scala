@@ -782,7 +782,7 @@ class ProtobufConversionsSpec
         firstName = Some("testFirstName"),
         lastName = Some("testLastName"),
         email = Some("testEmail"),
-        isSupport = Some(true)
+        isSupport = true
       )
       val pb = toPB(user)
 
@@ -838,7 +838,7 @@ class ProtobufConversionsSpec
     }
 
     "convert to/from protobuf with supportAdmin true" in {
-      val user = User("testName", "testAccess", "testSecret", isSupport = Some(true))
+      val user = User("testName", "testAccess", "testSecret", isSupport = true)
       val pb = toPB(user)
 
       pb.getUserName shouldBe user.userName

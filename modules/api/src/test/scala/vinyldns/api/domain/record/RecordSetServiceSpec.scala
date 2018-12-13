@@ -360,7 +360,7 @@ class RecordSetServiceSpec
             maxItems = None,
             recordNameFilter = None,
             authPrincipal = okAuth.copy(
-              signedInUser = okGroupAuth.signedInUser.copy(isSupport = Some(true)),
+              signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
               memberGroupIds = Seq.empty)
           )
           .value)

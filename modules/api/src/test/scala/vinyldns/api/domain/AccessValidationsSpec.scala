@@ -97,7 +97,7 @@ class AccessValidationsSpec
 
     "return true if the user is a support admin" in {
       val supportAuth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = Some(true)),
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
       accessValidationTest.canSeeZone(supportAuth, memberOkZoneAuthorized) should be(right)
     }
@@ -115,14 +115,14 @@ class AccessValidationsSpec
 
     "return true if the user is an admin and a support user" in {
       val auth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = Some(true)),
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq(okGroup.id))
       accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized) should be(right)
     }
 
     "return a NotAuthorizedError if the user is a support user only" in {
       val auth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = Some(true)),
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
       val error = leftValue(accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized))
       error shouldBe a[NotAuthorizedError]
@@ -321,7 +321,7 @@ class AccessValidationsSpec
     "return AccessLevel.Read if the user is support only" in {
       val mockRecordSet = mock[RecordSet]
       val supportAuth = okGroupAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = Some(true)),
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
       val result = accessValidationTest.getAccessLevel(
         supportAuth,
@@ -334,7 +334,7 @@ class AccessValidationsSpec
     "return the result of getAccessLevel if the user is support but also an admin" in {
       val mockRecordSet = mock[RecordSet]
       val supportAuth =
-        okGroupAuth.copy(signedInUser = okGroupAuth.signedInUser.copy(isSupport = Some(true)))
+        okGroupAuth.copy(signedInUser = okGroupAuth.signedInUser.copy(isSupport = true))
       val result = accessValidationTest.getAccessLevel(
         supportAuth,
         mockRecordSet.name,
@@ -345,7 +345,7 @@ class AccessValidationsSpec
 
     "return the result of getAccessLevel if the user is support but also has ACL rule access" in {
       val mockRecordSet = mock[RecordSet]
-      val userAccess = okUser.copy(id = "Write", isSupport = Some(true))
+      val userAccess = okUser.copy(id = "Write", isSupport = true)
       val userAuth = AuthPrincipal(userAccess, groupIds)
       val userAcl = ACLRule(AccessLevel.Write, userId = Some(userAuth.userId), groupId = None)
       val zoneIn = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
@@ -789,7 +789,7 @@ class AccessValidationsSpec
 
     "return access level Read if there is no ACL rule for the user and user is a support admin" in {
       val supportAuth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = Some(true)),
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
 
       val recordList = List("rs1", "rs2", "rs3").map {

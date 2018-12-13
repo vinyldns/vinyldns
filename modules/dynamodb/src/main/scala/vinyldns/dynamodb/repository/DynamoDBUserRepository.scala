@@ -105,7 +105,7 @@ object DynamoDBUserRepository {
     item.put(SECRET_KEY, new AttributeValue(crypto.encrypt(user.secretKey)))
     item.put(IS_SUPER, new AttributeValue().withBOOL(user.isSuper))
     item.put(LOCK_STATUS, new AttributeValue(user.lockStatus.toString))
-    item.put(IS_SUPPORT, new AttributeValue().withBOOL(user.isSupport.get))
+    item.put(IS_SUPPORT, new AttributeValue().withBOOL(user.isSupport))
 
     val firstName =
       user.firstName.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
@@ -137,7 +137,7 @@ object DynamoDBUserRepository {
       lockStatus =
         if (item.get(LOCK_STATUS) == null) LockStatus.Unlocked
         else userStatus(item.get(LOCK_STATUS).getS),
-      isSupport = Option(item.get(IS_SUPPORT)).flatMap(s => Option(s.getBOOL))
+      isSupport = if (item.get(IS_SUPPORT) == null) false else item.get(IS_SUPPORT).getBOOL
     )
   }
 }

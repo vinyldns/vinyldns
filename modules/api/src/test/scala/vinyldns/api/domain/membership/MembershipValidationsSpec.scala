@@ -64,7 +64,7 @@ class MembershipValidationsSpec
         isGroupAdmin(okGroup, superAuth) should be(right)
       }
       "return an error when the user is a support admin only" in {
-        val user = User("some", "new", "user", isSupport = Some(true))
+        val user = User("some", "new", "user", isSupport = true)
         val supportAuth = AuthPrincipal(user, Seq())
         val error = leftValue(isGroupAdmin(okGroup, supportAuth))
         error shouldBe an[NotAuthorizedError]
@@ -87,7 +87,7 @@ class MembershipValidationsSpec
         canSeeGroup(okGroup.id, superAuth) should be(right)
       }
       "return true when the user is a support admin" in {
-        val user = User("some", "new", "user", isSupport = Some(true))
+        val user = User("some", "new", "user", isSupport = true)
         val supportAuth = AuthPrincipal(user, Seq())
         canSeeGroup(okGroup.id, supportAuth) should be(right)
       }

@@ -103,7 +103,7 @@ object AccessValidations extends AccessValidationAlgebra {
 
       recordSets.map { rs =>
         val accessLevel = {
-          if ((getAccessFromUserAcls(rs.name, rs.typ) == AccessLevel.NoAccess) && auth.signedInUser.isSupport.get)
+          if ((getAccessFromUserAcls(rs.name, rs.typ) == AccessLevel.NoAccess) && auth.signedInUser.isSupport)
             AccessLevel.Read
           else
             getAccessFromUserAcls(rs.name, rs.typ)
