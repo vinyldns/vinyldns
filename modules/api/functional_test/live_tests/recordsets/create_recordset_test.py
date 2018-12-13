@@ -1697,3 +1697,25 @@ def test_create_high_value_domain_fails(shared_zone_test_context):
 
     error = client.create_recordset(new_rs, status=422)
     assert_that(error, is_('Record name "dont-touch-me.ok." is configured as a High Value Domain, cannot be modified'))
+
+
+def test_create_high_value_domain_fails_for_reverse_zone(shared_zone_test_context):
+    """
+    Test that creating a record configured as a High Value Domain fails for reverse zones
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    ptr = {
+        'zoneId': shared_zone_test_context.classless_base_zone['id'],
+        'name': '199',
+        'type': 'PTR',
+        'ttl': 100,
+        'records': [
+            {
+                'ptrdname': 'test.foo.'
+            }
+        ]
+    }
+
+    error_ptr = client.create_recordset(ptr, status=422)
+    assert_that(error_ptr, is_('Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'))

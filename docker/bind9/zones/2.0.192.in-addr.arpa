@@ -11,3 +11,4 @@ $ttl 38400
 193			IN	CNAME 193.192/30.2.0.192.in-addr.arpa.
 194			IN	CNAME 194.192/30.2.0.192.in-addr.arpa.
 195         IN  CNAME 195.192/30.2.0.192.in-addr.arpa.
+199         IN  PTR   high.value.domain.

@@ -622,3 +622,24 @@ def test_delete_high_value_domain_fails(shared_zone_test_context):
 
     errors = client.delete_recordset(record['zoneId'], record['id'], status=422)
     assert_that(errors ,is_('Record name "dont-touch-me.ok." is configured as a High Value Domain, cannot be modified'))
+
+def test_delete_high_value_domain_fails(shared_zone_test_context):
+    """
+    Test that deleting a high value domain fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone_system = shared_zone_test_context.system_test_zone
+    zone_reverse = shared_zone_test_context.classless_base_zone
+
+    list_results_page_system = client.list_recordsets(zone_system['id'],  status=200)['recordSets']
+    list_results_page_reverse = client.list_recordsets(zone_reverse['id'],  status=200)['recordSets']
+
+    record_system = [item for item in list_results_page_system if item['name'] == 'dont-touch-me'][0]
+    record_reverse = [item for item in list_results_page_reverse if item['name'] == '199'][0]
+
+    errors_system = client.delete_recordset(record_system['zoneId'], record_system['id'], status=422)
+    errors_reverse = client.delete_recordset(record_reverse['zoneId'], record_reverse['id'], status=422)
+
+    assert_that(errors_system ,is_('Record name "dont-touch-me.system-test." is configured as a High Value Domain, cannot be modified'))
+    assert_that(errors_reverse ,is_('Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'))

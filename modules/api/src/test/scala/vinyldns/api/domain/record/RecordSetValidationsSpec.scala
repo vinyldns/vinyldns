@@ -237,7 +237,7 @@ class RecordSetValidationsSpec
       "return ok if the record is an NS record but not origin" in {
         val valid = invalidNsRecordToOrigin.copy(
           name = "this-is-not-origin-mate",
-          records = List(NSData("some.test.ns.")))
+          records = List(NSData("172.17.42.1")))
 
         nsValidations(valid, okZone) should be(right)
       }
@@ -285,8 +285,53 @@ class RecordSetValidationsSpec
       }
     }
 
+    "isNotHighValueDomain" should {
+      "return InvalidRequest if a ptr ip4 record matches a High Value Domain" in {
+        val zone = okZone.copy(name = "2.0.192.in-addr.arpa.")
+        val record = ptrIp4.copy(name = "199")
+
+        val error = leftValue(isNotHighValueDomain(record, zone))
+        error shouldBe a[InvalidRequest]
+      }
+
+      "return InvalidRequest if a ptr ip6 record matches a High Value Domain" in {
+        val zone = okZone.copy(name = "0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa.")
+        val record = ptrIp6.copy(name = "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0")
+
+        val error = leftValue(isNotHighValueDomain(record, zone))
+        error shouldBe a[InvalidRequest]
+      }
+
+      "return InvalidRequest if a non ptr record matches a High Value Domain" in {
+        val zone = okZone
+        val record = aaaa.copy(name = "dont-touch-me")
+
+        val error = leftValue(isNotHighValueDomain(record, zone))
+        error shouldBe a[InvalidRequest]
+      }
+
+      "return right if record is not a High Value Domain" in {
+        val zoneIp4 = okZone.copy(name = "10.10.10.in-addr.arpa.")
+        val recordIp4 = ptrIp4.copy(name = "10")
+
+        val zoneClassless = okZone.copy(name = "10/30.10.10.10.in-addr.arpa.")
+        val recordClassless = ptrIp4.copy(name = "10")
+
+        val zoneIp6 = okZone.copy(name = "0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa.")
+        val recordIp6 = ptrIp6.copy(name = "1.2.3.4.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0")
+
+        val zoneAAAA = okZone
+        val recordAAAA = aaaa.copy(name = "not-important")
+
+        isNotHighValueDomain(recordIp4, zoneIp4) should be(right)
+        isNotHighValueDomain(recordIp6, zoneIp6) should be(right)
+        isNotHighValueDomain(recordClassless, zoneClassless) should be(right)
+        isNotHighValueDomain(recordAAAA, zoneAAAA) should be(right)
+      }
+    }
+
     "reverseNameToIp" should {
-      "convert ptr to ipv4 address" in {
+      "convert reverse record to ipv4 address" in {
         val zone = okZone.copy(name = "0.162.198.in-addr.arpa.")
         val record = ptrIp4.copy(name = "30")
 
@@ -300,7 +345,7 @@ class RecordSetValidationsSpec
         reverseNameToIp(record.name, zone) shouldBe "198.162.0.30"
       }
 
-      "convert ptr to ipv6 address" in {
+      "convert reverse record to ipv6 address" in {
         val zone = okZone.copy(name = "3.2.1.9.8.7.6.5.4.3.2.1.ip6.arpa.")
         val record = ptrIp6.copy(name = "5.4.3.2.1.9.8.7.6.5.4.3.2.1.9.8.7.6.5.4")
 

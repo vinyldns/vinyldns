@@ -132,16 +132,16 @@ class BatchChangeValidationsSpec
   property("""validateInputName: should fail with a HighValueDomainError
              |if inputName is a High Value Domain""".stripMargin) {
     val changeA = AddChangeInput("dont-touch-me.", RecordType.A, 300, AData("1.1.1.1"))
-    val changeIpV4 = AddChangeInput("192.0.2.193", RecordType.PTR, 300, PTRData("test."))
-    val changeIpV6 = AddChangeInput("1:2:3:4:5:6:7:8", RecordType.PTR, 300, PTRData("test."))
+    val changeIpV4 = AddChangeInput("192.0.2.199", RecordType.PTR, 300, PTRData("test."))
+    val changeIpV6 = AddChangeInput("0:0:0:0:0:0:0:1", RecordType.PTR, 300, PTRData("test."))
 
     val resultA = validateInputName(changeA)
     val resultIpV4 = validateInputName(changeIpV4)
     val resultIpV6 = validateInputName(changeIpV6)
 
     resultA should haveInvalid[DomainValidationError](HighValueDomainError("dont-touch-me."))
-    resultIpV4 should haveInvalid[DomainValidationError](HighValueDomainError("192.0.2.193"))
-    resultIpV6 should haveInvalid[DomainValidationError](HighValueDomainError("1:2:3:4:5:6:7:8"))
+    resultIpV4 should haveInvalid[DomainValidationError](HighValueDomainError("192.0.2.199"))
+    resultIpV6 should haveInvalid[DomainValidationError](HighValueDomainError("0:0:0:0:0:0:0:1"))
 
   }
 
