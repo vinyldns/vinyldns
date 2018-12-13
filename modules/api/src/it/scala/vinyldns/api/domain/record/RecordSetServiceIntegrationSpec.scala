@@ -286,8 +286,6 @@ class RecordSetServiceIntegrationSpec
         .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
       whenReady(result, timeout) { out =>
-        print(out)
-        print("\n\n\n")
         val change = rightValue(out)
         change.recordSet.name shouldBe "ns-record"
         change.recordSet.ttl shouldBe 200

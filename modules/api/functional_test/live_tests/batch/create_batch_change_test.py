@@ -665,9 +665,6 @@ def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_conte
             get_change_A_AAAA_json("dont-touch-me-update.ok."),
             get_change_A_AAAA_json("dont-touch-me-delete.ok.", change_type="DeleteRecordSet"),
             get_change_PTR_json("192.0.2.199"),
-            get_change_PTR_json("192.0.2.199", change_type="DeleteRecordSet"),
-            get_change_PTR_json("192.0.2.199"),
-            get_change_PTR_json("192.0.2.199", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json("i-can-be-touched.ok.", address="1.1.1.1")
         ]
     }
@@ -679,10 +676,7 @@ def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_conte
     assert_error(response[2], error_messages=['Record name "dont-touch-me-update.ok." is configured as a High Value Domain, cannot be modified'])
     assert_error(response[3], error_messages=['Record name "dont-touch-me-delete.ok." is configured as a High Value Domain, cannot be modified'])
     assert_error(response[4], error_messages=['Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'])
-    assert_error(response[5], error_messages=['Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'])
-    assert_error(response[6], error_messages=['Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'])
-    assert_error(response[7], error_messages=['Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'])
-    assert_that(response[8], is_not(has_key("errors")))
+     assert_that(response[5], is_not(has_key("errors")))
 
 
 def test_create_batch_change_with_invalid_record_type_fails(shared_zone_test_context):
