@@ -50,7 +50,7 @@ class ZoneRecordValidationsSpec
     "cdn-tr.*"
   )
 
-  val highValueRegexList = List("high-value-domain".r)
+  val highValueRegexList = List("high-value-domain.*".r)
 
   val highValueIpList = List(IpAddress("1::f"), IpAddress("10.10.10.10"))
 
@@ -76,7 +76,8 @@ class ZoneRecordValidationsSpec
 
     "return an error if fqdn is in high value list" in {
       val result = isNotHighValueFqdn(highValueRegexList, "high-value-domain.foo.")
-      result should haveInvalid[DomainValidationError](HighValueDomainError("high-value-domain.foo."))
+      result should haveInvalid[DomainValidationError](
+        HighValueDomainError("high-value-domain.foo."))
     }
   }
 

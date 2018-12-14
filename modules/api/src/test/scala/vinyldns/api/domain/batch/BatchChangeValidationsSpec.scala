@@ -133,15 +133,18 @@ class BatchChangeValidationsSpec
              |if inputName is a High Value Domain""".stripMargin) {
     val changeA = AddChangeInput("high-value-domain.foo.", RecordType.A, 300, AData("1.1.1.1"))
     val changeIpV4 = AddChangeInput("192.0.2.252", RecordType.PTR, 300, PTRData("test."))
-    val changeIpV6 = AddChangeInput("fd69:27cc:fe91:0:0:0:ffff", RecordType.PTR, 300, PTRData("test."))
+    val changeIpV6 =
+      AddChangeInput("fd69:27cc:fe91:0:0:0:0:ffff", RecordType.PTR, 300, PTRData("test."))
 
     val resultA = validateInputName(changeA)
     val resultIpV4 = validateInputName(changeIpV4)
     val resultIpV6 = validateInputName(changeIpV6)
 
-    resultA should haveInvalid[DomainValidationError](HighValueDomainError("high-value-domain.foo."))
+    resultA should haveInvalid[DomainValidationError](
+      HighValueDomainError("high-value-domain.foo."))
     resultIpV4 should haveInvalid[DomainValidationError](HighValueDomainError("192.0.2.252"))
-    resultIpV6 should haveInvalid[DomainValidationError](HighValueDomainError("fd69:27cc:fe91:0:0:0:ffff"))
+    resultIpV6 should haveInvalid[DomainValidationError](
+      HighValueDomainError("fd69:27cc:fe91:0:0:0:0:ffff"))
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes

@@ -117,7 +117,7 @@ class RecordSetServiceSpec
     }
     "fail if the record is a high value domain" in {
       val record = aaaa.copy(
-        name = "dont-touch-me",
+        name = "high-value-domain",
         zoneId = zoneAuthorized.id,
         status = RecordSetStatus.Active)
 
@@ -130,7 +130,7 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe InvalidRequest(
-        HighValueDomainError(s"dont-touch-me.${zoneAuthorized.name}").message)
+        HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
     }
     "succeed if record is apex with dot" in {
       val name = zoneAuthorized.name
@@ -294,7 +294,7 @@ class RecordSetServiceSpec
     }
     "fail if the record is a high value domain" in {
       val oldRecord = aaaa.copy(
-        name = "dont-touch-me",
+        name = "high-value-domain",
         zoneId = zoneAuthorized.id,
         status = RecordSetStatus.Active)
 
@@ -309,7 +309,7 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
       result shouldBe InvalidRequest(
-        HighValueDomainError(s"dont-touch-me.${zoneAuthorized.name}").message)
+        HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
     }
   }
 
@@ -340,7 +340,7 @@ class RecordSetServiceSpec
     }
     "fail if the record is a high value domain" in {
       val record = aaaa.copy(
-        name = "dont-touch-me",
+        name = "high-value-domain",
         zoneId = zoneAuthorized.id,
         status = RecordSetStatus.Active)
 
@@ -351,7 +351,7 @@ class RecordSetServiceSpec
       val result =
         leftResultOf(underTest.deleteRecordSet(record.id, zoneAuthorized.id, okAuth).value)
       result shouldBe InvalidRequest(
-        HighValueDomainError(s"dont-touch-me.${zoneAuthorized.name}").message)
+        HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
     }
   }
 

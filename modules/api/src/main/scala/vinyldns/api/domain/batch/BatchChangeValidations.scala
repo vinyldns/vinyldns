@@ -26,7 +26,6 @@ import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 import vinyldns.core.domain.batch.{BatchChange, RecordKey}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.zone.ZoneRecordValidations
 
 trait BatchChangeValidationsAlgebra {
@@ -340,7 +339,11 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
 
   def isNotHighValueDomain(change: ChangeInput): SingleValidation[Unit] =
     change.typ match {
-      case RecordType.PTR => ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, change.inputName)
-      case _ => ZoneRecordValidations.isNotHighValueFqdn(VinylDNSConfig.highValueRegexList, change.inputName)
+      case RecordType.PTR =>
+        ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, change.inputName)
+      case _ =>
+        ZoneRecordValidations.isNotHighValueFqdn(
+          VinylDNSConfig.highValueRegexList,
+          change.inputName)
     }
 }

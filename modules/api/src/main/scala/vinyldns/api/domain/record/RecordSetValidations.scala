@@ -17,7 +17,6 @@
 package vinyldns.api.domain.record
 
 import cats.syntax.either._
-import com.comcast.ip4s.IpAddress
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
@@ -204,17 +203,15 @@ object RecordSetValidations {
         ZoneRecordValidations.isNotHighValueFqdn(VinylDNSConfig.highValueRegexList, fqdn)
     }
 
-    result
-      .toEither
+    result.toEither
       .map(_ => ())
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
   }
 
-  def reverseNameToIp(recordName: String, zone: Zone): String = {
+  def reverseNameToIp(recordName: String, zone: Zone): String =
     if (zone.isIPv4) {
       ReverseZoneHelpers.convertPTRtoIPv4(zone, recordName)
     } else {
       ReverseZoneHelpers.convertPTRtoIPv6(zone, recordName)
     }
-  }
 }

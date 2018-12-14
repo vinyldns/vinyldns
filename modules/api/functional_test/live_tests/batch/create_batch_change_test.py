@@ -660,23 +660,39 @@ def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_conte
 
         "comments": "this is optional",
         "changes": [
-            get_change_A_AAAA_json("dont-touch-me-add.ok."),
-            get_change_A_AAAA_json("dont-touch-me-update.ok.", change_type="DeleteRecordSet"),
-            get_change_A_AAAA_json("dont-touch-me-update.ok."),
-            get_change_A_AAAA_json("dont-touch-me-delete.ok.", change_type="DeleteRecordSet"),
-            get_change_PTR_json("192.0.2.199"),
+            get_change_A_AAAA_json("high-value-domain-add.ok."),
+            get_change_A_AAAA_json("high-value-domain-update.ok.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("high-value-domain-update.ok."),
+            get_change_A_AAAA_json("high-value-domain-delete.ok.", change_type="DeleteRecordSet"),
+            get_change_PTR_json("192.0.2.252"),
+            get_change_PTR_json("192.0.2.253", change_type="DeleteRecordSet"), # 253 exists already
+            get_change_PTR_json("192.0.2.253"),
+            get_change_PTR_json("192.0.2.253", change_type="DeleteRecordSet"),
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:0:ffff"),
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:0", change_type="DeleteRecordSet"), # ffff:0 exists already
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:0"),
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:0", change_type="DeleteRecordSet"),
+
             get_change_A_AAAA_json("i-can-be-touched.ok.", address="1.1.1.1")
         ]
     }
 
     response = client.create_batch_change(batch_change_input, status=400)
 
-    assert_error(response[0], error_messages=['Record name "dont-touch-me-add.ok." is configured as a High Value Domain, cannot be modified'])
-    assert_error(response[1], error_messages=['Record name "dont-touch-me-update.ok." is configured as a High Value Domain, cannot be modified'])
-    assert_error(response[2], error_messages=['Record name "dont-touch-me-update.ok." is configured as a High Value Domain, cannot be modified'])
-    assert_error(response[3], error_messages=['Record name "dont-touch-me-delete.ok." is configured as a High Value Domain, cannot be modified'])
-    assert_error(response[4], error_messages=['Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'])
-     assert_that(response[5], is_not(has_key("errors")))
+    assert_error(response[0], error_messages=['Record name "high-value-domain-add.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[1], error_messages=['Record name "high-value-domain-update.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[2], error_messages=['Record name "high-value-domain-update.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[3], error_messages=['Record name "high-value-domain-delete.ok." is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[4], error_messages=['Record name "192.0.2.252" is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[5], error_messages=['Record name "192.0.2.253" is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[6], error_messages=['Record name "192.0.2.253" is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[7], error_messages=['Record name "192.0.2.253" is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[8], error_messages=['Record name "fd69:27cc:fe91:0:0:0:0:ffff" is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[9], error_messages=['Record name "fd69:27cc:fe91:0:0:0:ffff:0" is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[10], error_messages=['Record name "fd69:27cc:fe91:0:0:0:ffff:0" is configured as a High Value Domain, cannot be modified'])
+    assert_error(response[11], error_messages=['Record name "fd69:27cc:fe91:0:0:0:ffff:0" is configured as a High Value Domain, cannot be modified'])
+
+    assert_that(response[12], is_not(has_key("errors")))
 
 
 def test_create_batch_change_with_invalid_record_type_fails(shared_zone_test_context):
@@ -1656,7 +1672,7 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     existing_ipv4 = get_recordset_json(shared_zone_test_context.classless_zone_delegation_zone, "193", "PTR", [{"ptrdname": "ptrdname.data."}])
-    existing_cname = get_recordset_json(shared_zone_test_context.classless_base_zone, "201", "CNAME", [{"cname": "cname.data."}], 300)
+    existing_cname = get_recordset_json(shared_zone_test_context.classless_base_zone, "199", "CNAME", [{"cname": "cname.data."}], 300)
 
     batch_change_input = {
         "changes": [
@@ -1684,7 +1700,7 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
 
             # context validation failures
             get_change_PTR_json("192.0.2.193", ptrdname="existing-ptr."),
-            get_change_PTR_json("192.0.2.201", ptrdname="existing-cname.")
+            get_change_PTR_json("192.0.2.199", ptrdname="existing-cname.")
         ]
     }
 
@@ -1731,8 +1747,8 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
         # context validations: existing cname recordset
         assert_failed_change_in_error_response(response[13], input_name="192.0.2.193", record_type="PTR", record_data="existing-ptr.",
                                                error_messages=['Record "192.0.2.193" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
-        assert_failed_change_in_error_response(response[14], input_name="192.0.2.201", record_type="PTR", record_data="existing-cname.",
-                                               error_messages=['CNAME Conflict: CNAME record names must be unique. Existing record with name "192.0.2.201" and type "CNAME" conflicts with this record.'])
+        assert_failed_change_in_error_response(response[14], input_name="192.0.2.199", record_type="PTR", record_data="existing-cname.",
+                                               error_messages=['CNAME Conflict: CNAME record names must be unique. Existing record with name "192.0.2.199" and type "CNAME" conflicts with this record.'])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -1776,7 +1792,7 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json("192.0.1.25", change_type="DeleteRecordSet"),
 
             # context validation failures
-            get_change_PTR_json("192.0.2.201", change_type="DeleteRecordSet"),
+            get_change_PTR_json("192.0.2.199", change_type="DeleteRecordSet"),
             get_change_PTR_json("192.0.2.200", ttl=300, ptrdname="has-updated.ptr."),
             get_change_PTR_json("192.0.2.200", change_type="DeleteRecordSet"),
             get_change_PTR_json("192.0.2.50", change_type="DeleteRecordSet"),
@@ -1826,8 +1842,8 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Zone Discovery Failed: zone for \"192.0.1.25\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
 
         # context validation failures: record does not exist
-        assert_failed_change_in_error_response(response[11], input_name="192.0.2.201", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Record \"192.0.2.201\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_failed_change_in_error_response(response[11], input_name="192.0.2.199", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
+                                               error_messages=["Record \"192.0.2.199\" Does Not Exist: cannot delete a record that does not exist."])
         assert_successful_change_in_error_response(response[12], ttl=300, input_name="192.0.2.200", record_type="PTR", record_data="has-updated.ptr.")
         assert_failed_change_in_error_response(response[13], input_name="192.0.2.200", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"192.0.2.200\" Does Not Exist: cannot delete a record that does not exist."])

@@ -1685,7 +1685,7 @@ def test_create_high_value_domain_fails(shared_zone_test_context):
     zone = shared_zone_test_context.ok_zone
     new_rs = {
         'zoneId': zone['id'],
-        'name': 'dont-touch-me',
+        'name': 'high-value-domain',
         'type': 'A',
         'ttl': 100,
         'records': [
@@ -1696,18 +1696,18 @@ def test_create_high_value_domain_fails(shared_zone_test_context):
     }
 
     error = client.create_recordset(new_rs, status=422)
-    assert_that(error, is_('Record name "dont-touch-me.ok." is configured as a High Value Domain, cannot be modified'))
+    assert_that(error, is_('Record name "high-value-domain.ok." is configured as a High Value Domain, cannot be modified'))
 
 
-def test_create_high_value_domain_fails_for_reverse_zone(shared_zone_test_context):
+def test_create_high_value_domain_fails_for_ip4_ptr(shared_zone_test_context):
     """
-    Test that creating a record configured as a High Value Domain fails for reverse zones
+    Test that creating a record configured as a High Value Domain fails for ip4 ptr record
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
     ptr = {
         'zoneId': shared_zone_test_context.classless_base_zone['id'],
-        'name': '199',
+        'name': '252',
         'type': 'PTR',
         'ttl': 100,
         'records': [
@@ -1718,4 +1718,26 @@ def test_create_high_value_domain_fails_for_reverse_zone(shared_zone_test_contex
     }
 
     error_ptr = client.create_recordset(ptr, status=422)
-    assert_that(error_ptr, is_('Record name "192.0.2.199" is configured as a High Value Domain, cannot be modified'))
+    assert_that(error_ptr, is_('Record name "192.0.2.252" is configured as a High Value Domain, cannot be modified'))
+
+
+def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
+    """
+    Test that creating a record configured as a High Value Domain fails for ip6 ptr record
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    ptr = {
+        'zoneId': shared_zone_test_context.ip6_reverse_zone['id'],
+        'name': 'f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
+        'type': 'PTR',
+        'ttl': 100,
+        'records': [
+            {
+                'ptrdname': 'test.foo.'
+            }
+        ]
+    }
+
+    error_ptr = client.create_recordset(ptr, status=422)
+    assert_that(error_ptr, is_('Record name "fd69:27cc:fe91:0000:0000:0000:0000:ffff" is configured as a High Value Domain, cannot be modified'))

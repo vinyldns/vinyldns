@@ -146,7 +146,7 @@ class RecordSetServiceIntegrationSpec
 
   private val highValueDomainRecord = RecordSet(
     zone.id,
-    "dont-touch-me",
+    "high-value-domain-existing",
     A,
     38400,
     RecordSetStatus.Active,
@@ -319,7 +319,7 @@ class RecordSetServiceIntegrationSpec
     }
 
     "fail to add a dns record whose name is a high value domain" in {
-      val highValueRecord = subTestRecordA.copy(name = "dont-touch-me-2")
+      val highValueRecord = highValueDomainRecord.copy(name = "high-value-domain-new")
       val result =
         testRecordSetService
           .addRecordSet(highValueRecord, auth)
@@ -327,7 +327,7 @@ class RecordSetServiceIntegrationSpec
           .unsafeRunSync()
 
       leftValue(result) shouldBe InvalidRequest(
-        HighValueDomainError("dont-touch-me-2.live-zone-test.").message)
+        HighValueDomainError("high-value-domain-new.live-zone-test.").message)
     }
 
     "fail to update a record whose name is a high value domain" in {
@@ -339,7 +339,7 @@ class RecordSetServiceIntegrationSpec
         .unsafeRunSync()
 
       leftValue(result) shouldBe InvalidRequest(
-        HighValueDomainError("dont-touch-me.live-zone-test.").message)
+        HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
     }
 
     "fail to delete a record whose name is a high value domain" in {
@@ -349,7 +349,7 @@ class RecordSetServiceIntegrationSpec
         .unsafeRunSync()
 
       leftValue(result) shouldBe InvalidRequest(
-        HighValueDomainError("dont-touch-me.live-zone-test.").message)
+        HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
     }
   }
 
