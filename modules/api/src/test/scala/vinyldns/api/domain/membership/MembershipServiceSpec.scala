@@ -645,6 +645,28 @@ class MembershipServiceSpec
         val testUsers = Seq(okUser, dummyUser)
         val testListUsersResult = ListUsersResults(testUsers, Some("1"))
         val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
+        val testAuth = AuthPrincipal(okUser, Seq(testGroup.id))
+
+        doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
+        doReturn(IO.pure(testListUsersResult))
+          .when(mockUserRepo)
+          .getUsers(testGroup.memberIds, None, Some(100))
+
+        val result: ListMembersResponse =
+          rightResultOf(underTest.listMembers(testGroup.id, None, 100, testAuth).value)
+
+        result.members should contain theSameElementsAs expectedMembers
+        result.nextId shouldBe testListUsersResult.lastEvaluatedId
+        result.maxItems shouldBe 100
+        result.startFrom shouldBe None
+      }
+
+      "return a list of members if the requesting user is a support admin" in {
+        val testGroup =
+          okGroup.copy(memberIds = Set(okUser.id, dummyUser.id), adminUserIds = Set(okUser.id))
+        val testUsers = Seq(okUser, dummyUser)
+        val testListUsersResult = ListUsersResults(testUsers, Some("1"))
+        val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
         val supportAuth = okAuth.copy(
           signedInUser = dummyUserAuth.signedInUser.copy(isSupport = true),
           memberGroupIds = Seq.empty)
@@ -656,29 +678,6 @@ class MembershipServiceSpec
 
         val result: ListMembersResponse =
           rightResultOf(underTest.listMembers(testGroup.id, None, 100, supportAuth).value)
-
-        result.members should contain theSameElementsAs expectedMembers
-        result.nextId shouldBe testListUsersResult.lastEvaluatedId
-        result.maxItems shouldBe 100
-        result.startFrom shouldBe None
-      }
-
-      "return a list of members if the user is a support admin" in {
-        // make sure that the ok user is the admin user, would be an admin member
-        val testGroup =
-          okGroup.copy(memberIds = Set(okUser.id, dummyUser.id), adminUserIds = Set(okUser.id))
-        val testUsers = Seq(okUser, dummyUser)
-        val testListUsersResult = ListUsersResults(testUsers, Some("1"))
-        val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
-        val testAuth = AuthPrincipal(okUser, Seq(testGroup.id))
-
-        doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
-        doReturn(IO.pure(testListUsersResult))
-          .when(mockUserRepo)
-          .getUsers(testGroup.memberIds, None, Some(100))
-
-        val result: ListMembersResponse =
-          rightResultOf(underTest.listMembers(testGroup.id, None, 100, testAuth).value)
 
         result.members should contain theSameElementsAs expectedMembers
         result.nextId shouldBe testListUsersResult.lastEvaluatedId
