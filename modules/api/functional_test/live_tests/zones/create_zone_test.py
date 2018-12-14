@@ -165,11 +165,11 @@ def test_create_invalid_zone_data(shared_zone_test_context):
     zone = {
         'name': zone_name,
         'email': 'test@test.com',
-        'status': 'invalid_status'
+        'shared': 'invalid_value'
     }
 
     errors = client.create_zone(zone, status=400)['errors']
-    assert_that(errors, contains_inanyorder('Invalid ZoneStatus'))
+    assert_that(errors, contains_inanyorder('Do not know how to convert JString(invalid_value) into boolean'))
 
 
 def test_create_zone_with_connection_failure(shared_zone_test_context):
