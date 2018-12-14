@@ -69,8 +69,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             status = ZoneChangeStatus.Failed,
             systemMessage = Some(duplicateZoneError.message))
         )
-      case Right(_) if zoneChange.zone.status == ZoneStatus.Active =>
-        zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
       case Right(_) =>
         zoneChangeRepository.save(zoneChange)
     }
@@ -131,7 +129,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               _ <- saveRecordSets
             } yield
               zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)))
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                status = ZoneChangeStatus.Synced)
           }
         }
       }
