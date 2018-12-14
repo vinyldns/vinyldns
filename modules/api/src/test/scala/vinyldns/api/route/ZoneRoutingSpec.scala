@@ -110,7 +110,8 @@ class ZoneRoutingSpec
   private val zoneWithInvalidStatus: JValue =
     ("name" -> "invalidZoneStatus.") ~~
       ("email" -> "invalid-zone-status@test.com") ~~
-      ("status" -> "invalidStatus")
+      ("status" -> "invalidStatus") ~~
+      ("adminGroupId" -> "admin-group-id")
 
   private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Complete)
   private val zoneUpdate = ZoneChange(ok, "ok", ZoneChangeType.Update, ZoneChangeStatus.Complete)
@@ -688,7 +689,8 @@ class ZoneRoutingSpec
           "Missing ZoneConnection.name",
           "Missing ZoneConnection.keyName",
           "Missing ZoneConnection.key",
-          "Missing ZoneConnection.primaryServer"
+          "Missing ZoneConnection.primaryServer",
+          "Missing Zone.adminGroupId"
         )
       }
     }

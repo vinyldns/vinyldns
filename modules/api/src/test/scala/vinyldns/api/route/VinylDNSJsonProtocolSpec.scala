@@ -142,10 +142,10 @@ class VinylDNSJsonProtocolSpec
           ("shared" -> true) ~~
           ("adminGroupId" -> "admin-group-id")
 
-      val expected = completeCreateZoneInput.copy(shared = Some(true))
+      val expected = completeCreateZoneInput.copy(shared = true)
       val actual = createZoneInput.extract[CreateZoneInput]
       actual shouldBe expected
-      actual.shared shouldBe Some(true)
+      actual.shared shouldBe true
     }
   }
 

@@ -139,7 +139,7 @@ class ZoneServiceSpec
       val resultZone = rightResultOf(
         underTest.connectToZone(newZone, superAuth).map(_.asInstanceOf[ZoneChange]).value).zone
 
-      Option(resultZone.id) shouldBe defined
+      Option(resultZone.id) should not be None
       resultZone.email shouldBe zoneAuthorized.email
       resultZone.name shouldBe zoneAuthorized.name
       resultZone.status shouldBe ZoneStatus.Syncing

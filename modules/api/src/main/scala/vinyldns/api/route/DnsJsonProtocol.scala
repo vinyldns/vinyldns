@@ -98,9 +98,9 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "email").required[String]("Missing Zone.email"),
         (js \ "connection").optional[ZoneConnection],
         (js \ "transferConnection").optional[ZoneConnection],
-        (js \ "shared").optional[Boolean],
+        (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
-        (js \ "adminGroupId").default[String]("system")
+        (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId")
       ).mapN(CreateZoneInput.apply)
   }
 

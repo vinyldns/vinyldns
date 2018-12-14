@@ -71,7 +71,8 @@ class ZoneValidations(syncDelayMillis: Int) {
       case None => ().asRight
     }
 
-  def checkSharedZone(zone: Zone, user: User): Either[Throwable, Unit] =
+  // Validates that the zone is either not shared or shared and the user is a super user
+  def validateSharedZoneAuthorized(zone: Zone, user: User): Either[Throwable, Unit] =
     ensuring(UnauthorizedSharedZoneAction("Only super users are allowed to create shared zones."))(
       !zone.shared || user.isSuper)
 }

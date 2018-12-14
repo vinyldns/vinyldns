@@ -78,7 +78,7 @@ object Zone {
       email,
       connection = connection,
       transferConnection = transferConnection,
-      shared = shared.getOrElse(false),
+      shared = shared,
       acl = acl,
       adminGroupId = adminGroupId)
   }
@@ -89,7 +89,7 @@ case class CreateZoneInput(
     email: String,
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None,
-    shared: Option[Boolean] = None,
+    shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String)
 
