@@ -22,12 +22,15 @@ import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import pureconfig.module.catseffect.loadConfigF
 import vinyldns.api.crypto.Crypto
+import com.comcast.ip4s._
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
 import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
+
+import scala.util.Try
 
 object VinylDNSConfig {
 
@@ -54,9 +57,15 @@ object VinylDNSConfig {
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
   lazy val approvedNameServers: List[Regex] =
-    vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)
-  lazy val highValueDomains: List[Regex] =
-    vinyldnsConfig.getStringList("high-value-domains").asScala.toList.map(n => n.r)
+    Try(vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)).getOrElse(List[Regex]())
+
+  lazy val highValueRegexList: List[Regex] =
+    Try(vinyldnsConfig.getStringList("high-value-domains.regex-list")
+      .asScala.toList.map(n => n.r)).getOrElse(List[Regex]())
+
+  lazy val highValueIpList: List[Option[IpAddress]] =
+    Try(vinyldnsConfig.getStringList("high-value-domains.ip-list")
+      .asScala.toList.map(ip => IpAddress(ip))).getOrElse(List[Option[IpAddress]]())
 
   lazy val defaultZoneConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")

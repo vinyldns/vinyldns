@@ -17,8 +17,10 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.ValidatedMatchers
+import com.comcast.ip4s.IpAddress
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
+import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
 import vinyldns.core.domain.record._
 
 class ZoneRecordValidationsSpec
@@ -48,6 +50,10 @@ class ZoneRecordValidationsSpec
     "cdn-tr.*"
   )
 
+  val highValueRegexList = List("high-value-domain".r)
+
+  val highValueIpList = List(IpAddress("1::f"), IpAddress("10.10.10.10"))
+
   val fullNameServerRx = fullNameServers.map(_.r)
 
   "Approved Name Server check" should {
@@ -59,6 +65,62 @@ class ZoneRecordValidationsSpec
     "return an error if the name server is not in the list of approved name servers" in {
       val result = isApprovedNameServer(approvedNameServers, NSData("blah."))
       result should haveInvalid("Name Server blah. is not an approved name server.")
+    }
+  }
+
+  "isNotHighValueFqdn" should {
+    "return successfully if fqdn is not in high value list" in {
+      val result = isNotHighValueFqdn(highValueRegexList, "not-high-value.foo.")
+      result should beValid(())
+    }
+
+    "return an error if fqdn is in high value list" in {
+      val result = isNotHighValueFqdn(highValueRegexList, "high-value-domain.foo.")
+      result should haveInvalid[DomainValidationError](HighValueDomainError("high-value-domain.foo."))
+    }
+  }
+
+  "isNotHighValueIp" should {
+    "return successfully if ipv4 is not in high value list" in {
+      val result = isNotHighValueIp(highValueIpList, "10.0.001.251")
+      result should beValid(())
+    }
+
+    "return successfully if ipv6 is not in high value list" in {
+      val result = isNotHighValueIp(highValueIpList, "1:2:3:4:5:6:7:8")
+      result should beValid(())
+    }
+
+    "return an error if ipv6 is in high value list" in {
+      val result = isNotHighValueIp(highValueIpList, "1:0:0:0:0:0:0:f")
+      result should haveInvalid[DomainValidationError](HighValueDomainError("1:0:0:0:0:0:0:f"))
+    }
+
+    "return an error if ipv4 is in high value list" in {
+      val result = isNotHighValueIp(highValueIpList, "10.10.10.10")
+      result should haveInvalid[DomainValidationError](HighValueDomainError("10.10.10.10"))
+    }
+  }
+
+  "isIpInIpList" should {
+    "return true if ipv4 is in list" in {
+      isIpInIpList(highValueIpList, "10.10.10.10") shouldBe true
+    }
+
+    "return true if ipv6 is in list" in {
+      isIpInIpList(highValueIpList, "1:0:0:0:0:0:0:f") shouldBe true
+    }
+
+    "return false if ipv4 is not in list" in {
+      isIpInIpList(highValueIpList, "10.0.0.2") shouldBe false
+    }
+
+    "return false if ipv6 is not in list" in {
+      isIpInIpList(highValueIpList, "a::b") shouldBe false
+    }
+
+    "return false for invalid ip" in {
+      isIpInIpList(highValueIpList, "not-an-ip") shouldBe false
     }
   }
 

@@ -17,6 +17,7 @@
 package vinyldns.api.domain.record
 
 import cats.syntax.either._
+import com.comcast.ip4s.IpAddress
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
@@ -194,25 +195,26 @@ object RecordSetValidations {
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
 
   def isNotHighValueDomain(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
-    val name = recordSet.typ match {
-      case RecordType.PTR => reverseNameToIp(recordSet.name, zone)
-      case _ => DnsConversions.recordDnsName(recordSet.name, zone.name).toString()
+    val result = recordSet.typ match {
+      case RecordType.PTR =>
+        val ip = reverseNameToIp(recordSet.name, zone)
+        ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, ip)
+      case _ =>
+        val fqdn = DnsConversions.recordDnsName(recordSet.name, zone.name).toString()
+        ZoneRecordValidations.isNotHighValueFqdn(VinylDNSConfig.highValueRegexList, fqdn)
     }
 
-    ZoneRecordValidations
-      .isNotHighValueDomain(VinylDNSConfig.highValueDomains, name)
+    result
       .toEither
       .map(_ => ())
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
   }
 
   def reverseNameToIp(recordName: String, zone: Zone): String = {
-    val ptrToIp = if (zone.isIPv4) {
+    if (zone.isIPv4) {
       ReverseZoneHelpers.convertPTRtoIPv4(zone, recordName)
     } else {
       ReverseZoneHelpers.convertPTRtoIPv6(zone, recordName)
     }
-    // if dns conversions thinks its an invalid ip just use original
-    DnsConversions.getValidNormalizedIpAddress(ptrToIp).getOrElse(ptrToIp)
   }
 }

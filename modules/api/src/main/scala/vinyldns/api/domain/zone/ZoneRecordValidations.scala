@@ -18,6 +18,8 @@ package vinyldns.api.domain.zone
 
 import cats.implicits._
 import cats.data._
+import com.comcast.ip4s.IpAddress
+import com.comcast.ip4s.interop.cats.implicits._
 import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
 import vinyldns.core.domain.record.{NSData, RecordSet, RecordType}
 
@@ -28,6 +30,19 @@ object ZoneRecordValidations {
   /* Checks to see if an individual string is part of the regex list */
   def isStringInRegexList(regexList: List[Regex], string: String): Boolean =
     regexList.exists(rx => rx.findAllIn(string).contains(string))
+
+  /* Checks to see if an ip address is part of the ip address list */
+  def isIpInIpList(ipList: List[Option[IpAddress]], ip: String): Boolean = {
+    val ipToTest = IpAddress(ip)
+    if (ipToTest.isDefined) {
+      ipList.exists { ipOption =>
+        ipOption match {
+          case None => false
+          case ipInList => ipInList === ipToTest
+        }
+      }
+    } else false
+  }
 
   /* Checks to see if an individual ns data is part of the approved server list */
   def isApprovedNameServer(
@@ -71,12 +86,21 @@ object ZoneRecordValidations {
     validations.sequence
   }
 
-  def isNotHighValueDomain(
-      highValueDomainList: List[Regex],
-      name: String): ValidatedNel[DomainValidationError, Unit] =
-    if (!isStringInRegexList(highValueDomainList, name)) {
+  def isNotHighValueFqdn(
+      highValueRegexList: List[Regex],
+      fqdn: String): ValidatedNel[DomainValidationError, Unit] =
+    if (!isStringInRegexList(highValueRegexList, fqdn)) {
       ().validNel
     } else {
-      HighValueDomainError(name).invalidNel
+      HighValueDomainError(fqdn).invalidNel
+    }
+
+  def isNotHighValueIp(
+      highValueIpList: List[Option[IpAddress]],
+      ip: String): ValidatedNel[DomainValidationError, Unit] =
+    if (!isIpInIpList(highValueIpList, ip)) {
+      ().validNel
+    } else {
+      HighValueDomainError(ip).invalidNel
     }
 }

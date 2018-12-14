@@ -338,16 +338,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       UserNotAuthorizedError(batchChange.id).asLeft
     }
 
-  def isNotHighValueDomain(change: ChangeInput): SingleValidation[Unit] = {
-    val name = change.typ match {
-      case RecordType.PTR =>
-        // if dns conversions thinks its an invalid ip just use original
-        DnsConversions.getValidNormalizedIpAddress(change.inputName).getOrElse(change.inputName)
-      case _ => change.inputName
+  def isNotHighValueDomain(change: ChangeInput): SingleValidation[Unit] =
+    change.typ match {
+      case RecordType.PTR => ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, change.inputName)
+      case _ => ZoneRecordValidations.isNotHighValueFqdn(VinylDNSConfig.highValueRegexList, change.inputName)
     }
-
-    ZoneRecordValidations
-      .isNotHighValueDomain(VinylDNSConfig.highValueDomains, name)
-      .asUnit
-  }
 }
