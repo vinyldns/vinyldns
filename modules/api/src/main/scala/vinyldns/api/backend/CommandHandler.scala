@@ -134,14 +134,7 @@ object CommandHandler {
       message.command match {
         case sync: ZoneChange
             if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
-          val doSync =
-            for {
-              _ <- zoneChangeProcessor(sync) // make sure zone is updated to a syncing status
-              syncChange <- zoneSyncProcessor(sync)
-              _ <- zoneChangeProcessor(syncChange) // update zone to Active
-            } yield syncChange
-
-          outcomeOf(message)(doSync)
+          outcomeOf(message)(zoneSyncProcessor(sync))
 
         case zoneChange: ZoneChange =>
           outcomeOf(message)(zoneChangeProcessor(zoneChange))
@@ -196,7 +189,7 @@ object CommandHandler {
     val recordChangeHandler =
       RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
     val zoneSyncHandler =
-      ZoneSyncHandler(recordSetRepo, recordChangeRepo)
+      ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo)
 
     CommandHandler
       .mainFlow(

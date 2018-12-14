@@ -221,7 +221,6 @@ class CommandHandlerSpec
         .apply(zoneCreate)
       doReturn(IO.pure(zoneCreate)).when(mockZoneSyncProcessor).apply(zoneCreate)
       Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
-      verify(mockZoneChangeProcessor, times(2)).apply(zoneCreate)
       verify(mockZoneSyncProcessor).apply(zoneCreate)
       verifyZeroInteractions(mockRecordChangeProcessor)
     }
@@ -231,7 +230,6 @@ class CommandHandlerSpec
       doReturn(IO.pure(sync)).doReturn(IO.pure(change)).when(mockZoneChangeProcessor).apply(sync)
       doReturn(IO.pure(sync)).when(mockZoneSyncProcessor).apply(sync)
       Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
-      verify(mockZoneChangeProcessor, times(2)).apply(sync)
       verify(mockZoneSyncProcessor).apply(sync)
       verifyZeroInteractions(mockRecordChangeProcessor)
     }
