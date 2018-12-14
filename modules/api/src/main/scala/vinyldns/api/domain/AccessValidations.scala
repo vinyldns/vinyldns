@@ -173,8 +173,7 @@ object AccessValidations extends AccessValidationAlgebra {
       recordName: String,
       recordType: RecordType,
       zone: Zone): AccessLevel = auth match {
-    case superUser if superUser.canEditAll => AccessLevel.Delete
-    case groupMember if groupMember.isGroupMember(zone.adminGroupId) => AccessLevel.Delete
+    case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) => AccessLevel.Delete
     case supportUser if supportUser.canReadAll => {
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
