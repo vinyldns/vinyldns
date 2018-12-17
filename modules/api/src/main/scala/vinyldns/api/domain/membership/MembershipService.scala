@@ -68,7 +68,7 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
-      _ <- isGroupAdmin(existingGroup, authPrincipal).toResult
+      _ <- canEditGroup(existingGroup, authPrincipal).toResult
       addedMembers = newGroup.memberIds.diff(existingGroup.memberIds)
       removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
       _ <- hasMembersAndAdmins(newGroup).toResult
@@ -85,7 +85,7 @@ class MembershipService(
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
-      _ <- isGroupAdmin(existingGroup, authPrincipal).toResult
+      _ <- canEditGroup(existingGroup, authPrincipal).toResult
       _ <- groupCanBeDeleted(existingGroup)
       _ <- groupChangeRepo
         .save(GroupChange.forDelete(existingGroup, authPrincipal))
@@ -131,11 +131,12 @@ class MembershipService(
       startFrom: Option[String],
       maxItems: Int,
       authPrincipal: AuthPrincipal): Result[ListMyGroupsResponse] = {
-    val groupsCall = if (authPrincipal.signedInUser.isSuper) {
-      groupRepo.getAllGroups()
-    } else {
-      groupRepo.getGroups(authPrincipal.memberGroupIds.toSet)
-    }
+    val groupsCall =
+      if (authPrincipal.canReadAll) {
+        groupRepo.getAllGroups()
+      } else {
+        groupRepo.getGroups(authPrincipal.memberGroupIds.toSet)
+      }
 
     groupsCall.map { grp =>
       pageListGroupsResponse(grp.toList, groupNameFilter, startFrom, maxItems)

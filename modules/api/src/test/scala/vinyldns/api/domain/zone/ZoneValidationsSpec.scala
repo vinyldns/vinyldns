@@ -37,17 +37,6 @@ class ZoneValidationsSpec
 
   import testing._
 
-  "userIsMemberOfGroup" should {
-    "return true when authorized" in {
-      userIsMemberOfGroup(okUserAuth.memberGroupIds.head, okUserAuth) should be(right)
-    }
-
-    "return a InvalidZoneAdminError when not authorized" in {
-      val outcome = leftValue(userIsMemberOfGroup("badId", okUserAuth))
-      outcome shouldBe a[InvalidZoneAdminError]
-    }
-  }
-
   "outsideSyncDelay" should {
     "return ok when the zone has not been synced" in {
       val zone = memberOkZoneAuthorized.copy(latestSync = None)

@@ -17,11 +17,20 @@
 package vinyldns.core.domain.auth
 
 import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.membership.Group
 
 case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
+  def canEditAll: Boolean =
+    signedInUser.isSuper
 
-  def isAuthorized(adminGroupId: String): Boolean =
-    signedInUser.isSuper || memberGroupIds.contains(adminGroupId)
+  def canReadAll: Boolean =
+    signedInUser.isSuper || signedInUser.isSupport
+
+  def isGroupAdmin(group: Group): Boolean =
+    group.adminUserIds.contains(signedInUser.id)
+
+  def isGroupMember(groupId: String): Boolean =
+    memberGroupIds.contains(groupId)
 
   val secretKey: String = signedInUser.secretKey
 
