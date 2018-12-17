@@ -69,7 +69,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     */
   def receive(count: MessageCount): IO[List[SqsMessage]] =
     monitor("queue.SQS.receive") {
-      logger.info(s"Receiving $count messages.\n")
+      logger.debug(s"Receiving $count messages.\n")
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         // Can return 1-10 messages.
         // (see: https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/
