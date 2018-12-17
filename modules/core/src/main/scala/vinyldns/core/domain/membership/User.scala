@@ -39,7 +39,8 @@ final case class User(
     id: String = UUID.randomUUID().toString,
     isSuper: Boolean = false,
     lockStatus: LockStatus = LockStatus.Unlocked,
-    isSupport: Boolean = false
+    isSupport: Boolean = false,
+    isTest: Boolean = false
 ) {
 
   def updateUserLockStatus(lockStatus: LockStatus): User =
