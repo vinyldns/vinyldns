@@ -94,6 +94,13 @@ class AccessValidationsSpec
 
       accessValidationTest.canSeeZone(okUserAuth, zoneIn) should be(right)
     }
+
+    "return true if the user is a support admin" in {
+      val supportAuth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty)
+      accessValidationTest.canSeeZone(supportAuth, memberOkZoneAuthorized) should be(right)
+    }
   }
 
   "canChangeZone" should {
@@ -104,6 +111,21 @@ class AccessValidationsSpec
 
     "return true if the user is an admin or super user" in {
       accessValidationTest.canChangeZone(okUserAuth, memberOkZoneAuthorized) should be(right)
+    }
+
+    "return true if the user is an admin and a support user" in {
+      val auth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq(okGroup.id))
+      accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized) should be(right)
+    }
+
+    "return a NotAuthorizedError if the user is a support user only" in {
+      val auth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty)
+      val error = leftValue(accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized))
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
@@ -285,29 +307,6 @@ class AccessValidationsSpec
     }
   }
 
-  "isAdminOrSuper" should {
-    "return false if the user is not admin/super (membership auth)" in {
-      val auth = okGroupAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSuper = false),
-        memberGroupIds = Seq.empty)
-      val result = accessValidationTest.hasZoneAdminAccess(auth, memberZoneNotAuthorized)
-      result shouldBe false
-    }
-
-    "return true if the user is super (membership auth)" in {
-      val auth = okGroupAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSuper = true),
-        memberGroupIds = Seq.empty)
-      val result = accessValidationTest.hasZoneAdminAccess(auth, memberZoneNotAuthorized)
-      result shouldBe true
-    }
-
-    "return true if the user is not super but is admin (membership auth)" in {
-      val result = accessValidationTest.hasZoneAdminAccess(okGroupAuth, memberOkZoneAuthorized)
-      result shouldBe true
-    }
-  }
-
   "getAccessLevel" should {
     "return AccessLevel.Delete if the user is admin/super" in {
       val mockRecordSet = mock[RecordSet]
@@ -317,6 +316,43 @@ class AccessValidationsSpec
         mockRecordSet.typ,
         memberOkZoneAuthorized)
       result shouldBe AccessLevel.Delete
+    }
+
+    "return AccessLevel.Read if the user is support only" in {
+      val mockRecordSet = mock[RecordSet]
+      val supportAuth = okGroupAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty)
+      val result = accessValidationTest.getAccessLevel(
+        supportAuth,
+        mockRecordSet.name,
+        mockRecordSet.typ,
+        memberOkZoneAuthorized)
+      result shouldBe AccessLevel.Read
+    }
+
+    "return the result of getAccessLevel if the user is support but also an admin" in {
+      val mockRecordSet = mock[RecordSet]
+      val supportAuth =
+        okGroupAuth.copy(signedInUser = okGroupAuth.signedInUser.copy(isSupport = true))
+      val result = accessValidationTest.getAccessLevel(
+        supportAuth,
+        mockRecordSet.name,
+        mockRecordSet.typ,
+        memberOkZoneAuthorized)
+      result shouldBe AccessLevel.Delete
+    }
+
+    "return the result of getAccessLevel if the user is support but also has ACL rule access" in {
+      val mockRecordSet = mock[RecordSet]
+      val userAccess = okUser.copy(id = "Write", isSupport = true)
+      val userAuth = AuthPrincipal(userAccess, groupIds)
+      val userAcl = ACLRule(AccessLevel.Write, userId = Some(userAuth.userId), groupId = None)
+      val zoneIn = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
+
+      val result =
+        accessValidationTest.getAccessLevel(userAuth, mockRecordSet.name, mockRecordSet.typ, zoneIn)
+      result shouldBe AccessLevel.Write
     }
 
     "return the result of getAccessLevel if user is not admin/super" in {
@@ -748,6 +784,22 @@ class AccessValidationsSpec
       val result = accessValidationTest.getListAccessLevels(okUserAuth, recordList, zone)
 
       val expected = recordList.map(RecordSetInfo(_, AccessLevel.NoAccess))
+      result shouldBe expected
+    }
+
+    "return access level Read if there is no ACL rule for the user and user is a support admin" in {
+      val supportAuth = okAuth.copy(
+        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty)
+
+      val recordList = List("rs1", "rs2", "rs3").map {
+        RecordSet("zoneId", _, RecordType.A, 100, RecordSetStatus.Active, DateTime.now())
+      }
+      val zone = Zone("test", "test")
+
+      val result = accessValidationTest.getListAccessLevels(supportAuth, recordList, zone)
+
+      val expected = recordList.map(RecordSetInfo(_, AccessLevel.Read))
       result shouldBe expected
     }
 

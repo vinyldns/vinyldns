@@ -45,6 +45,7 @@ object DynamoDBUserRepository {
   private[repository] val SECRET_KEY = "secretkey"
   private[repository] val IS_SUPER = "super"
   private[repository] val LOCK_STATUS = "lockstatus"
+  private[repository] val IS_SUPPORT = "support"
   private[repository] val USER_NAME_INDEX_NAME = "username_index"
   private[repository] val ACCESS_KEY_INDEX_NAME = "access_key_index"
   private val log: Logger = LoggerFactory.getLogger(classOf[DynamoDBUserRepository])
@@ -104,6 +105,7 @@ object DynamoDBUserRepository {
     item.put(SECRET_KEY, new AttributeValue(crypto.encrypt(user.secretKey)))
     item.put(IS_SUPER, new AttributeValue().withBOOL(user.isSuper))
     item.put(LOCK_STATUS, new AttributeValue(user.lockStatus.toString))
+    item.put(IS_SUPPORT, new AttributeValue().withBOOL(user.isSupport))
 
     val firstName =
       user.firstName.map(new AttributeValue(_)).getOrElse(new AttributeValue().withNULL(true))
@@ -134,7 +136,8 @@ object DynamoDBUserRepository {
       isSuper = if (item.get(IS_SUPER) == null) false else item.get(IS_SUPER).getBOOL,
       lockStatus =
         if (item.get(LOCK_STATUS) == null) LockStatus.Unlocked
-        else userStatus(item.get(LOCK_STATUS).getS)
+        else userStatus(item.get(LOCK_STATUS).getS),
+      isSupport = if (item.get(IS_SUPPORT) == null) false else item.get(IS_SUPPORT).getBOOL
     )
   }
 }

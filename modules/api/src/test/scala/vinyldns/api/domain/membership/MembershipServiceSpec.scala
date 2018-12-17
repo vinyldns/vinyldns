@@ -570,6 +570,16 @@ class MembershipServiceSpec
           GroupInfo(dummyGroup),
           GroupInfo(okGroup))
       }
+      "return groups from the database for support users" in {
+        val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
+        doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
+        val result: ListMyGroupsResponse =
+          rightResultOf(underTest.listMyGroups(None, None, 100, supportAuth).value)
+        verify(mockGroupRepo).getAllGroups()
+        result.groups should contain theSameElementsAs Seq(
+          GroupInfo(dummyGroup),
+          GroupInfo(okGroup))
+      }
       "do not return deleted groups" in {
         doReturn(IO.pure(Set(deletedGroup)))
           .when(mockGroupRepo)
@@ -644,6 +654,30 @@ class MembershipServiceSpec
 
         val result: ListMembersResponse =
           rightResultOf(underTest.listMembers(testGroup.id, None, 100, testAuth).value)
+
+        result.members should contain theSameElementsAs expectedMembers
+        result.nextId shouldBe testListUsersResult.lastEvaluatedId
+        result.maxItems shouldBe 100
+        result.startFrom shouldBe None
+      }
+
+      "return a list of members if the requesting user is a support admin" in {
+        val testGroup =
+          okGroup.copy(memberIds = Set(okUser.id, dummyUser.id), adminUserIds = Set(okUser.id))
+        val testUsers = Seq(okUser, dummyUser)
+        val testListUsersResult = ListUsersResults(testUsers, Some("1"))
+        val expectedMembers = List(MemberInfo(okUser, okGroup), MemberInfo(dummyUser, dummyGroup))
+        val supportAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSupport = true),
+          memberGroupIds = Seq.empty)
+
+        doReturn(IO.pure(Some(testGroup))).when(mockGroupRepo).getGroup(testGroup.id)
+        doReturn(IO.pure(testListUsersResult))
+          .when(mockUserRepo)
+          .getUsers(testGroup.memberIds, None, Some(100))
+
+        val result: ListMembersResponse =
+          rightResultOf(underTest.listMembers(testGroup.id, None, 100, supportAuth).value)
 
         result.members should contain theSameElementsAs expectedMembers
         result.nextId shouldBe testListUsersResult.lastEvaluatedId
@@ -799,6 +833,18 @@ class MembershipServiceSpec
         val error = leftResultOf(
           underTest
             .updateUserLockStatus(okUser.id, LockStatus.Locked, dummyUserAuth)
+            .value)
+
+        error shouldBe a[NotAuthorizedError]
+      }
+
+      "return an error if the signed in user is only a support admin" in {
+        val supportAuth = okAuth.copy(
+          signedInUser = dummyUserAuth.signedInUser.copy(isSupport = true),
+          memberGroupIds = Seq.empty)
+        val error = leftResultOf(
+          underTest
+            .updateUserLockStatus(okUser.id, LockStatus.Locked, supportAuth)
             .value)
 
         error shouldBe a[NotAuthorizedError]

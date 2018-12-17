@@ -6,17 +6,8 @@ we anticipate the "plan" to change.  This document will be updated regularly to 
 
 This document is organized by priority / planned release timeframes.  Reading top-down should give you a sense of the order in which new features are planned to be delivered.
 
-## Pluggable Dependencies
-**Planned for: Q3 2018**
-Presently, VinylDNS requires operators to run DynamoDB, MySQL, and SQS.  These system dependencies were chosen to
-support the massive DNS footprint of Comcast.  However, they are viewed as a hurdle to adoption for VinylDNS.  We would like to make the external system dependencies "pluggable".  This will allow VinylDNS users to provide their own implementations which can be configured and loaded dynamically at run-time.
-
-The following high-level features will be developed:
-1. Pluggable Repositories - support multiple datastores other than MySQL and DynamoDB, for example PostgreSQL or MongoDB.
-1. Pluggable Queues - support different message queues other than SQS, for example RabbitMQ.
-
 ## Batch Change
-**Planned for: Q4 2018**
+**Planned for: Q1 2019**
 A major new feature introduced recently is the ability to make multiple changes across zones.  The changes are applied
 by consulting the _current_ access control model.  The access control model follows:
 
@@ -32,6 +23,7 @@ a group as the owner of the record to restrict who can modify that record.
 1. Profanity filter - reject changes that use profane language in record labels or text.
 1. Blacklisting - allow rejections on any DNS records that are in a blacklist.  This will prevent high-value domains
 from being modified via VinylDNS.
+1. Reverse lookup management - support auto-updating PTR records when making record changes
 
 ## Zone Management
 **Planned for: Q2 2019**
@@ -49,6 +41,7 @@ the zone will live, VinylDNS creates the delegation as well as access controls f
 ## Other
 There are several other features that we would like to support.  We will be opening up these for RFC shortly.  These include:
 
+1. Improved search and filter - allow users to search for records across zones
 1. DNS SEC - There is no first-class support for DNS SEC.  That feature set is being defined.
 1. Record meta data - VinylDNS will allow the "tagging" of DNS records with arbitrary key-value pairs
 1. DNS Global Service Load Balancing (GSLB) - Support for common DNS GSLB use cases and integration with various GSLB vendors

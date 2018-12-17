@@ -65,7 +65,7 @@ class ZoneService(
       _ <- connectionValidator.validateZoneConnections(zone)
       _ <- zoneDoesNotExist(zone)
       _ <- adminGroupExists(zone.adminGroupId)
-      _ <- userIsMemberOfGroup(zone.adminGroupId, auth).toResult
+      _ <- canChangeZone(auth, zone).toResult
       createZoneChange <- ZoneChangeGenerator.forAdd(zone, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
     } yield createZoneChange
@@ -77,7 +77,7 @@ class ZoneService(
       _ <- validateZoneConnectionIfChanged(newZone, existingZone)
       _ <- canChangeZone(auth, existingZone).toResult
       _ <- adminGroupExists(newZone.adminGroupId)
-      _ <- userIsMemberOfGroup(newZone.adminGroupId, auth).toResult
+      _ <- canChangeZone(auth, newZone).toResult //if admin group changes this confirms user has access to new group
       updateZoneChange <- ZoneChangeGenerator.forUpdate(newZone, existingZone, auth).toResult
       _ <- messageQueue.send(updateZoneChange).toResult[Unit]
     } yield updateZoneChange

@@ -216,6 +216,17 @@ class BatchChangeServiceSpec
 
       result shouldBe batchChange
     }
+
+    "Succeed if user is a support user" in {
+      val batchChange = BatchChange("badID", "badUN", None, DateTime.now, List())
+      batchChangeRepo.save(batchChange)
+
+      val authSuper = notAuth.copy(signedInUser = notAuth.signedInUser.copy(isSupport = true))
+
+      val result = rightResultOf(underTest.getBatchChange(batchChange.id, authSuper).value)
+
+      result shouldBe batchChange
+    }
   }
 
   "getExistingRecordSets" should {

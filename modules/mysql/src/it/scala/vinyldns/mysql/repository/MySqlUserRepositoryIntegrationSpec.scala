@@ -91,6 +91,22 @@ class MySqlUserRepositoryIntegrationSpec
       result shouldBe Some(unlockedUser)
       result.get.lockStatus shouldBe LockStatus.Unlocked
     }
+
+    "save support user with support status" in {
+      val supportUser = User("lockedName", "lockedAccess", "lockedSecret", isSupport = true)
+      repo.save(supportUser).unsafeRunSync() shouldBe supportUser
+      val result = repo.getUser(supportUser.id).unsafeRunSync()
+      result shouldBe Some(supportUser)
+      result.get.isSupport shouldBe true
+    }
+
+    "save non-support user with non-support status" in {
+      val nonSupportdUser = User("unlockedName", "unlockedAccess", "unlockedSecret")
+      repo.save(nonSupportdUser).unsafeRunSync() shouldBe nonSupportdUser
+      val result = repo.getUser(nonSupportdUser.id).unsafeRunSync()
+      result shouldBe Some(nonSupportdUser)
+      result.get.isSupport shouldBe false
+    }
   }
 
   "MySqlUserRepository.getUser" should {

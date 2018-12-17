@@ -17,12 +17,7 @@
 package vinyldns.api.domain
 
 import vinyldns.api.Interfaces.ensuring
-import vinyldns.api.domain.zone.{
-  ACLRuleOrdering,
-  NotAuthorizedError,
-  PTRACLRuleOrdering,
-  RecordSetInfo
-}
+import vinyldns.api.domain.zone.{ACLRuleOrdering, NotAuthorizedError, PTRACLRuleOrdering, RecordSetInfo}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -34,12 +29,12 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      hasZoneAdminAccess(auth, zone) || userHasAclRules(auth, zone))
+      auth.canReadAll || auth.isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
 
   def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot modify zone '${zone.name}'"))(
-      hasZoneAdminAccess(auth, zone))
+      auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
 
   def canAddRecordSet(
       auth: AuthPrincipal,
@@ -89,7 +84,8 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordSets: List[RecordSet],
       zone: Zone): List[RecordSetInfo] =
-    if (hasZoneAdminAccess(auth, zone)) recordSets.map(RecordSetInfo(_, AccessLevel.Delete))
+    if (auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
+      recordSets.map(RecordSetInfo(_, AccessLevel.Delete))
     else {
       val rulesForUser = zone.acl.rules.filter(ruleAppliesToUser(auth, _))
 
@@ -106,15 +102,18 @@ object AccessValidations extends AccessValidationAlgebra {
       }
 
       recordSets.map { rs =>
-        val accessLevel = getAccessFromUserAcls(rs.name, rs.typ)
+        val aclAccessLevel = getAccessFromUserAcls(rs.name, rs.typ)
+        val accessLevel = {
+          if ((aclAccessLevel == AccessLevel.NoAccess) && auth.canReadAll)
+            AccessLevel.Read
+          else
+            aclAccessLevel
+        }
         RecordSetInfo(rs, accessLevel)
       }
     }
 
   /* Non-algebra methods */
-  def hasZoneAdminAccess(auth: AuthPrincipal, zone: Zone): Boolean =
-    auth.isAuthorized(zone.adminGroupId)
-
   def getAccessFromAcl(
       auth: AuthPrincipal,
       recordName: String,
@@ -173,7 +172,12 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): AccessLevel =
-    if (hasZoneAdminAccess(auth, zone)) AccessLevel.Delete
-    else getAccessFromAcl(auth, recordName, recordType, zone)
+      zone: Zone): AccessLevel = auth match {
+    case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) => AccessLevel.Delete
+    case supportUser if supportUser.canReadAll => {
+      val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
+      if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
+    }
+    case _ => getAccessFromAcl(auth, recordName, recordType, zone)
+  }
 }

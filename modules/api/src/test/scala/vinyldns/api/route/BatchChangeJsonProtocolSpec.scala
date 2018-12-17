@@ -337,6 +337,7 @@ class BatchChangeJsonProtocolSpec
         Some("these be comments!"),
         time,
         List(add, delete),
+        None,
         "someId")
       val result = BatchChangeSerializer.toJson(batchChange)
 

@@ -33,6 +33,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       comments: Option[String],
       createdTimestamp: DateTime,
       changes: List[String],
+      ownerGroupId: Option[String],
       id: String)
   object StoredBatchChange {
     def apply(batchChange: BatchChange): StoredBatchChange =
@@ -42,7 +43,9 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         batchChange.comments,
         batchChange.createdTimestamp,
         batchChange.changes.map(_.id),
-        batchChange.id)
+        batchChange.ownerGroupId,
+        batchChange.id
+      )
   }
 
   private val batches = new concurrent.TrieMap[String, StoredBatchChange]
@@ -72,6 +75,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
           sc.comments,
           sc.createdTimestamp,
           singleChangesFromRepo,
+          sc.ownerGroupId,
           sc.id)
       }
     }
@@ -110,6 +114,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         sc.comments,
         sc.createdTimestamp,
         changes,
+        sc.ownerGroupId,
         sc.id)
     } yield BatchChangeSummary(batchChange)
     val sorted = batchChangeSummaries.sortBy(_.createdTimestamp)

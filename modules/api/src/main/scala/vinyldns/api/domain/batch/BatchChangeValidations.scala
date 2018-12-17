@@ -325,7 +325,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def canGetBatchChange(
       batchChange: BatchChange,
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    if (auth.signedInUser.isSuper || auth.userId == batchChange.userId) {
+    if (auth.canReadAll || auth.userId == batchChange.userId) {
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft

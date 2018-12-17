@@ -253,10 +253,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
   private def withAccessors(user: User, groupIds: Seq[String]): (String, Seq[Any]) =
     // Super users do not need to join across to check zone access as they have access to all of the zones
-    if (user.isSuper) {
+    if (user.isSuper || user.isSupport) {
       (BASE_ZONE_SEARCH_SQL, Seq.empty)
     } else {
-      // User is not super, let's join across to the zone access table so we return only zones a user has access to
+      // User is not super or support,
+      // let's join across to the zone access table so we return only zones a user has access to
       val accessors = buildZoneSearchAccessorList(user, groupIds)
       val questionMarks = List.fill(accessors.size)("?").mkString(",")
       val withAccessorCheck = BASE_ZONE_SEARCH_SQL +
