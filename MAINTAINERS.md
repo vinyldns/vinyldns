@@ -134,12 +134,18 @@ note you will have to generate a strong passphrase and save it in some password 
 1. Run `blackbox_cat vinyldns-sonatype.txt.gpg` to view the passphrase for that key - you will need this passphrase handy when releasing
 1. Create a file `~/.sbt/1.0/vinyldns-gpg-credentials` with the content
 
-``` 
-realm=GnuPG Key ID
-host=gpg
-user=vinyldns@gmail.com
-password=ignored-must-use-pinentry
-```
+    ```
+    realm=GnuPG Key ID
+    host=gpg
+    user=vinyldns@gmail.com
+    password=ignored-must-use-pinentry
+    ```
+
+1. Add credenial configuration to global sbt setting in `~/.sbt/1.0/credential.sbt` with the content
+
+    ```
+    credentials += Credentials(Path.userHome / ".sbt" / "1.0" / "vinyldns-gpg-credentials")
+    ```
 
 ## Release Process
 
