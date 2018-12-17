@@ -261,8 +261,7 @@ lazy val corePublishSettings = Seq(
     Developer(id="mitruly", name="Michael Ly", email="michaeltrulyng@gmail.com", url=url("https://github.com/mitruly")),
     Developer(id="britneywright", name="Britney Wright", email="blw06g@gmail.com", url=url("https://github.com/britneywright")),
   ),
-  sonatypeProfileName := "io.vinyldns",
-  credentials += Credentials(Path.userHome / ".sbt" / "1.0" / "vinyldns-gpg-credentials")
+  sonatypeProfileName := "io.vinyldns"
 )
 
 lazy val core = (project in file("modules/core")).enablePlugins(AutomateHeaderPlugin)
