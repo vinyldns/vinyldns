@@ -28,7 +28,7 @@ object MembershipValidations {
       group.memberIds.nonEmpty && group.adminUserIds.nonEmpty
     }
 
-  def isGroupAdmin(group: Group, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
+  def canEditGroup(group: Group, authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized")) {
       authPrincipal.isGroupAdmin(group) || authPrincipal.canEditAll
     }
