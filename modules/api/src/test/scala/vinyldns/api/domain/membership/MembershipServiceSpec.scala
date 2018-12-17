@@ -776,7 +776,7 @@ class MembershipServiceSpec
         result should be(right)
       }
 
-      "return a InvalidGroupRequestError when a group for deletion is admin of a zone" in {
+      "return an InvalidGroupRequestError when a group for deletion is admin of a zone" in {
         doReturn(IO.pure(List(mock[Zone])))
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(okGroup.id)

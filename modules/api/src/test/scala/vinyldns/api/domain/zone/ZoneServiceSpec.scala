@@ -106,7 +106,7 @@ class ZoneServiceSpec
       error shouldBe a[ZoneAlreadyExistsError]
     }
 
-    "return a InvalidZoneAdminError error if the zone admin group does not exist" in {
+    "return an InvalidZoneAdminError error if the zone admin group does not exist" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
       doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
 
