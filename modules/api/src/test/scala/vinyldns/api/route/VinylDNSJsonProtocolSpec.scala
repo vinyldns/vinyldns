@@ -147,6 +147,39 @@ class VinylDNSJsonProtocolSpec
       actual shouldBe expected
       actual.shared shouldBe true
     }
+
+    "throw an error if zone name is missing" in {
+      val createZoneInput: JValue =
+        ("email" -> "test@test.com") ~~
+          ("adminGroupId" -> "admin-group-id")
+
+      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+    }
+
+    "throw an error if zone email is missing" in {
+      val createZoneInput: JValue =
+        ("name" -> "testZone.") ~~
+          ("adminGroupId" -> "admin-group-id")
+
+      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+    }
+
+    "throw an error if adminGroupId is missing" in {
+      val createZoneInput: JValue =
+        ("name" -> "testZone.") ~~
+          ("email" -> "test@test.com")
+
+      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+    }
+
+    "throw an error if there is a type mismatch during deserialization" in {
+      val createZoneInput: JValue =
+        ("name" -> "testZone.") ~~
+          ("email" -> "test@test.com") ~~
+          ("adminGroupId" -> true)
+
+      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+    }
   }
 
   "RecordSetSerializer" should {

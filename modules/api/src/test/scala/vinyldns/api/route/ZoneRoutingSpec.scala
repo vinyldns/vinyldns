@@ -139,7 +139,7 @@ class ZoneRoutingSpec
         case zoneValidationFailed.email =>
           Left(ZoneValidationFailed(zone, List("fail"), "failure message"))
         case nonSuperUserSharedZone.email =>
-          Left(UnauthorizedSharedZoneAction("unauth"))
+          Left(NotAuthorizedError("unauth"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }

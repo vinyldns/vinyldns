@@ -147,12 +147,12 @@ class ZoneServiceSpec
       resultZone.shared shouldBe true
     }
 
-    "return an UnauthorizedSharedZoneAction error if zone is shared and user is not a super user" in {
+    "return a NotAuthorizedError if zone is shared and user is not a super user" in {
       val newZone = zoneAuthorized.copy(shared = true)
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
       val error = leftResultOf(underTest.connectToZone(newZone, okAuth).value)
-      error shouldBe an[UnauthorizedSharedZoneAction]
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
