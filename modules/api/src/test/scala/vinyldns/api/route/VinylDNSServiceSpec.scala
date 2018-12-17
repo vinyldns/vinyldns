@@ -59,7 +59,7 @@ class VinylDNSServiceSpec
       actual should include("protocol=HTTP/1.1")
       actual should include("method=GET")
       actual should include("path=/path/to/resource")
-      actual should include("status=200")
+      actual should include("status_code=200")
       actual should include("request_duration=20")
       (actual should not).include("response_body=results")
     }

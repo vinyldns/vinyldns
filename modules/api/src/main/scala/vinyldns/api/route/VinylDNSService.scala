@@ -54,7 +54,7 @@ object VinylDNSService {
     Seq(
       s"Headers: [$requestHeadersNoAuth]",
       s"Request: protocol=${req.protocol.value}, method=${req.method.value}, path=${sanitizePath(req.uri)}",
-      s"Response: status=${res.status.intValue}$errorResponse",
+      s"Response: status_code=${res.status.intValue}$errorResponse",
       s"Duration: request_duration=$duration"
     ).mkString(" | ")
   }
