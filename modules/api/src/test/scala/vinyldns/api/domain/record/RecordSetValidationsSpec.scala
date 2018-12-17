@@ -237,7 +237,7 @@ class RecordSetValidationsSpec
       "return ok if the record is an NS record but not origin" in {
         val valid = invalidNsRecordToOrigin.copy(
           name = "this-is-not-origin-mate",
-          records = List(NSData("172.17.42.1")))
+          records = List(NSData("some.test.ns.")))
 
         nsValidations(valid, okZone) should be(right)
       }

@@ -108,7 +108,7 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("172.17.42.1.")))
+    List(NSData("some.test.ns.")))
 
   private val failureNs = RecordSet(
     testZone.id,
@@ -118,7 +118,7 @@ class ZoneConnectionValidatorSpec
     RecordSetStatus.Active,
     DateTime.now,
     None,
-    List(NSData("172.17.42.1."), NSData("not.approved.")))
+    List(NSData("some.test.ns."), NSData("not.approved.")))
 
   private val mockRecordSet = mock[RecordSet]
 
