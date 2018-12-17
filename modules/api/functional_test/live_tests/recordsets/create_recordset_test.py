@@ -1696,7 +1696,7 @@ def test_create_high_value_domain_fails(shared_zone_test_context):
     }
 
     error = client.create_recordset(new_rs, status=422)
-    assert_that(error, is_('Record name "high-value-domain.ok." is configured as a High Value Domain, cannot be modified'))
+    assert_that(error, is_('Record name "high-value-domain.ok." is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_create_high_value_domain_fails_for_ip4_ptr(shared_zone_test_context):
@@ -1718,7 +1718,7 @@ def test_create_high_value_domain_fails_for_ip4_ptr(shared_zone_test_context):
     }
 
     error_ptr = client.create_recordset(ptr, status=422)
-    assert_that(error_ptr, is_('Record name "192.0.2.252" is configured as a High Value Domain, cannot be modified'))
+    assert_that(error_ptr, is_('Record name "192.0.2.252" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
@@ -1740,4 +1740,4 @@ def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
     }
 
     error_ptr = client.create_recordset(ptr, status=422)
-    assert_that(error_ptr, is_('Record name "fd69:27cc:fe91:0000:0000:0000:0000:ffff" is configured as a High Value Domain, cannot be modified'))
+    assert_that(error_ptr, is_('Record name "fd69:27cc:fe91:0000:0000:0000:0000:ffff" is configured as a High Value Domain, so it cannot be modified.'))

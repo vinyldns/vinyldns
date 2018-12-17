@@ -619,7 +619,7 @@ def test_delete_high_value_domain_fails(shared_zone_test_context):
     record_system = [item for item in list_results_page_system if item['name'] == 'high-value-domain'][0]
 
     errors_system = client.delete_recordset(record_system['zoneId'], record_system['id'], status=422)
-    assert_that(errors_system, is_('Record name "high-value-domain.system-test." is configured as a High Value Domain, cannot be modified'))
+    assert_that(errors_system, is_('Record name "high-value-domain.system-test." is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_delete_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
@@ -632,7 +632,7 @@ def test_delete_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
     record_ip4 = [item for item in list_results_page_ip4 if item['name'] == '253'][0]
 
     errors_ip4 = client.delete_recordset(record_ip4['zoneId'], record_ip4['id'], status=422)
-    assert_that(errors_ip4, is_('Record name "192.0.2.253" is configured as a High Value Domain, cannot be modified'))
+    assert_that(errors_ip4, is_('Record name "192.0.2.253" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_delete_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
@@ -646,4 +646,4 @@ def test_delete_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
     record_ip6 = [item for item in list_results_page_ip6 if item['name'] == '0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0'][0]
 
     errors_ip6 = client.delete_recordset(record_ip6['zoneId'], record_ip6['id'], status=422)
-    assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, cannot be modified'))
+    assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, so it cannot be modified.'))

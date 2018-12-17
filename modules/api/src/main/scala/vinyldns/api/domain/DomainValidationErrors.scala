@@ -124,6 +124,6 @@ final case class RecordInReverseZoneError(name: String, typ: String) extends Dom
 
 final case class HighValueDomainError(name: String) extends DomainValidationError {
   def message: String =
-    s"""Record name "$name" is configured as a High Value Domain, cannot be modified"""
+    s"""Record name "$name" is configured as a High Value Domain, so it cannot be modified."""
 }
 // $COVERAGE-ON$

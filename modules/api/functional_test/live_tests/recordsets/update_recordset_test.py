@@ -1947,7 +1947,7 @@ def test_update_high_value_domain_fails(shared_zone_test_context):
     record_system['ttl'] = record_system['ttl'] + 100
 
     errors_system = client.update_recordset(record_system, status=422)
-    assert_that(errors_system, is_('Record name "high-value-domain.system-test." is configured as a High Value Domain, cannot be modified'))
+    assert_that(errors_system, is_('Record name "high-value-domain.system-test." is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_update_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
@@ -1961,7 +1961,7 @@ def test_update_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
     record_ip4['ttl'] = record_ip4['ttl'] + 100
 
     errors_ip4 = client.update_recordset(record_ip4, status=422)
-    assert_that(errors_ip4, is_('Record name "192.0.2.253" is configured as a High Value Domain, cannot be modified'))
+    assert_that(errors_ip4, is_('Record name "192.0.2.253" is configured as a High Value Domain, so it cannot be modified.'))
 
 
 def test_update_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
@@ -1976,4 +1976,4 @@ def test_update_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
     record_ip6['ttl'] = record_ip6['ttl'] + 100
 
     errors_ip6 = client.update_recordset(record_ip6, status=422)
-    assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, cannot be modified'))
+    assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, so it cannot be modified.'))
