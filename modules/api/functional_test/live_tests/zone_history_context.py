@@ -36,7 +36,7 @@ class ZoneHistoryContext(object):
             {
                 'name': 'system-test-history.',
                 'email': 'i.changed.this.1.times@history-test.com',
-                'shared': True,
+                'shared': False,
                 'adminGroupId': self.group['id'],
                 'connection': {
                     'name': 'vinyldns.',

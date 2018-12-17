@@ -95,9 +95,10 @@ class ZoneServiceSpec
       resultZone.name shouldBe zoneAuthorized.name
       resultZone.status shouldBe ZoneStatus.Syncing
       resultZone.connection shouldBe zoneAuthorized.connection
+      resultZone.shared shouldBe false
     }
 
-    "returns a ZoneAlreadyExists error if the zone exists" in {
+    "return a ZoneAlreadyExists error if the zone exists" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZoneByName(anyString)
 
       val error = leftResultOf(underTest.connectToZone(zoneAuthorized, okAuth).value)
@@ -105,13 +106,13 @@ class ZoneServiceSpec
       error shouldBe a[ZoneAlreadyExistsError]
     }
 
-    "returns a InvalidZoneAdminError error if the zone admin group does not exist" in {
+    "return an InvalidZoneAdminError error if the zone admin group does not exist" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
       doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
 
       val error = leftResultOf(underTest.connectToZone(zoneAuthorized, okAuth).value)
 
-      error shouldBe a[InvalidZoneAdminError]
+      error shouldBe an[InvalidZoneAdminError]
     }
 
     "allow the zone to be created if it exists and the zone is deleted" in {
@@ -127,7 +128,31 @@ class ZoneServiceSpec
       val newZone = zoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
 
       val error = leftResultOf(underTest.connectToZone(newZone, okAuth).value)
-      error shouldBe a[InvalidRequest]
+      error shouldBe an[InvalidRequest]
+    }
+
+    "succeed if zone is shared and user is a super user" in {
+      val newZone = zoneAuthorized.copy(shared = true)
+      val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val resultZone = rightResultOf(
+        underTest.connectToZone(newZone, superAuth).map(_.asInstanceOf[ZoneChange]).value).zone
+
+      Option(resultZone.id) should not be None
+      resultZone.email shouldBe zoneAuthorized.email
+      resultZone.name shouldBe zoneAuthorized.name
+      resultZone.status shouldBe ZoneStatus.Syncing
+      resultZone.connection shouldBe zoneAuthorized.connection
+      resultZone.shared shouldBe true
+    }
+
+    "return a NotAuthorizedError if zone is shared and user is not a super user" in {
+      val newZone = zoneAuthorized.copy(shared = true)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val error = leftResultOf(underTest.connectToZone(newZone, okAuth).value)
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
@@ -186,7 +211,7 @@ class ZoneServiceSpec
       val newZone = zoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
 
       val error = leftResultOf(underTest.updateZone(newZone, okAuth).value)
-      error shouldBe a[InvalidRequest]
+      error shouldBe an[InvalidRequest]
     }
   }
 
@@ -504,7 +529,7 @@ class ZoneServiceSpec
       val error =
         leftResultOf(
           underTest.addACLRule(zoneAuthorized.id, invalidRegexMaskRuleInfo, okAuth).value)
-      error shouldBe a[InvalidRequest]
+      error shouldBe an[InvalidRequest]
     }
   }
 

@@ -87,7 +87,7 @@ class SharedZoneTestContext(object):
                 {
                     'name': '1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.',
                     'email': 'test@test.com',
-                    'shared': True,
+                    'shared': False,
                     'adminGroupId': self.ok_group['id'],
                     'connection': {
                         'name': 'ip6.',
@@ -109,7 +109,7 @@ class SharedZoneTestContext(object):
                 {
                     'name': '30.172.in-addr.arpa.',
                     'email': 'test@test.com',
-                    'shared': True,
+                    'shared': False,
                     'adminGroupId': self.ok_group['id'],
                     'connection': {
                         'name': 'ip4.',
@@ -175,7 +175,7 @@ class SharedZoneTestContext(object):
                 {
                     'name': 'system-test.',
                     'email': 'test@test.com',
-                    'shared': True,
+                    'shared': False,
                     'adminGroupId': self.ok_group['id'],
                     'connection': {
                         'name': 'system-test.',

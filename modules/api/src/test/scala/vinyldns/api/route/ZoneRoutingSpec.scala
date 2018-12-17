@@ -44,10 +44,12 @@ class ZoneRoutingSpec
     with GroupTestData {
 
   private val okAuth = okGroupAuth
-  private val alreadyExists = Zone("already.exists.", "test@test.com")
-  private val notFound = Zone("not.found.", "test@test.com")
-  private val notAuthorized = Zone("not.authorized.", "test@test.com")
-  private val badAdminId = Zone("bad.admin.", "test@test.com")
+  private val alreadyExists = Zone("already.exists.", "already-exists@test.com")
+  private val notFound = Zone("not.found.", "not-found@test.com")
+  private val notAuthorized = Zone("not.authorized.", "not-authorized@test.com")
+  private val badAdminId = Zone("bad.admin.", "bad-admin@test.com")
+  private val nonSuperUserSharedZone =
+    Zone("non-super-user-shared-zone.", "non-super-user-shared-zone@test.com")
 
   private val userAclRule = ACLRule(
     AccessLevel.Read,
@@ -72,42 +74,44 @@ class ZoneRoutingSpec
     Set(RecordType.A, RecordType.AAAA, RecordType.CNAME))
   private val zoneAcl = ZoneACL(Set(userAclRule, groupAclRule))
 
-  private val ok = Zone("ok.", "test@test.com", shared = true, acl = zoneAcl, adminGroupId = "test")
+  private val ok = Zone("ok.", "ok@test.com", acl = zoneAcl, adminGroupId = "test")
   private val aclAsInfo = ZoneACLInfo(zoneAcl.rules.map(ACLRuleInfo(_, Some("name"))))
   private val okAsZoneInfo = ZoneInfo(ok, aclAsInfo, okGroup.name)
-  private val badRegex = Zone("ok.", "test@test.com", shared = true, adminGroupId = "test")
-  private val trailingDot = Zone("trailing.dot", "test@test.com")
+  private val badRegex = Zone("ok.", "bad-regex@test.com", adminGroupId = "test")
+  private val trailingDot = Zone("trailing.dot", "trailing-dot@test.com")
   private val connectionOk = Zone(
     "connection.ok.",
-    "test@test.com",
+    "connection-ok@test.com",
     connection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1")),
     transferConnection = Some(ZoneConnection("connection.ok", "keyName", "key", "10.1.1.1"))
   )
   private val connectionFailed = Zone(
     "connection.fail",
-    "test@test.com",
+    "connection-failed@test.com",
     connection = Some(ZoneConnection("connection.fail", "keyName", "key", "10.1.1.1")))
   private val zoneValidationFailed = Zone(
     "validation.fail",
-    "test@test.com",
+    "zone-validation-failed@test.com",
     connection = Some(ZoneConnection("validation.fail", "keyName", "key", "10.1.1.1")))
-  private val zone1 = Zone("zone1.", "test@test.com", ZoneStatus.Active)
+  private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name)
-  private val zone2 = Zone("zone2.", "test@test.com", ZoneStatus.Active)
+  private val zone2 = Zone("zone2.", "zone2@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo2 = ZoneSummaryInfo(zone2, okGroup.name)
-  private val zone3 = Zone("zone3.", "test@test.com", ZoneStatus.Active)
+  private val zone3 = Zone("zone3.", "zone3@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo3 = ZoneSummaryInfo(zone3, okGroup.name)
-  private val zone4 = Zone("zone4.", "test@test.com", ZoneStatus.Active)
-  private val zone5 = Zone("zone5.", "test@test.com", ZoneStatus.Active)
-  private val error = Zone("error.", "test@test.com")
+  private val zone4 = Zone("zone4.", "zone4@test.com", ZoneStatus.Active)
+  private val zone5 = Zone("zone5.", "zone5@test.com", ZoneStatus.Active)
+  private val error = Zone("error.", "error@test.com")
 
   private val missingFields: JValue =
     ("invalidField" -> "randomValue") ~~
       ("connection" -> ("k" -> "value"))
-  private val invalidZone: JValue =
-    ("name" -> "invalidZone.") ~~
-      ("email" -> "test@test.com") ~~
-      ("status" -> "invalidStatus")
+
+  private val zoneWithInvalidStatus: JValue =
+    ("name" -> "invalidZoneStatus.") ~~
+      ("email" -> "invalid-zone-status@test.com") ~~
+      ("status" -> "invalidStatus") ~~
+      ("adminGroupId" -> "admin-group-id")
 
   private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Complete)
   private val zoneUpdate = ZoneChange(ok, "ok", ZoneChangeType.Update, ZoneChangeStatus.Complete)
@@ -120,20 +124,22 @@ class ZoneRoutingSpec
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(zone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] = {
-      val outcome = zone.id match {
-        case alreadyExists.id => Left(ZoneAlreadyExistsError(s"$zone"))
-        case notFound.id => Left(ZoneNotFoundError(s"$zone"))
-        case notAuthorized.id => Left(NotAuthorizedError(s"$zone"))
-        case badAdminId.id => Left(InvalidZoneAdminError(s"$zone"))
-        case ok.id | connectionOk.id | trailingDot.id =>
+      val outcome = zone.email match {
+        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$zone"))
+        case notFound.email => Left(ZoneNotFoundError(s"$zone"))
+        case notAuthorized.email => Left(NotAuthorizedError(s"$zone"))
+        case badAdminId.email => Left(InvalidZoneAdminError(s"$zone"))
+        case ok.email | connectionOk.email | trailingDot.email | "invalid-zone-status@test.com" =>
           Right(
             zoneCreate.copy(
               status = ZoneChangeStatus.Complete,
               zone = zone.copy(status = ZoneStatus.Active)))
-        case error.id => Left(new RuntimeException("fail"))
-        case connectionFailed.id => Left(ConnectionFailed(zone, "fail"))
-        case zoneValidationFailed.id =>
+        case error.email => Left(new RuntimeException("fail"))
+        case connectionFailed.email => Left(ConnectionFailed(zone, "fail"))
+        case zoneValidationFailed.email =>
           Left(ZoneValidationFailed(zone, List("fail"), "failure message"))
+        case nonSuperUserSharedZone.email =>
+          Left(NotAuthorizedError("unauth"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
@@ -647,6 +653,12 @@ class ZoneRoutingSpec
       }
     }
 
+    "return 403 Forbidden if the zone is shared and user is not authorized" in {
+      post(nonSuperUserSharedZone) ~> zoneRoute(okAuth) ~> check {
+        status shouldBe Forbidden
+      }
+    }
+
     "validate the connection when it is posted" in {
       post(connectionOk) ~> zoneRoute(okAuth) ~> check {
         status shouldBe Accepted
@@ -677,18 +689,15 @@ class ZoneRoutingSpec
           "Missing ZoneConnection.name",
           "Missing ZoneConnection.keyName",
           "Missing ZoneConnection.key",
-          "Missing ZoneConnection.primaryServer"
+          "Missing ZoneConnection.primaryServer",
+          "Missing Zone.adminGroupId"
         )
       }
     }
 
-    "report invalid enum" in {
-      post(invalidZone) ~> Route.seal(zoneRoute(okAuth)) ~> check {
-        status shouldBe BadRequest
-        val result = responseAs[JValue]
-        val errs = (result \ "errors").extractOpt[List[String]]
-        errs should not be None
-        errs.get shouldBe List("Invalid ZoneStatus")
+    "ignore fields not defined in CreateZoneInput" in {
+      post(zoneWithInvalidStatus) ~> Route.seal(zoneRoute(okAuth)) ~> check {
+        status shouldBe Accepted
       }
     }
   }
@@ -952,8 +961,9 @@ class ZoneRoutingSpec
     }
 
     "report invalid enum" in {
-      Put(s"/zones/${ok.id}").withEntity(
-        HttpEntity(ContentTypes.`application/json`, compact(render(invalidZone)))) ~> Route
+      Put(s"/zones/${ok.id}").withEntity(HttpEntity(
+        ContentTypes.`application/json`,
+        compact(render(zoneWithInvalidStatus)))) ~> Route
         .seal(zoneRoute(okAuth)) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]

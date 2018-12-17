@@ -32,6 +32,7 @@ trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
 
   val dnsSerializers = Seq(
+    CreateZoneInputSerializer,
     ZoneSerializer,
     ZoneConnectionSerializer,
     RecordSetSerializer,
@@ -86,6 +87,21 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "id").default[String](UUID.randomUUID.toString),
         (js \ "singleBatchChangeIds").default[List[String]](List())
       ).mapN(RecordSetChange.apply)
+  }
+
+  case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, CreateZoneInput] =
+      (
+        (js \ "name")
+          .required[String]("Missing Zone.name")
+          .map(name => if (name.endsWith(".")) name else s"$name."),
+        (js \ "email").required[String]("Missing Zone.email"),
+        (js \ "connection").optional[ZoneConnection],
+        (js \ "transferConnection").optional[ZoneConnection],
+        (js \ "shared").default[Boolean](false),
+        (js \ "acl").default[ZoneACL](ZoneACL()),
+        (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId")
+      ).mapN(CreateZoneInput.apply)
   }
 
   case object ZoneSerializer extends ValidationSerializer[Zone] {

@@ -62,6 +62,7 @@ class ZoneService(
   def connectToZone(zone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       _ <- isValidZoneAcl(zone.acl).toResult
+      _ <- validateSharedZoneAuthorized(zone, auth.signedInUser).toResult
       _ <- connectionValidator.validateZoneConnections(zone)
       _ <- zoneDoesNotExist(zone)
       _ <- adminGroupExists(zone.adminGroupId)
