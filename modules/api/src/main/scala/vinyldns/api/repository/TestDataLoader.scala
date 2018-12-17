@@ -35,7 +35,8 @@ object TestDataLoader {
     secretKey = "testUserSecretKey",
     firstName = Some("Test"),
     lastName = Some("User"),
-    email = Some("test@test.com")
+    email = Some("test@test.com"),
+    isTest = true
   )
   final val okUser = User(
     userName = "ok",
@@ -45,14 +46,16 @@ object TestDataLoader {
     secretKey = "okSecretKey",
     firstName = Some("ok"),
     lastName = Some("ok"),
-    email = Some("test@test.com")
+    email = Some("test@test.com"),
+    isTest = true
   )
   final val dummyUser = User(
     userName = "dummy",
     id = "dummy",
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "dummyAccessKey",
-    secretKey = "dummySecretKey"
+    secretKey = "dummySecretKey",
+    isTest = true
   )
   final val lockedUser = User(
     userName = "locked",
@@ -63,8 +66,8 @@ object TestDataLoader {
     firstName = Some("Locked"),
     lastName = Some("User"),
     email = Some("testlocked@test.com"),
-    isSuper = false,
-    lockStatus = LockStatus.Locked
+    lockStatus = LockStatus.Locked,
+    isTest = true
   )
   final val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
@@ -72,7 +75,8 @@ object TestDataLoader {
       id = "dummy%03d".format(runner),
       created = DateTime.now.secondOfDay().roundFloorCopy(),
       accessKey = "dummy",
-      secretKey = "dummy"
+      secretKey = "dummy",
+      isTest = true
     )
   }
   final val listGroupUser = User(
@@ -83,7 +87,8 @@ object TestDataLoader {
     secretKey = "listGroupSecretKey",
     firstName = Some("list-group"),
     lastName = Some("list-group"),
-    email = Some("test@test.com")
+    email = Some("test@test.com"),
+    isTest = true
   )
 
   final val listZonesUser = User(
@@ -94,7 +99,8 @@ object TestDataLoader {
     secretKey = "listZonesSecretKey",
     firstName = Some("list-zones"),
     lastName = Some("list-zones"),
-    email = Some("test@test.com")
+    email = Some("test@test.com"),
+    isTest = true
   )
 
   final val zoneHistoryUser = User(
@@ -105,7 +111,8 @@ object TestDataLoader {
     secretKey = "history-secret",
     firstName = Some("history-first"),
     lastName = Some("history-last"),
-    email = Some("history@history.com")
+    email = Some("history@history.com"),
+    isTest = true
   )
 
   final val listBatchChangeSummariesUser = User(
@@ -116,7 +123,8 @@ object TestDataLoader {
     secretKey = "listBatchSummariesSecretKey",
     firstName = Some("list-batch-summaries"),
     lastName = Some("list-batch-summaries"),
-    email = Some("test@test.com")
+    email = Some("test@test.com"),
+    isTest = true
   )
 
   final val listZeroBatchChangeSummariesUser = User(
@@ -127,7 +135,8 @@ object TestDataLoader {
     secretKey = "listZeroSummariesSecretKey",
     firstName = Some("list-zero-summaries"),
     lastName = Some("list-zero-summaries"),
-    email = Some("test@test.com")
+    email = Some("test@test.com"),
+    isTest = true
   )
 
   def loadTestData(repository: UserRepository): IO[List[User]] =
