@@ -17,7 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.ValidatedMatchers
-import com.comcast.ip4s.IpAddress
+import com.comcast.ip4s._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
@@ -52,7 +52,7 @@ class ZoneRecordValidationsSpec
 
   val highValueRegexList = List("high-value-domain.*".r)
 
-  val highValueIpList = List(IpAddress("1::f"), IpAddress("10.10.10.10"))
+  val highValueIpList = List(ip"1::f", ip"10.10.10.10")
 
   val fullNameServerRx = fullNameServers.map(_.r)
 

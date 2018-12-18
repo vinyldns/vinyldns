@@ -48,5 +48,13 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
       dynamodbConfig.repositories.keys should contain theSameElementsAs
         Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange)
     }
+
+    "load string list for key that exists" in {
+      VinylDNSConfig.getOptionalStringList("string-list-test").length shouldBe 1
+    }
+
+    "load empty string list that does not exist" in {
+      VinylDNSConfig.getOptionalStringList("no-existo").length shouldBe 0
+    }
   }
 }

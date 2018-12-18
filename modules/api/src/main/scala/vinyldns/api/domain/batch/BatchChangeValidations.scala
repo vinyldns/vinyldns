@@ -18,15 +18,15 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 import vinyldns.core.domain.batch.{BatchChange, RecordKey}
-import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.zone.ZoneRecordValidations
 
 trait BatchChangeValidationsAlgebra {
 

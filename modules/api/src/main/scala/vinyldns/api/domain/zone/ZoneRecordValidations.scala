@@ -32,16 +32,12 @@ object ZoneRecordValidations {
     regexList.exists(rx => rx.findAllIn(string).contains(string))
 
   /* Checks to see if an ip address is part of the ip address list */
-  def isIpInIpList(ipList: List[Option[IpAddress]], ip: String): Boolean = {
-    val ipToTest = IpAddress(ip)
-    if (ipToTest.isDefined) {
-      ipList.exists { ipOption =>
-        ipOption match {
-          case None => false
-          case ipInList => ipInList === ipToTest
-        }
-      }
-    } else false
+  def isIpInIpList(ipList: List[IpAddress], ip: String): Boolean = {
+    val ipToTestOption = IpAddress(ip)
+    ipToTestOption match {
+      case None => false
+      case Some(ipToTest) => ipList.exists(_ === ipToTest)
+    }
   }
 
   /* Checks to see if an individual ns data is part of the approved server list */
@@ -96,7 +92,7 @@ object ZoneRecordValidations {
     }
 
   def isNotHighValueIp(
-      highValueIpList: List[Option[IpAddress]],
+      highValueIpList: List[IpAddress],
       ip: String): ValidatedNel[DomainValidationError, Unit] =
     if (!isIpInIpList(highValueIpList, ip)) {
       ().validNel

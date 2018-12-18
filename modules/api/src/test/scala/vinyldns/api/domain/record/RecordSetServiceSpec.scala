@@ -121,13 +121,6 @@ class RecordSetServiceSpec
         zoneId = zoneAuthorized.id,
         status = RecordSetStatus.Active)
 
-      doReturn(IO.pure(List()))
-        .when(mockRecordRepo)
-        .getRecordSets(zoneAuthorized.id, record.name, record.typ)
-      doReturn(IO.pure(List()))
-        .when(mockRecordRepo)
-        .getRecordSetsByName(zoneAuthorized.id, record.name)
-
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe InvalidRequest(
         HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
@@ -299,13 +292,6 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active)
 
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
-
-      doReturn(IO.pure(Some(oldRecord)))
-        .when(mockRecordRepo)
-        .getRecordSet(zoneAuthorized.id, newRecord.id)
-      doReturn(IO.pure(List()))
-        .when(mockRecordRepo)
-        .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
 
       val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
       result shouldBe InvalidRequest(

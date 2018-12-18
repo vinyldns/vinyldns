@@ -30,8 +30,6 @@ import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
 
-import scala.util.Try
-
 object VinylDNSConfig {
 
   private implicit val cs: ContextShift[IO] =
@@ -57,20 +55,13 @@ object VinylDNSConfig {
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
   lazy val approvedNameServers: List[Regex] =
-    Try(vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r))
-      .getOrElse(List[Regex]())
+    vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)
 
   lazy val highValueRegexList: List[Regex] =
-    Try(vinyldnsConfig.getStringList("high-value-domains.regex-list").asScala.toList.map(n => n.r))
-      .getOrElse(List[Regex]())
+    getOptionalStringList("high-value-domains.regex-list").map(n => n.r)
 
-  lazy val highValueIpList: List[Option[IpAddress]] =
-    Try(
-      vinyldnsConfig
-        .getStringList("high-value-domains.ip-list")
-        .asScala
-        .toList
-        .map(ip => IpAddress(ip))).getOrElse(List[Option[IpAddress]]())
+  lazy val highValueIpList: List[IpAddress] =
+    getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
 
   lazy val defaultZoneConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")
@@ -93,4 +84,8 @@ object VinylDNSConfig {
   lazy val healthCheckTimeout: IO[Int] =
     loadConfigF[IO, Option[Int]](vinyldnsConfig, "health-check-timeout").map(_.getOrElse(10000))
 
+  def getOptionalStringList(key: String): List[String] =
+    if (vinyldnsConfig.hasPath(key)) {
+      vinyldnsConfig.getStringList(key).asScala.toList
+    } else List()
 }
