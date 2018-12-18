@@ -32,14 +32,9 @@ object ZoneRecordValidations {
     regexList.exists(rx => rx.findAllIn(string).contains(string))
 
   /* Checks to see if an ip address is part of the ip address list */
-  def isIpInIpList(ipList: List[IpAddress], ip: String): Boolean = {
-    val ipToTestOption = IpAddress(ip)
-    ipToTestOption match {
-      case None => false
-      case Some(ipToTest) => ipList.exists(_ === ipToTest)
-    }
-  }
-
+  def isIpInIpList(ipList: List[IpAddress], ipToTest: String): Boolean =
+    IpAddress(ipToTest).exists(ip => ipList.exists(_ === ip))
+  
   /* Checks to see if an individual ns data is part of the approved server list */
   def isApprovedNameServer(
       approvedServerList: List[Regex],
