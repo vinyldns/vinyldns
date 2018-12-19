@@ -107,7 +107,7 @@ final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
   def deleteRule(rule: ACLRule): ZoneACL = copy(rules = rules - rule)
 }
 
-final case class ZoneConnection(name: String, keyName: String, key: String, primaryServer: String) {
+case class ZoneConnection(name: String, keyName: String, key: String, primaryServer: String) {
 
   def encrypted(crypto: CryptoAlgebra): ZoneConnection =
     copy(key = crypto.encrypt(key))
