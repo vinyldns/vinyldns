@@ -81,7 +81,8 @@ trait ProtobufConversions {
       name = zn.getName,
       email = zn.getEmail,
       status =
-        if (zn.getStatus() == "Pending") ZoneStatus.Active else ZoneStatus.withName(zn.getStatus()),
+        if (zn.getStatus().startsWith("Pending")) ZoneStatus.Active
+        else ZoneStatus.withName(zn.getStatus()),
       created = new DateTime(zn.getCreated),
       updated = if (zn.hasUpdated) Some(new DateTime(zn.getUpdated)) else None,
       id = zn.getId,

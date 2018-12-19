@@ -384,26 +384,25 @@ class ProtobufConversionsSpec
       converted.status shouldBe ZoneStatus.Active
     }
 
-    "convert from a protobuf that has no zone acl present" in {
-      // build a proto that does not have a zone acl set (like current zones in the zone repo)
+    "default the status to Active if the zone state is PendingUpdate" in {
       val pb = VinylDNSProto.Zone
         .newBuilder()
         .setId(zone.id)
         .setName(zone.name)
         .setEmail(zone.email)
         .setCreated(zone.created.getMillis)
-        .setStatus(zone.status.toString)
+        .setStatus("PendingUpdate")
         .setAccount(zone.account)
         .setShared(zone.shared)
         .setAdminGroupId(zone.adminGroupId)
 
-      val convertedFromNoACL = fromPB(pb.build)
+      val converted = fromPB(pb.build)
 
-      convertedFromNoACL.acl shouldBe ZoneACL()
+      converted.status shouldBe ZoneStatus.Active
     }
 
-    "convert from a protobuf that has no adminGroupId present" in {
-      // proto without adminGroupId should have default "system"
+    "convert from a protobuf with only required fields" in {
+      // build a proto that does not have any optional fields
       val pb = VinylDNSProto.Zone
         .newBuilder()
         .setId(zone.id)
@@ -412,11 +411,17 @@ class ProtobufConversionsSpec
         .setCreated(zone.created.getMillis)
         .setStatus(zone.status.toString)
         .setAccount(zone.account)
-        .setShared(zone.shared)
 
-      val convertedFromNoAdminGroupId = fromPB(pb.build)
+      val convertedNoOptional = fromPB(pb.build)
 
-      convertedFromNoAdminGroupId.adminGroupId shouldBe "system"
+      convertedNoOptional.acl shouldBe ZoneACL()
+      convertedNoOptional.adminGroupId shouldBe "system"
+      convertedNoOptional.shared shouldBe false
+      convertedNoOptional.isTest shouldBe false
+      convertedNoOptional.connection should not be defined
+      convertedNoOptional.transferConnection should not be defined
+      convertedNoOptional.updated should not be defined
+      convertedNoOptional.latestSync should not be defined
     }
 
     "convert from protobuf to Zone" in {
@@ -440,22 +445,6 @@ class ProtobufConversionsSpec
 
       pb.getLatestSync shouldBe z.latestSync.get.getMillis
       fromPB(pb).latestSync shouldBe defined
-    }
-
-    "convert to protobuf for a Zone without a connection" in {
-      val z = zone.copy(connection = None)
-      val pb = toPB(z)
-
-      pb.hasConnection shouldBe false
-      fromPB(pb).connection should not be defined
-    }
-
-    "convert to protobuf for a Zone without a transferConnection" in {
-      val z = zone.copy(transferConnection = None)
-      val pb = toPB(z)
-
-      pb.hasTransferConnection shouldBe false
-      fromPB(pb).transferConnection should not be defined
     }
   }
 
