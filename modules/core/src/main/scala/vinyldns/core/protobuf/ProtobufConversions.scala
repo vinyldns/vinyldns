@@ -92,7 +92,8 @@ trait ProtobufConversions {
       shared = zn.getShared,
       acl = if (zn.hasAcl) fromPB(zn.getAcl) else ZoneACL(),
       adminGroupId = zn.getAdminGroupId,
-      latestSync = if (zn.hasLatestSync) Some(new DateTime(zn.getLatestSync)) else None
+      latestSync = if (zn.hasLatestSync) Some(new DateTime(zn.getLatestSync)) else None,
+      isTest = zn.getIsTest
     )
 
   def fromPB(zc: VinylDNSProto.ZoneConnection): ZoneConnection =
@@ -307,6 +308,7 @@ trait ProtobufConversions {
       .setShared(zone.shared)
       .setAcl(toPB(zone.acl))
       .setAdminGroupId(zone.adminGroupId)
+      .setIsTest(zone.isTest)
 
     zone.updated.foreach(dt => builder.setUpdated(dt.getMillis))
     zone.connection.foreach(cn => builder.setConnection(toPB(cn)))

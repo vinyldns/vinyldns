@@ -23,12 +23,12 @@ import vinyldns.core.crypto.CryptoAlgebra
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
-  val Active, Deleted, PendingUpdate, PendingDelete, Syncing = Value
+  val Active, Deleted, Syncing = Value
 }
 
 import vinyldns.core.domain.zone.ZoneStatus._
 
-case class Zone(
+final case class Zone(
     name: String,
     email: String,
     status: ZoneStatus = ZoneStatus.Active,
@@ -41,7 +41,8 @@ case class Zone(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String = "system",
-    latestSync: Option[DateTime] = None) {
+    latestSync: Option[DateTime] = None,
+    isTest: Boolean = false) {
   val isIPv4: Boolean = name.endsWith("in-addr.arpa.")
   val isIPv6: Boolean = name.endsWith("ip6.arpa.")
   val isReverse: Boolean = isIPv4 || isIPv6
@@ -60,10 +61,14 @@ case class Zone(
     sb.append("account=\"").append(account).append("\"; ")
     sb.append("adminGroupId=\"").append(adminGroupId).append("\"; ")
     sb.append("status=\"").append(status.toString).append("\"; ")
-    sb.append("shared=\"").append(shared.toString).append("\"; ")
+    sb.append("shared=\"").append(shared).append("\"; ")
     sb.append("connection=\"").append(connection.toString).append("\"; ")
     sb.append("transferConnection=\"").append(transferConnection.toString).append("\"; ")
-    sb.append("reverse=\"").append(isReverse.toString).append("\"; ")
+    sb.append("reverse=\"").append(isReverse).append("\"; ")
+    sb.append("isTest=\"").append(isTest).append("\"; ")
+    sb.append("created=\"").append(created).append("\"; ")
+    updated.map(sb.append("updated=\"").append(_).append("\"; "))
+    latestSync.map(sb.append("latestSync=\"").append(_).append("\"; "))
     sb.append("]")
     sb.toString
   }
@@ -80,27 +85,29 @@ object Zone {
       transferConnection = transferConnection,
       shared = shared,
       acl = acl,
-      adminGroupId = adminGroupId)
+      adminGroupId = adminGroupId,
+      isTest = isTest)
   }
 }
 
-case class CreateZoneInput(
+final case class CreateZoneInput(
     name: String,
     email: String,
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None,
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
-    adminGroupId: String)
+    adminGroupId: String,
+    isTest: Boolean = false)
 
-case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
+final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
   def addRule(newRule: ACLRule): ZoneACL = copy(rules = rules + newRule)
 
   def deleteRule(rule: ACLRule): ZoneACL = copy(rules = rules - rule)
 }
 
-case class ZoneConnection(name: String, keyName: String, key: String, primaryServer: String) {
+final case class ZoneConnection(name: String, keyName: String, key: String, primaryServer: String) {
 
   def encrypted(crypto: CryptoAlgebra): ZoneConnection =
     copy(key = crypto.encrypt(key))
