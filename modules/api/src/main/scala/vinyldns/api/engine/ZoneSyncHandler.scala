@@ -48,14 +48,16 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
         VinylDNSZoneViewLoader.apply): ZoneChange => IO[ZoneChange] =
     zoneChange =>
       for {
-        _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, zoneChange) // zone status: Syncing
+        _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, zoneChange) // initial save to store zone status
+        // as Syncing
         syncChange <- runSync(
           recordSetRepository,
           recordChangeRepository,
           zoneChange,
           dnsLoader,
           vinyldnsLoader)
-        _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, syncChange) // zone status: Active
+        _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, syncChange) // final save to store zone status
+        // as Active
       } yield syncChange
 
   def saveZoneAndChange(
