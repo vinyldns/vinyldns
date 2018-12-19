@@ -146,6 +146,21 @@ class ZoneSyncHandlerSpec
   private val testDnsView = ZoneView(testZone, List(testRecord1, testRecord2))
   private val testVinylDNSView = ZoneView(testZone, List(testRecord1))
 
+  private val zoneSync = ZoneSyncHandler(
+    recordSetRepo,
+    recordChangeRepo,
+    zoneChangeRepo,
+    zoneRepo,
+    _ => mockDNSLoader,
+    (_, _) => mockVinylDNSLoader)
+
+  private val runSync = ZoneSyncHandler.runSync(
+    recordSetRepo,
+    recordChangeRepo,
+    testZoneChange,
+    _ => mockDNSLoader,
+    (_, _) => mockVinylDNSLoader)
+
   override def beforeEach(): Unit = {
     reset(recordSetRepo)
     reset(recordChangeRepo)
@@ -172,22 +187,12 @@ class ZoneSyncHandlerSpec
         .when(zoneRepo)
         .save(any[Zone])
 
-      val dnsLoader = mock[Zone => DnsZoneViewLoader]
-      doReturn(mockDNSLoader).when(dnsLoader).apply(any[Zone])
-
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        zoneChangeRepo,
-        zoneRepo,
-        dnsLoader,
-        (_, _) => mockVinylDNSLoader)
-      val result = syncer(testZoneChange).unsafeRunSync()
+      val result = zoneSync(testZoneChange).unsafeRunSync()
 
       val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
       verify(zoneChangeRepo, times(2)).save(changeCaptor.capture())
 
-      val savedChange = changeCaptor.getAllValues()
+      val savedChange = changeCaptor.getAllValues
 
       // first saveZoneAndChange
       savedChange.get(0).status shouldBe ZoneChangeStatus.Pending
@@ -213,22 +218,12 @@ class ZoneSyncHandlerSpec
         .when(zoneRepo)
         .save(any[Zone])
 
-      val dnsLoader = mock[Zone => DnsZoneViewLoader]
-      doReturn(mockDNSLoader).when(dnsLoader).apply(any[Zone])
-
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        zoneChangeRepo,
-        zoneRepo,
-        dnsLoader,
-        (_, _) => mockVinylDNSLoader)
-      val result = syncer(testZoneChange).unsafeRunSync()
+      val result = zoneSync(testZoneChange).unsafeRunSync()
 
       val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
       verify(zoneChangeRepo, times(2)).save(changeCaptor.capture())
 
-      val savedChange = changeCaptor.getAllValues()
+      val savedChange = changeCaptor.getAllValues
 
       // first saveZoneAndChange
       savedChange.get(0).status shouldBe ZoneChangeStatus.Pending
@@ -340,13 +335,7 @@ class ZoneSyncHandlerSpec
     }
 
     "load the dns zone from VinylDNSZoneViewLoader" in {
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer.unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(mockVinylDNSLoader, times(1)).load
     }
@@ -358,13 +347,7 @@ class ZoneSyncHandlerSpec
       doReturn(List(testRecordSetChange)).when(testVinylDNSView).diff(any[ZoneView])
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
 
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer.unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(testVinylDNSView).diff(captor.capture())
       val req = captor.getValue
@@ -373,14 +356,7 @@ class ZoneSyncHandlerSpec
 
     "save the record changes to the recordChangeRepo" in {
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
-
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer.unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(recordChangeRepo).save(captor.capture())
       val req = captor.getValue
@@ -389,13 +365,7 @@ class ZoneSyncHandlerSpec
 
     "save the record sets to the recordSetRepo" in {
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer.unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(recordSetRepo).apply(captor.capture())
       val req = captor.getValue
@@ -405,14 +375,7 @@ class ZoneSyncHandlerSpec
     "returns the zone as active and sets the latest sync" in {
       val testVinylDNSView = ZoneView(testZone, List(testRecord1, testRecord2))
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
-
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      val result = syncer.unsafeRunSync()
+      val result = runSync.unsafeRunSync()
 
       result.zone.status shouldBe ZoneStatus.Active
       result.zone.latestSync shouldBe defined
@@ -435,13 +398,7 @@ class ZoneSyncHandlerSpec
       doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())
       doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
 
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer.unsafeRunSync()
+      runSync.unsafeRunSync()
 
       captor.getValue.changes should contain theSameElementsAs expectedChanges
     }
@@ -479,13 +436,7 @@ class ZoneSyncHandlerSpec
       doReturn(() => IO.raiseError(new RuntimeException("Dns Failed")))
         .when(mockVinylDNSLoader)
         .load
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        testZoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      val result = syncer.unsafeRunSync()
+      val result = runSync.unsafeRunSync()
 
       result.status shouldBe ZoneChangeStatus.Failed
       result.zone.status shouldBe ZoneStatus.Active
