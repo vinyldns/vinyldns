@@ -76,12 +76,16 @@ trait ProtobufConversions {
       ownerGroupId = if (rs.hasOwnerGroupId) Some(rs.getOwnerGroupId) else None
     )
 
-  def fromPB(zn: VinylDNSProto.Zone): Zone =
+  def fromPB(zn: VinylDNSProto.Zone): Zone = {
+    val pbStatus = zn.getStatus
+    val status =
+      if (pbStatus.startsWith("Pending")) ZoneStatus.Active
+      else ZoneStatus.withName(pbStatus)
+
     zone.Zone(
       name = zn.getName,
       email = zn.getEmail,
-      status =
-        if (zn.getStatus() == "Pending") ZoneStatus.Active else ZoneStatus.withName(zn.getStatus()),
+      status = status,
       created = new DateTime(zn.getCreated),
       updated = if (zn.hasUpdated) Some(new DateTime(zn.getUpdated)) else None,
       id = zn.getId,
@@ -92,8 +96,10 @@ trait ProtobufConversions {
       shared = zn.getShared,
       acl = if (zn.hasAcl) fromPB(zn.getAcl) else ZoneACL(),
       adminGroupId = zn.getAdminGroupId,
-      latestSync = if (zn.hasLatestSync) Some(new DateTime(zn.getLatestSync)) else None
+      latestSync = if (zn.hasLatestSync) Some(new DateTime(zn.getLatestSync)) else None,
+      isTest = zn.getIsTest
     )
+  }
 
   def fromPB(zc: VinylDNSProto.ZoneConnection): ZoneConnection =
     ZoneConnection(
@@ -307,6 +313,7 @@ trait ProtobufConversions {
       .setShared(zone.shared)
       .setAcl(toPB(zone.acl))
       .setAdminGroupId(zone.adminGroupId)
+      .setIsTest(zone.isTest)
 
     zone.updated.foreach(dt => builder.setUpdated(dt.getMillis))
     zone.connection.foreach(cn => builder.setConnection(toPB(cn)))

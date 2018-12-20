@@ -25,7 +25,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.{ZoneRepository, _}
+import vinyldns.core.domain.zone.ZoneRepository
 import cats.effect._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.domain.membership._
@@ -452,7 +452,7 @@ class MembershipServiceSpec
 
       "return an error if the group is the admin group of a zone" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        doReturn(IO.pure(List(mock[Zone])))
+        doReturn(IO.pure(List(zoneActive)))
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(anyString)
 
@@ -777,7 +777,7 @@ class MembershipServiceSpec
       }
 
       "return an InvalidGroupRequestError when a group for deletion is admin of a zone" in {
-        doReturn(IO.pure(List(mock[Zone])))
+        doReturn(IO.pure(List(zoneActive)))
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(okGroup.id)
 

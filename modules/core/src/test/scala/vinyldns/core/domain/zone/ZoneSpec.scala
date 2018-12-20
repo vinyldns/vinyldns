@@ -16,6 +16,7 @@
 
 package vinyldns.core.domain.zone
 
+import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestZoneData._
 
@@ -28,10 +29,31 @@ class ZoneSpec extends WordSpec with Matchers {
       result should include("id=\"" + zoneActive.id + "\"")
       result should include("name=\"" + zoneActive.name + "\"")
       result should include("connection=\"" + zoneActive.connection + "\"")
+      result should include("transferConnection=\"" + zoneActive.transferConnection + "\"")
       result should include("account=\"" + zoneActive.account + "\"")
       result should include("status=\"" + zoneActive.status + "\"")
       result should include("shared=\"" + zoneActive.shared + "\"")
       result should include("reverse=\"" + zoneActive.isReverse + "\"")
+      result should include("isTest=\"" + zoneActive.isReverse + "\"")
+
+      result shouldNot include("updated=")
+      result shouldNot include("latestSync=")
+    }
+    "toString should output a zone properly with updated and latestSync" in {
+      val time = DateTime.now()
+      val result = zoneActive.copy(updated = Some(time), latestSync = Some(time)).toString
+
+      result should include("id=\"" + zoneActive.id + "\"")
+      result should include("name=\"" + zoneActive.name + "\"")
+      result should include("connection=\"" + zoneActive.connection + "\"")
+      result should include("transferConnection=\"" + zoneActive.transferConnection + "\"")
+      result should include("account=\"" + zoneActive.account + "\"")
+      result should include("status=\"" + zoneActive.status + "\"")
+      result should include("shared=\"" + zoneActive.shared + "\"")
+      result should include("reverse=\"" + zoneActive.isReverse + "\"")
+      result should include("isTest=\"" + zoneActive.isReverse + "\"")
+      result should include("updated=\"" + time + "\"")
+      result should include("latestSync=\"" + time + "\"")
     }
     "add an ACL rule" in {
       val result = zoneActive.addACLRule(userAclRule)
