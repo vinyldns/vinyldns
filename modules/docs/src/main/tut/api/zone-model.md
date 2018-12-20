@@ -30,9 +30,10 @@ account       | string      | **DEPRECATED** The account that created the zone |
 email         | string      | The distribution email for the zone |
 connection    | ZoneConnection | The connection used to issue DDNS updates to the backend zone.  If not provided, default keys will be used.  See the [Zone Connection Attributes](#zone-conn-attr) for more information |
 transferConnection | ZoneConnection | The connection that is used to sync the zone with the DNS backend.  This can be different than the update connection.  If not provided, default keys will be used |
-shared        | boolean     | **DEPRECATED** An indicator that the zone is shared with anyone.  No longer used as ACLs are now used to manage zones. |
+shared        | boolean     | An indicator that the zone is shared with anyone. |
 acl           | ZoneACL     | The access control rules governing the zone.  See the [Zone ACL Rule Attributes](#zone-acl-rule-attr) for more information
 id            | string      | The unique identifier for this zone
+isTest        | boolean     | An indicator that the zone is a zone for testing purposes. |
 
 #### ZONE EXAMPLE <a id="zone-example"></a>
 
@@ -82,7 +83,8 @@ id            | string      | The unique identifier for this zone
       }
     ]
   },
-  "id": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562"
+  "id": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
+  "isTest": false
 }
 ```
 

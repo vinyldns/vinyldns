@@ -15,7 +15,7 @@ if no info is provided the default VinylDNS connections will be used
 
 #### HTTP REQUEST PARAMS
 
-**zone fields**  - adminGroupId, name, and email are required - refer to [zone model](../api/zone-model) |
+**zone fields**  - `adminGroupId`, `name`, and `email` are required - refer to [zone model](../api/zone-model). `shared` (default: `false`) and `isTest` (default: `false`) are optional parameters. |
 
 #### EXAMPLE HTTP REQUEST
 ```
@@ -65,7 +65,8 @@ id            | string        |  the id of the change.  This is not the id of th
 
       ]
     },
-    "id": "8ba20b72-cfdb-49d3-9216-9100aeaee7fc"
+    "id": "8ba20b72-cfdb-49d3-9216-9100aeaee7fc",
+    "isTest": false
   },
   "created": "2016-12-28T18:00:32Z",
   "changeType": "Create",
