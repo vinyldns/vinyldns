@@ -142,4 +142,10 @@ object ReverseZoneHelpers {
     }
   }
 
+  def reverseNameToIp(recordName: String, zone: Zone): String =
+    if (zone.isIPv4) {
+      ReverseZoneHelpers.convertPTRtoIPv4(zone, recordName)
+    } else {
+      ReverseZoneHelpers.convertPTRtoIPv6(zone, recordName)
+    }
 }

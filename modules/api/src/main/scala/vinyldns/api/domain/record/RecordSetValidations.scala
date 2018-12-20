@@ -196,7 +196,7 @@ object RecordSetValidations {
   def isNotHighValueDomain(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
     val result = recordSet.typ match {
       case RecordType.PTR =>
-        val ip = reverseNameToIp(recordSet.name, zone)
+        val ip = ReverseZoneHelpers.reverseNameToIp(recordSet.name, zone)
         ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, ip)
       case _ =>
         val fqdn = DnsConversions.recordDnsName(recordSet.name, zone.name).toString()
@@ -207,11 +207,4 @@ object RecordSetValidations {
       .map(_ => ())
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
   }
-
-  def reverseNameToIp(recordName: String, zone: Zone): String =
-    if (zone.isIPv4) {
-      ReverseZoneHelpers.convertPTRtoIPv4(zone, recordName)
-    } else {
-      ReverseZoneHelpers.convertPTRtoIPv6(zone, recordName)
-    }
 }
