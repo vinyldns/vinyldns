@@ -87,17 +87,6 @@ records_post_update = [
      'records': [{u'address': u'6.7.8.9'}]}]
 
 
-def wait_for_zone_sync_to_complete(client, zone_id, latest_sync):
-    retries = MAX_RETRIES
-    zone_request = client.get_zone(zone_id)
-
-    while zone_request[u'zone'][u'latestSync'] == latest_sync and retries > 0:
-        zone_request = client.get_zone(zone_id)
-        time.sleep(RETRY_WAIT)
-        retries -= 1
-
-    assert_that(zone_request[u'zone'][u'latestSync'], is_not(latest_sync))
-
 @pytest.mark.skip_production
 def test_sync_zone_success(shared_zone_test_context):
     """
@@ -163,8 +152,8 @@ def test_sync_zone_success(shared_zone_test_context):
         time.sleep(10)
 
         # sync again
-        client.sync_zone(zone['id'], status=202)
-        wait_for_zone_sync_to_complete(client, zone['id'], latest_sync)
+        change = client.sync_zone(zone['id'], status=202)
+        client.wait_until_zone_change_status_synced(change)
 
         # confirm cannot again sync without waiting
         client.sync_zone(zone['id'], status=403)

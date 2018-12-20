@@ -27,6 +27,7 @@ import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
 
 class ZoneSyncHandlerSpec
@@ -140,9 +141,25 @@ class ZoneSyncHandlerSpec
   private val testRecordSetChange = RecordSetChangeGenerator.forSyncAdd(testRecord2, testZone)
   private val testChangeSet =
     ChangeSet.apply(testRecordSetChange).copy(status = ChangeSetStatus.Applied)
-  private val testZoneChange = ZoneChange(testZone, testZone.account, ZoneChangeType.Sync)
+  private val testZoneChange =
+    ZoneChange(testZone.copy(status = ZoneStatus.Syncing), testZone.account, ZoneChangeType.Sync)
   private val testDnsView = ZoneView(testZone, List(testRecord1, testRecord2))
   private val testVinylDNSView = ZoneView(testZone, List(testRecord1))
+
+  private val zoneSync = ZoneSyncHandler(
+    recordSetRepo,
+    recordChangeRepo,
+    zoneChangeRepo,
+    zoneRepo,
+    _ => mockDNSLoader,
+    (_, _) => mockVinylDNSLoader)
+
+  private val runSync = ZoneSyncHandler.runSync(
+    recordSetRepo,
+    recordChangeRepo,
+    testZoneChange,
+    _ => mockDNSLoader,
+    (_, _) => mockVinylDNSLoader)
 
   override def beforeEach(): Unit = {
     reset(recordSetRepo)
@@ -164,31 +181,130 @@ class ZoneSyncHandlerSpec
     doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
   }
 
-  "ZoneSyncer" should {
-    "Send the correct zone to the DNSZoneViewLoader" in {
+  "ZoneSyncHandler" should {
+    "process successful zone sync" in {
+      doReturn(IO.pure(Right(testZoneChange)))
+        .when(zoneRepo)
+        .save(any[Zone])
+
+      val result = zoneSync(testZoneChange).unsafeRunSync()
+
+      val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+      verify(zoneChangeRepo, times(2)).save(changeCaptor.capture())
+
+      val savedChange = changeCaptor.getAllValues
+
+      // first saveZoneAndChange
+      savedChange.get(0).status shouldBe ZoneChangeStatus.Pending
+      savedChange.get(0).zone.status shouldBe ZoneStatus.Syncing
+      savedChange.get(0).zone.latestSync should not be defined
+
+      // second saveZoneAndChange
+      savedChange.get(1).status shouldBe ZoneChangeStatus.Synced
+      savedChange.get(1).zone.status shouldBe ZoneStatus.Active
+      savedChange.get(1).zone.latestSync shouldBe defined
+
+      // returned result
+      result.status shouldBe ZoneChangeStatus.Synced
+      result.zone.status shouldBe ZoneStatus.Active
+      result.zone.latestSync shouldBe defined
+    }
+
+    "handle failed zone sync" in {
+      doReturn(() => IO.raiseError(new RuntimeException("Dns Failed")))
+        .when(mockVinylDNSLoader)
+        .load
+      doReturn(IO.pure(Right(testZoneChange)))
+        .when(zoneRepo)
+        .save(any[Zone])
+
+      val result = zoneSync(testZoneChange).unsafeRunSync()
+
+      val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+      verify(zoneChangeRepo, times(2)).save(changeCaptor.capture())
+
+      val savedChange = changeCaptor.getAllValues
+
+      // first saveZoneAndChange
+      savedChange.get(0).status shouldBe ZoneChangeStatus.Pending
+      savedChange.get(0).zone.status shouldBe ZoneStatus.Syncing
+      savedChange.get(0).zone.latestSync should not be defined
+
+      // second saveZoneAndChange
+      savedChange.get(1).status shouldBe ZoneChangeStatus.Failed
+      savedChange.get(1).zone.status shouldBe ZoneStatus.Active
+      savedChange.get(1).zone.latestSync should not be defined
+
+      // final result
+      result.status shouldBe ZoneChangeStatus.Failed
+      result.zone.status shouldBe ZoneStatus.Active
+      result.zone.latestSync should not be defined
+    }
+  }
+
+  "saveZoneAndChange" should {
+    "save zone and zoneChange with given statuses" in {
+      doReturn(IO.pure(Right(testZoneChange))).when(zoneRepo).save(testZoneChange.zone)
+
+      ZoneSyncHandler.saveZoneAndChange(zoneRepo, zoneChangeRepo, testZoneChange).unsafeRunSync()
+
+      val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+      verify(zoneChangeRepo).save(changeCaptor.capture())
+
+      val savedChange = changeCaptor.getValue
+
+      savedChange.status shouldBe ZoneChangeStatus.Pending
+      savedChange.zone.status shouldBe ZoneStatus.Syncing
+      savedChange.zone.latestSync shouldBe testZoneChange.zone.latestSync
+    }
+
+    "handle duplicateZoneError" in {
+      doReturn(IO.pure(Left(DuplicateZoneError("error")))).when(zoneRepo).save(testZoneChange.zone)
+
+      ZoneSyncHandler.saveZoneAndChange(zoneRepo, zoneChangeRepo, testZoneChange).unsafeRunSync()
+
+      val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+      verify(zoneChangeRepo).save(changeCaptor.capture())
+
+      val savedChange = changeCaptor.getValue
+
+      savedChange.status shouldBe ZoneChangeStatus.Failed
+      savedChange.zone.status shouldBe ZoneStatus.Syncing
+      savedChange.systemMessage shouldBe Some("Zone with name \"error\" already exists.")
+    }
+  }
+
+  "runSync" should {
+    "send the correct zone to the DNSZoneViewLoader" in {
       val captor = ArgumentCaptor.forClass(classOf[Zone])
 
       val dnsLoader = mock[Zone => DnsZoneViewLoader]
       doReturn(mockDNSLoader).when(dnsLoader).apply(any[Zone])
 
-      val syncer =
-        ZoneSyncHandler(recordSetRepo, recordChangeRepo, dnsLoader, (_, _) => mockVinylDNSLoader)
-
-      syncer(testZoneChange).unsafeRunSync()
+      ZoneSyncHandler
+        .runSync(
+          recordSetRepo,
+          recordChangeRepo,
+          testZoneChange,
+          dnsLoader,
+          (_, _) => mockVinylDNSLoader)
+        .unsafeRunSync()
 
       verify(dnsLoader).apply(captor.capture())
       val req = captor.getValue
-      req shouldBe testZone
+      req shouldBe testZone.copy(status = ZoneStatus.Syncing)
 
     }
 
     "load the dns zone from DNSZoneViewLoader" in {
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer(testZoneChange).unsafeRunSync()
+      ZoneSyncHandler
+        .runSync(
+          recordSetRepo,
+          recordChangeRepo,
+          testZoneChange,
+          _ => mockDNSLoader,
+          (_, _) => mockVinylDNSLoader)
+        .unsafeRunSync()
 
       verify(mockDNSLoader, times(1)).load
     }
@@ -200,22 +316,22 @@ class ZoneSyncHandlerSpec
       val vinyldnsLoader = mock[(Zone, RecordSetRepository) => VinylDNSZoneViewLoader]
       doReturn(mockVinylDNSLoader).when(vinyldnsLoader).apply(any[Zone], any[RecordSetRepository])
 
-      val syncer =
-        ZoneSyncHandler(recordSetRepo, recordChangeRepo, _ => mockDNSLoader, vinyldnsLoader)
-      syncer(testZoneChange).unsafeRunSync()
+      ZoneSyncHandler
+        .runSync(
+          recordSetRepo,
+          recordChangeRepo,
+          testZoneChange,
+          _ => mockDNSLoader,
+          vinyldnsLoader)
+        .unsafeRunSync()
 
       verify(vinyldnsLoader).apply(zoneCaptor.capture(), repoCaptor.capture())
       val req = zoneCaptor.getValue
-      req shouldBe testZone
+      req shouldBe testZone.copy(status = ZoneStatus.Syncing)
     }
 
     "load the dns zone from VinylDNSZoneViewLoader" in {
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer(testZoneChange).unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(mockVinylDNSLoader, times(1)).load
     }
@@ -227,12 +343,7 @@ class ZoneSyncHandlerSpec
       doReturn(List(testRecordSetChange)).when(testVinylDNSView).diff(any[ZoneView])
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
 
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer(testZoneChange).unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(testVinylDNSView).diff(captor.capture())
       val req = captor.getValue
@@ -241,13 +352,7 @@ class ZoneSyncHandlerSpec
 
     "save the record changes to the recordChangeRepo" in {
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
-
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer(testZoneChange).unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(recordChangeRepo).save(captor.capture())
       val req = captor.getValue
@@ -256,12 +361,7 @@ class ZoneSyncHandlerSpec
 
     "save the record sets to the recordSetRepo" in {
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer(testZoneChange).unsafeRunSync()
+      runSync.unsafeRunSync()
 
       verify(recordSetRepo).apply(captor.capture())
       val req = captor.getValue
@@ -271,13 +371,7 @@ class ZoneSyncHandlerSpec
     "returns the zone as active and sets the latest sync" in {
       val testVinylDNSView = ZoneView(testZone, List(testRecord1, testRecord2))
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load
-
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      val result = syncer(testZoneChange).unsafeRunSync()
+      val result = runSync.unsafeRunSync()
 
       result.zone.status shouldBe ZoneStatus.Active
       result.zone.latestSync shouldBe defined
@@ -300,12 +394,7 @@ class ZoneSyncHandlerSpec
       doReturn(IO(correctChangeSet)).when(recordSetRepo).apply(captor.capture())
       doReturn(IO(correctChangeSet)).when(recordChangeRepo).save(any[ChangeSet])
 
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer(testZoneChange).unsafeRunSync()
+      runSync.unsafeRunSync()
 
       captor.getValue.changes should contain theSameElementsAs expectedChanges
     }
@@ -328,12 +417,14 @@ class ZoneSyncHandlerSpec
 
       val zoneChange = ZoneChange(testReverseZone, testReverseZone.account, ZoneChangeType.Sync)
 
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer(zoneChange).unsafeRunSync()
+      ZoneSyncHandler
+        .runSync(
+          recordSetRepo,
+          recordChangeRepo,
+          zoneChange,
+          _ => mockDNSLoader,
+          (_, _) => mockVinylDNSLoader)
+        .unsafeRunSync()
 
       captor.getValue.changes should contain theSameElementsAs expectedChanges
     }
@@ -342,12 +433,7 @@ class ZoneSyncHandlerSpec
       doReturn(() => IO.raiseError(new RuntimeException("Dns Failed")))
         .when(mockVinylDNSLoader)
         .load
-      val syncer = ZoneSyncHandler(
-        recordSetRepo,
-        recordChangeRepo,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      val result = syncer(testZoneChange).unsafeRunSync()
+      val result = runSync.unsafeRunSync()
 
       result.status shouldBe ZoneChangeStatus.Failed
       result.zone.status shouldBe ZoneStatus.Active
