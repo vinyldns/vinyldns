@@ -246,8 +246,7 @@ class ZoneSyncHandlerSpec
     "save zone and zoneChange with given statuses" in {
       doReturn(IO.pure(Right(testZoneChange))).when(zoneRepo).save(testZoneChange.zone)
 
-      val saver = ZoneSyncHandler.saveZoneAndChange(zoneRepo, zoneChangeRepo, testZoneChange)
-      saver.unsafeRunSync()
+      ZoneSyncHandler.saveZoneAndChange(zoneRepo, zoneChangeRepo, testZoneChange).unsafeRunSync()
 
       val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
       verify(zoneChangeRepo).save(changeCaptor.capture())
@@ -262,8 +261,7 @@ class ZoneSyncHandlerSpec
     "handle duplicateZoneError" in {
       doReturn(IO.pure(Left(DuplicateZoneError("error")))).when(zoneRepo).save(testZoneChange.zone)
 
-      val saver = ZoneSyncHandler.saveZoneAndChange(zoneRepo, zoneChangeRepo, testZoneChange)
-      saver.unsafeRunSync()
+      ZoneSyncHandler.saveZoneAndChange(zoneRepo, zoneChangeRepo, testZoneChange).unsafeRunSync()
 
       val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
       verify(zoneChangeRepo).save(changeCaptor.capture())
