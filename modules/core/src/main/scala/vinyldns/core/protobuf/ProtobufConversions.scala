@@ -78,9 +78,10 @@ trait ProtobufConversions {
 
   def fromPB(zn: VinylDNSProto.Zone): Zone = {
     val pbStatus = zn.getStatus
-    val status = if (pbStatus.startsWith("Pending")) ZoneStatus.Active
-    else ZoneStatus.withName(pbStatus)
-    
+    val status =
+      if (pbStatus.startsWith("Pending")) ZoneStatus.Active
+      else ZoneStatus.withName(pbStatus)
+
     zone.Zone(
       name = zn.getName,
       email = zn.getEmail,
