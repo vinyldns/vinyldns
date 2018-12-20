@@ -283,15 +283,14 @@ class ZoneSyncHandlerSpec
       val dnsLoader = mock[Zone => DnsZoneViewLoader]
       doReturn(mockDNSLoader).when(dnsLoader).apply(any[Zone])
 
-      val syncer =
-        ZoneSyncHandler.runSync(
+      ZoneSyncHandler
+        .runSync(
           recordSetRepo,
           recordChangeRepo,
           testZoneChange,
           dnsLoader,
           (_, _) => mockVinylDNSLoader)
-
-      syncer.unsafeRunSync()
+        .unsafeRunSync()
 
       verify(dnsLoader).apply(captor.capture())
       val req = captor.getValue
@@ -300,15 +299,14 @@ class ZoneSyncHandlerSpec
     }
 
     "load the dns zone from DNSZoneViewLoader" in {
-      val syncer =
-        ZoneSyncHandler.runSync(
+      ZoneSyncHandler
+        .runSync(
           recordSetRepo,
           recordChangeRepo,
           testZoneChange,
           _ => mockDNSLoader,
           (_, _) => mockVinylDNSLoader)
-
-      syncer.unsafeRunSync()
+        .unsafeRunSync()
 
       verify(mockDNSLoader, times(1)).load
     }
@@ -320,14 +318,14 @@ class ZoneSyncHandlerSpec
       val vinyldnsLoader = mock[(Zone, RecordSetRepository) => VinylDNSZoneViewLoader]
       doReturn(mockVinylDNSLoader).when(vinyldnsLoader).apply(any[Zone], any[RecordSetRepository])
 
-      val syncer =
-        ZoneSyncHandler.runSync(
+      ZoneSyncHandler
+        .runSync(
           recordSetRepo,
           recordChangeRepo,
           testZoneChange,
           _ => mockDNSLoader,
           vinyldnsLoader)
-      syncer.unsafeRunSync()
+        .unsafeRunSync()
 
       verify(vinyldnsLoader).apply(zoneCaptor.capture(), repoCaptor.capture())
       val req = zoneCaptor.getValue
@@ -421,13 +419,14 @@ class ZoneSyncHandlerSpec
 
       val zoneChange = ZoneChange(testReverseZone, testReverseZone.account, ZoneChangeType.Sync)
 
-      val syncer = ZoneSyncHandler.runSync(
-        recordSetRepo,
-        recordChangeRepo,
-        zoneChange,
-        _ => mockDNSLoader,
-        (_, _) => mockVinylDNSLoader)
-      syncer.unsafeRunSync()
+      ZoneSyncHandler
+        .runSync(
+          recordSetRepo,
+          recordChangeRepo,
+          zoneChange,
+          _ => mockDNSLoader,
+          (_, _) => mockVinylDNSLoader)
+        .unsafeRunSync()
 
       captor.getValue.changes should contain theSameElementsAs expectedChanges
     }
