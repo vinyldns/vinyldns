@@ -22,7 +22,7 @@ import org.json4s._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{CreateZoneInput, Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
 
 class VinylDNSJsonProtocolSpec
     extends WordSpec
@@ -48,7 +48,24 @@ class VinylDNSJsonProtocolSpec
     adminGroupId = "admin-group-id"
   )
 
-  private val completeZone = Zone(completeCreateZoneInput)
+  private val completeUpdateZoneInput = UpdateZoneInput(
+    "updated-zone-id",
+    "updated-zone-name.",
+    "updated@email.com",
+    connection = Some(
+      ZoneConnection(
+        "primaryConnection",
+        "primaryConnectionKeyName",
+        "primaryConnectionKey",
+        "10.1.1.1")),
+    transferConnection = Some(
+      ZoneConnection(
+        "transferConnection",
+        "transferConnectionKeyName",
+        "transferConnectionKey",
+        "10.1.1.2")),
+    adminGroupId = "updated-admin-group-id"
+  )
 
   private val primaryConnection: JValue =
     ("name" -> "primaryConnection") ~~
@@ -61,41 +78,6 @@ class VinylDNSJsonProtocolSpec
       ("keyName" -> "transferConnectionKeyName") ~~
       ("key" -> "transferConnectionKey") ~~
       ("primaryServer" -> "10.1.1.2")
-
-  "ZoneSerializer" should {
-    "parse a zone with no connections" in {
-      val zone: JValue =
-        ("name" -> "testZone.") ~~
-          ("email" -> "test@test.com") ~~
-          ("adminGroupId" -> "admin-group-id")
-
-      val expected = completeZone.copy(connection = None, transferConnection = None)
-      val actual = zone.extract[Zone]
-      anonymize(actual) shouldBe anonymize(expected)
-    }
-    "parse a zone with a connection and no transferConnection" in {
-      val zone: JValue =
-        ("name" -> "testZone.") ~~
-          ("email" -> "test@test.com") ~~
-          ("connection" -> primaryConnection) ~~
-          ("adminGroupId" -> "admin-group-id")
-
-      val expected = completeZone.copy(transferConnection = None)
-      val actual = zone.extract[Zone]
-      anonymize(actual) shouldBe anonymize(expected)
-    }
-    "parse a zone with a transferConnection" in {
-      val zone: JValue =
-        ("name" -> "testZone.") ~~
-          ("email" -> "test@test.com") ~~
-          ("connection" -> primaryConnection) ~~
-          ("transferConnection" -> transferConnection) ~~
-          ("adminGroupId" -> "admin-group-id")
-
-      val actual = zone.extract[Zone]
-      anonymize(actual) shouldBe anonymize(completeZone)
-    }
-  }
 
   "CreateZoneInputSerializer" should {
     "parse a create zone input with no connections" in {
@@ -179,6 +161,107 @@ class VinylDNSJsonProtocolSpec
           ("adminGroupId" -> true)
 
       assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+    }
+  }
+
+  "UpdateZoneInputSerializer" should {
+    "parse a zone with no connections" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "updated-zone-name.") ~~
+          ("email" -> "updated@email.com") ~~
+          ("adminGroupId" -> "updated-admin-group-id")
+
+      val expected = completeUpdateZoneInput.copy(connection = None, transferConnection = None)
+      val actual = updateZoneInput.extract[UpdateZoneInput]
+      actual shouldBe expected
+    }
+
+    "parse a zone with a connection and no transferConnection" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "updated-zone-name.") ~~
+          ("email" -> "updated@email.com") ~~
+          ("connection" -> primaryConnection) ~~
+          ("adminGroupId" -> "updated-admin-group-id")
+
+      val expected = completeUpdateZoneInput.copy(transferConnection = None)
+      val actual = updateZoneInput.extract[UpdateZoneInput]
+      actual shouldBe expected
+    }
+
+    "parse a zone with a transferConnection" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "updated-zone-name.") ~~
+          ("email" -> "updated@email.com") ~~
+          ("connection" -> primaryConnection) ~~
+          ("transferConnection" -> transferConnection) ~~
+          ("adminGroupId" -> "updated-admin-group-id")
+
+      val actual = updateZoneInput.extract[UpdateZoneInput]
+      actual shouldBe completeUpdateZoneInput
+    }
+
+    "parse a shared update zone input" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "updated-zone-name.") ~~
+          ("email" -> "updated@email.com") ~~
+          ("connection" -> primaryConnection) ~~
+          ("transferConnection" -> transferConnection) ~~
+          ("shared" -> true) ~~
+          ("adminGroupId" -> "updated-admin-group-id")
+
+      val expected = completeUpdateZoneInput.copy(shared = true)
+      val actual = updateZoneInput.extract[UpdateZoneInput]
+      actual shouldBe expected
+    }
+
+    "throw an error if zone id is missing" in {
+      val updateZoneInput: JValue =
+        ("name" -> "updated-zone-name.") ~~
+          ("email" -> "test@test.com") ~~
+          ("adminGroupId" -> "admin-group-id")
+
+      assertThrows[MappingException](updateZoneInput.extract[UpdateZoneInput])
+    }
+
+    "throw an error if zone name is missing" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("email" -> "test@test.com") ~~
+          ("adminGroupId" -> "admin-group-id")
+
+      assertThrows[MappingException](updateZoneInput.extract[UpdateZoneInput])
+    }
+
+    "throw an error if zone email is missing" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "updated-zone-name.") ~~
+          ("adminGroupId" -> "admin-group-id")
+
+      assertThrows[MappingException](updateZoneInput.extract[UpdateZoneInput])
+    }
+
+    "throw an error if adminGroupId is missing" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "updated-zone-name.") ~~
+          ("email" -> "test@test.com")
+
+      assertThrows[MappingException](updateZoneInput.extract[UpdateZoneInput])
+    }
+
+    "throw an error if there is a type mismatch during deserialization" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "testZone.") ~~
+          ("email" -> "test@test.com") ~~
+          ("adminGroupId" -> true)
+
+      assertThrows[MappingException](updateZoneInput.extract[UpdateZoneInput])
     }
   }
 

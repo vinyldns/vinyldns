@@ -105,26 +105,38 @@ class AccessValidationsSpec
 
   "canChangeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user" in {
-      val error = leftValue(accessValidationTest.canChangeZone(okAuth, zoneNotAuthorized))
+      val error = leftValue(
+        accessValidationTest.canChangeZone(
+          okAuth,
+          zoneNotAuthorized.name,
+          zoneNotAuthorized.adminGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user is an admin or super user" in {
-      accessValidationTest.canChangeZone(okAuth, okZone) should be(right)
+      accessValidationTest.canChangeZone(
+        okAuth,
+        okZone.name,
+        okZone.adminGroupId) should be(right)
     }
 
     "return true if the user is an admin and a support user" in {
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq(okGroup.id))
-      accessValidationTest.canChangeZone(auth, okZone) should be(right)
+      accessValidationTest.canChangeZone(
+        auth,
+        okZone.name,
+        okZone.adminGroupId) should be(right)
     }
 
     "return a NotAuthorizedError if the user is a support user only" in {
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
-      val error = leftValue(accessValidationTest.canChangeZone(auth, okZone))
+      val error = leftValue(
+        accessValidationTest
+          .canChangeZone(auth, okZone.name, okZone.adminGroupId))
       error shouldBe a[NotAuthorizedError]
     }
   }

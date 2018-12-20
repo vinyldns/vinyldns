@@ -71,6 +71,19 @@ class ZoneServiceSpec
     new ZoneValidations(1000),
     AccessValidations)
 
+  private val createZoneAuthorized = CreateZoneInput(
+    "ok.zone.recordsets.",
+    "test@test.com",
+    connection = testConnection,
+    adminGroupId = grp.id)
+
+  private val updateZoneAuthorized = UpdateZoneInput(
+    zoneAuthorized.id,
+    "ok.zone.recordsets.",
+    "updated-test@test.com",
+    connection = testConnection,
+    adminGroupId = okGroup.id)
+
   override protected def beforeEach(): Unit = {
     reset(mockGroupRepo, mockZoneRepo, mockUserRepo)
     doReturn(IO.pure(Some(grp))).when(mockGroupRepo).getGroup(anyString)
@@ -82,7 +95,7 @@ class ZoneServiceSpec
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
-        underTest.connectToZone(zoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
+        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
 
       resultChange.changeType shouldBe ZoneChangeType.Create
       Option(resultChange.created) shouldBe defined
@@ -101,7 +114,7 @@ class ZoneServiceSpec
     "return a ZoneAlreadyExists error if the zone exists" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZoneByName(anyString)
 
-      val error = leftResultOf(underTest.connectToZone(zoneAuthorized, okAuth).value)
+      val error = leftResultOf(underTest.connectToZone(createZoneAuthorized, okAuth).value)
 
       error shouldBe a[ZoneAlreadyExistsError]
     }
@@ -110,7 +123,7 @@ class ZoneServiceSpec
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
       doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(anyString)
 
-      val error = leftResultOf(underTest.connectToZone(zoneAuthorized, okAuth).value)
+      val error = leftResultOf(underTest.connectToZone(createZoneAuthorized, okAuth).value)
 
       error shouldBe an[InvalidZoneAdminError]
     }
@@ -119,20 +132,20 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(zoneDeleted))).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultChange: ZoneChange = rightResultOf(
-        underTest.connectToZone(zoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
+        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
       resultChange.changeType shouldBe ZoneChangeType.Create
     }
 
     "return an error if the zone create includes a bad acl rule" in {
       val badAcl = ACLRule(baseAclRuleInfo.copy(recordMask = Some("x{5,-3}")))
-      val newZone = zoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
+      val newZone = createZoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
 
       val error = leftResultOf(underTest.connectToZone(newZone, okAuth).value)
       error shouldBe an[InvalidRequest]
     }
 
     "succeed if zone is shared and user is a super user" in {
-      val newZone = zoneAuthorized.copy(shared = true)
+      val newZone = createZoneAuthorized.copy(shared = true)
       val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
@@ -148,7 +161,7 @@ class ZoneServiceSpec
     }
 
     "return a NotAuthorizedError if zone is shared and user is not a super user" in {
-      val newZone = zoneAuthorized.copy(shared = true)
+      val newZone = createZoneAuthorized.copy(shared = true)
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
       val error = leftResultOf(underTest.connectToZone(newZone, okAuth).value)
@@ -161,14 +174,16 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(grp.id, okGroup.id))
-      val newZone = zoneAuthorized.copy(adminGroupId = okGroup.id)
       val resultChange: ZoneChange = rightResultOf(
-        underTest.updateZone(newZone, doubleAuth).map(_.asInstanceOf[ZoneChange]).value,
+        underTest
+          .updateZone(updateZoneAuthorized, doubleAuth)
+          .map(_.asInstanceOf[ZoneChange])
+          .value,
         duration = 2.seconds)
 
       resultChange.zone.id shouldBe zoneAuthorized.id
       resultChange.changeType shouldBe ZoneChangeType.Update
-      resultChange.zone.adminGroupId shouldBe newZone.adminGroupId
+      resultChange.zone.adminGroupId shouldBe updateZoneAuthorized.adminGroupId
       resultChange.zone.adminGroupId should not be zoneAuthorized.adminGroupId
     }
 
@@ -177,18 +192,21 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(oldZone))).when(mockZoneRepo).getZone(anyString)
 
       val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(grp.id, okGroup.id))
-      val newZone = oldZone.copy(adminGroupId = okGroup.id)
 
       val resultChange: ZoneChange =
         rightResultOf(
-          underTest.updateZone(newZone, doubleAuth).map(_.asInstanceOf[ZoneChange]).value)
+          underTest
+            .updateZone(updateZoneAuthorized, doubleAuth)
+            .map(_.asInstanceOf[ZoneChange])
+            .value)
       resultChange.zone.id shouldBe oldZone.id
     }
 
     "validate connection and fail if changed to bad" in {
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
-      val newZone = zoneAuthorized.copy(connection = Some(badConnection))
+      val newZone =
+        updateZoneAuthorized.copy(connection = Some(badConnection), adminGroupId = grp.id)
 
       val error = leftResultOf(underTest.updateZone(newZone, okAuth).value)
       error shouldBe a[ConnectionFailed]
@@ -198,9 +216,8 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
-      val newZone = zoneAuthorized.copy(adminGroupId = okGroup.id)
 
-      val error = leftResultOf(underTest.updateZone(newZone, noAuth).value)
+      val error = leftResultOf(underTest.updateZone(updateZoneAuthorized, noAuth).value)
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -208,10 +225,43 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
 
       val badAcl = ACLRule(baseAclRuleInfo.copy(recordMask = Some("x{5,-3}")))
-      val newZone = zoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
+      val newZone = updateZoneAuthorized.copy(acl = ZoneACL(Set(badAcl)))
 
       val error = leftResultOf(underTest.updateZone(newZone, okAuth).value)
       error shouldBe an[InvalidRequest]
+    }
+
+    "succeed if zone shared flag is updated and user is a super user" in {
+      val newZone = updateZoneAuthorized.copy(shared = false)
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+        .when(mockZoneRepo)
+        .getZone(newZone.id)
+
+      val result = rightResultOf(
+        underTest
+          .updateZone(newZone, okAuth.copy(signedInUser = okUser.copy(isSuper = true)))
+          .value)
+      result shouldBe a[ZoneChange]
+    }
+
+    "return a NotAuthorizedError if zone shared flag is updated and user is not a super user" in {
+      val newZone = updateZoneAuthorized.copy(shared = false)
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+        .when(mockZoneRepo)
+        .getZone(newZone.id)
+
+      val error = leftResultOf(underTest.updateZone(newZone, okAuth).value)
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "succeed if zone is shared and user is not a super user" in {
+      val newZone = updateZoneAuthorized.copy(shared = true, adminGroupId = grp.id)
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+        .when(mockZoneRepo)
+        .getZone(newZone.id)
+
+      val result = rightResultOf(underTest.updateZone(newZone, okAuth).value)
+      result shouldBe a[ZoneChange]
     }
   }
 

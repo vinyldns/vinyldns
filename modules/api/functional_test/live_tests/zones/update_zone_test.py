@@ -142,7 +142,8 @@ def test_update_missing_zone_data(shared_zone_test_context):
             'id': result_zone['id'],
             'name': result_zone['name'],
             'random_key': 'some_value',
-            'another_key': 'meaningless_data'
+            'another_key': 'meaningless_data',
+            'adminGroupId': zone['adminGroupId']
         }
 
         errors = client.update_zone(update_zone, status=400)['errors']
@@ -191,11 +192,11 @@ def test_update_invalid_zone_data(shared_zone_test_context):
             'id': result_zone['id'],
             'name': result_zone['name'],
             'email': 'test@test.com',
-            'status': 'invalid_status'
+            'adminGroupId': True
         }
 
         errors = client.update_zone(update_zone, status=400)['errors']
-        assert_that(errors, contains_inanyorder('Invalid ZoneStatus'))
+        assert_that(errors, contains_inanyorder('Do not know how to convert JBool(true) into class java.lang.String'))
 
         # Check that the failed update didn't go through
         zone_get = client.get_zone(result_zone['id'])['zone']
@@ -226,7 +227,8 @@ def test_update_zone_returns_404_if_zone_not_found(shared_zone_test_context):
             'keyName': VinylDNSTestContext.dns_key_name,
             'key': VinylDNSTestContext.dns_key,
             'primaryServer': VinylDNSTestContext.dns_ip
-        }
+        },
+        'adminGroupId': shared_zone_test_context.ok_group['id']
     }
     client.update_zone(zone, status=404)
 
@@ -819,3 +821,8 @@ def test_update_zone_no_authorization(shared_zone_test_context):
     }
 
     client.update_zone(zone, sign_request=False, status=401)
+
+def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
+    """
+    Test updating a zone shared status as a normal user fails
+    """
