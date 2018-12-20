@@ -72,7 +72,17 @@ class ZoneValidations(syncDelayMillis: Int) {
     }
 
   // Validates that the zone is either not shared or shared and the user is a super user
-  def validateSharedZoneAuthorized(zone: Zone, user: User): Either[Throwable, Unit] =
+  def validateSharedZoneAuthorized(zoneShared: Boolean, user: User): Either[Throwable, Unit] =
     ensuring(NotAuthorizedError("Not authorized to create shared zones."))(
-      !zone.shared || user.isSuper)
+      !zoneShared || user.isSuper)
+
+  // Validates that the zone shared status has not been changed, or changed and the user is a super user
+  def validateSharedZoneAuthorized(
+      currentShared: Boolean,
+      updateShared: Boolean,
+      user: User): Either[Throwable, Unit] =
+    ensuring(
+      NotAuthorizedError(
+        s"Not authorized to update zone shared status from $currentShared to $updateShared."))(
+      currentShared == updateShared || user.isSuper)
 }

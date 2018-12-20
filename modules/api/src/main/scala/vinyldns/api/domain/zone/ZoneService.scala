@@ -59,34 +59,43 @@ class ZoneService(
   import zoneValidations._
   import Interfaces._
 
-  def connectToZone(zone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] =
+  def connectToZone(
+      createZoneInput: CreateZoneInput,
+      auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
-      _ <- isValidZoneAcl(zone.acl).toResult
-      _ <- validateSharedZoneAuthorized(zone, auth.signedInUser).toResult
-      _ <- connectionValidator.validateZoneConnections(zone)
-      _ <- zoneDoesNotExist(zone)
-      _ <- adminGroupExists(zone.adminGroupId)
-      _ <- canChangeZone(auth, zone).toResult
-      createZoneChange <- ZoneChangeGenerator.forAdd(zone, auth).toResult
+      _ <- isValidZoneAcl(createZoneInput.acl).toResult
+      _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
+      _ <- zoneDoesNotExist(createZoneInput.name)
+      _ <- adminGroupExists(createZoneInput.adminGroupId)
+      _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
+      zoneToCreate = Zone(createZoneInput)
+      _ <- connectionValidator.validateZoneConnections(zoneToCreate)
+      createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
     } yield createZoneChange
 
-  def updateZone(newZone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] =
+  def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
-      _ <- isValidZoneAcl(newZone.acl).toResult
-      existingZone <- getZoneOrFail(newZone.id)
-      _ <- validateZoneConnectionIfChanged(newZone, existingZone)
-      _ <- canChangeZone(auth, existingZone).toResult
-      _ <- adminGroupExists(newZone.adminGroupId)
-      _ <- canChangeZone(auth, newZone).toResult //if admin group changes this confirms user has access to new group
-      updateZoneChange <- ZoneChangeGenerator.forUpdate(newZone, existingZone, auth).toResult
+      _ <- isValidZoneAcl(updateZoneInput.acl).toResult
+      existingZone <- getZoneOrFail(updateZoneInput.id)
+      _ <- validateSharedZoneAuthorized(
+        existingZone.shared,
+        updateZoneInput.shared,
+        auth.signedInUser).toResult
+      _ <- canChangeZone(auth, existingZone.name, existingZone.adminGroupId).toResult
+      _ <- adminGroupExists(updateZoneInput.adminGroupId)
+      _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult // if admin group changes,
+      // this confirms user has access to new group
+      zoneToUpdate = Zone(updateZoneInput, existingZone)
+      _ <- validateZoneConnectionIfChanged(zoneToUpdate, existingZone)
+      updateZoneChange <- ZoneChangeGenerator.forUpdate(zoneToUpdate, existingZone, auth).toResult
       _ <- messageQueue.send(updateZoneChange).toResult[Unit]
     } yield updateZoneChange
 
   def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZoneOrFail(zoneId)
-      _ <- canChangeZone(auth, zone).toResult
+      _ <- canChangeZone(auth, zone.name, zone.adminGroupId).toResult
       deleteZoneChange <- ZoneChangeGenerator.forDelete(zone, auth).toResult
       _ <- messageQueue.send(deleteZoneChange).toResult[Unit]
     } yield deleteZoneChange
@@ -94,7 +103,7 @@ class ZoneService(
   def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZoneOrFail(zoneId)
-      _ <- canChangeZone(auth, zone).toResult
+      _ <- canChangeZone(auth, zone.name, zone.adminGroupId).toResult
       _ <- outsideSyncDelay(zone).toResult
       syncZoneChange <- ZoneChangeGenerator.forSync(zone, auth).toResult
       _ <- messageQueue.send(syncZoneChange).toResult[Unit]
@@ -157,7 +166,7 @@ class ZoneService(
     val newRule = ACLRule(aclRuleInfo)
     for {
       zone <- getZoneOrFail(zoneId)
-      _ <- canChangeZone(authPrincipal, zone).toResult
+      _ <- canChangeZone(authPrincipal, zone.name, zone.adminGroupId).toResult
       _ <- isValidAclRule(newRule).toResult
       zoneChange <- ZoneChangeGenerator
         .forUpdate(
@@ -177,7 +186,7 @@ class ZoneService(
     val newRule = ACLRule(aclRuleInfo)
     for {
       zone <- getZoneOrFail(zoneId)
-      _ <- canChangeZone(authPrincipal, zone).toResult
+      _ <- canChangeZone(authPrincipal, zone.name, zone.adminGroupId).toResult
       zoneChange <- ZoneChangeGenerator
         .forUpdate(
           newZone = zone.deleteACLRule(newRule),
@@ -189,12 +198,12 @@ class ZoneService(
     } yield zoneChange
   }
 
-  def zoneDoesNotExist(zone: Zone): Result[Unit] =
+  def zoneDoesNotExist(zoneName: String): Result[Unit] =
     zoneRepository
-      .getZoneByName(zone.name)
+      .getZoneByName(zoneName)
       .map {
         case Some(existingZone) if existingZone.status != ZoneStatus.Deleted =>
-          ZoneAlreadyExistsError(s"Zone with name ${zone.name} already exists").asLeft
+          ZoneAlreadyExistsError(s"Zone with name $zoneName already exists").asLeft
         case _ => ().asRight
       }
       .toResult

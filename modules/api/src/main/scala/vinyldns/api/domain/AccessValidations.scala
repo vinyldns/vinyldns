@@ -36,10 +36,13 @@ object AccessValidations extends AccessValidationAlgebra {
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
       auth.canReadAll || auth.isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
 
-  def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
+  def canChangeZone(
+      auth: AuthPrincipal,
+      zoneName: String,
+      zoneAdminGroupId: String): Either[Throwable, Unit] =
     ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot modify zone '${zone.name}'"))(
-      auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
+      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot modify zone '$zoneName'"))(
+      auth.canEditAll || auth.isGroupMember(zoneAdminGroupId))
 
   def canAddRecordSet(
       auth: AuthPrincipal,

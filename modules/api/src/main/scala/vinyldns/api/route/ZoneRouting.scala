@@ -44,7 +44,7 @@ trait ZoneRoute extends Directives {
   val zoneRoute = { authPrincipal: AuthPrincipal =>
     (post & path("zones") & monitor("Endpoint.createZone")) {
       entity(as[CreateZoneInput]) { createZoneInput =>
-        execute(zoneService.connectToZone(encrypt(Zone(createZoneInput)), authPrincipal)) { chg =>
+        execute(zoneService.connectToZone(encrypt(createZoneInput), authPrincipal)) { chg =>
           complete(StatusCodes.Accepted, chg)
         }
       }
@@ -77,8 +77,8 @@ trait ZoneRoute extends Directives {
         }
       } ~
       (put & path("zones" / Segment) & monitor("Endpoint.updateZone")) { _ =>
-        entity(as[Zone]) { zone =>
-          execute(zoneService.updateZone(encrypt(zone), authPrincipal)) { chg =>
+        entity(as[UpdateZoneInput]) { updateZoneInput =>
+          execute(zoneService.updateZone(encrypt(updateZoneInput), authPrincipal)) { chg =>
             complete(StatusCodes.Accepted, chg)
           }
         }
@@ -122,13 +122,20 @@ trait ZoneRoute extends Directives {
 
   /**
     * Important!  Will encrypt the key on the zone if a connection is present
-    * @param zone The zone to be encrypted
+    * @param createZoneInput/updateZoneInput The zone input to be encrypted
     * @return A new zone with the connection encrypted, or the same zone if not connection
     */
-  private def encrypt(zone: Zone): Zone =
-    zone.copy(
-      connection = zone.connection.map(_.encrypted(Crypto.instance)),
-      transferConnection = zone.transferConnection.map(_.encrypted(Crypto.instance)))
+  private def encrypt(createZoneInput: CreateZoneInput): CreateZoneInput =
+    createZoneInput.copy(
+      connection = createZoneInput.connection.map(_.encrypted(Crypto.instance)),
+      transferConnection = createZoneInput.transferConnection.map(_.encrypted(Crypto.instance))
+    )
+
+  private def encrypt(updateZoneInput: UpdateZoneInput): UpdateZoneInput =
+    updateZoneInput.copy(
+      connection = updateZoneInput.connection.map(_.encrypted(Crypto.instance)),
+      transferConnection = updateZoneInput.transferConnection.map(_.encrypted(Crypto.instance))
+    )
 
   // TODO: This is duplicated across routes.  Leaving duplicated until we upgrade our json serialization
   private val invalidQueryHandler = RejectionHandler

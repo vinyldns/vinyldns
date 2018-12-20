@@ -88,9 +88,35 @@ object Zone {
       adminGroupId = adminGroupId,
       isTest = isTest)
   }
+
+  def apply(updateZoneInput: UpdateZoneInput, currentZone: Zone): Zone = {
+    import updateZoneInput._
+
+    currentZone.copy(
+      name = name,
+      email = email,
+      id = id,
+      connection = connection,
+      transferConnection = transferConnection,
+      shared = shared,
+      acl = acl,
+      adminGroupId = adminGroupId,
+      isTest = isTest)
+  }
 }
 
 final case class CreateZoneInput(
+    name: String,
+    email: String,
+    connection: Option[ZoneConnection] = None,
+    transferConnection: Option[ZoneConnection] = None,
+    shared: Boolean = false,
+    acl: ZoneACL = ZoneACL(),
+    adminGroupId: String,
+    isTest: Boolean = false)
+
+case class UpdateZoneInput(
+    id: String,
     name: String,
     email: String,
     connection: Option[ZoneConnection] = None,
