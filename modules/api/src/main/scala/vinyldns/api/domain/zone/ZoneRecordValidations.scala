@@ -34,7 +34,7 @@ object ZoneRecordValidations {
   /* Checks to see if an ip address is part of the ip address list */
   def isIpInIpList(ipList: List[IpAddress], ipToTest: String): Boolean =
     IpAddress(ipToTest).exists(ip => ipList.exists(_ === ip))
-  
+
   /* Checks to see if an individual ns data is part of the approved server list */
   def isApprovedNameServer(
       approvedServerList: List[Regex],
