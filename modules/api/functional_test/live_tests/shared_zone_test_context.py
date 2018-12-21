@@ -11,6 +11,7 @@ class SharedZoneTestContext(object):
     def __init__(self):
         self.ok_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'okAccessKey', 'okSecretKey')
         self.dummy_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'dummyAccessKey', 'dummySecretKey')
+        self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'sharedZoneUserAccessKey', 'sharedZoneUserSecretKey')
 
         self.dummy_group = None
         self.ok_group = None
@@ -224,6 +225,26 @@ class SharedZoneTestContext(object):
                 }, status=202)
             self.parent_zone = parent_zone_change['zone']
 
+            get_shared_zone = self.shared_zone_vinyldns_client.get_zone('shared-zone')
+            shared_zone = get_shared_zone['zone']
+
+            shared_zone['connection'] = {
+                'name': 'shared.',
+                'keyName': VinylDNSTestContext.dns_key_name,
+                'key': VinylDNSTestContext.dns_key,
+                'primaryServer': VinylDNSTestContext.dns_ip
+            }
+
+            shared_zone['transferConnection'] = {
+                'name': 'shared.',
+                'keyName': VinylDNSTestContext.dns_key_name,
+                'key': VinylDNSTestContext.dns_key,
+                'primaryServer': VinylDNSTestContext.dns_ip
+            }
+
+            shared_zone_change = self.shared_zone_vinyldns_client.update_zone(shared_zone, status=202)
+            self.shared_zone = shared_zone_change['zone']
+
             # wait until our zones are created
             self.ok_vinyldns_client.wait_until_zone_exists(system_test_zone_change)
             self.ok_vinyldns_client.wait_until_zone_exists(ok_zone_change)
@@ -234,12 +255,16 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_exists(classless_zone_delegation_change)
             self.ok_vinyldns_client.wait_until_zone_exists(system_test_zone_change)
             self.ok_vinyldns_client.wait_until_zone_exists(parent_zone_change)
+            self.shared_zone_vinyldns_client.sync_zone(shared_zone['id'])
+            self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
 
             # validate all in there
             zones = self.dummy_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(2))
             zones = self.ok_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(7))
+            zones = self.shared_zone_vinyldns_client.list_zones()['zones']
+            assert_that(len(zones), is_(1))
 
         except:
             # teardown if there was any issue in setup

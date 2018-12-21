@@ -19,6 +19,17 @@ def test_get_zone_by_id(shared_zone_test_context):
     assert_that(retrieved['id'], is_(shared_zone_test_context.system_test_zone['id']))
     assert_that(retrieved['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
 
+def test_get_shared_zone_by_id(shared_zone_test_context):
+    """
+    Test get an existings shared zone by id
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+
+    result = client.get_zone(shared_zone_test_context.shared_zone['id'], status=200)
+    retrieved = result['zone']
+
+    assert_that(retrieved['id'], is_(shared_zone_test_context.shared_zone['id']))
+    assert_that(retrieved['adminGroupName'], is_('testSharedZoneGroup'))
 
 def test_get_zone_fails_without_access(shared_zone_test_context):
     """
