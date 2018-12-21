@@ -252,7 +252,8 @@ class BatchChangeService(
         auth.signedInUser.userName,
         batchChangeInput.comments,
         DateTime.now,
-        changes).asRight
+        changes,
+        batchChangeInput.ownerGroupId).asRight
     } else {
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
     }

@@ -20,7 +20,10 @@ import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType._
 
-final case class BatchChangeInput(comments: Option[String], changes: List[ChangeInput])
+final case class BatchChangeInput(
+    comments: Option[String],
+    changes: List[ChangeInput],
+    ownerGroupId: Option[String] = None)
 
 sealed trait ChangeInput {
   val inputName: String

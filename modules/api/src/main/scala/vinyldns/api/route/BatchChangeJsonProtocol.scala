@@ -17,7 +17,6 @@
 package vinyldns.api.route
 
 import cats.data._
-import cats.implicits._
 import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -55,7 +54,11 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       val changeList =
         (js \ "changes").required[List[ChangeInput]]("Missing BatchChangeInput.changes")
 
-      ((js \ "comments").optional[String], changeList).mapN(BatchChangeInput)
+      (
+        (js \ "comments").optional[String],
+        changeList,
+        (js \ "ownerGroupId").optional[String]
+      ).mapN(BatchChangeInput)
     }
   }
 
@@ -146,7 +149,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("createdTimestamp" -> Extraction.decompose(bc.createdTimestamp)) ~
         ("changes" -> Extraction.decompose(bc.changes)) ~
         ("status" -> bc.status.toString) ~
-        ("id" -> bc.id)
+        ("id" -> bc.id) ~
+        ("ownerGroupId" -> bc.ownerGroupId)
   }
 
   case object BatchChangeErrorListSerializer
