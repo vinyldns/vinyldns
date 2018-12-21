@@ -119,7 +119,7 @@ trait VinylDNSTestData {
     List(NSData("nsdata")))
 
   val ptrIp4: RecordSet = RecordSet(
-    okZone.id,
+    zoneIp4.id,
     "30",
     RecordType.PTR,
     200,
@@ -129,7 +129,7 @@ trait VinylDNSTestData {
     List(PTRData("ptr")))
 
   val ptrIp6: RecordSet = RecordSet(
-    okZone.id,
+    zoneIp6.id,
     "4.0.3.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
     RecordType.PTR,
     200,

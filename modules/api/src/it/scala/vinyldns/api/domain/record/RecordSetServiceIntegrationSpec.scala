@@ -22,14 +22,9 @@ import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.{
-  DynamoDBApiIntegrationSpec,
-  MySqlApiIntegrationSpec,
-  ResultHelpers,
-  VinylDNSTestData
-}
-import vinyldns.api.domain.AccessValidations
-import vinyldns.api.domain.zone.RecordSetAlreadyExists
+import vinyldns.api._
+import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
+import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists}
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, User, UserRepository}
@@ -149,6 +144,17 @@ class RecordSetServiceIntegrationSpec
     connection = testConnection,
     adminGroupId = group.id)
 
+  private val highValueDomainRecord = RecordSet(
+    zone.id,
+    "high-value-domain-existing",
+    A,
+    38400,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("1.1.1.1"))
+  )
+
   def setup(): Unit = {
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
@@ -164,7 +170,8 @@ class RecordSetServiceIntegrationSpec
       subTestRecordAAAA,
       subTestRecordNS,
       apexTestRecordNameConflict,
-      subTestRecordNameConflict
+      subTestRecordNameConflict,
+      highValueDomainRecord
     )
     records.map(record => waitForSuccess(recordSetRepo.putRecordSet(record)))
 
@@ -309,6 +316,40 @@ class RecordSetServiceIntegrationSpec
       whenReady(result, timeout) { out =>
         leftValue(out) shouldBe a[RecordSetAlreadyExists]
       }
+    }
+
+    "fail to add a dns record whose name is a high value domain" in {
+      val highValueRecord = highValueDomainRecord.copy(name = "high-value-domain-new")
+      val result =
+        testRecordSetService
+          .addRecordSet(highValueRecord, auth)
+          .value
+          .unsafeRunSync()
+
+      leftValue(result) shouldBe InvalidRequest(
+        HighValueDomainError("high-value-domain-new.live-zone-test.").message)
+    }
+
+    "fail to update a record whose name is a high value domain" in {
+      val newRecord = highValueDomainRecord.copy(ttl = highValueDomainRecord.ttl + 1000)
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe InvalidRequest(
+        HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
+    }
+
+    "fail to delete a record whose name is a high value domain" in {
+      val result = testRecordSetService
+        .deleteRecordSet(highValueDomainRecord.id, highValueDomainRecord.zoneId, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe InvalidRequest(
+        HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
     }
   }
 

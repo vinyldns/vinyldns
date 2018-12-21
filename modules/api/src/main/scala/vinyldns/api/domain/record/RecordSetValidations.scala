@@ -20,10 +20,11 @@ import cats.syntax.either._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
+import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
-import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 
 object RecordSetValidations {
@@ -192,4 +193,18 @@ object RecordSetValidations {
   private def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
     recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
 
+  def isNotHighValueDomain(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
+    val result = recordSet.typ match {
+      case RecordType.PTR =>
+        val ip = ReverseZoneHelpers.reverseNameToIp(recordSet.name, zone)
+        ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, ip)
+      case _ =>
+        val fqdn = DnsConversions.recordDnsName(recordSet.name, zone.name).toString()
+        ZoneRecordValidations.isNotHighValueFqdn(VinylDNSConfig.highValueRegexList, fqdn)
+    }
+
+    result.toEither
+      .map(_ => ())
+      .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
+  }
 }

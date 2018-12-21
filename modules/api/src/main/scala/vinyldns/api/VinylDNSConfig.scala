@@ -22,6 +22,7 @@ import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import pureconfig.module.catseffect.loadConfigF
 import vinyldns.api.crypto.Crypto
+import com.comcast.ip4s._
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
@@ -56,6 +57,12 @@ object VinylDNSConfig {
   lazy val approvedNameServers: List[Regex] =
     vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)
 
+  lazy val highValueRegexList: List[Regex] =
+    getOptionalStringList("high-value-domains.regex-list").map(n => n.r)
+
+  lazy val highValueIpList: List[IpAddress] =
+    getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
+
   lazy val defaultZoneConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")
     val name = connectionConfig.getString("name")
@@ -77,4 +84,8 @@ object VinylDNSConfig {
   lazy val healthCheckTimeout: IO[Int] =
     loadConfigF[IO, Option[Int]](vinyldnsConfig, "health-check-timeout").map(_.getOrElse(10000))
 
+  def getOptionalStringList(key: String): List[String] =
+    if (vinyldnsConfig.hasPath(key)) {
+      vinyldnsConfig.getStringList(key).asScala.toList
+    } else List()
 }

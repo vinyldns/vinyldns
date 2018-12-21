@@ -15,6 +15,7 @@ object Dependencies {
   lazy val playV = "2.6.19"
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
+  lazy val ip4sV = "1.1.1"
 
   lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
@@ -45,7 +46,9 @@ object Dependencies {
     "io.prometheus"             % "simpleclient_common"             % prometheusV,
     "com.typesafe"              % "config"                          % configV,
     "org.typelevel"             %% "cats-effect"                    % catsEffectV,
-    "com.47deg"                 %% "github4s"                       % "0.18.6"
+    "com.47deg"                 %% "github4s"                       % "0.18.6",
+    "com.comcast"               %% "ip4s-core"                      % ip4sV,
+    "com.comcast"               %% "ip4s-cats"                      % ip4sV
   )
 
   lazy val coreDependencies = Seq(
