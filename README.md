@@ -42,7 +42,7 @@ Integration is simple with first-class language support including:
 - [Credits](#credits)
 
 ## Quickstart
-Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/dashboard/. 
+Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/.
 To start up a local instance of VinylDNS on your machine with docker:
 
 1. Ensure that you have [docker](https://docs.docker.com/install/) and [docker-compose](https://docs.docker.com/compose/install/)
