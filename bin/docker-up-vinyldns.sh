@@ -9,7 +9,7 @@
 # Options:
 #	-t, --timeout seconds: overwrite ping timeout, default of 60
 #	-a, --api-only: only starts up vinyldns-api and its dependencies, excludes vinyldns-portal
-#	-c, --clean: delete local vinyldns docker images so they are re-pulled from docker hub
+#	-c, --clean: re-pull vinyldns/api and vinyldns/portal images from docker hub
 #	-v, --version tag: overwrite vinyldns/api and vinyldns/portal docker tags
 #####################################################################################################
 
@@ -45,7 +45,7 @@ function usage {
     printf "options:\n"
     printf "\t-t, --timeout seconds: overwrite ping timeout of 60\n"
     printf "\t-a, --api-only: do not start up vinyldns-portal\n"
-    printf "\t-c, --clean: delete local vinyldns docker images so they are re-pulled from docker hub\n"
+    printf "\t-c, --clean: re-pull vinyldns/api and vinyldns/portal images from docker hub\n"
     printf "\t-v, --version tag: overwrite vinyldns/api and vinyldns/portal docker tags\n"
 }
 
