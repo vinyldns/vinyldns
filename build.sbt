@@ -212,7 +212,9 @@ lazy val api = (project in file("modules/api"))
   .settings(allApiSettings)
   .settings(headerSettings(IntegrationTest))
   .settings(inConfig(IntegrationTest)(scalafmtConfigSettings))
-  .dependsOn(core, dynamodb % "compile->compile;it->it", mysql % "compile->compile;it->it")
+  .dependsOn(core % "compile->compile;test->test",
+    dynamodb % "compile->compile;it->it",
+    mysql % "compile->compile;it->it")
   .dependsOn(sqs % "compile->compile;it->it")
 
 val killDocker = TaskKey[Unit]("killDocker", "Kills all vinyldns docker containers")

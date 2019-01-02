@@ -56,6 +56,7 @@ case class RecordSet(
     val sb = new StringBuilder
     sb.append("RecordSet: [")
     sb.append("id=\"").append(id).append("\"; ")
+    sb.append("zoneId=\"").append(zoneId).append("\"; ")
     sb.append("name=\"").append(name).append("\"; ")
     sb.append("type=\"").append(typ.toString).append("\"; ")
     sb.append("ttl=\"").append(ttl.toString).append("\"; ")

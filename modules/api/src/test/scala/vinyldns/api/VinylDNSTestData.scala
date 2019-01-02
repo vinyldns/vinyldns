@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetChangeGenerator}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.TestRecordSetData
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, User}
 import vinyldns.core.domain.record._
@@ -38,8 +39,6 @@ trait VinylDNSTestData {
     adminUserIds = Set(usr.id),
     created = DateTime.now.secondOfDay().roundFloorCopy())
   val okAuth: AuthPrincipal = AuthPrincipal(TestDataLoader.okUser, Seq(grp.id))
-  val notAuth: AuthPrincipal = AuthPrincipal(TestDataLoader.dummyUser, Seq.empty)
-  val lockedAuth: AuthPrincipal = AuthPrincipal(TestDataLoader.lockedUser, Seq.empty)
 
   val testConnection: Option[ZoneConnection] = Some(
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
@@ -58,45 +57,13 @@ trait VinylDNSTestData {
   val zoneIp4: Zone = okZone.copy(name = "0.162.198.in-addr.arpa.")
   val zoneIp6: Zone = okZone.copy(name = "1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.")
 
-  val rsOk: RecordSet = RecordSet(
-    okZone.id,
-    "ok",
-    RecordType.A,
-    200,
-    RecordSetStatus.Active,
-    DateTime.now,
-    None,
-    List(AData("10.1.1.1")))
+  val rsOk: RecordSet = TestRecordSetData.rsOk
 
-  val aaaa: RecordSet = RecordSet(
-    okZone.id,
-    "aaaa",
-    RecordType.AAAA,
-    200,
-    RecordSetStatus.Pending,
-    DateTime.now,
-    None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
+  val aaaa: RecordSet = TestRecordSetData.aaaa
 
-  val validAAAAToOrigin: RecordSet = RecordSet(
-    okZone.id,
-    "@",
-    RecordType.AAAA,
-    200,
-    RecordSetStatus.Pending,
-    DateTime.now,
-    None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
+  val validAAAAToOrigin: RecordSet = TestRecordSetData.aaaaOrigin
 
-  val cname: RecordSet = RecordSet(
-    okZone.id,
-    "cname",
-    RecordType.CNAME,
-    200,
-    RecordSetStatus.Pending,
-    DateTime.now,
-    None,
-    List(CNAMEData("cname")))
+  val cname: RecordSet = TestRecordSetData.cname
 
   val invalidCnameToOrigin: RecordSet = RecordSet(
     okZone.id,
@@ -118,25 +85,9 @@ trait VinylDNSTestData {
     None,
     List(NSData("nsdata")))
 
-  val ptrIp4: RecordSet = RecordSet(
-    zoneIp4.id,
-    "30",
-    RecordType.PTR,
-    200,
-    RecordSetStatus.Active,
-    DateTime.now,
-    None,
-    List(PTRData("ptr")))
+  val ptrIp4: RecordSet = TestRecordSetData.ptrIp4
 
-  val ptrIp6: RecordSet = RecordSet(
-    zoneIp6.id,
-    "4.0.3.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-    RecordType.PTR,
-    200,
-    RecordSetStatus.Active,
-    DateTime.now,
-    None,
-    List(PTRData("ptr")))
+  val ptrIp6: RecordSet = TestRecordSetData.ptrIp6
 
   val soa: RecordSet = RecordSet(
     ptrIp4.name,
@@ -148,35 +99,11 @@ trait VinylDNSTestData {
     None,
     List(SOAData("something", "other", 1, 2, 3, 5, 6)))
 
-  val srv: RecordSet = RecordSet(
-    okZone.id,
-    "srv",
-    RecordType.SRV,
-    200,
-    RecordSetStatus.Active,
-    DateTime.now,
-    None,
-    List(SRVData(1, 2, 3, "target")))
+  val srv: RecordSet = TestRecordSetData.srv
 
-  val ns: RecordSet = RecordSet(
-    okZone.id,
-    okZone.name,
-    RecordType.NS,
-    300,
-    RecordSetStatus.Active,
-    DateTime.now,
-    None,
-    records = List(NSData("ns1.test.com"), NSData("ns2.test.com")))
+  val ns: RecordSet = TestRecordSetData.ns
 
-  val mx: RecordSet = RecordSet(
-    okZone.id,
-    "mx",
-    RecordType.MX,
-    200,
-    RecordSetStatus.Pending,
-    DateTime.now,
-    None,
-    List(MXData(3, "mx")))
+  val mx: RecordSet = TestRecordSetData.mx
 
   val txt: RecordSet = RecordSet(
     okZone.id,
@@ -217,16 +144,6 @@ trait VinylDNSTestData {
   val notAuthorizedAuth: AuthPrincipal =
     okAuth.copy(signedInUser = okAuth.signedInUser.copy(userName = "not auth", id = "not auth"))
 
-  val abcRecord: RecordSet = RecordSet(
-    abcZone.id,
-    "aaaa",
-    RecordType.AAAA,
-    200,
-    RecordSetStatus.Pending,
-    DateTime.now,
-    None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
-
   val pendingCreateAAAA: RecordSetChange = RecordSetChangeGenerator.forAdd(aaaa, zoneActive, okAuth)
   val pendingCreateCNAME: RecordSetChange =
     RecordSetChangeGenerator.forAdd(cname, zoneActive, okAuth)
@@ -240,8 +157,6 @@ trait VinylDNSTestData {
   val completeChangeSet: ChangeSet = ChangeSet(Seq(completeCreateAAAA, completeCreateCNAME))
   val completeCreateNS: RecordSetChange =
     pendingCreateNS.copy(status = RecordSetChangeStatus.Complete)
-  val completeRecordSetChanges: List[RecordSetChange] =
-    List(pendingCreateAAAA, pendingCreateCNAME, completeCreateAAAA, completeCreateCNAME)
 
   val listZoneChangesResponse: ListZoneChangesResponse = ListZoneChangesResponse(
     zoneActive.id,

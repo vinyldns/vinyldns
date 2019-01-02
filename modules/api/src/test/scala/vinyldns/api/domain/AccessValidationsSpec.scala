@@ -19,10 +19,13 @@ package vinyldns.api.domain
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.api.ResultHelpers
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.TestZoneData._
+import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneACL}
 
@@ -30,16 +33,13 @@ class AccessValidationsSpec
     extends WordSpecLike
     with Matchers
     with MockitoSugar
-    with BeforeAndAfterEach
     with ResultHelpers
-    with GroupTestData
-    with VinylDNSTestData
     with EitherMatchers {
 
   private val userReadAcl =
-    ACLRule(AccessLevel.Read, userId = Some(okUserAuth.userId), groupId = None)
+    ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), groupId = None)
   private val userWriteAcl =
-    ACLRule(AccessLevel.Write, userId = Some(okUserAuth.userId), groupId = None)
+    ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), groupId = None)
   private val groupReadAcl = ACLRule(AccessLevel.Read, userId = None, groupId = Some(okGroup.id))
   private val groupWriteAcl = ACLRule(AccessLevel.Write, userId = None, groupId = Some(okGroup.id))
   private val allReadACL = ACLRule(AccessLevel.Read, userId = None, groupId = None)
@@ -55,76 +55,76 @@ class AccessValidationsSpec
   private val userAuthNone = AuthPrincipal(userAccessNone, groupIds)
   private val userAclNone =
     ACLRule(AccessLevel.NoAccess, userId = Some(userAuthNone.userId), groupId = None)
-  private val zoneInNone = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAclNone)))
+  private val zoneInNone = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAclNone)))
 
   private val userAccessRead = okUser.copy(id = "ReadAccess")
   private val userAuthRead = AuthPrincipal(userAccessRead, groupIds)
   private val userAclRead =
     ACLRule(AccessLevel.Read, userId = Some(userAuthRead.userId), groupId = None)
-  private val zoneInRead = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAclRead)))
+  private val zoneInRead = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAclRead)))
 
   private val userAccessWrite = okUser.copy(id = "WriteAccess")
   private val userAuthWrite = AuthPrincipal(userAccessWrite, groupIds)
   private val userAclWrite =
     ACLRule(AccessLevel.Write, userId = Some(userAuthWrite.userId), groupId = None)
-  private val zoneInWrite = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAclWrite)))
+  private val zoneInWrite = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAclWrite)))
 
   private val userAccessDelete = okUser.copy(id = "DeleteAccess")
   private val userAuthDelete = AuthPrincipal(userAccessDelete, groupIds)
   private val userAclDelete =
     ACLRule(AccessLevel.Delete, userId = Some(userAuthDelete.userId), groupId = None)
-  private val zoneInDelete = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAclDelete)))
+  private val zoneInDelete = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAclDelete)))
 
   "canSeeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user with no acl rules" in {
-      val error = leftValue(accessValidationTest.canSeeZone(okUserAuth, memberZoneNotAuthorized))
+      val error = leftValue(accessValidationTest.canSeeZone(okAuth, zoneNotAuthorized))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user is an admin or super user" in {
       val auth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSuper = true),
+        signedInUser = okAuth.signedInUser.copy(isSuper = true),
         memberGroupIds = Seq.empty)
-      accessValidationTest.canSeeZone(auth, memberOkZoneAuthorized) should be(right)
+      accessValidationTest.canSeeZone(auth, okZone) should be(right)
     }
 
     "return true if there is an acl rule for the user in the zone" in {
-      val rule = ACLRule(AccessLevel.Read, userId = Some(okUserAuth.userId))
-      val zoneIn = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(rule)))
+      val rule = ACLRule(AccessLevel.Read, userId = Some(okAuth.userId))
+      val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(rule)))
 
-      accessValidationTest.canSeeZone(okUserAuth, zoneIn) should be(right)
+      accessValidationTest.canSeeZone(okAuth, zoneIn) should be(right)
     }
 
     "return true if the user is a support admin" in {
       val supportAuth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
-      accessValidationTest.canSeeZone(supportAuth, memberOkZoneAuthorized) should be(right)
+      accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
   }
 
   "canChangeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user" in {
-      val error = leftValue(accessValidationTest.canChangeZone(okUserAuth, memberZoneNotAuthorized))
+      val error = leftValue(accessValidationTest.canChangeZone(okAuth, zoneNotAuthorized))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user is an admin or super user" in {
-      accessValidationTest.canChangeZone(okUserAuth, memberOkZoneAuthorized) should be(right)
+      accessValidationTest.canChangeZone(okAuth, okZone) should be(right)
     }
 
     "return true if the user is an admin and a support user" in {
       val auth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq(okGroup.id))
-      accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized) should be(right)
+      accessValidationTest.canChangeZone(auth, okZone) should be(right)
     }
 
     "return a NotAuthorizedError if the user is a support user only" in {
       val auth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
-      val error = leftValue(accessValidationTest.canChangeZone(auth, memberOkZoneAuthorized))
+      val error = leftValue(accessValidationTest.canChangeZone(auth, okZone))
       error shouldBe a[NotAuthorizedError]
     }
   }
@@ -168,9 +168,9 @@ class AccessValidationsSpec
 
     "return true if recordset is NS and user is a superuser" in {
       val auth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSuper = true),
+        signedInUser = okAuth.signedInUser.copy(isSuper = true),
         memberGroupIds = Seq.empty)
-      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, memberZoneNotAuthorized) should be(
+      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zoneNotAuthorized) should be(
         right)
     }
 
@@ -221,7 +221,7 @@ class AccessValidationsSpec
       val userAccess = okUser.copy(id = "Delete")
       val userAuth = AuthPrincipal(userAccess, groupIds)
       val userAcl = ACLRule(AccessLevel.Delete, userId = Some(userAuth.userId), groupId = None)
-      val zoneIn = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
+      val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
       accessValidationTest.canUpdateRecordSet(
         userAuth,
         mockRecordSet.name,
@@ -310,36 +310,33 @@ class AccessValidationsSpec
   "getAccessLevel" should {
     "return AccessLevel.Delete if the user is admin/super" in {
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessLevel(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        memberOkZoneAuthorized)
+      val result =
+        accessValidationTest.getAccessLevel(okAuth, mockRecordSet.name, mockRecordSet.typ, okZone)
       result shouldBe AccessLevel.Delete
     }
 
     "return AccessLevel.Read if the user is support only" in {
       val mockRecordSet = mock[RecordSet]
-      val supportAuth = okGroupAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+      val supportAuth = okAuth.copy(
+        signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
       val result = accessValidationTest.getAccessLevel(
         supportAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        memberOkZoneAuthorized)
+        okZone)
       result shouldBe AccessLevel.Read
     }
 
     "return the result of getAccessLevel if the user is support but also an admin" in {
       val mockRecordSet = mock[RecordSet]
       val supportAuth =
-        okGroupAuth.copy(signedInUser = okGroupAuth.signedInUser.copy(isSupport = true))
+        okAuth.copy(signedInUser = okAuth.signedInUser.copy(isSupport = true))
       val result = accessValidationTest.getAccessLevel(
         supportAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        memberOkZoneAuthorized)
+        okZone)
       result shouldBe AccessLevel.Delete
     }
 
@@ -348,7 +345,7 @@ class AccessValidationsSpec
       val userAccess = okUser.copy(id = "Write", isSupport = true)
       val userAuth = AuthPrincipal(userAccess, groupIds)
       val userAcl = ACLRule(AccessLevel.Write, userId = Some(userAuth.userId), groupId = None)
-      val zoneIn = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
+      val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
 
       val result =
         accessValidationTest.getAccessLevel(userAuth, mockRecordSet.name, mockRecordSet.typ, zoneIn)
@@ -360,7 +357,7 @@ class AccessValidationsSpec
       val userAccess = okUser.copy(id = "Read")
       val userAuth = AuthPrincipal(userAccess, groupIds)
       val userAcl = ACLRule(AccessLevel.Read, userId = Some(userAuth.userId), groupId = None)
-      val zoneIn = memberZoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
+      val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
 
       val result =
         accessValidationTest.getAccessLevel(userAuth, mockRecordSet.name, mockRecordSet.typ, zoneIn)
@@ -375,11 +372,8 @@ class AccessValidationsSpec
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.Write
     }
 
@@ -388,11 +382,8 @@ class AccessValidationsSpec
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.Read
     }
 
@@ -401,11 +392,8 @@ class AccessValidationsSpec
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.Read
     }
 
@@ -414,11 +402,8 @@ class AccessValidationsSpec
       val zoneAcl = ZoneACL()
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.NoAccess
     }
 
@@ -427,11 +412,8 @@ class AccessValidationsSpec
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.NoAccess
     }
 
@@ -440,11 +422,8 @@ class AccessValidationsSpec
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.Write
     }
 
@@ -453,11 +432,8 @@ class AccessValidationsSpec
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.Write
     }
 
@@ -466,101 +442,92 @@ class AccessValidationsSpec
       val zone = Zone("name", "email", acl = zoneAcl)
 
       val mockRecordSet = mock[RecordSet]
-      val result = accessValidationTest.getAccessFromAcl(
-        okUserAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zone)
+      val result =
+        accessValidationTest.getAccessFromAcl(okAuth, mockRecordSet.name, mockRecordSet.typ, zone)
       result shouldBe AccessLevel.Read
     }
 
     "apply to specific record type" in {
       val rs = RecordSet(
-        memberZoneNotAuthorized.id,
+        zoneNotAuthorized.id,
         "ok",
         RecordType.A,
         200,
         RecordSetStatus.Active,
         DateTime.now)
       val aclRuleA =
-        ACLRule(AccessLevel.Read, userId = Some(okUserAuth.userId), recordTypes = Set(RecordType.A))
+        ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
 
       val zoneAcl = ZoneACL(Set(aclRuleA))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.Read
     }
 
     "not apply to all if record type specified" in {
       val rs = RecordSet(
-        memberZoneNotAuthorized.id,
+        zoneNotAuthorized.id,
         "ok",
         RecordType.A,
         200,
         RecordSetStatus.Active,
         DateTime.now)
-      val aclRuleA = ACLRule(
-        AccessLevel.Read,
-        userId = Some(okUserAuth.userId),
-        recordTypes = Set(RecordType.AAAA))
+      val aclRuleA =
+        ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordTypes = Set(RecordType.AAAA))
 
       val zoneAcl = ZoneACL(Set(aclRuleA))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.NoAccess
     }
 
     "prioritize more specific record type lists" in {
       val rs = RecordSet(
-        memberZoneNotAuthorized.id,
+        zoneNotAuthorized.id,
         "ok",
         RecordType.A,
         200,
         RecordSetStatus.Active,
         DateTime.now)
-      val aclRuleA = ACLRule(
-        AccessLevel.Write,
-        userId = Some(okUserAuth.userId),
-        recordTypes = Set(RecordType.A))
+      val aclRuleA =
+        ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
       val aclRuleMany = ACLRule(
         AccessLevel.Read,
-        userId = Some(okUserAuth.userId),
+        userId = Some(okAuth.userId),
         recordTypes = Set(RecordType.A, RecordType.AAAA))
 
       val zoneAcl = ZoneACL(Set(aclRuleA, aclRuleMany))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.Write
     }
 
     "prioritize record type lists over all" in {
       val rs = RecordSet(
-        memberZoneNotAuthorized.id,
+        zoneNotAuthorized.id,
         "ok",
         RecordType.A,
         200,
         RecordSetStatus.Active,
         DateTime.now)
-      val aclRuleA = ACLRule(
-        AccessLevel.Write,
-        userId = Some(okUserAuth.userId),
-        recordTypes = Set(RecordType.A))
+      val aclRuleA =
+        ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordTypes = Set(RecordType.A))
       val aclRuleAll =
-        ACLRule(AccessLevel.Read, userId = Some(okUserAuth.userId), recordTypes = Set())
+        ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordTypes = Set())
 
       val zoneAcl = ZoneACL(Set(aclRuleA, aclRuleAll))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.Write
     }
 
     "filter in based on record mask" in {
       val rs = RecordSet(
-        memberZoneNotAuthorized.id,
+        zoneNotAuthorized.id,
         "rsname",
         RecordType.A,
         200,
@@ -571,13 +538,13 @@ class AccessValidationsSpec
       val zoneAcl = ZoneACL(Set(aclRule))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.Read
     }
 
     "exclude records based on record mask" in {
       val rs = RecordSet(
-        memberZoneNotAuthorized.id,
+        zoneNotAuthorized.id,
         "rsname",
         RecordType.A,
         200,
@@ -588,13 +555,13 @@ class AccessValidationsSpec
       val zoneAcl = ZoneACL(Set(aclRule))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.NoAccess
     }
 
     "prioritize a record mask over apply to all" in {
       val rs = RecordSet(
-        memberZoneNotAuthorized.id,
+        zoneNotAuthorized.id,
         "rsname",
         RecordType.A,
         200,
@@ -606,7 +573,7 @@ class AccessValidationsSpec
       val zoneAcl = ZoneACL(Set(aclRuleAll, aclRuleRM))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.Read
     }
   }
@@ -671,7 +638,7 @@ class AccessValidationsSpec
       val zoneAcl = ZoneACL(Set(aclRule))
       val zone = Zone("name", "email", acl = zoneAcl)
 
-      val result = accessValidationTest.getAccessFromAcl(okUserAuth, rs.name, rs.typ, zone)
+      val result = accessValidationTest.getAccessFromAcl(okAuth, rs.name, rs.typ, zone)
       result shouldBe AccessLevel.NoAccess
     }
   }
@@ -769,7 +736,7 @@ class AccessValidationsSpec
       val zone = Zone("test", "test", adminGroupId = okGroup.id)
       val recordList = List(rsOk.copy(zoneId = zone.id))
 
-      val result = accessValidationTest.getListAccessLevels(okUserAuth, recordList, zone)
+      val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
       val expected = recordList.map(RecordSetInfo(_, AccessLevel.Delete))
       result shouldBe expected
@@ -781,7 +748,7 @@ class AccessValidationsSpec
       }
       val zone = Zone("test", "test")
 
-      val result = accessValidationTest.getListAccessLevels(okUserAuth, recordList, zone)
+      val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
       val expected = recordList.map(RecordSetInfo(_, AccessLevel.NoAccess))
       result shouldBe expected
@@ -789,7 +756,7 @@ class AccessValidationsSpec
 
     "return access level Read if there is no ACL rule for the user and user is a support admin" in {
       val supportAuth = okAuth.copy(
-        signedInUser = okGroupAuth.signedInUser.copy(isSupport = true),
+        signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
 
       val recordList = List("rs1", "rs2", "rs3").map {
@@ -811,13 +778,13 @@ class AccessValidationsSpec
       val recordList = List(rs1, rs2, rs3)
 
       val rs1Rule =
-        ACLRule(AccessLevel.Write, userId = Some(okUserAuth.userId), recordMask = Some("rs1"))
+        ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordMask = Some("rs1"))
       val rs2Rule =
         ACLRule(AccessLevel.NoAccess, groupId = Some(okGroup.id), recordMask = Some("rs2"))
       val aclRules = ZoneACL(Set(groupReadAcl, rs1Rule, rs2Rule))
       val zone = Zone("test", "test", acl = aclRules)
 
-      val result = accessValidationTest.getListAccessLevels(okUserAuth, recordList, zone)
+      val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
       val expected = List(
         RecordSetInfo(rs1, AccessLevel.Write),
