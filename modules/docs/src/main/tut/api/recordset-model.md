@@ -57,7 +57,8 @@ account       | string      | **DEPRECATED** The account that created the Record
 Current supported record types are: A, AAAA, CNAME, PTR, MX, NS, SOA, SRV, TXT, SSHFP, and SPF.
 Each individual record encodes its data in a record data object, in which each record type has different required attributes
 <br><br>
-**NS and SOA records are currently read-only and cannot be created, updated or deleted**
+SOA records and NS origin records (record with the same name as the zone) are currently read-only and cannot be created, updated or deleted.
+Non-origin NS records can be created or updated for [approved name servers](../operator/config-api#additional-configuration-settings) only. Any non-origin NS record can be deleted.
 
 record type  | attribute   | type        |
 ------------ | :---------- | :---------- |
