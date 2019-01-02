@@ -468,8 +468,6 @@ def test_user_cannot_create_zone_with_failed_validations(shared_zone_test_contex
     }
 
     result = shared_zone_test_context.ok_vinyldns_client.create_zone(zone, status=400)
-    import json
-    print json.dumps(result, indent=4)
     assert_that(result['errors'], contains_inanyorder(
         contains_string("not-approved.thing.com. is not an approved name server")
     ))

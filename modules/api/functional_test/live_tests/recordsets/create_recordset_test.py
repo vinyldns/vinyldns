@@ -1674,3 +1674,70 @@ def test_create_ipv4_ptr_recordset_in_classless_outside_cidr(shared_zone_test_co
 
     error = client.create_recordset(new_rs, status=422)
     assert_that(error, is_('RecordSet 190 does not specify a valid IP address in zone 192/30.2.0.192.in-addr.arpa.'))
+
+
+def test_create_high_value_domain_fails(shared_zone_test_context):
+    """
+    Test that creating a record configured as a High Value Domain fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+    new_rs = {
+        'zoneId': zone['id'],
+        'name': 'high-value-domain',
+        'type': 'A',
+        'ttl': 100,
+        'records': [
+            {
+                'address': '1.1.1.1'
+            }
+        ]
+    }
+
+    error = client.create_recordset(new_rs, status=422)
+    assert_that(error, is_('Record name "high-value-domain.ok." is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_create_high_value_domain_fails_for_ip4_ptr(shared_zone_test_context):
+    """
+    Test that creating a record configured as a High Value Domain fails for ip4 ptr record
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    ptr = {
+        'zoneId': shared_zone_test_context.classless_base_zone['id'],
+        'name': '252',
+        'type': 'PTR',
+        'ttl': 100,
+        'records': [
+            {
+                'ptrdname': 'test.foo.'
+            }
+        ]
+    }
+
+    error_ptr = client.create_recordset(ptr, status=422)
+    assert_that(error_ptr, is_('Record name "192.0.2.252" is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
+    """
+    Test that creating a record configured as a High Value Domain fails for ip6 ptr record
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    ptr = {
+        'zoneId': shared_zone_test_context.ip6_reverse_zone['id'],
+        'name': 'f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
+        'type': 'PTR',
+        'ttl': 100,
+        'records': [
+            {
+                'ptrdname': 'test.foo.'
+            }
+        ]
+    }
+
+    error_ptr = client.create_recordset(ptr, status=422)
+    assert_that(error_ptr, is_('Record name "fd69:27cc:fe91:0000:0000:0000:0000:ffff" is configured as a High Value Domain, so it cannot be modified.'))

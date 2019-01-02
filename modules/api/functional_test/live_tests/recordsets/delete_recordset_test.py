@@ -585,7 +585,7 @@ def test_ns_delete_existing_ns_origin_fails(shared_zone_test_context):
 
 def test_delete_dotted_a_record_apex_succeeds(shared_zone_test_context):
     """
-    Test that creating an apex A record set containing dots succeeds.
+    Test that deleting an apex A record set containing dots succeeds.
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -606,3 +606,44 @@ def test_delete_dotted_a_record_apex_succeeds(shared_zone_test_context):
     finally:
         delete_result = client.delete_recordset(apex_a_rs['zoneId'], apex_a_rs['id'], status=202)
         client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_delete_high_value_domain_fails(shared_zone_test_context):
+    """
+    Test that deleting a high value domain fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone_system = shared_zone_test_context.system_test_zone
+    list_results_page_system = client.list_recordsets(zone_system['id'],  status=200)['recordSets']
+    record_system = [item for item in list_results_page_system if item['name'] == 'high-value-domain'][0]
+
+    errors_system = client.delete_recordset(record_system['zoneId'], record_system['id'], status=422)
+    assert_that(errors_system, is_('Record name "high-value-domain.system-test." is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_delete_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
+    """
+    Test that deleting a high value domain fails for ip4 ptr
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone_ip4 = shared_zone_test_context.classless_base_zone
+    list_results_page_ip4 = client.list_recordsets(zone_ip4['id'],  status=200)['recordSets']
+    record_ip4 = [item for item in list_results_page_ip4 if item['name'] == '253'][0]
+
+    errors_ip4 = client.delete_recordset(record_ip4['zoneId'], record_ip4['id'], status=422)
+    assert_that(errors_ip4, is_('Record name "192.0.2.253" is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_delete_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
+    """
+    Test that deleting a high value domain fails for ip6 ptr
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone_ip6 = shared_zone_test_context.ip6_reverse_zone
+    list_results_page_ip6 = client.list_recordsets(zone_ip6['id'],  status=200)['recordSets']
+    record_ip6 = [item for item in list_results_page_ip6 if item['name'] == '0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0'][0]
+
+    errors_ip6 = client.delete_recordset(record_ip6['zoneId'], record_ip6['id'], status=422)
+    assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, so it cannot be modified.'))

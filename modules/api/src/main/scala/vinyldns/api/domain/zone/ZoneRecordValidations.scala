@@ -16,18 +16,30 @@
 
 package vinyldns.api.domain.zone
 
-import cats.implicits._, cats.data._
+import cats.implicits._
+import cats.data._
+import com.comcast.ip4s.IpAddress
+import com.comcast.ip4s.interop.cats.implicits._
+import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
 import vinyldns.core.domain.record.{NSData, RecordSet, RecordType}
 
 import scala.util.matching.Regex
 
 object ZoneRecordValidations {
 
+  /* Checks to see if an individual string is part of the regex list */
+  def isStringInRegexList(regexList: List[Regex], string: String): Boolean =
+    regexList.exists(rx => rx.findAllIn(string).contains(string))
+
+  /* Checks to see if an ip address is part of the ip address list */
+  def isIpInIpList(ipList: List[IpAddress], ipToTest: String): Boolean =
+    IpAddress(ipToTest).exists(ip => ipList.exists(_ === ip))
+
   /* Checks to see if an individual ns data is part of the approved server list */
   def isApprovedNameServer(
       approvedServerList: List[Regex],
       nsData: NSData): ValidatedNel[String, NSData] =
-    if (approvedServerList.exists(rx => rx.findAllIn(nsData.nsdname).contains(nsData.nsdname))) {
+    if (isStringInRegexList(approvedServerList, nsData.nsdname)) {
       nsData.validNel[String]
     } else {
       s"Name Server ${nsData.nsdname} is not an approved name server.".invalidNel[NSData]
@@ -64,4 +76,22 @@ object ZoneRecordValidations {
     }
     validations.sequence
   }
+
+  def isNotHighValueFqdn(
+      highValueRegexList: List[Regex],
+      fqdn: String): ValidatedNel[DomainValidationError, Unit] =
+    if (!isStringInRegexList(highValueRegexList, fqdn)) {
+      ().validNel
+    } else {
+      HighValueDomainError(fqdn).invalidNel
+    }
+
+  def isNotHighValueIp(
+      highValueIpList: List[IpAddress],
+      ip: String): ValidatedNel[DomainValidationError, Unit] =
+    if (!isIpInIpList(highValueIpList, ip)) {
+      ().validNel
+    } else {
+      HighValueDomainError(ip).invalidNel
+    }
 }

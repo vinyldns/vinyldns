@@ -21,7 +21,7 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.AccessValidations
+import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
@@ -114,6 +114,16 @@ class RecordSetServiceSpec
 
       val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
       result shouldBe a[InvalidRequest]
+    }
+    "fail if the record is a high value domain" in {
+      val record = aaaa.copy(
+        name = "high-value-domain",
+        zoneId = zoneAuthorized.id,
+        status = RecordSetStatus.Active)
+
+      val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
+      result shouldBe InvalidRequest(
+        HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
     }
     "succeed if record is apex with dot" in {
       val name = zoneAuthorized.name
@@ -275,6 +285,18 @@ class RecordSetServiceSpec
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
+    "fail if the record is a high value domain" in {
+      val oldRecord = aaaa.copy(
+        name = "high-value-domain",
+        zoneId = zoneAuthorized.id,
+        status = RecordSetStatus.Active)
+
+      val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
+
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
+      result shouldBe InvalidRequest(
+        HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
+    }
   }
 
   "deleteRecordSet" should {
@@ -301,6 +323,21 @@ class RecordSetServiceSpec
       val result =
         leftResultOf(underTest.deleteRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
+    }
+    "fail if the record is a high value domain" in {
+      val record = aaaa.copy(
+        name = "high-value-domain",
+        zoneId = zoneAuthorized.id,
+        status = RecordSetStatus.Active)
+
+      doReturn(IO.pure(Some(record)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneAuthorized.id, record.id)
+
+      val result =
+        leftResultOf(underTest.deleteRecordSet(record.id, zoneAuthorized.id, okAuth).value)
+      result shouldBe InvalidRequest(
+        HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
     }
   }
 

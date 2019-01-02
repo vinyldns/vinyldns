@@ -18,10 +18,12 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 import vinyldns.core.domain.batch.{BatchChange, RecordKey}
@@ -86,14 +88,18 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
 
-  def validateInputName(change: ChangeInput): SingleValidation[Unit] =
-    change.typ match {
+  def validateInputName(change: ChangeInput): SingleValidation[Unit] = {
+    val typedChecks = change.typ match {
       case A | AAAA | MX =>
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
-      case CNAME | TXT => validateHostName(change.inputName).asUnit
-      case PTR => validatePtrIp(change.inputName)
+      case CNAME | TXT =>
+        validateHostName(change.inputName).asUnit
+      case PTR =>
+        validatePtrIp(change.inputName)
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
     }
+    typedChecks |+| isNotHighValueDomain(change)
+  }
 
   def validatePtrIp(ip: String): SingleValidation[Unit] = {
     val validIpv4 = validateIpv4Address(ip).asUnit
@@ -329,5 +335,15 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
+    }
+
+  def isNotHighValueDomain(change: ChangeInput): SingleValidation[Unit] =
+    change.typ match {
+      case RecordType.PTR =>
+        ZoneRecordValidations.isNotHighValueIp(VinylDNSConfig.highValueIpList, change.inputName)
+      case _ =>
+        ZoneRecordValidations.isNotHighValueFqdn(
+          VinylDNSConfig.highValueRegexList,
+          change.inputName)
     }
 }

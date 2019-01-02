@@ -284,5 +284,50 @@ class RecordSetValidationsSpec
         error shouldBe a[InvalidRequest]
       }
     }
+
+    "isNotHighValueDomain" should {
+      "return InvalidRequest if a ptr ip4 record matches a High Value Domain" in {
+        val zone = okZone.copy(name = "2.0.192.in-addr.arpa.")
+        val record = ptrIp4.copy(name = "252")
+
+        val error = leftValue(isNotHighValueDomain(record, zone))
+        error shouldBe a[InvalidRequest]
+      }
+
+      "return InvalidRequest if a ptr ip6 record matches a High Value Domain" in {
+        val zone = okZone.copy(name = "1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.")
+        val record = ptrIp6.copy(name = "f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0")
+
+        val error = leftValue(isNotHighValueDomain(record, zone))
+        error shouldBe a[InvalidRequest]
+      }
+
+      "return InvalidRequest if a non ptr record matches a High Value Domain" in {
+        val zone = okZone
+        val record = aaaa.copy(name = "high-value-domain")
+
+        val error = leftValue(isNotHighValueDomain(record, zone))
+        error shouldBe a[InvalidRequest]
+      }
+
+      "return right if record is not a High Value Domain" in {
+        val zoneIp4 = okZone.copy(name = "10.10.10.in-addr.arpa.")
+        val recordIp4 = ptrIp4.copy(name = "10")
+
+        val zoneClassless = okZone.copy(name = "10/30.10.10.10.in-addr.arpa.")
+        val recordClassless = ptrIp4.copy(name = "10")
+
+        val zoneIp6 = okZone.copy(name = "0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa.")
+        val recordIp6 = ptrIp6.copy(name = "1.2.3.4.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0")
+
+        val zoneAAAA = okZone
+        val recordAAAA = aaaa.copy(name = "not-important")
+
+        isNotHighValueDomain(recordIp4, zoneIp4) should be(right)
+        isNotHighValueDomain(recordIp6, zoneIp6) should be(right)
+        isNotHighValueDomain(recordClassless, zoneClassless) should be(right)
+        isNotHighValueDomain(recordAAAA, zoneAAAA) should be(right)
+      }
+    }
   }
 }
