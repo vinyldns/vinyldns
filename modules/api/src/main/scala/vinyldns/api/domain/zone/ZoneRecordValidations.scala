@@ -20,7 +20,14 @@ import cats.implicits._
 import cats.data._
 import com.comcast.ip4s.IpAddress
 import com.comcast.ip4s.interop.cats.implicits._
-import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
+import vinyldns.api.domain.{
+  DomainValidationError,
+  HighValueDomainError,
+  OwnerGroupCreateUnauthorized,
+  OwnerGroupUpdateUnauthorized
+}
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{NSData, RecordSet, RecordType}
 
 import scala.util.matching.Regex
@@ -93,5 +100,28 @@ object ZoneRecordValidations {
       ().validNel
     } else {
       HighValueDomainError(ip).invalidNel
+    }
+
+  def createOwnerGroupIdValidations(
+      rname: String,
+      rtype: RecordType,
+      ownerGroupId: Option[String],
+      authPrincipal: AuthPrincipal): ValidatedNel[OwnerGroupCreateUnauthorized, Unit] =
+    if (ownerGroupId.isDefined && !authPrincipal.signedInUser.isSuper) {
+      OwnerGroupCreateUnauthorized(rname, rtype).invalidNel
+    } else {
+      ().validNel
+    }
+
+  def updateOwnerGroupIdValidations(
+      rname: String,
+      rtype: RecordType,
+      newOwnerGroupId: Option[String],
+      oldOwnerGroupId: Option[String],
+      authPrincipal: AuthPrincipal): ValidatedNel[OwnerGroupUpdateUnauthorized, Unit] =
+    if (newOwnerGroupId =!= oldOwnerGroupId && !authPrincipal.signedInUser.isSuper) {
+      OwnerGroupUpdateUnauthorized(rname, rtype, oldOwnerGroupId).invalidNel
+    } else {
+      ().validNel
     }
 }

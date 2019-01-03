@@ -24,6 +24,7 @@ import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 
@@ -201,6 +202,32 @@ object RecordSetValidations {
       case _ =>
         val fqdn = DnsConversions.recordDnsName(recordSet.name, zone.name).toString()
         ZoneRecordValidations.isNotHighValueFqdn(VinylDNSConfig.highValueRegexList, fqdn)
+    }
+
+    result.toEither
+      .map(_ => ())
+      .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
+  }
+
+  def ownerGroupIdValidations(
+      authPrincipal: AuthPrincipal,
+      newRs: RecordSet,
+      oldRs: Option[RecordSet] = None): Either[Throwable, Unit] = {
+
+    val result = oldRs match {
+      case Some(old) =>
+        ZoneRecordValidations.updateOwnerGroupIdValidations(
+          newRs.name,
+          newRs.typ,
+          newRs.ownerGroupId,
+          old.ownerGroupId,
+          authPrincipal)
+      case None =>
+        ZoneRecordValidations.createOwnerGroupIdValidations(
+          newRs.name,
+          newRs.typ,
+          newRs.ownerGroupId,
+          authPrincipal)
     }
 
     result.toEither

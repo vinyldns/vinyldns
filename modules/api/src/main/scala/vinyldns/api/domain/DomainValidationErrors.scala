@@ -17,7 +17,7 @@
 package vinyldns.api.domain
 
 import vinyldns.api.domain.batch.SupportedBatchChangeRecordTypes
-import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.{RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
@@ -125,5 +125,25 @@ final case class RecordInReverseZoneError(name: String, typ: String) extends Dom
 final case class HighValueDomainError(name: String) extends DomainValidationError {
   def message: String =
     s"""Record name "$name" is configured as a High Value Domain, so it cannot be modified."""
+}
+
+final case class OwnerGroupCreateUnauthorized(rname: String, rtype: RecordType)
+    extends DomainValidationError {
+  def message: String =
+    s"""Unauthorized to add attribute "ownerGroupId" to record (name: "$rname", type: "$rtype")."""
+}
+
+final case class OwnerGroupUpdateUnauthorized(
+    rname: String,
+    rtype: RecordType,
+    ownerGroupId: Option[String])
+    extends DomainValidationError {
+  def message: String =
+    ownerGroupId match {
+      case Some(id) =>
+        s"""Unauthorized to edit "ownerGroupId" attribute of the record (name: "$rname"
+                          |, type: "$rtype", ownerGroupId: "$id").""".stripMargin
+      case None => OwnerGroupCreateUnauthorized(rname, rtype).message
+    }
 }
 // $COVERAGE-ON$

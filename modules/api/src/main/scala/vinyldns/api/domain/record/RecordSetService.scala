@@ -61,6 +61,7 @@ class RecordSetService(
       // because changes happen to the RS in forAdd itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
+      _ <- ownerGroupIdValidations(auth, recordSet).toResult
       _ <- recordSetDoesNotExist(rsForValidations, zone)
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -81,6 +82,7 @@ class RecordSetService(
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
+      _ <- ownerGroupIdValidations(auth, recordSet, Some(existing)).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
