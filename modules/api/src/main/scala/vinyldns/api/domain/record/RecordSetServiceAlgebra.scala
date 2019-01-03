@@ -17,6 +17,7 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.Interfaces.Result
+import vinyldns.api.domain.zone.RecordSetSummaryInfo
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneCommandResult
 import vinyldns.api.route.ListRecordSetsResponse
@@ -35,7 +36,7 @@ trait RecordSetServiceAlgebra {
   def getRecordSet(
       recordSetId: String,
       zoneId: String,
-      authPrincipal: AuthPrincipal): Result[RecordSet]
+      authPrincipal: AuthPrincipal): Result[RecordSetSummaryInfo]
 
   def listRecordSets(
       zoneId: String,

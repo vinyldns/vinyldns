@@ -55,6 +55,8 @@ object TestZoneData {
 
   val zoneNotAuthorized: Zone = Zone("not.auth.zone.", "test@test.com", adminGroupId = "no-id")
 
+  val sharedZone: Zone = zoneActive.copy(id = "sharedZoneId", shared = true, adminGroupId = "abc")
+
   /* ACL RULES */
   val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
 

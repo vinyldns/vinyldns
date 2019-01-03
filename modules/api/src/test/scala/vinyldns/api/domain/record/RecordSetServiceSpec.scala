@@ -31,7 +31,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{ListUsersResults, UserRepository}
+import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{AccessLevel, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
@@ -45,6 +45,7 @@ class RecordSetServiceSpec
     with BeforeAndAfterEach {
 
   private val mockZoneRepo = mock[ZoneRepository]
+  private val mockGroupRepo = mock[GroupRepository]
   private val mockRecordRepo = mock[RecordSetRepository]
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
@@ -58,6 +59,7 @@ class RecordSetServiceSpec
 
   val underTest = new RecordSetService(
     mockZoneRepo,
+    mockGroupRepo,
     mockRecordRepo,
     mockRecordChangeRepo,
     mockUserRepo,
@@ -339,20 +341,81 @@ class RecordSetServiceSpec
   }
 
   "getRecordSet" should {
-    "return the recordSet" in {
+    doReturn(IO.pure(Some(sharedZone))).when(mockZoneRepo).getZone(sharedZone.id)
+
+    "return the recordSet if user is a zone admin" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(okZone.id, aaaa.id)
-      val result: RecordSet =
+      val expectedRecordSetInfo = RecordSetSummaryInfo(aaaa, None)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val result: RecordSetSummaryInfo =
         rightResultOf(underTest.getRecordSet(aaaa.id, okZone.id, okAuth).value)
-      result shouldBe aaaa
+      result shouldBe expectedRecordSetInfo
     }
-    "fail when the account is not authorized" in {
+
+    "return the recordSet if the user is in the recordSet owner group in a shared zone" in {
+      doReturn(IO.pure(Some(sharedZoneRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneRecord.id)
+
+      doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
+
+      val expectedRecordSetInfo = RecordSetSummaryInfo(sharedZoneRecord, Some(okGroup.name))
+      val result: RecordSetSummaryInfo =
+        rightResultOf(underTest.getRecordSet(sharedZoneRecord.id, sharedZone.id, okAuth).value)
+      result shouldBe expectedRecordSetInfo
+    }
+
+    "fail when the account is not authorized to access the zone" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
       val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
+    }
+
+    "fail when the account is not authorized for the record" in {
+      doReturn(IO.pure(Some(sharedZoneNoAuthRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneNoAuthRecord.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val result =
+        leftResultOf(
+          underTest
+            .getRecordSet(sharedZoneNoAuthRecord.id, sharedZone.id, okAuth)
+            .value)
+      result shouldBe a[NotAuthorizedError]
+    }
+
+    "fail if the user is only in the recordSet owner group but the zone is not shared" in {
+      doReturn(IO.pure(Some(zoneNoAuthRecordWithOwnerGroup)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneNotAuthorized.id, zoneNoAuthRecordWithOwnerGroup.id)
+
+      doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
+
+      val result = leftResultOf(
+        underTest
+          .getRecordSet(zoneNoAuthRecordWithOwnerGroup.id, zoneNotAuthorized.id, okAuth)
+          .value)
+      result shouldBe a[NotAuthorizedError]
+    }
+  }
+
+  "getGroupName" should {
+    "return the group name if a record owner group ID is present" in {
+      doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
+
+      val result = underTest.getGroupName(Some(okGroup.id)).value.unsafeRunSync().right.toOption.get
+      result shouldBe Some("ok")
     }
   }
 

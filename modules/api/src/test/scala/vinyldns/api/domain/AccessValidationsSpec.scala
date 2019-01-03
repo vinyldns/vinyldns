@@ -278,7 +278,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canViewRecordSet(
+            userAuthNone,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInNone,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -288,7 +293,8 @@ class AccessValidationsSpec
         userAuthRead,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInRead) should be(right)
+        zoneInRead,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Write" in {
@@ -298,7 +304,8 @@ class AccessValidationsSpec
         userAuthWrite,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInWrite) should be(right)
+        zoneInWrite,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -307,7 +314,8 @@ class AccessValidationsSpec
         userAuthDelete,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInDelete) should be(right)
+        zoneInDelete,
+        mockRecordSet.ownerGroupId) should be(right)
     }
   }
 

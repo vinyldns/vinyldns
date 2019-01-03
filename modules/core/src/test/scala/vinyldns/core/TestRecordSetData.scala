@@ -127,6 +127,30 @@ object TestRecordSetData {
     None,
     records = List(NSData("ns1.test.com"), NSData("ns2.test.com")))
 
+  val sharedZoneRecord: RecordSet = RecordSet(
+    sharedZone.id,
+    "aaaa",
+    RecordType.AAAA,
+    200,
+    RecordSetStatus.Pending,
+    DateTime.now,
+    None,
+    List(AAAAData("1:2:3:4:5:6:7:8")),
+    ownerGroupId = Some(okGroup.id))
+
+  val sharedZoneNoAuthRecord: RecordSet = RecordSet(
+    sharedZone.id,
+    "records",
+    RecordType.AAAA,
+    200,
+    RecordSetStatus.Pending,
+    DateTime.now,
+    None,
+    List(AAAAData("1:2:3:4:5:6:7:8")))
+
+  val zoneNoAuthRecordWithOwnerGroup: RecordSet =
+    rsOk.copy(zoneNotAuthorized.id, "okWithOwnerGroupID", ownerGroupId = Some(okGroup.id))
+
   /* RECORDSET CHANGES */
 
   def makeTestAddChange(
