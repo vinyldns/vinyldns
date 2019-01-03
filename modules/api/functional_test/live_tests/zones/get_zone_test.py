@@ -21,7 +21,7 @@ def test_get_zone_by_id(shared_zone_test_context):
 
 def test_get_shared_zone_by_id(shared_zone_test_context):
     """
-    Test get an existings shared zone by id
+    Test get an existing shared zone by id
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
 

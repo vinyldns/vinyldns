@@ -393,7 +393,6 @@ def clear_groups(client, exclude=[]):
 
     for group_id in group_ids:
         if not group_id in exclude:
-            print "group to delete: " + group_id
             client.delete_group(group_id, status=200)
 
 def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address="1.1.1.1", change_type="Add"):

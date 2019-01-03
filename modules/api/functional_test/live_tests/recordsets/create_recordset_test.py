@@ -1743,12 +1743,14 @@ def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
     assert_that(error_ptr, is_('Record name "fd69:27cc:fe91:0000:0000:0000:0000:ffff" is configured as a High Value Domain, so it cannot be modified.'))
 
 
-def test_create_recordset_with_record_ownergroup(shared_zone_test_context):
+def test_create_recordset_with_owner_group_id(shared_zone_test_context):
     """
-    Test creating a new record set in an existing zone with an assigned record ownergroup
+    Test creating a new record set in an existing zone with an assigned record owner group
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
     result_rs = None
+    created_group = None
+
     try:
         new_group = {
             'name': 'record-ownergroup',
@@ -1813,6 +1815,8 @@ def test_create_recordset_with_record_ownergroup(shared_zone_test_context):
                 client.wait_until_recordset_change_status(delete_result, 'Complete')
             except:
                 pass
-
-        result = client.delete_group(created_group['id'], status=200)
-        assert_that(result['status'], is_('Deleted'))
+        if created_group:
+            try:
+                client.delete_group(created_group['id'], status=200)
+            except:
+                pass
