@@ -31,12 +31,17 @@ final case class InvalidBatchChangeResponses(
 final case class ChangeLimitExceeded(limit: Int) extends BatchChangeErrorResponse {
   def message: String = s"Cannot request more than $limit changes in a single batch change request"
 }
-
 final case class BatchChangeIsEmpty(limit: Int) extends BatchChangeErrorResponse {
   def message: String =
     s"Batch change contained no changes. Batch change must have at least one change, up to a maximum of $limit changes."
 }
-
+final case class GroupDoesNotExist(id: String) extends BatchChangeErrorResponse {
+  def message: String = s""""Group with ID "$id" was not found"""
+}
+final case class UserDoesNotBelongToOwnerGroup(ownerGroupId: String, userName: String)
+    extends BatchChangeErrorResponse {
+  def message: String = s"""User "$userName." does not belong to group "$ownerGroupId""""
+}
 final case class BatchChangeNotFound(id: String) extends BatchChangeErrorResponse {
   def message: String = s"Batch change with id $id cannot be found"
 }

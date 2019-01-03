@@ -21,16 +21,18 @@ import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.ReverseZoneHelpers.ptrIsInZone
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
+import vinyldns.api.domain.membership.MembershipValidations._
+import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
+import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository, BatchChangeSummaryList}
+import vinyldns.core.domain.membership.GroupRepository
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository
-import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
-import vinyldns.api.repository.ApiDataAccessor
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository, BatchChangeSummaryList}
 
 object BatchChangeService {
   def apply(
@@ -40,14 +42,17 @@ object BatchChangeService {
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
+      dataAccessor.groupRepository,
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
-      batchChangeConverter)
+      batchChangeConverter
+    )
 }
 
 class BatchChangeService(
     zoneRepository: ZoneRepository,
     recordSetRepository: RecordSetRepository,
+    groupRepository: GroupRepository,
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
     batchChangeConverter: BatchChangeConverterAlgebra)
@@ -60,6 +65,7 @@ class BatchChangeService(
       auth: AuthPrincipal): BatchResult[BatchChange] =
     for {
       _ <- validateBatchChangeInputSize(batchChangeInput).toBatchResult
+      _ <- validateOwnerGroupId(batchChangeInput.ownerGroupId, auth).toBatchResult
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
@@ -152,6 +158,28 @@ class BatchChangeService(
 
     allSeq.map(lst => ExistingRecordSets(lst.flatten))
   }
+
+  def validateOwnerGroupId(
+      ownerGroupId: Option[String],
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    ownerGroupId match {
+      case None => ().asRight
+      case Some(groupId) =>
+        for {
+          _ <- validateOwnerGroupExists(groupId)
+          _ <- validateCanSeeGroup(groupId, authPrincipal)
+        } yield ().asRight
+    }
+
+  def validateOwnerGroupExists(ownerGroupId: String): Either[BatchChangeErrorResponse, Unit] =
+    if (groupRepository.getGroup(ownerGroupId).unsafeRunSync().isDefined) Right(())
+    else Left(GroupDoesNotExist(ownerGroupId))
+
+  def validateCanSeeGroup(
+      ownerGroupId: String,
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    if (canSeeGroup(ownerGroupId, authPrincipal).isRight) Right(())
+    else Left(UserDoesNotBelongToOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
 
   def zoneDiscovery(
       changes: ValidatedBatch[ChangeInput],
