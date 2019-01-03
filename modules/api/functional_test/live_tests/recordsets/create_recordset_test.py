@@ -1741,3 +1741,26 @@ def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
 
     error_ptr = client.create_recordset(ptr, status=422)
     assert_that(error_ptr, is_('Record name "fd69:27cc:fe91:0000:0000:0000:0000:ffff" is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_create_with_owner_group_id_fails_for_non_super_user(shared_zone_test_context):
+    """
+    Test that including the ownerGroupId attribute fails for non super users
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    record = {
+        'zoneId': shared_zone_test_context.ok_zone['id'],
+        'name': 'test-owner-group-id-create',
+        'type': 'A',
+        'ttl': 100,
+        'records': [
+            {
+                'address': '1.2.3.4'
+            }
+        ],
+        'ownerGroupId': "not-allowed"
+    }
+
+    error = client.create_recordset(record, status=422)
+    assert_that(error, is_('Unauthorized to add attribute "ownerGroupId" to record (name: "test-owner-group-id-create", type: "A").'))

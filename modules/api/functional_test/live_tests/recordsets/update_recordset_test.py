@@ -1977,3 +1977,37 @@ def test_update_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
 
     errors_ip6 = client.update_recordset(record_ip6, status=422)
     assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_update_with_owner_group_id_fails_for_non_super_user(shared_zone_test_context):
+    """
+    Test that changing the ownerGroupId attribute fails for non super users
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    create_rs = None
+
+    try:
+        record = {
+            'zoneId': shared_zone_test_context.ok_zone['id'],
+            'name': 'test-owner-group-id-update',
+            'type': 'A',
+            'ttl': 100,
+            'records': [
+                {
+                    'address': '1.2.3.4'
+                }
+            ]
+        }
+
+        create_result = client.create_recordset(record, status=202)
+        create_rs = client.wait_until_recordset_change_status(create_result, 'Complete')['recordSet']
+        record_update = create_rs
+        record_update['ownerGroupId'] = "not-allowed"
+
+        error = client.update_recordset(record_update, status=422)
+        assert_that(error, is_('Unauthorized to add attribute "ownerGroupId" to record (name: "test-owner-group-id-update", type: "A").'))
+
+    finally:
+        if create_rs:
+            client.delete_recordset(shared_zone_test_context.ok_zone['id'], create_rs['id'], status=202)
