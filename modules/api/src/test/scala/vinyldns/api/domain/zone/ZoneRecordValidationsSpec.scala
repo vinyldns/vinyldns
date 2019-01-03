@@ -20,7 +20,12 @@ import cats.scalatest.ValidatedMatchers
 import com.comcast.ip4s._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestData
-import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
+import vinyldns.api.domain.{
+  DomainValidationError,
+  HighValueDomainError,
+  OwnerGroupCreateUnauthorized,
+  OwnerGroupUpdateUnauthorized
+}
 import vinyldns.core.domain.record._
 
 class ZoneRecordValidationsSpec
@@ -49,6 +54,8 @@ class ZoneRecordValidationsSpec
     "odol-ccr.*",
     "cdn-tr.*"
   )
+
+  val superAuth = okAuth.copy(signedInUser = okAuth.signedInUser.copy(isSuper = true))
 
   val highValueRegexList = List("high-value-domain.*".r)
 
@@ -188,6 +195,138 @@ class ZoneRecordValidationsSpec
       )
 
       validateDnsZone(approvedNameServers, test) should beValid(test)
+    }
+  }
+
+  "createOwnerGroupIdValidations" should {
+    "return success if user is super and is adding ownerGroupId" in {
+      val record = aaaa.copy(ownerGroupId = Some("id"))
+      createOwnerGroupIdValidations(record.name, record.typ, record.ownerGroupId, superAuth) should beValid(
+        ())
+    }
+
+    "return failure if user is not super and is adding ownerGroupId" in {
+      val record = aaaa.copy(ownerGroupId = Some("id"))
+      createOwnerGroupIdValidations(record.name, record.typ, record.ownerGroupId, okAuth) should
+        haveInvalid[DomainValidationError](
+          OwnerGroupCreateUnauthorized(record.name, record.typ)
+        )
+    }
+
+    "return success if user not adding ownerGroupId" in {
+      val record = aaaa.copy(ownerGroupId = None)
+
+      createOwnerGroupIdValidations(record.name, record.typ, record.ownerGroupId, superAuth) should beValid(
+        ())
+      createOwnerGroupIdValidations(record.name, record.typ, record.ownerGroupId, okAuth) should beValid(
+        ())
+    }
+  }
+
+  "updateOwnerGroupIdValidations" should {
+    "return success if user is super and is updating ownerGroupID" in {
+      val recordId1 = aaaa.copy(ownerGroupId = Some("id1"))
+      val recordId2 = aaaa.copy(ownerGroupId = Some("id2"))
+      val recordNoId = aaaa.copy(ownerGroupId = None)
+
+      // old id to new id
+      updateOwnerGroupIdValidations(
+        recordId1.name,
+        recordId1.typ,
+        recordId1.ownerGroupId,
+        recordId2.ownerGroupId,
+        superAuth) should beValid(())
+
+      // no id to new id
+      updateOwnerGroupIdValidations(
+        recordNoId.name,
+        recordNoId.typ,
+        recordNoId.ownerGroupId,
+        recordId1.ownerGroupId,
+        superAuth) should beValid(())
+
+      // old id to no id
+      updateOwnerGroupIdValidations(
+        recordNoId.name,
+        recordNoId.typ,
+        recordNoId.ownerGroupId,
+        recordId2.ownerGroupId,
+        superAuth) should beValid(())
+    }
+
+    "return failure if user is not super and is updating ownerGroupID" in {
+      val recordId1 = aaaa.copy(ownerGroupId = Some("id1"))
+      val recordId2 = aaaa.copy(ownerGroupId = Some("id2"))
+      val recordNoId = aaaa.copy(ownerGroupId = None)
+
+      // old id to new id
+      val result1 = updateOwnerGroupIdValidations(
+        recordId1.name,
+        recordId1.typ,
+        recordId1.ownerGroupId,
+        recordId2.ownerGroupId,
+        okAuth)
+
+      result1 should haveInvalid[DomainValidationError](
+        OwnerGroupUpdateUnauthorized(recordId2.name, recordId2.typ, recordId2.ownerGroupId)
+      )
+
+      // no id to new id
+      val result2 = updateOwnerGroupIdValidations(
+        recordNoId.name,
+        recordNoId.typ,
+        recordNoId.ownerGroupId,
+        recordId1.ownerGroupId,
+        okAuth)
+
+      result2 should haveInvalid[DomainValidationError](
+        OwnerGroupUpdateUnauthorized(recordId1.name, recordId1.typ, recordId1.ownerGroupId)
+      )
+
+      // old id to no id
+      val result3 = updateOwnerGroupIdValidations(
+        recordNoId.name,
+        recordNoId.typ,
+        recordNoId.ownerGroupId,
+        recordId2.ownerGroupId,
+        okAuth)
+
+      result3 should haveInvalid[DomainValidationError](
+        OwnerGroupUpdateUnauthorized(recordId2.name, recordId2.typ, recordId2.ownerGroupId)
+      )
+    }
+
+    "return success if user is not updating ownerGroupID" in {
+      val recordNotNone = aaaa.copy(ownerGroupId = Some("id"))
+      val recordNone = aaaa.copy(ownerGroupId = None)
+
+      // some id
+      updateOwnerGroupIdValidations(
+        recordNotNone.name,
+        recordNotNone.typ,
+        recordNotNone.ownerGroupId,
+        recordNotNone.ownerGroupId,
+        superAuth) should beValid(())
+      updateOwnerGroupIdValidations(
+        recordNotNone.name,
+        recordNotNone.typ,
+        recordNotNone.ownerGroupId,
+        recordNotNone.ownerGroupId,
+        okAuth) should beValid(())
+
+      // no id
+      updateOwnerGroupIdValidations(
+        recordNone.name,
+        recordNone.typ,
+        recordNone.ownerGroupId,
+        recordNone.ownerGroupId,
+        superAuth) should beValid(())
+      updateOwnerGroupIdValidations(
+        recordNone.name,
+        recordNone.typ,
+        recordNone.ownerGroupId,
+        recordNone.ownerGroupId,
+        okAuth) should beValid(())
     }
   }
 }

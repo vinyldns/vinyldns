@@ -329,5 +329,50 @@ class RecordSetValidationsSpec
         isNotHighValueDomain(recordAAAA, zoneAAAA) should be(right)
       }
     }
+
+    "ownerGroupIdValidations" should {
+      "return success if user is super and is updating ownerGroupId" in {
+        val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
+        val newRecord = aaaa.copy(ownerGroupId = Some("id"))
+        val oldRecord = aaaa.copy(ownerGroupId = Some("old-id"))
+        val recordNone = aaaa.copy(ownerGroupId = None)
+
+        // adding to new create
+        ownerGroupIdValidations(superAuth, newRecord) should be(right)
+        // old id to new id
+        ownerGroupIdValidations(superAuth, newRecord, Some(oldRecord)) should be(right)
+        // no id to new id
+        ownerGroupIdValidations(superAuth, newRecord, Some(recordNone)) should be(right)
+        // old id to no id
+        ownerGroupIdValidations(superAuth, recordNone, Some(newRecord)) should be(right)
+      }
+
+      "return success if user is not updating" in {
+        val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
+        val normalAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = false))
+        val recordNone = aaaa.copy(ownerGroupId = None)
+        val recordNotNone = aaaa.copy(ownerGroupId = Some("id"))
+
+        ownerGroupIdValidations(superAuth, recordNone) should be(right)
+        ownerGroupIdValidations(superAuth, recordNotNone, Some(recordNotNone)) should be(right)
+        ownerGroupIdValidations(superAuth, recordNone, Some(recordNone)) should be(right)
+
+        ownerGroupIdValidations(normalAuth, recordNone) should be(right)
+        ownerGroupIdValidations(normalAuth, recordNotNone, Some(recordNotNone)) should be(right)
+        ownerGroupIdValidations(normalAuth, recordNone, Some(recordNone)) should be(right)
+      }
+
+      "return InvalidRequest if user is updating and is not super" in {
+        val normalAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = false))
+        val newRecord = aaaa.copy(ownerGroupId = Some("id"))
+        val oldRecord = aaaa.copy(ownerGroupId = Some("old-id"))
+        val recordNone = aaaa.copy(ownerGroupId = None)
+
+        leftValue(ownerGroupIdValidations(normalAuth, newRecord)) shouldBe a[InvalidRequest]
+        leftValue(ownerGroupIdValidations(normalAuth, newRecord, Some(oldRecord))) shouldBe a[InvalidRequest]
+        leftValue(ownerGroupIdValidations(normalAuth, newRecord, Some(recordNone))) shouldBe a[InvalidRequest]
+        leftValue(ownerGroupIdValidations(normalAuth, recordNone, Some(newRecord))) shouldBe a[InvalidRequest]
+      }
+    }
   }
 }

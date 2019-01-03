@@ -21,7 +21,12 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
+import vinyldns.api.domain.{
+  AccessValidations,
+  HighValueDomainError,
+  OwnerGroupCreateUnauthorized,
+  OwnerGroupUpdateUnauthorized
+}
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
 import vinyldns.api.route.ListRecordSetsResponse
@@ -176,6 +181,52 @@ class RecordSetServiceSpec
 
       result.recordSet.name shouldBe zoneAuthorized.name
     }
+    "succeed if record is adding ownerGroupId and user is super" in {
+      val record = aaaa.copy(zoneId = zoneAuthorized.id, ownerGroupId = Some("test-ownerGroupId"))
+      val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
+
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSets(record.zoneId, record.name, record.typ)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(record.zoneId, record.name)
+
+      val result = rightResultOf(
+        underTest.addRecordSet(record, superAuth).map(_.asInstanceOf[RecordSetChange]).value)
+      result.recordSet.name shouldBe record.name
+    }
+    "succeed if record is not adding ownerGroupId" in {
+      val record = aaaa.copy(zoneId = zoneAuthorized.id, ownerGroupId = None)
+      val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
+
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSets(record.zoneId, record.name, record.typ)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(record.zoneId, record.name)
+
+      val resultNotSuper = rightResultOf(
+        underTest
+          .addRecordSet(record, okAuth)
+          .map(_.asInstanceOf[RecordSetChange])
+          .value)
+      val resultSuper = rightResultOf(
+        underTest
+          .addRecordSet(record, superAuth)
+          .map(_.asInstanceOf[RecordSetChange])
+          .value)
+
+      resultNotSuper.recordSet.name shouldBe record.name
+      resultSuper.recordSet.name shouldBe record.name
+    }
+    "fail if record is adding ownerGroupId and user is not super" in {
+      val record = aaaa.copy(zoneId = zoneAuthorized.id, ownerGroupId = Some("test-ownerGroupId"))
+
+      val result = leftResultOf(underTest.addRecordSet(record, okAuth).value)
+      result shouldBe InvalidRequest(OwnerGroupCreateUnauthorized(record.name, record.typ).message)
+    }
   }
 
   "updateRecordSet" should {
@@ -296,6 +347,76 @@ class RecordSetServiceSpec
       val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
       result shouldBe InvalidRequest(
         HighValueDomainError(s"high-value-domain.${zoneAuthorized.name}").message)
+    }
+    "succeed if record is updating ownerGroupId and user is super" in {
+      val oldRecord = aaaa.copy(
+        zoneId = zoneAuthorized.id,
+        ownerGroupId = Some("test-ownerGroupId-old"),
+        status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(ownerGroupId = Some("test-ownerGroupId-new"))
+      val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneAuthorized.id, newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
+
+      val result = rightResultOf(
+        underTest
+          .updateRecordSet(newRecord, superAuth)
+          .map(_.asInstanceOf[RecordSetChange])
+          .value)
+      result.recordSet.name shouldBe newRecord.name
+    }
+    "succeed if record is not updating ownerGroupId" in {
+      val oldRecord = aaaa.copy(
+        zoneId = zoneAuthorized.id,
+        ownerGroupId = Some("test-ownerGroupId-old"),
+        status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy()
+
+      val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneAuthorized.id, newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
+
+      val resultSuper = rightResultOf(
+        underTest
+          .updateRecordSet(newRecord, superAuth)
+          .map(_.asInstanceOf[RecordSetChange])
+          .value)
+      resultSuper.recordSet.name shouldBe newRecord.name
+
+      val resultNotSuper = rightResultOf(
+        underTest
+          .updateRecordSet(newRecord, okAuth)
+          .map(_.asInstanceOf[RecordSetChange])
+          .value)
+      resultNotSuper.recordSet.name shouldBe newRecord.name
+    }
+    "fail if record is updating ownerGroupId and user is not super" in {
+      val oldRecord = aaaa.copy(
+        zoneId = zoneAuthorized.id,
+        ownerGroupId = Some("test-ownerGroupId-old"),
+        status = RecordSetStatus.Active)
+      val newRecord = oldRecord.copy(ownerGroupId = Some("test-ownerGroupId-new"))
+
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneAuthorized.id, newRecord.id)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zoneAuthorized.id, newRecord.name)
+
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, okAuth).value)
+      result shouldBe InvalidRequest(
+        OwnerGroupUpdateUnauthorized(newRecord.name, newRecord.typ, oldRecord.ownerGroupId).message)
     }
   }
 

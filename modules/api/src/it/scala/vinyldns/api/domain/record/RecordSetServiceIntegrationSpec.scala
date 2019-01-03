@@ -23,7 +23,12 @@ import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
-import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
+import vinyldns.api.domain.{
+  AccessValidations,
+  HighValueDomainError,
+  OwnerGroupCreateUnauthorized,
+  OwnerGroupUpdateUnauthorized
+}
 import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists}
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -59,6 +64,7 @@ class RecordSetServiceIntegrationSpec
   private val user = User("live-test-user", "key", "secret")
   private val group = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id))
   private val auth = AuthPrincipal(user, Seq(group.id))
+  private val superAuth = auth.copy(signedInUser = user.copy(isSuper = true))
 
   private val zone = Zone(
     s"live-zone-test.",
@@ -87,6 +93,25 @@ class RecordSetServiceIntegrationSpec
   private val subTestRecordA = RecordSet(
     zone.id,
     "a-record",
+    A,
+    38400,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("10.1.1.1")))
+  private val recordWithOwnerGroup = RecordSet(
+    zone.id,
+    "a-record-with-owner-group",
+    A,
+    38400,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("10.1.1.1")),
+    ownerGroupId = Some("ownerGroupId"))
+  private val recordWithNoOwnerGroup = RecordSet(
+    zone.id,
+    "a-record-with-no-owner-group",
     A,
     38400,
     RecordSetStatus.Active,
@@ -171,7 +196,9 @@ class RecordSetServiceIntegrationSpec
       subTestRecordNS,
       apexTestRecordNameConflict,
       subTestRecordNameConflict,
-      highValueDomainRecord
+      highValueDomainRecord,
+      recordWithOwnerGroup,
+      recordWithNoOwnerGroup
     )
     records.map(record => waitForSuccess(recordSetRepo.putRecordSet(record)))
 
@@ -350,6 +377,92 @@ class RecordSetServiceIntegrationSpec
 
       leftValue(result) shouldBe InvalidRequest(
         HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
+    }
+
+    "succeed in adding a record with a ownerGroupId when user is super" in {
+      val record = subTestRecordA.copy(
+        name = "owner-group-add-success",
+        ownerGroupId = Some("test-ownerGroupId"))
+      val result = testRecordSetService
+        .addRecordSet(record, superAuth)
+        .value
+        .unsafeRunSync()
+
+      rightValue(result)
+        .asInstanceOf[RecordSetChange]
+        .recordSet
+        .ownerGroupId shouldBe record.ownerGroupId
+    }
+
+    "fail in adding a record with a ownerGroupId when user is not super" in {
+      val record = subTestRecordA.copy(
+        name = "owner-group-add-failure",
+        ownerGroupId = Some("test-ownerGroupId"))
+      val result = testRecordSetService
+        .addRecordSet(record, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe
+        InvalidRequest(OwnerGroupCreateUnauthorized(record.name, record.typ).message)
+    }
+
+    "succeed in updating a record with a ownerGroupId when user is super" in {
+      val record = recordWithOwnerGroup.copy(ownerGroupId = Some("test-ownerGroupId-update"))
+      val recordUpdateFromNone =
+        recordWithNoOwnerGroup.copy(ownerGroupId = Some("test-ownerGroupId-update"))
+
+      val result = testRecordSetService
+        .updateRecordSet(record, superAuth)
+        .value
+        .unsafeRunSync()
+
+      val resultFromNone = testRecordSetService
+        .updateRecordSet(recordUpdateFromNone, superAuth)
+        .value
+        .unsafeRunSync()
+
+      rightValue(result)
+        .asInstanceOf[RecordSetChange]
+        .recordSet
+        .ownerGroupId shouldBe record.ownerGroupId
+
+      rightValue(resultFromNone)
+        .asInstanceOf[RecordSetChange]
+        .recordSet
+        .ownerGroupId shouldBe recordUpdateFromNone.ownerGroupId
+
+    }
+
+    "fail in updating a record with a ownerGroupId when user is not super" in {
+      val record = recordWithOwnerGroup.copy(ownerGroupId = Some("test-ownerGroupId-update"))
+      val recordUpdateFromNone =
+        recordWithNoOwnerGroup.copy(ownerGroupId = Some("test-ownerGroupId-update"))
+
+      // update owner group id
+      val result = testRecordSetService
+        .updateRecordSet(record, auth)
+        .value
+        .unsafeRunSync()
+
+      // add owner group to record that doesnt have one
+      val resultFromNone = testRecordSetService
+        .updateRecordSet(recordUpdateFromNone, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe
+        InvalidRequest(OwnerGroupUpdateUnauthorized(
+          record.name,
+          record.typ,
+          recordWithOwnerGroup.ownerGroupId).message)
+
+      leftValue(resultFromNone) shouldBe
+        InvalidRequest(
+          OwnerGroupUpdateUnauthorized(
+            recordUpdateFromNone.name,
+            recordUpdateFromNone.typ,
+            recordWithNoOwnerGroup.ownerGroupId).message)
     }
   }
 
