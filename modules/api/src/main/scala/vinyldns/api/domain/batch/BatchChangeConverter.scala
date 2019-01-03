@@ -41,7 +41,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def sendBatchForProcessing(
       batchChange: BatchChange,
       existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets): BatchResult[BatchConversionOutput] = {
+      existingRecordSets: ExistingRecordSets,
+      ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] = {
     logger.info(
       s"Converting BatchChange [${batchChange.id}] with SingleChanges [${batchChange.changes.map(_.id)}]")
     for {
@@ -49,7 +50,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         batchChange.changes,
         existingZones,
         existingRecordSets,
-        batchChange.userId).toRightBatchResult
+        batchChange.userId,
+        ownerGroupId).toRightBatchResult
       _ <- allChangesWereConverted(batchChange.changes, recordSetChanges)
       _ <- batchChangeRepo
         .save(batchChange)
@@ -121,7 +123,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       changes: List[SingleChange],
       existingZones: ExistingZones,
       existingRecordSets: ExistingRecordSets,
-      userId: String): List[RecordSetChange] = {
+      userId: String,
+      ownerGroupId: Option[String]): List[RecordSetChange] = {
     val grouped = changes.groupBy(_.recordKey)
 
     grouped.toList.flatMap {
@@ -131,7 +134,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         If we move to getting zones from the DB in the converter, we should report status back on changes
         where we can no longer find the zone (edge case - means someone submitted batch and then zone was deleted)
          */
-        combineChanges(groupedChanges, existingZones, existingRecordSets, userId)
+        combineChanges(groupedChanges, existingZones, existingRecordSets, userId, ownerGroupId)
     }
   }
 
@@ -139,7 +142,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       changes: List[SingleChange],
       existingZones: ExistingZones,
       existingRecordSets: ExistingRecordSets,
-      userId: String): Option[RecordSetChange] = {
+      userId: String,
+      ownerGroupId: Option[String]): Option[RecordSetChange] = {
     val adds = NonEmptyList.fromList {
       changes.collect {
         case add: SingleAddChange if SupportedBatchChangeRecordTypes.get.contains(add.typ) => add
@@ -153,10 +157,10 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
 
     // Note: deletes are applied before adds by this logic
     (deletes, adds) match {
-      case (None, Some(a)) => generateAddChange(a, existingZones, userId)
+      case (None, Some(a)) => generateAddChange(a, existingZones, userId, ownerGroupId)
       case (Some(d), None) => generateDeleteChange(d, existingZones, existingRecordSets, userId)
       case (Some(d), Some(a)) =>
-        generateUpdateChange(d, a, existingZones, existingRecordSets, userId)
+        generateUpdateChange(d, a, existingZones, existingRecordSets, userId, ownerGroupId)
       case _ => None
     }
   }
@@ -166,7 +170,8 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       addChanges: NonEmptyList[SingleAddChange],
       existingZones: ExistingZones,
       existingRecordSets: ExistingRecordSets,
-      userId: String): Option[RecordSetChange] =
+      userId: String,
+      ownerGroupId: Option[String]): Option[RecordSetChange] =
     for {
       deleteChange <- Some(deleteChanges.head)
       zone <- existingZones.getByName(deleteChange.zoneName)
@@ -174,7 +179,14 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         deleteChange.zoneId,
         deleteChange.recordName,
         deleteChange.typ)
-      newRecordSet = combineAddChanges(addChanges, zone)
+      newRecordSet = {
+        val newOwnerGroupId = if (zone.shared && existingRecordSet.ownerGroupId.isEmpty) {
+          ownerGroupId
+        } else {
+          existingRecordSet.ownerGroupId
+        }
+        combineAddChanges(addChanges, zone).copy(ownerGroupId = newOwnerGroupId)
+      }
       changeIds = deleteChanges.map(_.id) ++ addChanges.map(_.id).toList
     } yield
       RecordSetChangeGenerator.forUpdate(
@@ -206,10 +218,14 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def generateAddChange(
       addChanges: NonEmptyList[SingleAddChange],
       existingZones: ExistingZones,
-      userId: String): Option[RecordSetChange] =
+      userId: String,
+      ownerGroupId: Option[String]): Option[RecordSetChange] =
     for {
       zone <- existingZones.getByName(addChanges.head.zoneName)
-      newRecordSet = combineAddChanges(addChanges, zone)
+      newRecordSet = {
+        val newOwnerGroupId = if (zone.shared) ownerGroupId else None
+        combineAddChanges(addChanges, zone).copy(ownerGroupId = newOwnerGroupId)
+      }
       ids = addChanges.map(_.id)
     } yield RecordSetChangeGenerator.forAdd(newRecordSet, zone, userId, ids.toList)
 

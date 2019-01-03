@@ -40,7 +40,10 @@ final case class GroupDoesNotExist(id: String) extends BatchChangeErrorResponse 
 }
 final case class UserDoesNotBelongToOwnerGroup(ownerGroupId: String, userName: String)
     extends BatchChangeErrorResponse {
-  def message: String = s"""User "$userName." does not belong to group "$ownerGroupId""""
+  def message: String =
+    s"""User "$userName." does not belong to group "$ownerGroupId". Owner group ID is only required for
+       | record set changes in shared zones.
+     """.stripMargin
 }
 final case class BatchChangeNotFound(id: String) extends BatchChangeErrorResponse {
   def message: String = s"Batch change with id $id cannot be found"

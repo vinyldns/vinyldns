@@ -27,6 +27,7 @@ import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 import vinyldns.core.domain.batch.{BatchChange, RecordKey}
+import vinyldns.core.domain.zone.Zone
 
 trait BatchChangeValidationsAlgebra {
 
@@ -37,7 +38,8 @@ trait BatchChangeValidationsAlgebra {
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): ValidatedBatch[ChangeForValidation]
+      auth: AuthPrincipal,
+      ownerGroupId: Option[String]): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
       batchChange: BatchChange,
@@ -118,16 +120,17 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): ValidatedBatch[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      ownerGroupId: Option[String]): ValidatedBatch[ChangeForValidation] = {
     val changeGroups = ChangeForValidationMap(changes.getValid)
 
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     changes.mapValid {
       case addUpdate: AddChangeForValidation
           if changeGroups.containsDeleteChangeForValidation(addUpdate.recordKey) =>
-        validateAddUpdateWithContext(addUpdate, changeGroups, auth)
+        validateAddUpdateWithContext(addUpdate, changeGroups, existingRecords, auth, ownerGroupId)
       case add: AddChangeForValidation =>
-        validateAddWithContext(add, changeGroups, existingRecords, auth)
+        validateAddWithContext(add, changeGroups, existingRecords, auth, ownerGroupId)
       case deleteUpdate: DeleteChangeForValidation
           if changeGroups.containsAddChangeForValidation(deleteUpdate.recordKey) =>
         validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth)
@@ -153,7 +156,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateAddUpdateWithContext(
       change: AddChangeForValidation,
       changeGroups: ChangeForValidationMap,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      existingRecordSets: ExistingRecordSets,
+      auth: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     // Updates require checking against other batch changes since multiple adds
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
@@ -162,7 +167,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
 
     val validations = typedValidations |+|
-      userCanAddUpdateRecordSet(change, auth)
+      userCanAddUpdateRecordSet(change, auth) |+|
+      ownerGroupIsValid(change, existingRecordSets, ownerGroupId)
 
     validations.map(_ => change)
   }
@@ -186,7 +192,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       change: AddChangeForValidation,
       changeGroups: ChangeForValidationMap,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX | PTR =>
         noCnameWithRecordNameInExistingRecords(
@@ -222,7 +229,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
           change.recordName,
           change.inputChange.inputName,
           change.inputChange.typ,
-          existingRecords)
+          existingRecords) |+|
+        ownerGroupIsValid(change.zone, change.recordName, ownerGroupId)
 
     validations.map(_ => change)
   }
@@ -345,5 +353,30 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
         ZoneRecordValidations.isNotHighValueFqdn(
           VinylDNSConfig.highValueRegexList,
           change.inputName)
+    }
+
+  def ownerGroupIsValid(
+      zone: Zone,
+      recordName: String,
+      ownerGroupId: Option[String]): SingleValidation[Unit] =
+    if (!zone.shared || (zone.shared && ownerGroupId.isDefined)) {
+      ().validNel
+    } else {
+      OwnerGroupIdMissing(recordName, zone.name).invalidNel
+    }
+
+  def ownerGroupIsValid(
+      change: ChangeForValidation,
+      existingRecordSets: ExistingRecordSets,
+      ownerGroupId: Option[String]): SingleValidation[Unit] =
+    if (!change.zone.shared) {
+      ().validNel
+    } else {
+      existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+        case Some(rs) =>
+          if (rs.ownerGroupId.isDefined || ownerGroupId.isDefined) ().validNel
+          else OwnerGroupIdMissing(change.recordName, change.zone.name).invalidNel
+      }
     }
 }

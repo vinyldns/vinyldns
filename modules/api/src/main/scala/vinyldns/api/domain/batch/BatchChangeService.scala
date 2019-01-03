@@ -70,12 +70,17 @@ class BatchChangeService(
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
       recordSets <- getExistingRecordSets(changesWithZones).toBatchResult
-      validatedSingleChanges = validateChangesWithContext(changesWithZones, recordSets, auth)
+      validatedSingleChanges = validateChangesWithContext(
+        changesWithZones,
+        recordSets,
+        auth,
+        batchChangeInput.ownerGroupId)
       changeForConversion <- buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
       conversionResult <- batchChangeConverter.sendBatchForProcessing(
         changeForConversion,
         zoneMap,
-        recordSets)
+        recordSets,
+        batchChangeInput.ownerGroupId)
     } yield conversionResult.batchChange
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChange] =

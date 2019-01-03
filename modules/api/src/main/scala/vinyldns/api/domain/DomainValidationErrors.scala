@@ -126,4 +126,11 @@ final case class HighValueDomainError(name: String) extends DomainValidationErro
   def message: String =
     s"""Record name "$name" is configured as a High Value Domain, so it cannot be modified."""
 }
+
+final case class OwnerGroupIdMissing(recordName: String, zoneName: String)
+    extends DomainValidationError {
+  def message: String =
+    s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record
+       | "$recordName".""".stripMargin
+}
 // $COVERAGE-ON$
