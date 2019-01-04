@@ -9,13 +9,9 @@
 # Options:
 #	-t, --timeout seconds: overwrite ping timeout, default of 60
 #	-a, --api-only: only starts up vinyldns-api and its dependencies, excludes vinyldns-portal
+#	-c, --clean: re-pull vinyldns/api and vinyldns/portal images from docker hub
+#	-v, --version tag: overwrite vinyldns/api and vinyldns/portal docker tags
 #####################################################################################################
-
-DIR=$( cd $(dirname $0) ; pwd -P )
-TIMEOUT=60
-DOCKER_COMPOSE_CONFIG="${DIR}/../docker/docker-compose-build.yml"
-# empty service starts up all
-SERVICE=""
 
 function wait_for_url {
 	echo "pinging ${URL} ..."
@@ -49,36 +45,67 @@ function usage {
     printf "options:\n"
     printf "\t-t, --timeout seconds: overwrite ping timeout of 60\n"
     printf "\t-a, --api-only: do not start up vinyldns-portal\n"
+    printf "\t-c, --clean: re-pull vinyldns/api and vinyldns/portal images from docker hub\n"
+    printf "\t-v, --version tag: overwrite vinyldns/api and vinyldns/portal docker tags\n"
 }
 
-while [ "$1" != "" ]; do
-    case "$1" in
-        -t | --timeout ) TIMEOUT="$2";  shift;;
-        -a | --api-only ) SERVICE="api";;
-        * ) usage; exit;;
-    esac
-    shift
-done
+function clean_images {
+	if (( $CLEAN == 1 )); then
+		echo "cleaning docker images..."
+		docker rmi vinyldns/api:"$VINYLDNS_VERSION"
+		docker rmi vinyldns/portal:"$VINYLDNS_VERSION"
+	fi
+}
 
-echo "timeout set to $TIMEOUT"
+function wait_for_api {
+	echo "Waiting for api..."
+	URL="$VINYLDNS_API_URL"
+	wait_for_url
+}
 
+function wait_for_portal {
+	# check if portal was skipped
+	if [ "$SERVICE" != "api" ]; then
+		echo "Waiting for portal..."
+		URL="$VINYLDNS_PORTAL_URL"
+		wait_for_url
+	fi
+}
+
+# initial var setup
+DIR=$( cd $(dirname $0) ; pwd -P )
+TIMEOUT=60
+DOCKER_COMPOSE_CONFIG="${DIR}/../docker/docker-compose-build.yml"
+# empty service starts up all docker services in compose file
+SERVICE=""
+# when CLEAN is set to 1, existing docker images are deleted so they are re-pulled
+CLEAN=0
+
+# source env before parsing args so vars can be overwritten
 set -a # Required in order to source docker/.env
 # Source customizable env files
 source "$DIR"/.env
 source "$DIR"/../docker/.env
 
+# parse args
+while [ "$1" != "" ]; do
+	case "$1" in
+		-t | --timeout  	) TIMEOUT="$2";  shift;;
+		-a | --api-only 	) SERVICE="api";;
+		-c | --clean    	) CLEAN=1;;
+		-v | --version		) export VINYLDNS_VERSION="$2"; shift;;
+		* ) usage; exit;;
+	esac
+	shift
+done
+
+clean_images
+
+echo "timeout is set to ${TIMEOUT}"
+echo "vinyldns version is set to ${VINYLDNS_VERSION}"
+
 echo "Starting vinyldns and all dependencies in the background..."
 docker-compose -f "$DOCKER_COMPOSE_CONFIG" up -d ${SERVICE}
 
-echo "Waiting for api..."
-URL="$VINYLDNS_API_URL"
-wait_for_url
-
-# if api only then don't wait for portal
-if [ "$SERVICE" == "api" ]; then
-	exit 0
-fi
-
-echo "Waiting for portal..."
-URL="$VINYLDNS_PORTAL_URL"
-wait_for_url
+wait_for_api
+wait_for_portal
