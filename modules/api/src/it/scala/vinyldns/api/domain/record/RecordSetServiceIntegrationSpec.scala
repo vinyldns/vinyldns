@@ -24,10 +24,10 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
 import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
-import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists}
+import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists, RecordSetSummaryInfo}
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{Group, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
@@ -53,6 +53,7 @@ class RecordSetServiceIntegrationSpec
 
   private var recordSetRepo: DynamoDBRecordSetRepository = _
   private var zoneRepo: ZoneRepository = _
+  private var groupRepo: GroupRepository = _
 
   private var testRecordSetService: RecordSetServiceAlgebra = _
 
@@ -159,7 +160,7 @@ class RecordSetServiceIntegrationSpec
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
     zoneRepo = zoneRepository
-
+    groupRepo = groupRepository
     List(zone, zoneTestNameConflicts, zoneTestAddRecords).map(z => waitForSuccess(zoneRepo.save(z)))
 
     // Seeding records in DB
@@ -177,6 +178,7 @@ class RecordSetServiceIntegrationSpec
 
     testRecordSetService = new RecordSetService(
       zoneRepo,
+      groupRepo,
       recordSetRepo,
       mock[RecordChangeRepository],
       mock[UserRepository],
@@ -192,7 +194,7 @@ class RecordSetServiceIntegrationSpec
         .getRecordSet(apexTestRecordA.id, apexTestRecordA.zoneId, auth)
         .value
         .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSet]]
+        .mapTo[Either[Throwable, RecordSetSummaryInfo]]
       whenReady(originalRecord, timeout) { out =>
         rightValue(out).name shouldBe "live-zone-test"
       }

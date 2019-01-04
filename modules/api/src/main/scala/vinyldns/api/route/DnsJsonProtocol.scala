@@ -23,7 +23,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import vinyldns.api.domain.zone.RecordSetInfo
+import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetSummaryInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -37,6 +37,7 @@ trait DnsJsonProtocol extends JsonValidation {
     ZoneConnectionSerializer,
     RecordSetSerializer,
     RecordSetInfoSerializer,
+    RecordSetSummaryInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
     JsonEnumV(ZoneChangeStatus),
@@ -223,6 +224,26 @@ trait DnsJsonProtocol extends JsonValidation {
         ("account" -> rs.account) ~
         ("accessLevel" -> rs.accessLevel.toString) ~
         ("ownerGroupId" -> rs.ownerGroupId)
+  }
+
+  case object RecordSetSummaryInfoSerializer extends ValidationSerializer[RecordSetSummaryInfo] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetSummaryInfo] =
+      (RecordSetSerializer.fromJson(js), (js \ "ownerGroupName").optional[String])
+        .mapN(RecordSetSummaryInfo.apply)
+
+    override def toJson(rs: RecordSetSummaryInfo): JValue =
+      ("type" -> Extraction.decompose(rs.typ)) ~
+        ("zoneId" -> rs.zoneId) ~
+        ("name" -> rs.name) ~
+        ("ttl" -> rs.ttl) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("updated" -> Extraction.decompose(rs.updated)) ~
+        ("records" -> Extraction.decompose(rs.records)) ~
+        ("id" -> rs.id) ~
+        ("account" -> rs.account) ~
+        ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("ownerGroupName" -> rs.ownerGroupName)
   }
 
   def extractRecords(typ: RecordType, js: JValue): ValidatedNel[String, List[RecordData]] =
