@@ -69,7 +69,12 @@ object Boot extends App {
       loaderResponse <- DataStoreLoader
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
       repositories = loaderResponse.accessor
-      _ <- TestDataLoader.loadTestData(repositories.userRepository)
+      _ <- TestDataLoader
+        .loadTestData(
+          repositories.userRepository,
+          repositories.groupRepository,
+          repositories.zoneRepository,
+          repositories.membershipRepository)
       queueConfig <- VinylDNSConfig.messageQueueConfig
       messageQueue <- MessageQueueLoader.load(queueConfig)
       processingDisabled <- IO(VinylDNSConfig.vinyldnsConfig.getBoolean("processing-disabled"))

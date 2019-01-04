@@ -20,6 +20,7 @@ import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership._
+import vinyldns.core.domain.zone._
 
 // $COVERAGE-OFF$
 object TestDataLoader {
@@ -55,6 +56,17 @@ object TestDataLoader {
     created = DateTime.now.secondOfDay().roundFloorCopy(),
     accessKey = "dummyAccessKey",
     secretKey = "dummySecretKey",
+    isTest = true
+  )
+  final val sharedZoneUser = User(
+    userName = "sharedZoneUser",
+    id = "sharedZoneUser",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "sharedZoneUserAccessKey",
+    secretKey = "sharedZoneUserSecretKey",
+    firstName = Some("sharedZoneUser"),
+    lastName = Some("sharedZoneUser"),
+    email = Some("test@test.com"),
     isTest = true
   )
   final val lockedUser = User(
@@ -139,10 +151,38 @@ object TestDataLoader {
     isTest = true
   )
 
-  def loadTestData(repository: UserRepository): IO[List[User]] =
-    (testUser :: okUser :: dummyUser :: lockedUser :: listGroupUser :: listZonesUser :: listBatchChangeSummariesUser ::
-      listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map { user =>
-      repository.save(user)
-    }.parSequence
+  final val sharedZoneGroup = Group(
+    name = "testSharedZoneGroup",
+    id = "shared-zone-group",
+    email = "email",
+    memberIds = Set(sharedZoneUser.id),
+    adminUserIds = Set(sharedZoneUser.id))
+
+  final val sharedZone = Zone(
+    name = "shared.",
+    email = "email",
+    id = "shared-zone",
+    adminGroupId = sharedZoneGroup.id,
+    shared = true,
+    isTest = true
+  )
+
+  def loadTestData(
+      userRepo: UserRepository,
+      groupRepo: GroupRepository,
+      zoneRepo: ZoneRepository,
+      membershipRepo: MembershipRepository): IO[Unit] =
+    for {
+      _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
+        listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map {
+        user =>
+          userRepo.save(user)
+      }.parSequence
+      _ <- groupRepo.save(sharedZoneGroup)
+      _ <- membershipRepo.addMembers(
+        groupId = "shared-zone-group",
+        memberUserIds = Set(sharedZoneUser.id))
+      _ <- zoneRepo.save(sharedZone)
+    } yield ()
 }
 // $COVERAGE-ON$
