@@ -135,7 +135,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canAddRecordSet(
+            userAuthNone,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInNone,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -144,7 +149,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead))
+          .canAddRecordSet(
+            userAuthRead,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInRead,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -154,7 +164,8 @@ class AccessValidationsSpec
         userAuthWrite,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInWrite) should be(right)
+        zoneInWrite,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -163,21 +174,23 @@ class AccessValidationsSpec
         userAuthDelete,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInDelete) should be(right)
+        zoneInDelete,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if recordset is NS and user is a superuser" in {
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSuper = true),
         memberGroupIds = Seq.empty)
-      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zoneNotAuthorized) should be(
+      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zoneNotAuthorized, ns.ownerGroupId) should be(
         right)
     }
 
     "return true if recordset is NS and user is in the admin group" in {
       val zone = okZone
       val auth = okAuth
-      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zone) should be(right)
+      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zone, ns.ownerGroupId) should be(
+        right)
     }
 
     "return true if recordset is NS and the user has ACL access " in {
@@ -185,7 +198,8 @@ class AccessValidationsSpec
         userAuthWrite,
         "someRecordName",
         RecordType.NS,
-        zoneInWrite) should be(right)
+        zoneInWrite,
+        None) should be(right)
     }
   }
   "canUpdateRecordSet" should {
@@ -194,7 +208,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canUpdateRecordSet(
+            userAuthNone,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInNone,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -203,7 +222,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead))
+          .canUpdateRecordSet(
+            userAuthRead,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInRead,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -213,7 +237,8 @@ class AccessValidationsSpec
         userAuthWrite,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInWrite) should be(right)
+        zoneInWrite,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -226,7 +251,8 @@ class AccessValidationsSpec
         userAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneIn) should be(right)
+        zoneIn,
+        mockRecordSet.ownerGroupId) should be(right)
     }
   }
 
@@ -236,7 +262,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canDeleteRecordSet(
+            userAuthNone,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInNone,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -245,7 +276,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead))
+          .canDeleteRecordSet(
+            userAuthRead,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInRead,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -254,7 +290,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(userAuthWrite, mockRecordSet.name, mockRecordSet.typ, zoneInWrite))
+          .canDeleteRecordSet(
+            userAuthWrite,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInWrite,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -264,7 +305,8 @@ class AccessValidationsSpec
         userAuthDelete,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInDelete) should be(right)
+        zoneInDelete,
+        mockRecordSet.ownerGroupId) should be(right)
     }
   }
 
@@ -274,7 +316,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canViewRecordSet(
+            userAuthNone,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInNone,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -284,7 +331,8 @@ class AccessValidationsSpec
         userAuthRead,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInRead) should be(right)
+        zoneInRead,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Write" in {
@@ -294,7 +342,8 @@ class AccessValidationsSpec
         userAuthWrite,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInWrite) should be(right)
+        zoneInWrite,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -303,7 +352,8 @@ class AccessValidationsSpec
         userAuthDelete,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInDelete) should be(right)
+        zoneInDelete,
+        mockRecordSet.ownerGroupId) should be(right)
     }
   }
 
@@ -311,7 +361,8 @@ class AccessValidationsSpec
     "return AccessLevel.Delete if the user is admin/super" in {
       val mockRecordSet = mock[RecordSet]
       val result =
-        accessValidationTest.getAccessLevel(okAuth, mockRecordSet.name, mockRecordSet.typ, okZone)
+        accessValidationTest.getAccessLevel(okAuth, mockRecordSet.name, mockRecordSet.typ, okZone,
+          mockRecordSet.ownerGroupId)
       result shouldBe AccessLevel.Delete
     }
 
@@ -324,7 +375,8 @@ class AccessValidationsSpec
         supportAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        okZone)
+        okZone,
+        mockRecordSet.ownerGroupId)
       result shouldBe AccessLevel.Read
     }
 
@@ -336,7 +388,8 @@ class AccessValidationsSpec
         supportAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        okZone)
+        okZone,
+        mockRecordSet.ownerGroupId)
       result shouldBe AccessLevel.Delete
     }
 
@@ -348,7 +401,12 @@ class AccessValidationsSpec
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
 
       val result =
-        accessValidationTest.getAccessLevel(userAuth, mockRecordSet.name, mockRecordSet.typ, zoneIn)
+        accessValidationTest.getAccessLevel(
+          userAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          zoneIn,
+          mockRecordSet.ownerGroupId)
       result shouldBe AccessLevel.Write
     }
 
@@ -360,7 +418,12 @@ class AccessValidationsSpec
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
 
       val result =
-        accessValidationTest.getAccessLevel(userAuth, mockRecordSet.name, mockRecordSet.typ, zoneIn)
+        accessValidationTest.getAccessLevel(
+          userAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          zoneIn,
+          mockRecordSet.ownerGroupId)
       result shouldBe AccessLevel.Read
     }
   }

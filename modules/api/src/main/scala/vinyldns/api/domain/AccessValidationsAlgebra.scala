@@ -32,25 +32,29 @@ trait AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit]
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit]
 
   def canUpdateRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit]
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit]
 
   def canDeleteRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit]
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit]
 
   def canViewRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit]
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit]
 
   def getListAccessLevels(
       auth: AuthPrincipal,

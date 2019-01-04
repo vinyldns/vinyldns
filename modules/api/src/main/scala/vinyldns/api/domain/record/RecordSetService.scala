@@ -64,7 +64,12 @@ class RecordSetService(
       _ <- recordSetDoesNotExist(rsForValidations, zone)
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
-      _ <- canAddRecordSet(auth, rsForValidations.name, rsForValidations.typ, zone).toResult
+      _ <- canAddRecordSet(
+        auth,
+        rsForValidations.name,
+        rsForValidations.typ,
+        zone,
+        rsForValidations.ownerGroupId).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
@@ -81,7 +86,7 @@ class RecordSetService(
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone).toResult
+      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -102,7 +107,7 @@ class RecordSetService(
       zone <- getZone(zoneId)
       existing <- getRecordSet(recordSetId, zone)
       _ <- isNotHighValueDomain(existing, zone).toResult
-      _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone).toResult
+      _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
@@ -116,7 +121,12 @@ class RecordSetService(
     for {
       zone <- getZone(zoneId)
       recordSet <- getRecordSet(recordSetId, zone)
-      _ <- canViewRecordSet(authPrincipal, recordSet.name, recordSet.typ, zone).toResult
+      _ <- canViewRecordSet(
+        authPrincipal,
+        recordSet.name,
+        recordSet.typ,
+        zone,
+        recordSet.ownerGroupId).toResult
     } yield recordSet
 
   def listRecordSets(

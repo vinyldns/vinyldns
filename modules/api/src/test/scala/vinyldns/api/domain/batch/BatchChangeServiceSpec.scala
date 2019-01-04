@@ -29,7 +29,12 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.api.domain.{AccessValidations, _}
-import vinyldns.api.repository.{EmptyRecordSetRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
+import vinyldns.api.repository.{
+  EmptyGroupRepo,
+  EmptyRecordSetRepo,
+  EmptyZoneRepo,
+  InMemoryBatchChangeRepository
+}
 import cats.effect._
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
@@ -98,7 +103,8 @@ class BatchChangeServiceSpec
     def sendBatchForProcessing(
         batchChange: BatchChange,
         existingZones: ExistingZones,
-        existingRecordSets: ExistingRecordSets): BatchResult[BatchConversionOutput] =
+        existingRecordSets: ExistingRecordSets,
+        ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] =
       batchChange.comments match {
         case Some("conversionError") => BatchConversionError(pendingChange).toLeftBatchResult
         case _ => BatchConversionOutput(batchChange, List()).toRightBatchResult
@@ -145,9 +151,12 @@ class BatchChangeServiceSpec
       IO.pure(dbZones.filter(z => zoneNames.exists(z.name.endsWith)))
   }
 
+  object TestGroupRepo extends EmptyGroupRepo
+
   private val underTest = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    TestGroupRepo,
     validations,
     batchChangeRepo,
     EmptyBatchConverter)
@@ -277,6 +286,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        TestGroupRepo,
         validations,
         batchChangeRepo,
         EmptyBatchConverter)
@@ -309,6 +319,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        TestGroupRepo,
         validations,
         batchChangeRepo,
         EmptyBatchConverter)

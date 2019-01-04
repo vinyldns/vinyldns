@@ -45,8 +45,9 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit] = {
-    val accessLevel = getAccessLevel(auth, recordName, recordType, zone)
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit] = {
+    val accessLevel = getAccessLevel(auth, recordName, recordType, zone, ownerGroupId)
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to create " +
         s"$recordName.${zone.name}"))(
@@ -57,8 +58,9 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit] = {
-    val accessLevel = getAccessLevel(auth, recordName, recordType, zone)
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit] = {
+    val accessLevel = getAccessLevel(auth, recordName, recordType, zone, ownerGroupId)
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to update " +
         s"$recordName.${zone.name}"))(
@@ -69,21 +71,23 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit] =
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to delete " +
         s"$recordName.${zone.name}"))(
-      getAccessLevel(auth, recordName, recordType, zone) == AccessLevel.Delete)
+      getAccessLevel(auth, recordName, recordType, zone, ownerGroupId) == AccessLevel.Delete)
 
   def canViewRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit] =
+      zone: Zone,
+      ownerGroupId: Option[String]): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to view " +
         s"$recordName.${zone.name}"))(
-      getAccessLevel(auth, recordName, recordType, zone) != AccessLevel.NoAccess)
+      getAccessLevel(auth, recordName, recordType, zone, ownerGroupId) != AccessLevel.NoAccess)
 
   def getListAccessLevels(
       auth: AuthPrincipal,
@@ -177,12 +181,28 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): AccessLevel = auth match {
-    case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) => AccessLevel.Delete
-    case supportUser if supportUser.canReadAll => {
+      zone: Zone,
+      ownerGroupId: Option[String]): AccessLevel = auth match {
+    case admin
+        if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) ||
+          ownerGroupValidInSharedZone(zone.shared, auth, ownerGroupId) =>
+      AccessLevel.Delete
+    case supportUser if supportUser.canReadAll =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
-    }
     case _ => getAccessFromAcl(auth, recordName, recordType, zone)
   }
+
+  def ownerGroupValidInSharedZone(
+      zoneShared: Boolean,
+      authPrincipal: AuthPrincipal,
+      ownerGroupId: Option[String]): Boolean =
+    if (!zoneShared) {
+      false
+    } else {
+      ownerGroupId match {
+        case Some(groupId) => authPrincipal.isGroupMember(groupId)
+        case None => true
+      }
+    }
 }

@@ -213,7 +213,9 @@ class BatchChangeConverterSpec
       val batchChange =
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, addSingleChangesGood)
       val result = rightResultOf(
-        underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
+        underTest
+          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .value)
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -232,7 +234,9 @@ class BatchChangeConverterSpec
       val batchChange =
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, deleteSingleChangesGood)
       val result = rightResultOf(
-        underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
+        underTest
+          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .value)
       val rsChanges = result.recordSetChanges
 
       // validate recordset change basics generated from batch
@@ -261,7 +265,9 @@ class BatchChangeConverterSpec
       val batchChange =
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, updateSingleChangesGood)
       val result = rightResultOf(
-        underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
+        underTest
+          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .value)
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -287,7 +293,9 @@ class BatchChangeConverterSpec
       val batchChange =
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, changes)
       val result = rightResultOf(
-        underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
+        underTest
+          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .value)
       val rsChanges = result.recordSetChanges
 
       // validate recordset changes generated from batch
@@ -323,7 +331,9 @@ class BatchChangeConverterSpec
       val batchChange =
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, List())
       val result = rightResultOf(
-        underTest.sendBatchForProcessing(batchChange, existingZones, existingRecordSets).value)
+        underTest
+          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
+          .value)
 
       result.batchChange shouldBe batchChange
     }
@@ -333,7 +343,7 @@ class BatchChangeConverterSpec
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneBad)
       val result = rightResultOf(
         underTest
-          .sendBatchForProcessing(batchWithBadChange, existingZones, existingRecordSets)
+          .sendBatchForProcessing(batchWithBadChange, existingZones, existingRecordSets, None)
           .value)
       val rsChanges = result.recordSetChanges
 
@@ -366,7 +376,7 @@ class BatchChangeConverterSpec
         BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneUnsupported)
       val result = leftResultOf(
         underTest
-          .sendBatchForProcessing(batchChangeUnsupported, existingZones, existingRecordSets)
+          .sendBatchForProcessing(batchChangeUnsupported, existingZones, existingRecordSets, None)
           .value)
       result shouldBe an[BatchConversionError]
 

@@ -133,22 +133,24 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
         validateAddWithContext(add, changeGroups, existingRecords, auth, ownerGroupId)
       case deleteUpdate: DeleteChangeForValidation
           if changeGroups.containsAddChangeForValidation(deleteUpdate.recordKey) =>
-        validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth)
-      case del: DeleteChangeForValidation => validateDeleteWithContext(del, existingRecords, auth)
+        validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth, ownerGroupId)
+      case del: DeleteChangeForValidation =>
+        validateDeleteWithContext(del, existingRecords, auth, ownerGroupId)
     }
   }
 
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val validations = recordExists(
       change.zone.id,
       change.recordName,
       change.inputChange.inputName,
       change.inputChange.typ,
       existingRecords) |+|
-      userCanDeleteRecordSet(change, auth)
+      userCanDeleteRecordSet(change, auth, ownerGroupId)
 
     validations.map(_ => change)
   }
@@ -167,7 +169,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
 
     val validations = typedValidations |+|
-      userCanAddUpdateRecordSet(change, auth) |+|
+      userCanAddUpdateRecordSet(change, auth, ownerGroupId) |+|
       ownerGroupIsValid(change, existingRecordSets, ownerGroupId)
 
     validations.map(_ => change)
@@ -176,14 +178,15 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateDeleteUpdateWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val validations = recordExists(
       change.zone.id,
       change.recordName,
       change.inputChange.inputName,
       change.inputChange.typ,
       existingRecords) |+|
-      userCanAddUpdateRecordSet(change, auth)
+      userCanAddUpdateRecordSet(change, auth, ownerGroupId)
 
     validations.map(_ => change)
   }
@@ -223,7 +226,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
 
     val validations =
       typedValidations |+|
-        userCanAddUpdateRecordSet(change, auth) |+|
+        userCanAddUpdateRecordSet(change, auth, ownerGroupId) |+|
         recordDoesNotExist(
           change.zone.id,
           change.recordName,
@@ -323,16 +326,28 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   // - should update that in the AccessValidations in a different PR
   def userCanAddUpdateRecordSet(
       input: ChangeForValidation,
-      authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
-    val result = canAddRecordSet(authPrincipal, input.recordName, input.inputChange.typ, input.zone)
+      authPrincipal: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[Unit] = {
+    val result = canAddRecordSet(
+      authPrincipal,
+      input.recordName,
+      input.inputChange.typ,
+      input.zone,
+      ownerGroupId)
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
   }
 
   def userCanDeleteRecordSet(
       input: ChangeForValidation,
-      authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
+      authPrincipal: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[Unit] = {
     val result =
-      canDeleteRecordSet(authPrincipal, input.recordName, input.inputChange.typ, input.zone)
+      canDeleteRecordSet(
+        authPrincipal,
+        input.recordName,
+        input.inputChange.typ,
+        input.zone,
+        ownerGroupId)
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
   }
 
