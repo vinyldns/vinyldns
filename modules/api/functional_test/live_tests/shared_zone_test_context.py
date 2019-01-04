@@ -225,6 +225,7 @@ class SharedZoneTestContext(object):
                 }, status=202)
             self.parent_zone = parent_zone_change['zone']
 
+            # shared zone is created through test data loader, but needs connection info added here to use
             get_shared_zone = self.shared_zone_vinyldns_client.get_zone('shared-zone')
             shared_zone = get_shared_zone['zone']
 
@@ -255,8 +256,8 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_exists(classless_zone_delegation_change)
             self.ok_vinyldns_client.wait_until_zone_exists(system_test_zone_change)
             self.ok_vinyldns_client.wait_until_zone_exists(parent_zone_change)
-            self.shared_zone_vinyldns_client.sync_zone(shared_zone['id'])
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
+            self.shared_zone_vinyldns_client.sync_zone(shared_zone['id'])
 
             # validate all in there
             zones = self.dummy_vinyldns_client.list_zones()['zones']

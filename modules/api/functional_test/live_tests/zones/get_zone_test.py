@@ -30,6 +30,7 @@ def test_get_shared_zone_by_id(shared_zone_test_context):
 
     assert_that(retrieved['id'], is_(shared_zone_test_context.shared_zone['id']))
     assert_that(retrieved['adminGroupName'], is_('testSharedZoneGroup'))
+    assert_that(retrieved['shared'], is_(True))
 
 def test_get_zone_fails_without_access(shared_zone_test_context):
     """
