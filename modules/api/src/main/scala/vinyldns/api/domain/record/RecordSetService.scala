@@ -124,8 +124,8 @@ class RecordSetService(
         recordSet.typ,
         zone,
         recordSet.ownerGroupId).toResult
-      groupName <- getGroupName(recordSet.ownerGroupId)
     } yield {
+      val groupName = getGroupName(recordSet.ownerGroupId)
       RecordSetSummaryInfo(recordSet, groupName)
     }
 
@@ -217,12 +217,14 @@ class RecordSetService(
     } yield recordSetChangesInfo
   }
 
-  def getGroupName(groupId: Option[String]): Result[Option[String]] =
-    groupRepository
-      .getGroup(groupId.mkString)
-      .map {
-        case Some(group) => Some(group.name)
-        case _ => None
-      }
-      .toResult
+  def getGroupName(groupId: Option[String]): Option[String] =
+    if (groupId.isDefined)
+      groupRepository
+        .getGroup(groupId.mkString)
+        .map {
+          case Some(group) => Some(group.name)
+          case _ => None
+        }
+        .unsafeRunSync()
+    else None
 }
