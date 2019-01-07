@@ -21,10 +21,12 @@ import cats.scalatest.ValidatedMatchers
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
-import vinyldns.api.{VinylDNSTestData}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, _}
-import vinyldns.api.repository.TestDataLoader
+import vinyldns.core.TestZoneData._
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
@@ -35,8 +37,7 @@ class BatchChangeValidationsSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
     with EitherValues
-    with ValidatedMatchers
-    with VinylDNSTestData {
+    with ValidatedMatchers {
 
   import Gen._
   import vinyldns.api.DomainGenerator._
@@ -52,13 +53,13 @@ class BatchChangeValidationsSpec
     "test@test.com",
     status = ZoneStatus.Active,
     connection = testConnection,
-    adminGroupId = grp.id)
+    adminGroupId = okGroup.id)
   private val validIp4ReverseZone = Zone(
     "2.0.192.in-addr.arpa",
     "test@test.com",
     status = ZoneStatus.Active,
     connection = testConnection,
-    adminGroupId = grp.id)
+    adminGroupId = okGroup.id)
 
   private val validAChangeGen: Gen[AddChangeInput] = for {
     fqdn <- domainGenerator
@@ -81,7 +82,7 @@ class BatchChangeValidationsSpec
       addChangeInput <- AddChangeInput(recordName, rs.typ, rs.ttl, rs.records.head)
     } yield AddChangeForValidation(validZone, recordName, addChangeInput)
 
-  private val recordSetList = List(rsOk, aaaa, validAAAAToOrigin, abcRecord)
+  private val recordSetList = List(rsOk, aaaa, aaaaOrigin, abcRecord)
 
   private def validBatchChangeInput(min: Int, max: Int): Gen[BatchChangeInput] =
     for {
@@ -130,7 +131,7 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateInputName: should fail with a HighValueDomainError
-             |if inputName is a High Value Domain""".stripMargin) {
+      |if inputName is a High Value Domain""".stripMargin) {
     val changeA = AddChangeInput("high-value-domain.foo.", RecordType.A, 300, AData("1.1.1.1"))
     val changeIpV4 = AddChangeInput("192.0.2.252", RecordType.PTR, 300, PTRData("test."))
     val changeIpV6 =
@@ -284,7 +285,7 @@ class BatchChangeValidationsSpec
 
   property(
     "validateChangesWithContext: should properly validate with mix of success and failure inputs") {
-    val authZone = okZone.copy(adminGroupId = grp.id)
+    val authZone = okZone
     val reverseZone = okZone.copy(name = "2.0.192.in-addr.arpa.")
     val addA1 = AddChangeForValidation(
       authZone,
@@ -710,7 +711,7 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel),
       ExistingRecordSets(recordSetList),
-      notAuth.copy(TestDataLoader.dummyUser.copy(isSuper = true)))
+      AuthPrincipal(superUser, Seq.empty))
 
     result(0) shouldBe valid
   }
@@ -827,7 +828,7 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      notAuth.copy(TestDataLoader.dummyUser.copy(isSuper = true)))
+      AuthPrincipal(superUser, Seq.empty))
     result(0) shouldBe valid
   }
 

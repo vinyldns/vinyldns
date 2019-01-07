@@ -37,9 +37,29 @@ object TestRecordSetData {
     None,
     List(AData("10.1.1.1")))
 
+  val abcRecord: RecordSet = RecordSet(
+    abcZone.id,
+    "aaaa",
+    RecordType.AAAA,
+    200,
+    RecordSetStatus.Pending,
+    DateTime.now,
+    None,
+    List(AAAAData("1:2:3:4:5:6:7:8")))
+
   val aaaa: RecordSet = RecordSet(
     okZone.id,
     "aaaa",
+    RecordType.AAAA,
+    200,
+    RecordSetStatus.Pending,
+    DateTime.now,
+    None,
+    List(AAAAData("1:2:3:4:5:6:7:8")))
+
+  val aaaaOrigin: RecordSet = RecordSet(
+    okZone.id,
+    "@",
     RecordType.AAAA,
     200,
     RecordSetStatus.Pending,
@@ -58,8 +78,18 @@ object TestRecordSetData {
     List(CNAMEData("cname")))
 
   val ptrIp4: RecordSet = RecordSet(
-    okZone.id,
+    zoneIp4.id,
     "30",
+    RecordType.PTR,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(PTRData("ptr")))
+
+  val ptrIp6: RecordSet = RecordSet(
+    zoneIp6.id,
+    "4.0.3.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
     RecordType.PTR,
     200,
     RecordSetStatus.Active,
@@ -86,6 +116,16 @@ object TestRecordSetData {
     DateTime.now,
     None,
     List(MXData(3, "mx")))
+
+  val ns: RecordSet = RecordSet(
+    okZone.id,
+    okZone.name,
+    RecordType.NS,
+    300,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    records = List(NSData("ns1.test.com"), NSData("ns2.test.com")))
 
   /* RECORDSET CHANGES */
 
@@ -139,8 +179,12 @@ object TestRecordSetData {
     )
 
   val pendingCreateAAAA: RecordSetChange = makeTestAddChange(aaaa, zoneActive)
+  val completeCreateAAAA: RecordSetChange =
+    pendingCreateAAAA.copy(status = RecordSetChangeStatus.Complete)
 
   val pendingCreateCNAME: RecordSetChange = makeTestAddChange(cname, zoneActive)
+  val completeCreateCNAME: RecordSetChange =
+    pendingCreateCNAME.copy(status = RecordSetChangeStatus.Complete)
 
   val pendingUpdateAAAA: RecordSetChange =
     makeTestUpdateChange(aaaa, aaaa.copy(ttl = aaaa.ttl + 100), zoneActive)

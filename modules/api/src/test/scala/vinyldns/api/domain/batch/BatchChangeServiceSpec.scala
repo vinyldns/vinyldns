@@ -20,8 +20,6 @@ import cats.data.Validated.Valid
 import cats.implicits._
 import cats.scalatest.ValidatedMatchers
 import org.joda.time.DateTime
-import org.scalatest.concurrent.Eventually
-import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements._
 import vinyldns.api._
@@ -33,19 +31,14 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.api.repository.{EmptyRecordSetRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
 import cats.effect._
-import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
-import vinyldns.core.domain.membership.Group
 
 class BatchChangeServiceSpec
     extends WordSpec
     with Matchers
-    with MockitoSugar
-    with VinylDNSTestData
-    with Eventually
     with CatsHelpers
     with BeforeAndAfterEach
-    with GroupTestData
     with EitherValues
     with ValidatedMatchers {
 
@@ -71,13 +64,9 @@ class BatchChangeServiceSpec
   private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, 100, PTRData("ptr"))
   private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, 100, PTRData("ptr"))
 
-  private val authGrp = Group(
-    "ok",
-    "test@test.com",
-    Some("a test group"),
-    memberIds = Set(usr.id),
-    adminUserIds = Set(usr.id))
-  private val auth = AuthPrincipal(usr, Seq(authGrp.id))
+  private val authGrp = okGroup
+  private val auth = okAuth
+  private val notAuth = dummyAuth
 
   private val apexZone = Zone("apex.test.com.", "email", id = "apex", adminGroupId = authGrp.id)
   private val baseZone = Zone("test.com.", "email", id = "base", adminGroupId = authGrp.id)

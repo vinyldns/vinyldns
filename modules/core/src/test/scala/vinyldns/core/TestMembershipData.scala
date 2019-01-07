@@ -35,6 +35,7 @@ object TestMembershipData {
   )
 
   val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
+  val superUser = User("super", "superAccess", "superSecret", isSuper = true)
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
@@ -54,6 +55,15 @@ object TestMembershipData {
     memberIds = Set(okUser.id),
     adminUserIds = Set(okUser.id),
     created = DateTime.now.secondOfDay().roundFloorCopy())
+
+  val twoUserGroup: Group = Group(
+    "twoUsers",
+    "test@test.com",
+    Some("has two users"),
+    memberIds = Set(okUser.id),
+    adminUserIds = Set(okUser.id, dummyUser.id),
+    created = DateTime.now.secondOfDay().roundFloorCopy()
+  )
 
   val abcGroup: Group = Group("abc", "abc", id = "abc", memberIds = Set("abc"))
 
@@ -85,6 +95,8 @@ object TestMembershipData {
   )
 
   val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(oneUserDummyGroup.id))
+
+  val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", "secret"), Seq.empty)
 
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(

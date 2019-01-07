@@ -23,6 +23,10 @@ object TestZoneData {
 
   /* ZONES */
   val okZone: Zone = Zone("ok.zone.recordsets.", "test@test.com", adminGroupId = okGroup.id)
+  val abcZone: Zone = Zone("abc.zone.recordsets.", "test@test.com", adminGroupId = abcGroup.id)
+  val zoneIp4: Zone = Zone("0.162.198.in-addr.arpa.", "test@test.com", adminGroupId = abcGroup.id)
+  val zoneIp6: Zone =
+    Zone("1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.", "test@test.com", adminGroupId = abcGroup.id)
 
   val validConnection =
     ZoneConnection("connectionName", "connectionKeyName", "connectionKey", "127.0.0.1")
@@ -35,6 +39,8 @@ object TestZoneData {
     "test@test.com",
     status = ZoneStatus.Active,
     connection = Some(validConnection))
+
+  val zoneNotAuthorized: Zone = Zone("not.auth.zone.", "test@test.com", adminGroupId = "no-id")
 
   val userAclRule: ACLRule = ACLRule(AccessLevel.Read, userId = Some("someUser"))
 
