@@ -26,13 +26,17 @@ class RecordSetSpec extends WordSpec with Matchers {
       "output a record set properly" in {
         val result = aaaa.toString
 
-        result should include("id=\"" + aaaa.id + "\"")
+        result should include("zoneId=\"" + aaaa.zoneId + "\"")
         result should include("name=\"" + aaaa.name + "\"")
         result should include("type=\"" + aaaa.typ + "\"")
         result should include("ttl=\"" + aaaa.ttl + "\"")
-        result should include("account=\"" + aaaa.account + "\"")
         result should include("status=\"" + aaaa.status + "\"")
+        result should include("created=\"" + aaaa.created + "\"")
+        result should include("updated=\"" + aaaa.updated + "\"")
         result should include("records=\"" + aaaa.records + "\"")
+        result should include("id=\"" + aaaa.id + "\"")
+        result should include("account=\"" + aaaa.account + "\"")
+        result should include("ownerGroupId=\"" + aaaa.ownerGroupId + "\"")
       }
     }
 

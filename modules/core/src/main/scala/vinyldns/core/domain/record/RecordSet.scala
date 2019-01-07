@@ -52,7 +52,6 @@ case class RecordSet(
       || status == RecordSetStatus.PendingDelete)
 
   override def toString: String = {
-
     val sb = new StringBuilder
     sb.append("RecordSet: [")
     sb.append("id=\"").append(id).append("\"; ")
@@ -60,6 +59,8 @@ case class RecordSet(
     sb.append("name=\"").append(name).append("\"; ")
     sb.append("type=\"").append(typ.toString).append("\"; ")
     sb.append("ttl=\"").append(ttl.toString).append("\"; ")
+    sb.append("created=\"").append(created.toString).append("\"; ")
+    sb.append("updated=\"").append(updated.toString).append("\"; ")
     sb.append("account=\"").append(account).append("\"; ")
     sb.append("status=\"").append(status.toString).append("\"; ")
     sb.append("records=\"").append(records.toString).append("\"; ")
