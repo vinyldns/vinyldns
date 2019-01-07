@@ -26,6 +26,8 @@ import vinyldns.api._
 import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
 import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists, RecordSetInfo}
 import vinyldns.api.engine.TestMessageQueue
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
@@ -39,7 +41,6 @@ import scala.concurrent.duration._
 
 class RecordSetServiceIntegrationSpec
     extends DynamoDBApiIntegrationSpec
-    with VinylDNSTestData
     with ResultHelpers
     with MockitoSugar
     with Matchers
@@ -322,7 +323,7 @@ class RecordSetServiceIntegrationSpec
 
     "update relative NS record without trailing dot" in {
       val newRecord = subTestRecordNS.copy(ttl = 200)
-      val superAuth = AuthPrincipal(okAuth.signedInUser.copy(isSuper = true), Seq.empty)
+      val superAuth = AuthPrincipal(superUser, List())
       val result = testRecordSetService
         .updateRecordSet(newRecord, superAuth)
         .value
