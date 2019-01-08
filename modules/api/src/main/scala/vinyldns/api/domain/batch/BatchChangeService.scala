@@ -177,8 +177,13 @@ class BatchChangeService(
     }
 
   def validateOwnerGroupExists(ownerGroupId: String): Either[BatchChangeErrorResponse, Unit] =
-    if (groupRepository.getGroup(ownerGroupId).unsafeRunSync().isDefined) Right(())
-    else Left(GroupDoesNotExist(ownerGroupId))
+    groupRepository
+      .getGroup(ownerGroupId)
+      .map {
+        case Some(_) => ().asRight
+        case None => Left(GroupDoesNotExist(ownerGroupId))
+      }
+      .unsafeRunSync()
 
   def validateCanSeeGroup(
       ownerGroupId: String,

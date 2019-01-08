@@ -130,7 +130,6 @@ final case class HighValueDomainError(name: String) extends DomainValidationErro
 final case class OwnerGroupIdMissing(recordName: String, zoneName: String)
     extends DomainValidationError {
   def message: String =
-    s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record
-       | "$recordName".""".stripMargin
+    s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record "$recordName"."""
 }
 // $COVERAGE-ON$

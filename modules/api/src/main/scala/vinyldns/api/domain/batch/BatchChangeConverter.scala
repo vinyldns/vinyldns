@@ -185,7 +185,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         } else {
           existingRecordSet.ownerGroupId
         }
-        combineAddChanges(addChanges, zone).copy(ownerGroupId = newOwnerGroupId)
+        combineAddChanges(addChanges, zone, newOwnerGroupId)
       }
       changeIds = deleteChanges.map(_.id) ++ addChanges.map(_.id).toList
     } yield
@@ -224,14 +224,17 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       zone <- existingZones.getByName(addChanges.head.zoneName)
       newRecordSet = {
         val newOwnerGroupId = if (zone.shared) ownerGroupId else None
-        combineAddChanges(addChanges, zone).copy(ownerGroupId = newOwnerGroupId)
+        combineAddChanges(addChanges, zone, newOwnerGroupId)
       }
       ids = addChanges.map(_.id)
     } yield RecordSetChangeGenerator.forAdd(newRecordSet, zone, userId, ids.toList)
 
   // Combines changes where the RecordData can just be appended to list (A, AAAA, CNAME, PTR)
   // NOTE: CNAME & PTR will only have one data field due to validations, so the combination is fine
-  def combineAddChanges(changes: NonEmptyList[SingleAddChange], zone: Zone): RecordSet = {
+  def combineAddChanges(
+      changes: NonEmptyList[SingleAddChange],
+      zone: Zone,
+      ownerGroupId: Option[String]): RecordSet = {
     val combinedData =
       changes.foldLeft(List[RecordData]())((acc, ch) => ch.recordData :: acc).distinct
     // recordName and typ are shared by all changes passed into this function, can pull those from any change
@@ -244,6 +247,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       RecordSetStatus.Pending,
       DateTime.now,
       None,
-      combinedData)
+      combinedData,
+      ownerGroupId = ownerGroupId)
   }
 }

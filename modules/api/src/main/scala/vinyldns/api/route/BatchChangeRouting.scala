@@ -89,6 +89,6 @@ trait BatchChangeRoute extends Directives {
       case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
       case Left(gdne: GroupDoesNotExist) => complete(StatusCodes.BadRequest, gdne.message)
       case Left(udnbtog: UserDoesNotBelongToOwnerGroup) =>
-        complete(StatusCodes.BadRequest, udnbtog.message)
+        complete(StatusCodes.Forbidden, udnbtog.message)
     }
 }
