@@ -20,7 +20,7 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, ZoneACL}
 
@@ -30,7 +30,6 @@ class ZoneValidationsSpec
     with MockitoSugar
     with ResultHelpers
     with VinylDNSTestData
-    with GroupTestData
     with EitherMatchers {
 
   val testing = new ZoneValidations(syncDelayMillis = 10000)
@@ -39,15 +38,15 @@ class ZoneValidationsSpec
 
   "outsideSyncDelay" should {
     "return ok when the zone has not been synced" in {
-      val zone = memberOkZoneAuthorized.copy(latestSync = None)
+      val zone = okZone.copy(latestSync = None)
       outsideSyncDelay(zone) should be(right)
     }
     "return ok when the zone sync is not within the sync delay" in {
-      val zone = memberOkZoneAuthorized.copy(latestSync = Some(DateTime.now().minus(10001)))
+      val zone = okZone.copy(latestSync = Some(DateTime.now().minus(10001)))
       outsideSyncDelay(zone) should be(right)
     }
     "return RecentSyncError when the zone sync is within the sync delay" in {
-      val zone = memberOkZoneAuthorized.copy(latestSync = Some(DateTime.now()))
+      val zone = okZone.copy(latestSync = Some(DateTime.now()))
       val error = leftValue(outsideSyncDelay(zone))
       error shouldBe a[RecentSyncError]
     }

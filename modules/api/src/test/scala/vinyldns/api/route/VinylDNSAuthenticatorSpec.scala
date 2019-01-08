@@ -24,14 +24,11 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain.auth.AuthPrincipalProvider
-import vinyldns.api.GroupTestData
+import vinyldns.core.TestMembershipData._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.auth.AuthPrincipal
 
-class VinylDNSAuthenticatorSpec
-    extends WordSpec
-    with Matchers
-    with MockitoSugar
-    with GroupTestData {
+class VinylDNSAuthenticatorSpec extends WordSpec with Matchers with MockitoSugar {
   private val mockAuthenticator = mock[Aws4Authenticator]
   private val mockAuthPrincipalProvider = mock[AuthPrincipalProvider]
 
@@ -67,7 +64,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(IO.pure(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -76,7 +73,7 @@ class VinylDNSAuthenticatorSpec
         .authenticateReq(any[HttpRequest], any[List[String]], any[String], any[String])
 
       val result = underTest.authenticate(context, "").unsafeRunSync()
-      result shouldBe Right(okUserAuth)
+      result shouldBe Right(okAuth)
     }
     "fail if missing Authorization header" in {
       val httpRequest: HttpRequest = HttpRequest()
@@ -88,7 +85,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(IO.pure(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 
@@ -171,6 +168,7 @@ class VinylDNSAuthenticatorSpec
       doReturn(header).when(fakeHttpHeader).value
 
       val httpRequest: HttpRequest = HttpRequest().withHeaders(List(fakeHttpHeader))
+      val lockedUserAuth: AuthPrincipal = AuthPrincipal(lockedUser, Seq())
 
       val context: RequestContext = mock[RequestContext]
       doReturn(httpRequest).when(context).request
@@ -232,7 +230,7 @@ class VinylDNSAuthenticatorSpec
         .when(mockAuthenticator)
         .extractAccessKey(any[String])
 
-      doReturn(IO.pure(Some(okUserAuth)))
+      doReturn(IO.pure(Some(okAuth)))
         .when(mockAuthPrincipalProvider)
         .getAuthPrincipal(any[String])
 

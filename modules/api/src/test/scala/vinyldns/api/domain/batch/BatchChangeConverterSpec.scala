@@ -18,15 +18,16 @@ package vinyldns.api.domain.batch
 
 import cats.implicits._
 import org.joda.time.DateTime
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.{ExistingRecordSets, ExistingZones}
 import vinyldns.api.engine.TestMessageQueue
+import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.api.repository._
-import vinyldns.api.{CatsHelpers, GroupTestData, VinylDNSTestData}
+import vinyldns.api.{CatsHelpers, VinylDNSTestData}
 import vinyldns.core.domain.batch.{
   BatchChange,
   SingleAddChange,
@@ -38,9 +39,7 @@ class BatchChangeConverterSpec
     extends WordSpec
     with Matchers
     with CatsHelpers
-    with VinylDNSTestData
-    with GroupTestData
-    with BeforeAndAfterEach {
+    with VinylDNSTestData {
 
   private def makeSingleAddChange(
       name: String,
