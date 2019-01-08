@@ -396,15 +396,15 @@ class RecordSetServiceSpec
     }
 
     "fail if the user is only in the recordSet owner group but the zone is not shared" in {
-      doReturn(IO.pure(Some(zoneNoAuthRecordWithOwnerGroup)))
+      doReturn(IO.pure(Some(notSharedZoneRecordWithOwnerGroup)))
         .when(mockRecordRepo)
-        .getRecordSet(zoneNotAuthorized.id, zoneNoAuthRecordWithOwnerGroup.id)
+        .getRecordSet(zoneNotAuthorized.id, notSharedZoneRecordWithOwnerGroup.id)
 
       doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
 
       val result = leftResultOf(
         underTest
-          .getRecordSet(zoneNoAuthRecordWithOwnerGroup.id, zoneNotAuthorized.id, okAuth)
+          .getRecordSet(notSharedZoneRecordWithOwnerGroup.id, zoneNotAuthorized.id, okAuth)
           .value)
       result shouldBe a[NotAuthorizedError]
     }
@@ -414,7 +414,7 @@ class RecordSetServiceSpec
     "return the group name if a record owner group ID is present" in {
       doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
 
-      val result = underTest.getGroupName(Some(okGroup.id)).value.unsafeRunSync().right.toOption.get
+      val result = underTest.getGroupName(Some(okGroup.id))
       result shouldBe Some("ok")
     }
   }

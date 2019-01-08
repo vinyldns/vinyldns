@@ -148,7 +148,7 @@ object TestRecordSetData {
     None,
     List(AAAAData("1:2:3:4:5:6:7:8")))
 
-  val zoneNoAuthRecordWithOwnerGroup: RecordSet =
+  val notSharedZoneRecordWithOwnerGroup: RecordSet =
     rsOk.copy(zoneNotAuthorized.id, "okWithOwnerGroupID", ownerGroupId = Some(okGroup.id))
 
   /* RECORDSET CHANGES */

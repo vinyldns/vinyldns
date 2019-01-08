@@ -317,6 +317,28 @@ class AccessValidationsSpec
         zoneInDelete,
         mockRecordSet.ownerGroupId) should be(right)
     }
+
+    "return true if the user is in the recordSet owner group and the recordSet is in a shared zone" in {
+      val mockRecordSet = sharedZoneRecord
+      accessValidationTest.canViewRecordSet(
+        okAuth,
+        mockRecordSet.name,
+        mockRecordSet.typ,
+        sharedZone,
+        mockRecordSet.ownerGroupId) should be(right)
+    }
+
+    "return a NotAuthorizedError if the user is in the recordSet owner group but it is not in a shared zone" in {
+      val mockRecordSet = notSharedZoneRecordWithOwnerGroup
+      val error = leftValue(
+        accessValidationTest.canViewRecordSet(
+          okAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          zoneNotAuthorized,
+          mockRecordSet.ownerGroupId))
+      error shouldBe a[NotAuthorizedError]
+    }
   }
 
   "getAccessLevel" should {
