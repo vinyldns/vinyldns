@@ -85,12 +85,30 @@ class RecordSetServiceSpec
       result.changeType shouldBe RecordSetChangeType.Create
       result.status shouldBe RecordSetChangeStatus.Pending
     }
+    "fail if the zone is not found" in {
+      val mockZone = okZone.copy(id = "fakeZone")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone(mockZone.id)
+
+      val result = leftResultOf(underTest.getRecordSet(aaaa.id, mockZone.id, okAuth).value)
+      result shouldBe a[ZoneNotFoundError]
+    }
+
     "fail when the account is not authorized" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
+    }
+    "fail if the record already exists" in {
+      val record = aaaa
+
+      doReturn(IO.pure(List(aaaa)))
+        .when(mockRecordRepo)
+        .getRecordSets(okZone.id, record.name, record.typ)
+
+      val result = leftResultOf(underTest.addRecordSet(aaaa, okAuth).value)
+      result shouldBe a[RecordSetAlreadyExists]
     }
     "fail if the record is dotted" in {
       val record =
@@ -354,6 +372,18 @@ class RecordSetServiceSpec
       val result: RecordSetSummaryInfo =
         rightResultOf(underTest.getRecordSet(aaaa.id, okZone.id, okAuth).value)
       result shouldBe expectedRecordSetInfo
+    }
+
+    "fail if the record does not exist" in {
+      val mockRecord = rsOk.copy(id = "faker")
+
+      doReturn(IO.pure(None))
+        .when(mockRecordRepo)
+        .getRecordSet(okZone.id, mockRecord.id)
+
+      val result = leftResultOf(underTest.getRecordSet(mockRecord.id, okZone.id, okAuth).value)
+
+      result shouldBe a[RecordSetNotFoundError]
     }
 
     "return the recordSet if the user is in the recordSet owner group in a shared zone" in {
