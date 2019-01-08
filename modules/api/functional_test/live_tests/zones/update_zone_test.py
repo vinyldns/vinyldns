@@ -826,3 +826,25 @@ def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
     """
     Test updating a zone shared status as a normal user fails
     """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = 'one-time.'
+
+        zone = {
+            'name': zone_name,
+            'email': 'test@test.com',
+            'adminGroupId': shared_zone_test_context.ok_group['id']
+        }
+
+        result = client.create_zone(zone, status=202)
+        result_zone = result['zone']
+        client.wait_until_zone_exists(result)
+
+        result_zone['shared'] = True
+        error = client.update_zone(result_zone, status=403)
+        assert_that(error, contains_string('Not authorized to update zone shared status from false to true.'))
+
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone['id']], status=202)
