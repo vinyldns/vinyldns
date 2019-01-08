@@ -21,6 +21,7 @@ import cats.scalatest.ValidatedMatchers
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
+import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.core.TestMembershipData._
@@ -37,7 +38,8 @@ class BatchChangeValidationsSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
     with EitherValues
-    with ValidatedMatchers {
+    with ValidatedMatchers
+    with ResultHelpers {
 
   import Gen._
   import vinyldns.api.DomainGenerator._
@@ -760,6 +762,41 @@ class BatchChangeValidationsSpec
   }
 
   property(
+    "validateChangesWithContext: should succeed for AddChangeForValidation in shared zone if owner group is defined") {
+    val addA = AddChangeForValidation(
+      okZone.copy(shared = true),
+      "valid",
+      AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1"))
+    )
+    val result =
+      validateChangesWithContext(
+        List(addA.validNel),
+        ExistingRecordSets(recordSetList),
+        okAuth,
+        Some("owner-group-id"))
+
+    result(0) shouldBe valid
+  }
+
+  property(
+    "validateChangesWithContext: should fail for AddChangeForValidation in shared zone if owner group is not defined") {
+    val addA = AddChangeForValidation(
+      okZone.copy(shared = true),
+      "valid",
+      AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1"))
+    )
+    val result =
+      validateChangesWithContext(
+        List(addA.validNel),
+        ExistingRecordSets(recordSetList),
+        okAuth,
+        None)
+
+    result(0) should haveInvalid[DomainValidationError](
+      OwnerGroupIdMissing(addA.recordName, addA.zone.name))
+  }
+
+  property(
     """validateChangesWithContext: should fail AddChangeForValidation with UserIsNotAuthorized if user
       |is not a superuser, doesn't have group admin access, or doesn't have necessary ACL rule""".stripMargin) {
     forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
@@ -1346,5 +1383,73 @@ class BatchChangeValidationsSpec
       okAuth,
       None)
     result(0) shouldBe valid
+  }
+
+  property(
+    "validateChangesWithContext: should succeed for update in shared zone if existing record has owner group ID") {
+    val addA = AddChangeForValidation(
+      okZone.copy(shared = true),
+      "ok",
+      AddChangeInput("ok", RecordType.A, 4800, AData("1.1.1.1"))
+    )
+    val deleteA = DeleteChangeForValidation(
+      okZone.copy(shared = true),
+      "ok",
+      DeleteChangeInput("ok", RecordType.A)
+    )
+    val result =
+      validateChangesWithContext(
+        List(addA.validNel, deleteA.validNel),
+        ExistingRecordSets(List(rsOk.copy(ownerGroupId = Some("existing-owner-group-id")))),
+        okAuth,
+        None)
+
+    result.map(_ shouldBe valid)
+  }
+
+  property(
+    "validateChangesWithContext: should succeed for update in shared zone if owner group ID is provided") {
+    val addA = AddChangeForValidation(
+      okZone.copy(shared = true),
+      "ok",
+      AddChangeInput("ok", RecordType.A, 4800, AData("1.1.1.1"))
+    )
+    val deleteA = DeleteChangeForValidation(
+      okZone.copy(shared = true),
+      "ok",
+      DeleteChangeInput("ok", RecordType.A)
+    )
+    val result =
+      validateChangesWithContext(
+        List(addA.validNel, deleteA.validNel),
+        ExistingRecordSets(List(rsOk)),
+        okAuth,
+        Some("new-owner-group-id"))
+
+    result.map(_ shouldBe valid)
+  }
+
+  property(
+    "validateChangesWithContext: should fail for update in shared zone if owner group ID is not provided") {
+    val addA = AddChangeForValidation(
+      okZone.copy(shared = true),
+      "ok",
+      AddChangeInput("ok", RecordType.A, 4800, AData("1.1.1.1"))
+    )
+    val deleteA = DeleteChangeForValidation(
+      okZone.copy(shared = true),
+      "ok",
+      DeleteChangeInput("ok", RecordType.A)
+    )
+    val result =
+      validateChangesWithContext(
+        List(addA.validNel, deleteA.validNel),
+        ExistingRecordSets(List(rsOk)),
+        okAuth,
+        None)
+
+    result(0) should haveInvalid[DomainValidationError](
+      OwnerGroupIdMissing(addA.recordName, addA.zone.name))
+    result(1) shouldBe valid
   }
 }
