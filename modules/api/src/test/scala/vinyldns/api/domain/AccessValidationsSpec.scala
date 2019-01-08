@@ -182,8 +182,12 @@ class AccessValidationsSpec
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSuper = true),
         memberGroupIds = Seq.empty)
-      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zoneNotAuthorized, ns.ownerGroupId) should be(
-        right)
+      accessValidationTest.canAddRecordSet(
+        auth,
+        ns.name,
+        ns.typ,
+        zoneNotAuthorized,
+        ns.ownerGroupId) should be(right)
     }
 
     "return true if recordset is NS and user is in the admin group" in {
@@ -401,7 +405,11 @@ class AccessValidationsSpec
     "return AccessLevel.Delete if the user is admin/super" in {
       val mockRecordSet = mock[RecordSet]
       val result =
-        accessValidationTest.getAccessLevel(okAuth, mockRecordSet.name, mockRecordSet.typ, okZone,
+        accessValidationTest.getAccessLevel(
+          okAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          okZone,
           mockRecordSet.ownerGroupId)
       result shouldBe AccessLevel.Delete
     }
@@ -498,7 +506,7 @@ class AccessValidationsSpec
     "return the result of getAccessLevel if user has no access nor belongs to group that owns record set in" +
       " a shared zone" in {
       val result = accessValidationTest.getAccessLevel(
-        userAuthNone,
+        userAuthNone.copy(memberGroupIds = Seq()),
         rsOk.name,
         rsOk.typ,
         okZone,
@@ -511,7 +519,7 @@ class AccessValidationsSpec
       val recordSet = rsOk.copy(zoneId = okZone.id, ownerGroupId = Some(twoUserGroup.id))
 
       val result = accessValidationTest.getAccessLevel(
-        userAuthNone,
+        userAuthNone.copy(memberGroupIds = Seq(twoUserGroup.id)),
         recordSet.name,
         recordSet.typ,
         okZone,

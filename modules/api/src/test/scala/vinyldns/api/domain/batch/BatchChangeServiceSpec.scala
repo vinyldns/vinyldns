@@ -27,7 +27,12 @@ import vinyldns.api._
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, _}
-import vinyldns.api.repository.{EmptyGroupRepo, EmptyRecordSetRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
+import vinyldns.api.repository.{
+  EmptyGroupRepo,
+  EmptyRecordSetRepo,
+  EmptyZoneRepo,
+  InMemoryBatchChangeRepository
+}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
 import vinyldns.core.domain.membership.Group
@@ -40,7 +45,6 @@ class BatchChangeServiceSpec
     with Matchers
     with CatsHelpers
     with BeforeAndAfterEach
-    with GroupTestData
     with EitherMatchers
     with EitherValues
     with ValidatedMatchers {
@@ -144,7 +148,7 @@ class BatchChangeServiceSpec
         groupId match {
           case okGroup.id => Some(okGroup)
           case authGrp.id => Some(authGrp)
-          case "user-is-not-member" => Some(dummyGroup)
+          case "user-is-not-member" => Some(abcGroup)
           case _ => None
         }
       }

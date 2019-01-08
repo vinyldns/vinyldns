@@ -22,25 +22,26 @@ import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.batch.BatchTransformations.{ExistingRecordSets, ExistingZones}
 import vinyldns.api.engine.TestMessageQueue
-import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
-import vinyldns.core.domain.record.RecordType.{RecordType, _}
-import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.Zone
 import vinyldns.api.repository._
-import vinyldns.api.{CatsHelpers, GroupTestData, VinylDNSTestData}
+import vinyldns.api.CatsHelpers
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.batch.{
   BatchChange,
   SingleAddChange,
   SingleChangeStatus,
   SingleDeleteChange
 }
+import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
+import vinyldns.core.domain.record.RecordType.{RecordType, _}
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.zone.Zone
+import vinyldns.core.TestZoneData._
 
 class BatchChangeConverterSpec
     extends WordSpec
     with Matchers
     with CatsHelpers
-    with VinylDNSTestData
-    with GroupTestData
     with BeforeAndAfterEach {
 
   private def makeSingleAddChange(

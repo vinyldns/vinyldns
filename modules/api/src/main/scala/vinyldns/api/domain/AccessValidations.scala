@@ -239,7 +239,7 @@ object AccessValidations extends AccessValidationAlgebra {
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      ownerGroupId: Option[String]): AccessLevel = {
+      ownerGroupId: Option[String]): AccessLevel =
     auth match {
       case admin
           if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) ||
@@ -250,7 +250,6 @@ object AccessValidations extends AccessValidationAlgebra {
         if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
       case _ => getAccessFromAcl(auth, recordName, recordType, zone)
     }
-  }
 
   def ownerGroupValidInSharedZone(
       zoneShared: Boolean,
