@@ -136,18 +136,6 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
     client = shared_zone_test_context.shared_zone_vinyldns_client
     retrieved_rs = None
     try:
-        new_group = {
-            'name': 'record-ownergroup',
-            'email': 'test@test.com',
-            'description': 'this is a description',
-            'members': [ { 'id': 'sharedZoneUser'}, { 'id': 'ok'} ],
-            'admins': [ { 'id': 'sharedZoneUser'}, { 'id': 'ok'} ]
-        }
-        created_group = client.create_group(new_group, status=200)
-
-        assert_that(created_group['members'], has_length(2))
-        assert_that(created_group['admins'], has_length(2))
-
         new_rs = {
             'zoneId': shared_zone_test_context.shared_zone['id'],
             'name': 'test_get_recordset',
@@ -161,7 +149,7 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
                     'address': '10.2.2.2'
                 }
             ],
-            'ownerGroupId': created_group['id']
+            'ownerGroupId': shared_zone_test_context.shared_record_group['id']
         }
         result = client.create_recordset(new_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
@@ -181,5 +169,3 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
         if retrieved_rs:
             delete_result = client.delete_recordset(retrieved_rs['zoneId'], retrieved_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
-        result = client.delete_group(created_group['id'], status=200)
-        assert_that(result['status'], is_('Deleted'))
