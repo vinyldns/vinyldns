@@ -26,6 +26,8 @@ import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
+import cats.data._
+import cats.effect.IO
 
 object RecordSetService {
   def apply(
@@ -124,10 +126,8 @@ class RecordSetService(
         recordSet.typ,
         zone,
         recordSet.ownerGroupId).toResult
-    } yield {
-      val groupName = getGroupName(recordSet.ownerGroupId)
-      RecordSetSummaryInfo(recordSet, groupName)
-    }
+      groupName <- getGroupName(recordSet.ownerGroupId)
+    } yield RecordSetSummaryInfo(recordSet, groupName)
 
   def listRecordSets(
       zoneId: String,
@@ -217,16 +217,11 @@ class RecordSetService(
     } yield recordSetChangesInfo
   }
 
-  def getGroupName(groupId: Option[String]): Option[String] =
-    groupId match {
-      case Some(id) =>
-        groupRepository
-          .getGroup(id)
-          .map {
-            case Some(group) => Some(group.name)
-            case _ => None
-          }
-          .unsafeRunSync()
-      case _ => None
-    }
+  def getGroupName(groupId: Option[String]): Result[Option[String]] = {
+    val groupName = for {
+      input <- OptionT.fromOption[IO](groupId)
+      dbGet <- OptionT(groupRepository.getGroup(input))
+    } yield dbGet.name
+    groupName.value.toResult[Option[String]]
+  }
 }

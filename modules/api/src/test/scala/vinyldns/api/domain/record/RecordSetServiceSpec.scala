@@ -445,7 +445,14 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
 
       val result = underTest.getGroupName(Some(okGroup.id))
-      result shouldBe Some("ok")
+      val resultToOption = result.value.unsafeRunSync().right.toOption.get
+      resultToOption shouldBe Some("ok")
+    }
+
+    "return None if a record owner group ID is not present" in {
+      val result = underTest.getGroupName(None)
+      val resultToOption = result.value.unsafeRunSync().right.toOption.get
+      resultToOption shouldBe None
     }
   }
 
