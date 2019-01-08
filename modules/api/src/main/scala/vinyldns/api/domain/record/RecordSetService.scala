@@ -218,13 +218,15 @@ class RecordSetService(
   }
 
   def getGroupName(groupId: Option[String]): Option[String] =
-    if (groupId.isDefined)
-      groupRepository
-        .getGroup(groupId.mkString)
-        .map {
-          case Some(group) => Some(group.name)
-          case _ => None
-        }
-        .unsafeRunSync()
-    else None
+    groupId match {
+      case Some(id) =>
+        groupRepository
+          .getGroup(id)
+          .map {
+            case Some(group) => Some(group.name)
+            case _ => None
+          }
+          .unsafeRunSync()
+      case _ => None
+    }
 }
