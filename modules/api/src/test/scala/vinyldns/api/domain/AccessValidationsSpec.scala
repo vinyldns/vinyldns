@@ -201,6 +201,46 @@ class AccessValidationsSpec
         zoneInWrite,
         None) should be(right)
     }
+
+    "return false if user has no access nor belongs to group that owns record set in a shared zone" in {
+      val error = leftValue(
+        accessValidationTest.canAddRecordSet(
+          userAuthNone,
+          "some-record-name",
+          RecordType.A,
+          zoneInNone.copy(shared = true),
+          Some("owner-group-id")))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if user has no access and record set is unowned in a shared zone" in {
+      accessValidationTest.canAddRecordSet(
+        userAuthNone,
+        "some-record-name",
+        RecordType.A,
+        zoneInNone.copy(shared = true),
+        None) should be(right)
+    }
+
+    "return true if user has no access but belongs to group that owns the record set in a shared zone" in {
+      accessValidationTest.canAddRecordSet(
+        userAuthNone,
+        "some-record-name",
+        RecordType.A,
+        zoneInNone.copy(shared = true),
+        Some(twoUserGroup.id)) should be(right)
+    }
+
+    "return false if user has no access but belongs to group that owns the record set in a non-shared zone" in {
+      val error = leftValue(
+        accessValidationTest.canAddRecordSet(
+          userAuthNone,
+          "some-record-name",
+          RecordType.A,
+          zoneInNone.copy(shared = true),
+          Some("owner-group-id")))
+      error shouldBe a[NotAuthorizedError]
+    }
   }
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
@@ -366,6 +406,34 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.Delete
     }
 
+    "return AccessLevel.Delete if the user belongs to group that owns record set in a shared zone" in {
+      val sharedOkZone = okZone.copy(id = "shared-ok-zone", shared = true)
+      val recordSet = rsOk.copy(zoneId = sharedOkZone.id, ownerGroupId = Some(twoUserGroup.id))
+
+      val result = accessValidationTest.getAccessLevel(
+        userAuthNone,
+        recordSet.name,
+        recordSet.typ,
+        sharedOkZone,
+        recordSet.ownerGroupId
+      )
+      result shouldBe AccessLevel.Delete
+    }
+
+    "return AccessLevel.Delete if record set is unowned in a shared zone" in {
+      val sharedOkZone = okZone.copy(id = "shared-ok-zone", shared = true)
+      val recordSet = rsOk.copy(zoneId = sharedOkZone.id)
+
+      val result = accessValidationTest.getAccessLevel(
+        userAuthNone,
+        recordSet.name,
+        recordSet.typ,
+        sharedOkZone,
+        None
+      )
+      result shouldBe AccessLevel.Delete
+    }
+
     "return AccessLevel.Read if the user is support only" in {
       val mockRecordSet = mock[RecordSet]
       val supportAuth = okAuth.copy(
@@ -425,6 +493,31 @@ class AccessValidationsSpec
           zoneIn,
           mockRecordSet.ownerGroupId)
       result shouldBe AccessLevel.Read
+    }
+
+    "return the result of getAccessLevel if user has no access nor belongs to group that owns record set in" +
+      " a shared zone" in {
+      val result = accessValidationTest.getAccessLevel(
+        userAuthNone,
+        rsOk.name,
+        rsOk.typ,
+        okZone,
+        rsOk.ownerGroupId
+      )
+      result shouldBe AccessLevel.NoAccess
+    }
+
+    "return the result of getAccessLevel if user belongs to group that owns record set in non-shared zone" in {
+      val recordSet = rsOk.copy(zoneId = okZone.id, ownerGroupId = Some(twoUserGroup.id))
+
+      val result = accessValidationTest.getAccessLevel(
+        userAuthNone,
+        recordSet.name,
+        recordSet.typ,
+        okZone,
+        recordSet.ownerGroupId
+      )
+      result shouldBe AccessLevel.NoAccess
     }
   }
 

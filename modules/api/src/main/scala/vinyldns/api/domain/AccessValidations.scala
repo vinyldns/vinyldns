@@ -197,12 +197,6 @@ object AccessValidations extends AccessValidationAlgebra {
       zoneShared: Boolean,
       authPrincipal: AuthPrincipal,
       ownerGroupId: Option[String]): Boolean =
-    if (!zoneShared) {
-      false
-    } else {
-      ownerGroupId match {
-        case Some(groupId) => authPrincipal.isGroupMember(groupId)
-        case None => true
-      }
-    }
+    if (!zoneShared) false
+    else ownerGroupId.forall(authPrincipal.isGroupMember)
 }

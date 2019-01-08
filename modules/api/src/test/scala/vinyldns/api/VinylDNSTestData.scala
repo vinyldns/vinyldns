@@ -56,6 +56,7 @@ trait VinylDNSTestData {
     zoneActive.copy(id = UUID.randomUUID().toString, adminGroupId = UUID.randomUUID().toString)
   val zoneIp4: Zone = okZone.copy(name = "0.162.198.in-addr.arpa.")
   val zoneIp6: Zone = okZone.copy(name = "1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.")
+  val zoneShared: Zone = okZone.copy(name = "shared-zone.", shared = true)
 
   val rsOk: RecordSet = TestRecordSetData.rsOk
 

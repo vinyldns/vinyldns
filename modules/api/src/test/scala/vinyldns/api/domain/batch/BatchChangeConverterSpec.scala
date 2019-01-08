@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import cats.data.NonEmptyList
 import cats.implicits._
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
@@ -119,7 +120,7 @@ class BatchChangeConverterSpec
     makeSingleAddChange("wrongType", TXTData("Unsupported!"), UNKNOWN)
   )
 
-  private def existingZones = ExistingZones(Set(okZone))
+  private def existingZones = ExistingZones(Set(okZone, zoneShared))
 
   private val aToDelete = RecordSet(
     okZone.id,
@@ -383,6 +384,96 @@ class BatchChangeConverterSpec
       val notSaved: Option[BatchChange] =
         await(batchChangeRepo.getBatchChange(batchChangeUnsupported.id))
       notSaved shouldBe None
+    }
+  }
+
+  "generateAddChange" should {
+    val singleAddChange = makeSingleAddChange("shared-rs", AData("1.2.3.4"), A, zoneShared)
+    val ownerGroupId = Some("some-owner-group-id")
+
+    "generate record set changes for shared zone without owner group ID if not provided" in {
+      val result =
+        underTest.generateAddChange(
+          NonEmptyList.of(singleAddChange),
+          existingZones,
+          okUser.id,
+          None)
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe None)
+    }
+
+    "generate record set changes for shared zone with owner group ID if provided" in {
+      val result =
+        underTest.generateAddChange(
+          NonEmptyList.of(singleAddChange),
+          existingZones,
+          okUser.id,
+          ownerGroupId)
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe ownerGroupId)
+    }
+
+    "generate record set changes for non-shared zone without owner group ID" in {
+      val result =
+        underTest.generateAddChange(
+          NonEmptyList.fromListUnsafe(addSingleChangesGood),
+          existingZones,
+          okUser.id,
+          ownerGroupId)
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe None)
+    }
+  }
+
+  "generateUpdateChange" should {
+    val addChange = makeSingleAddChange("shared-rs", AData("2.3.4.5"), A, zoneShared)
+    val deleteChange = makeSingleDeleteChange("shared-rs", A, zoneShared)
+    val existingRs = rsOk.copy(
+      name = "shared-rs",
+      records = List(AData("1.2.3.4")),
+      ownerGroupId = Some("existing-owner-group-id"))
+
+    "not overwrite existing owner group ID for existing record set in shared zone" in {
+      val result =
+        underTest.generateUpdateChange(
+          NonEmptyList.of(deleteChange),
+          NonEmptyList.of(addChange),
+          existingZones,
+          ExistingRecordSets(List(existingRs)),
+          okUser.id,
+          Some("new-owner-group-id")
+        )
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe existingRs.ownerGroupId)
+    }
+
+    "use specified owner group ID if undefined for existing record set in shared zone" in {
+      val ownerGroupId = Some("new-owner-group-id")
+      val result =
+        underTest.generateUpdateChange(
+          NonEmptyList.of(deleteChange),
+          NonEmptyList.of(addChange),
+          existingZones,
+          ExistingRecordSets(List(existingRs.copy(ownerGroupId = None))),
+          okUser.id,
+          ownerGroupId
+        )
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe ownerGroupId)
+    }
+
+    "generate record set without updating owner group ID for record set in unshared zone" in {
+      val result =
+        underTest.generateUpdateChange(
+          NonEmptyList.of(deleteChange.copy(zoneId = okZone.id, zoneName = okZone.name)),
+          NonEmptyList.of(addChange.copy(zoneId = okZone.id, zoneName = okZone.name)),
+          existingZones,
+          ExistingRecordSets(List(existingRs.copy(ownerGroupId = None))),
+          okUser.id,
+          Some("new-owner-group-id")
+        )
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe None)
     }
   }
 
