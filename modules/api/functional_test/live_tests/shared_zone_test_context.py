@@ -58,6 +58,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'ok.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -79,6 +80,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.dummy_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'dummy.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -100,6 +102,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'ip6.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -122,6 +125,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'ip4.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -144,6 +148,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'classless-base.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -166,6 +171,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'classless.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -188,6 +194,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'system-test.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -211,6 +218,7 @@ class SharedZoneTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
                     'acl': {
                         'rules': [
                             {
@@ -235,26 +243,11 @@ class SharedZoneTestContext(object):
                 }, status=202)
             self.parent_zone = parent_zone_change['zone']
 
-            # shared zone is created through test data loader, but needs connection info added here to use
-            get_shared_zone = self.shared_zone_vinyldns_client.get_zone('shared-zone')
-            shared_zone = get_shared_zone['zone']
-
-            shared_zone['connection'] = {
-                'name': 'shared.',
-                'keyName': VinylDNSTestContext.dns_key_name,
-                'key': VinylDNSTestContext.dns_key,
-                'primaryServer': VinylDNSTestContext.dns_ip
-            }
-
-            shared_zone['transferConnection'] = {
-                'name': 'shared.',
-                'keyName': VinylDNSTestContext.dns_key_name,
-                'key': VinylDNSTestContext.dns_key,
-                'primaryServer': VinylDNSTestContext.dns_ip
-            }
-
-            shared_zone_change = self.shared_zone_vinyldns_client.update_zone(shared_zone, status=202)
+            shared_zone_change = self.set_up_shared_zone('shared-zone')
             self.shared_zone = shared_zone_change['zone']
+
+            non_test_shared_zone_change = self.set_up_shared_zone('non-test-shared-zone')
+            self.non_test_shared_zone = non_test_shared_zone_change['zone']
 
             # wait until our zones are created
             self.ok_vinyldns_client.wait_until_zone_exists(system_test_zone_change)
@@ -267,7 +260,11 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_exists(system_test_zone_change)
             self.ok_vinyldns_client.wait_until_zone_exists(parent_zone_change)
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
-            self.shared_zone_vinyldns_client.sync_zone(shared_zone['id'])
+            shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.shared_zone['id'])
+            self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_zone_change)
+            non_test_shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.non_test_shared_zone['id'])
+            self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_sync_change)
+            self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_sync_change)
 
             # validate all in there
             zones = self.dummy_vinyldns_client.list_zones()['zones']
@@ -275,7 +272,7 @@ class SharedZoneTestContext(object):
             zones = self.ok_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(7))
             zones = self.shared_zone_vinyldns_client.list_zones()['zones']
-            assert_that(len(zones), is_(1))
+            assert_that(len(zones), is_(2))
 
         except:
             # teardown if there was any issue in setup
@@ -285,6 +282,22 @@ class SharedZoneTestContext(object):
                 pass
             raise
 
+    def set_up_shared_zone(self, zone_id):
+        # shared zones are created through test data loader, but needs connection info added here to use
+        get_shared_zone = self.shared_zone_vinyldns_client.get_zone(zone_id)
+        shared_zone = get_shared_zone['zone']
+
+        connection_info = {
+            'name': 'shared.',
+            'keyName': VinylDNSTestContext.dns_key_name,
+            'key': VinylDNSTestContext.dns_key,
+            'primaryServer': VinylDNSTestContext.dns_ip
+        }
+
+        shared_zone['connection'] = connection_info
+        shared_zone['transferConnection'] = connection_info
+
+        return self.shared_zone_vinyldns_client.update_zone(shared_zone, status=202)
 
     def tear_down(self):
         """
