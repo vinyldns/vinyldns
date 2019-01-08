@@ -133,25 +133,21 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
         validateAddWithContext(add, changeGroups, existingRecords, auth, ownerGroupId)
       case deleteUpdate: DeleteChangeForValidation
           if changeGroups.containsAddChangeForValidation(deleteUpdate.recordKey) =>
-        validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth, ownerGroupId)
+        validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth)
       case del: DeleteChangeForValidation =>
-        validateDeleteWithContext(del, existingRecords, auth, ownerGroupId)
+        validateDeleteWithContext(del, existingRecords, auth)
     }
   }
 
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal,
-      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
-    val validations = recordExists(
-      change.zone.id,
-      change.recordName,
-      change.inputChange.inputName,
-      change.inputChange.typ,
-      existingRecords) |+|
-      userCanDeleteRecordSet(change, auth, ownerGroupId) |+|
-      ownerGroupIsValidDelete(change, existingRecords, auth)
+      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+    val validations =
+      existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+        case Some(rs) => userCanDeleteRecordSet(change, auth, rs.ownerGroupId)
+        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+      }
 
     validations.map(_ => change)
   }
@@ -179,15 +175,13 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateDeleteUpdateWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal,
-      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
-    val validations = recordExists(
-      change.zone.id,
-      change.recordName,
-      change.inputChange.inputName,
-      change.inputChange.typ,
-      existingRecords) |+|
-      userCanAddUpdateRecordSet(change, auth, ownerGroupId)
+      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+
+    val validations =
+      existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+        case Some(rs) => userCanUpdateRecordSet(change, auth, rs.ownerGroupId)
+        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+      }
 
     validations.map(_ => change)
   }
@@ -276,17 +270,6 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case None => ().validNel
     }
 
-  def recordExists(
-      zoneId: String,
-      recordName: String,
-      inputName: String,
-      typ: RecordType,
-      existingRecordSets: ExistingRecordSets): SingleValidation[Unit] =
-    existingRecordSets.get(zoneId, recordName, typ) match {
-      case Some(_) => ().validNel
-      case None => RecordDoesNotExist(inputName).invalidNel
-    }
-
   def noCnameWithRecordNameInExistingRecords(
       zoneId: String,
       recordName: String,
@@ -335,6 +318,21 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       input.inputChange.typ,
       input.zone,
       ownerGroupId)
+    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
+  }
+
+  def userCanUpdateRecordSet(
+      input: ChangeForValidation,
+      authPrincipal: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[Unit] = {
+    val result =
+      canUpdateRecordSet(
+        authPrincipal,
+        input.recordName,
+        input.inputChange.typ,
+        input.zone,
+        ownerGroupId
+      )
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
   }
 
@@ -393,25 +391,6 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
         case Some(rs) =>
           if (rs.ownerGroupId.isDefined || ownerGroupId.isDefined) ().validNel
           else OwnerGroupIdMissing(change.recordName, change.zone.name).invalidNel
-      }
-    }
-
-  def ownerGroupIsValidDelete(
-      change: ChangeForValidation,
-      existingRecords: ExistingRecordSets,
-      authPrincipal: AuthPrincipal): SingleValidation[Unit] =
-    if (!change.zone.shared) {
-      ().validNel
-    } else {
-      existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
-        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
-        case Some(rs) =>
-          rs.ownerGroupId match {
-            case None => ().validNel
-            case Some(groupId) =>
-              if (authPrincipal.isGroupMember(groupId)) ().validNel
-              else UserIsNotAuthorized(authPrincipal.signedInUser.userName).invalidNel
-          }
       }
     }
 }

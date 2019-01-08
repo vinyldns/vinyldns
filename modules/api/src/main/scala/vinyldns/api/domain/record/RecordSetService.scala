@@ -64,12 +64,7 @@ class RecordSetService(
       _ <- recordSetDoesNotExist(rsForValidations, zone)
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
-      _ <- canAddRecordSet(
-        auth,
-        rsForValidations.name,
-        rsForValidations.typ,
-        zone,
-        rsForValidations.ownerGroupId).toResult
+      _ <- canAddRecordSet(auth, rsForValidations.name, rsForValidations.typ, zone).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
