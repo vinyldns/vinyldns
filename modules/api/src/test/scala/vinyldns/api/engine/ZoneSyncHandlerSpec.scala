@@ -210,6 +210,36 @@ class ZoneSyncHandlerSpec
       result.zone.latestSync shouldBe defined
     }
 
+    "process successful zone sync with no changes" in {
+      doReturn(IO.pure(Right(testZoneChange)))
+        .when(zoneRepo)
+        .save(any[Zone])
+      doReturn(() => IO(testDnsView)).when(mockDNSLoader).load
+      doReturn(() => IO(testDnsView)).when(mockVinylDNSLoader).load
+
+      val result = zoneSync(testZoneChange).unsafeRunSync()
+
+      val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+      verify(zoneChangeRepo, times(2)).save(changeCaptor.capture())
+
+      val savedChange = changeCaptor.getAllValues
+
+      // first saveZoneAndChange
+      savedChange.get(0).status shouldBe ZoneChangeStatus.Pending
+      savedChange.get(0).zone.status shouldBe ZoneStatus.Syncing
+      savedChange.get(0).zone.latestSync should not be defined
+
+      // second saveZoneAndChange
+      savedChange.get(1).status shouldBe ZoneChangeStatus.Synced
+      savedChange.get(1).zone.status shouldBe ZoneStatus.Active
+      savedChange.get(1).zone.latestSync shouldBe defined
+
+      // returned result
+      result.status shouldBe ZoneChangeStatus.Synced
+      result.zone.status shouldBe ZoneStatus.Active
+      result.zone.latestSync shouldBe defined
+    }
+
     "handle failed zone sync" in {
       doReturn(() => IO.raiseError(new RuntimeException("Dns Failed")))
         .when(mockVinylDNSLoader)
