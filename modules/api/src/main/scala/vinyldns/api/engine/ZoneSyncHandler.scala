@@ -112,7 +112,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             logger.info(s"Zone sync for change $zoneChange had no records to sync")
             IO.pure(
               zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now))))
+                zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
+                status = ZoneChangeStatus.Synced))
           } else {
             logger.info(
               s"Zone sync for change $zoneChange found ${changes.size} changes to be saved")
