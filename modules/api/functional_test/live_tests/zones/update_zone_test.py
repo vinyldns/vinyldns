@@ -67,17 +67,6 @@ def test_update_zone_success(shared_zone_test_context):
         if result_zone:
             client.abandon_zones([result_zone['id']], status=202)
 
-def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
-    """
-    Test updating a zone shared status as a normal user fails
-    """
-    zone_update = shared_zone_test_context.ok_zone
-    zone_update['shared'] = True
-
-    error = shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status= 403)
-    assert_that(error, contains_string('Not authorized to update zone shared status from false to true.'))
-
-
 def test_update_bad_acl_fails(shared_zone_test_context):
     """
     Test that updating a zone with a bad ACL rule fails
@@ -832,3 +821,16 @@ def test_update_zone_no_authorization(shared_zone_test_context):
     }
 
     client.update_zone(zone, sign_request=False, status=401)
+
+def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
+    """
+    Test updating a zone shared status as a normal user fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    result = client.get_zone(shared_zone_test_context.ok_zone['id'], status=200)
+    zone_update = result['zone']
+    zone_update['shared'] = True
+
+    error = shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status= 403)
+    assert_that(error, contains_string('Not authorized to update zone shared status from false to true.'))
