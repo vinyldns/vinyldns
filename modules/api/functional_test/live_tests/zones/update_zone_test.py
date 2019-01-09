@@ -822,6 +822,7 @@ def test_update_zone_no_authorization(shared_zone_test_context):
 
     client.update_zone(zone, sign_request=False, status=401)
 
+
 def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
     """
     Test updating a zone shared status as a normal user fails
@@ -834,3 +835,30 @@ def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
 
     error = shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status= 403)
     assert_that(error, contains_string('Not authorized to update zone shared status from false to true.'))
+
+
+def test_toggle_test_flag(shared_zone_test_context):
+    """
+    Test the isTest flag is ignored in update requests
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone_update = shared_zone_test_context.non_test_shared_zone
+    zone_update['isTest'] = True
+
+    change = client.update_zone(zone_update, status=202)
+    client.wait_until_zone_change_status_synced(change)
+
+    # we dont expose the isTest flag to users, so the only way to validate this is ignored is to validate
+    # changes continue to fail
+    record = {
+        'zoneId': shared_zone_test_context.non_test_shared_zone['id'],
+        'name': 'non-test-zone-A',
+        'type': 'A',
+        'ttl': 100,
+        'records': [
+            {
+                'address': '1.2.3.4'
+            }
+        ]
+    }
+    client.create_recordset(record, status=403)

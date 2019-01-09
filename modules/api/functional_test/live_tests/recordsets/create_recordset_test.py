@@ -1741,3 +1741,24 @@ def test_create_high_value_domain_fails_for_ip6_ptr(shared_zone_test_context):
 
     error_ptr = client.create_recordset(ptr, status=422)
     assert_that(error_ptr, is_('Record name "fd69:27cc:fe91:0000:0000:0000:0000:ffff" is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_no_add_access_non_test_zone(shared_zone_test_context):
+    """
+    Test that a test user cannot create a record in a non-test zone (even if admin)
+    """
+
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    record = {
+        'zoneId': shared_zone_test_context.non_test_shared_zone['id'],
+        'name': 'non-test-zone-A',
+        'type': 'A',
+        'ttl': 100,
+        'records': [
+            {
+                'address': '1.2.3.4'
+            }
+        ]
+    }
+
+    client.create_recordset(record, status=403)

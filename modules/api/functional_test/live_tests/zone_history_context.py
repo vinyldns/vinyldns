@@ -38,6 +38,7 @@ class ZoneHistoryContext(object):
                 'email': 'i.changed.this.1.times@history-test.com',
                 'shared': False,
                 'adminGroupId': self.group['id'],
+                'isTest': True,
                 'connection': {
                     'name': 'vinyldns.',
                     'keyName': VinylDNSTestContext.dns_key_name,
