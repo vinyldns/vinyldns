@@ -169,3 +169,37 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
         if retrieved_rs:
             delete_result = client.delete_recordset(retrieved_rs['zoneId'], retrieved_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+def test_get_owned_recordset_from_not_shared_zone(shared_zone_test_context):
+    """
+    Test getting a recordset as the record group owner not in a shared zone fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_rs = None
+    try:
+        new_rs = {
+            'zoneId': shared_zone_test_context.ok_zone['id'],
+            'name': 'test_cant_get_owned_recordset',
+            'type': 'A',
+            'ttl': 100,
+            'records': [
+                {
+                    'address': '10.1.1.1'
+                },
+                {
+                    'address': '10.2.2.2'
+                }
+            ],
+            'ownerGroupId': shared_zone_test_context.shared_record_group['id']
+        }
+        result = client.create_recordset(new_rs, status=202)
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        # Get the recordset we just made and verify
+        shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+        shared_client.get_recordset(result_rs['zoneId'], result_rs['id'], status=403)
+
+    finally:
+        if result_rs:
+            delete_result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
