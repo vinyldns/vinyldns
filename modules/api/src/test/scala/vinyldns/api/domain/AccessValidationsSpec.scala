@@ -27,6 +27,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneACL}
 
 class AccessValidationsSpec
@@ -74,6 +75,8 @@ class AccessValidationsSpec
   private val userAclDelete =
     ACLRule(AccessLevel.Delete, userId = Some(userAuthDelete.userId), groupId = None)
   private val zoneInDelete = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAclDelete)))
+
+  private val testUser = User("test", "test", "test", isTest = true)
 
   "canSeeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user with no acl rules" in {
@@ -170,6 +173,25 @@ class AccessValidationsSpec
         zoneInDelete) should be(right)
     }
 
+    "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+
+      val error = leftValue(
+        accessValidationTest
+          .canAddRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return access as calculated if the user is a test user in a test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+      val zone = okZone.copy(isTest = true)
+
+      accessValidationTest
+        .canAddRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
+    }
+
     "return true if recordset is NS and user is a superuser" in {
       val auth = okAuth.copy(
         signedInUser = okAuth.signedInUser.copy(isSuper = true),
@@ -232,6 +254,25 @@ class AccessValidationsSpec
         mockRecordSet.typ,
         zoneIn) should be(right)
     }
+
+    "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+
+      val error = leftValue(
+        accessValidationTest
+          .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return access as calculated if the user is a test user in a test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+      val zone = okZone.copy(isTest = true)
+
+      accessValidationTest
+        .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
+    }
   }
 
   "canDeleteRecordSet" should {
@@ -269,6 +310,25 @@ class AccessValidationsSpec
         mockRecordSet.name,
         mockRecordSet.typ,
         zoneInDelete) should be(right)
+    }
+
+    "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+
+      val error = leftValue(
+        accessValidationTest
+          .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return access as calculated if the user is a test user in a test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+      val zone = okZone.copy(isTest = true)
+
+      accessValidationTest
+        .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
     }
   }
 
@@ -338,6 +398,25 @@ class AccessValidationsSpec
           zoneNotAuthorized,
           mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
+    }
+
+    "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+
+      val error = leftValue(
+        accessValidationTest
+          .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return access as calculated if the user is a test user in a test zone" in {
+      val mockRecordSet = mock[RecordSet]
+      val auth = okAuth.copy(signedInUser = testUser)
+      val zone = okZone.copy(isTest = true)
+
+      accessValidationTest
+        .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
     }
   }
 

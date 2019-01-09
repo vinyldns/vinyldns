@@ -203,6 +203,18 @@ class ZoneServiceSpec
       resultChange.zone.id shouldBe oldZone.id
     }
 
+    "ignore isTest updates" in {
+      doReturn(IO.pure(Some(zoneAuthorized))).when(mockZoneRepo).getZone(anyString)
+
+      val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(grp.id, okGroup.id))
+      val newZone = zoneAuthorized.copy(isTest = !zoneAuthorized.isTest)
+      val resultChange: ZoneChange = rightResultOf(
+        underTest.updateZone(newZone, doubleAuth).map(_.asInstanceOf[ZoneChange]).value,
+        duration = 2.seconds)
+
+      resultChange.zone.isTest shouldBe zoneAuthorized.isTest
+    }
+
     "validate connection and fail if changed to bad" in {
       doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
 

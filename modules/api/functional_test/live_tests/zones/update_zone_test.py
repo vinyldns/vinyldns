@@ -848,17 +848,4 @@ def test_toggle_test_flag(shared_zone_test_context):
     change = client.update_zone(zone_update, status=202)
     client.wait_until_zone_change_status_synced(change)
 
-    # we dont expose the isTest flag to users, so the only way to validate this is ignored is to validate
-    # changes continue to fail
-    record = {
-        'zoneId': shared_zone_test_context.non_test_shared_zone['id'],
-        'name': 'non-test-zone-A',
-        'type': 'A',
-        'ttl': 100,
-        'records': [
-            {
-                'address': '1.2.3.4'
-            }
-        ]
-    }
-    client.create_recordset(record, status=403)
+    assert_that(change['zone']['isTest'], is_(False))
