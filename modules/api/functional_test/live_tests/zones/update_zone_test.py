@@ -227,8 +227,7 @@ def test_update_zone_returns_404_if_zone_not_found(shared_zone_test_context):
             'keyName': VinylDNSTestContext.dns_key_name,
             'key': VinylDNSTestContext.dns_key,
             'primaryServer': VinylDNSTestContext.dns_ip
-        },
-        'adminGroupId': shared_zone_test_context.ok_group['id']
+        }
     }
     client.update_zone(zone, status=404)
 
