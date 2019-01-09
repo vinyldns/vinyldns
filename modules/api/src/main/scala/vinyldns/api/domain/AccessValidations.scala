@@ -87,10 +87,7 @@ object AccessValidations extends AccessValidationAlgebra {
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to view " +
         s"$recordName.${zone.name}"))(
-      if (zone.shared)
-        getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId) != AccessLevel.NoAccess
-      else
-        getAccessLevel(auth, recordName, recordType, zone) != AccessLevel.NoAccess
+      getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId) != AccessLevel.NoAccess
     )
 
   def getListAccessLevels(
@@ -185,29 +182,15 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): AccessLevel = auth match {
-    case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) => AccessLevel.Delete
-    case supportUser if supportUser.canReadAll => {
-      val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
-      if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
-    }
-    case _ => getAccessFromAcl(auth, recordName, recordType, zone)
-  }
-
-  def getAccessLevel(
-      auth: AuthPrincipal,
-      recordName: String,
-      recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String] = None): AccessLevel = auth match {
     case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) =>
       AccessLevel.Delete
-    case recordOwner if zone.shared && recordOwner.isGroupMember(recordOwnerGroupId.mkString) =>
+    case recordOwner if zone.shared && recordOwnerGroupId.exists(recordOwner.isGroupMember) =>
       AccessLevel.Delete
-    case supportUser if supportUser.canReadAll => {
+    case supportUser if supportUser.canReadAll =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
-    }
     case _ => getAccessFromAcl(auth, recordName, recordType, zone)
   }
 }
