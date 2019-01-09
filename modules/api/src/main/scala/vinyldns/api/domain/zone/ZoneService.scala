@@ -88,7 +88,9 @@ class ZoneService(
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
       zoneWithUpdates = Zone(updateZoneInput, existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
-      updateZoneChange <- ZoneChangeGenerator.forUpdate(zoneWithUpdates, existingZone, auth).toResult
+      updateZoneChange <- ZoneChangeGenerator
+        .forUpdate(zoneWithUpdates, existingZone, auth)
+        .toResult
       _ <- messageQueue.send(updateZoneChange).toResult[Unit]
     } yield updateZoneChange
 
