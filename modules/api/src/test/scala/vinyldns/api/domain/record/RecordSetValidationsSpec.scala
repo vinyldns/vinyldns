@@ -22,7 +22,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone.{InvalidRequest, PendingUpdateError, RecordSetAlreadyExists}
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.record.{NSData, RecordSet, RecordSetStatus, SOAData}
 
 class RecordSetValidationsSpec
@@ -31,7 +31,6 @@ class RecordSetValidationsSpec
     with MockitoSugar
     with ResultHelpers
     with VinylDNSTestData
-    with GroupTestData
     with EitherMatchers {
 
   import RecordSetValidations._

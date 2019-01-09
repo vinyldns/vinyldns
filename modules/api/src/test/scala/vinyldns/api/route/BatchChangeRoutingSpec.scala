@@ -27,8 +27,8 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.GroupTestData
 import vinyldns.api.domain.batch._
+import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import cats.effect._
@@ -42,19 +42,16 @@ class BatchChangeRoutingSpec
     with JsonValidationRejection
     with VinylDNSDirectives
     with VinylDNSJsonProtocol
-    with Matchers
-    with GroupTestData {
+    with Matchers {
 
   val batchChangeService: BatchChangeServiceAlgebra = TestBatchChangeService
-  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(okUserAuth)
+  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
 
   import vinyldns.core.domain.batch.SingleChangeStatus._
 
   object TestData {
     import vinyldns.api.domain.batch.ChangeInputType._
 
-    val okAuth: AuthPrincipal = okGroupAuth
-    val notAuth: AuthPrincipal = dummyUserAuth
     val batchChangeLimit = 20
 
     /* Builds BatchChange response */
@@ -235,7 +232,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithComments)) ~>
-        batchChangeRoute(TestData.okAuth) ~> check {
+        batchChangeRoute(okAuth) ~> check {
 
         status shouldBe Accepted
 
@@ -249,7 +246,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)) ~>
-        batchChangeRoute(TestData.okAuth) ~> check {
+        batchChangeRoute(okAuth) ~> check {
 
         status shouldBe Accepted
 
@@ -266,7 +263,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, unprocessableEntity)) ~>
-        Route.seal(batchChangeRoute(TestData.okAuth)) ~> check {
+        Route.seal(batchChangeRoute(okAuth)) ~> check {
 
         status shouldBe UnprocessableEntity
       }
@@ -280,7 +277,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, requestEntityTooLarge)) ~>
-        Route.seal(batchChangeRoute(TestData.okAuth)) ~> check {
+        Route.seal(batchChangeRoute(okAuth)) ~> check {
 
         status shouldBe RequestEntityTooLarge
       }
@@ -296,7 +293,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, invalidRequestChangeType)) ~>
-        Route.seal(batchChangeRoute(TestData.okAuth)) ~> check {
+        Route.seal(batchChangeRoute(okAuth)) ~> check {
 
         status shouldBe BadRequest
       }
@@ -307,7 +304,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, runtimeError)) ~>
-        Route.seal(batchChangeRoute(TestData.okAuth)) ~> check {
+        Route.seal(batchChangeRoute(okAuth)) ~> check {
 
         status shouldBe InternalServerError
       }
@@ -316,8 +313,7 @@ class BatchChangeRoutingSpec
 
   "GET Batch Change" should {
     "return the batch change given a valid batch change id" in {
-      Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute(
-        TestData.okAuth) ~> check {
+      Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute(okAuth) ~> check {
 
         status shouldBe OK
 
@@ -327,14 +323,14 @@ class BatchChangeRoutingSpec
     }
 
     "return a NotFound error given a nonexistent batch change id" in {
-      Get("/zones/batchrecordchanges/nonexistentID") ~> batchChangeRoute(TestData.okAuth) ~> check {
+      Get("/zones/batchrecordchanges/nonexistentID") ~> batchChangeRoute(okAuth) ~> check {
 
         status shouldBe NotFound
       }
     }
 
     "return a Forbidden error if user did not create the batch change" in {
-      Get("/zones/batchrecordchanges/notAuthedID") ~> batchChangeRoute(TestData.notAuth) ~> check {
+      Get("/zones/batchrecordchanges/notAuthedID") ~> batchChangeRoute(notAuth) ~> check {
 
         status shouldBe Forbidden
       }
@@ -343,7 +339,7 @@ class BatchChangeRoutingSpec
 
   "GET batchChangesSummaries" should {
     "return the list of batch change summaries for the user that called it" in {
-      Get("/zones/batchrecordchanges") ~> batchChangeRoute(TestData.okAuth) ~> check {
+      Get("/zones/batchrecordchanges") ~> batchChangeRoute(okAuth) ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -356,7 +352,7 @@ class BatchChangeRoutingSpec
     }
 
     "return the first batch change summary for the user that called it" in {
-      Get("/zones/batchrecordchanges?maxItems=1") ~> batchChangeRoute(TestData.okAuth) ~> check {
+      Get("/zones/batchrecordchanges?maxItems=1") ~> batchChangeRoute(okAuth) ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -369,7 +365,7 @@ class BatchChangeRoutingSpec
     }
 
     "return an offset of the batch change summaries for the user that called it" in {
-      Get("/zones/batchrecordchanges?startFrom=1") ~> batchChangeRoute(TestData.okAuth) ~> check {
+      Get("/zones/batchrecordchanges?startFrom=1") ~> batchChangeRoute(okAuth) ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -382,7 +378,7 @@ class BatchChangeRoutingSpec
     }
 
     "return only the second batch change summary for the user that called it" in {
-      Get("/zones/batchrecordchanges?startFrom=1&maxItems=1") ~> batchChangeRoute(TestData.okAuth) ~> check {
+      Get("/zones/batchrecordchanges?startFrom=1&maxItems=1") ~> batchChangeRoute(okAuth) ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -395,7 +391,7 @@ class BatchChangeRoutingSpec
     }
 
     "return an error if maxItems is out of range" in {
-      Get("/zones/batchrecordchanges?startFrom=1&maxItems=101") ~> batchChangeRoute(TestData.okAuth) ~> check {
+      Get("/zones/batchrecordchanges?startFrom=1&maxItems=101") ~> batchChangeRoute(okAuth) ~> check {
         status shouldBe BadRequest
 
         responseEntity.toString should include(
@@ -404,7 +400,7 @@ class BatchChangeRoutingSpec
     }
 
     "return empty list of batch change summaries for the user that called it" in {
-      Get("/zones/batchrecordchanges") ~> batchChangeRoute(TestData.notAuth) ~> check {
+      Get("/zones/batchrecordchanges") ~> batchChangeRoute(notAuth) ~> check {
         status shouldBe OK
 
         val resp = responseAs[JValue]

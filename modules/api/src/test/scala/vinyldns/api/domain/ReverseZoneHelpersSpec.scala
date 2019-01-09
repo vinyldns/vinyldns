@@ -20,10 +20,10 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone.InvalidRequest
-import vinyldns.api.{GroupTestData, ResultHelpers, VinylDNSTestData}
+import vinyldns.api.{ResultHelpers, VinylDNSTestData}
 import vinyldns.core.domain.zone.Zone
 
 class ReverseZoneHelpersSpec
@@ -33,8 +33,6 @@ class ReverseZoneHelpersSpec
     with VinylDNSTestData
     with Eventually
     with ResultHelpers
-    with BeforeAndAfterEach
-    with GroupTestData
     with EitherMatchers {
 
   "ReverseZoneHelpersSpec" should {

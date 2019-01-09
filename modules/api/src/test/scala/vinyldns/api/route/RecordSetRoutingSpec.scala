@@ -24,10 +24,10 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
+import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
@@ -43,15 +43,13 @@ class RecordSetRoutingSpec
     with VinylDNSJsonProtocol
     with JsonValidationRejection
     with VinylDNSDirectives
-    with Matchers
-    with GroupTestData {
+    with Matchers {
 
   private val zoneNotFound = Zone("not.found", "test@test.com")
   private val okZone = Zone("ok", "test@test.com")
   private val zoneDeleted = Zone("inactive", "test@test.com", ZoneStatus.Deleted)
   private val notAuthorizedZone = Zone("notAuth", "test@test.com")
   private val syncingZone = Zone("syncing", "test@test.com")
-  private val okAuth = okGroupAuth
 
   private val rsAlreadyExists = RecordSet(
     okZone.id,

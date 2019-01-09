@@ -19,8 +19,9 @@ package vinyldns.api.domain.auth
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.{GroupTestData, ResultHelpers}
+import org.scalatest.{Matchers, WordSpec}
+import vinyldns.api.ResultHelpers
+import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.membership.{MembershipRepository, UserRepository}
 import cats.effect._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -29,9 +30,7 @@ class MembershipAuthPrincipalProviderSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
-    with BeforeAndAfterEach
-    with ResultHelpers
-    with GroupTestData {
+    with ResultHelpers {
 
   "MembershipAuthPrincipalProvider" should {
     "return the AuthPrincipal" in {

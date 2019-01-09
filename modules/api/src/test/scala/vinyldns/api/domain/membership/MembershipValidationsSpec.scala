@@ -19,7 +19,8 @@ package vinyldns.api.domain.membership
 import cats.scalatest.EitherMatchers
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
-import vinyldns.api.{GroupTestData, ResultHelpers}
+import vinyldns.api.ResultHelpers
+import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.domain.membership.User
@@ -30,7 +31,6 @@ class MembershipValidationsSpec
     with MockitoSugar
     with BeforeAndAfterEach
     with ResultHelpers
-    with GroupTestData
     with EitherMatchers {
 
   import vinyldns.api.domain.membership.MembershipValidations._
@@ -56,7 +56,7 @@ class MembershipValidationsSpec
 
     "isAdmin" should {
       "return true when the user is in admin group" in {
-        canEditGroup(okGroup, okUserAuth) should be(right)
+        canEditGroup(okGroup, okAuth) should be(right)
       }
       "return true when the user is a super user" in {
         val user = User("some", "new", "user", isSuper = true)
@@ -79,7 +79,7 @@ class MembershipValidationsSpec
 
     "canSeeGroup" should {
       "return true when the user is in the group" in {
-        canSeeGroup(okGroup.id, okUserAuth) should be(right)
+        canSeeGroup(okGroup.id, okAuth) should be(right)
       }
       "return true when the user is a super user" in {
         val user = User("some", "new", "user", isSuper = true)

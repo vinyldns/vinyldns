@@ -92,7 +92,6 @@ trait GroupTestData { this: Matchers =>
   val noGroupsUserAuth: AuthPrincipal = AuthPrincipal(okUser, Seq())
   val deletedGroupAuth: AuthPrincipal = AuthPrincipal(okUser, Seq(deletedGroup.id))
   val dummyUserAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
-  val lockedUserAuth: AuthPrincipal = AuthPrincipal(lockedUser, Seq())
   val listOfDummyGroupsAuth: AuthPrincipal = AuthPrincipal(dummyUser, listOfDummyGroups.map(_.id))
 
   val memberOkZoneAuthorized: Zone = Zone(

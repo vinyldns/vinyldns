@@ -36,6 +36,7 @@ object TestMembershipData {
 
   val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
   val superUser = User("super", "superAccess", "superSecret", isSuper = true)
+  val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
@@ -55,6 +56,13 @@ object TestMembershipData {
     memberIds = Set(okUser.id),
     adminUserIds = Set(okUser.id),
     created = DateTime.now.secondOfDay().roundFloorCopy())
+
+  val dummyGroup: Group = Group(
+    "dummy",
+    "test@test.com",
+    Some("has the dummy users"),
+    adminUserIds = listOfDummyUsers.map(_.id).toSet,
+    memberIds = listOfDummyUsers.map(_.id).toSet)
 
   val twoUserGroup: Group = Group(
     "twoUsers",
