@@ -94,8 +94,15 @@ object TestMembershipData {
       created = DateTime.now.secondOfDay().roundFloorCopy())
   }
 
+  val xyzGroup: Group = Group("xyz", "xyz", id = "xyz", memberIds = Set("xyz"))
+
   /* AUTHS */
   val okAuth: AuthPrincipal = AuthPrincipal(okUser, Seq(okGroup.id))
+
+  val xyzAuth: AuthPrincipal = okAuth.copy(
+    signedInUser = okAuth.signedInUser.copy(userName = "xyz", id = "xyz"),
+    memberGroupIds = List(xyzGroup.id, okGroup.id)
+  )
 
   val abcAuth: AuthPrincipal = okAuth.copy(
     signedInUser = okAuth.signedInUser.copy(userName = "abc", id = "abc"),

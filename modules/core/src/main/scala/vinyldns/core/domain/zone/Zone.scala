@@ -115,7 +115,7 @@ final case class CreateZoneInput(
     adminGroupId: String,
     isTest: Boolean = false)
 
-case class UpdateZoneInput(
+final case class UpdateZoneInput(
     id: String,
     name: String,
     email: String,

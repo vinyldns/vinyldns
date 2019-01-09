@@ -84,8 +84,8 @@ class ZoneService(
         auth.signedInUser).toResult
       _ <- canChangeZone(auth, existingZone.name, existingZone.adminGroupId).toResult
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
-      _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult // if admin group changes,
-      // this confirms user has access to new group
+      // if admin group changes, this confirms user has access to new group
+      _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
       zoneToUpdate = Zone(updateZoneInput, existingZone)
       _ <- validateZoneConnectionIfChanged(zoneToUpdate, existingZone)
       updateZoneChange <- ZoneChangeGenerator.forUpdate(zoneToUpdate, existingZone, auth).toResult

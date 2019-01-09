@@ -24,12 +24,13 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
-import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
-import vinyldns.core.domain.record.RecordType
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
 
 class ZoneRoutingSpec
@@ -40,10 +41,8 @@ class ZoneRoutingSpec
     with VinylDNSDirectives
     with OneInstancePerTest
     with VinylDNSJsonProtocol
-    with Matchers
-    with GroupTestData {
+    with Matchers {
 
-  private val okAuth = okGroupAuth
   private val alreadyExists = Zone("already.exists.", "already-exists@test.com")
   private val notFound = Zone("not.found.", "not-found@test.com")
   private val notAuthorized = Zone("not.authorized.", "not-authorized@test.com")
@@ -115,7 +114,6 @@ class ZoneRoutingSpec
       ("adminGroupId" -> "admin-group-id")
 
   private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Complete)
-  private val zoneUpdate = ZoneChange(ok, "ok", ZoneChangeType.Update, ZoneChangeStatus.Complete)
   private val listZoneChangeResponse = ListZoneChangesResponse(
     ok.id,
     List(zoneCreate, zoneUpdate),
