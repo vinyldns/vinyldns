@@ -133,7 +133,9 @@ object RecordSetChangeGenerator extends DnsConversions {
         id = replacing.id,
         name = relativize(newRecordSet.name, zone.name),
         status = RecordSetStatus.Active,
-        updated = Some(DateTime.now)),
+        updated = Some(DateTime.now),
+        ownerGroupId = replacing.ownerGroupId
+      ),
       userId = "system",
       changeType = RecordSetChangeType.Update,
       status = RecordSetChangeStatus.Complete,

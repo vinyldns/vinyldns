@@ -234,7 +234,9 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
             ttl = 100,
             status = RecordSetStatus.Active,
             created = DateTime.now,
-            records = List(AData("3.3.3.3")))
+            records = List(AData("3.3.3.3")),
+            ownerGroupId = Some("defOwner")
+          )
         )
         val vinyldnsView = ZoneView(testZone, vinyldnsRecords)
 
@@ -267,6 +269,7 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
           val record = rsc.recordSet
           record.id shouldBe expected.id
           record.account shouldBe expected.account
+          record.ownerGroupId shouldBe expected.ownerGroupId
         }
       }
     }

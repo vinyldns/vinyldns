@@ -94,6 +94,7 @@ def test_sync_zone_success(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone_name = 'sync-test'
+    updated_rs_id = None
 
     zone = {
         'name': zone_name,
@@ -130,12 +131,22 @@ def test_sync_zone_success(shared_zone_test_context):
 
         assert_that(len(recordsets), is_(10))
         for rs in recordsets:
+            if rs['name'] == 'foo':
+                # get the ID for recordset with name 'foo'
+                updated_rs_id = rs['id']
             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
             small_rs['records'] = sorted(small_rs['records'])
             if small_rs['type'] == 'SOA':
                 assert_that(small_rs['name'], is_('sync-test.'))
             else:
                 assert_that(records_in_dns, has_item(small_rs))
+
+        # give the 'foo' record an ownerGroupID to confirm it's still present after the zone sync
+        foo_rs = client.get_recordset(zone['id'], updated_rs_id)['recordSet']
+        foo_rs['ownerGroupId'] = shared_zone_test_context.ok_group['id']
+        update_response = client.update_recordset(foo_rs, status=202)
+        foo_rs_change = client.wait_until_recordset_change_status(update_response, 'Complete')
+        assert_that(foo_rs_change['recordSet']['ownerGroupId'], is_(shared_zone_test_context.ok_group['id']))
 
         # make changes to the dns backend
         dns_update(zone, 'foo', 38400, 'A', '1.2.3.4')
@@ -178,7 +189,13 @@ def test_sync_zone_success(shared_zone_test_context):
 
         changes = client.list_recordset_changes(zone['id'])
         for c in changes['recordSetChanges']:
-            assert_that(c['systemMessage'], is_('Change applied via zone sync'))
+            if c['id'] == foo_rs_change['id']:
+                assert_that(c, is_not(has_key('systemMessage')))
+            else:
+                assert_that(c['systemMessage'], is_('Change applied via zone sync'))
+
+        check_rs = client.get_recordset(zone['id'], updated_rs_id)['recordSet']
+        assert_that(check_rs['ownerGroupId'], is_(shared_zone_test_context.ok_group['id']))
 
         for rs in recordsets:
             # confirm that we cannot update the dotted host if the name is the same
