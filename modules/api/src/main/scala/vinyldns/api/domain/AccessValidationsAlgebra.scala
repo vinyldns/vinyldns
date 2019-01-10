@@ -26,7 +26,10 @@ trait AccessValidationAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
 
-  def canChangeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
+  def canChangeZone(
+      auth: AuthPrincipal,
+      zoneName: String,
+      zoneAdminGroupId: String): Either[Throwable, Unit]
 
   def canAddRecordSet(
       auth: AuthPrincipal,

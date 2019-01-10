@@ -24,12 +24,13 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
-import vinyldns.api.GroupTestData
 import vinyldns.api.Interfaces._
 import vinyldns.api.crypto.Crypto
-import vinyldns.core.domain.record.RecordType
 import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
 
 class ZoneRoutingSpec
@@ -40,10 +41,8 @@ class ZoneRoutingSpec
     with VinylDNSDirectives
     with OneInstancePerTest
     with VinylDNSJsonProtocol
-    with Matchers
-    with GroupTestData {
+    with Matchers {
 
-  private val okAuth = okGroupAuth
   private val alreadyExists = Zone("already.exists.", "already-exists@test.com")
   private val notFound = Zone("not.found.", "not-found@test.com")
   private val notAuthorized = Zone("not.authorized.", "not-authorized@test.com")
@@ -107,14 +106,14 @@ class ZoneRoutingSpec
     ("invalidField" -> "randomValue") ~~
       ("connection" -> ("k" -> "value"))
 
-  private val zoneWithInvalidStatus: JValue =
-    ("name" -> "invalidZoneStatus.") ~~
+  private val zoneWithInvalidId: JValue =
+    ("id" -> true) ~~
+      ("name" -> "invalidZoneStatus.") ~~
       ("email" -> "invalid-zone-status@test.com") ~~
       ("status" -> "invalidStatus") ~~
       ("adminGroupId" -> "admin-group-id")
 
   private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Complete)
-  private val zoneUpdate = ZoneChange(ok, "ok", ZoneChangeType.Update, ZoneChangeStatus.Complete)
   private val listZoneChangeResponse = ListZoneChangesResponse(
     ok.id,
     List(zoneCreate, zoneUpdate),
@@ -123,43 +122,52 @@ class ZoneRoutingSpec
     maxItems = 100)
 
   object TestZoneService extends ZoneServiceAlgebra {
-    def connectToZone(zone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] = {
-      val outcome = zone.email match {
-        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$zone"))
-        case notFound.email => Left(ZoneNotFoundError(s"$zone"))
-        case notAuthorized.email => Left(NotAuthorizedError(s"$zone"))
-        case badAdminId.email => Left(InvalidZoneAdminError(s"$zone"))
+    def connectToZone(
+        createZoneInput: CreateZoneInput,
+        auth: AuthPrincipal): Result[ZoneCommandResult] = {
+      val outcome = createZoneInput.email match {
+        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$createZoneInput"))
+        case notFound.email => Left(ZoneNotFoundError(s"$createZoneInput"))
+        case notAuthorized.email => Left(NotAuthorizedError(s"$createZoneInput"))
+        case badAdminId.email => Left(InvalidZoneAdminError(s"$createZoneInput"))
         case ok.email | connectionOk.email | trailingDot.email | "invalid-zone-status@test.com" =>
           Right(
             zoneCreate.copy(
               status = ZoneChangeStatus.Complete,
-              zone = zone.copy(status = ZoneStatus.Active)))
+              zone = Zone(createZoneInput).copy(status = ZoneStatus.Active)))
         case error.email => Left(new RuntimeException("fail"))
-        case connectionFailed.email => Left(ConnectionFailed(zone, "fail"))
+        case connectionFailed.email => Left(ConnectionFailed(Zone(createZoneInput), "fail"))
         case zoneValidationFailed.email =>
-          Left(ZoneValidationFailed(zone, List("fail"), "failure message"))
+          Left(ZoneValidationFailed(Zone(createZoneInput), List("fail"), "failure message"))
         case nonSuperUserSharedZone.email =>
           Left(NotAuthorizedError("unauth"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
 
-    def updateZone(newZone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult] = {
-      val outcome = newZone.id match {
-        case alreadyExists.id => Left(ZoneAlreadyExistsError(s"$newZone"))
-        case notFound.id => Left(ZoneNotFoundError(s"$newZone"))
-        case notAuthorized.id => Left(NotAuthorizedError(s"$newZone"))
-        case badAdminId.id => Left(InvalidZoneAdminError(s"$newZone"))
-        case ok.id | connectionOk.id =>
+    def updateZone(
+        updateZoneInput: UpdateZoneInput,
+        auth: AuthPrincipal): Result[ZoneCommandResult] = {
+      val outcome = updateZoneInput.email match {
+        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$updateZoneInput"))
+        case notFound.email => Left(ZoneNotFoundError(s"$updateZoneInput"))
+        case notAuthorized.email => Left(NotAuthorizedError(s"$updateZoneInput"))
+        case badAdminId.email => Left(InvalidZoneAdminError(s"$updateZoneInput"))
+        case ok.email | connectionOk.email =>
           Right(
             zoneUpdate.copy(
               status = ZoneChangeStatus.Complete,
-              zone = newZone.copy(status = ZoneStatus.Active)))
-        case error.id => Left(new RuntimeException("fail"))
-        case zone1.id => Left(ZoneUnavailableError(s"$newZone"))
-        case connectionFailed.id => Left(ConnectionFailed(newZone, "fail"))
-        case zoneValidationFailed.id =>
-          Left(ZoneValidationFailed(newZone, List("fail"), "failure message"))
+              zone = Zone(updateZoneInput, zoneUpdate.zone).copy(status = ZoneStatus.Active)))
+        case error.email => Left(new RuntimeException("fail"))
+        case zone1.email => Left(ZoneUnavailableError(s"$updateZoneInput"))
+        case connectionFailed.email =>
+          Left(ConnectionFailed(Zone(updateZoneInput, zoneUpdate.zone), "fail"))
+        case zoneValidationFailed.email =>
+          Left(
+            ZoneValidationFailed(
+              Zone(updateZoneInput, zoneUpdate.zone),
+              List("fail"),
+              "failure message"))
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
@@ -696,7 +704,7 @@ class ZoneRoutingSpec
     }
 
     "ignore fields not defined in CreateZoneInput" in {
-      post(zoneWithInvalidStatus) ~> Route.seal(zoneRoute(okAuth)) ~> check {
+      post(zoneWithInvalidId) ~> Route.seal(zoneRoute(okAuth)) ~> check {
         status shouldBe Accepted
       }
     }
@@ -950,26 +958,27 @@ class ZoneRoutingSpec
         val errs = (result \ "errors").extractOpt[List[String]]
         errs should not be None
         errs.get.toSet shouldBe Set(
+          "Missing Zone.id",
           "Missing Zone.name",
           "Missing Zone.email",
           "Missing ZoneConnection.name",
           "Missing ZoneConnection.keyName",
           "Missing ZoneConnection.key",
-          "Missing ZoneConnection.primaryServer"
+          "Missing ZoneConnection.primaryServer",
+          "Missing Zone.adminGroupId"
         )
       }
     }
 
-    "report invalid enum" in {
-      Put(s"/zones/${ok.id}").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        compact(render(zoneWithInvalidStatus)))) ~> Route
+    "report type mismatch" in {
+      Put(s"/zones/${ok.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render(zoneWithInvalidId)))) ~> Route
         .seal(zoneRoute(okAuth)) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
         errs should not be None
-        errs.get shouldBe List("Invalid ZoneStatus")
+        errs.get shouldBe List("Do not know how to convert JBool(true) into class java.lang.String")
       }
     }
   }

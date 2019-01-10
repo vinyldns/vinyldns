@@ -18,13 +18,15 @@ package vinyldns.api.domain.zone
 
 import vinyldns.api.Interfaces.Result
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.{ACLRuleInfo, Zone, ZoneCommandResult}
+import vinyldns.core.domain.zone._
 
 trait ZoneServiceAlgebra {
 
-  def connectToZone(zone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult]
+  def connectToZone(
+      createZoneInput: CreateZoneInput,
+      auth: AuthPrincipal): Result[ZoneCommandResult]
 
-  def updateZone(newZone: Zone, auth: AuthPrincipal): Result[ZoneCommandResult]
+  def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult]
 
   def deleteZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult]
 

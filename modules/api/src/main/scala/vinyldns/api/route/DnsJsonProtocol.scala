@@ -33,11 +33,10 @@ trait DnsJsonProtocol extends JsonValidation {
 
   val dnsSerializers = Seq(
     CreateZoneInputSerializer,
-    ZoneSerializer,
+    UpdateZoneInputSerializer,
     ZoneConnectionSerializer,
     RecordSetSerializer,
     RecordSetInfoSerializer,
-    ZoneChangeSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
     JsonEnumV(ZoneChangeStatus),
@@ -59,19 +58,6 @@ trait DnsJsonProtocol extends JsonValidation {
     TXTSerializer,
     JsonV[ZoneACL]
   )
-
-  case object ZoneChangeSerializer extends ValidationSerializer[ZoneChange] {
-    override def fromJson(js: JValue): ValidatedNel[String, ZoneChange] =
-      (
-        (js \ "zone").required[Zone]("Missing ZoneChange.zone"),
-        (js \ "userId").required[String]("Missing ZoneChange.userId"),
-        (js \ "changeType").required(ZoneChangeType, "Missing ZoneChange.changeType"),
-        (js \ "status").required(ZoneChangeStatus, "Missing ZoneChange.status"),
-        (js \ "created").default[DateTime](DateTime.now),
-        (js \ "systemMessage").optional[String],
-        (js \ "id").default[String](UUID.randomUUID.toString)
-      ).mapN(ZoneChange.apply)
-  }
 
   case object RecordSetChangeSerializer extends ValidationSerializer[RecordSetChange] {
     override def fromJson(js: JValue): ValidatedNel[String, RecordSetChange] =
@@ -105,26 +91,20 @@ trait DnsJsonProtocol extends JsonValidation {
       ).mapN(CreateZoneInput.apply)
   }
 
-  case object ZoneSerializer extends ValidationSerializer[Zone] {
-    override def fromJson(js: JValue): ValidatedNel[String, Zone] =
+  case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, UpdateZoneInput] =
       (
+        (js \ "id").required[String]("Missing Zone.id"),
         (js \ "name")
           .required[String]("Missing Zone.name")
           .map(name => if (name.endsWith(".")) name else s"$name."),
         (js \ "email").required[String]("Missing Zone.email"),
-        (js \ "status").default(ZoneStatus, ZoneStatus.Active),
-        (js \ "created").default[DateTime](DateTime.now),
-        (js \ "updated").optional[DateTime],
-        (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "connection").optional[ZoneConnection],
         (js \ "transferConnection").optional[ZoneConnection],
-        (js \ "account").default[String]("system"),
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
-        (js \ "adminGroupId").default[String]("system"),
-        (js \ "latestSync").optional[DateTime],
-        (js \ "isTest").default[Boolean](false)
-      ).mapN(Zone.apply)
+        (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId")
+      ).mapN(UpdateZoneInput.apply)
   }
 
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
