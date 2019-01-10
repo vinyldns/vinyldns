@@ -21,16 +21,18 @@ import cats.implicits._
 import org.joda.time.DateTime
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.ReverseZoneHelpers.ptrIsInZone
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
+import vinyldns.api.domain.membership.MembershipValidations._
+import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
+import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository, BatchChangeSummaryList}
+import vinyldns.core.domain.membership.GroupRepository
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository
-import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
-import vinyldns.api.repository.ApiDataAccessor
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository, BatchChangeSummaryList}
 
 object BatchChangeService {
   def apply(
@@ -40,14 +42,17 @@ object BatchChangeService {
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
+      dataAccessor.groupRepository,
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
-      batchChangeConverter)
+      batchChangeConverter
+    )
 }
 
 class BatchChangeService(
     zoneRepository: ZoneRepository,
     recordSetRepository: RecordSetRepository,
+    groupRepository: GroupRepository,
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
     batchChangeConverter: BatchChangeConverterAlgebra)
@@ -60,6 +65,7 @@ class BatchChangeService(
       auth: AuthPrincipal): BatchResult[BatchChange] =
     for {
       _ <- validateBatchChangeInputSize(batchChangeInput).toBatchResult
+      _ <- validateOwnerGroupId(batchChangeInput.ownerGroupId, auth)
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
@@ -69,7 +75,8 @@ class BatchChangeService(
       conversionResult <- batchChangeConverter.sendBatchForProcessing(
         changeForConversion,
         zoneMap,
-        recordSets)
+        recordSets,
+        batchChangeInput.ownerGroupId)
     } yield conversionResult.batchChange
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChange] =
@@ -152,6 +159,33 @@ class BatchChangeService(
 
     allSeq.map(lst => ExistingRecordSets(lst.flatten))
   }
+
+  def validateOwnerGroupId(
+      ownerGroupId: Option[String],
+      authPrincipal: AuthPrincipal): BatchResult[Unit] =
+    ownerGroupId match {
+      case None => IO(().asRight).toBatchResult
+      case Some(groupId) =>
+        for {
+          _ <- validateOwnerGroupExists(groupId)
+          _ <- validateCanSeeGroup(groupId, authPrincipal)
+        } yield ().asRight
+    }
+
+  def validateOwnerGroupExists(ownerGroupId: String): BatchResult[Unit] =
+    groupRepository
+      .getGroup(ownerGroupId)
+      .map {
+        case Some(_) => ().asRight
+        case None => Left(GroupDoesNotExist(ownerGroupId))
+      }
+      .toBatchResult
+
+  def validateCanSeeGroup(ownerGroupId: String, authPrincipal: AuthPrincipal): BatchResult[Unit] =
+    IO {
+      if (canSeeGroup(ownerGroupId, authPrincipal).isRight) ().asRight
+      else Left(UserDoesNotBelongToOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
+    }.toBatchResult
 
   def zoneDiscovery(
       changes: ValidatedBatch[ChangeInput],
@@ -252,7 +286,8 @@ class BatchChangeService(
         auth.signedInUser.userName,
         batchChangeInput.comments,
         DateTime.now,
-        changes).asRight
+        changes,
+        batchChangeInput.ownerGroupId).asRight
     } else {
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
     }
