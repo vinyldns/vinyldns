@@ -128,18 +128,6 @@ trait VinylDNSTestData {
     ZoneChangeStatus.Complete,
     created = DateTime.now)
 
-  val abcGroup: Group = Group("abc", "abc", id = "abc", memberIds = Set("abc"))
-  val abcAuth: AuthPrincipal = okAuth.copy(
-    signedInUser = okAuth.signedInUser.copy(userName = "abc", id = "abc"),
-    memberGroupIds = List(abcGroup.id, grp.id)
-  )
-  val xyzGroup: Group = Group("xyz", "xyz", id = "xyz", memberIds = Set("xyz"))
-  val xyzAuth: AuthPrincipal = okAuth.copy(
-    signedInUser = okAuth.signedInUser.copy(userName = "xyz", id = "xyz"),
-    memberGroupIds = List(xyzGroup.id, grp.id)
-  )
-  val abcZone: Zone = Zone("abc.", "abc@xyz.com", adminGroupId = "abc")
-  val xyzZone: Zone = Zone("xyz.", "abc@xyz.com", adminGroupId = "xyz")
   val notAuthorizedZone: Zone = Zone("notAuth.", "notAuth@notAuth.com")
   val notAuthorizedAuth: AuthPrincipal =
     okAuth.copy(signedInUser = okAuth.signedInUser.copy(userName = "not auth", id = "not auth"))
