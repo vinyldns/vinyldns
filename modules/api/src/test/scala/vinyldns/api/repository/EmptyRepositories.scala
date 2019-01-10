@@ -21,6 +21,7 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.{Zone, ZoneRepository}
 import cats.effect._
+import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
 // Empty implementations let our other test classes just edit with the methods they need
@@ -68,4 +69,19 @@ trait EmptyZoneRepo extends ZoneRepository {
 
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = IO.pure(Set())
 
+}
+
+trait EmptyGroupRepo extends GroupRepository {
+
+  def save(group: Group): IO[Group] = IO.pure(group)
+
+  def delete(group: Group): IO[Group] = IO.pure(group)
+
+  def getGroup(groupId: String): IO[Option[Group]] = IO.pure(None)
+
+  def getGroups(groupIds: Set[String]): IO[Set[Group]] = IO.pure(Set())
+
+  def getGroupByName(groupName: String): IO[Option[Group]] = IO.pure(None)
+
+  def getAllGroups(): IO[Set[Group]] = IO.pure(Set())
 }

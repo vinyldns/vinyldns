@@ -17,28 +17,35 @@
 package vinyldns.api.domain.batch
 
 import cats.data.Validated.Valid
+import cats.effect._
 import cats.implicits._
-import cats.scalatest.ValidatedMatchers
+import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements._
 import vinyldns.api._
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.{AccessValidations, _}
+import vinyldns.api.repository.{
+  EmptyGroupRepo,
+  EmptyRecordSetRepo,
+  EmptyZoneRepo,
+  InMemoryBatchChangeRepository
+}
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
+import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
 import vinyldns.core.domain.zone.Zone
-import vinyldns.api.domain.{AccessValidations, _}
-import vinyldns.api.repository.{EmptyRecordSetRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
-import cats.effect._
-import vinyldns.core.TestMembershipData._
-import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
 
 class BatchChangeServiceSpec
     extends WordSpec
     with Matchers
     with CatsHelpers
     with BeforeAndAfterEach
+    with EitherMatchers
     with EitherValues
     with ValidatedMatchers {
 
@@ -98,7 +105,8 @@ class BatchChangeServiceSpec
     def sendBatchForProcessing(
         batchChange: BatchChange,
         existingZones: ExistingZones,
-        existingRecordSets: ExistingRecordSets): BatchResult[BatchConversionOutput] =
+        existingRecordSets: ExistingRecordSets,
+        ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] =
       batchChange.comments match {
         case Some("conversionError") => BatchConversionError(pendingChange).toLeftBatchResult
         case _ => BatchConversionOutput(batchChange, List()).toRightBatchResult
@@ -134,6 +142,18 @@ class BatchChangeServiceSpec
     }
   }
 
+  object TestGroupRepo extends EmptyGroupRepo {
+    override def getGroup(groupId: String): IO[Option[Group]] =
+      IO.pure {
+        groupId match {
+          case okGroup.id => Some(okGroup)
+          case authGrp.id => Some(authGrp)
+          case "user-is-not-member" => Some(abcGroup)
+          case _ => None
+        }
+      }
+  }
+
   object TestZoneRepo extends EmptyZoneRepo {
     val dbZones: Set[Zone] =
       Set(apexZone, baseZone, onlyApexZone, onlyBaseZone, ptrZone, delegatedPTRZone, otherPTRZone)
@@ -148,6 +168,7 @@ class BatchChangeServiceSpec
   private val underTest = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    TestGroupRepo,
     validations,
     batchChangeRepo,
     EmptyBatchConverter)
@@ -277,6 +298,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        TestGroupRepo,
         validations,
         batchChangeRepo,
         EmptyBatchConverter)
@@ -309,6 +331,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        TestGroupRepo,
         validations,
         batchChangeRepo,
         EmptyBatchConverter)
@@ -679,6 +702,41 @@ class BatchChangeServiceSpec
         rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value).batchChanges
 
       result.length shouldBe 0
+    }
+  }
+
+  "validateOwnerGroupId" should {
+    "succeed if owner group ID is undefined" in {
+      underTest.validateOwnerGroupId(None, auth).value.unsafeRunSync() should be(right)
+    }
+
+    "succeed if user belongs to owner group" in {
+      underTest.validateOwnerGroupId(Some(authGrp.id), auth).value.unsafeRunSync() should be(right)
+    }
+
+    "succeed if user is an admin" in {
+      underTest
+        .validateOwnerGroupId(
+          Some("user-is-not-member"),
+          auth.copy(signedInUser = okUser.copy(isSuper = true)))
+        .value
+        .unsafeRunSync() should be(right)
+    }
+
+    "fail if owner group does not exist" in {
+      underTest
+        .validateOwnerGroupId(Some("non-existent-owner-id"), auth)
+        .value
+        .unsafeRunSync() shouldBe
+        Left(GroupDoesNotExist("non-existent-owner-id"))
+    }
+
+    "fail if user is not an admin and does not belong to owner group" in {
+      underTest
+        .validateOwnerGroupId(Some("user-is-not-member"), auth)
+        .value
+        .unsafeRunSync() shouldBe
+        Left(UserDoesNotBelongToOwnerGroup("user-is-not-member", auth.signedInUser.userName))
     }
   }
 }

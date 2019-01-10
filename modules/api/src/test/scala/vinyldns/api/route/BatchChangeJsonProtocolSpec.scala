@@ -99,6 +99,9 @@ class BatchChangeJsonProtocolSpec
   val addBatchChangeInputWithComment: JObject = ("comments" -> Some("some comment")) ~~
     addChangeList
 
+  val addBatchChangeInputWithOwnerGroupId: JObject = ("ownerGroupId" -> Some("owner-group-id")) ~~
+    addBatchChangeInputWithComment
+
   val addAChangeInput = AddChangeInput("foo.", A, 3600, AData("1.1.1.1"))
 
   val deleteAChangeInput = DeleteChangeInput("foo.", A)
@@ -219,6 +222,16 @@ class BatchChangeJsonProtocolSpec
       result shouldBe BatchChangeInput(
         None,
         List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput))
+    }
+
+    "successfully serialize valid add change when owner group ID is provided" in {
+      val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithOwnerGroupId).value
+
+      result shouldBe BatchChangeInput(
+        Some("some comment"),
+        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput),
+        Some("owner-group-id")
+      )
     }
 
     "return an error if the changes are not specified" in {
@@ -346,7 +359,8 @@ class BatchChangeJsonProtocolSpec
         ("createdTimestamp" -> decompose(time)) ~
         ("changes" -> decompose(List(add, delete))) ~
         ("status" -> decompose(BatchChangeStatus.Pending)) ~
-        ("id" -> "someId")
+        ("id" -> "someId") ~
+        ("ownerGroupId" -> JNothing)
     }
   }
 
