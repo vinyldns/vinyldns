@@ -34,6 +34,7 @@ import vinyldns.api.repository.{
   InMemoryBatchChangeRepository
 }
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.RecordType._
@@ -714,11 +715,11 @@ class BatchChangeServiceSpec
       underTest.validateOwnerGroupId(Some(authGrp.id), auth).value.unsafeRunSync() should be(right)
     }
 
-    "succeed if user is an admin" in {
+    "succeed if user is a super user" in {
       underTest
         .validateOwnerGroupId(
           Some("user-is-not-member"),
-          auth.copy(signedInUser = okUser.copy(isSuper = true)))
+          AuthPrincipal(okUser.copy(isSuper = true), Seq()))
         .value
         .unsafeRunSync() should be(right)
     }
