@@ -95,7 +95,6 @@ object Zone {
     currentZone.copy(
       name = name,
       email = email,
-      id = id,
       connection = connection,
       transferConnection = transferConnection,
       shared = shared,
