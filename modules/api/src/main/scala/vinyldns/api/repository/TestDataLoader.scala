@@ -37,8 +37,7 @@ object TestDataLoader {
     firstName = Some("Test"),
     lastName = Some("User"),
     email = Some("test@test.com"),
-    isTest = true,
-    isSuper = true
+    isTest = true
   )
   final val okUser = User(
     userName = "ok",

@@ -100,8 +100,7 @@ object Zone {
       transferConnection = transferConnection,
       shared = shared,
       acl = acl,
-      adminGroupId = adminGroupId,
-      isTest = isTest)
+      adminGroupId = adminGroupId)
   }
 }
 
@@ -123,8 +122,7 @@ final case class UpdateZoneInput(
     transferConnection: Option[ZoneConnection] = None,
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
-    adminGroupId: String,
-    isTest: Boolean = false)
+    adminGroupId: String)
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
