@@ -41,10 +41,7 @@ object ZoneChangeGenerator {
 
   def forUpdate(newZone: Zone, oldZone: Zone, authPrincipal: AuthPrincipal): ZoneChange =
     ZoneChange(
-      newZone.copy(
-        updated = Some(DateTime.now),
-        connection = fixConn(oldZone, newZone),
-        isTest = oldZone.isTest),
+      newZone.copy(updated = Some(DateTime.now), connection = fixConn(oldZone, newZone)),
       authPrincipal.userId,
       ZoneChangeType.Update,
       ZoneChangeStatus.Pending
