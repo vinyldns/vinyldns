@@ -411,16 +411,16 @@ class RecordSetServiceSpec
     }
 
     "fail when the account is not authorized for the record" in {
-      doReturn(IO.pure(Some(sharedZoneNoAuthRecord)))
+      doReturn(IO.pure(Some(sharedZoneRecordNoOwnerGroup)))
         .when(mockRecordRepo)
-        .getRecordSet(sharedZone.id, sharedZoneNoAuthRecord.id)
+        .getRecordSet(sharedZone.id, sharedZoneRecordNoOwnerGroup.id)
 
       doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
 
       val result =
         leftResultOf(
           underTest
-            .getRecordSet(sharedZoneNoAuthRecord.id, sharedZone.id, okAuth)
+            .getRecordSet(sharedZoneRecordNoOwnerGroup.id, sharedZone.id, okAuth)
             .value)
       result shouldBe a[NotAuthorizedError]
     }
@@ -444,15 +444,13 @@ class RecordSetServiceSpec
     "return the group name if a record owner group ID is present" in {
       doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
 
-      val result = underTest.getGroupName(Some(okGroup.id))
-      val resultToOption = result.value.unsafeRunSync().right.toOption.get
-      resultToOption shouldBe Some("ok")
+      val result = rightResultOf(underTest.getGroupName(Some(okGroup.id)).value)
+      result shouldBe Some("ok")
     }
 
     "return None if a record owner group ID is not present" in {
-      val result = underTest.getGroupName(None)
-      val resultToOption = result.value.unsafeRunSync().right.toOption.get
-      resultToOption shouldBe None
+      val result = rightResultOf(underTest.getGroupName(None).value)
+      result shouldBe None
     }
   }
 

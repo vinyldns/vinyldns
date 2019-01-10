@@ -138,15 +138,8 @@ object TestRecordSetData {
     List(AAAAData("1:2:3:4:5:6:7:8")),
     ownerGroupId = Some(okGroup.id))
 
-  val sharedZoneNoAuthRecord: RecordSet = RecordSet(
-    sharedZone.id,
-    "records",
-    RecordType.AAAA,
-    200,
-    RecordSetStatus.Pending,
-    DateTime.now,
-    None,
-    List(AAAAData("1:2:3:4:5:6:7:8")))
+  val sharedZoneRecordNoOwnerGroup: RecordSet =
+    sharedZoneRecord.copy(name = "records", ownerGroupId = None)
 
   val notSharedZoneRecordWithOwnerGroup: RecordSet =
     rsOk.copy(zoneNotAuthorized.id, "okWithOwnerGroupID", ownerGroupId = Some(okGroup.id))
