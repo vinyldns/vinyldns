@@ -53,7 +53,6 @@ class RecordSetServiceIntegrationSpec
 
   private var recordSetRepo: DynamoDBRecordSetRepository = _
   private var zoneRepo: ZoneRepository = _
-  private var groupRepo: GroupRepository = _
 
   private var testRecordSetService: RecordSetServiceAlgebra = _
 
@@ -160,7 +159,6 @@ class RecordSetServiceIntegrationSpec
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
     zoneRepo = zoneRepository
-    groupRepo = groupRepository
     List(zone, zoneTestNameConflicts, zoneTestAddRecords).map(z => waitForSuccess(zoneRepo.save(z)))
 
     // Seeding records in DB
@@ -178,7 +176,7 @@ class RecordSetServiceIntegrationSpec
 
     testRecordSetService = new RecordSetService(
       zoneRepo,
-      groupRepo,
+      mock[GroupRepository],
       recordSetRepo,
       mock[RecordChangeRepository],
       mock[UserRepository],
