@@ -158,6 +158,12 @@ class BatchChangeRoutingSpec
         case Some("changeLimitExceeded") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
             IO.pure(Left(ChangeLimitExceeded(batchChangeLimit))))
+        case Some("groupDoesNotExist") =>
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Left(GroupDoesNotExist("non-existent-group"))))
+        case Some("userDoesNotBelongToOwnerGroup") =>
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Left(UserDoesNotBelongToOwnerGroup("owner-group-id", "user-name"))))
         case Some(_) =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))
       }
@@ -307,6 +313,36 @@ class BatchChangeRoutingSpec
         Route.seal(batchChangeRoute(okAuth)) ~> check {
 
         status shouldBe InternalServerError
+      }
+    }
+
+    "return a 400 BadRequest for non-existent owner group ID" in {
+      val badRequest: String =
+        """{"comments": "groupDoesNotExist",
+          | "changes": [],
+          | "ownerGroupId": "some-non-existent-group-id"
+          |}""".stripMargin
+
+      Post("/zones/batchrecordchanges").withEntity(
+        HttpEntity(ContentTypes.`application/json`, badRequest)) ~>
+        Route.seal(batchChangeRoute(okAuth)) ~> check {
+
+        status shouldBe BadRequest
+      }
+    }
+
+    "return a 403 Forbidden for owner group ID that user does not have membership to" in {
+      val badRequest: String =
+        """{"comments": "userDoesNotBelongToOwnerGroup",
+          | "changes": [],
+          | "ownerGroupId": "very-exclusive-group-id"
+          |}""".stripMargin
+
+      Post("/zones/batchrecordchanges").withEntity(
+        HttpEntity(ContentTypes.`application/json`, badRequest)) ~>
+        Route.seal(batchChangeRoute(okAuth)) ~> check {
+
+        status shouldBe Forbidden
       }
     }
   }
