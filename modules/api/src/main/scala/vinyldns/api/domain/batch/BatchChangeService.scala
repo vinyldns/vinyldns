@@ -167,7 +167,7 @@ class BatchChangeService(
       case Some(groupId) =>
         for {
           _ <- validateOwnerGroupExists(groupId)
-          _ <- validateCanSeeGroup(groupId, authPrincipal)
+          _ <- validateGroupMembership(groupId, authPrincipal)
         } yield ().asRight
     }
 
@@ -180,7 +180,7 @@ class BatchChangeService(
       }
       .toBatchResult
 
-  def validateCanSeeGroup(ownerGroupId: String, authPrincipal: AuthPrincipal): BatchResult[Unit] =
+  def validateGroupMembership(ownerGroupId: String, authPrincipal: AuthPrincipal): BatchResult[Unit] =
     IO {
       if (authPrincipal.isGroupMember(ownerGroupId) || authPrincipal.canEditAll) ().asRight
       else Left(NotAMemberOfOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
