@@ -24,7 +24,6 @@ import vinyldns.api.domain.ReverseZoneHelpers.ptrIsInZone
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
-import vinyldns.api.domain.membership.MembershipValidations._
 import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -183,8 +182,8 @@ class BatchChangeService(
 
   def validateCanSeeGroup(ownerGroupId: String, authPrincipal: AuthPrincipal): BatchResult[Unit] =
     IO {
-      if (canSeeGroup(ownerGroupId, authPrincipal).isRight) ().asRight
-      else Left(UserDoesNotBelongToOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
+      if (authPrincipal.isGroupMember(ownerGroupId) || authPrincipal.canEditAll) ().asRight
+      else Left(NotAMemberOfOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
     }.toBatchResult
 
   def zoneDiscovery(

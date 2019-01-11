@@ -163,7 +163,7 @@ class BatchChangeRoutingSpec
             IO.pure(Left(GroupDoesNotExist("non-existent-group"))))
         case Some("userDoesNotBelongToOwnerGroup") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(UserDoesNotBelongToOwnerGroup("owner-group-id", "user-name"))))
+            IO.pure(Left(NotAMemberOfOwnerGroup("owner-group-id", "user-name"))))
         case Some(_) =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))
       }

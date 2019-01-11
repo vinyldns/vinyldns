@@ -203,7 +203,7 @@ class BatchChangeServiceSpec
       val input = BatchChangeInput(None, List(apexAddA), ownerGroupId)
       val result = leftResultOf(underTest.applyBatchChange(input, notAuth).value)
 
-      result shouldBe a[UserDoesNotBelongToOwnerGroup]
+      result shouldBe a[NotAMemberOfOwnerGroup]
     }
 
     "succeed if owner group ID is provided and user is a super user" in {
@@ -762,7 +762,7 @@ class BatchChangeServiceSpec
         .validateOwnerGroupId(Some("user-is-not-member"), auth)
         .value
         .unsafeRunSync() shouldBe
-        Left(UserDoesNotBelongToOwnerGroup("user-is-not-member", auth.signedInUser.userName))
+        Left(NotAMemberOfOwnerGroup("user-is-not-member", auth.signedInUser.userName))
     }
   }
 }
