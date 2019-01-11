@@ -1749,16 +1749,6 @@ def test_no_add_access_non_test_zone(shared_zone_test_context):
     """
 
     client = shared_zone_test_context.shared_zone_vinyldns_client
-    record = {
-        'zoneId': shared_zone_test_context.non_test_shared_zone['id'],
-        'name': 'non-test-zone-A',
-        'type': 'A',
-        'ttl': 100,
-        'records': [
-            {
-                'address': '1.2.3.4'
-            }
-        ]
-    }
-
+    zone = shared_zone_test_context.non_test_shared_zone
+    record = get_recordset_json(zone, 'non-test-zone-A', 'A', [{'address': '1.2.3.4'}])
     client.create_recordset(record, status=403)
