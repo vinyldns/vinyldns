@@ -214,7 +214,7 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
 
         anonymizedDiffRecordSetChanges should contain theSameElementsAs expectedRecordSetChanges
       }
-      "use the vinyldns record set's id and account for updates" in {
+      "use the vinyldns record set's id, account, and ownerGroupId for updates" in {
         val testZone = Zone("vinyldns.", "test@test.com")
 
         val vinyldnsRecords = List(
