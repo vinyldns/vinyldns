@@ -58,7 +58,7 @@ class RecordSetServiceIntegrationSpec
   private var testRecordSetService: RecordSetServiceAlgebra = _
 
   private val user = User("live-test-user", "key", "secret")
-  private val user2 = User("live-test-user", "key", "secret")
+  private val user2 = User("shared-record-test-user", "key-shared", "secret-shared")
   private val group = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id))
   private val sharedGroup =
     Group(s"test-shared-group", "test@test.com", adminUserIds = Set(user2.id))
@@ -403,8 +403,6 @@ class RecordSetServiceIntegrationSpec
           .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetInfo]]
       whenReady(result, timeout) { out =>
-        print("OUT")
-        print(out)
         rightValue(out).name shouldBe "shared-record"
         rightValue(out).ownerGroupName shouldBe Some(sharedGroup.name)
       }
@@ -418,8 +416,6 @@ class RecordSetServiceIntegrationSpec
           .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetInfo]]
       whenReady(result, timeout) { out =>
-        print("OUT")
-        print(out)
         rightValue(out).name shouldBe "shared-record"
         rightValue(out).ownerGroupName shouldBe None
       }
