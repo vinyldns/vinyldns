@@ -210,21 +210,10 @@ def test_get_owned_recordset_from_not_shared_zone(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
     try:
-        new_rs = {
-            'zoneId': shared_zone_test_context.ok_zone['id'],
-            'name': 'test_cant_get_owned_recordset',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                },
-                {
-                    'address': '10.2.2.2'
-                }
-            ],
-            'ownerGroupId': shared_zone_test_context.shared_record_group['id']
-        }
+        new_rs = get_recordset_json(shared_zone_test_context.ok_zone,
+                                    "test_cant_get_owned_recordset", "TXT", [{'text':'should-work'}],
+                                    100,
+                                    shared_zone_test_context.shared_record_group['id'])
         result = client.create_recordset(new_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
 

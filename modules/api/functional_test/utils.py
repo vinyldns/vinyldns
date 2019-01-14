@@ -493,13 +493,14 @@ def get_change_MX_json(input_name, ttl=200, preference=1, exchange="foo.bar.", c
         }
     return json
 
-def get_recordset_json(zone, rname, type, rdata_list, ttl=200):
+def get_recordset_json(zone, rname, type, rdata_list, ttl=200, ownergroup_id=""):
     json = {
         "zoneId": zone['id'],
         "name": rname,
         "type": type,
         "ttl": ttl,
-        "records": rdata_list
+        "records": rdata_list,
+        "ownerGroupId": ownergroup_id
     }
     return json
 
