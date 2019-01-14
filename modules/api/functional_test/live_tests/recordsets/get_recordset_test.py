@@ -136,21 +136,11 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
     client = shared_zone_test_context.shared_zone_vinyldns_client
     retrieved_rs = None
     try:
-        new_rs = {
-            'zoneId': shared_zone_test_context.shared_zone['id'],
-            'name': 'test_get_recordset',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                },
-                {
-                    'address': '10.2.2.2'
-                }
-            ],
-            'ownerGroupId': shared_zone_test_context.shared_record_group['id']
-        }
+        new_rs = get_recordset_json(shared_zone_test_context.shared_zone,
+                                    "test_get_recordset", "TXT", [{'text':'should-work'}],
+                                    100,
+                                    shared_zone_test_context.shared_record_group['id'])
+
         result = client.create_recordset(new_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
 
@@ -159,11 +149,6 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
         retrieved = ok_client.get_recordset(result_rs['zoneId'], result_rs['id'])
         retrieved_rs = retrieved['recordSet']
         verify_recordset(retrieved_rs, new_rs)
-
-        records = [x['address'] for x in retrieved_rs['records']]
-        assert_that(records, has_length(2))
-        assert_that('10.1.1.1', is_in(records))
-        assert_that('10.2.2.2', is_in(records))
 
     finally:
         if retrieved_rs:
@@ -177,20 +162,9 @@ def test_get_unowned_recordset_from_shared_zone(shared_zone_test_context):
     client = shared_zone_test_context.shared_zone_vinyldns_client
     result_rs = None
     try:
-        new_rs = {
-            'zoneId': shared_zone_test_context.shared_zone['id'],
-            'name': 'test_get_unowned_recordset',
-            'type': 'A',
-            'ttl': 100,
-            'records': [
-                {
-                    'address': '10.1.1.1'
-                },
-                {
-                    'address': '10.2.2.2'
-                }
-            ]
-        }
+        new_rs = get_recordset_json(shared_zone_test_context.shared_zone,
+                                    "test_get_unowned_recordset", "TXT", [{'text':'should-not-work'}])
+
         result = client.create_recordset(new_rs, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
 
