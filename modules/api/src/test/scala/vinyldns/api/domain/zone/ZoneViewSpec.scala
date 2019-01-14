@@ -51,7 +51,8 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AAAAData("2001:db8:a0b:12f0::1"))
+      records = List(AAAAData("2001:db8:a0b:12f0::1")),
+      ownerGroupId = Some("someGroup")
     ),
     RecordSet(
       zoneId = testZone.id,
@@ -60,7 +61,9 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
       ttl = 100,
       status = RecordSetStatus.Active,
       created = DateTime.now,
-      records = List(AData("3.3.3.3"))),
+      records = List(AData("3.3.3.3")),
+      ownerGroupId = Some("someOwner")
+    ),
     RecordSet(
       zoneId = testZone.id,
       name = "vinyldns",
@@ -174,7 +177,15 @@ class ZoneViewSpec extends WordSpec with Matchers with VinylDNSTestData {
         val vinyldnsView = ZoneView(testZone, vinyldnsRecords)
 
         val dnsRecords = List(
-          records(2),
+          RecordSet(
+            zoneId = testZone.id,
+            name = "abc",
+            typ = RecordType.AAAA,
+            ttl = 100,
+            status = RecordSetStatus.Active,
+            created = DateTime.now,
+            records = List(AAAAData("2001:db8:a0b:12f0::1"))
+          ),
           RecordSet(
             zoneId = testZone.id,
             name = "def",

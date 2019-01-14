@@ -189,9 +189,7 @@ def test_sync_zone_success(shared_zone_test_context):
 
         changes = client.list_recordset_changes(zone['id'])
         for c in changes['recordSetChanges']:
-            if c['id'] == foo_rs_change['id']:
-                assert_that(c, is_not(has_key('systemMessage')))
-            else:
+            if c['id'] != foo_rs_change['id']:
                 assert_that(c['systemMessage'], is_('Change applied via zone sync'))
 
         check_rs = client.get_recordset(zone['id'], updated_rs_id)['recordSet']
