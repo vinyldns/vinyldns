@@ -399,6 +399,20 @@ class RecordSetServiceSpec
       result shouldBe expectedRecordSetInfo
     }
 
+    "return the recordSet if the recordSet owner group cannot be found but user is an admin" in {
+      doReturn(IO.pure(Some(sharedZoneRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneRecord.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val expectedRecordSetInfo = RecordSetSummaryInfo(sharedZoneRecord, None)
+
+      val result: RecordSetSummaryInfo =
+        rightResultOf(underTest.getRecordSet(sharedZoneRecord.id, sharedZone.id, sharedAuth).value)
+      result shouldBe expectedRecordSetInfo
+    }
+
     "fail when the account is not authorized to access the zone" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)

@@ -37,6 +37,7 @@ object TestMembershipData {
   val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
   val superUser = User("super", "superAccess", "superSecret", isSuper = true)
   val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
+  val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")
 
   val listOfDummyUsers: List[User] = List.range(0, 200).map { runner =>
     User(
@@ -73,7 +74,7 @@ object TestMembershipData {
     created = DateTime.now.secondOfDay().roundFloorCopy()
   )
 
-  val abcGroup: Group = Group("abc", "abc", id = "abc", memberIds = Set("abc"))
+  val abcGroup: Group = Group("abc", "abc", id = "abc", memberIds = Set("abc", sharedZoneUser.id))
 
   val emptyGroup = Group("grpName", "grpEmail")
 
@@ -112,6 +113,8 @@ object TestMembershipData {
   val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(oneUserDummyGroup.id))
 
   val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", "secret"), Seq.empty)
+
+  val sharedAuth: AuthPrincipal = AuthPrincipal(sharedZoneUser, Seq(abcGroup.id))
 
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(

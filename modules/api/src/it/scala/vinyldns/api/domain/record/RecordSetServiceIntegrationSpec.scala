@@ -53,12 +53,17 @@ class RecordSetServiceIntegrationSpec
 
   private var recordSetRepo: DynamoDBRecordSetRepository = _
   private var zoneRepo: ZoneRepository = _
+  private var groupRepo: GroupRepository = _
 
   private var testRecordSetService: RecordSetServiceAlgebra = _
 
   private val user = User("live-test-user", "key", "secret")
+  private val user2 = User("live-test-user", "key", "secret")
   private val group = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id))
+  private val sharedGroup =
+    Group(s"test-shared-group", "test@test.com", adminUserIds = Set(user2.id))
   private val auth = AuthPrincipal(user, Seq(group.id))
+  private val auth2 = AuthPrincipal(user2, Seq(sharedGroup.id))
 
   private val zone = Zone(
     s"live-zone-test.",
@@ -66,6 +71,7 @@ class RecordSetServiceIntegrationSpec
     status = ZoneStatus.Active,
     connection = testConnection,
     adminGroupId = group.id)
+
   private val apexTestRecordA = RecordSet(
     zone.id,
     "live-zone-test",
@@ -155,11 +161,46 @@ class RecordSetServiceIntegrationSpec
     List(AData("1.1.1.1"))
   )
 
+  private val sharedZone = Zone(
+    s"shared-zone-test.",
+    "test@test.com",
+    status = ZoneStatus.Active,
+    connection = testConnection,
+    adminGroupId = group.id,
+    shared = true)
+
+  private val sharedTestRecord = RecordSet(
+    sharedZone.id,
+    "shared-record",
+    A,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("1.1.1.1")),
+    ownerGroupId = Some(sharedGroup.id)
+  )
+
+  private val sharedTestRecordBadOwnerGroup = RecordSet(
+    sharedZone.id,
+    "shared-record",
+    A,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("1.1.1.1")),
+    ownerGroupId = Some("non-existent")
+  )
+
   def setup(): Unit = {
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
     zoneRepo = zoneRepository
-    List(zone, zoneTestNameConflicts, zoneTestAddRecords).map(z => waitForSuccess(zoneRepo.save(z)))
+    groupRepo = groupRepository
+    List(group, sharedGroup).map(g => waitForSuccess(groupRepo.save(g)))
+    List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone).map(z =>
+      waitForSuccess(zoneRepo.save(z)))
 
     // Seeding records in DB
     val records = List(
@@ -170,13 +211,15 @@ class RecordSetServiceIntegrationSpec
       subTestRecordNS,
       apexTestRecordNameConflict,
       subTestRecordNameConflict,
-      highValueDomainRecord
+      highValueDomainRecord,
+      sharedTestRecord,
+      sharedTestRecordBadOwnerGroup
     )
     records.map(record => waitForSuccess(recordSetRepo.putRecordSet(record)))
 
     testRecordSetService = new RecordSetService(
       zoneRepo,
-      mock[GroupRepository],
+      groupRepo,
       recordSetRepo,
       mock[RecordChangeRepository],
       mock[UserRepository],
@@ -350,6 +393,36 @@ class RecordSetServiceIntegrationSpec
 
       leftValue(result) shouldBe InvalidRequest(
         HighValueDomainError("high-value-domain-existing.live-zone-test.").message)
+    }
+
+    "get a shared record when user is in assigned ownerGroup" in {
+      val result =
+        testRecordSetService
+          .getRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, auth2)
+          .value
+          .unsafeToFuture()
+          .mapTo[Either[Throwable, RecordSetSummaryInfo]]
+      whenReady(result, timeout) { out =>
+        print("OUT")
+        print(out)
+        rightValue(out).name shouldBe "shared-record"
+        rightValue(out).ownerGroupName shouldBe Some(sharedGroup.name)
+      }
+    }
+
+    "get a shared record when ownerGroup can't be found" in {
+      val result =
+        testRecordSetService
+          .getRecordSet(sharedTestRecordBadOwnerGroup.id, sharedTestRecord.zoneId, auth)
+          .value
+          .unsafeToFuture()
+          .mapTo[Either[Throwable, RecordSetSummaryInfo]]
+      whenReady(result, timeout) { out =>
+        print("OUT")
+        print(out)
+        rightValue(out).name shouldBe "shared-record"
+        rightValue(out).ownerGroupName shouldBe None
+      }
     }
   }
 
