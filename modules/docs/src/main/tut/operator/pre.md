@@ -36,7 +36,7 @@ When no zone connection is specified on a zone, the global defaults will be used
 ## Database
 [database]: #database
 
-The VinylDNS database provides implementations in both a `MySQL` / relational and a `NoSQL` / non-relational design.  Instead of having a heavily normalized set of SQL tables
+The VinylDNS database has a `NoSQL` / non-relational design to it.  Instead of having a heavily normalized set of SQL tables
 that surface in the system, VinylDNS relies on `Repositories` where each `Repository` is independent of each one another.
 This allows implementers to best map each `Repository` into the data-store of choice.
 
@@ -61,10 +61,7 @@ The user information will be pulled from LDAP, and inserted into the VinylDNS Us
 * `GroupChangeRepository` - Holds changes to groups and membership
 * `BatchChangeRepository` - VinylDNS allows users to submit multiple record changes _across_ DNS zones at the same time within a `Batch`
 The `BatchChangeRepository` holds the batch itself and all individual changes that executed in the batch.
-* `UserChangeRepository` - Holds changes to users
-
-**Note: The UserChangeRepository is currently only used in the portal, and lives outside of the API.  This will be moved
-alongside the other repositories in the near future.**
+* `UserChangeRepository` - Holds changes to users. Currently only used in the portal.
 
 ## Database Types
 ### AWS DynamoDB
