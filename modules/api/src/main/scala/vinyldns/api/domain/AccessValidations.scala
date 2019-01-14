@@ -21,7 +21,7 @@ import vinyldns.api.domain.zone.{
   ACLRuleOrdering,
   NotAuthorizedError,
   PTRACLRuleOrdering,
-  RecordSetInfo
+  RecordSetListInfo
 }
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.{RecordSet, RecordType}
@@ -93,9 +93,9 @@ object AccessValidations extends AccessValidationAlgebra {
   def getListAccessLevels(
       auth: AuthPrincipal,
       recordSets: List[RecordSet],
-      zone: Zone): List[RecordSetInfo] =
+      zone: Zone): List[RecordSetListInfo] =
     if (auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
-      recordSets.map(RecordSetInfo(_, AccessLevel.Delete))
+      recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))
     else {
       val rulesForUser = zone.acl.rules.filter(ruleAppliesToUser(auth, _))
 
@@ -119,7 +119,7 @@ object AccessValidations extends AccessValidationAlgebra {
           else
             aclAccessLevel
         }
-        RecordSetInfo(rs, accessLevel)
+        RecordSetListInfo(rs, accessLevel)
       }
     }
 

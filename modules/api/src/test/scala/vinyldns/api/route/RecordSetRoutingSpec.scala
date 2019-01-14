@@ -329,7 +329,7 @@ class RecordSetRoutingSpec
     txt.id -> txt
   )
 
-  private val rsOkSummary = RecordSetSummaryInfo(rsOk, None)
+  private val rsOkSummary = RecordSetInfo(rsOk, None)
 
   private val rsChange1 = RecordSetChange(
     okZone,
@@ -420,7 +420,7 @@ class RecordSetRoutingSpec
     def getRecordSet(
         recordSetId: String,
         zoneId: String,
-        authPrincipal: AuthPrincipal): Result[RecordSetSummaryInfo] = {
+        authPrincipal: AuthPrincipal): Result[RecordSetInfo] = {
       if (zoneId == zoneNotFound.id) {
         Left(ZoneNotFoundError(s"$zoneId"))
       } else {
@@ -444,9 +444,9 @@ class RecordSetRoutingSpec
           Right(
             ListRecordSetsResponse(
               List(
-                RecordSetInfo(rs1, AccessLevel.Read),
-                RecordSetInfo(rs2, AccessLevel.Read),
-                RecordSetInfo(rs3, AccessLevel.Read)),
+                RecordSetListInfo(rs1, AccessLevel.Read),
+                RecordSetListInfo(rs2, AccessLevel.Read),
+                RecordSetListInfo(rs3, AccessLevel.Read)),
               None))
       }
     }.toResult

@@ -27,9 +27,9 @@ import vinyldns.core.domain.record.RecordSet
 
 import scala.concurrent.duration._
 
-case class GetRecordSetResponse(recordSet: RecordSetSummaryInfo)
+case class GetRecordSetResponse(recordSet: RecordSetInfo)
 case class ListRecordSetsResponse(
-    recordSets: List[RecordSetInfo],
+    recordSets: List[RecordSetListInfo],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Option[Int] = None,

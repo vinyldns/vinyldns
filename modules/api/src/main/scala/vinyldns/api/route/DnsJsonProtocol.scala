@@ -23,7 +23,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetSummaryInfo}
+import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -36,8 +36,8 @@ trait DnsJsonProtocol extends JsonValidation {
     UpdateZoneInputSerializer,
     ZoneConnectionSerializer,
     RecordSetSerializer,
+    RecordSetListInfoSerializer,
     RecordSetInfoSerializer,
-    RecordSetSummaryInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
     JsonEnumV(ZoneChangeStatus),
@@ -204,14 +204,14 @@ trait DnsJsonProtocol extends JsonValidation {
         ("ownerGroupId" -> rs.ownerGroupId)
   }
 
-  case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, RecordSetInfo] =
+  case object RecordSetListInfoSerializer extends ValidationSerializer[RecordSetListInfo] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetListInfo] =
       (
         RecordSetSerializer.fromJson(js),
         (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId"))
-        .mapN(RecordSetInfo.apply)
+        .mapN(RecordSetListInfo.apply)
 
-    override def toJson(rs: RecordSetInfo): JValue =
+    override def toJson(rs: RecordSetListInfo): JValue =
       ("type" -> Extraction.decompose(rs.typ)) ~
         ("zoneId" -> rs.zoneId) ~
         ("name" -> rs.name) ~
@@ -226,12 +226,12 @@ trait DnsJsonProtocol extends JsonValidation {
         ("ownerGroupId" -> rs.ownerGroupId)
   }
 
-  case object RecordSetSummaryInfoSerializer extends ValidationSerializer[RecordSetSummaryInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, RecordSetSummaryInfo] =
+  case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetInfo] =
       (RecordSetSerializer.fromJson(js), (js \ "ownerGroupName").optional[String])
-        .mapN(RecordSetSummaryInfo.apply)
+        .mapN(RecordSetInfo.apply)
 
-    override def toJson(rs: RecordSetSummaryInfo): JValue =
+    override def toJson(rs: RecordSetInfo): JValue =
       ("type" -> Extraction.decompose(rs.typ)) ~
         ("zoneId" -> rs.zoneId) ~
         ("name" -> rs.name) ~

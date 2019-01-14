@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo}
+import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetListInfo}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -812,7 +812,7 @@ class AccessValidationsSpec
 
       val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
-      val expected = recordList.map(RecordSetInfo(_, AccessLevel.Delete))
+      val expected = recordList.map(RecordSetListInfo(_, AccessLevel.Delete))
       result shouldBe expected
     }
 
@@ -824,7 +824,7 @@ class AccessValidationsSpec
 
       val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
-      val expected = recordList.map(RecordSetInfo(_, AccessLevel.NoAccess))
+      val expected = recordList.map(RecordSetListInfo(_, AccessLevel.NoAccess))
       result shouldBe expected
     }
 
@@ -840,7 +840,7 @@ class AccessValidationsSpec
 
       val result = accessValidationTest.getListAccessLevels(supportAuth, recordList, zone)
 
-      val expected = recordList.map(RecordSetInfo(_, AccessLevel.Read))
+      val expected = recordList.map(RecordSetListInfo(_, AccessLevel.Read))
       result shouldBe expected
     }
 
@@ -861,9 +861,9 @@ class AccessValidationsSpec
       val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
       val expected = List(
-        RecordSetInfo(rs1, AccessLevel.Write),
-        RecordSetInfo(rs2, AccessLevel.NoAccess),
-        RecordSetInfo(rs3, AccessLevel.Read))
+        RecordSetListInfo(rs1, AccessLevel.Write),
+        RecordSetListInfo(rs2, AccessLevel.NoAccess),
+        RecordSetListInfo(rs3, AccessLevel.Read))
       result shouldBe expected
     }
 

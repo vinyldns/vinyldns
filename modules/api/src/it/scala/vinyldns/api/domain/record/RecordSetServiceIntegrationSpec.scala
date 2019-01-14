@@ -24,7 +24,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
 import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
-import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists, RecordSetSummaryInfo}
+import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists, RecordSetInfo}
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
@@ -235,7 +235,7 @@ class RecordSetServiceIntegrationSpec
         .getRecordSet(apexTestRecordA.id, apexTestRecordA.zoneId, auth)
         .value
         .unsafeToFuture()
-        .mapTo[Either[Throwable, RecordSetSummaryInfo]]
+        .mapTo[Either[Throwable, RecordSetInfo]]
       whenReady(originalRecord, timeout) { out =>
         rightValue(out).name shouldBe "live-zone-test"
       }
@@ -401,7 +401,7 @@ class RecordSetServiceIntegrationSpec
           .getRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, auth2)
           .value
           .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetSummaryInfo]]
+          .mapTo[Either[Throwable, RecordSetInfo]]
       whenReady(result, timeout) { out =>
         print("OUT")
         print(out)
@@ -416,7 +416,7 @@ class RecordSetServiceIntegrationSpec
           .getRecordSet(sharedTestRecordBadOwnerGroup.id, sharedTestRecord.zoneId, auth)
           .value
           .unsafeToFuture()
-          .mapTo[Either[Throwable, RecordSetSummaryInfo]]
+          .mapTo[Either[Throwable, RecordSetInfo]]
       whenReady(result, timeout) { out =>
         print("OUT")
         print(out)

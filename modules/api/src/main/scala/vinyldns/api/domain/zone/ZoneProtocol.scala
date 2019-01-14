@@ -100,7 +100,7 @@ object ZoneSummaryInfo {
     )
 }
 
-case class RecordSetInfo(
+case class RecordSetListInfo(
     zoneId: String,
     name: String,
     typ: RecordType,
@@ -114,8 +114,8 @@ case class RecordSetInfo(
     accessLevel: AccessLevel,
     ownerGroupId: Option[String])
 
-object RecordSetInfo {
-  def apply(recordSet: RecordSet, accessLevel: AccessLevel): RecordSetInfo = RecordSetInfo(
+object RecordSetListInfo {
+  def apply(recordSet: RecordSet, accessLevel: AccessLevel): RecordSetListInfo = RecordSetListInfo(
     zoneId = recordSet.zoneId,
     name = recordSet.name,
     typ = recordSet.typ,
@@ -131,7 +131,7 @@ object RecordSetInfo {
   )
 }
 
-case class RecordSetSummaryInfo(
+case class RecordSetInfo(
     zoneId: String,
     name: String,
     typ: RecordType,
@@ -145,9 +145,9 @@ case class RecordSetSummaryInfo(
     ownerGroupId: Option[String],
     ownerGroupName: Option[String])
 
-object RecordSetSummaryInfo {
-  def apply(recordSet: RecordSet, groupName: Option[String]): RecordSetSummaryInfo =
-    RecordSetSummaryInfo(
+object RecordSetInfo {
+  def apply(recordSet: RecordSet, groupName: Option[String]): RecordSetInfo =
+    RecordSetInfo(
       zoneId = recordSet.zoneId,
       name = recordSet.name,
       typ = recordSet.typ,

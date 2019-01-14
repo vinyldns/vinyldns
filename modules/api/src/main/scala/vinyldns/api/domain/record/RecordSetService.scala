@@ -116,7 +116,7 @@ class RecordSetService(
   def getRecordSet(
       recordSetId: String,
       zoneId: String,
-      authPrincipal: AuthPrincipal): Result[RecordSetSummaryInfo] =
+      authPrincipal: AuthPrincipal): Result[RecordSetInfo] =
     for {
       zone <- getZone(zoneId)
       recordSet <- getRecordSet(recordSetId, zone)
@@ -127,7 +127,7 @@ class RecordSetService(
         zone,
         recordSet.ownerGroupId).toResult
       groupName <- getGroupName(recordSet.ownerGroupId)
-    } yield RecordSetSummaryInfo(recordSet, groupName)
+    } yield RecordSetInfo(recordSet, groupName)
 
   def listRecordSets(
       zoneId: String,
