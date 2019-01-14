@@ -110,11 +110,13 @@ object TestMembershipData {
     memberGroupIds = List(abcGroup.id, okGroup.id)
   )
 
-  val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(oneUserDummyGroup.id))
+  val dummyAuth: AuthPrincipal = AuthPrincipal(dummyUser, Seq(dummyGroup.id))
 
   val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", "secret"), Seq.empty)
 
   val sharedAuth: AuthPrincipal = AuthPrincipal(sharedZoneUser, Seq(abcGroup.id))
+
+  val superUserAuth = AuthPrincipal(superUser, Seq.empty)
 
   /* GROUP CHANGES */
   val okGroupChange: GroupChange = GroupChange(

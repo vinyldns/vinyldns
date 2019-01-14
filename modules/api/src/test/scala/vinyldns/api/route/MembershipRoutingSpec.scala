@@ -19,6 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -33,7 +34,8 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, LockStatus}
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
-import vinyldns.api.{GroupTestData, VinylDNSTestData}
+import vinyldns.api.VinylDNSTestData
+import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 
 class MembershipRoutingSpec
@@ -45,7 +47,6 @@ class MembershipRoutingSpec
     with VinylDNSDirectives
     with Matchers
     with VinylDNSTestData
-    with GroupTestData
     with MockitoSugar
     with BeforeAndAfterEach {
 
@@ -55,6 +56,19 @@ class MembershipRoutingSpec
   override protected def beforeEach(): Unit = reset(membershipService)
 
   private def js[A](info: A): String = compact(render(Extraction.decompose(info)))
+
+  // marshalling and unmarshalling cuts off some 0s. By setting the times to epoch,
+  // this is avoided since were working with 0s there anyway
+  val baseTime = new DateTime(0)
+  val okUserInfo: UserInfo = UserInfo(okUser).copy(created = Some(baseTime))
+  val dummyUserInfo: UserInfo = UserInfo(dummyUser).copy(created = Some(baseTime))
+  val okGroupInfo: GroupInfo = GroupInfo(okGroup).copy(created = baseTime)
+  val okMemberInfo: MemberInfo = MemberInfo(okUser, okGroup).copy(created = Some(baseTime))
+  val dummyMemberInfo: MemberInfo = MemberInfo(dummyUser, okGroup).copy(created = Some(baseTime))
+  val listOfMembersInfo: List[MemberInfo] = listOfDummyUsers.map(MemberInfo(_, okGroup))
+  val okGroupChangeInfo: GroupChangeInfo = GroupChangeInfo(okGroupChange)
+  val okGroupChangeUpdateInfo: GroupChangeInfo = GroupChangeInfo(okGroupChangeUpdate)
+  val okGroupChangeDeleteInfo: GroupChangeInfo = GroupChangeInfo(okGroupChangeDelete)
 
   "POST groups" should {
     "return a 200 response when successful" in {
@@ -69,7 +83,7 @@ class MembershipRoutingSpec
       doReturn(result(okGroup)).when(membershipService).createGroup(any[Group], any[AuthPrincipal])
 
       Post("/groups").withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[GroupInfo]
@@ -94,7 +108,7 @@ class MembershipRoutingSpec
         .createGroup(any[Group], any[AuthPrincipal])
 
       Post("/groups").withEntity(HttpEntity(ContentTypes.`application/json`, js(duplicateRequest))) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
@@ -106,7 +120,7 @@ class MembershipRoutingSpec
         .createGroup(any[Group], any[AuthPrincipal])
 
       Post("/groups").withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -118,7 +132,7 @@ class MembershipRoutingSpec
       val malformed = compact(render(missingFields))
 
       Post("/groups").withEntity(HttpEntity(ContentTypes.`application/json`, malformed)) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -144,7 +158,7 @@ class MembershipRoutingSpec
         .createGroup(any[Group], any[AuthPrincipal])
 
       Post("/groups").withEntity(HttpEntity(ContentTypes.`application/json`, js(notFoundRequest))) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -161,7 +175,7 @@ class MembershipRoutingSpec
         .createGroup(any[Group], any[AuthPrincipal])
 
       Post("/groups").withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
@@ -169,11 +183,12 @@ class MembershipRoutingSpec
 
   "GET Groups" should {
     "return a 200 response with the groups when no optional parameters are used" in {
+      val twoUserGroupInfo = GroupInfo(twoUserGroup)
       doReturn(
         result(ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100)))
         .when(membershipService)
-        .listMyGroups(None, None, 100, okUserAuth)
-      Get("/groups") ~> Route.seal(membershipRoute(okUserAuth)) ~> check {
+        .listMyGroups(None, None, 100, okAuth)
+      Get("/groups") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[ListMyGroupsResponse]
@@ -197,9 +212,9 @@ class MembershipRoutingSpec
           groupNameFilter = Some("ok"),
           startFrom = Some("anyString"),
           maxItems = 100,
-          okUserAuth)
+          okAuth)
       Get("/groups?startFrom=anyString&maxItems=100&groupNameFilter=ok") ~> Route.seal(
-        membershipRoute(okUserAuth)) ~> check {
+        membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[ListMyGroupsResponse]
@@ -214,21 +229,21 @@ class MembershipRoutingSpec
       }
     }
     "return with a 400 response when the page size is 0" in {
-      Get("/groups?maxItems=0") ~> Route.seal(membershipRoute(okUserAuth)) ~> check {
+      Get("/groups?maxItems=0") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
     "return a 400 response when maxItems is more than 1000" in {
-      Get("/groups?maxItems=1001") ~> Route.seal(membershipRoute(okUserAuth)) ~> check {
+      Get("/groups?maxItems=1001") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
     "return a 500 response when fails" in {
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
-        .listMyGroups(None, None, 100, okUserAuth)
+        .listMyGroups(None, None, 100, okAuth)
 
-      Get("/groups") ~> Route.seal(membershipRoute(okUserAuth)) ~> check {
+      Get("/groups") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
@@ -236,21 +251,21 @@ class MembershipRoutingSpec
 
   "GET group" should {
     "return a 200 response with the group when found" in {
-      doReturn(result(okGroup)).when(membershipService).getGroup("ok", okGroupAuth)
-      Get("/groups/ok") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      val grpBaseTime = okGroup.copy(created = baseTime)
+      doReturn(result(grpBaseTime)).when(membershipService).getGroup("ok", okAuth)
+      Get("/groups/ok") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[GroupInfo]
-
-        verifyGroupsMatch(result, okGroup)
+        result shouldBe GroupInfo(grpBaseTime)
       }
     }
 
     "return a 404 Not Found when the group is not found" in {
       doReturn(result(GroupNotFoundError("fail")))
         .when(membershipService)
-        .getGroup("notFound", okGroupAuth)
-      Get("/groups/notFound") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .getGroup("notFound", okAuth)
+      Get("/groups/notFound") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -258,21 +273,21 @@ class MembershipRoutingSpec
 
   "DELETE group" should {
     "return a 200 response with the deleted group when it exists" in {
-      doReturn(result(deletedGroup)).when(membershipService).deleteGroup("ok", okGroupAuth)
-      Delete("/groups/ok") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      val grpBaseTime = deletedGroup.copy(created = baseTime)
+      doReturn(result(grpBaseTime)).when(membershipService).deleteGroup("ok", okAuth)
+      Delete("/groups/ok") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[GroupInfo]
-
-        verifyGroupsMatch(result, deletedGroup)
+        result shouldBe GroupInfo(grpBaseTime)
       }
     }
 
     "return a 404 Not Found when the group is not found" in {
       doReturn(result(GroupNotFoundError("fail")))
         .when(membershipService)
-        .deleteGroup("notFound", okGroupAuth)
-      Delete("/groups/notFound") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .deleteGroup("notFound", okAuth)
+      Delete("/groups/notFound") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -280,8 +295,8 @@ class MembershipRoutingSpec
     "return a 400 Bad Request when the group is an admin of a zone" in {
       doReturn(result(InvalidGroupRequestError("fail")))
         .when(membershipService)
-        .deleteGroup("adminGroup", okGroupAuth)
-      Delete("/groups/adminGroup") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .deleteGroup("adminGroup", okAuth)
+      Delete("/groups/adminGroup") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -289,9 +304,9 @@ class MembershipRoutingSpec
     "return a 500 response when fails" in {
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
-        .deleteGroup("bad", okGroupAuth)
+        .deleteGroup("bad", okAuth)
 
-      Delete("/groups/bad") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Delete("/groups/bad") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
@@ -299,8 +314,8 @@ class MembershipRoutingSpec
     "return a 403 response when not authorized" in {
       doReturn(result(NotAuthorizedError("forbidden")))
         .when(membershipService)
-        .deleteGroup("forbidden", okGroupAuth)
-      Delete("/groups/forbidden") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .deleteGroup("forbidden", okAuth)
+      Delete("/groups/forbidden") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -328,7 +343,7 @@ class MembershipRoutingSpec
           any[AuthPrincipal])
 
       Put("/groups/good").withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[GroupInfo]
@@ -362,7 +377,7 @@ class MembershipRoutingSpec
 
       Put("/groups/duplicate").withEntity(
         HttpEntity(ContentTypes.`application/json`, js(duplicateRequest))) ~> Route.seal(
-        membershipRoute(okGroupAuth)) ~> check {
+        membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
@@ -387,7 +402,7 @@ class MembershipRoutingSpec
           any[AuthPrincipal])
       Put("/groups/notFound").withEntity(
         HttpEntity(ContentTypes.`application/json`, js(notFoundRequest))) ~> Route.seal(
-        membershipRoute(okGroupAuth)) ~> check {
+        membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -413,7 +428,7 @@ class MembershipRoutingSpec
           any[AuthPrincipal])
       Put("/groups/forbidden").withEntity(
         HttpEntity(ContentTypes.`application/json`, js(forbiddenRequest))) ~> Route.seal(
-        membershipRoute(okGroupAuth)) ~> check {
+        membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -433,7 +448,7 @@ class MembershipRoutingSpec
           any[AuthPrincipal])
 
       Put("/groups/bad").withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> Route
-        .seal(Route.seal(membershipRoute(okGroupAuth))) ~> check {
+        .seal(Route.seal(membershipRoute(okAuth))) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
@@ -453,7 +468,7 @@ class MembershipRoutingSpec
           any[AuthPrincipal])
 
       Put("/groups/bad").withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -465,7 +480,7 @@ class MembershipRoutingSpec
       val malformed = compact(render(missingFields))
 
       Put("/groups/malformed").withEntity(HttpEntity(ContentTypes.`application/json`, malformed)) ~> Route
-        .seal(membershipRoute(okGroupAuth)) ~> check {
+        .seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -487,7 +502,7 @@ class MembershipRoutingSpec
         .when(membershipService)
         .listMembers(anyString, any[Option[String]], anyInt, any[AuthPrincipal])
 
-      Get(s"/groups/good/members") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/good/members") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[ListMembersResponse]
 
@@ -501,7 +516,7 @@ class MembershipRoutingSpec
         .when(membershipService)
         .listMembers(anyString, any[Option[String]], anyInt, any[AuthPrincipal])
 
-      Get(s"/groups/notFound/members") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/notFound/members") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -510,7 +525,7 @@ class MembershipRoutingSpec
         .when(membershipService)
         .listMembers(anyString, any[Option[String]], anyInt, any[AuthPrincipal])
 
-      Get(s"/groups/bad/members") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/bad/members") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
@@ -523,10 +538,10 @@ class MembershipRoutingSpec
             Some("ok"),
             maxItems = 50)))
         .when(membershipService)
-        .listMembers("goodQuery", Some("dummy"), 50, okGroupAuth)
+        .listMembers("goodQuery", Some("dummy"), 50, okAuth)
 
       Get(s"/groups/goodQuery/members?startFrom=dummy&maxItems=50") ~> Route.seal(
-        membershipRoute(okGroupAuth)) ~> check {
+        membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[ListMembersResponse]
 
@@ -541,7 +556,7 @@ class MembershipRoutingSpec
         .when(membershipService)
         .listMembers(anyString, any[Option[String]], anyInt, any[AuthPrincipal])
 
-      Get(s"/groups/pageSize/members") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/pageSize/members") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[ListMembersResponse]
 
@@ -559,12 +574,12 @@ class MembershipRoutingSpec
       }
     }
     "return with a 400 response when the page size is 0" in {
-      Get(s"/groups/badPageSize/members?maxItems=0") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/badPageSize/members?maxItems=0") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
     "return a 400 response when maxItems is more than 1000" in {
-      Get(s"/groups/pageSize/members?maxItems=1001") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/pageSize/members?maxItems=1001") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -574,8 +589,8 @@ class MembershipRoutingSpec
     "return a 200 response with the admin list" in {
       doReturn(result(ListAdminsResponse(Seq(dummyUserInfo, okUserInfo))))
         .when(membershipService)
-        .listAdmins("good", okGroupAuth)
-      Get(s"/groups/good/admins") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .listAdmins("good", okAuth)
+      Get(s"/groups/good/admins") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[ListAdminsResponse]
 
@@ -585,16 +600,16 @@ class MembershipRoutingSpec
     "return a 404 response when the group is not found" in {
       doReturn(result(GroupNotFoundError("fail")))
         .when(membershipService)
-        .listAdmins("notFound", okGroupAuth)
-      Get(s"/groups/notFound/admins") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .listAdmins("notFound", okAuth)
+      Get(s"/groups/notFound/admins") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
     "return a 500 response on failure" in {
       doReturn(result(new RuntimeException("fail")))
         .when(membershipService)
-        .listAdmins("bad", okGroupAuth)
-      Get(s"/groups/bad/admins") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .listAdmins("bad", okAuth)
+      Get(s"/groups/bad/admins") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
@@ -608,9 +623,9 @@ class MembershipRoutingSpec
         100)
       doReturn(result(expected))
         .when(membershipService)
-        .getGroupActivity("ok", None, 100, okGroupAuth)
+        .getGroupActivity("ok", None, 100, okAuth)
 
-      Get(s"/groups/ok/activity") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/ok/activity") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[ListGroupChangesResponse]
 
@@ -626,18 +641,18 @@ class MembershipRoutingSpec
     "return a 404 response when the group is not found" in {
       doReturn(result(GroupNotFoundError("fail")))
         .when(membershipService)
-        .getGroupActivity("notFound", None, 100, okGroupAuth)
-      Get(s"/groups/notFound/activity") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .getGroupActivity("notFound", None, 100, okAuth)
+      Get(s"/groups/notFound/activity") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
     "return with a 400 response when the page size is 0" in {
-      Get(s"/groups/badPageSize/activity?maxItems=0") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/badPageSize/activity?maxItems=0") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
     "return a 400 response when maxItems is more than 1000" in {
-      Get(s"/groups/pageSize/activity?maxItems=1001") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/pageSize/activity?maxItems=1001") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -651,7 +666,7 @@ class MembershipRoutingSpec
         .when(membershipService)
         .getGroupActivity(anyString, any[Option[String]], anyInt, any[AuthPrincipal])
 
-      Get(s"/groups/pageSize/activity") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+      Get(s"/groups/pageSize/activity") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
         val maxItemsCaptor = ArgumentCaptor.forClass(classOf[Int])
         verify(membershipService).getGroupActivity(
@@ -666,8 +681,8 @@ class MembershipRoutingSpec
     "return a 500 response on failure" in {
       doReturn(result(new RuntimeException("fail")))
         .when(membershipService)
-        .getGroupActivity("bad", None, 100, okGroupAuth)
-      Get(s"/groups/bad/activity") ~> Route.seal(membershipRoute(okGroupAuth)) ~> check {
+        .getGroupActivity("bad", None, 100, okAuth)
+      Get(s"/groups/bad/activity") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
@@ -675,9 +690,6 @@ class MembershipRoutingSpec
   "PUT update user lock status" should {
     "return a 200 response with the user locked" in {
       val updatedUser = okUser.copy(lockStatus = LockStatus.Locked)
-      val superUserAuth = okAuth.copy(
-        signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
-        memberGroupIds = Seq.empty)
       doReturn(result(updatedUser))
         .when(membershipService)
         .updateUserLockStatus("ok", LockStatus.Locked, superUserAuth)
@@ -694,9 +706,6 @@ class MembershipRoutingSpec
 
     "return a 200 response with the user unlocked" in {
       val updatedUser = lockedUser.copy(lockStatus = LockStatus.Unlocked)
-      val superUserAuth = okAuth.copy(
-        signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
-        memberGroupIds = Seq.empty)
       doReturn(result(updatedUser))
         .when(membershipService)
         .updateUserLockStatus("locked", LockStatus.Unlocked, superUserAuth)
@@ -712,9 +721,6 @@ class MembershipRoutingSpec
     }
 
     "return a 404 Not Found when the user is not found" in {
-      val superUserAuth = okAuth.copy(
-        signedInUser = dummyUserAuth.signedInUser.copy(isSuper = true),
-        memberGroupIds = Seq.empty)
       doReturn(result(UserNotFoundError("fail")))
         .when(membershipService)
         .updateUserLockStatus(anyString, any[LockStatus], any[AuthPrincipal])
@@ -727,7 +733,7 @@ class MembershipRoutingSpec
       doReturn(result(NotAuthorizedError("fail")))
         .when(membershipService)
         .updateUserLockStatus(anyString, any[LockStatus], any[AuthPrincipal])
-      Put("/users/forbidden/lock") ~> membershipRoute(okGroupAuth) ~> check {
+      Put("/users/forbidden/lock") ~> membershipRoute(okAuth) ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
