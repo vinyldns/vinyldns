@@ -150,17 +150,20 @@ VinylDNS supports both DynamoDB and MySQL backends. You can enable all repos in 
 For each backend, you need to configure the table(s) that should be loaded.
 
 You must have all of the following required API repositories configured in exactly one datastore.
-**At the moment, not all repositories are implemented in both datastores, but we are actively working on expanding
-MySQL support to all repositories**:
-- record-set (dynamodb only)
-- record-change (dynamodb only)
-- zone-change (mysql or dynamodb)
-- user (dynamodb only)
-- group (dynamodb only)
-- group-change (dynamodb only)
-- membership (dynamodb only)
-- zone (mysql only)
-- batch-change (mysql only)
+**Some repositories are implemented in DynamoDB, all repositories have MySQL support**:
+
+| Repository | DynamoDB support | MySQL support |
+| :---       |       :---:      |     :---:     |
+| BatchChange  |                 |       X       |
+| Group  |        X         |       X       |
+| GroupChange  |        X         |       X       |
+| Membership  |        X         |       X       |
+| RecordSet |        X         |       X       |
+| RecordSetChange  |        X         |       X       |
+| User  |        X         |       X       |
+| UserChange  |        X         |       X       |
+| Zone  |                 |       X       |
+| ZoneChange  |        X         |       X       |
 
 
 If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.

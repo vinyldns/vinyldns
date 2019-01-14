@@ -36,7 +36,7 @@ When no zone connection is specified on a zone, the global defaults will be used
 ## Database
 [database]: #database
 
-The VinylDNS database has a `NoSQL` / non-relational design to it.  Instead of having a heavily normalized set of SQL tables
+The VinylDNS database provides implementations in both a `MySQL` / relational and a `NoSQL` / non-relational design.  Instead of having a heavily normalized set of SQL tables
 that surface in the system, VinylDNS relies on `Repositories` where each `Repository` is independent of each one another.
 This allows implementers to best map each `Repository` into the data-store of choice.
 
@@ -63,7 +63,7 @@ The user information will be pulled from LDAP, and inserted into the VinylDNS Us
 The `BatchChangeRepository` holds the batch itself and all individual changes that executed in the batch.
 * `UserChangeRepository` - Holds changes to users
 
-**Note: The UserChangeRepository is currently only used in the portal, and lives outside of the api.  This will be moved
+**Note: The UserChangeRepository is currently only used in the portal, and lives outside of the API.  This will be moved
 alongside the other repositories in the near future.**
 
 ## Database Types
@@ -93,6 +93,9 @@ VinylDNS currently uses MySQL only for the following repositories:
 Originally, the `ZoneRepository` lived in DynamoDB.  However, the access controls in VinylDNS made it very difficult
 to use DynamoDB as the query interface is limited.  A SQL interface with `JOIN`s was required.
 
+It should also be noted that all of the repositories have also been implemented in MySQL despite most currently running
+in DynamoDB in our VinylDNS instance.
+
 Review the [Setup MySQL Guide](setup-mysql) for more information.
 
 ## Message Queues
@@ -116,6 +119,12 @@ bottlenecks in processing could cause an increase in heap pressure in the API no
 The price to use SQS is in the single digit dollars per month.  VinylDNS can be tuned to run exclusively in the _free tier_.
 
 Review the [Setup AWS SQS Guide](setup-sqs) for more information.
+
+### MySQL
+VinylDNS has also implemented a message queue using MySQL, which incorporates the features that we currently utilize through AWS SQS
+such as changing visibility timeout and re-queuing operations.
+
+Review the [Setup MySQL Guide](setup-mysql) for more information.
 
 ## LDAP
 VinylDNS uses LDAP in order to authenticate users in the **Portal**.  LDAP is **not** used in the API, instead the API uses
