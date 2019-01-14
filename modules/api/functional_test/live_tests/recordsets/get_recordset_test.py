@@ -150,6 +150,9 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
         retrieved_rs = retrieved['recordSet']
         verify_recordset(retrieved_rs, new_rs)
 
+        assert_that(retrieved_rs['ownerGroupId'], is_(shared_zone_test_context.shared_record_group['id']))
+        assert_that(retrieved_rs['ownerGroupName'], is_('record-ownergroup'))
+
     finally:
         if retrieved_rs:
             delete_result = client.delete_recordset(retrieved_rs['zoneId'], retrieved_rs['id'], status=202)
