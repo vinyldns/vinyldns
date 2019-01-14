@@ -64,25 +64,9 @@ The `BatchChangeRepository` holds the batch itself and all individual changes th
 * `UserChangeRepository` - Holds changes to users. Currently only used in the portal.
 
 ## Database Types
-### AWS DynamoDB
-VinylDNS has gone through several architecture evolutions.  Along the way, DynamoDB was chosen as the data store due to
-the volume of data at Comcast.  It is an excellent key-value store with extremely high performance characteristics.
-
-VinylDNS uses DynamoDB presently for the following repositories:
-
-1. RecordSetRepository
-1. RecordChangeRepository
-1. ZoneChangeRepository
-1. GroupRepository
-1. UserRepository
-1. MembershipRepository
-1. GroupChangeRepository
-1. UserChangeRepository
-
-Review the [Setup AWS DynamoDB Guide](setup-dynamodb) for more information.
-
 ### MySQL
-VinylDNS currently uses MySQL only for the following repositories:
+VinylDNS has implemented MySQL for all repositories so a MySQL-only instance of VinylDNS is possible. Furthermore, there are two
+repositories that have _only_ been implemented in MySQL:
 
 1. ZoneRepository
 1. BatchChangeRepository
@@ -95,6 +79,26 @@ in DynamoDB in our VinylDNS instance.
 
 Review the [Setup MySQL Guide](setup-mysql) for more information.
 
+### AWS DynamoDB
+VinylDNS has gone through several architecture evolutions.  Along the way, DynamoDB was chosen as the data store due to
+the volume of data at Comcast.  It is an excellent key-value store with extremely high performance characteristics.
+
+VinylDNS has implemented DynamoDB for the following repositories:
+
+1. RecordSetRepository
+1. RecordChangeRepository
+1. ZoneChangeRepository
+1. GroupRepository
+1. UserRepository
+1. MembershipRepository
+1. GroupChangeRepository
+1. UserChangeRepository
+
+Currently using DynamoDB would also require the user to either use MySQL for the batch change and zone repositories or also provide
+an implementation for those repositories in a different data store.
+
+Review the [Setup AWS DynamoDB Guide](setup-dynamodb) for more information.
+
 ## Message Queues
 Most operations that take place in VinylDNS use a message queue.  These operations require high-availability, fault-tolerance
 with retry, and throttling.  The message queue supports these characteristics in VinylDNS.
@@ -104,7 +108,7 @@ fault-tolerance and throttling requirements.
 
 ## Message Queue Types
 ### AWS SQS
-VinylDNS uses AWS SQS as its message queue.  SQS has the following characteristics:
+Our VinylDNS instance uses AWS SQS to fulfill its message queue service needs.  SQS has the following characteristics:
 
 1. High-Availability
 1. Retry - in the event that a message cannot be processed, or if a node fails midstream processing, it will be automatically
