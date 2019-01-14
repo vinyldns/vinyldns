@@ -329,6 +329,8 @@ class RecordSetRoutingSpec
     txt.id -> txt
   )
 
+  private val rsOkSummary = RecordSetInfo(rsOk, None)
+
   private val rsChange1 = RecordSetChange(
     okZone,
     rs1,
@@ -418,15 +420,14 @@ class RecordSetRoutingSpec
     def getRecordSet(
         recordSetId: String,
         zoneId: String,
-        authPrincipal: AuthPrincipal): Result[RecordSet] = {
+        authPrincipal: AuthPrincipal): Result[RecordSetInfo] = {
       if (zoneId == zoneNotFound.id) {
         Left(ZoneNotFoundError(s"$zoneId"))
       } else {
         recordSetId match {
           case rsError.id => Left(new RuntimeException("fail"))
           case rsNotFound.id => Left(RecordSetNotFoundError(s"$zoneId"))
-          case valid if recordSets.contains(valid) =>
-            Right(recordSets.get(valid).get)
+          case rsOk.id => Right(rsOkSummary)
         }
       }
     }.toResult
@@ -443,9 +444,9 @@ class RecordSetRoutingSpec
           Right(
             ListRecordSetsResponse(
               List(
-                RecordSetInfo(rs1, AccessLevel.Read),
-                RecordSetInfo(rs2, AccessLevel.Read),
-                RecordSetInfo(rs3, AccessLevel.Read)),
+                RecordSetListInfo(rs1, AccessLevel.Read),
+                RecordSetListInfo(rs2, AccessLevel.Read),
+                RecordSetListInfo(rs3, AccessLevel.Read)),
               None))
       }
     }.toResult
@@ -607,11 +608,13 @@ class RecordSetRoutingSpec
   }
 
   "GET recordset" should {
-    "return the recordset" in {
+    "return the recordset summary info" in {
       Get(s"/zones/${okZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute(okAuth) ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[GetRecordSetResponse].recordSet
-        validateRecordSet(rsOk, resultRs)
+        resultRs.id shouldBe rsOk.id
+        resultRs.ownerGroupId shouldBe None
+        resultRs.ownerGroupName shouldBe None
       }
     }
 

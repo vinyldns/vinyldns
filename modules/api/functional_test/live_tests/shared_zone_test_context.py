@@ -15,6 +15,7 @@ class SharedZoneTestContext(object):
 
         self.dummy_group = None
         self.ok_group = None
+        self.shared_record_group = None
 
         self.tear_down() # ensures that the environment is clean before starting
 
@@ -41,6 +42,15 @@ class SharedZoneTestContext(object):
             self.dummy_group = self.dummy_vinyldns_client.create_group(dummy_group, status=200)
             # in theory this shouldn't be needed, but getting 'user is not in group' errors on zone creation
             self.confirm_member_in_group(self.dummy_vinyldns_client, self.dummy_group)
+
+            shared_record_group = {
+                'name': 'record-ownergroup',
+                'email': 'test@test.com',
+                'description': 'this is a description',
+                'members': [ { 'id': 'sharedZoneUser'}, { 'id': 'ok'} ],
+                'admins': [ { 'id': 'sharedZoneUser'}, { 'id': 'ok'}  ]
+            }
+            self.shared_record_group = self.ok_vinyldns_client.create_group(shared_record_group, status=200)
 
             ok_zone_change = self.ok_vinyldns_client.create_zone(
                 {
