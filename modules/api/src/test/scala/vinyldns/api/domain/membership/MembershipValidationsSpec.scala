@@ -59,9 +59,7 @@ class MembershipValidationsSpec
         canEditGroup(okGroup, okAuth) should be(right)
       }
       "return true when the user is a super user" in {
-        val user = User("some", "new", "user", isSuper = true)
-        val superAuth = AuthPrincipal(user, Seq())
-        canEditGroup(okGroup, superAuth) should be(right)
+        canEditGroup(okGroup, superUserAuth) should be(right)
       }
       "return an error when the user is a support admin only" in {
         val user = User("some", "new", "user", isSupport = true)
@@ -82,9 +80,7 @@ class MembershipValidationsSpec
         canSeeGroup(okGroup.id, okAuth) should be(right)
       }
       "return true when the user is a super user" in {
-        val user = User("some", "new", "user", isSuper = true)
-        val superAuth = AuthPrincipal(user, Seq())
-        canSeeGroup(okGroup.id, superAuth) should be(right)
+        canSeeGroup(okGroup.id, superUserAuth) should be(right)
       }
       "return true when the user is a support admin" in {
         val user = User("some", "new", "user", isSupport = true)
