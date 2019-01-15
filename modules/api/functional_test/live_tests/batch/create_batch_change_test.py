@@ -2545,7 +2545,7 @@ def test_create_batch_change_for_shared_zone_updates_recordset_owner_group_id_su
 
 def test_create_batch_change_for_shared_zone_with_invalid_owner_group_id_fails(shared_zone_test_context):
     """
-    Test successfully creating a batch change with owner group ID saves value for records in shared zone
+    Test creating a batch change with invalid owner group ID fails
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
 
@@ -2561,7 +2561,7 @@ def test_create_batch_change_for_shared_zone_with_invalid_owner_group_id_fails(s
 
 def test_create_batch_change_for_shared_zone_with_unauthorized_owner_group_id_fails(shared_zone_test_context):
     """
-    Test successfully creating a batch change with owner group ID saves value for records in shared zone
+    Test creating a batch change with unauthorized owner group ID fails
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     ok_group = shared_zone_test_context.ok_group
