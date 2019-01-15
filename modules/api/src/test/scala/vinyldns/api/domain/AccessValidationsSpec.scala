@@ -406,7 +406,7 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+          .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -416,7 +416,7 @@ class AccessValidationsSpec
       val zone = okZone.copy(isTest = true)
 
       accessValidationTest
-        .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
+        .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone, None) should be(right)
     }
   }
 

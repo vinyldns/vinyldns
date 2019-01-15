@@ -323,9 +323,8 @@ class RecordSetServiceIntegrationSpec
 
     "update relative NS record without trailing dot" in {
       val newRecord = subTestRecordNS.copy(ttl = 200)
-      val superAuth = AuthPrincipal(superUser, List())
       val result = testRecordSetService
-        .updateRecordSet(newRecord, superAuth)
+        .updateRecordSet(newRecord, superUserAuth)
         .value
         .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
