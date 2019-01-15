@@ -11,7 +11,7 @@ section: "operator_menu"
 ## Configuration
 - [Configuration Overview](#configuration-overview)
 - [Configuration API Server](#configuring-api-server)
-- [AWS SQS](#aws-sqs)
+- [Queue Configuration](#queue-configuration)
 - [Database Configuration](#database-configuration)
 - [Cryptography](#cryptography-settings)
 - [Additional Configuration Settings](#additional-configuration-settings)
