@@ -167,6 +167,16 @@ object TestDataLoader {
     isTest = true
   )
 
+  // NOTE: this is intentionally not a flagged test zone for validating our test users cannot access regular zone info
+  // All other test zones should be flagged as test
+  final val nonTestSharedZone = Zone(
+    name = "non.test.shared.",
+    email = "email",
+    id = "non-test-shared-zone",
+    adminGroupId = sharedZoneGroup.id,
+    shared = true
+  )
+
   def loadTestData(
       userRepo: UserRepository,
       groupRepo: GroupRepository,
@@ -183,6 +193,7 @@ object TestDataLoader {
         groupId = "shared-zone-group",
         memberUserIds = Set(sharedZoneUser.id))
       _ <- zoneRepo.save(sharedZone)
+      _ <- zoneRepo.save(nonTestSharedZone)
     } yield ()
 }
 // $COVERAGE-ON$

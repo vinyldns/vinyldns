@@ -184,6 +184,7 @@ object AccessValidations extends AccessValidationAlgebra {
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String] = None): AccessLevel = auth match {
+    case testUser if testUser.isTestUser && !zone.isTest => AccessLevel.NoAccess
     case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) =>
       AccessLevel.Delete
     case recordOwner if zone.shared && recordOwnerGroupId.exists(recordOwner.isGroupMember) =>

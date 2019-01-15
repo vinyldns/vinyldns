@@ -192,15 +192,19 @@ class ZoneServiceSpec
       val oldZone = okZone.copy(connection = Some(badConnection))
       doReturn(IO.pure(Some(oldZone))).when(mockZoneRepo).getZone(anyString)
 
+      val newZone =
+        updateZoneAuthorized.copy(connection = Some(badConnection))
+
       val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(okGroup.id, okGroup.id))
 
       val resultChange: ZoneChange =
         rightResultOf(
           underTest
-            .updateZone(updateZoneAuthorized, doubleAuth)
+            .updateZone(newZone, doubleAuth)
             .map(_.asInstanceOf[ZoneChange])
             .value)
       resultChange.zone.id shouldBe oldZone.id
+      resultChange.zone.connection shouldBe oldZone.connection
     }
 
     "validate connection and fail if changed to bad" in {

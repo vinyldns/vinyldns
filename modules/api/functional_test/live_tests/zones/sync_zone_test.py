@@ -100,6 +100,7 @@ def test_sync_zone_success(shared_zone_test_context):
         'name': zone_name,
         'email': 'test@test.com',
         'adminGroupId': shared_zone_test_context.ok_group['id'],
+        'isTest': True,
         'connection': {
             'name': 'vinyldns.',
             'keyName': VinylDNSTestContext.dns_key_name,
