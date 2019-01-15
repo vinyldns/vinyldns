@@ -1977,3 +1977,18 @@ def test_update_high_value_domain_fails_ip6_ptr(shared_zone_test_context):
 
     errors_ip6 = client.update_recordset(record_ip6, status=422)
     assert_that(errors_ip6, is_('Record name "fd69:27cc:fe91:0000:0000:0000:ffff:0000" is configured as a High Value Domain, so it cannot be modified.'))
+
+
+def test_no_update_access_non_test_zone(shared_zone_test_context):
+    """
+    Test that a test user cannot update a record in a non-test zone (even if admin)
+    """
+
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone_id = shared_zone_test_context.non_test_shared_zone['id']
+
+    list_results = client.list_recordsets(zone_id,  status=200)['recordSets']
+    record_update = [item for item in list_results if item['name'] == 'update-test'][0]
+    record_update['ttl'] = record_update['ttl'] + 100
+
+    client.update_recordset(record_update, status=403)

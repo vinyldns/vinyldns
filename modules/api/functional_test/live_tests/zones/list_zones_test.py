@@ -29,6 +29,7 @@ class ListZonesTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'vinyldns.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -50,6 +51,7 @@ class ListZonesTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'vinyldns.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -72,6 +74,7 @@ class ListZonesTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'vinyldns.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -93,6 +96,7 @@ class ListZonesTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'vinyldns.',
                         'keyName': VinylDNSTestContext.dns_key_name,
@@ -114,6 +118,7 @@ class ListZonesTestContext(object):
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
+                    'isTest': True,
                     'connection': {
                         'name': 'vinyldns.',
                         'keyName': VinylDNSTestContext.dns_key_name,
