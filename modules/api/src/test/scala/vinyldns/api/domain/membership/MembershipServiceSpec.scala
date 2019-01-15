@@ -566,10 +566,9 @@ class MembershipServiceSpec
         result shouldBe ListMyGroupsResponse(Seq(), None, None, None, 100)
       }
       "return groups from the database for super users" in {
-        val superAuth = AuthPrincipal(okUser.copy(isSuper = true), Seq())
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
-          rightResultOf(underTest.listMyGroups(None, None, 100, superAuth).value)
+          rightResultOf(underTest.listMyGroups(None, None, 100, superUserAuth).value)
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
@@ -797,9 +796,6 @@ class MembershipServiceSpec
 
     "updateUserLockStatus" should {
       "save the update and lock the user account" in {
-        val superUserAuth = okAuth.copy(
-          signedInUser = dummyAuth.signedInUser.copy(isSuper = true),
-          memberGroupIds = Seq.empty)
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
         doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
 
@@ -818,9 +814,6 @@ class MembershipServiceSpec
       }
 
       "save the update and unlock the user account" in {
-        val superUserAuth = okAuth.copy(
-          signedInUser = dummyAuth.signedInUser.copy(isSuper = true),
-          memberGroupIds = Seq.empty)
         doReturn(IO.pure(Some(lockedUser))).when(mockUserRepo).getUser(lockedUser.id)
         doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
 
@@ -860,9 +853,6 @@ class MembershipServiceSpec
       }
 
       "return an error if the requested user is not found" in {
-        val superUserAuth = okAuth.copy(
-          signedInUser = dummyAuth.signedInUser.copy(isSuper = true),
-          memberGroupIds = Seq.empty)
         doReturn(IO.pure(None)).when(mockUserRepo).getUser(okUser.id)
 
         val error = leftResultOf(

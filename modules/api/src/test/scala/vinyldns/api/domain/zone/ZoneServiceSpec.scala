@@ -146,11 +146,10 @@ class ZoneServiceSpec
 
     "succeed if zone is shared and user is a super user" in {
       val newZone = createZoneAuthorized.copy(shared = true)
-      val superAuth = okAuth.copy(signedInUser = okUser.copy(isSuper = true))
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
       val resultZone = rightResultOf(
-        underTest.connectToZone(newZone, superAuth).map(_.asInstanceOf[ZoneChange]).value).zone
+        underTest.connectToZone(newZone, superUserAuth).map(_.asInstanceOf[ZoneChange]).value).zone
 
       Option(resultZone.id) should not be None
       resultZone.email shouldBe okZone.email

@@ -95,8 +95,6 @@ class MySqlZoneRepositoryIntegrationSpec
     if (num == 1) z.addACLRule(dummyAclRule) else z
   }
 
-  private val superUserAuth = AuthPrincipal(dummyUser.copy(isSuper = true), Seq())
-
   private def testZone(name: String, adminGroupId: String = testZoneAdminGroupId) =
     okZone.copy(name = name, id = UUID.randomUUID().toString, adminGroupId = adminGroupId)
 
