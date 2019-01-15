@@ -34,7 +34,6 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, LockStatus}
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
-import vinyldns.api.VinylDNSTestData
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 
@@ -46,7 +45,6 @@ class MembershipRoutingSpec
     with JsonValidationRejection
     with VinylDNSDirectives
     with Matchers
-    with VinylDNSTestData
     with MockitoSugar
     with BeforeAndAfterEach {
 

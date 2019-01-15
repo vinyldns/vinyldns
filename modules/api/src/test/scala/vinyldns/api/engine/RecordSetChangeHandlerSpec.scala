@@ -28,10 +28,11 @@ import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
-import vinyldns.api.{CatsHelpers, Interfaces, VinylDNSTestData}
+import vinyldns.api.{CatsHelpers, Interfaces}
 import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetRepository, _}
+import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.ExecutionContext
 
@@ -39,7 +40,6 @@ class RecordSetChangeHandlerSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
-    with VinylDNSTestData
     with BeforeAndAfterEach
     with CatsHelpers {
 

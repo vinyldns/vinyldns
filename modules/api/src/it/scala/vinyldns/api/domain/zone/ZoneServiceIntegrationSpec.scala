@@ -24,8 +24,7 @@ import org.scalatest.time.{Seconds, Span}
 import vinyldns.api.{
   DynamoDBApiIntegrationSpec,
   MySqlApiIntegrationSpec,
-  ResultHelpers,
-  VinylDNSTestData
+  ResultHelpers
 }
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
@@ -34,6 +33,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
+import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.Await
@@ -42,7 +42,6 @@ import scala.concurrent.duration._
 
 class ZoneServiceIntegrationSpec
     extends DynamoDBApiIntegrationSpec
-    with VinylDNSTestData
     with ResultHelpers
     with MockitoSugar
     with MySqlApiIntegrationSpec {
