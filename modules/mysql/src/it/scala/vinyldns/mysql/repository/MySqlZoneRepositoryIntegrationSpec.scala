@@ -25,7 +25,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
-import vinyldns.core.TestMembershipData.{dummyAuth, dummyUser, okGroup, okUser, oneUserDummyGroup}
+import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.mysql.TestMySqlInstance
 
@@ -54,7 +54,7 @@ class MySqlZoneRepositoryIntegrationSpec
   private val dummyAclRule =
     ACLRule(
       accessLevel = AccessLevel.Read,
-      groupId = Some(oneUserDummyGroup.id)
+      groupId = Some(dummyGroup.id)
     )
 
   // generate some ACLs
@@ -94,8 +94,6 @@ class MySqlZoneRepositoryIntegrationSpec
     // add the dummy acl rule to the first zone
     if (num == 1) z.addACLRule(dummyAclRule) else z
   }
-
-  private val superUserAuth = AuthPrincipal(dummyUser.copy(isSuper = true), Seq())
 
   private def testZone(name: String, adminGroupId: String = testZoneAdminGroupId) =
     okZone.copy(name = name, id = UUID.randomUUID().toString, adminGroupId = adminGroupId)
