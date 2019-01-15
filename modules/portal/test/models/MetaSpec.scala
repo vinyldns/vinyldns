@@ -25,5 +25,13 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("vinyldns.version" -> "foo-bar")
       Meta(Configuration.from(config)).version must beEqualTo("foo-bar")
     }
+    "default to false if shared_display_enabled is not found" in {
+      val config = Map("vinyldns.version" -> "foo-bar")
+      Meta(Configuration.from(config)).shared_display_enabled must beFalse
+    }
+    "set to true if shared_display_enabled is true in config" in {
+      val config = Map("shared_display_enabled" -> true)
+      Meta(Configuration.from(config)).shared_display_enabled must beTrue
+    }
   }
 }

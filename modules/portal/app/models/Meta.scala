@@ -17,8 +17,10 @@
 package models
 import play.api.Configuration
 
-case class Meta(version: String)
+case class Meta(version: String, shared_display_enabled: Boolean)
 object Meta {
   def apply(config: Configuration): Meta =
-    Meta(config.getOptional[String]("vinyldns.version").getOrElse("unknown"))
+    Meta(
+      config.getOptional[String]("vinyldns.version").getOrElse("unknown"),
+      config.getOptional[Boolean]("shared_display_enabled").getOrElse(false))
 }
