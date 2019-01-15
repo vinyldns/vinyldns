@@ -112,7 +112,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     makeSingleAddChange("wrongType", TXTData("Unsupported!"), UNKNOWN)
   )
 
-  private def existingZones = ExistingZones(Set(okZone, zoneShared))
+  private def existingZones = ExistingZones(Set(okZone, sharedZone))
 
   private val aToDelete = RecordSet(
     okZone.id,
@@ -380,7 +380,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
   }
 
   "generateAddChange" should {
-    val singleAddChange = makeSingleAddChange("shared-rs", AData("1.2.3.4"), A, zoneShared)
+    val singleAddChange = makeSingleAddChange("shared-rs", AData("1.2.3.4"), A, sharedZone)
     val ownerGroupId = Some("some-owner-group-id")
 
     "generate record set changes for shared zone without owner group ID if not provided" in {
@@ -418,12 +418,8 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
   }
 
   "generateUpdateChange" should {
-    val addChange = makeSingleAddChange("shared-rs", AData("2.3.4.5"), A, zoneShared)
-    val deleteChange = makeSingleDeleteChange("shared-rs", A, zoneShared)
-    val existingRs = rsOk.copy(
-      name = "shared-rs",
-      records = List(AData("1.2.3.4")),
-      ownerGroupId = Some("existing-owner-group-id"))
+    val addChange = makeSingleAddChange("aaaa", AAAAData("2:3:4:5:6:7:8:9"), AAAA, sharedZone)
+    val deleteChange = makeSingleDeleteChange("aaaa", AAAA, sharedZone)
 
     "not overwrite existing owner group ID for existing record set in shared zone" in {
       val result =
@@ -431,12 +427,12 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           NonEmptyList.of(deleteChange),
           NonEmptyList.of(addChange),
           existingZones,
-          ExistingRecordSets(List(existingRs)),
+          ExistingRecordSets(List(sharedZoneRecord)),
           okUser.id,
           Some("new-owner-group-id")
         )
       result shouldBe defined
-      result.foreach(_.recordSet.ownerGroupId shouldBe existingRs.ownerGroupId)
+      result.foreach(_.recordSet.ownerGroupId shouldBe sharedZoneRecord.ownerGroupId)
     }
 
     "use specified owner group ID if undefined for existing record set in shared zone" in {
@@ -446,7 +442,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           NonEmptyList.of(deleteChange),
           NonEmptyList.of(addChange),
           existingZones,
-          ExistingRecordSets(List(existingRs.copy(ownerGroupId = None))),
+          ExistingRecordSets(List(sharedZoneRecord.copy(ownerGroupId = None))),
           okUser.id,
           ownerGroupId
         )
@@ -460,7 +456,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           NonEmptyList.of(deleteChange.copy(zoneId = okZone.id, zoneName = okZone.name)),
           NonEmptyList.of(addChange.copy(zoneId = okZone.id, zoneName = okZone.name)),
           existingZones,
-          ExistingRecordSets(List(existingRs.copy(ownerGroupId = None))),
+          ExistingRecordSets(List(sharedZoneRecord.copy(ownerGroupId = None, zoneId = okZone.id))),
           okUser.id,
           Some("new-owner-group-id")
         )
