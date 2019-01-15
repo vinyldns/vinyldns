@@ -32,12 +32,6 @@ zone "old-vinyldns3" {
 	allow-update { key "vinyldns."; };
 	};
 
-zone "old-shared" {
-	type master;
-	file "/var/bind/old-shared.hosts";
-	allow-update { key "vinyldns."; };
-	};
-
 zone "dummy" {
 	type master;
 	file "/var/bind/dummy.hosts";
@@ -55,6 +49,12 @@ zone "shared" {
 	file "/var/bind/shared.hosts";
 	allow-update { key "vinyldns."; };
 	};
+
+zone "non.test.shared" {
+  type master;
+  file "/var/bind/non.test.shared.hosts";
+  allow-update { key "vinyldns."; };
+  };
 
 zone "system-test" {
 	type master;

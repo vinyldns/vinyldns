@@ -44,6 +44,7 @@ object TestZoneData {
   val zoneActive: Zone = Zone(
     "some.zone.name.",
     "test@test.com",
+    adminGroupId = okGroup.id,
     status = ZoneStatus.Active,
     connection = Some(validConnection))
 

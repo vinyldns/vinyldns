@@ -2343,3 +2343,64 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
         ok_deletes = [rs for rs in to_delete if rs['zone']['id'] != dummy_zone['id']]
         clear_recordset_list(dummy_deletes, dummy_client)
         clear_recordset_list(ok_deletes, ok_client)
+
+
+def test_user_validation_ownership(shared_zone_test_context):
+    """
+    Confirm that test users cannot add/edit/delete records in non-test zones (via zone admin group)
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("add-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.non.test.shared.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("delete-test-batch.non.test.shared.", change_type="DeleteRecordSet"),
+
+            get_change_A_AAAA_json("add-test-batch.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.shared.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-test-batch.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("delete-test-batch.shared.", change_type="DeleteRecordSet"),
+        ]
+    }
+
+    response = client.create_batch_change(batch_change_input, status=400)
+    assert_failed_change_in_error_response(response[0], input_name="add-test-batch.non.test.shared.", record_data="1.1.1.1",
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+    assert_failed_change_in_error_response(response[1], input_name="update-test-batch.non.test.shared.", change_type="DeleteRecordSet",
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+    assert_failed_change_in_error_response(response[2], input_name="update-test-batch.non.test.shared.", record_data="1.1.1.1",
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+    assert_failed_change_in_error_response(response[3], input_name="delete-test-batch.non.test.shared.", change_type="DeleteRecordSet",
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
+
+    assert_successful_change_in_error_response(response[4], input_name="add-test-batch.shared.")
+    assert_successful_change_in_error_response(response[5], input_name="update-test-batch.shared.", change_type="DeleteRecordSet")
+    assert_successful_change_in_error_response(response[6], input_name="update-test-batch.shared.")
+    assert_successful_change_in_error_response(response[7], input_name="delete-test-batch.shared.", change_type="DeleteRecordSet")
+
+
+
+def test_user_validation_shared(shared_zone_test_context):
+    """
+    Confirm that test users cannot add/edit/delete records in non-test zones (via shared access)
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("add-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.non.test.shared.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-test-batch.non.test.shared.", address="1.1.1.1"),
+            get_change_A_AAAA_json("delete-test-batch.non.test.shared.", change_type="DeleteRecordSet")
+        ]
+    }
+
+    response = client.create_batch_change(batch_change_input, status=400)
+    assert_failed_change_in_error_response(response[0], input_name="add-test-batch.non.test.shared.", record_data="1.1.1.1",
+                                           error_messages=["User \"ok\" is not authorized."])
+    assert_failed_change_in_error_response(response[1], input_name="update-test-batch.non.test.shared.", change_type="DeleteRecordSet",
+                                           error_messages=["User \"ok\" is not authorized."])
+    assert_failed_change_in_error_response(response[2], input_name="update-test-batch.non.test.shared.", record_data="1.1.1.1",
+                                           error_messages=["User \"ok\" is not authorized."])
+    assert_failed_change_in_error_response(response[3], input_name="delete-test-batch.non.test.shared.", change_type="DeleteRecordSet",
+                                           error_messages=["User \"ok\" is not authorized."])
