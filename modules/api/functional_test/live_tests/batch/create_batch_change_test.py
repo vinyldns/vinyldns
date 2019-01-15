@@ -2574,4 +2574,4 @@ def test_create_batch_change_for_shared_zone_with_unauthorized_owner_group_id_fa
     }
 
     errors = shared_client.create_batch_change(batch_change_input, status=403)
-    assert_that(errors, is_('User "sharedZoneUser" must be a member of group ' + ok_group['id'] + ' to apply this group to batch changes'))
+    assert_that(errors, is_('User "sharedZoneUser" must be a member of group "' + ok_group['id'] + '" to apply this group to batch changes.'))
