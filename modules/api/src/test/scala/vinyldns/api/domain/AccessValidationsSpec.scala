@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo}
+import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetListInfo}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -278,7 +278,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canViewRecordSet(
+            userAuthNone,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInNone,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -288,7 +293,8 @@ class AccessValidationsSpec
         userAuthRead,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInRead) should be(right)
+        zoneInRead,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Write" in {
@@ -298,7 +304,8 @@ class AccessValidationsSpec
         userAuthWrite,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInWrite) should be(right)
+        zoneInWrite,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -307,7 +314,30 @@ class AccessValidationsSpec
         userAuthDelete,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInDelete) should be(right)
+        zoneInDelete,
+        mockRecordSet.ownerGroupId) should be(right)
+    }
+
+    "return true if the user is in the recordSet owner group and the recordSet is in a shared zone" in {
+      val mockRecordSet = sharedZoneRecord
+      accessValidationTest.canViewRecordSet(
+        okAuth,
+        mockRecordSet.name,
+        mockRecordSet.typ,
+        sharedZone,
+        mockRecordSet.ownerGroupId) should be(right)
+    }
+
+    "return a NotAuthorizedError if the user is in the recordSet owner group but it is not in a shared zone" in {
+      val mockRecordSet = notSharedZoneRecordWithOwnerGroup
+      val error = leftValue(
+        accessValidationTest.canViewRecordSet(
+          okAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          zoneNotAuthorized,
+          mockRecordSet.ownerGroupId))
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
@@ -315,8 +345,36 @@ class AccessValidationsSpec
     "return AccessLevel.Delete if the user is admin/super" in {
       val mockRecordSet = mock[RecordSet]
       val result =
-        accessValidationTest.getAccessLevel(okAuth, mockRecordSet.name, mockRecordSet.typ, okZone)
+        accessValidationTest.getAccessLevel(
+          okAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          okZone,
+          None)
       result shouldBe AccessLevel.Delete
+    }
+
+    "return AccessLevel.Delete if the user is a record owner and zone is shared" in {
+      val recordOwnerAuth = AuthPrincipal(okUser.copy(id = "recordOwner"), Seq(okGroup.id))
+      val result =
+        accessValidationTest.getAccessLevel(
+          recordOwnerAuth,
+          sharedZoneRecord.name,
+          sharedZoneRecord.typ,
+          sharedZone,
+          sharedZoneRecord.ownerGroupId)
+      result shouldBe AccessLevel.Delete
+    }
+
+    "return the result of getAccessLevel if the user is a record owner but zone is not shared" in {
+      val result =
+        accessValidationTest.getAccessLevel(
+          okAuth,
+          notSharedZoneRecordWithOwnerGroup.name,
+          notSharedZoneRecordWithOwnerGroup.typ,
+          zoneNotAuthorized,
+          notSharedZoneRecordWithOwnerGroup.ownerGroupId)
+      result shouldBe AccessLevel.NoAccess
     }
 
     "return AccessLevel.Read if the user is support only" in {
@@ -328,7 +386,8 @@ class AccessValidationsSpec
         supportAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        okZone)
+        okZone,
+        None)
       result shouldBe AccessLevel.Read
     }
 
@@ -340,7 +399,8 @@ class AccessValidationsSpec
         supportAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        okZone)
+        okZone,
+        None)
       result shouldBe AccessLevel.Delete
     }
 
@@ -352,7 +412,12 @@ class AccessValidationsSpec
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
 
       val result =
-        accessValidationTest.getAccessLevel(userAuth, mockRecordSet.name, mockRecordSet.typ, zoneIn)
+        accessValidationTest.getAccessLevel(
+          userAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          zoneIn,
+          None)
       result shouldBe AccessLevel.Write
     }
 
@@ -364,7 +429,12 @@ class AccessValidationsSpec
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
 
       val result =
-        accessValidationTest.getAccessLevel(userAuth, mockRecordSet.name, mockRecordSet.typ, zoneIn)
+        accessValidationTest.getAccessLevel(
+          userAuth,
+          mockRecordSet.name,
+          mockRecordSet.typ,
+          zoneIn,
+          None)
       result shouldBe AccessLevel.Read
     }
   }
@@ -742,7 +812,7 @@ class AccessValidationsSpec
 
       val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
-      val expected = recordList.map(RecordSetInfo(_, AccessLevel.Delete))
+      val expected = recordList.map(RecordSetListInfo(_, AccessLevel.Delete))
       result shouldBe expected
     }
 
@@ -754,7 +824,7 @@ class AccessValidationsSpec
 
       val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
-      val expected = recordList.map(RecordSetInfo(_, AccessLevel.NoAccess))
+      val expected = recordList.map(RecordSetListInfo(_, AccessLevel.NoAccess))
       result shouldBe expected
     }
 
@@ -770,7 +840,7 @@ class AccessValidationsSpec
 
       val result = accessValidationTest.getListAccessLevels(supportAuth, recordList, zone)
 
-      val expected = recordList.map(RecordSetInfo(_, AccessLevel.Read))
+      val expected = recordList.map(RecordSetListInfo(_, AccessLevel.Read))
       result shouldBe expected
     }
 
@@ -791,9 +861,9 @@ class AccessValidationsSpec
       val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
       val expected = List(
-        RecordSetInfo(rs1, AccessLevel.Write),
-        RecordSetInfo(rs2, AccessLevel.NoAccess),
-        RecordSetInfo(rs3, AccessLevel.Read))
+        RecordSetListInfo(rs1, AccessLevel.Write),
+        RecordSetListInfo(rs2, AccessLevel.NoAccess),
+        RecordSetListInfo(rs3, AccessLevel.Read))
       result shouldBe expected
     }
 

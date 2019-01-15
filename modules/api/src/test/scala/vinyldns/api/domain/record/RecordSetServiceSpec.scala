@@ -31,7 +31,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{ListUsersResults, UserRepository}
+import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{AccessLevel, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
@@ -45,6 +45,7 @@ class RecordSetServiceSpec
     with BeforeAndAfterEach {
 
   private val mockZoneRepo = mock[ZoneRepository]
+  private val mockGroupRepo = mock[GroupRepository]
   private val mockRecordRepo = mock[RecordSetRepository]
   private val mockRecordChangeRepo = mock[RecordChangeRepository]
   private val mockUserRepo = mock[UserRepository]
@@ -58,6 +59,7 @@ class RecordSetServiceSpec
 
   val underTest = new RecordSetService(
     mockZoneRepo,
+    mockGroupRepo,
     mockRecordRepo,
     mockRecordChangeRepo,
     mockUserRepo,
@@ -83,12 +85,30 @@ class RecordSetServiceSpec
       result.changeType shouldBe RecordSetChangeType.Create
       result.status shouldBe RecordSetChangeStatus.Pending
     }
+    "fail if the zone is not found" in {
+      val mockZone = okZone.copy(id = "fakeZone")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone(mockZone.id)
+
+      val result = leftResultOf(underTest.getRecordSet(aaaa.id, mockZone.id, okAuth).value)
+      result shouldBe a[ZoneNotFoundError]
+    }
+
     "fail when the account is not authorized" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
+    }
+    "fail if the record already exists" in {
+      val record = aaaa
+
+      doReturn(IO.pure(List(aaaa)))
+        .when(mockRecordRepo)
+        .getRecordSets(okZone.id, record.name, record.typ)
+
+      val result = leftResultOf(underTest.addRecordSet(aaaa, okAuth).value)
+      result shouldBe a[RecordSetAlreadyExists]
     }
     "fail if the record is dotted" in {
       val record =
@@ -339,20 +359,112 @@ class RecordSetServiceSpec
   }
 
   "getRecordSet" should {
-    "return the recordSet" in {
+    doReturn(IO.pure(Some(sharedZone))).when(mockZoneRepo).getZone(sharedZone.id)
+
+    "return the record if user is a zone admin" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(okZone.id, aaaa.id)
-      val result: RecordSet =
+      val expectedRecordSetListInfo = RecordSetInfo(aaaa, None)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val result: RecordSetInfo =
         rightResultOf(underTest.getRecordSet(aaaa.id, okZone.id, okAuth).value)
-      result shouldBe aaaa
+      result shouldBe expectedRecordSetListInfo
     }
-    "fail when the account is not authorized" in {
+
+    "fail if the record does not exist" in {
+      val mockRecord = rsOk.copy(id = "faker")
+
+      doReturn(IO.pure(None))
+        .when(mockRecordRepo)
+        .getRecordSet(okZone.id, mockRecord.id)
+
+      val result = leftResultOf(underTest.getRecordSet(mockRecord.id, okZone.id, okAuth).value)
+
+      result shouldBe a[RecordSetNotFoundError]
+    }
+
+    "return the record if the user is in the recordSet owner group in a shared zone" in {
+      doReturn(IO.pure(Some(sharedZoneRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneRecord.id)
+
+      doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
+
+      val expectedRecordSetListInfo = RecordSetInfo(sharedZoneRecord, Some(okGroup.name))
+      val result: RecordSetInfo =
+        rightResultOf(underTest.getRecordSet(sharedZoneRecord.id, sharedZone.id, okAuth).value)
+      result shouldBe expectedRecordSetListInfo
+    }
+
+    "return the record if the recordSet owner group cannot be found but user is an admin" in {
+      doReturn(IO.pure(Some(sharedZoneRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneRecord.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val expectedRecordSetListInfo = RecordSetInfo(sharedZoneRecord, None)
+
+      val result: RecordSetInfo =
+        rightResultOf(underTest.getRecordSet(sharedZoneRecord.id, sharedZone.id, sharedAuth).value)
+      result shouldBe expectedRecordSetListInfo
+    }
+
+    "fail when the account is not authorized to access the zone" in {
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
       val result = leftResultOf(underTest.getRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value)
       result shouldBe a[NotAuthorizedError]
+    }
+
+    "fail when the account is not authorized for the record" in {
+      doReturn(IO.pure(Some(sharedZoneRecordNoOwnerGroup)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneRecordNoOwnerGroup.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val result =
+        leftResultOf(
+          underTest
+            .getRecordSet(sharedZoneRecordNoOwnerGroup.id, sharedZone.id, okAuth)
+            .value)
+      result shouldBe a[NotAuthorizedError]
+    }
+
+    "fail if the user is only in the recordSet owner group but the zone is not shared" in {
+      doReturn(IO.pure(Some(notSharedZoneRecordWithOwnerGroup)))
+        .when(mockRecordRepo)
+        .getRecordSet(zoneNotAuthorized.id, notSharedZoneRecordWithOwnerGroup.id)
+
+      doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
+
+      val result = leftResultOf(
+        underTest
+          .getRecordSet(notSharedZoneRecordWithOwnerGroup.id, zoneNotAuthorized.id, okAuth)
+          .value)
+      result shouldBe a[NotAuthorizedError]
+    }
+  }
+
+  "getGroupName" should {
+    "return the group name if a record owner group ID is present" in {
+      doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(any[String])
+
+      val result = rightResultOf(underTest.getGroupName(Some(okGroup.id)).value)
+      result shouldBe Some("ok")
+    }
+
+    "return None if a record owner group ID is not present" in {
+      val result = rightResultOf(underTest.getGroupName(None).value)
+      result shouldBe None
     }
   }
 
@@ -375,7 +487,7 @@ class RecordSetServiceSpec
             recordNameFilter = None,
             authPrincipal = okAuth)
           .value)
-      result.recordSets shouldBe List(RecordSetInfo(aaaa, AccessLevel.Delete))
+      result.recordSets shouldBe List(RecordSetListInfo(aaaa, AccessLevel.Delete))
     }
     "return the recordSet for support admin" in {
       doReturn(IO.pure(ListRecordSetResults(List(aaaa))))
@@ -396,7 +508,7 @@ class RecordSetServiceSpec
             authPrincipal = AuthPrincipal(okAuth.signedInUser.copy(isSupport = true), Seq.empty)
           )
           .value)
-      result.recordSets shouldBe List(RecordSetInfo(aaaa, AccessLevel.Read))
+      result.recordSets shouldBe List(RecordSetListInfo(aaaa, AccessLevel.Read))
     }
     "fails when the account is not authorized" in {
       val result = leftResultOf(

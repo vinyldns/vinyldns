@@ -100,7 +100,7 @@ object ZoneSummaryInfo {
     )
 }
 
-case class RecordSetInfo(
+case class RecordSetListInfo(
     zoneId: String,
     name: String,
     typ: RecordType,
@@ -113,8 +113,9 @@ case class RecordSetInfo(
     account: String,
     accessLevel: AccessLevel,
     ownerGroupId: Option[String])
-object RecordSetInfo {
-  def apply(recordSet: RecordSet, accessLevel: AccessLevel): RecordSetInfo = RecordSetInfo(
+
+object RecordSetListInfo {
+  def apply(recordSet: RecordSet, accessLevel: AccessLevel): RecordSetListInfo = RecordSetListInfo(
     zoneId = recordSet.zoneId,
     name = recordSet.name,
     typ = recordSet.typ,
@@ -128,6 +129,38 @@ object RecordSetInfo {
     accessLevel = accessLevel,
     ownerGroupId = recordSet.ownerGroupId
   )
+}
+
+case class RecordSetInfo(
+    zoneId: String,
+    name: String,
+    typ: RecordType,
+    ttl: Long,
+    status: RecordSetStatus,
+    created: DateTime,
+    updated: Option[DateTime],
+    records: List[RecordData],
+    id: String,
+    account: String,
+    ownerGroupId: Option[String],
+    ownerGroupName: Option[String])
+
+object RecordSetInfo {
+  def apply(recordSet: RecordSet, groupName: Option[String]): RecordSetInfo =
+    RecordSetInfo(
+      zoneId = recordSet.zoneId,
+      name = recordSet.name,
+      typ = recordSet.typ,
+      ttl = recordSet.ttl,
+      status = recordSet.status,
+      created = recordSet.created,
+      updated = recordSet.updated,
+      records = recordSet.records,
+      id = recordSet.id,
+      account = recordSet.account,
+      ownerGroupId = recordSet.ownerGroupId,
+      ownerGroupName = groupName
+    )
 }
 
 case class RecordSetChangeInfo(

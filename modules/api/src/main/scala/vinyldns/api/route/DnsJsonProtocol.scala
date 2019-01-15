@@ -23,7 +23,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import vinyldns.api.domain.zone.RecordSetInfo
+import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -36,6 +36,7 @@ trait DnsJsonProtocol extends JsonValidation {
     UpdateZoneInputSerializer,
     ZoneConnectionSerializer,
     RecordSetSerializer,
+    RecordSetListInfoSerializer,
     RecordSetInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
@@ -203,11 +204,31 @@ trait DnsJsonProtocol extends JsonValidation {
         ("ownerGroupId" -> rs.ownerGroupId)
   }
 
-  case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
-    override def fromJson(js: JValue): ValidatedNel[String, RecordSetInfo] =
+  case object RecordSetListInfoSerializer extends ValidationSerializer[RecordSetListInfo] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetListInfo] =
       (
         RecordSetSerializer.fromJson(js),
         (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId"))
+        .mapN(RecordSetListInfo.apply)
+
+    override def toJson(rs: RecordSetListInfo): JValue =
+      ("type" -> Extraction.decompose(rs.typ)) ~
+        ("zoneId" -> rs.zoneId) ~
+        ("name" -> rs.name) ~
+        ("ttl" -> rs.ttl) ~
+        ("status" -> Extraction.decompose(rs.status)) ~
+        ("created" -> Extraction.decompose(rs.created)) ~
+        ("updated" -> Extraction.decompose(rs.updated)) ~
+        ("records" -> Extraction.decompose(rs.records)) ~
+        ("id" -> rs.id) ~
+        ("account" -> rs.account) ~
+        ("accessLevel" -> rs.accessLevel.toString) ~
+        ("ownerGroupId" -> rs.ownerGroupId)
+  }
+
+  case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {
+    override def fromJson(js: JValue): ValidatedNel[String, RecordSetInfo] =
+      (RecordSetSerializer.fromJson(js), (js \ "ownerGroupName").optional[String])
         .mapN(RecordSetInfo.apply)
 
     override def toJson(rs: RecordSetInfo): JValue =
@@ -221,8 +242,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("records" -> Extraction.decompose(rs.records)) ~
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
-        ("accessLevel" -> rs.accessLevel.toString) ~
-        ("ownerGroupId" -> rs.ownerGroupId)
+        ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("ownerGroupName" -> rs.ownerGroupName)
   }
 
   def extractRecords(typ: RecordType, js: JValue): ValidatedNel[String, List[RecordData]] =

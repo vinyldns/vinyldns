@@ -19,13 +19,15 @@ package vinyldns.api.domain.record
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{User, UserRepository}
+import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
+import cats.data._
+import cats.effect.IO
 
 object RecordSetService {
   def apply(
@@ -34,6 +36,7 @@ object RecordSetService {
       accessValidation: AccessValidationAlgebra): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
+      dataAccessor.groupRepository,
       dataAccessor.recordSetRepository,
       dataAccessor.recordChangeRepository,
       dataAccessor.userRepository,
@@ -44,6 +47,7 @@ object RecordSetService {
 
 class RecordSetService(
     zoneRepository: ZoneRepository,
+    groupRepository: GroupRepository,
     recordSetRepository: RecordSetRepository,
     recordChangeRepository: RecordChangeRepository,
     userRepository: UserRepository,
@@ -112,12 +116,18 @@ class RecordSetService(
   def getRecordSet(
       recordSetId: String,
       zoneId: String,
-      authPrincipal: AuthPrincipal): Result[RecordSet] =
+      authPrincipal: AuthPrincipal): Result[RecordSetInfo] =
     for {
       zone <- getZone(zoneId)
       recordSet <- getRecordSet(recordSetId, zone)
-      _ <- canViewRecordSet(authPrincipal, recordSet.name, recordSet.typ, zone).toResult
-    } yield recordSet
+      _ <- canViewRecordSet(
+        authPrincipal,
+        recordSet.name,
+        recordSet.typ,
+        zone,
+        recordSet.ownerGroupId).toResult
+      groupName <- getGroupName(recordSet.ownerGroupId)
+    } yield RecordSetInfo(recordSet, groupName)
 
   def listRecordSets(
       zoneId: String,
@@ -205,5 +215,13 @@ class RecordSetService(
       recordSetChangesInfo = changes.map(change =>
         RecordSetChangeInfo(change, userMap.get(change.userId)))
     } yield recordSetChangesInfo
+  }
+
+  def getGroupName(groupId: Option[String]): Result[Option[String]] = {
+    val groupName = for {
+      input <- OptionT.fromOption[IO](groupId)
+      dbGet <- OptionT(groupRepository.getGroup(input))
+    } yield dbGet.name
+    groupName.value.toResult[Option[String]]
   }
 }

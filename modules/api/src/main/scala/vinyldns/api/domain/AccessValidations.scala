@@ -21,7 +21,7 @@ import vinyldns.api.domain.zone.{
   ACLRuleOrdering,
   NotAuthorizedError,
   PTRACLRuleOrdering,
-  RecordSetInfo
+  RecordSetListInfo
 }
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.{RecordSet, RecordType}
@@ -82,18 +82,20 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit] =
+      zone: Zone,
+      recordOwnerGroupId: Option[String]): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to view " +
         s"$recordName.${zone.name}"))(
-      getAccessLevel(auth, recordName, recordType, zone) != AccessLevel.NoAccess)
+      getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId) != AccessLevel.NoAccess
+    )
 
   def getListAccessLevels(
       auth: AuthPrincipal,
       recordSets: List[RecordSet],
-      zone: Zone): List[RecordSetInfo] =
+      zone: Zone): List[RecordSetListInfo] =
     if (auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
-      recordSets.map(RecordSetInfo(_, AccessLevel.Delete))
+      recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))
     else {
       val rulesForUser = zone.acl.rules.filter(ruleAppliesToUser(auth, _))
 
@@ -117,7 +119,7 @@ object AccessValidations extends AccessValidationAlgebra {
           else
             aclAccessLevel
         }
-        RecordSetInfo(rs, accessLevel)
+        RecordSetListInfo(rs, accessLevel)
       }
     }
 
@@ -180,12 +182,15 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): AccessLevel = auth match {
-    case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) => AccessLevel.Delete
-    case supportUser if supportUser.canReadAll => {
+      zone: Zone,
+      recordOwnerGroupId: Option[String] = None): AccessLevel = auth match {
+    case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) =>
+      AccessLevel.Delete
+    case recordOwner if zone.shared && recordOwnerGroupId.exists(recordOwner.isGroupMember) =>
+      AccessLevel.Delete
+    case supportUser if supportUser.canReadAll =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
-    }
     case _ => getAccessFromAcl(auth, recordName, recordType, zone)
   }
 }

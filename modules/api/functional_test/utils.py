@@ -493,7 +493,7 @@ def get_change_MX_json(input_name, ttl=200, preference=1, exchange="foo.bar.", c
         }
     return json
 
-def get_recordset_json(zone, rname, type, rdata_list, ttl=200):
+def get_recordset_json(zone, rname, type, rdata_list, ttl=200, ownergroup_id=None):
     json = {
         "zoneId": zone['id'],
         "name": rname,
@@ -501,6 +501,9 @@ def get_recordset_json(zone, rname, type, rdata_list, ttl=200):
         "ttl": ttl,
         "records": rdata_list
     }
+    if ownergroup_id is not None:
+        json["ownerGroupId"] = ownergroup_id
+
     return json
 
 def clear_recordset_list(to_delete, client):
