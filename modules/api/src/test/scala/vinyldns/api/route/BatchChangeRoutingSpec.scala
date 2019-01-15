@@ -55,7 +55,9 @@ class BatchChangeRoutingSpec
     val batchChangeLimit = 20
 
     /* Builds BatchChange response */
-    def createBatchChangeResponse(comments: Option[String]): BatchChange =
+    def createBatchChangeResponse(
+        comments: Option[String] = None,
+        ownerGroupId: Option[String] = None): BatchChange =
       BatchChange(
         okAuth.userId,
         okAuth.signedInUser.userName,
@@ -87,7 +89,7 @@ class BatchChangeRoutingSpec
             None,
             "singleDeleteChangeId")
         ),
-        None,
+        ownerGroupId,
         "batchId"
       )
 
@@ -130,7 +132,9 @@ class BatchChangeRoutingSpec
 
     val validResponseWithComments: BatchChange = createBatchChangeResponse(
       Some("validChangeWithComments"))
-    val validResponseWithoutComments: BatchChange = createBatchChangeResponse(None)
+    val validResponseWithoutComments: BatchChange = createBatchChangeResponse()
+    val validResponseWithOwnerGroupId: BatchChange =
+      createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
     val genericValidResponse: BatchChange = createBatchChangeResponse(
       Some("generic valid response"))
     val validListBatchChangeSummariesResponse: BatchChangeSummaryList = BatchChangeSummaryList(
@@ -164,6 +168,9 @@ class BatchChangeRoutingSpec
         case Some("userDoesNotBelongToOwnerGroup") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
             IO.pure(Left(NotAMemberOfOwnerGroup("owner-group-id", "user-name"))))
+        case Some("validChangeWithOwnerGroup") =>
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Right(validResponseWithOwnerGroupId)))
         case Some(_) =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))
       }
@@ -258,6 +265,22 @@ class BatchChangeRoutingSpec
 
         val change = responseAs[JValue]
         compact(change) shouldBe compact(Extraction.decompose(validResponseWithoutComments))
+      }
+    }
+
+    "return a 202 Accepted for valid add and delete request with owner group ID" in {
+      val validRequestWithOwnerGroupId: String =
+        compact(
+          render(("comments" -> "validChangeWithOwnerGroup") ~~ changeList ~~
+            ("ownerGroupId" -> "some-group-id")))
+
+      Post("/zones/batchrecordchanges").withEntity(
+        HttpEntity(ContentTypes.`application/json`, validRequestWithOwnerGroupId)) ~>
+        batchChangeRoute(sharedAuth) ~> check {
+        status shouldBe Accepted
+
+        val change = responseAs[JValue]
+        compact(change) shouldBe compact(Extraction.decompose(validResponseWithOwnerGroupId))
       }
     }
 

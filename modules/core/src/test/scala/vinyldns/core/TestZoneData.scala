@@ -37,7 +37,8 @@ object TestZoneData {
   val zoneIp4: Zone = Zone("0.162.198.in-addr.arpa.", "test@test.com", adminGroupId = abcGroup.id)
   val zoneIp6: Zone =
     Zone("1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.", "test@test.com", adminGroupId = abcGroup.id)
-  val zoneShared: Zone = okZone.copy(name = "shared-zone.", shared = true)
+  val zoneShared: Zone =
+    Zone("shared-zone.", "test@test.com", adminGroupId = okGroup.id, shared = true)
 
   val zoneActive: Zone = Zone(
     "some.zone.name.",

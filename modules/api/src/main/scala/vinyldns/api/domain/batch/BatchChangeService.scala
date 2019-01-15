@@ -163,7 +163,7 @@ class BatchChangeService(
       ownerGroupId: Option[String],
       authPrincipal: AuthPrincipal): BatchResult[Unit] =
     ownerGroupId match {
-      case None => IO(().asRight).toBatchResult
+      case None => ().toRightBatchResult
       case Some(groupId) =>
         for {
           _ <- validateOwnerGroupExists(groupId)
@@ -180,11 +180,12 @@ class BatchChangeService(
       }
       .toBatchResult
 
-  def validateGroupMembership(ownerGroupId: String, authPrincipal: AuthPrincipal): BatchResult[Unit] =
-    IO {
-      if (authPrincipal.isGroupMember(ownerGroupId) || authPrincipal.canEditAll) ().asRight
-      else Left(NotAMemberOfOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
-    }.toBatchResult
+  def validateGroupMembership(
+      ownerGroupId: String,
+      authPrincipal: AuthPrincipal): BatchResult[Unit] = {
+    if (authPrincipal.isGroupMember(ownerGroupId) || authPrincipal.canEditAll) ().asRight
+    else Left(NotAMemberOfOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
+  }.toBatchResult
 
   def zoneDiscovery(
       changes: ValidatedBatch[ChangeInput],

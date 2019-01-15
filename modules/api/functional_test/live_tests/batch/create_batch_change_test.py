@@ -2528,6 +2528,7 @@ def test_create_batch_change_for_shared_zone_updates_recordset_owner_group_id_su
         completed_batch = shared_client.wait_until_batch_change_completed(result)
         to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
 
+        assert_that(result['ownerGroupId'], is_('shared-zone-group'))
         assert_change_success_response_values(result['changes'], zone=shared_zone, index=0, record_name="no-owner-group-id",
                                               input_name="no-owner-group-id.shared.", record_data="4.3.2.1")
         assert_change_success_response_values(result['changes'], zone=shared_zone, index=1, record_name="update",
@@ -2573,4 +2574,4 @@ def test_create_batch_change_for_shared_zone_with_unauthorized_owner_group_id_fa
     }
 
     errors = shared_client.create_batch_change(batch_change_input, status=403)
-    assert_that(errors, is_('User "sharedZoneUser" is not a member of group "' + ok_group['id'] + '". Owner group ID is only required for record set changes in shared zones.'))
+    assert_that(errors, is_('User "sharedZoneUser" must be a member of group ' + ok_group['id'] + ' to apply this group to batch changes'))
