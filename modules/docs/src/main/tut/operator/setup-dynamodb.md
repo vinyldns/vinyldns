@@ -5,8 +5,9 @@ section: "operator_menu"
 ---
 
 # Setup AWS DynamoDB
-[AWS DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html) is the default database
-for _most_ of the data that is stored in VinylDNS.  The following tables are used in VinylDNS:
+[AWS DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html) is currently the default database
+for _most_ of the data that is stored in our instance of VinylDNS. However, all table implementations are available in MySQL
+ (see [Setup MySQL Guide](setup-mysql) for more information). The following tables are present in DynamoDB in our instance of VinylDNS:
 
 * [RecordSet](#recordset-table) - holds record data
 * [RecordSetChange](#recordsetchange-table) - audit history of all changes made to records

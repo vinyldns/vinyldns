@@ -11,7 +11,7 @@ section: "operator_menu"
 ## Configuration
 - [Configuration Overview](#configuration-overview)
 - [Configuration API Server](#configuring-api-server)
-- [AWS SQS](#aws-sqs)
+- [Queue Configuration](#queue-configuration)
 - [Database Configuration](#database-configuration)
 - [Cryptography](#cryptography-settings)
 - [Additional Configuration Settings](#additional-configuration-settings)
@@ -150,22 +150,25 @@ VinylDNS supports both DynamoDB and MySQL backends. You can enable all repos in 
 For each backend, you need to configure the table(s) that should be loaded.
 
 You must have all of the following required API repositories configured in exactly one datastore.
-**At the moment, not all repositories are implemented in both datastores, but we are actively working on expanding
-MySQL support to all repositories**:
-- record-set (dynamodb only)
-- record-change (dynamodb only)
-- zone-change (mysql or dynamodb)
-- user (dynamodb only)
-- group (dynamodb only)
-- group-change (dynamodb only)
-- membership (dynamodb only)
-- zone (mysql only)
-- batch-change (mysql only)
+**Some repositories are implemented in DynamoDB, all repositories have MySQL support**:
 
+| Repository | DynamoDB support | MySQL support |
+| :---       |       :---:      |     :---:     |
+| BatchChange  |                 |       X       |
+| Group  |        X         |       X       |
+| GroupChange  |        X         |       X       |
+| Membership  |        X         |       X       |
+| RecordSet |        X         |       X       |
+| RecordSetChange  |        X         |       X       |
+| User  |        X         |       X       |
+| UserChange  |        X         |       X       |
+| Zone  |                 |       X       |
+| ZoneChange  |        X         |       X       |
 
-If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
 
 If using MySQL, follow the [MySQL Setup Guide](setup-mysql) first to get the values you need to configure here.
+
+If using DynamoDB, follow the [AWS DynamoDB Setup Guide](setup-dynamodb) first to get the values you need to configure here.
 
 
 ```yaml
@@ -173,6 +176,72 @@ vinyldns {
 
   # this list should include only the datastores being used by your instance
   data-stores = ["mysql", "dynamodb"]
+  
+  mysql {
+    
+    # this is the path to the mysql provider. This should not be edited
+    # from the default in reference.conf
+    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
+    
+    settings {
+      # the name of the database, recommend to leave this as is
+      name = "vinyldns"
+      
+      # the jdbc driver, recommended to leave this as is
+      driver = "org.mariadb.jdbc.Driver"
+  
+      # the URL used to create the schema, typically this will be without the "database" name
+      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+  
+      # the main connection URL
+      url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
+  
+      # the user to connect to MySQL
+      user = "root"
+  
+      # the password to connect to MySQL
+      password = "pass"
+  
+      ## see https://github.com/brettwooldridge/HikariCP for more detail on the following fields
+      # the maximum number of connections to scale the connection pool to
+      maximum-pool-size = 20
+  
+      # the maximum number of milliseconds to wait for a connection from the connection pool
+      connection-timeout-millis = 1000
+      
+      # the minimum number of idle connections that HikariCP tries to maintain in the pool
+      minimum-idle = 10
+            
+      # the maximum number of milliseconds that a connection is can sit idle in the pool
+      idle-timeout = 10000
+  
+      # The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit
+      max-lifetime = 600000
+      
+      # controls whether JMX MBeans are registered
+      register-mbeans = true
+      
+      # my-sql-properties allows you to include any additional mysql performance settings you want.
+      # Note that the properties within my-sql-properties must be camel case!
+      # see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration for guidance
+      my-sql-properties {
+        prepStmtCacheSize = 300
+        prepStmtCacheSqlLimit = 2048
+        cachePrepStmts = true
+        useServerPrepStmts = true
+        rewriteBatchedStatements = true
+      }
+    }
+    
+    repositories {
+      # all repositories with config sections here will be enabled in mysql
+      zone {
+        # no additional settings for repositories enabled in mysql
+      },
+      batch-change {
+      }
+    }
+  }
   
   dynamodb {
       
@@ -233,72 +302,6 @@ vinyldns {
         table-name = "membershipTest"
         provisioned-reads = 30
         provisioned-writes = 20
-      }
-    }
-  }
-  
-  mysql {
-    
-    # this is the path to the mysql provider. This should not be edited
-    # from the default in reference.conf
-    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
-    
-    settings {
-      # the name of the database, recommend to leave this as is
-      name = "vinyldns"
-      
-      # the jdbc driver, recommended to leave this as is
-      driver = "org.mariadb.jdbc.Driver"
-
-      # the URL used to create the schema, typically this will be without the "database" name
-      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
-
-      # the main connection URL
-      url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
-
-      # the user to connect to MySQL
-      user = "root"
-
-      # the password to connect to MySQL
-      password = "pass"
-
-      ## see https://github.com/brettwooldridge/HikariCP for more detail on the following fields
-      # the maximum number of connections to scale the connection pool to
-      maximum-pool-size = 20
-
-      # the maximum number of milliseconds to wait for a connection from the connection pool
-      connection-timeout-millis = 1000
-      
-      # the minimum number of idle connections that HikariCP tries to maintain in the pool
-      minimum-idle = 10
-            
-      # the maximum number of milliseconds that a connection is can sit idle in the pool
-      idle-timeout = 10000
-
-      # The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit
-      max-lifetime = 600000
-      
-      # controls whether JMX MBeans are registered
-      register-mbeans = true
-      
-      # my-sql-properties allows you to include any additional mysql performance settings you want.
-      # Note that the properties within my-sql-properties must be camel case!
-      # see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration for guidance
-      my-sql-properties {
-        prepStmtCacheSize = 300
-        prepStmtCacheSqlLimit = 2048
-        cachePrepStmts = true
-        useServerPrepStmts = true
-        rewriteBatchedStatements = true
-      }
-    }
-    
-    repositories {
-      # all repositories with config sections here will be enabled in mysql
-      zone {
-        # no additional settings for repositories enabled in mysql
-      },
-      batch-change {
       }
     }
   }

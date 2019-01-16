@@ -61,17 +61,29 @@ The user information will be pulled from LDAP, and inserted into the VinylDNS Us
 * `GroupChangeRepository` - Holds changes to groups and membership
 * `BatchChangeRepository` - VinylDNS allows users to submit multiple record changes _across_ DNS zones at the same time within a `Batch`
 The `BatchChangeRepository` holds the batch itself and all individual changes that executed in the batch.
-* `UserChangeRepository` - Holds changes to users
-
-**Note: The UserChangeRepository is currently only used in the portal, and lives outside of the api.  This will be moved
-alongside the other repositories in the near future.**
+* `UserChangeRepository` - Holds changes to users. Currently only used in the portal.
 
 ## Database Types
+### MySQL
+VinylDNS has implemented MySQL for all repositories so a MySQL-only instance of VinylDNS is possible. Furthermore, there are two
+repositories that have _only_ been implemented in MySQL:
+
+1. ZoneRepository
+1. BatchChangeRepository
+
+Originally, the `ZoneRepository` lived in DynamoDB.  However, the access controls in VinylDNS made it very difficult
+to use DynamoDB as the query interface is limited.  A SQL interface with `JOIN`s was required.
+
+It should also be noted that all of the repositories have also been implemented in MySQL despite most currently running
+in DynamoDB in our VinylDNS instance.
+
+Review the [Setup MySQL Guide](setup-mysql) for more information.
+
 ### AWS DynamoDB
 VinylDNS has gone through several architecture evolutions.  Along the way, DynamoDB was chosen as the data store due to
 the volume of data at Comcast.  It is an excellent key-value store with extremely high performance characteristics.
 
-VinylDNS uses DynamoDB presently for the following repositories:
+VinylDNS has implemented DynamoDB for the following repositories:
 
 1. RecordSetRepository
 1. RecordChangeRepository
@@ -82,18 +94,10 @@ VinylDNS uses DynamoDB presently for the following repositories:
 1. GroupChangeRepository
 1. UserChangeRepository
 
+Currently using DynamoDB would also require the user to either use MySQL for the batch change and zone repositories or also provide
+an implementation for those repositories in a different data store.
+
 Review the [Setup AWS DynamoDB Guide](setup-dynamodb) for more information.
-
-### MySQL
-VinylDNS currently uses MySQL only for the following repositories:
-
-1. ZoneRepository
-1. BatchChangeRepository
-
-Originally, the `ZoneRepository` lived in DynamoDB.  However, the access controls in VinylDNS made it very difficult
-to use DynamoDB as the query interface is limited.  A SQL interface with `JOIN`s was required.
-
-Review the [Setup MySQL Guide](setup-mysql) for more information.
 
 ## Message Queues
 Most operations that take place in VinylDNS use a message queue.  These operations require high-availability, fault-tolerance
@@ -104,7 +108,7 @@ fault-tolerance and throttling requirements.
 
 ## Message Queue Types
 ### AWS SQS
-VinylDNS uses AWS SQS as its message queue.  SQS has the following characteristics:
+Our VinylDNS instance uses AWS SQS to fulfill its message queue service needs.  SQS has the following characteristics:
 
 1. High-Availability
 1. Retry - in the event that a message cannot be processed, or if a node fails midstream processing, it will be automatically
@@ -116,6 +120,12 @@ bottlenecks in processing could cause an increase in heap pressure in the API no
 The price to use SQS is in the single digit dollars per month.  VinylDNS can be tuned to run exclusively in the _free tier_.
 
 Review the [Setup AWS SQS Guide](setup-sqs) for more information.
+
+### MySQL
+VinylDNS has also implemented a message queue using MySQL, which incorporates the features that we currently utilize through AWS SQS
+such as changing visibility timeout and re-queuing operations.
+
+Review the [Setup MySQL Guide](setup-mysql) for more information.
 
 ## LDAP
 VinylDNS uses LDAP in order to authenticate users in the **Portal**.  LDAP is **not** used in the API, instead the API uses
