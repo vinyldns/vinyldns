@@ -125,7 +125,7 @@ class ZoneServiceSpec
 
       val error = leftResultOf(underTest.connectToZone(createZoneAuthorized, okAuth).value)
 
-      error shouldBe an[InvalidZoneAdminError]
+      error shouldBe an[InvalidGroupError]
     }
 
     "allow the zone to be created if it exists and the zone is deleted" in {

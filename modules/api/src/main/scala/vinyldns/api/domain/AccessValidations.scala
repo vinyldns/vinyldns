@@ -60,8 +60,9 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit] = {
-    val accessLevel = getAccessLevel(auth, recordName, recordType, zone)
+      zone: Zone,
+      recordOwnerGroupId: Option[String]): Either[Throwable, Unit] = {
+    val accessLevel = getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId)
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to update " +
         s"$recordName.${zone.name}"))(

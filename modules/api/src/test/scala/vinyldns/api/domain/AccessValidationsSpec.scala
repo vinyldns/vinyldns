@@ -50,7 +50,6 @@ class AccessValidationsSpec
     ACLRule(AccessLevel.Read, userId = None, groupId = Some("bad-group"))
 
   private val accessValidationTest = AccessValidations
-
   private val groupIds = Seq(okGroup.id, twoUserGroup.id)
   private val userAccessNone = okUser.copy(id = "NoAccess")
   private val userAuthNone = AuthPrincipal(userAccessNone, groupIds)
@@ -220,7 +219,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canUpdateRecordSet(
+            userAuthNone,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInNone,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -229,7 +233,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead))
+          .canUpdateRecordSet(
+            userAuthRead,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInRead,
+            mockRecordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -239,7 +248,8 @@ class AccessValidationsSpec
         userAuthWrite,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInWrite) should be(right)
+        zoneInWrite,
+        mockRecordSet.ownerGroupId) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
@@ -252,7 +262,36 @@ class AccessValidationsSpec
         userAuth,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneIn) should be(right)
+        zoneIn,
+        mockRecordSet.ownerGroupId) should be(right)
+    }
+
+    "return true if the user is in the owner group and the zone is shared" in {
+      val zone = okZone.copy(shared = true)
+      val record = aaaa.copy(zoneId = zone.id, ownerGroupId = Some(oneUserDummyGroup.id))
+      val userAccess = listOfDummyUsers.head
+      val userAuth = AuthPrincipal(userAccess, Seq(oneUserDummyGroup.id))
+      accessValidationTest.canUpdateRecordSet(
+        userAuth,
+        record.name,
+        record.typ,
+        zone,
+        Some(oneUserDummyGroup.id)
+      ) should be(right)
+    }
+
+    "return false if the user is in the owner group and the zone is not shared" in {
+      val zone = okZone.copy(shared = false)
+      val record = aaaa.copy(zoneId = zone.id, ownerGroupId = Some(oneUserDummyGroup.id))
+      val userAccess = listOfDummyUsers.head
+      val userAuth = AuthPrincipal(userAccess, Seq(oneUserDummyGroup.id))
+      accessValidationTest.canUpdateRecordSet(
+        userAuth,
+        record.name,
+        record.typ,
+        zone,
+        Some(oneUserDummyGroup.id)
+      ) should be(left)
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
@@ -261,7 +300,7 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+          .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -271,7 +310,8 @@ class AccessValidationsSpec
       val zone = okZone.copy(isTest = true)
 
       accessValidationTest
-        .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
+        .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone, None) should be(
+        right)
     }
   }
 

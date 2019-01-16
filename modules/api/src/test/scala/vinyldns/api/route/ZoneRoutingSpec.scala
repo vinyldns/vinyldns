@@ -129,7 +129,7 @@ class ZoneRoutingSpec
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$createZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$createZoneInput"))
         case notAuthorized.email => Left(NotAuthorizedError(s"$createZoneInput"))
-        case badAdminId.email => Left(InvalidZoneAdminError(s"$createZoneInput"))
+        case badAdminId.email => Left(InvalidGroupError(s"$createZoneInput"))
         case ok.email | connectionOk.email | trailingDot.email | "invalid-zone-status@test.com" =>
           Right(
             zoneCreate.copy(
@@ -152,7 +152,7 @@ class ZoneRoutingSpec
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$updateZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$updateZoneInput"))
         case notAuthorized.email => Left(NotAuthorizedError(s"$updateZoneInput"))
-        case badAdminId.email => Left(InvalidZoneAdminError(s"$updateZoneInput"))
+        case badAdminId.email => Left(InvalidGroupError(s"$updateZoneInput"))
         case ok.email | connectionOk.email =>
           Right(
             zoneUpdate.copy(

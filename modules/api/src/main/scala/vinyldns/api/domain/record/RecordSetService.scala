@@ -28,6 +28,7 @@ import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
+import cats.implicits._
 
 object RecordSetService {
   def apply(
@@ -72,6 +73,8 @@ class RecordSetService(
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
+      _ <- ownerGroupExists(recordSet.ownerGroupId)
+      _ <- canUseOwnerGroup(recordSet.ownerGroupId, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificAddValidations(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- messageQueue.send(change).toResult[Unit]
@@ -85,7 +88,9 @@ class RecordSetService(
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone).toResult
+      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
+      _ <- ownerGroupExists(rsForValidations.ownerGroupId)
+      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, auth).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -224,4 +229,17 @@ class RecordSetService(
     } yield dbGet.name
     groupName.value.toResult[Option[String]]
   }
+
+  def ownerGroupExists(groupId: Option[String]): Result[Option[String]] =
+    groupId match {
+      case Some(id) =>
+        groupRepository
+          .getGroup(id)
+          .map {
+            case Some(_) => groupId.asRight
+            case None => InvalidGroupError(s"Owner group with id $id not found").asLeft
+          }
+          .toResult
+      case None => groupId.toResult
+    }
 }

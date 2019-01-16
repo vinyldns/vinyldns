@@ -154,7 +154,7 @@ trait ZoneRoute extends Directives {
       case Left(ZoneValidationFailed(zone, errors, _)) =>
         complete(StatusCodes.BadRequest, ZoneRejected(zone, errors))
       case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-      case Left(InvalidZoneAdminError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
       case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
       case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
       case Left(InvalidSyncStateError(msg)) => complete(StatusCodes.BadRequest, msg)

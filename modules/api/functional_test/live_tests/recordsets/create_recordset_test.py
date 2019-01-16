@@ -1752,3 +1752,52 @@ def test_no_add_access_non_test_zone(shared_zone_test_context):
     zone = shared_zone_test_context.non_test_shared_zone
     record = get_recordset_json(zone, 'non-test-zone-A', 'A', [{'address': '1.2.3.4'}])
     client.create_recordset(record, status=403)
+
+
+def test_create_with_owner_group_passes(shared_zone_test_context):
+    """
+    Test that creating a record with an owner group passes
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+    group = shared_zone_test_context.shared_record_group
+    create_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = group['id']
+        create_response = client.create_recordset(record_json, status=202)
+        create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+    finally:
+        if create_rs:
+            delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_create_with_not_found_owner_group_fails(shared_zone_test_context):
+    """
+    Test that creating a record with a owner group that doesn't exist fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+
+    record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+    record_json['ownerGroupId'] = 'no-existo'
+    client.create_recordset(record_json, status=422)
+
+
+def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context):
+    """
+    Test that creating a record with a owner group that the user is not in fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+    group = shared_zone_test_context.dummy_group
+
+    record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+    record_json['ownerGroupId'] = group['id']
+    client.create_recordset(record_json, status=422)

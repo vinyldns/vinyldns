@@ -331,5 +331,41 @@ class RecordSetValidationsSpec
         isNotHighValueDomain(recordAAAA, zoneAAAA) should be(right)
       }
     }
+
+    "canUseOwnerGroup" should {
+      "fail if user is not in owner group" in {
+        val auth = okAuth.copy(memberGroupIds = Seq("foo"))
+        val ownerGroupId = Some("bar")
+
+        leftValue(canUseOwnerGroup(ownerGroupId, auth)) shouldBe a[InvalidRequest]
+      }
+      "pass if user is not in owner group but super" in {
+        val auth = okAuth.copy(
+          memberGroupIds = Seq("foo"),
+          signedInUser = okAuth.signedInUser.copy(isSuper = true))
+        val ownerGroupId = Some("bar")
+
+        canUseOwnerGroup(ownerGroupId, auth) should be(right)
+      }
+      "pass if user is in owner group and super" in {
+        val auth = okAuth.copy(
+          memberGroupIds = Seq("foo"),
+          signedInUser = okAuth.signedInUser.copy(isSuper = true))
+        val ownerGroupId = Some("foo")
+
+        canUseOwnerGroup(ownerGroupId, auth) should be(right)
+      }
+      "pass if user is in owner group and not super" in {
+        val auth = okAuth.copy(memberGroupIds = Seq("foo"))
+        val ownerGroupId = Some("foo")
+
+        canUseOwnerGroup(ownerGroupId, auth) should be(right)
+      }
+      "pass if owner group is None" in {
+        val ownerGroupId = None
+
+        canUseOwnerGroup(ownerGroupId, okAuth) should be(right)
+      }
+    }
   }
 }

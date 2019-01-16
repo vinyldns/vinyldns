@@ -158,6 +158,7 @@ trait RecordSetRoute extends Directives {
       case Left(InvalidRequest(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
       case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
       case Left(RecordSetChangeNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(InvalidGroupError(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
       case Left(e) => failWith(e)
     }
 }

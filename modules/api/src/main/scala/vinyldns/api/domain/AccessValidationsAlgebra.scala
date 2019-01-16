@@ -41,7 +41,8 @@ trait AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit]
+      zone: Zone,
+      recordOwnerGroupId: Option[String]): Either[Throwable, Unit]
 
   def canDeleteRecordSet(
       auth: AuthPrincipal,
