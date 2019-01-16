@@ -264,6 +264,11 @@ def add_ok_acl_rules(test_context, rules):
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
+def add_shared_zone_acl_rules(test_context, rules):
+    updated_zone = add_rules_to_zone(test_context.shared_zone, rules)
+    update_change = test_context.shared_zone_vinyldns_client.update_zone(updated_zone, status=202)
+    test_context.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
 def add_ip4_acl_rules(test_context, rules):
     updated_zone = add_rules_to_zone(test_context.ip4_reverse_zone, rules)
     update_change = test_context.ok_vinyldns_client.update_zone(updated_zone, status=202)
@@ -308,6 +313,12 @@ def clear_ok_acl_rules(test_context):
     zone['acl']['rules'] = []
     update_change = test_context.ok_vinyldns_client.update_zone(zone, status=202)
     test_context.ok_vinyldns_client.wait_until_zone_change_status_synced(update_change)
+
+def clear_shared_zone_acl_rules(test_context):
+    zone = test_context.shared_zone
+    zone['acl']['rules'] = []
+    update_change = test_context.shared_zone_vinyldns_client.update_zone(zone, status=202)
+    test_context.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(update_change)
 
 def clear_ip4_acl_rules(test_context):
     zone = test_context.ip4_reverse_zone

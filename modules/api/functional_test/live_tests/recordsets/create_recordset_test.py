@@ -1754,9 +1754,9 @@ def test_no_add_access_non_test_zone(shared_zone_test_context):
     client.create_recordset(record, status=403)
 
 
-def test_create_with_owner_group_passes(shared_zone_test_context):
+def test_create_with_owner_group_in_private_zone_by_admin_passes(shared_zone_test_context):
     """
-    Test that creating a record with an owner group passes
+    Test that creating a record with an owner group in a non shared zone by a zone admin passes
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -1765,7 +1765,7 @@ def test_create_with_owner_group_passes(shared_zone_test_context):
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_shared_owner_group_success', 'A', [{'address': '1.1.1.1'}])
         record_json['ownerGroupId'] = group['id']
         create_response = client.create_recordset(record_json, status=202)
         create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
@@ -1776,6 +1776,95 @@ def test_create_with_owner_group_passes(shared_zone_test_context):
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+def test_create_with_owner_group_in_shared_zone_by_admin_passes(shared_zone_test_context):
+    """
+    Test that creating a record with an owner group in a shared zone by a zone admin passes
+    """
+
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    group = shared_zone_test_context.shared_record_group
+    create_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_admin_success', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = group['id']
+        create_response = client.create_recordset(record_json, status=202)
+        create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+    finally:
+        if create_rs:
+            delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_create_with_owner_group_in_private_zone_by_acl_passes(shared_zone_test_context):
+    """
+    Test that creating a record with an owner group in a non shared zone by a user with acl access passes
+    """
+
+    client = shared_zone_test_context.dummy_vinyldns_client
+    acl_rule = generate_acl_rule('Write', userId='dummy')
+    zone = shared_zone_test_context.ok_zone
+    group = shared_zone_test_context.dummy_group
+    create_rs = None
+
+    try:
+        add_ok_acl_rules(shared_zone_test_context, [acl_rule])
+
+        record_json = get_recordset_json(zone, 'test_ownergroup_success-acl', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = group['id']
+        create_response = client.create_recordset(record_json, status=202)
+        create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+    finally:
+        clear_ok_acl_rules(shared_zone_test_context)
+        if create_rs:
+            delete_result = shared_zone_test_context.ok_vinyldns_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_create_with_owner_group_in_shared_zone_by_acl_passes(shared_zone_test_context):
+    """
+    Test that creating a record with an owner group in a shared zone by a user with acl access passes
+    """
+
+    client = shared_zone_test_context.dummy_vinyldns_client
+    acl_rule = generate_acl_rule('Write', userId='dummy')
+    zone = shared_zone_test_context.shared_zone
+    group = shared_zone_test_context.dummy_group
+    create_rs = None
+
+    try:
+        add_shared_zone_acl_rules(shared_zone_test_context, [acl_rule])
+
+        record_json = get_recordset_json(zone, 'test_shared_success_acl', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = group['id']
+        create_response = client.create_recordset(record_json, status=202)
+        create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+    finally:
+        clear_shared_zone_acl_rules(shared_zone_test_context)
+        if create_rs:
+            delete_result = shared_zone_test_context.shared_zone_vinyldns_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            shared_zone_test_context.shared_zone_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_create_in_shared_zone_by_non_unassociated_user_fails(shared_zone_test_context):
+    """
+    Test that creating a record in a shared zone by a user with no write permissions fails
+    """
+
+    client = shared_zone_test_context.dummy_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    group = shared_zone_test_context.dummy_group
+
+    record_json = get_recordset_json(zone, 'test_shared_bad_user', 'A', [{'address': '1.1.1.1'}])
+    record_json['ownerGroupId'] = group['id']
+    error = client.create_recordset(record_json, status=403)
+    assert_that(error, is_('User dummy does not have access to create test-shared-bad-user.shared.'))
+
+
 def test_create_with_not_found_owner_group_fails(shared_zone_test_context):
     """
     Test that creating a record with a owner group that doesn't exist fails
@@ -1784,7 +1873,7 @@ def test_create_with_not_found_owner_group_fails(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ok_zone
 
-    record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+    record_json = get_recordset_json(zone, 'test_shared_bad_owner', 'A', [{'address': '1.1.1.1'}])
     record_json['ownerGroupId'] = 'no-existo'
     client.create_recordset(record_json, status=422)
 
@@ -1798,6 +1887,7 @@ def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context)
     zone = shared_zone_test_context.ok_zone
     group = shared_zone_test_context.dummy_group
 
-    record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+    record_json = get_recordset_json(zone, 'test_shared_not_group_member', 'A', [{'address': '1.1.1.1'}])
     record_json['ownerGroupId'] = group['id']
-    client.create_recordset(record_json, status=422)
+    error = client.create_recordset(record_json, status=422)
+    assert_that(error, is_('User not in record owner group ' + group['id']))

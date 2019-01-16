@@ -25,6 +25,7 @@ import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 
@@ -210,12 +211,12 @@ object RecordSetValidations {
   }
 
   def canUseOwnerGroup(
-      groupId: Option[String],
+      group: Option[Group],
       authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
-    groupId match {
-      case Some(id) if authPrincipal.signedInUser.isSuper || authPrincipal.isGroupMember(id) =>
+    group match {
+      case Some(g) if authPrincipal.signedInUser.isSuper || authPrincipal.isGroupMember(g.id) =>
         ().asRight
       case None => ().asRight
-      case _ => InvalidRequest(s"User not in record owner group $groupId").asLeft
+      case Some(g) => InvalidRequest(s"User not in record owner group ${g.id}").asLeft
     }
 }

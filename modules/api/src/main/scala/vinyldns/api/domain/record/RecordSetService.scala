@@ -19,7 +19,7 @@ package vinyldns.api.domain.record
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.ListRecordSetsResponse
@@ -73,8 +73,8 @@ class RecordSetService(
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
-      _ <- ownerGroupExists(recordSet.ownerGroupId)
-      _ <- canUseOwnerGroup(recordSet.ownerGroupId, auth).toResult
+      ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
+      _ <- canUseOwnerGroup(ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificAddValidations(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- messageQueue.send(change).toResult[Unit]
@@ -89,8 +89,8 @@ class RecordSetService(
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
-      _ <- ownerGroupExists(rsForValidations.ownerGroupId)
-      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, auth).toResult
+      ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
+      _ <- canUseOwnerGroup(ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -230,16 +230,16 @@ class RecordSetService(
     groupName.value.toResult[Option[String]]
   }
 
-  def ownerGroupExists(groupId: Option[String]): Result[Option[String]] =
+  def getGroupIfProvided(groupId: Option[String]): Result[Option[Group]] =
     groupId match {
       case Some(id) =>
         groupRepository
           .getGroup(id)
           .map {
-            case Some(_) => groupId.asRight
-            case None => InvalidGroupError(s"Owner group with id $id not found").asLeft
+            case Some(group) => Some(group).asRight
+            case None => InvalidGroupError(s"""Owner group with id "$id" not found""").asLeft
           }
           .toResult
-      case None => groupId.toResult
+      case None => Option.empty[Group].toResult
     }
 }

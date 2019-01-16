@@ -25,6 +25,8 @@ import vinyldns.api.domain.zone.{InvalidRequest, PendingUpdateError, RecordSetAl
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record._
 
 class RecordSetValidationsSpec
@@ -335,36 +337,34 @@ class RecordSetValidationsSpec
     "canUseOwnerGroup" should {
       "fail if user is not in owner group" in {
         val auth = okAuth.copy(memberGroupIds = Seq("foo"))
-        val ownerGroupId = Some("bar")
+        val ownerGroup = Group(id = "bar", name = "test", email = "test@test.com")
 
-        leftValue(canUseOwnerGroup(ownerGroupId, auth)) shouldBe a[InvalidRequest]
+        leftValue(canUseOwnerGroup(Some(ownerGroup), auth)) shouldBe a[InvalidRequest]
       }
       "pass if user is not in owner group but super" in {
         val auth = okAuth.copy(
           memberGroupIds = Seq("foo"),
           signedInUser = okAuth.signedInUser.copy(isSuper = true))
-        val ownerGroupId = Some("bar")
+        val ownerGroup = Group(id = "bar", name = "test", email = "test@test.com")
 
-        canUseOwnerGroup(ownerGroupId, auth) should be(right)
+        canUseOwnerGroup(Some(ownerGroup), auth) should be(right)
       }
       "pass if user is in owner group and super" in {
         val auth = okAuth.copy(
           memberGroupIds = Seq("foo"),
           signedInUser = okAuth.signedInUser.copy(isSuper = true))
-        val ownerGroupId = Some("foo")
+        val ownerGroup = Group(id = "foo", name = "test", email = "test@test.com")
 
-        canUseOwnerGroup(ownerGroupId, auth) should be(right)
+        canUseOwnerGroup(Some(ownerGroup), auth) should be(right)
       }
       "pass if user is in owner group and not super" in {
         val auth = okAuth.copy(memberGroupIds = Seq("foo"))
-        val ownerGroupId = Some("foo")
+        val ownerGroup = Group(id = "foo", name = "test", email = "test@test.com")
 
-        canUseOwnerGroup(ownerGroupId, auth) should be(right)
+        canUseOwnerGroup(Some(ownerGroup), auth) should be(right)
       }
       "pass if owner group is None" in {
-        val ownerGroupId = None
-
-        canUseOwnerGroup(ownerGroupId, okAuth) should be(right)
+        canUseOwnerGroup(None, okAuth) should be(right)
       }
     }
   }
