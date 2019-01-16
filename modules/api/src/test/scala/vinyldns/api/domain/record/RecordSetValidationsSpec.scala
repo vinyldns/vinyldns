@@ -22,15 +22,16 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone.{InvalidRequest, PendingUpdateError, RecordSetAlreadyExists}
-import vinyldns.api.{ResultHelpers, VinylDNSTestData}
-import vinyldns.core.domain.record.{NSData, RecordSet, RecordSetStatus, SOAData}
+import vinyldns.api.ResultHelpers
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.record._
 
 class RecordSetValidationsSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers
-    with VinylDNSTestData
     with EitherMatchers {
 
   import RecordSetValidations._
@@ -233,6 +234,7 @@ class RecordSetValidationsSpec
     }
 
     "NSValidations" should {
+      val invalidNsRecordToOrigin: RecordSet = ns.copy(name = "@")
       "return ok if the record is an NS record but not origin" in {
         val valid = invalidNsRecordToOrigin.copy(
           name = "this-is-not-origin-mate",
@@ -266,6 +268,7 @@ class RecordSetValidationsSpec
     }
 
     "CnameValidations" should {
+      val invalidCnameToOrigin: RecordSet = cname.copy(name = "@")
       "return a RecordSetAlreadyExistsError if a record with the same name exists and creating a cname" in {
         val error = leftValue(cnameValidations(cname, List(aaaa), okZone))
         error shouldBe a[RecordSetAlreadyExists]

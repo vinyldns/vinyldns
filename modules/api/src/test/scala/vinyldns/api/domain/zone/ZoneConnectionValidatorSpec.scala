@@ -25,7 +25,7 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
-import vinyldns.api.{ResultHelpers, VinylDNSTestData}
+import vinyldns.api.ResultHelpers
 import cats.effect._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
 
@@ -35,7 +35,6 @@ class ZoneConnectionValidatorSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
-    with VinylDNSTestData
     with BeforeAndAfterEach
     with ResultHelpers
     with EitherMatchers {

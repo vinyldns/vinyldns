@@ -20,7 +20,8 @@ import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.{ResultHelpers, VinylDNSTestData}
+import vinyldns.api.ResultHelpers
+import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, ZoneACL}
 
@@ -29,7 +30,6 @@ class ZoneValidationsSpec
     with Matchers
     with MockitoSugar
     with ResultHelpers
-    with VinylDNSTestData
     with EitherMatchers {
 
   val testing = new ZoneValidations(syncDelayMillis = 10000)

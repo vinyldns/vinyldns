@@ -22,7 +22,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
+import vinyldns.core.TestZoneData.zoneChangePending
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone.{
   ZoneChange,
@@ -31,11 +31,7 @@ import vinyldns.core.domain.zone.{
   ZoneRepository
 }
 
-import scala.concurrent.ExecutionContext
-
-class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar with VinylDNSTestData {
-
-  implicit val ec = ExecutionContext.global
+class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar {
 
   "ZoneChangeHandler" should {
     "save the zone change and zone" in {
