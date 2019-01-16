@@ -200,7 +200,7 @@ class BatchChangeJsonProtocolSpec
   }
 
   "De-serializing BatchChangeInput from JSON" should {
-    "successfully serialize valid add change data when comment is provided" in {
+    "successfully serialize valid add change data with comment and without owner group ID" in {
       val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithComment).value
 
       result shouldBe BatchChangeInput(
@@ -208,7 +208,7 @@ class BatchChangeJsonProtocolSpec
         List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput))
     }
 
-    "successfully serialize valid add change data when no comment is provided" in {
+    "successfully serialize valid add change data without comment and owner group ID" in {
       val result = BatchChangeInputSerializer.fromJson(addChangeList).value
 
       result shouldBe BatchChangeInput(
@@ -216,7 +216,7 @@ class BatchChangeJsonProtocolSpec
         List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput))
     }
 
-    "successfully serialize valid add and delete change data when no comment is provided" in {
+    "successfully serialize valid add and delete change data without comment and owner group ID" in {
       val result = BatchChangeInputSerializer.fromJson(addDeleteChangeList).value
 
       result shouldBe BatchChangeInput(
@@ -224,14 +224,38 @@ class BatchChangeJsonProtocolSpec
         List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput))
     }
 
-    "successfully serialize valid add change when owner group ID is provided" in {
-      val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithOwnerGroupId).value
-
-      result shouldBe BatchChangeInput(
+    "successfully serialize valid add and delete change with comment and owner group ID" in {
+      val batchChange = BatchChangeInput(
         Some("some comment"),
-        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput),
+        List(
+          deleteAChangeInput,
+          addAChangeInput,
+          addAAAAChangeInput,
+          addCNAMEChangeInput,
+          addPTRChangeInput),
         Some("owner-group-id")
       )
+
+      BatchChangeInputSerializer
+        .fromJson(BatchChangeInputSerializer.toJson(batchChange))
+        .value shouldBe batchChange
+    }
+
+    "successfully serialize valid add and delete change without comment and with owner group ID" in {
+      val batchChange = BatchChangeInput(
+        None,
+        List(
+          deleteAChangeInput,
+          addAChangeInput,
+          addAAAAChangeInput,
+          addCNAMEChangeInput,
+          addPTRChangeInput),
+        Some("owner-group-id")
+      )
+
+      BatchChangeInputSerializer
+        .fromJson(BatchChangeInputSerializer.toJson(batchChange))
+        .value shouldBe batchChange
     }
 
     "return an error if the changes are not specified" in {

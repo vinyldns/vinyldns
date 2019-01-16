@@ -2481,6 +2481,9 @@ def test_create_batch_change_does_not_save_owner_group_id_for_non_shared_zone(sh
 
         result = ok_client.create_batch_change(batch_change_input, status=202)
         completed_batch = ok_client.wait_until_batch_change_completed(result)
+
+        assert_that(completed_batch['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
+
         to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
 
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, record_name="no-owner-group-id",
@@ -2497,48 +2500,71 @@ def test_create_batch_change_does_not_save_owner_group_id_for_non_shared_zone(sh
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, ok_client)
 
-def test_create_batch_change_for_shared_zone_updates_recordset_owner_group_id_succeeds(shared_zone_test_context):
+def test_create_batch_change_for_shared_zone_owner_group_applied_logic(shared_zone_test_context):
     """
     Test successfully creating a batch change with owner group ID in shared zone succeeds and sets owner group ID
     on creates and updates (if existing value does not exist)
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     shared_zone = shared_zone_test_context.shared_zone
+    shared_record_group = shared_zone_test_context.shared_record_group
 
-    update_rs = get_recordset_json(shared_zone, "update", "A", [{"address": "127.0.0.1"}], 300)
+    update_rs_without_owner_group = get_recordset_json(shared_zone, "update-without-existing-owner-group", "A", [{"address": "127.0.0.1"}], 300)
+    update_rs_with_owner_group = get_recordset_json(shared_zone, "update-with-existing-owner-group", "A", [{"address": "127.0.0.1"}], 300, shared_record_group['id'])
 
     batch_change_input = {
         "changes": [
-            get_change_A_AAAA_json("no-owner-group-id.shared.", address="4.3.2.1"),
-            get_change_A_AAAA_json("update.shared.", address="1.2.3.4"),
-            get_change_A_AAAA_json("update.shared.", change_type="DeleteRecordSet")
+            get_change_A_AAAA_json("create-with-owner-group.shared.", address="4.3.2.1"),
+            get_change_A_AAAA_json("update-without-existing-owner-group.shared.", address="1.2.3.4"),
+            get_change_A_AAAA_json("update-without-existing-owner-group.shared.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-with-existing-owner-group.shared.", address="1.2.3.4"),
+            get_change_A_AAAA_json("update-with-existing-owner-group.shared.", change_type="DeleteRecordSet")
         ],
         "ownerGroupId": "shared-zone-group"
     }
     to_delete = []
 
     try:
-        create_result = shared_client.create_recordset(update_rs, status=202)
+        # Create first record for updating and verify that owner group ID is not set
+        create_result = shared_client.create_recordset(update_rs_without_owner_group, status=202)
         to_delete.append(shared_client.wait_until_recordset_change_status(create_result, 'Complete'))
 
         create_result = shared_client.get_recordset(create_result['recordSet']['zoneId'], create_result['recordSet']['id'], status=200)
         assert_that(create_result['recordSet'], is_not(has_key('ownerGroupId')))
 
+        # Create second record for updating and verify that owner group ID is set
+        create_result = shared_client.create_recordset(update_rs_with_owner_group, status=202)
+        to_delete.append(shared_client.wait_until_recordset_change_status(create_result, 'Complete'))
+
+        create_result = shared_client.get_recordset(create_result['recordSet']['zoneId'], create_result['recordSet']['id'], status=200)
+        assert_that(create_result['recordSet']['ownerGroupId'], is_(shared_record_group['id']))
+
+        # Create batch
         result = shared_client.create_batch_change(batch_change_input, status=202)
         completed_batch = shared_client.wait_until_batch_change_completed(result)
+
+        assert_that(completed_batch['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
+
         to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
 
         assert_that(result['ownerGroupId'], is_('shared-zone-group'))
-        assert_change_success_response_values(result['changes'], zone=shared_zone, index=0, record_name="no-owner-group-id",
-                                              input_name="no-owner-group-id.shared.", record_data="4.3.2.1")
-        assert_change_success_response_values(result['changes'], zone=shared_zone, index=1, record_name="update",
-                                              input_name="update.shared.", record_data="1.2.3.4")
-        assert_change_success_response_values(result['changes'], zone=shared_zone, index=2, record_name="update",
-                                              input_name="update.shared.", change_type="DeleteRecordSet", record_data=None)
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=0, record_name="create-with-owner-group",
+                                              input_name="create-with-owner-group.shared.", record_data="4.3.2.1")
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=1, record_name="update-without-existing-owner-group",
+                                              input_name="update-without-existing-owner-group.shared.", record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=2, record_name="update-without-existing-owner-group",
+                                              input_name="update-without-existing-owner-group.shared.", change_type="DeleteRecordSet", record_data=None)
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=3, record_name="update-with-existing-owner-group",
+                                              input_name="update-with-existing-owner-group.shared.", record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=4, record_name="update-with-existing-owner-group",
+                                              input_name="update-with-existing-owner-group.shared.", change_type="DeleteRecordSet", record_data=None)
 
         for (zoneId, recordSetId) in to_delete:
             get_recordset = shared_client.get_recordset(zoneId, recordSetId, status=200)
-            assert_that(get_recordset['recordSet']['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
+            if get_recordset['recordSet']['name'] == "update-with-existing-owner-group":
+                assert_that(get_recordset['recordSet']['ownerGroupId'], is_(shared_record_group['id']))
+            else:
+                assert_that(get_recordset['recordSet']['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
 
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, shared_client)

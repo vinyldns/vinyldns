@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import cats.data._
 import cats.effect._
 import cats.implicits._
 import org.joda.time.DateTime
@@ -28,7 +29,7 @@ import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository, BatchChangeSummaryList}
-import vinyldns.core.domain.membership.GroupRepository
+import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository
@@ -63,8 +64,8 @@ class BatchChangeService(
       batchChangeInput: BatchChangeInput,
       auth: AuthPrincipal): BatchResult[BatchChange] =
     for {
-      _ <- validateBatchChangeInputSize(batchChangeInput).toBatchResult
-      _ <- validateOwnerGroupId(batchChangeInput.ownerGroupId, auth)
+      existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
+      _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth).toBatchResult
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
@@ -159,33 +160,13 @@ class BatchChangeService(
     allSeq.map(lst => ExistingRecordSets(lst.flatten))
   }
 
-  def validateOwnerGroupId(
-      ownerGroupId: Option[String],
-      authPrincipal: AuthPrincipal): BatchResult[Unit] =
-    ownerGroupId match {
-      case None => ().toRightBatchResult
-      case Some(groupId) =>
-        for {
-          _ <- validateOwnerGroupExists(groupId)
-          _ <- validateGroupMembership(groupId, authPrincipal)
-        } yield ().asRight
-    }
-
-  def validateOwnerGroupExists(ownerGroupId: String): BatchResult[Unit] =
-    groupRepository
-      .getGroup(ownerGroupId)
-      .map {
-        case Some(_) => ().asRight
-        case None => Left(GroupDoesNotExist(ownerGroupId))
-      }
-      .toBatchResult
-
-  def validateGroupMembership(
-      ownerGroupId: String,
-      authPrincipal: AuthPrincipal): BatchResult[Unit] = {
-    if (authPrincipal.isGroupMember(ownerGroupId) || authPrincipal.canEditAll) ().asRight
-    else Left(NotAMemberOfOwnerGroup(ownerGroupId, authPrincipal.signedInUser.userName))
-  }.toBatchResult
+  def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
+    val ownerGroup = for {
+      groupId <- OptionT.fromOption[IO](ownerGroupId)
+      group <- OptionT(groupRepository.getGroup(groupId))
+    } yield group
+    ownerGroup.value.toBatchResult
+  }
 
   def zoneDiscovery(
       changes: ValidatedBatch[ChangeInput],

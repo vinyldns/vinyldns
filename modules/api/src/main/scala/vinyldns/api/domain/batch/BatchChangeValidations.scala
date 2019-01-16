@@ -27,10 +27,14 @@ import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
 import vinyldns.core.domain.batch.{BatchChange, RecordKey}
+import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
 
-  def validateBatchChangeInputSize(input: BatchChangeInput): Either[BatchChangeErrorResponse, Unit]
+  def validateBatchChangeInput(
+      input: BatchChangeInput,
+      existingGroup: Option[Group],
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 
   def validateInputChanges(input: List[ChangeInput]): ValidatedBatch[ChangeInput]
 
@@ -50,6 +54,15 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   import RecordType._
   import accessValidation._
 
+  def validateBatchChangeInput(
+      input: BatchChangeInput,
+      existingGroup: Option[Group],
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    for {
+      _ <- validateBatchChangeInputSize(input)
+      _ <- validateOwnerGroupId(input.ownerGroupId, existingGroup, authPrincipal)
+    } yield ().asRight
+
   def validateBatchChangeInputSize(
       input: BatchChangeInput): Either[BatchChangeErrorResponse, Unit] =
     if (input.changes.isEmpty) {
@@ -58,6 +71,18 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       ChangeLimitExceeded(changeLimit).asLeft
     } else {
       ().asRight
+    }
+
+  def validateOwnerGroupId(
+      ownerGroupId: Option[String],
+      existingGroup: Option[Group],
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    (ownerGroupId, existingGroup) match {
+      case (None, _) => ().asRight
+      case (Some(groupId), None) => Left(GroupDoesNotExist(groupId))
+      case (Some(groupId), Some(_)) =>
+        if (authPrincipal.isGroupMember(groupId) || authPrincipal.canEditAll) ().asRight
+        else Left(NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName))
     }
 
   /* input validations */

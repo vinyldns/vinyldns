@@ -17,7 +17,7 @@
 package vinyldns.api.domain.batch
 
 import cats.implicits._
-import cats.scalatest.ValidatedMatchers
+import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
@@ -36,6 +36,7 @@ class BatchChangeValidationsSpec
     extends PropSpec
     with Matchers
     with GeneratorDrivenPropertyChecks
+    with EitherMatchers
     with EitherValues
     with ValidatedMatchers {
 
@@ -98,20 +99,41 @@ class BatchChangeValidationsSpec
 
   property(
     "validateBatchChangeInputSize: should succeed with at least one but fewer than max inputs") {
-    forAll(validBatchChangeInput(1, maxChanges)) { (input: BatchChangeInput) =>
+    forAll(validBatchChangeInput(1, maxChanges)) { input: BatchChangeInput =>
       validateBatchChangeInputSize(input).isRight shouldBe true
     }
 
-    forAll(validBatchChangeInput(maxChanges + 1, 100)) { (input: BatchChangeInput) =>
+    forAll(validBatchChangeInput(maxChanges + 1, 100)) { input: BatchChangeInput =>
       validateBatchChangeInputSize(input).left.value shouldBe ChangeLimitExceeded(maxChanges)
     }
   }
 
   property("validateInputChanges: should succeed if all inputs are good") {
-    forAll(listOfN(3, validAChangeGen)) { (input: List[ChangeInput]) =>
+    forAll(listOfN(3, validAChangeGen)) { input: List[ChangeInput] =>
       val result = validateInputChanges(input)
       result.map(_ shouldBe valid)
     }
+  }
+
+  property("validateOwnerGroupId: should succeed if owner group ID is undefined") {
+    validateOwnerGroupId(None, None, okAuth) should be(right)
+  }
+
+  property("validateOwnerGroupId: should succeed if user belongs to owner group") {
+    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), okAuth) should be(right)
+  }
+
+  property("validateOwnerGroupId: should succeed if user is a super user") {
+    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), superUserAuth) should be(right)
+  }
+
+  property("validateOwnerGroupId: should fail if owner group does not exist") {
+    validateOwnerGroupId(Some(okGroup.id), None, okAuth) should be(left)
+  }
+
+  property(
+    "validateOwnerGroupId: should fail if user is not an admin and does not belong to owner group") {
+    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), dummyAuth) should be(left)
   }
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {

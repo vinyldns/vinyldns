@@ -206,6 +206,13 @@ class BatchChangeServiceSpec
       result shouldBe a[NotAMemberOfOwnerGroup]
     }
 
+    "succeed if owner group ID is provided and user is a member of the group" in {
+      val input = BatchChangeInput(None, List(apexAddA), Some(okGroup.id))
+      val result = rightResultOf(underTest.applyBatchChange(input, okAuth).value)
+
+      result.changes.length shouldBe 1
+    }
+
     "succeed if owner group ID is provided and user is a super user" in {
       val ownerGroupId = Some("user-is-not-member")
       val input = BatchChangeInput(None, List(apexAddA), ownerGroupId)
@@ -731,38 +738,17 @@ class BatchChangeServiceSpec
     }
   }
 
-  "validateOwnerGroupId" should {
-    "succeed if owner group ID is undefined" in {
-      underTest.validateOwnerGroupId(None, auth).value.unsafeRunSync() should be(right)
+  "getOwnerGroup" should {
+    "return None if owner group ID is None" in {
+      rightResultOf(underTest.getOwnerGroup(None).value) shouldBe None
     }
 
-    "succeed if user belongs to owner group" in {
-      underTest.validateOwnerGroupId(Some(authGrp.id), auth).value.unsafeRunSync() should be(right)
+    "return None if group does not exist for owner group ID" in {
+      rightResultOf(underTest.getOwnerGroup(Some("non-existent-group-id")).value) shouldBe None
     }
 
-    "succeed if user is a super user" in {
-      underTest
-        .validateOwnerGroupId(
-          Some("user-is-not-member"),
-          AuthPrincipal(okUser.copy(isSuper = true), Seq()))
-        .value
-        .unsafeRunSync() should be(right)
-    }
-
-    "fail if owner group does not exist" in {
-      underTest
-        .validateOwnerGroupId(Some("non-existent-owner-id"), auth)
-        .value
-        .unsafeRunSync() shouldBe
-        Left(GroupDoesNotExist("non-existent-owner-id"))
-    }
-
-    "fail if user is not an admin and does not belong to owner group" in {
-      underTest
-        .validateOwnerGroupId(Some("user-is-not-member"), auth)
-        .value
-        .unsafeRunSync() shouldBe
-        Left(NotAMemberOfOwnerGroup("user-is-not-member", auth.signedInUser.userName))
+    "return the group if the group exists for the owner group ID" in {
+      rightResultOf(underTest.getOwnerGroup(Some(okGroup.id)).value) shouldBe Some(okGroup)
     }
   }
 }
