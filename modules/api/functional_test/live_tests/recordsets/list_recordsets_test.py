@@ -11,6 +11,7 @@ class ListRecordSetsFixture():
     def __init__(self, shared_zone_test_context):
         self.test_context = shared_zone_test_context.ok_zone
         self.client = shared_zone_test_context.ok_vinyldns_client
+        self.shared_group = shared_zone_test_context.shared_record_group
         self.new_rs = {}
         existing_records = self.client.list_recordsets(self.test_context['id'])['recordSets']
         assert_that(existing_records, has_length(7))
@@ -102,6 +103,46 @@ def test_list_recordsets_no_start(rs_fixture):
 
     list_results = client.list_recordsets(ok_zone['id'], status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
+
+def test_list_recordsets_with_ownergroup_id_and_ownergroup_name(rs_fixture):
+    """
+    Test that record sets with an owner group return the owner group ID and name
+    """
+    client = rs_fixture.client
+    ok_zone = rs_fixture.test_context
+    shared_group = rs_fixture.shared_group
+    created_rs_id = None
+    try:
+        # create a record in the zone with an owner group ID
+        new_rs = get_recordset_json(ok_zone,
+                                    "test_get_recordset", "TXT", [{'text':'should-work'}],
+                                    100,
+                                    shared_group['id'])
+
+        result = client.create_recordset(new_rs, status=202)
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        list_results = client.list_recordsets(ok_zone['id'], status=200)
+        assert_that(list_results['recordSets'], has_length(18))
+
+        # confirm the created recordset is in the list of recordsets
+        assert_that(any(r['id'] == result_rs['id'] for r in list_results['recordSets']), is_(True))
+
+        # confirm the created recordset has an ownerGroupId and ownerGroupName
+        for rs in list_results['recordSets']:
+            if rs['id'] == result_rs['id']:
+                assert_that(rs['ownerGroupId'], is_(shared_group['id']))
+                assert_that(rs['ownerGroupName'], is_("record-ownergroup"))
+
+        # set created_rs_id after confirming record set creation so it can be deleted in test cleanup
+        created_rs_id = result_rs['id']
+
+    finally:
+        if created_rs_id:
+            delete_result = client.delete_recordset(ok_zone['id'], created_rs_id, status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+            list_results = client.list_recordsets(ok_zone['id'], status=200)
+            rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
 
 
 def test_list_recordsets_multiple_pages(rs_fixture):

@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetListInfo}
+import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetListInfo}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -927,7 +927,7 @@ class AccessValidationsSpec
   "getListAccessLevels" should {
     "return access level DELETE if the user is admin/super of the zone" in {
       val zone = Zone("test", "test", adminGroupId = okGroup.id)
-      val recordList = List(rsOk.copy(zoneId = zone.id))
+      val recordList = List(RecordSetInfo(rsOk.copy(zoneId = zone.id), None))
 
       val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
 
@@ -936,8 +936,10 @@ class AccessValidationsSpec
     }
 
     "return access level NOACCESS if there is no ACL rule for the user" in {
-      val recordList = List("rs1", "rs2", "rs3").map {
-        RecordSet("zoneId", _, RecordType.A, 100, RecordSetStatus.Active, DateTime.now())
+      val recordList = List("rs1", "rs2", "rs3").map { name =>
+        RecordSetInfo(
+          RecordSet("zoneId", name, RecordType.A, 100, RecordSetStatus.Active, DateTime.now()),
+          None)
       }
       val zone = Zone("test", "test")
 
@@ -952,8 +954,10 @@ class AccessValidationsSpec
         signedInUser = okAuth.signedInUser.copy(isSupport = true),
         memberGroupIds = Seq.empty)
 
-      val recordList = List("rs1", "rs2", "rs3").map {
-        RecordSet("zoneId", _, RecordType.A, 100, RecordSetStatus.Active, DateTime.now())
+      val recordList = List("rs1", "rs2", "rs3").map { name =>
+        RecordSetInfo(
+          RecordSet("zoneId", name, RecordType.A, 100, RecordSetStatus.Active, DateTime.now()),
+          None)
       }
       val zone = Zone("test", "test")
 
@@ -965,7 +969,9 @@ class AccessValidationsSpec
 
     "return the appropriate access level for each RecordSet in the list" in {
       val rs1 =
-        RecordSet("zoneId", "rs1", RecordType.A, 100, RecordSetStatus.Active, DateTime.now())
+        RecordSetInfo(
+          RecordSet("zoneId", "rs1", RecordType.A, 100, RecordSetStatus.Active, DateTime.now()),
+          None)
       val rs2 = rs1.copy(name = "rs2")
       val rs3 = rs1.copy(name = "rs3")
       val recordList = List(rs1, rs2, rs3)
