@@ -62,8 +62,6 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
 
     }
     "Successfully add DS record type" in {
-
-      DSData
       val dsData =
         DSData(60485, 5, 1, ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118"))
       val testRecord = RecordSet(

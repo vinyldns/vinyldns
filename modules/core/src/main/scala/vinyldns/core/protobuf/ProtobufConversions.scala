@@ -214,6 +214,10 @@ trait ProtobufConversions {
   def toPB(data: CNAMEData): VinylDNSProto.CNAMEData =
     VinylDNSProto.CNAMEData.newBuilder().setCname(data.cname).build()
 
+  def toPB(data: DSData): VinylDNSProto.TXTData =
+    // TODO
+    VinylDNSProto.TXTData.newBuilder().setText(s"${data.keyTag}").build()
+
   def toPB(data: MXData): VinylDNSProto.MXData =
     VinylDNSProto.MXData
       .newBuilder()
@@ -268,6 +272,7 @@ trait ProtobufConversions {
       case x: AData => toPB(x)
       case x: AAAAData => toPB(x)
       case x: CNAMEData => toPB(x)
+      case x: DSData => toPB(x)
       case x: MXData => toPB(x)
       case x: NSData => toPB(x)
       case x: PTRData => toPB(x)
