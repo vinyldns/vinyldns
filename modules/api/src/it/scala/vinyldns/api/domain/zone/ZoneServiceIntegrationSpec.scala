@@ -21,11 +21,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.{
-  DynamoDBApiIntegrationSpec,
-  MySqlApiIntegrationSpec,
-  ResultHelpers
-}
+import vinyldns.api.{DynamoDBApiIntegrationSpec, MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue

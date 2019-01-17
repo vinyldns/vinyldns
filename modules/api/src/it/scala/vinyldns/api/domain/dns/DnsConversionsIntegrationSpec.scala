@@ -24,10 +24,7 @@ import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestRecordSetData.aaaa
 
-class DnsConversionsIntegrationSpec
-    extends WordSpec
-    with Matchers
-    with ResultHelpers {
+class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHelpers {
 
   private val zoneName = "vinyldns."
   private val testZone = Zone(

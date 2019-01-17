@@ -152,9 +152,6 @@ trait DnsConversions {
       case _ => fromUnknownRecordType(r, zoneName, zoneId)
     }
 
-  def toRecordSets(records: List[DNS.Record], zoneName: DNS.Name): List[RecordSet] =
-    records.map(toRecordSet(_, zoneName))
-
   /**
     * Converts the list of raw DNS records to a list of record sets.
     *
