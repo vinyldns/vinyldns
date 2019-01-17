@@ -224,12 +224,12 @@ class DnsConversionsSpec
     record.getType shouldBe toDnsRecordType(rs.typ)
 
     // Convert the DNS records to their appropriate VinylDNS RecordData
-    val convertedRecords = toRecordSets(records, testZoneDnsName).flatMap(_.records)
+    val convertedRecords = records.flatMap(toRecordSet(_, testZoneDnsName, "id").records)
     convertedRecords should contain theSameElementsAs rs.records
   }
 
   private def roundTrip(rs: RecordSet): RecordSet =
-    toRecordSet(rightValue(toDnsRecord(rs, testZoneName)), testZoneDnsName)
+    toRecordSet(rightValue(toDnsRecords(rs, testZoneName)).head, testZoneDnsName)
 
   override protected def beforeEach(): Unit = {
     doReturn(mockMessage).when(mockMessage).clone()
@@ -536,9 +536,9 @@ class DnsConversionsSpec
       actual.name shouldBe "vinyldns."
     }
     "convert zone name to @" in {
-      val actual = toDnsRecord(testAt, testZoneName)
+      val actual = toDnsRecords(testAt, testZoneName)
       val omitFinalDot = false
-      rightValue(actual).getName.toString(omitFinalDot) shouldBe testZoneName
+      rightValue(actual).head.getName.toString(omitFinalDot) shouldBe testZoneName
     }
   }
 
