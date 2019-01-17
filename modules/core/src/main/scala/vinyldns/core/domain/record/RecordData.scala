@@ -16,6 +16,7 @@
 
 package vinyldns.core.domain.record
 
+import scodec.bits.ByteVector
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 
 sealed trait RecordData
@@ -75,3 +76,10 @@ object SRVData {
 final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String) extends RecordData
 
 final case class TXTData(text: String) extends RecordData
+
+final case class DSData(
+    keyTag: Integer, // footprint - The original KEY record's footprint (keyid).
+    algorithm: Integer,
+    digestType: Integer, //digestid - The digest id code; algorithm used to construct the digest
+    digest: ByteVector) //digest - A hash of the original key
+    extends RecordData
