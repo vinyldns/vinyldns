@@ -19,15 +19,11 @@ package vinyldns.api.domain.zone
 import cats.scalatest.ValidatedMatchers
 import com.comcast.ip4s._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
 import vinyldns.core.domain.record._
+import vinyldns.core.TestRecordSetData._
 
-class ZoneRecordValidationsSpec
-    extends WordSpec
-    with Matchers
-    with VinylDNSTestData
-    with ValidatedMatchers {
+class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMatchers {
 
   import vinyldns.api.domain.zone.ZoneRecordValidations._
 

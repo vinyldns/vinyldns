@@ -27,7 +27,8 @@ import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.api.repository._
-import vinyldns.api.{CatsHelpers, VinylDNSTestData}
+import vinyldns.api.CatsHelpers
+import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.batch.{
   BatchChange,
   SingleAddChange,
@@ -35,11 +36,7 @@ import vinyldns.core.domain.batch.{
   SingleDeleteChange
 }
 
-class BatchChangeConverterSpec
-    extends WordSpec
-    with Matchers
-    with CatsHelpers
-    with VinylDNSTestData {
+class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
   private def makeSingleAddChange(
       name: String,

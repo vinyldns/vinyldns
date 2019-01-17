@@ -18,7 +18,6 @@ package vinyldns.api.domain.record
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito.doReturn
-import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
@@ -40,7 +39,6 @@ class RecordSetServiceSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
-    with Eventually
     with ResultHelpers
     with BeforeAndAfterEach {
 

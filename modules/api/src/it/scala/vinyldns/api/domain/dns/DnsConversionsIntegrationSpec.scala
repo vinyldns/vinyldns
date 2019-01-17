@@ -21,12 +21,12 @@ import org.xbill.DNS
 import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
-import vinyldns.api.{ResultHelpers, VinylDNSTestData}
+import vinyldns.api.ResultHelpers
+import vinyldns.core.TestRecordSetData.aaaa
 
 class DnsConversionsIntegrationSpec
     extends WordSpec
     with Matchers
-    with VinylDNSTestData
     with ResultHelpers {
 
   private val zoneName = "vinyldns."

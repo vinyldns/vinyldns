@@ -27,7 +27,6 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, WordSpec}
 import org.xbill.DNS
 import org.xbill.DNS.{Name, ZoneTransferIn}
-import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.record._
 
@@ -36,12 +35,7 @@ import scala.collection._
 import cats.effect._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 
-class ZoneViewLoaderSpec
-    extends WordSpec
-    with Matchers
-    with VinylDNSTestData
-    with MockitoSugar
-    with DnsConversions {
+class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with DnsConversions {
 
   private implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))

@@ -17,10 +17,14 @@
 package vinyldns.api.domain.record
 
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
-import vinyldns.core.domain.record.AData
+import vinyldns.core.TestMembershipData.okAuth
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.domain.record.{AData, RecordSet}
 
-class RecordSetChangeSpec extends WordSpec with Matchers with VinylDNSTestData {
+class RecordSetChangeSpec extends WordSpec with Matchers {
+
+  val apexRs: RecordSet = rsOk.copy(name = "@")
 
   "RecordSetChange" should {
     "toString" should {
@@ -39,23 +43,23 @@ class RecordSetChangeSpec extends WordSpec with Matchers with VinylDNSTestData {
     }
     "forAdd" should {
       "change the record set name if it is @" in {
-        val result = RecordSetChangeGenerator.forAdd(atRs, okZone)
+        val result = RecordSetChangeGenerator.forAdd(apexRs, okZone)
         result.recordSet.name shouldBe okZone.name
       }
       "change the record set name if it is @ with AddRecordSet" in {
-        val result = RecordSetChangeGenerator.forAdd(atRs, okZone, okAuth)
+        val result = RecordSetChangeGenerator.forAdd(apexRs, okZone, okAuth)
         result.recordSet.name shouldBe okZone.name
       }
     }
     "forUpdate" should {
       "change the record set name if it is @" in {
-        val newRS = atRs.copy(records = List(AData("2.2.2.2")))
-        val result = RecordSetChangeGenerator.forUpdate(atRs, newRS, okZone)
+        val newRS = apexRs.copy(records = List(AData("2.2.2.2")))
+        val result = RecordSetChangeGenerator.forUpdate(apexRs, newRS, okZone)
         result.recordSet.name shouldBe okZone.name
       }
       "change the record set name if it is @ with AddRecordSet" in {
-        val newRS = atRs.copy(records = List(AData("2.2.2.2")))
-        val result = RecordSetChangeGenerator.forUpdate(atRs, newRS, okZone, okAuth)
+        val newRS = apexRs.copy(records = List(AData("2.2.2.2")))
+        val result = RecordSetChangeGenerator.forUpdate(apexRs, newRS, okZone, okAuth)
         result.recordSet.name shouldBe okZone.name
       }
       "not copy the account from the record set being replaced when using an UpdateRecordSet" in {
@@ -77,11 +81,11 @@ class RecordSetChangeSpec extends WordSpec with Matchers with VinylDNSTestData {
     }
     "forDelete" should {
       "change the record set name if it is @" in {
-        val result = RecordSetChangeGenerator.forDelete(atRs, okZone)
+        val result = RecordSetChangeGenerator.forDelete(apexRs, okZone)
         result.recordSet.name shouldBe okZone.name
       }
       "change the record set name if it is @ with AddRecordSet" in {
-        val result = RecordSetChangeGenerator.forDelete(atRs, okZone, okAuth)
+        val result = RecordSetChangeGenerator.forDelete(apexRs, okZone, okAuth)
         result.recordSet.name shouldBe okZone.name
       }
     }

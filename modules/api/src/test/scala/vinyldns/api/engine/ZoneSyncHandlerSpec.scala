@@ -23,7 +23,7 @@ import org.mockito.Matchers.{any, anyString}
 import org.mockito.Mockito.{doReturn, reset, times, verify}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
+import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader, ZoneView}
 import vinyldns.core.domain.record._
@@ -35,7 +35,7 @@ class ZoneSyncHandlerSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
-    with VinylDNSTestData {
+    with VinylDNSTestHelpers {
 
   private val mockDNSLoader = mock[DnsZoneViewLoader]
   private val mockVinylDNSLoader = mock[VinylDNSZoneViewLoader]

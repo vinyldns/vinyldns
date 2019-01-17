@@ -23,14 +23,15 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.zone.InvalidRequest
-import vinyldns.api.{ResultHelpers, VinylDNSTestData}
+import vinyldns.api.ResultHelpers
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.zone.Zone
 
 class ReverseZoneHelpersSpec
     extends WordSpec
     with Matchers
     with MockitoSugar
-    with VinylDNSTestData
     with Eventually
     with ResultHelpers
     with EitherMatchers {

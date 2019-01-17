@@ -23,9 +23,6 @@ import org.joda.time.DateTime
 object TestZoneData {
 
   /* ZONE CONNECTIONS */
-  val validConnection =
-    ZoneConnection("connectionName", "connectionKeyName", "connectionKey", "127.0.0.1")
-
   val testConnection: Option[ZoneConnection] = Some(
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1"))
 
@@ -46,13 +43,13 @@ object TestZoneData {
     "test@test.com",
     adminGroupId = okGroup.id,
     status = ZoneStatus.Active,
-    connection = Some(validConnection))
+    connection = testConnection)
 
   val zoneDeleted: Zone = Zone(
     "some.deleted.zone.",
     "test@test.com",
     status = ZoneStatus.Deleted,
-    connection = Some(validConnection))
+    connection = testConnection)
 
   val zoneNotAuthorized: Zone = Zone("not.auth.zone.", "test@test.com", adminGroupId = "no-id")
 

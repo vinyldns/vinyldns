@@ -17,11 +17,12 @@
 package vinyldns.api.domain.record
 
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain.record.RecordSetHelpers._
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.record._
 
-class RecordSetHelpersSpec extends WordSpec with Matchers with VinylDNSTestData {
+class RecordSetHelpersSpec extends WordSpec with Matchers {
 
   "RecordSetHelpers" should {
     "matches" should {

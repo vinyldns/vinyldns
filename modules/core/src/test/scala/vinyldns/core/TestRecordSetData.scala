@@ -127,6 +127,16 @@ object TestRecordSetData {
     None,
     records = List(NSData("ns1.test.com"), NSData("ns2.test.com")))
 
+  val txt: RecordSet = RecordSet(
+    okZone.id,
+    "txt",
+    RecordType.TXT,
+    200,
+    RecordSetStatus.Pending,
+    DateTime.now,
+    None,
+    List(TXTData("txt")))
+
   val sharedZoneRecord: RecordSet = RecordSet(
     sharedZone.id,
     "aaaa",
@@ -205,6 +215,10 @@ object TestRecordSetData {
 
   val pendingUpdateAAAA: RecordSetChange =
     makeTestUpdateChange(aaaa, aaaa.copy(ttl = aaaa.ttl + 100), zoneActive)
+
+  val pendingCreateNS: RecordSetChange = makeTestAddChange(ns, zoneActive)
+  val completeCreateNS: RecordSetChange =
+    pendingCreateNS.copy(status = RecordSetChangeStatus.Complete)
 
   /* CHANGESETS */
   val pendingChangeSet: ChangeSet = ChangeSet(Seq(pendingCreateAAAA, pendingCreateCNAME))

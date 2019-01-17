@@ -37,10 +37,10 @@ class ZoneRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
     with ZoneRoute
+    with VinylDNSJsonProtocol
     with JsonValidationRejection
     with VinylDNSDirectives
     with OneInstancePerTest
-    with VinylDNSJsonProtocol
     with Matchers {
 
   private val alreadyExists = Zone("already.exists.", "already-exists@test.com")

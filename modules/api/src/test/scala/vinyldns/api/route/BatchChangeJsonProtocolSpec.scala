@@ -24,7 +24,6 @@ import org.json4s.Extraction._
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSTestData
 import vinyldns.api.domain._
 import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, ChangeForValidation}
 import vinyldns.api.domain.batch.ChangeInputType._
@@ -34,6 +33,7 @@ import vinyldns.api.domain.batch.{
   DeleteChangeInput,
   InvalidBatchChangeResponses
 }
+import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.batch.SingleChangeStatus._
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
@@ -44,8 +44,7 @@ class BatchChangeJsonProtocolSpec
     with Matchers
     with BatchChangeJsonProtocol
     with ValidatedValues
-    with ValidatedMatchers
-    with VinylDNSTestData {
+    with ValidatedMatchers {
 
   val serializers: Seq[Serializer[_]] = batchChangeSerializers
 
