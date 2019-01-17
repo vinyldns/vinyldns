@@ -234,9 +234,9 @@ class RecordSetValidationsSpec
     }
 
     "NSValidations" should {
-      val invalidNsRecordToOrigin: RecordSet = ns.copy(name = "@")
+      val invalidNsApexRs: RecordSet = ns.copy(name = "@")
       "return ok if the record is an NS record but not origin" in {
-        val valid = invalidNsRecordToOrigin.copy(
+        val valid = invalidNsApexRs.copy(
           name = "this-is-not-origin-mate",
           records = List(NSData("some.test.ns.")))
 
@@ -244,31 +244,31 @@ class RecordSetValidationsSpec
       }
 
       "return an InvalidRequest if an NS record is '@'" in {
-        val error = leftValue(nsValidations(invalidNsRecordToOrigin, okZone))
+        val error = leftValue(nsValidations(invalidNsApexRs, okZone))
         error shouldBe a[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record is the same as the zone" in {
-        val invalid = invalidNsRecordToOrigin.copy(name = okZone.name)
+        val invalid = invalidNsApexRs.copy(name = okZone.name)
         val error = leftValue(nsValidations(invalid, okZone))
         error shouldBe a[InvalidRequest]
       }
 
       "return an InvalidRequest if the NS record being updated is '@'" in {
-        val valid = invalidNsRecordToOrigin.copy(name = "this-is-not-origin-mate")
-        val error = leftValue(nsValidations(valid, okZone, Some(invalidNsRecordToOrigin)))
+        val valid = invalidNsApexRs.copy(name = "this-is-not-origin-mate")
+        val error = leftValue(nsValidations(valid, okZone, Some(invalidNsApexRs)))
         error shouldBe a[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record data is not in the approved server list" in {
-        val ns = invalidNsRecordToOrigin.copy(records = List(NSData("not.approved.")))
+        val ns = invalidNsApexRs.copy(records = List(NSData("not.approved.")))
         val error = leftValue(nsValidations(ns, okZone))
         error shouldBe a[InvalidRequest]
       }
     }
 
     "CnameValidations" should {
-      val invalidCnameToOrigin: RecordSet = cname.copy(name = "@")
+      val invalidCnameApexRs: RecordSet = cname.copy(name = "@")
       "return a RecordSetAlreadyExistsError if a record with the same name exists and creating a cname" in {
         val error = leftValue(cnameValidations(cname, List(aaaa), okZone))
         error shouldBe a[RecordSetAlreadyExists]
@@ -277,11 +277,11 @@ class RecordSetValidationsSpec
         cnameValidations(cname, List(), okZone) should be(right)
       }
       "return an InvalidRequest if a cname record set name is '@'" in {
-        val error = leftValue(cnameValidations(invalidCnameToOrigin, List(), okZone))
+        val error = leftValue(cnameValidations(invalidCnameApexRs, List(), okZone))
         error shouldBe a[InvalidRequest]
       }
       "return an InvalidRequest if a cname record set name is same as zone" in {
-        val invalid = invalidCnameToOrigin.copy(name = okZone.name)
+        val invalid = invalidCnameApexRs.copy(name = okZone.name)
         val error = leftValue(cnameValidations(invalid, List(), okZone))
         error shouldBe a[InvalidRequest]
       }
