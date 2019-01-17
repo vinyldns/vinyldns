@@ -16,7 +16,9 @@
 
 package vinyldns.core.protobuf
 
+import com.google.protobuf.ByteString
 import org.joda.time.DateTime
+import scodec.bits.ByteVector
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChangeType}
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -143,6 +145,7 @@ trait ProtobufConversions {
       case RecordType.A => fromPB(VinylDNSProto.AData.parseFrom(rd.getData))
       case RecordType.AAAA => fromPB(VinylDNSProto.AAAAData.parseFrom(rd.getData))
       case RecordType.CNAME => fromPB(VinylDNSProto.CNAMEData.parseFrom(rd.getData))
+      case RecordType.DS => fromPB(VinylDNSProto.DSData.parseFrom(rd.getData))
       case RecordType.MX => fromPB(VinylDNSProto.MXData.parseFrom(rd.getData))
       case RecordType.NS => fromPB(VinylDNSProto.NSData.parseFrom(rd.getData))
       case RecordType.PTR => fromPB(VinylDNSProto.PTRData.parseFrom(rd.getData))
@@ -158,6 +161,13 @@ trait ProtobufConversions {
   def fromPB(data: VinylDNSProto.AAAAData): AAAAData = AAAAData(data.getAddress)
 
   def fromPB(data: VinylDNSProto.CNAMEData): CNAMEData = CNAMEData(data.getCname)
+
+  def fromPB(data: VinylDNSProto.DSData): DSData =
+    DSData(
+      data.getKeytag,
+      DnsSecAlgorithm(data.getAlgorithm),
+      DigestType(data.getDigesttype),
+      ByteVector.apply(data.getDigest.asReadOnlyByteBuffer()))
 
   def fromPB(data: VinylDNSProto.MXData): MXData = MXData(data.getPreference, data.getExchange)
 
@@ -214,6 +224,15 @@ trait ProtobufConversions {
   def toPB(data: CNAMEData): VinylDNSProto.CNAMEData =
     VinylDNSProto.CNAMEData.newBuilder().setCname(data.cname).build()
 
+  def toPB(data: DSData): VinylDNSProto.DSData =
+    VinylDNSProto.DSData
+      .newBuilder()
+      .setKeytag(data.keyTag)
+      .setAlgorithm(data.algorithm.value)
+      .setDigesttype(data.digestType.value)
+      .setDigest(ByteString.copyFrom(data.digest.toByteBuffer))
+      .build()
+
   def toPB(data: MXData): VinylDNSProto.MXData =
     VinylDNSProto.MXData
       .newBuilder()
@@ -268,6 +287,7 @@ trait ProtobufConversions {
       case x: AData => toPB(x)
       case x: AAAAData => toPB(x)
       case x: CNAMEData => toPB(x)
+      case x: DSData => toPB(x)
       case x: MXData => toPB(x)
       case x: NSData => toPB(x)
       case x: PTRData => toPB(x)

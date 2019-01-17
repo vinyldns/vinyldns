@@ -373,7 +373,8 @@ class RecordSetValidationsSpec
         val auth = okAuth.copy(memberGroupIds = Seq("foo"))
         val ownerGroup = Group(id = ownerGroupId, name = "test", email = "test@test.com")
 
-        leftValue(canUseOwnerGroup(Some(ownerGroupId), Some(ownerGroup), auth)) shouldBe a[InvalidRequest]
+        val error = leftValue(canUseOwnerGroup(Some(ownerGroupId), Some(ownerGroup), auth))
+        error shouldBe a[InvalidRequest]
       }
     }
   }
