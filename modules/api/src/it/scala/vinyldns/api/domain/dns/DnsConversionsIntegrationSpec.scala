@@ -16,13 +16,16 @@
 
 package vinyldns.api.domain.dns
 
+import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import org.xbill.DNS
+import scodec.bits.ByteVector
 import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestRecordSetData.aaaa
+import vinyldns.core.domain.record.{DSData, RecordSet, RecordSetStatus, RecordType}
 
 class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHelpers {
 
@@ -37,7 +40,7 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
   )
 
-  "Obscuring Dns Messages" should {
+  "Adding records" should {
     "remove the tsig key value during an update" in {
       val testRecord = aaaa.copy(zoneId = testZone.id)
       val conn = DnsConnection(testZone.connection.get)
@@ -51,6 +54,37 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       val resultingMessageString = resultingMessage.toString
 
       resultingMessageString should not contain "TSIG"
+
+      val queryResult: List[RecordSet] =
+        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.AAAA).value)
+
+      queryResult.head.records shouldBe testRecord.records
+
+    }
+    "Successfully add DS record type" in {
+
+      DSData
+      val dsData =
+        DSData(60485, 5, 1, ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118"))
+      val testRecord = RecordSet(
+        testZone.id,
+        "test-ds",
+        RecordType.DS,
+        200,
+        RecordSetStatus.Pending,
+        DateTime.now(),
+        records = List(dsData))
+
+      val conn = DnsConnection(testZone.connection.get)
+      val result: DnsResponse =
+        rightResultOf(conn.addRecord(RecordSetChangeGenerator.forAdd(testRecord, testZone)).value)
+
+      result shouldBe a[NoError]
+
+      val queryResult: List[RecordSet] =
+        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.AAAA).value)
+
+      queryResult.head.records shouldBe testRecord.records
     }
   }
 }

@@ -279,7 +279,14 @@ trait DnsConversions {
           new DNS.CNAMERecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(cname))
 
         case DSData(keyTag, algorithm, digestType, digest) =>
-          new DNS.DSRecord(recordName, DNS.DClass.IN, ttl, keyTag, algorithm, digestType, digest.toArray)
+          new DNS.DSRecord(
+            recordName,
+            DNS.DClass.IN,
+            ttl,
+            keyTag,
+            algorithm,
+            digestType,
+            digest.toArray)
 
         case NSData(nsdname) =>
           new DNS.NSRecord(recordName, DNS.DClass.IN, ttl, DNS.Name.fromString(nsdname))
@@ -341,6 +348,7 @@ trait DnsConversions {
     case RecordType.A => DNS.Type.A
     case RecordType.AAAA => DNS.Type.AAAA
     case RecordType.CNAME => DNS.Type.CNAME
+    case RecordType.DS => DNS.Type.DS
     case RecordType.MX => DNS.Type.MX
     case RecordType.NS => DNS.Type.NS
     case RecordType.PTR => DNS.Type.PTR
