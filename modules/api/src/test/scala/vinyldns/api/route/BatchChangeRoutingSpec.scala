@@ -32,6 +32,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import cats.effect._
+import vinyldns.api.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 
@@ -156,18 +157,10 @@ class BatchChangeRoutingSpec
             IO.pure(Right(validResponseWithoutComments)))
         case Some("runtimeException") =>
           throw new RuntimeException("Unexpected run-time exception has occurred!")
-        case Some("batchChangeIsEmpty") =>
+        case Some("emptyBatch") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(BatchChangeIsEmpty(batchChangeLimit))))
-        case Some("changeLimitExceeded") =>
-          EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(ChangeLimitExceeded(batchChangeLimit))))
-        case Some("groupDoesNotExist") =>
-          EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(GroupDoesNotExist("non-existent-group"))))
-        case Some("userDoesNotBelongToOwnerGroup") =>
-          EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(NotAMemberOfOwnerGroup("owner-group-id", "user-name"))))
+            IO.pure(Left(InvalidBatchChangeInput(List(BatchChangeIsEmpty(batchChangeLimit)))))
+          )
         case Some("validChangeWithOwnerGroup") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
             IO.pure(Right(validResponseWithOwnerGroupId)))
@@ -284,31 +277,16 @@ class BatchChangeRoutingSpec
       }
     }
 
-    "return a 422 UnprocessableEntity if batch change contains no changes" in {
-      val unprocessableEntity: String =
-        """{"comments": "batchChangeIsEmpty",
-          | "changes": []
+    "return a 400 BadRequest for empty batch" in {
+      val emptyBatchRequest: String =
+        """{"comments": "emptyBatch"
           |}""".stripMargin
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, unprocessableEntity)) ~>
+        HttpEntity(ContentTypes.`application/json`, emptyBatchRequest)) ~>
         Route.seal(batchChangeRoute(okAuth)) ~> check {
 
-        status shouldBe UnprocessableEntity
-      }
-    }
-
-    "return a 413 RequestEntityTooLarge if batch change limit has been exceeded" in {
-      val requestEntityTooLarge: String =
-        """{"comments": "changeLimitExceeded",
-          | "changes": []
-          |}""".stripMargin
-
-      Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, requestEntityTooLarge)) ~>
-        Route.seal(batchChangeRoute(okAuth)) ~> check {
-
-        status shouldBe RequestEntityTooLarge
+        status shouldBe BadRequest
       }
     }
 
@@ -336,36 +314,6 @@ class BatchChangeRoutingSpec
         Route.seal(batchChangeRoute(okAuth)) ~> check {
 
         status shouldBe InternalServerError
-      }
-    }
-
-    "return a 400 BadRequest for non-existent owner group ID" in {
-      val badRequest: String =
-        """{"comments": "groupDoesNotExist",
-          | "changes": [],
-          | "ownerGroupId": "some-non-existent-group-id"
-          |}""".stripMargin
-
-      Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, badRequest)) ~>
-        Route.seal(batchChangeRoute(okAuth)) ~> check {
-
-        status shouldBe BadRequest
-      }
-    }
-
-    "return a 403 Forbidden for owner group ID that user does not have membership to" in {
-      val badRequest: String =
-        """{"comments": "userDoesNotBelongToOwnerGroup",
-          | "changes": [],
-          | "ownerGroupId": "very-exclusive-group-id"
-          |}""".stripMargin
-
-      Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, badRequest)) ~>
-        Route.seal(batchChangeRoute(okAuth)) ~> check {
-
-        status shouldBe Forbidden
       }
     }
   }

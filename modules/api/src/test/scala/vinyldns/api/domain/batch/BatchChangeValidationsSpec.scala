@@ -22,7 +22,7 @@ import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.api.domain.{AccessValidations, _}
+import vinyldns.api.domain.{AccessValidations, batch, _}
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestMembershipData._
@@ -92,19 +92,19 @@ class BatchChangeValidationsSpec
     } yield batch.BatchChangeInput(None, changes)
 
   property("validateBatchChangeInputSize: should fail if batch has no changes") {
-    val result = validateBatchChangeInputSize(BatchChangeInput(None, List()))
-    result.isLeft shouldBe true
-    result.left.value shouldBe BatchChangeIsEmpty(maxChanges)
+    validateBatchChangeInputSize(BatchChangeInput(None, List())) should
+      haveInvalid[DomainValidationError](BatchChangeIsEmpty(maxChanges))
   }
 
   property(
     "validateBatchChangeInputSize: should succeed with at least one but fewer than max inputs") {
     forAll(validBatchChangeInput(1, maxChanges)) { input: BatchChangeInput =>
-      validateBatchChangeInputSize(input).isRight shouldBe true
+      validateBatchChangeInputSize(input).isValid shouldBe true
     }
 
     forAll(validBatchChangeInput(maxChanges + 1, 100)) { input: BatchChangeInput =>
-      validateBatchChangeInputSize(input).left.value shouldBe ChangeLimitExceeded(maxChanges)
+      validateBatchChangeInputSize(input) should haveInvalid[DomainValidationError](
+        ChangeLimitExceeded(maxChanges))
     }
   }
 
@@ -116,24 +116,71 @@ class BatchChangeValidationsSpec
   }
 
   property("validateOwnerGroupId: should succeed if owner group ID is undefined") {
-    validateOwnerGroupId(None, None, okAuth) should be(right)
+    validateOwnerGroupId(None, None, okAuth) should beValid(())
   }
 
   property("validateOwnerGroupId: should succeed if user belongs to owner group") {
-    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), okAuth) should be(right)
+    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), okAuth) should beValid(())
   }
 
   property("validateOwnerGroupId: should succeed if user is a super user") {
-    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), superUserAuth) should be(right)
+    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), superUserAuth) should beValid(())
   }
 
   property("validateOwnerGroupId: should fail if owner group does not exist") {
-    validateOwnerGroupId(Some(okGroup.id), None, okAuth) should be(left)
+    validateOwnerGroupId(Some(okGroup.id), None, okAuth) should
+      haveInvalid[DomainValidationError](GroupDoesNotExist(okGroup.id))
   }
 
   property(
     "validateOwnerGroupId: should fail if user is not an admin and does not belong to owner group") {
-    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), dummyAuth) should be(left)
+    validateOwnerGroupId(Some(okGroup.id), Some(okGroup), dummyAuth) should
+      haveInvalid[DomainValidationError](
+        NotAMemberOfOwnerGroup(okGroup.id, dummyAuth.signedInUser.userName))
+  }
+
+  property(
+    "validateBatchChangeInput: should succeed if input size and owner group ID are both valid") {
+    forAll(validBatchChangeInput(1, 10)) { batchChangeInput =>
+      validateBatchChangeInput(batchChangeInput, None, okAuth).value.unsafeRunSync() should be(
+        right)
+    }
+  }
+
+  property(
+    "validateBatchChangeInput: should fail if input size is invalid and owner group ID is valid") {
+    forAll(validBatchChangeInput(11, 20)) { batchChangeInput =>
+      validateBatchChangeInput(batchChangeInput, None, okAuth).value
+        .unsafeRunSync() shouldBe
+        Left(InvalidBatchChangeInput(List(ChangeLimitExceeded(maxChanges))))
+    }
+  }
+
+  property(
+    "validateBatchChangeInput: should fail if input size is valid and owner group ID is invalid") {
+    forAll(validBatchChangeInput(1, 10)) { batchChangeInput =>
+      validateBatchChangeInput(
+        batchChangeInput.copy(ownerGroupId = Some(okGroup.id)),
+        Some(okGroup),
+        dummyAuth).value.unsafeRunSync() shouldBe
+        Left(
+          InvalidBatchChangeInput(
+            List(NotAMemberOfOwnerGroup(okGroup.id, dummyAuth.signedInUser.userName))))
+    }
+  }
+
+  property(
+    "validateBatchChangeInput: should fail if both input size is valid and owner group ID aew invalid") {
+    forAll(validBatchChangeInput(0, 0)) { batchChangeInput =>
+      val result = validateBatchChangeInput(
+        batchChangeInput.copy(ownerGroupId = Some(dummyGroup.id)),
+        None,
+        okAuth).value.unsafeRunSync()
+      result shouldBe
+        Left(
+          InvalidBatchChangeInput(
+            List(BatchChangeIsEmpty(maxChanges), GroupDoesNotExist(dummyGroup.id))))
+    }
   }
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {
@@ -221,13 +268,13 @@ class BatchChangeValidationsSpec
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = AddChangeInput(invalidDomainName, RecordType.A, 100, AData("1.1.1.1"))
     val result = validateAddChangeInput(change)
-    result should (haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
-      .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255))))
+    result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
+      .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255)))
   }
 
   property(
     "validateAddChangeInput: should fail with InvalidRange if validateRange fails for an addChangeInput") {
-    forAll(choose[Long](0, 29)) { (invalidTTL: Long) =>
+    forAll(choose[Long](0, 29)) { invalidTTL: Long =>
       val change = AddChangeInput("test.comcast.com.", RecordType.A, invalidTTL, AData("1.1.1.1"))
       val result = validateAddChangeInput(change)
       result should haveInvalid[DomainValidationError](InvalidTTL(invalidTTL))
@@ -361,10 +408,10 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
       RecordAlreadyExists(existingA.inputChange.inputName))
-    result(2) should (haveInvalid[DomainValidationError](
+    result(2) should haveInvalid[DomainValidationError](
       RecordAlreadyExists(existingCname.inputChange.inputName)).and(
       haveInvalid[DomainValidationError](
-        CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ))))
+        CnameIsNotUniqueError(existingCname.inputChange.inputName, existingCname.inputChange.typ)))
     result(3) shouldBe valid
     result(4) should haveInvalid[DomainValidationError](
       RecordNameNotUniqueInBatch("199.2.0.192.in-addr.arpa.", RecordType.CNAME))
@@ -471,7 +518,7 @@ class BatchChangeValidationsSpec
   property("""validateChangesWithContext: should fail AddChangeForValidation with
       |CnameWithRecordNameAlreadyExists if record already exists as CNAME record type""".stripMargin) {
     List(rsOk, aaaa, ptrIp4, ptrIp6).foreach { recordSet =>
-      forAll(generateValidAddChangeForValidation(recordSet)) { (input: AddChangeForValidation) =>
+      forAll(generateValidAddChangeForValidation(recordSet)) { input: AddChangeForValidation =>
         val existingCNAMERecord = recordSet.copy(
           zoneId = input.zone.id,
           name = input.recordName,
@@ -490,7 +537,7 @@ class BatchChangeValidationsSpec
   }
 
   property("validateChangesWithContext: should succeed if all inputs are good") {
-    forAll(validAddChangeForValidationGen) { (input: AddChangeForValidation) =>
+    forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
       val result =
         validateChangesWithContext(List(input.validNel), ExistingRecordSets(recordSetList), okAuth)
 
@@ -501,7 +548,7 @@ class BatchChangeValidationsSpec
   property(
     "validateChangesWithContext: should succeed if all inputs of different record types are good") {
     List(rsOk, aaaa, ptrIp4, ptrIp6).foreach { recordSet =>
-      forAll(generateValidAddChangeForValidation(recordSet)) { (input: AddChangeForValidation) =>
+      forAll(generateValidAddChangeForValidation(recordSet)) { input: AddChangeForValidation =>
         val result = validateChangesWithContext(
           List(input.validNel),
           ExistingRecordSets(recordSetList),
@@ -513,7 +560,7 @@ class BatchChangeValidationsSpec
 
   property(
     "validateChangesWithContext: should fail with RecordAlreadyExists if record already exists") {
-    forAll(validAddChangeForValidationGen) { (input: AddChangeForValidation) =>
+    forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
       val existingRecordSetList = rsOk.copy(
         zoneId = input.zone.id,
         name = input.recordName.toUpperCase) :: recordSetList
@@ -754,7 +801,7 @@ class BatchChangeValidationsSpec
   property(
     """validateChangesWithContext: should fail AddChangeForValidation with UserIsNotAuthorized if user
       |is not a superuser, doesn't have group admin access, or doesn't have necessary ACL rule""".stripMargin) {
-    forAll(validAddChangeForValidationGen) { (input: AddChangeForValidation) =>
+    forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
       val result =
         validateChangesWithContext(List(input.validNel), ExistingRecordSets(recordSetList), notAuth)
 

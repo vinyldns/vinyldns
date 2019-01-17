@@ -191,19 +191,21 @@ class BatchChangeServiceSpec
     }
 
     "fail with GroupDoesNotExist if owner group ID is provided for a non-existent group" in {
-      val ownerGroupId = Some("non-existent-group-id")
-      val input = BatchChangeInput(None, List(apexAddA), ownerGroupId)
+      val ownerGroupId = "non-existent-group-id"
+      val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
       val result = leftResultOf(underTest.applyBatchChange(input, auth).value)
 
-      result shouldBe a[GroupDoesNotExist]
+      result shouldBe InvalidBatchChangeInput(List(GroupDoesNotExist(ownerGroupId)))
     }
 
     "fail with UserDoesNotBelongToOwnerGroup if normal user does not belong to group specified by owner group ID" in {
-      val ownerGroupId = Some("user-is-not-member")
-      val input = BatchChangeInput(None, List(apexAddA), ownerGroupId)
+      val ownerGroupId = "user-is-not-member"
+      val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
       val result = leftResultOf(underTest.applyBatchChange(input, notAuth).value)
 
-      result shouldBe a[NotAMemberOfOwnerGroup]
+      result shouldBe
+        InvalidBatchChangeInput(
+          List(NotAMemberOfOwnerGroup(ownerGroupId, notAuth.signedInUser.userName)))
     }
 
     "succeed if owner group ID is provided and user is a member of the group" in {

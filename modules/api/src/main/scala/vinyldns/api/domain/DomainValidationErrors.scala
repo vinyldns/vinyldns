@@ -25,6 +25,23 @@ sealed trait DomainValidationError {
   def message: String
 }
 
+// The request itself is invalid in this case, so we fail fast
+final case class ChangeLimitExceeded(limit: Int) extends DomainValidationError {
+  def message: String = s"Cannot request more than $limit changes in a single batch change request"
+}
+final case class BatchChangeIsEmpty(limit: Int) extends DomainValidationError {
+  def message: String =
+    s"Batch change contained no changes. Batch change must have at least one change, up to a maximum of $limit changes."
+}
+final case class GroupDoesNotExist(id: String) extends DomainValidationError {
+  def message: String = s"""Group with ID "$id" was not found"""
+}
+final case class NotAMemberOfOwnerGroup(ownerGroupId: String, userName: String)
+    extends DomainValidationError {
+  def message: String =
+    s"""User "$userName" must be a member of group "$ownerGroupId" to apply this group to batch changes."""
+}
+
 final case class InvalidDomainName(param: String) extends DomainValidationError {
   def message: String =
     s"""Invalid domain name: "$param", valid domain names must be letters, numbers, and hyphens, """ +

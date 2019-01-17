@@ -27,7 +27,12 @@ import vinyldns.api.repository._
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
-import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus, SingleDeleteChange}
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  SingleAddChange,
+  SingleChangeStatus,
+  SingleDeleteChange
+}
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._

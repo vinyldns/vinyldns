@@ -570,8 +570,8 @@ def test_empty_batch_fails(shared_zone_test_context):
         "changes": []
     }
 
-    error = shared_zone_test_context.ok_vinyldns_client.create_batch_change(batch_change_input, status=422)
-    assert_that(error, is_("Batch change contained no changes. Batch change must have at least one change, up to a maximum of 20 changes."))
+    errors = shared_zone_test_context.ok_vinyldns_client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains("Batch change contained no changes. Batch change must have at least one change, up to a maximum of 20 changes."))
 
 
 def test_create_batch_exceeding_change_limit_fails(shared_zone_test_context):
@@ -585,9 +585,8 @@ def test_create_batch_exceeding_change_limit_fails(shared_zone_test_context):
     for x in range(100):
         batch_change_input['changes'].append(get_change_A_AAAA_json("ok.", address=("1.2.3." + str(x))))
 
-    errors = client.create_batch_change(batch_change_input, status=413)
-
-    assert_that(errors, is_("Cannot request more than 20 changes in a single batch change request"))
+    errors = client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains("Cannot request more than 20 changes in a single batch change request"))
 
 
 def test_create_batch_change_without_changes_fails(shared_zone_test_context):
@@ -2582,8 +2581,8 @@ def test_create_batch_change_for_shared_zone_with_invalid_owner_group_id_fails(s
         "ownerGroupId": "non-existent-owner-group-id"
     }
 
-    errors = shared_client.create_batch_change(batch_change_input, status=400)
-    assert_that(errors, is_('Group with ID "non-existent-owner-group-id" was not found'))
+    errors = shared_client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains('Group with ID "non-existent-owner-group-id" was not found'))
 
 def test_create_batch_change_for_shared_zone_with_unauthorized_owner_group_id_fails(shared_zone_test_context):
     """
@@ -2599,5 +2598,5 @@ def test_create_batch_change_for_shared_zone_with_unauthorized_owner_group_id_fa
         "ownerGroupId": ok_group['id']
     }
 
-    errors = shared_client.create_batch_change(batch_change_input, status=403)
-    assert_that(errors, is_('User "sharedZoneUser" must be a member of group "' + ok_group['id'] + '" to apply this group to batch changes.'))
+    errors = shared_client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains('User "sharedZoneUser" must be a member of group "' + ok_group['id'] + '" to apply this group to batch changes.'))

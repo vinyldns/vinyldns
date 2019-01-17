@@ -65,7 +65,7 @@ class BatchChangeService(
       auth: AuthPrincipal): BatchResult[BatchChange] =
     for {
       existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
-      _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth).toBatchResult
+      _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth)
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)

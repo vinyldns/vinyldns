@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.batch
 
-import cats.data.NonEmptyList
+import cats.data._
 import cats.implicits._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
@@ -34,7 +34,7 @@ trait BatchChangeValidationsAlgebra {
   def validateBatchChangeInput(
       input: BatchChangeInput,
       existingGroup: Option[Group],
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+      authPrincipal: AuthPrincipal): BatchResult[Unit]
 
   def validateInputChanges(input: List[ChangeInput]): ValidatedBatch[ChangeInput]
 
@@ -57,32 +57,37 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateBatchChangeInput(
       input: BatchChangeInput,
       existingGroup: Option[Group],
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    for {
-      _ <- validateBatchChangeInputSize(input)
-      _ <- validateOwnerGroupId(input.ownerGroupId, existingGroup, authPrincipal)
-    } yield ().asRight
+      authPrincipal: AuthPrincipal): BatchResult[Unit] = {
+    val validations = validateBatchChangeInputSize(input) |+| validateOwnerGroupId(
+      input.ownerGroupId,
+      existingGroup,
+      authPrincipal)
 
-  def validateBatchChangeInputSize(
-      input: BatchChangeInput): Either[BatchChangeErrorResponse, Unit] =
+    EitherT.fromEither(
+      validations
+        .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeInput(nel.toList))
+        .toEither)
+  }
+
+  def validateBatchChangeInputSize(input: BatchChangeInput): SingleValidation[Unit] =
     if (input.changes.isEmpty) {
-      BatchChangeIsEmpty(changeLimit).asLeft
+      BatchChangeIsEmpty(changeLimit).invalidNel
     } else if (input.changes.length > changeLimit) {
-      ChangeLimitExceeded(changeLimit).asLeft
+      ChangeLimitExceeded(changeLimit).invalidNel
     } else {
-      ().asRight
+      ().validNel
     }
 
   def validateOwnerGroupId(
       ownerGroupId: Option[String],
       existingGroup: Option[Group],
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+      authPrincipal: AuthPrincipal): SingleValidation[Unit] =
     (ownerGroupId, existingGroup) match {
-      case (None, _) => ().asRight
-      case (Some(groupId), None) => Left(GroupDoesNotExist(groupId))
+      case (None, _) => ().validNel
+      case (Some(groupId), None) => GroupDoesNotExist(groupId).invalidNel
       case (Some(groupId), Some(_)) =>
-        if (authPrincipal.isGroupMember(groupId) || authPrincipal.canEditAll) ().asRight
-        else Left(NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName))
+        if (authPrincipal.isGroupMember(groupId) || authPrincipal.canEditAll) ().validNel
+        else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
     }
 
   /* input validations */
