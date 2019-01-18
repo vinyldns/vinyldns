@@ -81,7 +81,7 @@
                                     <th>Email</th>
                                     <th>Admin Group</th>
                                     <th>Status</th>
-                                    @if(meta.shared_display_enabled) {
+                                    @if(meta.sharedDisplayEnabled) {
                                         <th>Type</th>
                                     }
                                     <th>Actions</th>
@@ -96,7 +96,7 @@
                                       <span ng-if="!isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
                                   </td>
                                   <td ng-bind="zone.status"></td>
-                                  @if(meta.shared_display_enabled) {
+                                  @if(meta.sharedDisplayEnabled) {
                                     <td>{{zone.shared ? "Shared" : "Private"}}</td>
                                   }
                                   <td>
