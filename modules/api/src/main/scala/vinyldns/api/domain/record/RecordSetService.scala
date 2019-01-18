@@ -228,10 +228,8 @@ class RecordSetService(
       recordsets: List[RecordSet],
       groups: Set[Group]): Result[List[RecordSetInfo]] =
     recordsets.map { rs =>
-      val ownerGroupName = groups.find(_.id == rs.ownerGroupId.getOrElse(None)) match {
-        case Some(group) => Some(group.name)
-        case None => None
-      }
+      val ownerGroupName =
+        rs.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
       RecordSetInfo(rs, ownerGroupName)
     }.toResult
 

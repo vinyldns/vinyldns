@@ -104,7 +104,7 @@ def test_list_recordsets_no_start(rs_fixture):
     list_results = client.list_recordsets(ok_zone['id'], status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
 
-def test_list_recordsets_with_ownergroup_id_and_ownergroup_name(rs_fixture):
+def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
     """
     Test that record sets with an owner group return the owner group ID and name
     """

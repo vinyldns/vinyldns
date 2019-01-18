@@ -648,9 +648,10 @@ class RecordSetServiceSpec
     "return the recordSets" in {
       doReturn(IO.pure(Set(okGroup)))
         .when(mockGroupRepo)
-        .getGroups(Set(okGroup.id))
+        .getGroups(Set(okGroup.id, "not-in-backend"))
 
-      doReturn(IO.pure(ListRecordSetResults(List(sharedZoneRecord))))
+      doReturn(
+        IO.pure(ListRecordSetResults(List(sharedZoneRecord, sharedZoneRecordNotFoundOwnerGroup))))
         .when(mockRecordRepo)
         .listRecordSets(
           zoneId = sharedZone.id,
@@ -671,7 +672,11 @@ class RecordSetServiceSpec
         List(
           RecordSetListInfo(
             RecordSetInfo(sharedZoneRecord, Some(okGroup.name)),
-            AccessLevel.Delete))
+            AccessLevel.Delete),
+          RecordSetListInfo(
+            RecordSetInfo(sharedZoneRecordNotFoundOwnerGroup, None),
+            AccessLevel.Delete)
+        )
     }
     "return the recordSet for support admin" in {
       doReturn(IO.pure(Set()))
