@@ -59,14 +59,24 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
         rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.AAAA).value)
 
       val recordOut = queryResult.head
-      recordOut.records shouldBe testRecord.records
+      recordOut.records should contain theSameElementsAs testRecord.records
       recordOut.name shouldBe testRecord.name
       recordOut.ttl shouldBe testRecord.ttl
       recordOut.typ shouldBe testRecord.typ
     }
     "Successfully add DS record type" in {
-      val dsData =
+      val dSDataSha1 =
         DSData(60485, 5, 1, ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118"))
+
+      // example in https://tools.ietf.org/html/rfc4509
+      val dSDataSha256 =
+        DSData(
+          60485,
+          5,
+          2,
+          ByteVector.fromValidHex(
+            "D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A"))
+
       val testRecord = RecordSet(
         testZone.id,
         "dskey",
@@ -74,7 +84,7 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
         200,
         RecordSetStatus.Pending,
         DateTime.now(),
-        records = List(dsData))
+        records = List(dSDataSha1, dSDataSha256))
 
       val conn = DnsConnection(testZone.connection.get)
       val result: DnsResponse =
@@ -86,7 +96,7 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
         rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.DS).value)
 
       val recordOut = queryResult.head
-      recordOut.records shouldBe testRecord.records
+      recordOut.records should contain theSameElementsAs testRecord.records
       recordOut.name shouldBe testRecord.name
       recordOut.ttl shouldBe testRecord.ttl
       recordOut.typ shouldBe testRecord.typ
