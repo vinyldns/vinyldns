@@ -29,7 +29,7 @@ import vinyldns.core.domain.record.{DSData, RecordSet, RecordSetStatus, RecordTy
 
 class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHelpers {
 
-  private val zoneName = "vinyldns."
+  private val zoneName = "example.com."
   private val testZone = Zone(
     zoneName,
     "test@test.com",
@@ -58,15 +58,18 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       val queryResult: List[RecordSet] =
         rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.AAAA).value)
 
-      queryResult.head.records shouldBe testRecord.records
-
+      val recordOut = queryResult.head
+      recordOut.records shouldBe testRecord.records
+      recordOut.name shouldBe testRecord.name
+      recordOut.ttl shouldBe testRecord.ttl
+      recordOut.typ shouldBe testRecord.typ
     }
     "Successfully add DS record type" in {
       val dsData =
         DSData(60485, 5, 1, ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118"))
       val testRecord = RecordSet(
         testZone.id,
-        "test-ds",
+        "dskey",
         RecordType.DS,
         200,
         RecordSetStatus.Pending,
@@ -80,9 +83,13 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       result shouldBe a[NoError]
 
       val queryResult: List[RecordSet] =
-        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.AAAA).value)
+        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.DS).value)
 
-      queryResult.head.records shouldBe testRecord.records
+      val recordOut = queryResult.head
+      recordOut.records shouldBe testRecord.records
+      recordOut.name shouldBe testRecord.name
+      recordOut.ttl shouldBe testRecord.ttl
+      recordOut.typ shouldBe testRecord.typ
     }
   }
 }

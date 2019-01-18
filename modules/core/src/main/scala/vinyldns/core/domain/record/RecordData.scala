@@ -78,8 +78,8 @@ final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String
 final case class TXTData(text: String) extends RecordData
 
 final case class DSData(
-    keyTag: Integer, // footprint - The original KEY record's footprint (keyid).
+    keyTag: Integer, // footprint in DNSJava
     algorithm: Integer,
-    digestType: Integer, //digestid - The digest id code; algorithm used to construct the digest
-    digest: ByteVector) //digest - A hash of the original key
+    digestType: Integer, //digestid in DNSJava
+    digest: ByteVector)
     extends RecordData

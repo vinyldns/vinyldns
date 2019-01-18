@@ -21,6 +21,7 @@ import java.net.InetAddress
 import cats.syntax.either._
 import org.joda.time.DateTime
 import org.xbill.DNS
+import scodec.bits.ByteVector
 import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.core.domain.{DomainHelpers, record}
 import vinyldns.core.domain.record.RecordType._
@@ -125,6 +126,7 @@ trait DnsConversions {
     case DNS.Type.A => RecordType.A
     case DNS.Type.AAAA => RecordType.AAAA
     case DNS.Type.CNAME => RecordType.CNAME
+    case DNS.Type.DS => RecordType.DS
     case DNS.Type.MX => RecordType.MX
     case DNS.Type.NS => RecordType.NS
     case DNS.Type.PTR => RecordType.PTR
@@ -141,6 +143,7 @@ trait DnsConversions {
       case x: DNS.ARecord => fromARecord(x, zoneName, zoneId)
       case x: DNS.AAAARecord => fromAAAARecord(x, zoneName, zoneId)
       case x: DNS.CNAMERecord => fromCNAMERecord(x, zoneName, zoneId)
+      case x: DNS.DSRecord => fromDSRecord(x, zoneName, zoneId)
       case x: DNS.MXRecord => fromMXRecord(x, zoneName, zoneId)
       case x: DNS.NSRecord => fromNSRecord(x, zoneName, zoneId)
       case x: DNS.PTRRecord => fromPTRRecord(x, zoneName, zoneId)
@@ -213,6 +216,17 @@ trait DnsConversions {
   def fromCNAMERecord(r: DNS.CNAMERecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
       List(CNAMEData(data.getAlias.toString))
+    }
+
+  def fromDSRecord(r: DNS.DSRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
+    fromDnsRecord(r, zoneName, zoneId) { data =>
+      List(
+        DSData(
+          data.getFootprint,
+          data.getAlgorithm,
+          data.getDigestID,
+          ByteVector(data.getDigest)
+        ))
     }
 
   def fromMXRecord(r: DNS.MXRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
