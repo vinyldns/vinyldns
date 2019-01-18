@@ -24,7 +24,7 @@ import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 import vinyldns.api.ResultHelpers
-import vinyldns.core.TestRecordSetData.aaaa
+import vinyldns.core.TestRecordSetData.{aaaa, ds}
 import vinyldns.core.domain.record.{DSData, RecordSet, RecordSetStatus, RecordType}
 
 class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHelpers {
@@ -40,7 +40,7 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
   )
 
-  "Adding records" should {
+  "Interacting with the DNS backend" should {
     "remove the tsig key value during an update" in {
       val testRecord = aaaa.copy(zoneId = testZone.id)
       val conn = DnsConnection(testZone.connection.get)
@@ -64,27 +64,8 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       recordOut.ttl shouldBe testRecord.ttl
       recordOut.typ shouldBe testRecord.typ
     }
-    "Successfully add DS record type" in {
-      val dSDataSha1 =
-        DSData(60485, 5, 1, ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118"))
-
-      // example in https://tools.ietf.org/html/rfc4509
-      val dSDataSha256 =
-        DSData(
-          60485,
-          5,
-          2,
-          ByteVector.fromValidHex(
-            "D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A"))
-
-      val testRecord = RecordSet(
-        testZone.id,
-        "dskey",
-        RecordType.DS,
-        200,
-        RecordSetStatus.Pending,
-        DateTime.now(),
-        records = List(dSDataSha1, dSDataSha256))
+    "Successfully add and remove DS record type" in {
+      val testRecord = ds.copy(zoneId = testZone.id)
 
       val conn = DnsConnection(testZone.connection.get)
       val result: DnsResponse =
@@ -100,6 +81,18 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       recordOut.name shouldBe testRecord.name
       recordOut.ttl shouldBe testRecord.ttl
       recordOut.typ shouldBe testRecord.typ
+
+      // deleting the record just added
+      val deleteResult: DnsResponse =
+        rightResultOf(
+          conn.deleteRecord(RecordSetChangeGenerator.forAdd(testRecord, testZone)).value)
+
+      deleteResult shouldBe a[NoError]
+
+      val deleteQuery: List[RecordSet] =
+        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.DS).value)
+
+      deleteQuery shouldBe List.empty
     }
   }
 }

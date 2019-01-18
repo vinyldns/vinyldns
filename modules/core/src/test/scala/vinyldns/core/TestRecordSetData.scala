@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.record._
 import TestZoneData._
 import TestMembershipData._
+import scodec.bits.ByteVector
 import vinyldns.core.domain.zone.Zone
 
 object TestRecordSetData {
@@ -136,6 +137,27 @@ object TestRecordSetData {
     DateTime.now,
     None,
     List(TXTData("txt")))
+
+  // example at https://tools.ietf.org/html/rfc4034#page-18
+  val dSDataSha1 =
+    DSData(60485, 5, 1, ByteVector.fromValidHex("2BB183AF5F22588179A53B0A98631FAD1A292118"))
+
+  // example at https://tools.ietf.org/html/rfc4509#page-3
+  val dSDataSha256 =
+    DSData(
+      60485,
+      5,
+      2,
+      ByteVector.fromValidHex("D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A"))
+
+  val ds: RecordSet = RecordSet(
+    okZone.id,
+    "dskey",
+    RecordType.DS,
+    200,
+    RecordSetStatus.Pending,
+    DateTime.now(),
+    records = List(dSDataSha1, dSDataSha256))
 
   val sharedZoneRecord: RecordSet = RecordSet(
     sharedZone.id,
