@@ -28,7 +28,6 @@ import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
-import cats.implicits._
 
 object RecordSetService {
   def apply(
@@ -74,7 +73,7 @@ class RecordSetService(
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      _ <- canUseOwnerGroup(ownerGroup, auth).toResult
+      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificAddValidations(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- messageQueue.send(change).toResult[Unit]
@@ -90,7 +89,7 @@ class RecordSetService(
       _ <- isNotHighValueDomain(recordSet, zone).toResult
       _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      _ <- canUseOwnerGroup(ownerGroup, auth).toResult
+      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -230,16 +229,11 @@ class RecordSetService(
     groupName.value.toResult[Option[String]]
   }
 
-  def getGroupIfProvided(groupId: Option[String]): Result[Option[Group]] =
-    groupId match {
-      case Some(id) =>
-        groupRepository
-          .getGroup(id)
-          .map {
-            case Some(group) => Some(group).asRight
-            case None => InvalidGroupError(s"""Owner group with id "$id" not found""").asLeft
-          }
-          .toResult
-      case None => Option.empty[Group].toResult
-    }
+  def getGroupIfProvided(groupId: Option[String]): Result[Option[Group]] = {
+    val ownerGroup = for {
+      id <- OptionT.fromOption[IO](groupId)
+      group <- OptionT(groupRepository.getGroup(id))
+    } yield group
+    ownerGroup.value.toResult
+  }
 }

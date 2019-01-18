@@ -211,12 +211,15 @@ object RecordSetValidations {
   }
 
   def canUseOwnerGroup(
+      ownerGroupId: Option[String],
       group: Option[Group],
       authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
-    group match {
-      case Some(g) if authPrincipal.signedInUser.isSuper || authPrincipal.isGroupMember(g.id) =>
-        ().asRight
-      case None => ().asRight
-      case Some(g) => InvalidRequest(s"User not in record owner group ${g.id}").asLeft
+    (ownerGroupId, group) match {
+      case (None, _) => ().asRight
+      case (Some(groupId), None) =>
+        InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
+      case (Some(groupId), Some(_)) =>
+        if (authPrincipal.canEditAll || authPrincipal.isGroupMember(groupId)) ().asRight
+        else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
 }

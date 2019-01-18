@@ -1850,7 +1850,7 @@ def test_create_with_owner_group_in_shared_zone_by_acl_passes(shared_zone_test_c
             shared_zone_test_context.shared_zone_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_create_in_shared_zone_by_non_unassociated_user_fails(shared_zone_test_context):
+def test_create_in_shared_zone_by_unassociated_user_fails(shared_zone_test_context):
     """
     Test that creating a record in a shared zone by a user with no write permissions fails
     """
@@ -1875,7 +1875,8 @@ def test_create_with_not_found_owner_group_fails(shared_zone_test_context):
 
     record_json = get_recordset_json(zone, 'test_shared_bad_owner', 'A', [{'address': '1.1.1.1'}])
     record_json['ownerGroupId'] = 'no-existo'
-    client.create_recordset(record_json, status=422)
+    error = client.create_recordset(record_json, status=422)
+    assert_that(error, is_('Record owner group with id "no-existo" not found'))
 
 
 def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context):
@@ -1890,4 +1891,4 @@ def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context)
     record_json = get_recordset_json(zone, 'test_shared_not_group_member', 'A', [{'address': '1.1.1.1'}])
     record_json['ownerGroupId'] = group['id']
     error = client.create_recordset(record_json, status=422)
-    assert_that(error, is_('User not in record owner group ' + group['id']))
+    assert_that(error, is_('User not in record owner group with id "' + group['id'] + '"'))
