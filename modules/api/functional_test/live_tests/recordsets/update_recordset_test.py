@@ -2010,6 +2010,8 @@ def test_update_from_user_in_record_owner_group_for_private_zone_fails(shared_zo
         record_json['ownerGroupId'] = shared_record_group['id']
         create_response = ok_client.create_recordset(record_json, status=202)
         create_rs = ok_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs['ownerGroupId'], is_(shared_record_group['id']))
+
 
         update = create_rs
         update['ttl'] = update['ttl'] + 100
@@ -2038,10 +2040,14 @@ def test_update_owner_group_from_user_in_record_owner_group_for_shared_zone_pass
         record_json['ownerGroupId'] = shared_record_group['id']
         create_response = shared_client.create_recordset(record_json, status=202)
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update['ownerGroupId'], is_(shared_record_group['id']))
+
 
         update['ttl'] = update['ttl'] + 100
         update_response = ok_client.update_recordset(update, status=202)
         update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update_rs['ownerGroupId'], is_(shared_record_group['id']))
+
 
     finally:
         if update_rs:
@@ -2063,11 +2069,15 @@ def test_update_owner_group_from_admin_in_shared_zone_passes(shared_zone_test_co
         record_json = get_recordset_json(zone, 'test_shared_admin_update_success', 'A', [{'address': '1.1.1.1'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update, is_not(has_key('ownerGroupId')))
+
 
         update['ownerGroupId'] = group['id']
         update['ttl'] = update['ttl'] + 100
         update_response = shared_client.update_recordset(update, status=202)
         update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update_rs['ownerGroupId'], is_(group['id']))
+
 
     finally:
         if update_rs:
@@ -2089,6 +2099,7 @@ def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_con
         record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs, is_not(has_key('ownerGroupId')))
 
         update = create_rs
         update['ttl'] = update['ttl'] + 100
@@ -2118,10 +2129,13 @@ def test_update_from_acl_for_shared_zone_passes(shared_zone_test_context):
         record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update, is_not(has_key('ownerGroupId')))
 
         update['ttl'] = update['ttl'] + 100
         update_response = dummy_client.update_recordset(update, status=202)
         update_rs = dummy_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update, is_not(has_key('ownerGroupId')))
+
 
     finally:
         clear_shared_zone_acl_rules(shared_zone_test_context)
@@ -2145,10 +2159,12 @@ def test_update_to_no_group_owner_passes(shared_zone_test_context):
         record_json['ownerGroupId'] = shared_record_group['id']
         create_response = shared_client.create_recordset(record_json, status=202)
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update['ownerGroupId'], is_(shared_record_group['id']))
 
         update['ownerGroupId'] = None
         update_response = shared_client.update_recordset(update, status=202)
         update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update_rs, is_not(has_key('ownerGroupId')))
 
     finally:
         if update_rs:
@@ -2183,7 +2199,7 @@ def test_update_to_invalid_record_owner_group_fails(shared_zone_test_context):
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_update_to_group_a_user_is_not_in_fails(shared_zone_test_context):
+def test_update_to_group_a_user_is_notin_fails(shared_zone_test_context):
     """
     Test that updating to a record owner group that the user is not in fails
     """

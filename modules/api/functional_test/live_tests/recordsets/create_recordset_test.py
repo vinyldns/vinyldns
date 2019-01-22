@@ -1769,6 +1769,7 @@ def test_create_with_owner_group_in_private_zone_by_admin_passes(shared_zone_tes
         record_json['ownerGroupId'] = group['id']
         create_response = client.create_recordset(record_json, status=202)
         create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs['ownerGroupId'], is_(group['id']))
 
     finally:
         if create_rs:
@@ -1791,6 +1792,7 @@ def test_create_with_owner_group_in_shared_zone_by_admin_passes(shared_zone_test
         record_json['ownerGroupId'] = group['id']
         create_response = client.create_recordset(record_json, status=202)
         create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs['ownerGroupId'], is_(group['id']))
 
     finally:
         if create_rs:
@@ -1816,6 +1818,7 @@ def test_create_with_owner_group_in_private_zone_by_acl_passes(shared_zone_test_
         record_json['ownerGroupId'] = group['id']
         create_response = client.create_recordset(record_json, status=202)
         create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs['ownerGroupId'], is_(group['id']))
 
     finally:
         clear_ok_acl_rules(shared_zone_test_context)
@@ -1842,6 +1845,7 @@ def test_create_with_owner_group_in_shared_zone_by_acl_passes(shared_zone_test_c
         record_json['ownerGroupId'] = group['id']
         create_response = client.create_recordset(record_json, status=202)
         create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs['ownerGroupId'], is_(group['id']))
 
     finally:
         clear_shared_zone_acl_rules(shared_zone_test_context)
