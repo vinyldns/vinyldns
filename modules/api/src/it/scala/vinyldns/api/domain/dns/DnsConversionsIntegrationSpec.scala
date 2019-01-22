@@ -16,16 +16,14 @@
 
 package vinyldns.api.domain.dns
 
-import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import org.xbill.DNS
-import scodec.bits.ByteVector
 import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestRecordSetData.{aaaa, ds}
-import vinyldns.core.domain.record.{DSData, RecordSet, RecordSetStatus, RecordType}
+import vinyldns.core.domain.record.{RecordSet, RecordType}
 
 class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHelpers {
 
