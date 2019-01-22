@@ -111,7 +111,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
     client = rs_fixture.client
     ok_zone = rs_fixture.test_context
     shared_group = rs_fixture.shared_group
-    created_rs_id = None
+    result_rs = None
     try:
         # create a record in the zone with an owner group ID
         new_rs = get_recordset_json(ok_zone,
@@ -134,12 +134,9 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
                 assert_that(rs['ownerGroupId'], is_(shared_group['id']))
                 assert_that(rs['ownerGroupName'], is_("record-ownergroup"))
 
-        # set created_rs_id after confirming record set creation so it can be deleted in test cleanup
-        created_rs_id = result_rs['id']
-
     finally:
-        if created_rs_id:
-            delete_result = client.delete_recordset(ok_zone['id'], created_rs_id, status=202)
+        if result_rs:
+            delete_result = client.delete_recordset(ok_zone['id'], result_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
             list_results = client.list_recordsets(ok_zone['id'], status=200)
             rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
