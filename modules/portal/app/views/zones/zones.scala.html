@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks)
+@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -81,6 +81,9 @@
                                     <th>Email</th>
                                     <th>Admin Group</th>
                                     <th>Status</th>
+                                    @if(meta.sharedDisplayEnabled) {
+                                        <th>Type</th>
+                                    }
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -93,6 +96,9 @@
                                       <span ng-if="!isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
                                   </td>
                                   <td ng-bind="zone.status"></td>
+                                  @if(meta.sharedDisplayEnabled) {
+                                    <td>{{zone.shared ? "Shared" : "Private"}}</td>
+                                  }
                                   <td>
                                     <div class="table-form-group">
                                       <a id="zone-view-{{zone.name}}" type="button" class="btn btn-info btn-rounded"
