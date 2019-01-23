@@ -435,7 +435,7 @@ class RecordSetServiceIntegrationSpec
       }
     }
 
-    "fail if user is in owner group but zone is not shared" in {
+    "fail updating if user is in owner group but zone is not shared" in {
       val result = testRecordSetService
         .updateRecordSet(testOwnerGroupRecordInNormalZone, auth2)
         .value
@@ -444,7 +444,7 @@ class RecordSetServiceIntegrationSpec
       leftValue(result) shouldBe a[NotAuthorizedError]
     }
 
-    "fail if owner group does not exist" in {
+    "fail updating if owner group does not exist" in {
       val newRecord = sharedTestRecord.copy(ownerGroupId = Some("no-existo"))
 
       val result = testRecordSetService
@@ -455,7 +455,7 @@ class RecordSetServiceIntegrationSpec
       leftValue(result) shouldBe a[InvalidGroupError]
     }
 
-    "fail if user is not in new owner group" in {
+    "fail updating if user is not in new owner group" in {
       val newRecord = sharedTestRecord.copy(ownerGroupId = Some(group.id))
 
       val result = testRecordSetService
@@ -466,7 +466,7 @@ class RecordSetServiceIntegrationSpec
       leftValue(result) shouldBe a[InvalidRequest]
     }
 
-    "succeed if user is in owner group and zone is shared" in {
+    "update successfully if user is in owner group and zone is shared" in {
       val newRecord = sharedTestRecord.copy(ttl = sharedTestRecord.ttl + 100)
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth2)
@@ -478,7 +478,7 @@ class RecordSetServiceIntegrationSpec
         sharedTestRecord.ownerGroupId
     }
 
-    "succeed if user is changing owner group to None" in {
+    "update successfully if user is changing owner group to None" in {
       val newRecord = sharedTestRecord.copy(ownerGroupId = None)
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth2)
@@ -488,7 +488,7 @@ class RecordSetServiceIntegrationSpec
       rightValue(result).asInstanceOf[RecordSetChange].recordSet.ownerGroupId shouldBe None
     }
 
-    "succeed if user is changing owner group to another group they are a part of" in {
+    "update successfully if user is changing owner group to another group they are a part of" in {
       val newRecord = sharedTestRecord.copy(ownerGroupId = Some(group2.id))
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth2)
