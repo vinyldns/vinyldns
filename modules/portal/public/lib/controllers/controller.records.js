@@ -17,6 +17,21 @@
 angular.module('controller.records', [])
     .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
 
+    groupsService.getMyGroupsStored()
+        .then(function (results) {
+            $scope.myGroups = results.groups;
+        })
+        .catch(function (error){
+            handleError(error, 'getMyGroup:get-groups-failure');
+        });
+
+    $scope.isGroupMember = function(groupId) {
+        var groupMember = $scope.myGroups.find(function(group) {
+            return groupId === group.id;
+        });
+        return groupMember !== undefined
+    };
+
     /**
       * Scope data initial setup
       */

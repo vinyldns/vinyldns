@@ -1,4 +1,4 @@
-@(implicit request: play.api.mvc.Request[Any])
+@(implicit request: play.api.mvc.Request[Any], meta: models.Meta)
 
     <!-- START ACCORDION -->
     <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
@@ -102,6 +102,9 @@
                     <th>Type</th>
                     <th>TTL</th>
                     <th>Record Data</th>
+                    @if(meta.sharedDisplayEnabled) {
+                        <th ng-if="zoneInfo.shared">Owner Group Name</th>
+                    }
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -261,6 +264,12 @@
                         </span>
                         </span>
                     </td>
+                    @if(meta.sharedDisplayEnabled) {
+                        <td ng-if="zoneInfo.shared">
+                            <a ng-if="record.ownerGroupName && isGroupMember(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}">blah</a>
+                            <span ng-if="record.ownerGroupName && !isGroupMember(record.ownerGroupId)" ng-bind="record.ownerGroupName" style="line-height: 0"></span>
+                        </td>
+                    }
                     <td>
                         <span ng-if="(record.canBeEdited && record.accessLevel != 'NoAccess' && record.accessLevel != 'Read')">
                             <div class="table-form-group">
