@@ -32,6 +32,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import cats.effect._
+import vinyldns.api.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 
@@ -55,7 +56,9 @@ class BatchChangeRoutingSpec
     val batchChangeLimit = 20
 
     /* Builds BatchChange response */
-    def createBatchChangeResponse(comments: Option[String]): BatchChange =
+    def createBatchChangeResponse(
+        comments: Option[String] = None,
+        ownerGroupId: Option[String] = None): BatchChange =
       BatchChange(
         okAuth.userId,
         okAuth.signedInUser.userName,
@@ -87,7 +90,7 @@ class BatchChangeRoutingSpec
             None,
             "singleDeleteChangeId")
         ),
-        None,
+        ownerGroupId,
         "batchId"
       )
 
@@ -130,7 +133,9 @@ class BatchChangeRoutingSpec
 
     val validResponseWithComments: BatchChange = createBatchChangeResponse(
       Some("validChangeWithComments"))
-    val validResponseWithoutComments: BatchChange = createBatchChangeResponse(None)
+    val validResponseWithoutComments: BatchChange = createBatchChangeResponse()
+    val validResponseWithOwnerGroupId: BatchChange =
+      createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
     val genericValidResponse: BatchChange = createBatchChangeResponse(
       Some("generic valid response"))
     val validListBatchChangeSummariesResponse: BatchChangeSummaryList = BatchChangeSummaryList(
@@ -152,12 +157,13 @@ class BatchChangeRoutingSpec
             IO.pure(Right(validResponseWithoutComments)))
         case Some("runtimeException") =>
           throw new RuntimeException("Unexpected run-time exception has occurred!")
-        case Some("batchChangeIsEmpty") =>
+        case Some("emptyBatch") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(BatchChangeIsEmpty(batchChangeLimit))))
-        case Some("changeLimitExceeded") =>
+            IO.pure(Left(InvalidBatchChangeInput(List(BatchChangeIsEmpty(batchChangeLimit)))))
+          )
+        case Some("validChangeWithOwnerGroup") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(ChangeLimitExceeded(batchChangeLimit))))
+            IO.pure(Right(validResponseWithOwnerGroupId)))
         case Some(_) =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))
       }
@@ -255,31 +261,32 @@ class BatchChangeRoutingSpec
       }
     }
 
-    "return a 422 UnprocessableEntity if batch change contains no changes" in {
-      val unprocessableEntity: String =
-        """{"comments": "batchChangeIsEmpty",
-          | "changes": []
-          |}""".stripMargin
+    "return a 202 Accepted for valid add and delete request with owner group ID" in {
+      val validRequestWithOwnerGroupId: String =
+        compact(
+          render(("comments" -> "validChangeWithOwnerGroup") ~~ changeList ~~
+            ("ownerGroupId" -> "some-group-id")))
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, unprocessableEntity)) ~>
-        Route.seal(batchChangeRoute(okAuth)) ~> check {
+        HttpEntity(ContentTypes.`application/json`, validRequestWithOwnerGroupId)) ~>
+        batchChangeRoute(sharedAuth) ~> check {
+        status shouldBe Accepted
 
-        status shouldBe UnprocessableEntity
+        val change = responseAs[JValue]
+        compact(change) shouldBe compact(Extraction.decompose(validResponseWithOwnerGroupId))
       }
     }
 
-    "return a 413 RequestEntityTooLarge if batch change limit has been exceeded" in {
-      val requestEntityTooLarge: String =
-        """{"comments": "changeLimitExceeded",
-          | "changes": []
+    "return a 400 BadRequest for empty batch" in {
+      val emptyBatchRequest: String =
+        """{"comments": "emptyBatch"
           |}""".stripMargin
 
       Post("/zones/batchrecordchanges").withEntity(
-        HttpEntity(ContentTypes.`application/json`, requestEntityTooLarge)) ~>
+        HttpEntity(ContentTypes.`application/json`, emptyBatchRequest)) ~>
         Route.seal(batchChangeRoute(okAuth)) ~> check {
 
-        status shouldBe RequestEntityTooLarge
+        status shouldBe BadRequest
       }
     }
 

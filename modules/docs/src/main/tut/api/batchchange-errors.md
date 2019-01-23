@@ -342,50 +342,33 @@ Not all record types are allowed in a DNS reverse zone. The given type is not su
 
 Fail-request errors cause the batch change processing to abort immediately upon encounter.
 
-1. [Batch Change Is Empty](#BatchChangeIsEmpty)
-2. [Change Limit Exceeded](#ChangeLimitExceeded)
-3. [Batch Change Not Found](#BatchChangeNotFound)
-4. [Malformed JSON Errors](#malformed-json-errors)
+1. [Invalid Batch Change Input](#InvalidBatchChangeInput)
+2. [Batch Change Not Found](#BatchChangeNotFound)
+3. [Malformed JSON Errors](#malformed-json-errors)
 
-#### 1. BATCH CHANGE IS EMPTY <a id="BatchChangeIsEmpty" />
+#### 1. INVALID BATCH CHANGE INPUT <a id="InvalidBatchChangeInput" />
 
 ##### HTTP RESPONSE CODE
 
 Code          | description |
  ------------ | :---------- |
-422           | **Unprocessable Entity** - the batch does not contain any changes, thus cannot be processed. |
+400           | **Bad Request** - There is a top-level issue with batch change, aborting batch processing. |
 
-##### ERROR MESSAGE:
+There are a series of different error messages that can be returned with this error code.
+
+##### EXAMPLE ERROR MESSAGES:
 
 ```
 Batch change contained no changes. Batch change must have at least one change, up to a maximum of <limit> changes.
-```
 
-##### DETAILS:
-
-There were no changes found in the [create batch change](../api/create-batchchange) request. A batch must contain at least one change and no more than 20 changes.
-
-
-#### 2. CHANGE LIMIT EXCEEDED <a id="ChangeLimitExceeded" />
-
-##### HTTP RESPONSE CODE
-
-Code          | description |
- ------------ | :---------- |
-413           | **Request Entity Too Large** - the batch size exceeds the maximum number of single changes, currently set to 20. |
-
-##### ERROR MESSAGE:
-
-```
 Cannot request more than <limit> changes in a single batch change request
 ```
 
 ##### DETAILS:
 
-The number of change inputs in the [create batch change](../api/create-batchchange) request exceeds the max change input limit threshold, which is currently set to 20.
+If there are issues with the batch change input data provided in the batch change request, errors will be returned and batch change validations will abort processing.
 
-
-#### 3. BATCH CHANGE NOT FOUND <a id="BatchChangeNotFound" />
+#### 2. BATCH CHANGE NOT FOUND <a id="BatchChangeNotFound" />
 
 ##### HTTP RESPONSE CODE
 
@@ -404,7 +387,7 @@ Batch change with id <id> cannot be found
 The batch ID specified in the [get batch change](../api/get-batchchange) request does not exist.
 
 
-#### 4. MALFORMED JSON ERRORS <a id="malformed-json-errors" />
+#### 3. MALFORMED JSON ERRORS <a id="malformed-json-errors" />
 
 ##### DETAILS:
 

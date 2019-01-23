@@ -451,6 +451,56 @@ def test_create_batch_change_without_comments_succeeds(shared_zone_test_context)
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
+def test_create_batch_change_with_owner_group_id_succeeds(shared_zone_test_context):
+    """
+    Test successfully creating a batch change with owner group ID specified
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("owner-group-id.ok.", address="4.3.2.1")
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+    to_delete = []
+
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(result)
+        to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, record_name="owner-group-id",
+                                              input_name="owner-group-id.ok.", record_data="4.3.2.1")
+        assert_that(completed_batch['ownerGroupId'], is_(shared_zone_test_context.ok_group['id']))
+
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, client)
+
+def test_create_batch_change_without_owner_group_id_succeeds(shared_zone_test_context):
+    """
+    Test successfully creating a batch change without owner group ID specified
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("no-owner-group-id.ok.", address="4.3.2.1")
+        ]
+    }
+    to_delete = []
+
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(result)
+        to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, record_name="no-owner-group-id",
+                                              input_name="no-owner-group-id.ok.", record_data="4.3.2.1")
+        assert_that(completed_batch, is_not(has_key('ownerGroupId')))
+
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, client)
 
 def test_create_batch_change_partial_failure(shared_zone_test_context):
     """
@@ -520,8 +570,8 @@ def test_empty_batch_fails(shared_zone_test_context):
         "changes": []
     }
 
-    error = shared_zone_test_context.ok_vinyldns_client.create_batch_change(batch_change_input, status=422)
-    assert_that(error, is_("Batch change contained no changes. Batch change must have at least one change, up to a maximum of 20 changes."))
+    errors = shared_zone_test_context.ok_vinyldns_client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains("Batch change contained no changes. Batch change must have at least one change, up to a maximum of 20 changes."))
 
 
 def test_create_batch_exceeding_change_limit_fails(shared_zone_test_context):
@@ -535,9 +585,8 @@ def test_create_batch_exceeding_change_limit_fails(shared_zone_test_context):
     for x in range(100):
         batch_change_input['changes'].append(get_change_A_AAAA_json("ok.", address=("1.2.3." + str(x))))
 
-    errors = client.create_batch_change(batch_change_input, status=413)
-
-    assert_that(errors, is_("Cannot request more than 20 changes in a single batch change request"))
+    errors = client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains("Cannot request more than 20 changes in a single batch change request"))
 
 
 def test_create_batch_change_without_changes_fails(shared_zone_test_context):
@@ -2404,3 +2453,150 @@ def test_user_validation_shared(shared_zone_test_context):
                                            error_messages=["User \"ok\" is not authorized."])
     assert_failed_change_in_error_response(response[3], input_name="delete-test-batch.non.test.shared.", change_type="DeleteRecordSet",
                                            error_messages=["User \"ok\" is not authorized."])
+
+def test_create_batch_change_does_not_save_owner_group_id_for_non_shared_zone(shared_zone_test_context):
+    """
+    Test successfully creating a batch change with owner group ID doesn't save value for records in non-shared zone
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    ok_group = shared_zone_test_context.ok_group
+
+    update_rs = get_recordset_json(ok_zone, "update", "A", [{"address": "127.0.0.1"}], 300)
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("no-owner-group-id.ok.", address="4.3.2.1"),
+            get_change_A_AAAA_json("update.ok.", address="1.2.3.4"),
+            get_change_A_AAAA_json("update.ok.", change_type="DeleteRecordSet")
+        ],
+        "ownerGroupId": ok_group['id']
+    }
+    to_delete = []
+
+    try:
+        create_result = ok_client.create_recordset(update_rs, status=202)
+        to_delete.append(ok_client.wait_until_recordset_change_status(create_result, 'Complete'))
+
+        result = ok_client.create_batch_change(batch_change_input, status=202)
+        completed_batch = ok_client.wait_until_batch_change_completed(result)
+
+        assert_that(completed_batch['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
+
+        to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=0, record_name="no-owner-group-id",
+                                              input_name="no-owner-group-id.ok.", record_data="4.3.2.1")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=1, record_name="update",
+                                              input_name="update.ok.", record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=2, record_name="update",
+                                              input_name="update.ok.", change_type="DeleteRecordSet", record_data=None)
+
+        for (zoneId, recordSetId) in to_delete:
+            get_recordset = ok_client.get_recordset(zoneId, recordSetId, status=200)
+            assert_that(get_recordset['recordSet'], is_not(has_key('ownerGroupId')))
+
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, ok_client)
+
+def test_create_batch_change_for_shared_zone_owner_group_applied_logic(shared_zone_test_context):
+    """
+    Test successfully creating a batch change with owner group ID in shared zone succeeds and sets owner group ID
+    on creates and only updates without a pre-existing owner group ID
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    shared_zone = shared_zone_test_context.shared_zone
+    shared_record_group = shared_zone_test_context.shared_record_group
+
+    update_rs_without_owner_group = get_recordset_json(shared_zone, "update-without-existing-owner-group", "A", [{"address": "127.0.0.1"}], 300)
+    update_rs_with_owner_group = get_recordset_json(shared_zone, "update-with-existing-owner-group", "A", [{"address": "127.0.0.1"}], 300, shared_record_group['id'])
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("create-with-owner-group.shared.", address="4.3.2.1"),
+            get_change_A_AAAA_json("update-without-existing-owner-group.shared.", address="1.2.3.4"),
+            get_change_A_AAAA_json("update-without-existing-owner-group.shared.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-with-existing-owner-group.shared.", address="1.2.3.4"),
+            get_change_A_AAAA_json("update-with-existing-owner-group.shared.", change_type="DeleteRecordSet")
+        ],
+        "ownerGroupId": "shared-zone-group"
+    }
+    to_delete = []
+
+    try:
+        # Create first record for updating and verify that owner group ID is not set
+        create_result = shared_client.create_recordset(update_rs_without_owner_group, status=202)
+        to_delete.append(shared_client.wait_until_recordset_change_status(create_result, 'Complete'))
+
+        create_result = shared_client.get_recordset(create_result['recordSet']['zoneId'], create_result['recordSet']['id'], status=200)
+        assert_that(create_result['recordSet'], is_not(has_key('ownerGroupId')))
+
+        # Create second record for updating and verify that owner group ID is set
+        create_result = shared_client.create_recordset(update_rs_with_owner_group, status=202)
+        to_delete.append(shared_client.wait_until_recordset_change_status(create_result, 'Complete'))
+
+        create_result = shared_client.get_recordset(create_result['recordSet']['zoneId'], create_result['recordSet']['id'], status=200)
+        assert_that(create_result['recordSet']['ownerGroupId'], is_(shared_record_group['id']))
+
+        # Create batch
+        result = shared_client.create_batch_change(batch_change_input, status=202)
+        completed_batch = shared_client.wait_until_batch_change_completed(result)
+
+        assert_that(completed_batch['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
+
+        to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+
+        assert_that(result['ownerGroupId'], is_('shared-zone-group'))
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=0, record_name="create-with-owner-group",
+                                              input_name="create-with-owner-group.shared.", record_data="4.3.2.1")
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=1, record_name="update-without-existing-owner-group",
+                                              input_name="update-without-existing-owner-group.shared.", record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=2, record_name="update-without-existing-owner-group",
+                                              input_name="update-without-existing-owner-group.shared.", change_type="DeleteRecordSet", record_data=None)
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=3, record_name="update-with-existing-owner-group",
+                                              input_name="update-with-existing-owner-group.shared.", record_data="1.2.3.4")
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=4, record_name="update-with-existing-owner-group",
+                                              input_name="update-with-existing-owner-group.shared.", change_type="DeleteRecordSet", record_data=None)
+
+        for (zoneId, recordSetId) in to_delete:
+            get_recordset = shared_client.get_recordset(zoneId, recordSetId, status=200)
+            if get_recordset['recordSet']['name'] == "update-with-existing-owner-group":
+                assert_that(get_recordset['recordSet']['ownerGroupId'], is_(shared_record_group['id']))
+            else:
+                assert_that(get_recordset['recordSet']['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
+
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, shared_client)
+
+def test_create_batch_change_for_shared_zone_with_invalid_owner_group_id_fails(shared_zone_test_context):
+    """
+    Test creating a batch change with invalid owner group ID fails
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("no-owner-group-id.shared.", address="4.3.2.1")
+        ],
+        "ownerGroupId": "non-existent-owner-group-id"
+    }
+
+    errors = shared_client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains('Group with ID "non-existent-owner-group-id" was not found'))
+
+def test_create_batch_change_for_shared_zone_with_unauthorized_owner_group_id_fails(shared_zone_test_context):
+    """
+    Test creating a batch change with unauthorized owner group ID fails
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    ok_group = shared_zone_test_context.ok_group
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("no-owner-group-id.shared.", address="4.3.2.1")
+        ],
+        "ownerGroupId": ok_group['id']
+    }
+
+    errors = shared_client.create_batch_change(batch_change_input, status=400)['errors']
+    assert_that(errors, contains('User "sharedZoneUser" must be a member of group "' + ok_group['id'] + '" to apply this group to batch changes.'))

@@ -16,13 +16,12 @@
 
 package vinyldns.api.domain.batch
 
-import cats.implicits._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
-
 import cats.effect._
 import cats.implicits._
+import vinyldns.api.domain.{BatchChangeIsEmpty, ChangeLimitExceeded}
 
 class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers {
 
@@ -34,7 +33,7 @@ class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers 
       rightResultOf(out.value) shouldBe input
     }
     "work with either failure input" in {
-      val error = ChangeLimitExceeded(10)
+      val error = InvalidBatchChangeInput(List(BatchChangeIsEmpty(10)))
       val out = error.asLeft.toBatchResult
 
       leftResultOf(out.value) shouldBe error
@@ -54,16 +53,18 @@ class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers 
       rightResultOf(out3.value) shouldBe input
     }
     "return a BatchChangeIsEmpty error if no changes are found" in {
-      val futureError = IO.pure(BatchChangeIsEmpty(10).asLeft)
+      val futureError =
+        IO.pure(InvalidBatchChangeInput(List(BatchChangeIsEmpty(10))).asLeft)
       val output = futureError.toBatchResult
 
-      leftResultOf(output.value) shouldBe BatchChangeIsEmpty(10)
+      leftResultOf(output.value) shouldBe InvalidBatchChangeInput(List(BatchChangeIsEmpty(10)))
     }
     "return a ChangeLimitExceeded error if change limit is exceeded" in {
-      val futureError = IO.pure(ChangeLimitExceeded(10).asLeft)
+      val futureError =
+        IO.pure(InvalidBatchChangeInput(List(ChangeLimitExceeded(10))).asLeft)
       val output = futureError.toBatchResult
 
-      leftResultOf(output.value) shouldBe ChangeLimitExceeded(10)
+      leftResultOf(output.value) shouldBe InvalidBatchChangeInput(List(ChangeLimitExceeded(10)))
     }
     "return a UnknownConversionError if run-time error is encountered during processing" in {
       val futureError = IO.pure(new RuntimeException("bad!").asLeft)
