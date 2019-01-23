@@ -147,7 +147,7 @@ class RecordSetService(
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
       rsGroups <- groupRepository.getGroups(rsOwnerGroupIds).toResult[Set[Group]]
-      setsWithGroupName <- getListWithGroupNames(recordSetResults.recordSets, rsGroups)
+      setsWithGroupName = getListWithGroupNames(recordSetResults.recordSets, rsGroups)
       setsWithAccess <- getListAccessLevels(authPrincipal, setsWithGroupName, zone).toResult
     } yield
       ListRecordSetsResponse(
@@ -224,14 +224,12 @@ class RecordSetService(
     } yield recordSetChangesInfo
   }
 
-  def getListWithGroupNames(
-      recordsets: List[RecordSet],
-      groups: Set[Group]): Result[List[RecordSetInfo]] =
+  def getListWithGroupNames(recordsets: List[RecordSet], groups: Set[Group]): List[RecordSetInfo] =
     recordsets.map { rs =>
       val ownerGroupName =
         rs.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
       RecordSetInfo(rs, ownerGroupName)
-    }.toResult
+    }
 
   def getGroupName(groupId: Option[String]): Result[Option[String]] = {
     val groupName = for {
