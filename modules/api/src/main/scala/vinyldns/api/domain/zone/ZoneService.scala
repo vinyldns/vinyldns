@@ -215,7 +215,7 @@ class ZoneService(
       .getGroup(groupId)
       .map {
         case Some(_) => ().asRight
-        case None => InvalidZoneAdminError(s"Admin group with ID $groupId does not exist").asLeft
+        case None => InvalidGroupError(s"Admin group with ID $groupId does not exist").asLeft
       }
       .toResult
 

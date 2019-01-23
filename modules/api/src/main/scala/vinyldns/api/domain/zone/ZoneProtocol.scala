@@ -223,7 +223,7 @@ case class NotAuthorizedError(msg: String) extends Throwable(msg)
 
 case class ZoneUnavailableError(msg: String) extends Throwable(msg)
 
-case class InvalidZoneAdminError(msg: String) extends Throwable(msg)
+case class InvalidGroupError(msg: String) extends Throwable(msg)
 
 case class InvalidSyncStateError(msg: String) extends Throwable(msg)
 

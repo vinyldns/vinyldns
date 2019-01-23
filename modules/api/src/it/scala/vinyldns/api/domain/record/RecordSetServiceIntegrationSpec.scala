@@ -24,7 +24,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
 import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
-import vinyldns.api.domain.zone.{InvalidRequest, RecordSetAlreadyExists, RecordSetInfo}
+import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData.testConnection
@@ -61,10 +61,11 @@ class RecordSetServiceIntegrationSpec
   private val user = User("live-test-user", "key", "secret")
   private val user2 = User("shared-record-test-user", "key-shared", "secret-shared")
   private val group = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id))
+  private val group2 = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id, user2.id))
   private val sharedGroup =
-    Group(s"test-shared-group", "test@test.com", adminUserIds = Set(user2.id))
-  private val auth = AuthPrincipal(user, Seq(group.id))
-  private val auth2 = AuthPrincipal(user2, Seq(sharedGroup.id))
+    Group(s"test-shared-group", "test@test.com", adminUserIds = Set(user.id, user2.id))
+  private val auth = AuthPrincipal(user, Seq(group.id, sharedGroup.id))
+  private val auth2 = AuthPrincipal(user2, Seq(sharedGroup.id, group2.id))
 
   private val zone = Zone(
     s"live-zone-test.",
@@ -184,7 +185,7 @@ class RecordSetServiceIntegrationSpec
 
   private val sharedTestRecordBadOwnerGroup = RecordSet(
     sharedZone.id,
-    "shared-record",
+    "shared-record-bad-owner-group",
     A,
     200,
     RecordSetStatus.Active,
@@ -194,12 +195,24 @@ class RecordSetServiceIntegrationSpec
     ownerGroupId = Some("non-existent")
   )
 
+  private val testOwnerGroupRecordInNormalZone = RecordSet(
+    zone.id,
+    "user-in-owner-group-but-zone-not-shared",
+    A,
+    38400,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(AData("10.1.1.1")),
+    ownerGroupId = Some(sharedGroup.id)
+  )
+
   def setup(): Unit = {
     recordSetRepo =
       DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
     zoneRepo = zoneRepository
     groupRepo = groupRepository
-    List(group, sharedGroup).map(g => waitForSuccess(groupRepo.save(g)))
+    List(group, group2, sharedGroup).map(g => waitForSuccess(groupRepo.save(g)))
     List(zone, zoneTestNameConflicts, zoneTestAddRecords, sharedZone).map(z =>
       waitForSuccess(zoneRepo.save(z)))
 
@@ -214,7 +227,8 @@ class RecordSetServiceIntegrationSpec
       subTestRecordNameConflict,
       highValueDomainRecord,
       sharedTestRecord,
-      sharedTestRecordBadOwnerGroup
+      sharedTestRecordBadOwnerGroup,
+      testOwnerGroupRecordInNormalZone
     )
     records.map(record => waitForSuccess(recordSetRepo.putRecordSet(record)))
 
@@ -408,7 +422,7 @@ class RecordSetServiceIntegrationSpec
       }
     }
 
-    "get a shared record when ownerGroup can't be found" in {
+    "get a shared record when owner group can't be found" in {
       val result =
         testRecordSetService
           .getRecordSet(sharedTestRecordBadOwnerGroup.id, sharedTestRecord.zoneId, auth)
@@ -416,9 +430,73 @@ class RecordSetServiceIntegrationSpec
           .unsafeToFuture()
           .mapTo[Either[Throwable, RecordSetInfo]]
       whenReady(result, timeout) { out =>
-        rightValue(out).name shouldBe "shared-record"
+        rightValue(out).name shouldBe "shared-record-bad-owner-group"
         rightValue(out).ownerGroupName shouldBe None
       }
+    }
+
+    "fail updating if user is in owner group but zone is not shared" in {
+      val result = testRecordSetService
+        .updateRecordSet(testOwnerGroupRecordInNormalZone, auth2)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[NotAuthorizedError]
+    }
+
+    "fail updating if owner group does not exist" in {
+      val newRecord = sharedTestRecord.copy(ownerGroupId = Some("no-existo"))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidGroupError]
+    }
+
+    "fail updating if user is not in new owner group" in {
+      val newRecord = sharedTestRecord.copy(ownerGroupId = Some(group.id))
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "update successfully if user is in owner group and zone is shared" in {
+      val newRecord = sharedTestRecord.copy(ttl = sharedTestRecord.ttl + 100)
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      rightValue(result).asInstanceOf[RecordSetChange].recordSet.ttl shouldBe newRecord.ttl
+      rightValue(result).asInstanceOf[RecordSetChange].recordSet.ownerGroupId shouldBe
+        sharedTestRecord.ownerGroupId
+    }
+
+    "update successfully if user is changing owner group to None" in {
+      val newRecord = sharedTestRecord.copy(ownerGroupId = None)
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      rightValue(result).asInstanceOf[RecordSetChange].recordSet.ownerGroupId shouldBe None
+    }
+
+    "update successfully if user is changing owner group to another group they are a part of" in {
+      val newRecord = sharedTestRecord.copy(ownerGroupId = Some(group2.id))
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth2)
+        .value
+        .unsafeRunSync()
+
+      rightValue(result).asInstanceOf[RecordSetChange].recordSet.ownerGroupId shouldBe
+        Some(group2.id)
     }
   }
 

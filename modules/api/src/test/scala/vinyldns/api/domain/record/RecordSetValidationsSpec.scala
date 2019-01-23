@@ -21,10 +21,17 @@ import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.api.domain.zone.{InvalidRequest, PendingUpdateError, RecordSetAlreadyExists}
+import vinyldns.api.domain.zone.{
+  InvalidGroupError,
+  InvalidRequest,
+  PendingUpdateError,
+  RecordSetAlreadyExists
+}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record._
 
 class RecordSetValidationsSpec
@@ -329,6 +336,44 @@ class RecordSetValidationsSpec
         isNotHighValueDomain(recordIp6, zoneIp6) should be(right)
         isNotHighValueDomain(recordClassless, zoneClassless) should be(right)
         isNotHighValueDomain(recordAAAA, zoneAAAA) should be(right)
+      }
+    }
+
+    "canUseOwnerGroup" should {
+      "pass if owner group id is None" in {
+        canUseOwnerGroup(None, None, okAuth) should be(right)
+        canUseOwnerGroup(None, Some(okGroup), okAuth) should be(right)
+      }
+      "fail if owner group id is provided with no group" in {
+        val ownerGroupId = "bar"
+        val auth = okAuth.copy(memberGroupIds = Seq("foo"))
+
+        leftValue(canUseOwnerGroup(Some(ownerGroupId), None, auth)) shouldBe a[InvalidGroupError]
+      }
+      "pass if owner group id is provided and user is super" in {
+        val ownerGroupIdGood = "foo"
+        val ownerGroupIdBad = "bar"
+        val auth = okAuth.copy(
+          memberGroupIds = Seq("foo"),
+          signedInUser = okAuth.signedInUser.copy(isSuper = true))
+        val ownerGroup = Group(id = ownerGroupIdGood, name = "test", email = "test@test.com")
+
+        canUseOwnerGroup(Some(ownerGroupIdGood), Some(ownerGroup), auth) should be(right)
+        canUseOwnerGroup(Some(ownerGroupIdBad), Some(ownerGroup), auth) should be(right)
+      }
+      "pass if owner group if is provided and user is in owner group" in {
+        val ownerGroupId = "foo"
+        val auth = okAuth.copy(memberGroupIds = Seq("foo"))
+        val ownerGroup = Group(id = ownerGroupId, name = "test", email = "test@test.com")
+
+        canUseOwnerGroup(Some(ownerGroupId), Some(ownerGroup), auth) should be(right)
+      }
+      "fail if owner group id is provided and user is not in owner group" in {
+        val ownerGroupId = "bar"
+        val auth = okAuth.copy(memberGroupIds = Seq("foo"))
+        val ownerGroup = Group(id = ownerGroupId, name = "test", email = "test@test.com")
+
+        leftValue(canUseOwnerGroup(Some(ownerGroupId), Some(ownerGroup), auth)) shouldBe a[InvalidRequest]
       }
     }
   }

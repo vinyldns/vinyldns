@@ -19,7 +19,7 @@ package vinyldns.api.domain.record
 import vinyldns.api.Interfaces.{Result, _}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.api.domain.zone._
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.api.route.ListRecordSetsResponse
@@ -72,6 +72,8 @@ class RecordSetService(
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
         .toResult[List[RecordSet]]
+      ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
+      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- typeSpecificAddValidations(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- messageQueue.send(change).toResult[Unit]
@@ -85,7 +87,9 @@ class RecordSetService(
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
       _ <- isNotHighValueDomain(recordSet, zone).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone).toResult
+      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
+      ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
+      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -223,5 +227,13 @@ class RecordSetService(
       dbGet <- OptionT(groupRepository.getGroup(input))
     } yield dbGet.name
     groupName.value.toResult[Option[String]]
+  }
+
+  def getGroupIfProvided(groupId: Option[String]): Result[Option[Group]] = {
+    val ownerGroup = for {
+      id <- OptionT.fromOption[IO](groupId)
+      group <- OptionT(groupRepository.getGroup(id))
+    } yield group
+    ownerGroup.value.toResult
   }
 }

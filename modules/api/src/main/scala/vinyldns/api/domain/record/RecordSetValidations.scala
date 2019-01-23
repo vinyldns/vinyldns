@@ -24,6 +24,8 @@ import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 
@@ -207,4 +209,17 @@ object RecordSetValidations {
       .map(_ => ())
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
   }
+
+  def canUseOwnerGroup(
+      ownerGroupId: Option[String],
+      group: Option[Group],
+      authPrincipal: AuthPrincipal): Either[Throwable, Unit] =
+    (ownerGroupId, group) match {
+      case (None, _) => ().asRight
+      case (Some(groupId), None) =>
+        InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
+      case (Some(groupId), Some(_)) =>
+        if (authPrincipal.canEditAll || authPrincipal.isGroupMember(groupId)) ().asRight
+        else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
+    }
 }

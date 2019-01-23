@@ -1992,3 +1992,234 @@ def test_no_update_access_non_test_zone(shared_zone_test_context):
     record_update['ttl'] = record_update['ttl'] + 100
 
     client.update_recordset(record_update, status=403)
+
+
+def test_update_from_user_in_record_owner_group_for_private_zone_fails(shared_zone_test_context):
+    """
+    Test that updating with a user in the record owner group fails when the zone is not set to shared
+    """
+
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    shared_record_group = shared_zone_test_context.shared_record_group
+    shared_zone_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+    create_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_failure', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = shared_record_group['id']
+        create_response = ok_client.create_recordset(record_json, status=202)
+        create_rs = ok_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs['ownerGroupId'], is_(shared_record_group['id']))
+
+
+        update = create_rs
+        update['ttl'] = update['ttl'] + 100
+        error = shared_zone_client.update_recordset(update, status=403)
+        assert_that(error, is_('User sharedZoneUser does not have access to update test-shared-failure.ok.'))
+
+    finally:
+        if create_rs:
+            delete_result = ok_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            ok_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_owner_group_from_user_in_record_owner_group_for_shared_zone_passes(shared_zone_test_context):
+    """
+    Test that updating with a user in the record owner group passes when the zone is set to shared
+    """
+
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    shared_record_group = shared_zone_test_context.shared_record_group
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    update_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = shared_record_group['id']
+        create_response = shared_client.create_recordset(record_json, status=202)
+        update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update['ownerGroupId'], is_(shared_record_group['id']))
+
+
+        update['ttl'] = update['ttl'] + 100
+        update_response = ok_client.update_recordset(update, status=202)
+        update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update_rs['ownerGroupId'], is_(shared_record_group['id']))
+
+
+    finally:
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_owner_group_from_admin_in_shared_zone_passes(shared_zone_test_context):
+    """
+    Test that updating with a zone admin user when the zone is set to shared passes
+    """
+
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    group = shared_zone_test_context.shared_record_group
+    update_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_admin_update_success', 'A', [{'address': '1.1.1.1'}])
+        create_response = shared_client.create_recordset(record_json, status=202)
+        update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update, is_not(has_key('ownerGroupId')))
+
+
+        update['ownerGroupId'] = group['id']
+        update['ttl'] = update['ttl'] + 100
+        update_response = shared_client.update_recordset(update, status=202)
+        update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update_rs['ownerGroupId'], is_(group['id']))
+
+
+    finally:
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_context):
+    """
+    Test that updating with a user that does not have write access fails in a shared zone
+    """
+
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    create_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        create_response = shared_client.create_recordset(record_json, status=202)
+        create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs, is_not(has_key('ownerGroupId')))
+
+        update = create_rs
+        update['ttl'] = update['ttl'] + 100
+        error = ok_client.update_recordset(update, status=403)
+        assert_that(error, is_('User ok does not have access to update test-shared-success.shared.'))
+
+    finally:
+        if create_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_from_acl_for_shared_zone_passes(shared_zone_test_context):
+    """
+    Test that updating with a user that has an acl passes when the zone is set to shared
+    """
+
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    acl_rule = generate_acl_rule('Write', userId='dummy')
+    zone = shared_zone_test_context.shared_zone
+    update_rs = None
+
+    try:
+        add_shared_zone_acl_rules(shared_zone_test_context, [acl_rule])
+
+        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        create_response = shared_client.create_recordset(record_json, status=202)
+        update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update, is_not(has_key('ownerGroupId')))
+
+        update['ttl'] = update['ttl'] + 100
+        update_response = dummy_client.update_recordset(update, status=202)
+        update_rs = dummy_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update, is_not(has_key('ownerGroupId')))
+
+
+    finally:
+        clear_shared_zone_acl_rules(shared_zone_test_context)
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_to_no_group_owner_passes(shared_zone_test_context):
+    """
+    Test that updating to have no record owner group passes
+    """
+
+    shared_record_group = shared_zone_test_context.shared_record_group
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    update_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_success_no_owner', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = shared_record_group['id']
+        create_response = shared_client.create_recordset(record_json, status=202)
+        update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(update['ownerGroupId'], is_(shared_record_group['id']))
+
+        update['ownerGroupId'] = None
+        update_response = shared_client.update_recordset(update, status=202)
+        update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(update_rs, is_not(has_key('ownerGroupId')))
+
+    finally:
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_to_invalid_record_owner_group_fails(shared_zone_test_context):
+    """
+    Test that updating to a record owner group that does not exist fails
+    """
+
+    shared_record_group = shared_zone_test_context.shared_record_group
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    create_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner', 'A', [{'address': '1.1.1.1'}])
+        record_json['ownerGroupId'] = shared_record_group['id']
+        create_response = shared_client.create_recordset(record_json, status=202)
+        create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+        update = create_rs
+        update['ownerGroupId'] = 'no-existo'
+        error = shared_client.update_recordset(update, status=422)
+        assert_that(error, is_('Record owner group with id "no-existo" not found'))
+
+    finally:
+        if create_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_to_group_a_user_is_notin_fails(shared_zone_test_context):
+    """
+    Test that updating to a record owner group that the user is not in fails
+    """
+
+    dummy_group = shared_zone_test_context.dummy_group
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    create_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_fail_no_owner', 'A', [{'address': '1.1.1.1'}])
+        create_response = shared_client.create_recordset(record_json, status=202)
+        create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+        update = create_rs
+        update['ownerGroupId'] = dummy_group['id']
+        error = shared_client.update_recordset(update, status=422)
+        assert_that(error, is_('User not in record owner group with id "' + dummy_group['id'] + '"'))
+
+    finally:
+        if create_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
