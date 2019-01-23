@@ -16,26 +16,21 @@
 
 package vinyldns.api.domain.batch
 
+import vinyldns.api.domain.DomainValidationError
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
 import vinyldns.core.domain.batch.SingleChange
 
 /* Error response options */
 sealed trait BatchChangeErrorResponse
+final case class InvalidBatchChangeInput(errors: List[DomainValidationError])
+    extends BatchChangeErrorResponse
+
 // This separates error by change requested
 final case class InvalidBatchChangeResponses(
     changeRequests: List[ChangeInput],
     changeRequestResponses: ValidatedBatch[ChangeForValidation])
     extends BatchChangeErrorResponse
-// The request itself is invalid in this case, so we fail fast
-final case class ChangeLimitExceeded(limit: Int) extends BatchChangeErrorResponse {
-  def message: String = s"Cannot request more than $limit changes in a single batch change request"
-}
-
-final case class BatchChangeIsEmpty(limit: Int) extends BatchChangeErrorResponse {
-  def message: String =
-    s"Batch change contained no changes. Batch change must have at least one change, up to a maximum of $limit changes."
-}
 
 final case class BatchChangeNotFound(id: String) extends BatchChangeErrorResponse {
   def message: String = s"Batch change with id $id cannot be found"

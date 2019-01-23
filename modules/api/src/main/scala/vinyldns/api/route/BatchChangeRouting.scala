@@ -79,9 +79,7 @@ trait BatchChangeRoute extends Directives {
   private def execute[A](f: => EitherT[IO, BatchChangeErrorResponse, A])(rt: A => Route): Route =
     onSuccess(f.value.unsafeToFuture()) {
       case Right(a) => rt(a)
-      case Left(cle: ChangeLimitExceeded) =>
-        complete(StatusCodes.RequestEntityTooLarge, cle.message)
-      case Left(bie: BatchChangeIsEmpty) => complete(StatusCodes.UnprocessableEntity, bie.message)
+      case Left(ibci: InvalidBatchChangeInput) => complete(StatusCodes.BadRequest, ibci)
       case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
       case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
       case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)

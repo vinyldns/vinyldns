@@ -29,5 +29,6 @@ trait BatchChangeConverterAlgebra {
   def sendBatchForProcessing(
       batchChange: BatchChange,
       existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets): BatchResult[BatchConversionOutput]
+      existingRecordSets: ExistingRecordSets,
+      ownerGroupId: Option[String]): BatchResult[BatchConversionOutput]
 }
