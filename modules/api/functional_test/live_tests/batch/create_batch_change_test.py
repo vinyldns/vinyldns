@@ -2502,7 +2502,7 @@ def test_create_batch_change_does_not_save_owner_group_id_for_non_shared_zone(sh
 def test_create_batch_change_for_shared_zone_owner_group_applied_logic(shared_zone_test_context):
     """
     Test successfully creating a batch change with owner group ID in shared zone succeeds and sets owner group ID
-    on creates and updates (if existing value does not exist)
+    on creates and only updates without a pre-existing owner group ID
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     shared_zone = shared_zone_test_context.shared_zone
