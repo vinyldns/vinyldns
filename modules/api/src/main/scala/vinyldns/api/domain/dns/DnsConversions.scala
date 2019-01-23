@@ -223,8 +223,8 @@ trait DnsConversions {
       List(
         DSData(
           data.getFootprint,
-          DnsSecAlgorithm.fromInt(data.getAlgorithm),
-          DigestType.fromInt(data.getDigestID),
+          DnsSecAlgorithm(data.getAlgorithm),
+          DigestType(data.getDigestID),
           ByteVector(data.getDigest)
         ))
     }

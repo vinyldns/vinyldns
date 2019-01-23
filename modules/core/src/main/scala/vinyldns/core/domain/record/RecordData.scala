@@ -86,7 +86,7 @@ object DigestType {
   case object SHA384 extends DigestType(4)
   final case class UnknownDigestType(x: Int) extends DigestType(x)
 
-  def fromInt(value: Int): DigestType =
+  def apply(value: Int): DigestType =
     value match {
       case 1 => SHA1
       case 2 => SHA256
@@ -103,9 +103,9 @@ object DnsSecAlgorithm {
   case object RSASHA1 extends DnsSecAlgorithm(5)
   case object DSA_NSEC3_SHA1 extends DnsSecAlgorithm(6)
   case object RSA_NSEC3_SHA1 extends DnsSecAlgorithm(7)
-  final case class UnknownAlgorithm(x: Int) extends DnsSecAlgorithm(x)
+  final case class UnknownAlgorithm private (x: Int) extends DnsSecAlgorithm(x)
 
-  def fromInt(value: Int): DnsSecAlgorithm =
+  def apply(value: Int): DnsSecAlgorithm =
     value match {
       case 3 => DSA
       case 5 => RSASHA1
