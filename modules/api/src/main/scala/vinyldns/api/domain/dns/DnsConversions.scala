@@ -223,8 +223,8 @@ trait DnsConversions {
       List(
         DSData(
           data.getFootprint,
-          data.getAlgorithm,
-          data.getDigestID,
+          DnsSecAlgorithm.fromInt(data.getAlgorithm),
+          DigestType.fromInt(data.getDigestID),
           ByteVector(data.getDigest)
         ))
     }
@@ -298,8 +298,8 @@ trait DnsConversions {
             DNS.DClass.IN,
             ttl,
             keyTag,
-            algorithm,
-            digestType,
+            algorithm.value,
+            digestType.value,
             digest.toArray)
 
         case NSData(nsdname) =>
