@@ -17,21 +17,6 @@
 angular.module('controller.records', [])
     .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
 
-    groupsService.getMyGroupsStored()
-        .then(function (results) {
-            $scope.myGroups = results.groups;
-        })
-        .catch(function (error){
-            handleError(error, 'getMyGroup:get-groups-failure');
-        });
-
-    $scope.isGroupMember = function(groupId) {
-        var groupMember = $scope.myGroups.find(function(group) {
-            return groupId === group.id;
-        });
-        return groupMember !== undefined
-    };
-
     /**
       * Scope data initial setup
       */
@@ -316,10 +301,18 @@ angular.module('controller.records', [])
     function determineAdmin(){
         groupsService.getMyGroupsStored().then(
             function (results) {
+                $scope.myGroups = results.groups;
                 var groupIds = results['groups'].map(function(grp) {return grp['id']});
                 $scope.isZoneAdmin = groupIds.indexOf($scope.zoneInfo.adminGroupId) > -1;
             })
     }
+
+    $scope.isGroupMember = function(groupId) {
+        var groupMember = $scope.myGroups.find(function(group) {
+            return groupId === group.id;
+        });
+        return groupMember !== undefined
+    };
 
     /**
       * Global data-updating functions
