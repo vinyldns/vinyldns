@@ -17,6 +17,7 @@
 package vinyldns.api.domain.record
 
 import cats.effect._
+import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.Matchers
 import org.scalatest.concurrent.PatienceConfiguration
@@ -42,6 +43,7 @@ import scala.concurrent.duration._
 class RecordSetServiceIntegrationSpec
     extends DynamoDBApiIntegrationSpec
     with ResultHelpers
+    with EitherMatchers
     with MockitoSugar
     with Matchers
     with MySqlApiIntegrationSpec {
@@ -497,6 +499,56 @@ class RecordSetServiceIntegrationSpec
 
       rightValue(result).asInstanceOf[RecordSetChange].recordSet.ownerGroupId shouldBe
         Some(group2.id)
+    }
+
+    "fail deleting for normal user not in owner group in shared zone" in {
+      val result = leftResultOf(
+        testRecordSetService
+          .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, dummyAuth)
+          .value
+      )
+
+      result shouldBe a[NotAuthorizedError]
+    }
+
+    "fail deleting for normal user in owner group in non-shared zone" in {
+      val result = leftResultOf(
+        testRecordSetService
+          .deleteRecordSet(
+            testOwnerGroupRecordInNormalZone.id,
+            testOwnerGroupRecordInNormalZone.zoneId,
+            auth2)
+          .value
+      )
+
+      result shouldBe a[NotAuthorizedError]
+    }
+
+    "delete successfully for normal user in owner group in shared zone" in {
+      val result = testRecordSetService
+        .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, auth2)
+        .value
+        .unsafeRunSync()
+
+      result should be(right)
+    }
+
+    "delete successfully for zone admin in shared zone" in {
+      val result = testRecordSetService
+        .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, auth)
+        .value
+        .unsafeRunSync()
+
+      result should be(right)
+    }
+
+    "delete successfully for super user in shared zone" in {
+      val result = testRecordSetService
+        .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, superUserAuth)
+        .value
+        .unsafeRunSync()
+
+      result should be(right)
     }
   }
 
