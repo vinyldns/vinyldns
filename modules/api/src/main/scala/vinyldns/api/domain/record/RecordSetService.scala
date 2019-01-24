@@ -110,7 +110,7 @@ class RecordSetService(
       zone <- getZone(zoneId)
       existing <- getRecordSet(recordSetId, zone)
       _ <- isNotHighValueDomain(existing, zone).toResult
-      _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone).toResult
+      _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       _ <- notPending(existing).toResult
       _ <- typeSpecificDeleteValidations(existing, zone).toResult
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
