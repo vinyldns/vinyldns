@@ -115,7 +115,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
     try:
         # create a record in the zone with an owner group ID
         new_rs = get_recordset_json(ok_zone,
-                                    "test_get_recordset", "TXT", [{'text':'should-work'}],
+                                    "test-owned-recordset", "TXT", [{'text':'should-work'}],
                                     100,
                                     shared_group['id'])
 
@@ -126,13 +126,10 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
         assert_that(list_results['recordSets'], has_length(18))
 
         # confirm the created recordset is in the list of recordsets
-        assert_that(any(r['id'] == result_rs['id'] for r in list_results['recordSets']), is_(True))
-
-        # confirm the created recordset has an ownerGroupId and ownerGroupName
-        for rs in list_results['recordSets']:
-            if rs['id'] == result_rs['id']:
-                assert_that(rs['ownerGroupId'], is_(shared_group['id']))
-                assert_that(rs['ownerGroupName'], is_("record-ownergroup"))
+        rs_from_list = (r for r in list_results['recordSets'] if r['id'] == result_rs['id']).next()
+        assert_that(rs_from_list['name'], is_("test-owned-recordset"))
+        assert_that(rs_from_list['ownerGroupId'], is_(shared_group['id']))
+        assert_that(rs_from_list['ownerGroupName'], is_("record-ownergroup"))
 
     finally:
         if result_rs:
