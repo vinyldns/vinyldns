@@ -22,11 +22,12 @@ import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, NoError}
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 import vinyldns.api.ResultHelpers
-import vinyldns.core.TestRecordSetData.aaaa
+import vinyldns.core.TestRecordSetData.{aaaa, ds}
+import vinyldns.core.domain.record.{RecordSet, RecordType}
 
 class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHelpers {
 
-  private val zoneName = "vinyldns."
+  private val zoneName = "example.com."
   private val testZone = Zone(
     zoneName,
     "test@test.com",
@@ -37,7 +38,7 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       Some(ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
   )
 
-  "Obscuring Dns Messages" should {
+  "Interacting with the DNS backend" should {
     "remove the tsig key value during an update" in {
       val testRecord = aaaa.copy(zoneId = testZone.id)
       val conn = DnsConnection(testZone.connection.get)
@@ -51,6 +52,45 @@ class DnsConversionsIntegrationSpec extends WordSpec with Matchers with ResultHe
       val resultingMessageString = resultingMessage.toString
 
       resultingMessageString should not contain "TSIG"
+
+      val queryResult: List[RecordSet] =
+        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.AAAA).value)
+
+      val recordOut = queryResult.head
+      recordOut.records should contain theSameElementsAs testRecord.records
+      recordOut.name shouldBe testRecord.name
+      recordOut.ttl shouldBe testRecord.ttl
+      recordOut.typ shouldBe testRecord.typ
+    }
+    "Successfully add and remove DS record type" in {
+      val testRecord = ds.copy(zoneId = testZone.id)
+
+      val conn = DnsConnection(testZone.connection.get)
+      val result: DnsResponse =
+        rightResultOf(conn.addRecord(RecordSetChangeGenerator.forAdd(testRecord, testZone)).value)
+
+      result shouldBe a[NoError]
+
+      val queryResult: List[RecordSet] =
+        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.DS).value)
+
+      val recordOut = queryResult.head
+      recordOut.records should contain theSameElementsAs testRecord.records
+      recordOut.name shouldBe testRecord.name
+      recordOut.ttl shouldBe testRecord.ttl
+      recordOut.typ shouldBe testRecord.typ
+
+      // deleting the record just added
+      val deleteResult: DnsResponse =
+        rightResultOf(
+          conn.deleteRecord(RecordSetChangeGenerator.forAdd(testRecord, testZone)).value)
+
+      deleteResult shouldBe a[NoError]
+
+      val deleteQuery: List[RecordSet] =
+        rightResultOf(conn.resolve(testRecord.name, testZone.name, RecordType.DS).value)
+
+      deleteQuery shouldBe List.empty
     }
   }
 }

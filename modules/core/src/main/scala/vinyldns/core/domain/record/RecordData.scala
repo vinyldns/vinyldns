@@ -16,6 +16,7 @@
 
 package vinyldns.core.domain.record
 
+import scodec.bits.ByteVector
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 
 sealed trait RecordData
@@ -75,3 +76,48 @@ object SRVData {
 final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String) extends RecordData
 
 final case class TXTData(text: String) extends RecordData
+
+sealed abstract class DigestType(val value: Int)
+object DigestType {
+  // see https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml
+  case object SHA1 extends DigestType(1)
+  case object SHA256 extends DigestType(2)
+  case object GOSTR341194 extends DigestType(3)
+  case object SHA384 extends DigestType(4)
+  final case class UnknownDigestType(x: Int) extends DigestType(x)
+
+  def apply(value: Int): DigestType =
+    value match {
+      case 1 => SHA1
+      case 2 => SHA256
+      case 3 => GOSTR341194
+      case 4 => SHA384
+      case other => UnknownDigestType(other)
+    }
+}
+
+sealed abstract class DnsSecAlgorithm(val value: Int)
+object DnsSecAlgorithm {
+  // see https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml
+  case object DSA extends DnsSecAlgorithm(3)
+  case object RSASHA1 extends DnsSecAlgorithm(5)
+  case object DSA_NSEC3_SHA1 extends DnsSecAlgorithm(6)
+  case object RSA_NSEC3_SHA1 extends DnsSecAlgorithm(7)
+  final case class UnknownAlgorithm private (x: Int) extends DnsSecAlgorithm(x)
+
+  def apply(value: Int): DnsSecAlgorithm =
+    value match {
+      case 3 => DSA
+      case 5 => RSASHA1
+      case 6 => DSA_NSEC3_SHA1
+      case 7 => RSA_NSEC3_SHA1
+      case other => UnknownAlgorithm(other)
+    }
+}
+
+final case class DSData(
+    keyTag: Integer, // footprint in DNSJava
+    algorithm: DnsSecAlgorithm,
+    digestType: DigestType, //digestid in DNSJava
+    digest: ByteVector)
+    extends RecordData

@@ -158,3 +158,14 @@ zone "child.parent.com" {
 	allow-update { key "vinyldns."; };
 	};
 
+zone "example.com" {
+	type master;
+	file "/var/bind/example.com.hosts";
+	allow-update { key "vinyldns."; };
+	};
+
+zone "dskey.example.com" {
+	type master;
+	file "/var/bind/dskey.example.com.hosts";
+	allow-update { key "vinyldns."; };
+	};
