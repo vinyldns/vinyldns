@@ -71,6 +71,22 @@ class MySqlRecordSetRepositoryIntegrationSpec
   }
 
   "inserting record sets" should {
+    "properly add and delete DS records" in {
+      val addChange = makeTestAddChange(ds, okZone)
+      val testRecord = addChange.recordSet
+      val deleteChange = makeTestDeleteChange(testRecord, okZone)
+
+      val dbCalls = for {
+        _ <- repo.apply(ChangeSet(addChange))
+        get <- repo.getRecordSet(testRecord.zoneId, testRecord.id)
+        _ <- repo.apply(ChangeSet(deleteChange))
+        finalGet <- repo.getRecordSet(testRecord.zoneId, testRecord.id)
+      } yield (get, finalGet)
+
+      val (get, finalGet) = dbCalls.unsafeRunSync()
+      get shouldBe Some(testRecord)
+      finalGet shouldBe None
+    }
     "be idempotent for inserts" in {
       val pendingChanges = generateInserts(okZone, 1000)
       val bigPendingChangeSet = ChangeSet(pendingChanges)
