@@ -444,10 +444,12 @@ class RecordSetRoutingSpec
           Right(
             ListRecordSetsResponse(
               List(
-                RecordSetListInfo(rs1, AccessLevel.Read),
-                RecordSetListInfo(rs2, AccessLevel.Read),
-                RecordSetListInfo(rs3, AccessLevel.Read)),
-              None))
+                RecordSetListInfo(RecordSetInfo(rs1, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(rs2, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(rs3, None), AccessLevel.Read)
+              ),
+              None
+            ))
       }
     }.toResult
 

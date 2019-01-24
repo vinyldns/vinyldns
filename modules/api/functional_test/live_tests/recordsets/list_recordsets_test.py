@@ -11,6 +11,7 @@ class ListRecordSetsFixture():
     def __init__(self, shared_zone_test_context):
         self.test_context = shared_zone_test_context.ok_zone
         self.client = shared_zone_test_context.ok_vinyldns_client
+        self.shared_group = shared_zone_test_context.shared_record_group
         self.new_rs = {}
         existing_records = self.client.list_recordsets(self.test_context['id'])['recordSets']
         assert_that(existing_records, has_length(7))
@@ -102,6 +103,40 @@ def test_list_recordsets_no_start(rs_fixture):
 
     list_results = client.list_recordsets(ok_zone['id'], status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
+
+def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
+    """
+    Test that record sets with an owner group return the owner group ID and name
+    """
+    client = rs_fixture.client
+    ok_zone = rs_fixture.test_context
+    shared_group = rs_fixture.shared_group
+    result_rs = None
+    try:
+        # create a record in the zone with an owner group ID
+        new_rs = get_recordset_json(ok_zone,
+                                    "test-owned-recordset", "TXT", [{'text':'should-work'}],
+                                    100,
+                                    shared_group['id'])
+
+        result = client.create_recordset(new_rs, status=202)
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        list_results = client.list_recordsets(ok_zone['id'], status=200)
+        assert_that(list_results['recordSets'], has_length(18))
+
+        # confirm the created recordset is in the list of recordsets
+        rs_from_list = (r for r in list_results['recordSets'] if r['id'] == result_rs['id']).next()
+        assert_that(rs_from_list['name'], is_("test-owned-recordset"))
+        assert_that(rs_from_list['ownerGroupId'], is_(shared_group['id']))
+        assert_that(rs_from_list['ownerGroupName'], is_("record-ownergroup"))
+
+    finally:
+        if result_rs:
+            delete_result = client.delete_recordset(ok_zone['id'], result_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+            list_results = client.list_recordsets(ok_zone['id'], status=200)
+            rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
 
 
 def test_list_recordsets_multiple_pages(rs_fixture):

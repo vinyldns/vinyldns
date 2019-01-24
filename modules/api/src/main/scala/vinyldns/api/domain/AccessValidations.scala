@@ -17,14 +17,9 @@
 package vinyldns.api.domain
 
 import vinyldns.api.Interfaces.ensuring
-import vinyldns.api.domain.zone.{
-  ACLRuleOrdering,
-  NotAuthorizedError,
-  PTRACLRuleOrdering,
-  RecordSetListInfo
-}
+import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.record.{RecordSet, RecordType}
+import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone._
@@ -93,7 +88,7 @@ object AccessValidations extends AccessValidationAlgebra {
 
   def getListAccessLevels(
       auth: AuthPrincipal,
-      recordSets: List[RecordSet],
+      recordSets: List[RecordSetInfo],
       zone: Zone): List[RecordSetListInfo] =
     if (auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
       recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))

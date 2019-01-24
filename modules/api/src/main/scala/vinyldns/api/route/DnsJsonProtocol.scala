@@ -207,7 +207,7 @@ trait DnsJsonProtocol extends JsonValidation {
   case object RecordSetListInfoSerializer extends ValidationSerializer[RecordSetListInfo] {
     override def fromJson(js: JValue): ValidatedNel[String, RecordSetListInfo] =
       (
-        RecordSetSerializer.fromJson(js),
+        RecordSetInfoSerializer.fromJson(js),
         (js \ "accessLevel").required[AccessLevel.AccessLevel]("Missing RecordSet.zoneId"))
         .mapN(RecordSetListInfo.apply)
 
@@ -223,7 +223,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("id" -> rs.id) ~
         ("account" -> rs.account) ~
         ("accessLevel" -> rs.accessLevel.toString) ~
-        ("ownerGroupId" -> rs.ownerGroupId)
+        ("ownerGroupId" -> rs.ownerGroupId) ~
+        ("ownerGroupName" -> rs.ownerGroupName)
   }
 
   case object RecordSetInfoSerializer extends ValidationSerializer[RecordSetInfo] {

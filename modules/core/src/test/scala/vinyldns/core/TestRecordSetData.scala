@@ -180,6 +180,9 @@ object TestRecordSetData {
   val notSharedZoneRecordWithOwnerGroup: RecordSet =
     rsOk.copy(zoneNotAuthorized.id, "okWithOwnerGroupID", ownerGroupId = Some(okGroup.id))
 
+  val sharedZoneRecordNotFoundOwnerGroup: RecordSet =
+    sharedZoneRecord.copy(name = "records", ownerGroupId = Some("not-in-backend"))
+
   /* RECORDSET CHANGES */
 
   def makeTestAddChange(

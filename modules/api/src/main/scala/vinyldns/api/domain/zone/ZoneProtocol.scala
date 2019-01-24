@@ -112,23 +112,26 @@ case class RecordSetListInfo(
     id: String,
     account: String,
     accessLevel: AccessLevel,
-    ownerGroupId: Option[String])
+    ownerGroupId: Option[String],
+    ownerGroupName: Option[String])
 
 object RecordSetListInfo {
-  def apply(recordSet: RecordSet, accessLevel: AccessLevel): RecordSetListInfo = RecordSetListInfo(
-    zoneId = recordSet.zoneId,
-    name = recordSet.name,
-    typ = recordSet.typ,
-    ttl = recordSet.ttl,
-    status = recordSet.status,
-    created = recordSet.created,
-    updated = recordSet.updated,
-    records = recordSet.records,
-    id = recordSet.id,
-    account = recordSet.account,
-    accessLevel = accessLevel,
-    ownerGroupId = recordSet.ownerGroupId
-  )
+  def apply(recordSet: RecordSetInfo, accessLevel: AccessLevel): RecordSetListInfo =
+    RecordSetListInfo(
+      zoneId = recordSet.zoneId,
+      name = recordSet.name,
+      typ = recordSet.typ,
+      ttl = recordSet.ttl,
+      status = recordSet.status,
+      created = recordSet.created,
+      updated = recordSet.updated,
+      records = recordSet.records,
+      id = recordSet.id,
+      account = recordSet.account,
+      accessLevel = accessLevel,
+      ownerGroupId = recordSet.ownerGroupId,
+      ownerGroupName = recordSet.ownerGroupName
+    )
 }
 
 case class RecordSetInfo(
