@@ -283,7 +283,7 @@ trait ProtobufConversions {
 
   /* This cannot be called toPB because RecordData is the base type for things like AData, cannot overload */
   def toRecordData(data: RecordData): VinylDNSProto.RecordData = {
-    val d = (data: @unchecked) match {
+    val d = data match {
       case x: AData => toPB(x)
       case x: AAAAData => toPB(x)
       case x: CNAMEData => toPB(x)
