@@ -17,6 +17,7 @@
 package vinyldns.core.domain.record
 
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.core.domain.record.DnsSecAlgorithm._
 
 class RecordDataSpec extends WordSpec with Matchers {
 
@@ -38,19 +39,26 @@ class RecordDataSpec extends WordSpec with Matchers {
     }
   }
   "DnsSecAlgorithm" should {
-    "Properly convert from int" in {
-      DnsSecAlgorithm(3) shouldBe DnsSecAlgorithm.DSA
-      DnsSecAlgorithm(5) shouldBe DnsSecAlgorithm.RSASHA1
-      DnsSecAlgorithm(6) shouldBe DnsSecAlgorithm.DSA_NSEC3_SHA1
-      DnsSecAlgorithm(7) shouldBe DnsSecAlgorithm.RSA_NSEC3_SHA1
-      DnsSecAlgorithm(1) shouldBe DnsSecAlgorithm.UnknownAlgorithm(1)
-    }
-    "Properly convert to int" in {
-      DnsSecAlgorithm.DSA.value shouldBe 3
-      DnsSecAlgorithm.RSASHA1.value shouldBe 5
-      DnsSecAlgorithm.DSA_NSEC3_SHA1.value shouldBe 6
-      DnsSecAlgorithm.RSA_NSEC3_SHA1.value shouldBe 7
-      DnsSecAlgorithm.UnknownAlgorithm(1).value shouldBe 1
+    "Properly convert to/from int" in {
+      List(
+        DSA,
+        RSASHA1,
+        DSA_NSEC3_SHA1,
+        RSASHA1_NSEC3_SHA1,
+        RSASHA256,
+        RSASHA512,
+        ECC_GOST,
+        ECDSAP256SHA256,
+        ECDSAP384SHA384,
+        ED25519,
+        ED25519,
+        ED448,
+        PRIVATEDNS,
+        PRIVATEOID,
+        UnknownAlgorithm(100)
+      ).foreach { alg =>
+        DnsSecAlgorithm(alg.value) shouldBe alg
+      }
     }
   }
 }

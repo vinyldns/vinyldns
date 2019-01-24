@@ -1896,3 +1896,22 @@ def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context)
     record_json['ownerGroupId'] = group['id']
     error = client.create_recordset(record_json, status=422)
     assert_that(error, is_('User not in record owner group with id "' + group['id'] + '"'))
+
+
+def test_create_ds_success(shared_zone_test_context):
+    """
+    Test that creating a DS record succeeds
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_json = get_recordset_json(zone, 'dskey', 'DS', [{'keyTag': 60485, 'algorithm': 5, 'digestType': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}])
+    result_rs = None
+    try:
+        result = client.create_recordset(record_json, status=202)
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+    finally:
+        if result_rs:
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])

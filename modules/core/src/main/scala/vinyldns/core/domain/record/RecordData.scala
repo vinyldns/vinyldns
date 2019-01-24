@@ -102,7 +102,16 @@ object DnsSecAlgorithm {
   case object DSA extends DnsSecAlgorithm(3)
   case object RSASHA1 extends DnsSecAlgorithm(5)
   case object DSA_NSEC3_SHA1 extends DnsSecAlgorithm(6)
-  case object RSA_NSEC3_SHA1 extends DnsSecAlgorithm(7)
+  case object RSASHA1_NSEC3_SHA1 extends DnsSecAlgorithm(7)
+  case object RSASHA256 extends DnsSecAlgorithm(8)
+  case object RSASHA512 extends DnsSecAlgorithm(10)
+  case object ECC_GOST extends DnsSecAlgorithm(12)
+  case object ECDSAP256SHA256 extends DnsSecAlgorithm(13)
+  case object ECDSAP384SHA384 extends DnsSecAlgorithm(14)
+  case object ED25519 extends DnsSecAlgorithm(15)
+  case object ED448 extends DnsSecAlgorithm(16)
+  case object PRIVATEDNS extends DnsSecAlgorithm(253)
+  case object PRIVATEOID extends DnsSecAlgorithm(254)
   final case class UnknownAlgorithm private (x: Int) extends DnsSecAlgorithm(x)
 
   def apply(value: Int): DnsSecAlgorithm =
@@ -110,7 +119,16 @@ object DnsSecAlgorithm {
       case 3 => DSA
       case 5 => RSASHA1
       case 6 => DSA_NSEC3_SHA1
-      case 7 => RSA_NSEC3_SHA1
+      case 7 => RSASHA1_NSEC3_SHA1
+      case 8 => RSASHA256
+      case 10 => RSASHA512
+      case 12 => ECC_GOST
+      case 13 => ECDSAP256SHA256
+      case 14 => ECDSAP384SHA384
+      case 15 => ED25519
+      case 16 => ED448
+      case 253 => PRIVATEDNS
+      case 254 => PRIVATEOID
       case other => UnknownAlgorithm(other)
     }
 }
