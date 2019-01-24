@@ -27,6 +27,7 @@ import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
+import vinyldns.core.TestRecordSetData.ds
 
 import scala.collection.JavaConverters._
 
@@ -159,6 +160,7 @@ class DnsConversionsSpec
     DateTime.now,
     None,
     List(AData("10.1.1.1")))
+  private val testDS = ds.copy(zoneId = testZone.id)
 
   private val testDnsUnknown = DNS.Record.newRecord(
     DNS.Name.fromString("unknown-record."),
@@ -228,8 +230,10 @@ class DnsConversionsSpec
     convertedRecords should contain theSameElementsAs rs.records
   }
 
-  private def roundTrip(rs: RecordSet): RecordSet =
-    toRecordSet(rightValue(toDnsRecords(rs, testZoneName)).head, testZoneDnsName)
+  private def roundTrip(rs: RecordSet): RecordSet = {
+    val recordList = rightValue(toDnsRecords(rs, testZoneName)).map(toRecordSet(_, testZoneDnsName))
+    recordList.head.copy(records = recordList.flatMap(_.records))
+  }
 
   override protected def beforeEach(): Unit = {
     doReturn(mockMessage).when(mockMessage).clone()
@@ -286,6 +290,11 @@ class DnsConversionsSpec
     "convert CNAME record set" in {
       val result = rightValue(toDnsRRset(testCNAME, testZoneName))
       verifyMatch(result, testCNAME)
+    }
+
+    "convert DS record set" in {
+      val result = rightValue(toDnsRRset(testDS, testZoneName))
+      verifyMatch(result, testDS)
     }
 
     "convert MX record set" in {
@@ -406,6 +415,9 @@ class DnsConversionsSpec
     "convert to/from RecordType CNAME" in {
       verifyMatch(testCNAME, roundTrip(testCNAME))
     }
+    "convert to/from RecordType DS" in {
+      verifyMatch(testDS, roundTrip(testDS))
+    }
     "convert to/from RecordType MX" in {
       verifyMatch(testMX, roundTrip(testMX))
     }
@@ -441,6 +453,9 @@ class DnsConversionsSpec
     }
     "support CNAME" in {
       toDnsRecordType(RecordType.CNAME) shouldBe DNS.Type.CNAME
+    }
+    "support DS" in {
+      toDnsRecordType(RecordType.DS) shouldBe DNS.Type.DS
     }
     "support MX" in {
       toDnsRecordType(RecordType.MX) shouldBe DNS.Type.MX
