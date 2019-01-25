@@ -18,7 +18,14 @@
     'use strict';
 
     angular.module('batch-change')
-        .controller('BatchChangeNewController', function($scope, jsConfig, $log, $location, $timeout, batchChangeService, utilityService){
+        .controller('BatchChangeNewController', function($scope, jsConfig, $log, $location, $timeout, batchChangeService, utilityService, groupsService){
+
+            $scope.load = function(){
+                groupsService.getMyGroupsStored().then(
+                    function (results) {
+                        $scope.myGroups = results['groups'];
+                    })
+            }
 
             $scope.batch = {};
             $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]};
@@ -86,5 +93,7 @@
                 var alert = utilityService.failure(error, type);
                 $scope.alerts.push(alert);
             }
+
+            $timeout($scope.load, 0);
         });
 })();
