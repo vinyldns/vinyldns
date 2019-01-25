@@ -1,6 +1,9 @@
 // Karma configuration
 // http://karma-runner.github.io/0.10/config/configuration-file.html
 
+const puppeteer = require('puppeteer');
+process.env.CHROME_BIN = puppeteer.executablePath();
+
 module.exports = function(config) {
     config.set({
         // base path, that will be used to resolve files and exclude
@@ -11,9 +14,9 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-            'javascripts/jquery.min.js',
+            'gentelella/vendors/jquery/dist/jquery.min.js',
+            'gentelella/vendors/bootstrap/dist/js/bootstrap.min.js',
             'javascripts/angular.min.js',
-            'javascripts/*.min.js',
             'test_frameworks/*.js',
             'lib/services/**/*.js',
             'lib/controllers/**/*.js',
@@ -37,7 +40,7 @@ module.exports = function(config) {
         
         plugins: [
             'karma-jasmine',
-            'karma-phantomjs-launcher',
+            'karma-chrome-launcher',
             'karma-mocha-reporter'
         ],
 
@@ -61,7 +64,7 @@ module.exports = function(config) {
         // - Safari (only Mac)
         // - PhantomJS
         // - IE (only Windows)
-        browsers: ['PhantomJS'],
+        browsers: ['ChromeHeadless'],
 
         // Continuous Integration mode
         // if true, it capture browsers, run tests and exit
