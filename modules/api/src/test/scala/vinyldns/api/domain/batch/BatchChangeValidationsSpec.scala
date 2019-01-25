@@ -402,7 +402,8 @@ class BatchChangeValidationsSpec
         duplicateNameCname.validNel,
         duplicateNamePTR.validNel),
       ExistingRecordSets(existingRsList),
-      okAuth
+      okAuth,
+      None
     )
 
     result(0) shouldBe valid
@@ -429,7 +430,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -449,7 +451,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
-      notAuth)
+      notAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -470,7 +473,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
-      notAuth)
+      notAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
     result(1) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
@@ -488,7 +492,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -509,7 +514,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel, deleteCname.validNel),
       ExistingRecordSets(List(existingCname)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -528,7 +534,8 @@ class BatchChangeValidationsSpec
         val result = validateChangesWithContext(
           List(input.validNel),
           ExistingRecordSets(newRecordSetList),
-          okAuth)
+          okAuth,
+          None)
 
         result(0) should haveInvalid[DomainValidationError](
           CnameIsNotUniqueError(input.inputChange.inputName, RecordType.CNAME))
@@ -539,7 +546,11 @@ class BatchChangeValidationsSpec
   property("validateChangesWithContext: should succeed if all inputs are good") {
     forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
       val result =
-        validateChangesWithContext(List(input.validNel), ExistingRecordSets(recordSetList), okAuth)
+        validateChangesWithContext(
+          List(input.validNel),
+          ExistingRecordSets(recordSetList),
+          okAuth,
+          None)
 
       result(0) shouldBe valid
     }
@@ -552,7 +563,8 @@ class BatchChangeValidationsSpec
         val result = validateChangesWithContext(
           List(input.validNel),
           ExistingRecordSets(recordSetList),
-          okAuth)
+          okAuth,
+          None)
         result(0) shouldBe valid
       }
     }
@@ -567,7 +579,8 @@ class BatchChangeValidationsSpec
       val result = validateChangesWithContext(
         List(input.validNel),
         ExistingRecordSets(existingRecordSetList),
-        okAuth)
+        okAuth,
+        None)
 
       result(0) should haveInvalid[DomainValidationError](
         RecordAlreadyExists(input.inputChange.inputName))
@@ -589,7 +602,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addCname.validNel, deleteA.validNel),
       ExistingRecordSets(newRecordSetList),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -606,7 +620,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addCname.validNel),
       ExistingRecordSets(newRecordSetList),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](
       CnameIsNotUniqueError(addCname.inputChange.inputName, existingA.typ))
@@ -631,7 +646,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addCname.validNel, deletePtr.validNel),
       ExistingRecordSets(List(existingRecordPTR)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -652,7 +668,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addCname.validNel),
       ExistingRecordSets(List(existingRecordPTR)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](
       CnameIsNotUniqueError(addCname.inputChange.inputName, existingRecordPTR.typ))
@@ -675,7 +692,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel, addAAAA.validNel, addCname.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -699,7 +717,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel, addAAAA.validNel, addDuplicateCname.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) shouldBe valid
@@ -726,7 +745,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel, addCname.validNel, addDuplicateCname.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -754,7 +774,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel, addPtr.validNel, addDuplicatePtr.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
 
     result.map(_ shouldBe valid)
   }
@@ -766,7 +787,11 @@ class BatchChangeValidationsSpec
       "valid",
       AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1")))
     val result =
-      validateChangesWithContext(List(addA.validNel), ExistingRecordSets(recordSetList), okAuth)
+      validateChangesWithContext(
+        List(addA.validNel),
+        ExistingRecordSets(recordSetList),
+        okAuth,
+        None)
 
     result(0) shouldBe valid
   }
@@ -780,7 +805,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addA.validNel),
       ExistingRecordSets(recordSetList),
-      AuthPrincipal(superUser, Seq.empty))
+      AuthPrincipal(superUser, Seq.empty),
+      None)
 
     result(0) shouldBe valid
   }
@@ -793,7 +819,11 @@ class BatchChangeValidationsSpec
       AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1"))
     )
     val result =
-      validateChangesWithContext(List(addA.validNel), ExistingRecordSets(recordSetList), notAuth)
+      validateChangesWithContext(
+        List(addA.validNel),
+        ExistingRecordSets(recordSetList),
+        notAuth,
+        None)
 
     result(0) shouldBe valid
   }
@@ -803,7 +833,11 @@ class BatchChangeValidationsSpec
       |is not a superuser, doesn't have group admin access, or doesn't have necessary ACL rule""".stripMargin) {
     forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
       val result =
-        validateChangesWithContext(List(input.validNel), ExistingRecordSets(recordSetList), notAuth)
+        validateChangesWithContext(
+          List(input.validNel),
+          ExistingRecordSets(recordSetList),
+          notAuth,
+          None)
 
       result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
     }
@@ -822,7 +856,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addCname.validNel, addPtr.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](
       RecordNameNotUniqueInBatch("existing.ok.", RecordType.CNAME))
@@ -839,7 +874,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
   }
@@ -852,7 +888,11 @@ class BatchChangeValidationsSpec
       "record-does-not-exist",
       DeleteChangeInput("record-does-not-exist.ok.", RecordType.A))
     val result =
-      validateChangesWithContext(List(deleteA.validNel), ExistingRecordSets(recordSetList), okAuth)
+      validateChangesWithContext(
+        List(deleteA.validNel),
+        ExistingRecordSets(recordSetList),
+        okAuth,
+        None)
 
     result(0) should haveInvalid[DomainValidationError](
       RecordDoesNotExist(deleteA.inputChange.inputName))
@@ -871,7 +911,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
   }
@@ -884,7 +925,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
   }
@@ -897,7 +939,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      AuthPrincipal(superUser, Seq.empty))
+      AuthPrincipal(superUser, Seq.empty),
+      None)
     result(0) shouldBe valid
   }
 
@@ -912,7 +955,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      notAuth)
+      notAuth,
+      None)
 
     result(0) shouldBe valid
   }
@@ -928,7 +972,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
-      notAuth)
+      notAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
   }
@@ -970,7 +1015,8 @@ class BatchChangeValidationsSpec
         addA.validNel,
         deleteCname.validNel),
       ExistingRecordSets(List(existingA, existingCname)),
-      okAuth
+      okAuth,
+      None
     )
 
     result(0) shouldBe valid
@@ -1006,7 +1052,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteA.validNel, addA.validNel, addAAAA.validNel, addCname.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingA)),
-      okAuth)
+      okAuth,
+      None)
     result.map(_ shouldBe valid)
   }
 
@@ -1033,7 +1080,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteCname.validNel, addA.validNel, addAAAA.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingCname)),
-      okAuth)
+      okAuth,
+      None)
     result.map(_ shouldBe valid)
   }
 
@@ -1051,7 +1099,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteCname.validNel, addCname.validNel),
       ExistingRecordSets(List(existingCname)),
-      okAuth)
+      okAuth,
+      None)
     result.map(_ shouldBe valid)
   }
 
@@ -1078,7 +1127,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteUpdateCname.validNel, addUpdateCname.validNel, addCname.validNel),
       ExistingRecordSets(List(existingCname)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -1106,7 +1156,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deletePtr.validNel, addCname.validNel),
       ExistingRecordSets(List(existingPtr)),
-      okAuth)
+      okAuth,
+      None)
     result.map(_ shouldBe valid)
   }
 
@@ -1129,7 +1180,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deletePtr.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingPtr)),
-      okAuth)
+      okAuth,
+      None)
     result.map(_ shouldBe valid)
   }
 
@@ -1156,7 +1208,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteUpdatePtr.validNel, addUpdatePtr.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingPtr)),
-      okAuth)
+      okAuth,
+      None)
 
     result.map(_ shouldBe valid)
   }
@@ -1196,7 +1249,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addTxt.validNel),
       ExistingRecordSets(List(existingTxt)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
   }
@@ -1214,7 +1268,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addTxt.validNel, addTxt2.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](
       RecordNameNotUniqueInBatch("name-conflict.", RecordType.TXT))
@@ -1239,7 +1294,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addTxt.validNel, addTxt2.validNel),
       ExistingRecordSets(List(existingTxt)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) should haveInvalid[DomainValidationError](
       RecordNameNotUniqueInBatch("name-conflict.", RecordType.TXT))
@@ -1264,7 +1320,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addTxt.validNel, addTxt2.validNel),
       ExistingRecordSets(List(existingTxt)),
-      okAuth)
+      okAuth,
+      None)
 
     result(0) shouldBe valid
   }
@@ -1311,7 +1368,11 @@ class BatchChangeValidationsSpec
       AddChangeInput("name-conflict", RecordType.MX, 300, MXData(1, "foo.bar.")))
 
     val result =
-      validateChangesWithContext(List(addMX.validNel), ExistingRecordSets(List(existingMX)), okAuth)
+      validateChangesWithContext(
+        List(addMX.validNel),
+        ExistingRecordSets(List(existingMX)),
+        okAuth,
+        None)
     result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
   }
 
@@ -1328,7 +1389,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(addMx.validNel, addMx2.validNel),
       ExistingRecordSets(List()),
-      okAuth)
+      okAuth,
+      None)
     result(0) shouldBe valid
   }
 
@@ -1350,7 +1412,8 @@ class BatchChangeValidationsSpec
     val result = validateChangesWithContext(
       List(deleteMx.validNel, addMx.validNel),
       ExistingRecordSets(List(existingMx)),
-      okAuth)
+      okAuth,
+      None)
     result(0) shouldBe valid
   }
 }

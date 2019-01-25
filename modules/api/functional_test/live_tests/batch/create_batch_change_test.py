@@ -2410,7 +2410,8 @@ def test_user_validation_ownership(shared_zone_test_context):
             get_change_A_AAAA_json("update-test-batch.shared.", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json("update-test-batch.shared.", address="1.1.1.1"),
             get_change_A_AAAA_json("delete-test-batch.shared.", change_type="DeleteRecordSet"),
-        ]
+        ],
+        "ownerGroupId": "shared-zone-group"
     }
 
     response = client.create_batch_change(batch_change_input, status=400)
@@ -2441,7 +2442,8 @@ def test_user_validation_shared(shared_zone_test_context):
             get_change_A_AAAA_json("update-test-batch.non.test.shared.", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json("update-test-batch.non.test.shared.", address="1.1.1.1"),
             get_change_A_AAAA_json("delete-test-batch.non.test.shared.", change_type="DeleteRecordSet")
-        ]
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
     }
 
     response = client.create_batch_change(batch_change_input, status=400)
