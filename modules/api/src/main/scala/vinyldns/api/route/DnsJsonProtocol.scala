@@ -18,7 +18,6 @@ package vinyldns.api.route
 
 import java.util.UUID
 
-import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.implicits._
 import org.joda.time.DateTime
@@ -441,16 +440,13 @@ trait DnsJsonProtocol extends JsonValidation {
 
   case object DSSerializer extends ValidationSerializer[DSData] {
     override def fromJson(js: JValue): ValidatedNel[String, DSData] = {
-      val digestInput =
-        (js \ "digest").required[String]("Missing DS.digest").map(ByteVector.fromHex(_))
-      val digest: ValidatedNel[String, ByteVector] = digestInput match {
-        case Valid(bvOption) =>
-          bvOption match {
+      val digest =
+        (js \ "digest").required[String]("Missing DS.digest")
+          .map(ByteVector.fromHex(_))
+          .andThen {
             case Some(v) => v.validNel
             case None => s"Could not convert digest to valid hex".invalidNel
           }
-        case Invalid(err) => err.invalid[ByteVector]
-      }
 
       (
         (js \ "keytag")
