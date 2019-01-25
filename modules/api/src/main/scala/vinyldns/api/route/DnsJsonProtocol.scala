@@ -439,27 +439,36 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object DSSerializer extends ValidationSerializer[DSData] {
-    override def fromJson(js: JValue): ValidatedNel[String, DSData] = {
-      val digest =
+    override def fromJson(js: JValue): ValidatedNel[String, DSData] =
+      (
+        (js \ "keytag")
+          .required[Integer]("Missing DS.keytag")
+          .check("DS.keytag must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0))
+        ,
+        (js \ "algorithm")
+          .required[Integer]("Missing DS.algorithm")
+          .map(DnsSecAlgorithm(_))
+          .andThen {
+            case DnsSecAlgorithm.UnknownAlgorithm(x) =>
+              s"Algorithm $x is not a supported DNSSEC algorithm".invalidNel
+            case supported => supported.validNel
+          }
+        ,
+        (js \ "digesttype")
+          .required[Integer]("Missing DS.digesttype")
+          .map(DigestType(_))
+          .andThen {
+            case DigestType.UnknownDigestType(x) =>
+              s"Digest Type $x is not a supported DS record digest type".invalidNel
+            case supported => supported.validNel
+          },
         (js \ "digest").required[String]("Missing DS.digest")
           .map(ByteVector.fromHex(_))
           .andThen {
             case Some(v) => v.validNel
-            case None => s"Could not convert digest to valid hex".invalidNel
+            case None => "Could not convert digest to valid hex".invalidNel
           }
-
-      (
-        (js \ "keytag")
-          .required[Integer]("Missing DS.keytag"),
-        (js \ "algorithm")
-          .required[Integer]("Missing DS.algorithm")
-          .map(DnsSecAlgorithm(_)),
-        (js \ "digesttype")
-          .required[Integer]("Missing DS.digesttype")
-          .map(DigestType(_)),
-        digest
       ).mapN(DSData.apply)
-    }
   }
 
   case object TXTSerializer extends ValidationSerializer[TXTData] {
