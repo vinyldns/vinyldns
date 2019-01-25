@@ -53,9 +53,9 @@ message CNAMEData {
 }
 
 message DSData {
-  required int32 keytag = 1;
+  required int32 keyTag = 1;
   required int32 algorithm = 2;
-  required int32 digesttype = 3;
+  required int32 digestType = 3;
   required bytes digest = 4;
 }
 

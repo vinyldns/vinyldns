@@ -164,9 +164,9 @@ trait ProtobufConversions {
 
   def fromPB(data: VinylDNSProto.DSData): DSData =
     DSData(
-      data.getKeytag,
+      data.getKeyTag,
       DnsSecAlgorithm(data.getAlgorithm),
-      DigestType(data.getDigesttype),
+      DigestType(data.getDigestType),
       ByteVector.apply(data.getDigest.asReadOnlyByteBuffer()))
 
   def fromPB(data: VinylDNSProto.MXData): MXData = MXData(data.getPreference, data.getExchange)
@@ -227,9 +227,9 @@ trait ProtobufConversions {
   def toPB(data: DSData): VinylDNSProto.DSData =
     VinylDNSProto.DSData
       .newBuilder()
-      .setKeytag(data.keyTag)
+      .setKeyTag(data.keyTag)
       .setAlgorithm(data.algorithm.value)
-      .setDigesttype(data.digestType.value)
+      .setDigestType(data.digestType.value)
       .setDigest(ByteString.copyFrom(data.digest.toByteBuffer))
       .build()
 

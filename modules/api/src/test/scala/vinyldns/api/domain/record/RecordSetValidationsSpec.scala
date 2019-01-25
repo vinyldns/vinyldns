@@ -374,7 +374,7 @@ class RecordSetValidationsSpec
         val ownerGroup = Group(id = ownerGroupId, name = "test", email = "test@test.com")
 
         val error = leftValue(canUseOwnerGroup(Some(ownerGroupId), Some(ownerGroup), auth))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
     }
   }
