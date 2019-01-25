@@ -23,6 +23,7 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.protobuf.ProtobufConversions
+import vinyldns.core.TestRecordSetData.ds
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
@@ -524,6 +525,10 @@ class ProtobufConversionsSpec
 
     "convert from protobuf for TXT recordset" in {
       fromPB(toPB(txt)) shouldBe txt
+    }
+
+    "convert from protobuf for DS recordset" in {
+      fromPB(toPB(ds)) shouldBe ds
     }
 
     "convert to a protobuf for a recordset without an update date" in {

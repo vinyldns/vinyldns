@@ -22,6 +22,11 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
   import MySqlRecordSetRepository._
   "fromRecordType" should {
     "support all record types" in {
+      RecordType.values.foreach {
+        noException should be thrownBy fromRecordType(_)
+      }
+    }
+    "appropriately determine value" in {
       fromRecordType(RecordType.A) shouldBe 1
       fromRecordType(RecordType.AAAA) shouldBe 2
       fromRecordType(RecordType.CNAME) shouldBe 3
@@ -33,6 +38,7 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
       fromRecordType(RecordType.SSHFP) shouldBe 9
       fromRecordType(RecordType.TXT) shouldBe 10
       fromRecordType(RecordType.SOA) shouldBe 11
+      fromRecordType(RecordType.DS) shouldBe 12
       fromRecordType(RecordType.UNKNOWN) shouldBe unknownRecordType
     }
   }

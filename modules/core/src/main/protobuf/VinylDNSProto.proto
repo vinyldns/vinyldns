@@ -52,6 +52,13 @@ message CNAMEData {
   required string cname = 1;
 }
 
+message DSData {
+  required int32 keyTag = 1;
+  required int32 algorithm = 2;
+  required int32 digestType = 3;
+  required bytes digest = 4;
+}
+
 message MXData {
   required int32 preference = 1;
   required string exchange = 2;
