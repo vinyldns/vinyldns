@@ -298,13 +298,22 @@ angular.module('controller.records', [])
         return response;
     }
 
-    function determineAdmin(){
-        groupsService.getMyGroupsStored().then(
+    function getMembership(){
+        groupsService
+        .getMyGroupsStored()
+        .then(
             function (results) {
                 $scope.myGroups = results.groups;
-                var groupIds = results['groups'].map(function(grp) {return grp['id']});
-                $scope.isZoneAdmin = groupIds.indexOf($scope.zoneInfo.adminGroupId) > -1;
+                determineAdmin()
             })
+        .catch(function (error){
+            handleError(error, 'groupsService::getMyGroupsStored-failure');
+        });
+    }
+
+    function determineAdmin(){
+        var groupIds = $scope.myGroups.map(function(grp) {return grp['id']});
+        $scope.isZoneAdmin = groupIds.indexOf($scope.zoneInfo.adminGroupId) > -1;
     }
 
     $scope.isGroupMember = function(groupId) {
@@ -322,8 +331,8 @@ angular.module('controller.records', [])
         function success(response) {
             $log.log('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
-            // Determine if the current user is an admin of this zone
-            determineAdmin()
+            // Get current user's groups and determine if they're an admin of this zone
+            getMembership()
         }
         return recordsService
             .getZone($scope.zoneId)
