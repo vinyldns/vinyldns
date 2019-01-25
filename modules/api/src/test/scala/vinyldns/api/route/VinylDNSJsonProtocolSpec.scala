@@ -516,6 +516,23 @@ class VinylDNSJsonProtocolSpec
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
     }
+    "reject a DS record with non-hex digest" in {
+      val dsData = ("keytag" -> 60485) ~
+        ("algorithm" -> 5) ~
+        ("digesttype" -> 1) ~
+        ("digest" -> "G123")
+
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "DS") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List(dsData))
+
+      val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
+      thrown.msg.contains("Could not convert digest to valid hex") shouldBe true
+    }
   }
 }
 
