@@ -70,7 +70,11 @@ class BatchChangeService(
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
       recordSets <- getExistingRecordSets(changesWithZones).toBatchResult
-      validatedSingleChanges = validateChangesWithContext(changesWithZones, recordSets, auth)
+      validatedSingleChanges = validateChangesWithContext(
+        changesWithZones,
+        recordSets,
+        auth,
+        batchChangeInput.ownerGroupId)
       changeForConversion <- buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
       conversionResult <- batchChangeConverter.sendBatchForProcessing(
         changeForConversion,
