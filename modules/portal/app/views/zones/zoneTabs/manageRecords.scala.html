@@ -266,7 +266,7 @@
                     </td>
                     @if(meta.sharedDisplayEnabled) {
                         <td ng-if="zoneInfo.shared">
-                            <a ng-if="record.ownerGroupName && isGroupMember(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}">blah</a>
+                            <a ng-if="record.ownerGroupName && isGroupMember(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}"></a>
                             <span ng-if="record.ownerGroupName && !isGroupMember(record.ownerGroupId)" ng-bind="record.ownerGroupName" style="line-height: 0"></span>
                         </td>
                     }
