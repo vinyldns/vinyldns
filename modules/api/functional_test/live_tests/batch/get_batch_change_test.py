@@ -32,6 +32,92 @@ def test_get_batch_change_success(shared_zone_test_context):
                 pass
 
 
+def test_get_batch_change_with_record_owner_group_success(shared_zone_test_context):
+    """
+    Test successfully getting a batch change with an ownerGroupId and ownerGroupName
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    group = shared_zone_test_context.shared_record_group
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("testing-get-batch-with-owner-group.shared.", address="1.1.1.1")
+        ],
+        "ownerGroupId": group['id']
+    }
+    to_delete = []
+    try:
+        batch_change = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(batch_change)
+
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        to_delete = set(record_set_list)
+
+        result = client.get_batch_change(batch_change['id'], status=200)
+        assert_that(result, is_(completed_batch))
+        assert_that(result['ownerGroupId'], is_(group['id']))
+        assert_that(result['ownerGroupName'], is_(group['name']))
+
+    finally:
+        for result_rs in to_delete:
+            try:
+                delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+                client.wait_until_recordset_change_status(delete_result, 'Complete')
+            except:
+                pass
+
+
+def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_test_context):
+    """
+    Test that if the owner group no longer exists that getting a batch change will still succeed,
+    with the ownerGroupName attribute set to None
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    temp_group = {
+        'name': 'test-get-batch-record-owner-group',
+        'email': 'test@test.com',
+        'description': 'for testing that a get batch change still works when record owner group is deleted',
+        'members': [ { 'id': 'sharedZoneUser'} ],
+        'admins': [ { 'id': 'sharedZoneUser'} ]
+    }
+
+    record_to_delete = []
+    try:
+
+        group_to_delete = client.create_group(temp_group, status=200)
+
+        batch_change_input = {
+            "comments": "this is optional",
+            "changes": [
+                get_change_A_AAAA_json("testing-get-batch-with-owner-group.shared.", address="1.1.1.1")
+            ],
+            "ownerGroupId": group_to_delete['id']
+        }
+
+        batch_change = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(batch_change)
+
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        record_to_delete = set(record_set_list)
+
+        # delete group
+        client.delete_group(group_to_delete['id'], status=200)
+        del completed_batch['ownerGroupName']
+
+        result = client.get_batch_change(batch_change['id'], status=200)
+        assert_that(result, is_(completed_batch))
+        assert_that(result['ownerGroupId'], is_(group_to_delete['id']))
+        assert_that(result, is_not(has_key('ownerGroupName')))
+
+    finally:
+        for result_rs in record_to_delete:
+            try:
+                delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+                client.wait_until_recordset_change_status(delete_result, 'Complete')
+            except:
+                pass
+
+
 def test_get_batch_change_failure(shared_zone_test_context):
     """
     Test that getting a batch change with invalid id returns a Not Found error

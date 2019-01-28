@@ -158,6 +158,15 @@ class BatchChangeServiceSpec
           case _ => None
         }
       }
+
+    override def getGroups(groupIds: Set[String]): IO[Set[Group]] =
+      IO.pure {
+        groupIds.flatMap {
+          case okGroup.id => Some(okGroup)
+          case authGrp.id => Some(authGrp)
+          case _ => None
+        }
+      }
   }
 
   object TestZoneRepo extends EmptyZoneRepo {
@@ -275,6 +284,36 @@ class BatchChangeServiceSpec
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, authSuper).value)
 
+      result shouldBe BatchChangeInfo(batchChange)
+    }
+
+    "Succeed with record owner group name in result" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          ownerGroupId = Some(okGroup.id))
+      batchChangeRepo.save(batchChange)
+
+      val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
+      result shouldBe BatchChangeInfo(batchChange, Some(okGroup.name))
+    }
+
+    "Succeed if record owner group name is not found" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          ownerGroupId = Some("no-existo"))
+      batchChangeRepo.save(batchChange)
+
+      val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
       result shouldBe BatchChangeInfo(batchChange)
     }
   }
@@ -742,6 +781,52 @@ class BatchChangeServiceSpec
         rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value).batchChanges
 
       result.length shouldBe 0
+    }
+
+    "return ownerGroupName in batchChangeSummaries" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          ownerGroupId = Some(okGroup.id))
+      batchChangeRepo.save(batchChange)
+
+      val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+
+      result.batchChanges.length shouldBe 1
+      result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
+      result.batchChanges(0).ownerGroupId shouldBe Some(okGroup.id)
+      result.batchChanges(0).ownerGroupName shouldBe Some(okGroup.name)
+    }
+
+    "return None for ownerGroupName in batchChangeSummaries if group not found" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          ownerGroupId = Some("no-existo"))
+      batchChangeRepo.save(batchChange)
+
+      val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+
+      result.batchChanges.length shouldBe 1
+      result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
+      result.batchChanges(0).ownerGroupId shouldBe Some("no-existo")
+      result.batchChanges(0).ownerGroupName shouldBe None
     }
   }
 
