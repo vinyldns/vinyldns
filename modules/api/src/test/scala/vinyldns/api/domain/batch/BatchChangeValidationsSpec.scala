@@ -91,6 +91,48 @@ class BatchChangeValidationsSpec
       changes <- listOfN(numChanges, validAChangeGen)
     } yield batch.BatchChangeInput(None, changes)
 
+  private val createPrivateAddChange = AddChangeForValidation(
+    okZone,
+    "private-create",
+    AddChangeInput("private-create", RecordType.A, 200, AData("1.1.1.1")))
+
+  private val createSharedAddChange = AddChangeForValidation(
+    sharedZone,
+    "shared-create",
+    AddChangeInput("shared-create", RecordType.A, 200, AData("1.1.1.1")))
+
+  private val updatePrivateAddChange = AddChangeForValidation(
+    okZone,
+    "private-update",
+    AddChangeInput("private-update", RecordType.A, 300, AAAAData("1.2.3.4")))
+
+  private val updatePrivateDeleteChange = DeleteChangeForValidation(
+    okZone,
+    "private-update",
+    DeleteChangeInput("private-update", RecordType.A))
+
+  private val updateSharedAddChange = AddChangeForValidation(
+    sharedZone,
+    "shared-update",
+    AddChangeInput("shared-update", RecordType.AAAA, 300, AAAAData("1:2:3:4:5:6:7:8")))
+
+  private val updateSharedDeleteChange = DeleteChangeForValidation(
+    sharedZone,
+    "shared-update",
+    DeleteChangeInput("shared-update", RecordType.AAAA))
+
+  private val deletePrivateChange = DeleteChangeForValidation(
+    okZone,
+    "private-delete",
+    DeleteChangeInput("private-delete", RecordType.A)
+  )
+
+  private val deleteSharedChange = DeleteChangeForValidation(
+    sharedZone,
+    "shared-delete",
+    DeleteChangeInput("shared-delete", RecordType.AAAA)
+  )
+
   property("validateBatchChangeInputSize: should fail if batch has no changes") {
     validateBatchChangeInputSize(BatchChangeInput(None, List())) should
       haveInvalid[DomainValidationError](BatchChangeIsEmpty(maxChanges))
@@ -1414,6 +1456,112 @@ class BatchChangeValidationsSpec
       ExistingRecordSets(List(existingMx)),
       okAuth,
       None)
+    result(0) shouldBe valid
+  }
+
+  property("validateChangesWithContext: should properly validate changes with owner group ID") {
+    val result = validateChangesWithContext(
+      List(
+        createPrivateAddChange,
+        createSharedAddChange,
+        updatePrivateAddChange,
+        updatePrivateDeleteChange,
+        updateSharedAddChange,
+        updateSharedDeleteChange,
+        deletePrivateChange,
+        deleteSharedChange
+      ).map(_.validNel),
+      ExistingRecordSets(
+        List(
+          rsOk.copy(name = "private-update"),
+          sharedZoneRecord.copy(name = "shared-update"),
+          rsOk.copy(name = "private-delete"),
+          sharedZoneRecord.copy(name = "shared-delete")
+        )),
+      AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
+      Some("some-owner-group-id")
+    )
+
+    result.foreach(_ shouldBe valid)
+  }
+
+  property("validateChangesWithContext: should properly validate changes without owner group ID") {
+    val result = validateChangesWithContext(
+      List(
+        createPrivateAddChange,
+        createSharedAddChange,
+        updatePrivateAddChange,
+        updatePrivateDeleteChange,
+        updateSharedAddChange,
+        updateSharedDeleteChange,
+        deletePrivateChange,
+        deleteSharedChange
+      ).map(_.validNel),
+      ExistingRecordSets(
+        List(
+          rsOk.copy(name = "private-update"),
+          sharedZoneRecordNoOwnerGroup.copy(name = "shared-update"),
+          rsOk.copy(name = "private-delete"),
+          sharedZoneRecord.copy(name = "shared-delete")
+        )),
+      AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
+      None
+    )
+
+    result(0) shouldBe valid
+    result(1) should
+      haveInvalid[DomainValidationError](
+        MissingOwnerGroupId(createSharedAddChange.recordName, createSharedAddChange.zone.name))
+    result(2) shouldBe valid
+    result(3) shouldBe valid
+    result(4) should
+      haveInvalid[DomainValidationError](
+        MissingOwnerGroupId(updateSharedAddChange.recordName, updateSharedAddChange.zone.name))
+    result(5) shouldBe valid
+    result(6) shouldBe valid
+    result(7) shouldBe valid
+  }
+
+  property(
+    "validateChangesWithContext: should fail deleting record for normal user not in owner group in shared zone") {
+    val result = validateChangesWithContext(
+      List(deleteSharedChange.validNel),
+      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
+      dummyAuth,
+      None)
+
+    result(0) should
+      haveInvalid[DomainValidationError](UserIsNotAuthorized(dummyAuth.signedInUser.id))
+  }
+
+  property(
+    "validateChangesWithContext: should delete record without owner group for normal user in shared zone") {
+    val result = validateChangesWithContext(
+      List(deleteSharedChange.validNel),
+      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
+      okAuth,
+      None)
+
+    result(0) shouldBe valid
+  }
+
+  property("validateChangesWithContext: should delete record for zone admin in shared zone") {
+    val result = validateChangesWithContext(
+      List(deleteSharedChange.validNel),
+      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
+      sharedAuth,
+      None)
+
+    result(0) shouldBe valid
+  }
+
+  property("validateChangesWithContext: should delete record for super user in shared zone") {
+    val result = validateChangesWithContext(
+      List(deleteSharedChange.validNel),
+      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
+      superUserAuth,
+      None)
+
     result(0) shouldBe valid
   }
 }
