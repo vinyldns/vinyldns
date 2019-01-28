@@ -19,7 +19,8 @@ describe('BatchChange', function(){
     beforeEach(function () {
         module('batch-change'),
         module('service.utility'),
-        module('service.paging')
+        module('service.paging'),
+        module('service.groups')
     });
 
     var deferred;
@@ -29,7 +30,7 @@ describe('BatchChange', function(){
             module('ngMock')
         });
 
-        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, pagingService, utilityService) {
+        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, pagingService, utilityService, groupsService) {
             this.rootScope = $rootScope;
             this.scope = $rootScope.$new();
             this.controller = $controller('BatchChangeDetailController', {'$scope': this.scope});
