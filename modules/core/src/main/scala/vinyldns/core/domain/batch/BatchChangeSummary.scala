@@ -29,7 +29,8 @@ case class BatchChangeSummary(
     totalChanges: Int,
     status: BatchChangeStatus,
     ownerGroupId: Option[String],
-    id: String = UUID.randomUUID().toString) {}
+    id: String = UUID.randomUUID().toString,
+    ownerGroupName: Option[String] = None)
 
 object BatchChangeSummary {
   def apply(batchchange: BatchChange): BatchChangeSummary =
@@ -42,6 +43,19 @@ object BatchChangeSummary {
       batchchange.status,
       batchchange.ownerGroupId,
       batchchange.id
+    )
+
+  def apply(batchChangeInfo: BatchChangeInfo): BatchChangeSummary =
+    BatchChangeSummary(
+      batchChangeInfo.userId,
+      batchChangeInfo.userName,
+      batchChangeInfo.comments,
+      batchChangeInfo.createdTimestamp,
+      batchChangeInfo.changes.length,
+      batchChangeInfo.status,
+      batchChangeInfo.ownerGroupId,
+      batchChangeInfo.id,
+      batchChangeInfo.ownerGroupName
     )
 }
 

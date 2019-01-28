@@ -94,6 +94,12 @@ class BatchChangeRoutingSpec
         "batchId"
       )
 
+    /* Builds BatchChange response */
+    def createBatchChangeInfoResponse(
+        batchChange: BatchChange,
+        ownerGroupName: Option[String] = None): BatchChangeInfo =
+      BatchChangeInfo(batchChange, ownerGroupName)
+
     def buildAddChangeInput(
         inputName: Option[String] = None,
         typ: Option[RecordType] = None,
@@ -170,9 +176,12 @@ class BatchChangeRoutingSpec
 
     def getBatchChange(
         id: String,
-        auth: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+        auth: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChangeInfo] =
       id match {
-        case "batchId" => EitherT(IO.pure(genericValidResponse.asRight))
+        case "batchId" =>
+          EitherT(
+            IO.pure(createBatchChangeInfoResponse(genericValidResponse).asRight)
+          )
         case "nonexistentID" =>
           EitherT(IO.pure(BatchChangeNotFound("nonexistentID").asLeft))
         case "notAuthedID" =>
@@ -318,14 +327,15 @@ class BatchChangeRoutingSpec
     }
   }
 
-  "GET Batch Change" should {
-    "return the batch change given a valid batch change id" in {
+  "GET Batch Change Info" should {
+    "return the batch change info given a valid batch change id" in {
       Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute(okAuth) ~> check {
 
         status shouldBe OK
 
         val resp = responseAs[JValue]
-        compact(resp) shouldBe compact(Extraction.decompose(genericValidResponse))
+        compact(resp) shouldBe compact(
+          Extraction.decompose(createBatchChangeInfoResponse(genericValidResponse)))
       }
     }
 

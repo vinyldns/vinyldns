@@ -35,7 +35,12 @@ import vinyldns.api.repository.{
 }
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  BatchChangeInfo,
+  SingleAddChange,
+  SingleChangeStatus
+}
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
@@ -233,7 +238,7 @@ class BatchChangeServiceSpec
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
 
-      result shouldBe batchChange
+      result shouldBe BatchChangeInfo(batchChange)
     }
 
     "Fail if batchChange id does not exist" in {
@@ -259,7 +264,7 @@ class BatchChangeServiceSpec
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, authSuper).value)
 
-      result shouldBe batchChange
+      result shouldBe BatchChangeInfo(batchChange)
     }
 
     "Succeed if user is a support user" in {
@@ -270,7 +275,7 @@ class BatchChangeServiceSpec
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, authSuper).value)
 
-      result shouldBe batchChange
+      result shouldBe BatchChangeInfo(batchChange)
     }
   }
 

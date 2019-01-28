@@ -60,3 +60,30 @@ object BatchChangeStatus extends Enumeration {
       case _ => BatchChangeStatus.Complete
     }
 }
+
+case class BatchChangeInfo(
+    userId: String,
+    userName: String,
+    comments: Option[String],
+    createdTimestamp: DateTime,
+    changes: List[SingleChange],
+    ownerGroupId: Option[String],
+    id: String,
+    status: BatchChangeStatus,
+    ownerGroupName: Option[String]
+)
+
+object BatchChangeInfo {
+  def apply(batchChange: BatchChange, ownerGroupName: Option[String] = None): BatchChangeInfo =
+    BatchChangeInfo(
+      batchChange.userId,
+      batchChange.userName,
+      batchChange.comments,
+      batchChange.createdTimestamp,
+      batchChange.changes,
+      batchChange.ownerGroupId,
+      batchChange.id,
+      batchChange.status,
+      ownerGroupName
+    )
+}

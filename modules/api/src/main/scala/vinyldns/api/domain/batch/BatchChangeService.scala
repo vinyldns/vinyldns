@@ -28,7 +28,7 @@ import vinyldns.api.domain.dns.DnsConversions._
 import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeRepository, BatchChangeSummaryList}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
@@ -79,11 +79,13 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId)
     } yield conversionResult.batchChange
 
-  def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChange] =
+  def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
       batchChange <- getExistingBatchChange(id)
       _ <- canGetBatchChange(batchChange, auth).toBatchResult
-    } yield batchChange
+      rsOwnerGroup <- getOwnerGroup(batchChange.ownerGroupId)
+      rsOwnerGroupName = rsOwnerGroup.map(_.name)
+    } yield BatchChangeInfo(batchChange, rsOwnerGroupName)
 
   def getExistingBatchChange(id: String): BatchResult[BatchChange] =
     batchChangeRepo
@@ -273,10 +275,28 @@ class BatchChangeService(
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
     }
 
+  def addOwnerGroupNamesToSummaries(
+      summaries: List[BatchChangeSummary],
+      groups: Set[Group]): List[BatchChangeSummary] =
+    summaries.map { summary =>
+      val groupName =
+        summary.ownerGroupId.flatMap(groupId => groups.find(_.id == groupId).map(_.name))
+      summary.copy(ownerGroupName = groupName)
+    }
+
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       startFrom: Option[Int] = None,
-      maxItems: Int = 100): BatchResult[BatchChangeSummaryList] = {
-    batchChangeRepo.getBatchChangeSummariesByUserId(auth.userId, startFrom, maxItems)
-  }.toBatchResult
+      maxItems: Int = 100): BatchResult[BatchChangeSummaryList] =
+    for {
+      listResults <- batchChangeRepo
+        .getBatchChangeSummariesByUserId(auth.userId, startFrom, maxItems)
+        .toBatchResult
+      rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
+      rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
+      summariesWithGroupNames = addOwnerGroupNamesToSummaries(
+        listResults.batchChanges,
+        rsOwnerGroups)
+      listWithGroupNames = listResults.copy(batchChanges = summariesWithGroupNames)
+    } yield listWithGroupNames
 }
