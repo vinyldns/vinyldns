@@ -123,8 +123,8 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
       s"""Existing record with name "$name" and type "$typ" conflicts with this record."""
 }
 
-final case class UserIsNotAuthorized(user: String) extends DomainValidationError {
-  def message: String = s"""User "$user" is not authorized."""
+final case class UserIsNotAuthorized(userId: String) extends DomainValidationError {
+  def message: String = s"""User "$userId" is not authorized."""
 }
 
 final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)
