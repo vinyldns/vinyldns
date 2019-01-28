@@ -32,9 +32,22 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <div class="form-group">
-                                <label class="h4">Description: </label>
+                                <label class="h5">Description: </label>
                                 <input type="text" class="form-control" ng-model="newBatch.comments">
                             </div>
+                            @if(meta.sharedDisplayEnabled) {
+                            <div class="form-group row">
+                                <div class="col-md-6">
+                                    <label class="h5" for="recordOwnerGroup">Record Owner Group</label>
+                                    <select class="form-control" id="recordOwnerGroup" ng-model="newBatch.ownerGroupId">
+                                        <option></option>
+                                        <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
+                                                ng-selected="updateZoneInfo.adminGroupName == group.name">
+                                            {{group.name}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            }
                         </div>
                         <div class="panel-body">
                             <h4>Changes</h4>
@@ -156,20 +169,6 @@
                             </table>
                             <button type="button" id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length == batchChangeLimit"><span class="fa fa-plus"></span> Add a Change</button>
                             <span ng-if="newBatch.changes.length == batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</span>
-                            @if(meta.sharedDisplayEnabled) {
-                                <div class="form-group">
-                                    &nbsp;
-                                </div>
-                                <div class="row col-md-6">
-                                    <label for="recordOwnerGroup">Record Owner Group</label>
-                                    <select class="form-control" id="recordOwnerGroup" ng-model="newBatch.ownerGroupId">
-                                        <option></option>
-                                        <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
-                                                ng-selected="updateZoneInfo.adminGroupName == group.name">
-                                            {{group.name}}</option>
-                                    </select>
-                                </div>
-                            }
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="formStatus=='pendingSubmit'" class="pull-right">
