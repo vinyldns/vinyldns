@@ -163,13 +163,18 @@ class RecordSetService(
       authPrincipal: AuthPrincipal): Result[RecordSetChange] =
     for {
       zone <- getZone(zoneId)
-      _ <- canSeeZone(authPrincipal, zone).toResult
       change <- recordChangeRepository
         .getRecordSetChange(zone.id, changeId)
         .orFail(
           RecordSetChangeNotFoundError(
             s"Unable to find record set change with id $changeId in zone ${zone.name}"))
         .toResult[RecordSetChange]
+      _ <- canViewRecordSet(
+        authPrincipal,
+        change.recordSet.name,
+        change.recordSet.typ,
+        zone,
+        change.recordSet.ownerGroupId).toResult
     } yield change
 
   def listRecordSetChanges(
