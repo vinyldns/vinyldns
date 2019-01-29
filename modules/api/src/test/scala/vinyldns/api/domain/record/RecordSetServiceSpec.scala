@@ -537,14 +537,14 @@ class RecordSetServiceSpec
       result shouldBe InvalidRequest(
         HighValueDomainError(s"high-value-domain.${okZone.name}").message)
     }
-    "fail for normal user who is not in owner group in shared zone" in {
+    "fail for user who is not in record owner group in shared zone" in {
       val result =
         leftResultOf(
           underTest.deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, dummyAuth).value)
 
       result shouldBe a[NotAuthorizedError]
     }
-    "fail for normal user who is in owner group in non-shared zone" in {
+    "fail for user who is in record owner group in non-shared zone" in {
       doReturn(IO.pure(Some(sharedZone.copy(shared = false))))
         .when(mockZoneRepo)
         .getZone(sharedZone.id)
@@ -555,7 +555,7 @@ class RecordSetServiceSpec
 
       result shouldBe a[NotAuthorizedError]
     }
-    "succeed for normal user in owner group in shared zone" in {
+    "succeed for user in record owner group in shared zone" in {
       doReturn(IO.pure(Some(sharedZone)))
         .when(mockZoneRepo)
         .getZone(sharedZone.id)

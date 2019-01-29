@@ -501,7 +501,7 @@ class RecordSetServiceIntegrationSpec
         Some(group2.id)
     }
 
-    "fail deleting for normal user not in owner group in shared zone" in {
+    "fail deleting for user not in record owner group in shared zone" in {
       val result = leftResultOf(
         testRecordSetService
           .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, dummyAuth)
@@ -511,7 +511,7 @@ class RecordSetServiceIntegrationSpec
       result shouldBe a[NotAuthorizedError]
     }
 
-    "fail deleting for normal user in owner group in non-shared zone" in {
+    "fail deleting for user in record owner group in non-shared zone" in {
       val result = leftResultOf(
         testRecordSetService
           .deleteRecordSet(
@@ -524,7 +524,7 @@ class RecordSetServiceIntegrationSpec
       result shouldBe a[NotAuthorizedError]
     }
 
-    "delete successfully for normal user in owner group in shared zone" in {
+    "delete successfully for user in record owner group in shared zone" in {
       val result = testRecordSetService
         .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, auth2)
         .value
