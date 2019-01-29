@@ -282,6 +282,7 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_exists(classless_zone_delegation_change)
             self.ok_vinyldns_client.wait_until_zone_exists(system_test_zone_change)
             self.ok_vinyldns_client.wait_until_zone_exists(parent_zone_change)
+            self.ok_vinyldns_client.wait_until_zone_exists(ds_zone_change)
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
             shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.shared_zone['id'])
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_zone_change)
