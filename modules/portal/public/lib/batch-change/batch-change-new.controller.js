@@ -19,15 +19,13 @@
 
     angular.module('batch-change')
         .controller('BatchChangeNewController', function($scope, jsConfig, $log, $location, $timeout, batchChangeService, utilityService, groupsService){
-            $scope.load = function(){
-                groupsService.getMyGroupsStored()
-                    .then(function (results) {
-                        $scope.myGroups = results['groups'];
-                    })
-                    .catch(function (error) {
-                        handleError(error, 'groupsService::getMyGroupsStored-failure');
-                    });
-            }
+            groupsService.getMyGroups()
+                .then(function (results) {
+                    $scope.myGroups = results['groups'];
+                })
+                .catch(function (error) {
+                    handleError(error, 'groupsService::getMyGroupsStored-failure');
+                });
 
             $scope.batch = {};
             $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]};
