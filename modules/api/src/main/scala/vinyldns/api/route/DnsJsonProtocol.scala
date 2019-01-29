@@ -443,8 +443,7 @@ trait DnsJsonProtocol extends JsonValidation {
       (
         (js \ "keytag")
           .required[Integer]("Missing DS.keytag")
-          .check("DS.keytag must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0))
-        ,
+          .check("DS.keytag must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)),
         (js \ "algorithm")
           .required[Integer]("Missing DS.algorithm")
           .map(DnsSecAlgorithm(_))
@@ -452,8 +451,7 @@ trait DnsJsonProtocol extends JsonValidation {
             case DnsSecAlgorithm.UnknownAlgorithm(x) =>
               s"Algorithm $x is not a supported DNSSEC algorithm".invalidNel
             case supported => supported.validNel
-          }
-        ,
+          },
         (js \ "digesttype")
           .required[Integer]("Missing DS.digesttype")
           .map(DigestType(_))
@@ -462,7 +460,8 @@ trait DnsJsonProtocol extends JsonValidation {
               s"Digest Type $x is not a supported DS record digest type".invalidNel
             case supported => supported.validNel
           },
-        (js \ "digest").required[String]("Missing DS.digest")
+        (js \ "digest")
+          .required[String]("Missing DS.digest")
           .map(ByteVector.fromHex(_))
           .andThen {
             case Some(v) => v.validNel

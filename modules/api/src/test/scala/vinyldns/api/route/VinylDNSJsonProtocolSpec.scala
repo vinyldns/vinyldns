@@ -320,7 +320,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> List("cname" -> "cname"))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg.contains("CNAME data must be absolute") shouldBe true
+      thrown.msg should include("CNAME data must be absolute")
     }
 
     "parse a record set with an absolute MX exchange passes" in {
@@ -488,7 +488,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> data)
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg.contains("NS data must be absolute") shouldBe true
+      thrown.msg should include("NS data must be absolute")
     }
     "parse a DS record set" in {
       val dSDataSha1Data = ("keytag" -> 60485) ~
@@ -531,7 +531,41 @@ class VinylDNSJsonProtocolSpec
           ("records" -> List(dsData))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg.contains("Could not convert digest to valid hex") shouldBe true
+      thrown.msg should include("Could not convert digest to valid hex")
+    }
+    "reject a DS record with unknown algorithm" in {
+      val dsData = ("keytag" -> 60485) ~
+        ("algorithm" -> 0) ~
+        ("digesttype" -> 1) ~
+        ("digest" -> "2BB183AF5F22588179A53B0A98631FAD1A292118")
+
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "DS") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List(dsData))
+
+      val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
+      thrown.msg should include("Algorithm 0 is not a supported DNSSEC algorithm")
+    }
+    "reject a DS record with digest type" in {
+      val dsData = ("keytag" -> 60485) ~
+        ("algorithm" -> 5) ~
+        ("digesttype" -> 0) ~
+        ("digest" -> "2BB183AF5F22588179A53B0A98631FAD1A292118")
+
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "DS") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List(dsData))
+
+      val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
+      thrown.msg should include("Digest Type 0 is not a supported DS record digest type")
     }
   }
 }
