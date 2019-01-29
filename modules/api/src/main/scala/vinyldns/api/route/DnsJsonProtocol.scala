@@ -23,6 +23,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
+import scodec.bits.ByteVector
 import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record._
@@ -49,6 +50,7 @@ trait DnsJsonProtocol extends JsonValidation {
     ASerializer,
     AAAASerializer,
     CNAMESerializer,
+    DSSerializer,
     MXSerializer,
     NSSerializer,
     PTRSerializer,
@@ -252,6 +254,7 @@ trait DnsJsonProtocol extends JsonValidation {
       case RecordType.A => js.required[List[AData]]("Missing A Records")
       case RecordType.AAAA => js.required[List[AAAAData]]("Missing AAAA Records")
       case RecordType.CNAME => js.required[List[CNAMEData]]("Missing CNAME Records")
+      case RecordType.DS => js.required[List[DSData]]("Missing DS Records")
       case RecordType.MX => js.required[List[MXData]]("Missing MX Records")
       case RecordType.NS => js.required[List[NSData]]("Missing NS Records")
       case RecordType.PTR => js.required[List[PTRData]]("Missing PTR Records")
@@ -433,6 +436,38 @@ trait DnsJsonProtocol extends JsonValidation {
       ("algorithm" -> Extraction.decompose(rr.algorithm)) ~
         ("type" -> Extraction.decompose(rr.typ)) ~
         ("fingerprint" -> rr.fingerprint)
+  }
+
+  case object DSSerializer extends ValidationSerializer[DSData] {
+    override def fromJson(js: JValue): ValidatedNel[String, DSData] =
+      (
+        (js \ "keytag")
+          .required[Integer]("Missing DS.keytag")
+          .check("DS.keytag must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)),
+        (js \ "algorithm")
+          .required[Integer]("Missing DS.algorithm")
+          .map(DnsSecAlgorithm(_))
+          .andThen {
+            case DnsSecAlgorithm.UnknownAlgorithm(x) =>
+              s"Algorithm $x is not a supported DNSSEC algorithm".invalidNel
+            case supported => supported.validNel
+          },
+        (js \ "digesttype")
+          .required[Integer]("Missing DS.digesttype")
+          .map(DigestType(_))
+          .andThen {
+            case DigestType.UnknownDigestType(x) =>
+              s"Digest Type $x is not a supported DS record digest type".invalidNel
+            case supported => supported.validNel
+          },
+        (js \ "digest")
+          .required[String]("Missing DS.digest")
+          .map(ByteVector.fromHex(_))
+          .andThen {
+            case Some(v) => v.validNel
+            case None => "Could not convert digest to valid hex".invalidNel
+          }
+      ).mapN(DSData.apply)
   }
 
   case object TXTSerializer extends ValidationSerializer[TXTData] {

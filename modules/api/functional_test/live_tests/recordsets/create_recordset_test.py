@@ -1896,3 +1896,55 @@ def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context)
     record_json['ownerGroupId'] = group['id']
     error = client.create_recordset(record_json, status=422)
     assert_that(error, is_('User not in record owner group with id "' + group['id'] + '"'))
+
+
+def test_create_ds_valid_input(shared_zone_test_context):
+    """
+    Test that creating a DS record passes input validations
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data)
+    # input was successful if it gets past to determine auth; this will be updated to success test
+    client.create_recordset(record_json, status=403)
+
+
+def test_create_ds_non_hex_digest(shared_zone_test_context):
+    """
+    Test that creating a DS record fails with a bad digest
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53G'}]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data)
+    errors = client.create_recordset(record_json, status=400)['errors']
+    assert_that(errors, contains_inanyorder("Could not convert digest to valid hex"))
+
+
+def test_create_ds_unknown_algorithm(shared_zone_test_context):
+    """
+    Test that creating a DS record fails with an unknown algorithm
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 0, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data)
+    errors = client.create_recordset(record_json, status=400)['errors']
+    assert_that(errors, contains_inanyorder("Algorithm 0 is not a supported DNSSEC algorithm"))
+
+
+def test_create_ds_unknown_digest_type(shared_zone_test_context):
+    """
+    Test that creating a DS record fails with an unknown digest type
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 0, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data)
+    errors = client.create_recordset(record_json, status=400)['errors']
+    assert_that(errors, contains_inanyorder("Digest Type 0 is not a supported DS record digest type"))

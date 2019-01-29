@@ -23,6 +23,7 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
+import vinyldns.core.TestRecordSetData._
 
 class VinylDNSJsonProtocolSpec
     extends WordSpec
@@ -269,7 +270,7 @@ class VinylDNSJsonProtocolSpec
     "parse a record set with an absolute CNAME record passes" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "CNAME") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -277,7 +278,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.CNAME,
         1000,
         RecordSetStatus.Pending,
@@ -290,7 +291,7 @@ class VinylDNSJsonProtocolSpec
     "convert non-dotted CNAME record to an absolute CNAME record" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "CNAME") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -298,7 +299,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.CNAME,
         1000,
         RecordSetStatus.Pending,
@@ -312,20 +313,20 @@ class VinylDNSJsonProtocolSpec
     "reject a relative CNAME record" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "CNAME") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
           ("records" -> List("cname" -> "cname"))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg.contains("CNAME data must be absolute") shouldBe true
+      thrown.msg should include("CNAME data must be absolute")
     }
 
     "parse a record set with an absolute MX exchange passes" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "MX") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -333,7 +334,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.MX,
         1000,
         RecordSetStatus.Pending,
@@ -346,7 +347,7 @@ class VinylDNSJsonProtocolSpec
     "convert relative MX exchange to an absolute MX exchange" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "MX") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -354,7 +355,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.MX,
         1000,
         RecordSetStatus.Pending,
@@ -369,7 +370,7 @@ class VinylDNSJsonProtocolSpec
     "parse a record set with an absolute SRV target passes" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "SRV") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -377,7 +378,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.SRV,
         1000,
         RecordSetStatus.Pending,
@@ -390,7 +391,7 @@ class VinylDNSJsonProtocolSpec
     "convert relative SRV target to an absolute SRV target" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "SRV") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -398,7 +399,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.SRV,
         1000,
         RecordSetStatus.Pending,
@@ -413,7 +414,7 @@ class VinylDNSJsonProtocolSpec
     "parse a record set with an absolute PTR domain name" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "PTR") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -421,7 +422,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.PTR,
         1000,
         RecordSetStatus.Pending,
@@ -434,7 +435,7 @@ class VinylDNSJsonProtocolSpec
     "convert relative PTR domain name to an absolute PTR domain name" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "PTR") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -442,7 +443,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.PTR,
         1000,
         RecordSetStatus.Pending,
@@ -453,11 +454,10 @@ class VinylDNSJsonProtocolSpec
       anonymize(actual) shouldBe anonymize(expected)
       anonymize(actual).records shouldBe List(PTRData("ptr."))
     }
-
     "convert non-dotted NS record to an absolute NS record" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "NS") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
@@ -465,7 +465,7 @@ class VinylDNSJsonProtocolSpec
 
       val expected = RecordSet(
         "1",
-        "Comcast",
+        "TestRecordName",
         RecordType.NS,
         1000,
         RecordSetStatus.Pending,
@@ -476,18 +476,96 @@ class VinylDNSJsonProtocolSpec
       anonymize(actual) shouldBe anonymize(expected)
       anonymize(actual).records shouldBe List(NSData("abs.data."))
     }
-
     "reject a relative NS record" in {
+      val data = List("nsdname" -> "abs")
+
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~
-          ("name" -> "Comcast") ~~
+          ("name" -> "TestRecordName") ~~
           ("type" -> "NS") ~~
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
-          ("records" -> List("nsdname" -> "abs"))
+          ("records" -> data)
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg.contains("NS data must be absolute") shouldBe true
+      thrown.msg should include("NS data must be absolute")
+    }
+    "parse a DS record set" in {
+      val dSDataSha1Data = ("keytag" -> 60485) ~
+        ("algorithm" -> 5) ~
+        ("digesttype" -> 1) ~
+        ("digest" -> "2BB183AF5F22588179A53B0A98631FAD1A292118")
+
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "DS") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List(dSDataSha1Data))
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.DS,
+        1000,
+        RecordSetStatus.Pending,
+        new DateTime(2010, 1, 1, 0, 0),
+        records = List(dSDataSha1))
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+    }
+    "reject a DS record with non-hex digest" in {
+      val dsData = ("keytag" -> 60485) ~
+        ("algorithm" -> 5) ~
+        ("digesttype" -> 1) ~
+        ("digest" -> "G123")
+
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "DS") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List(dsData))
+
+      val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
+      thrown.msg should include("Could not convert digest to valid hex")
+    }
+    "reject a DS record with unknown algorithm" in {
+      val dsData = ("keytag" -> 60485) ~
+        ("algorithm" -> 0) ~
+        ("digesttype" -> 1) ~
+        ("digest" -> "2BB183AF5F22588179A53B0A98631FAD1A292118")
+
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "DS") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List(dsData))
+
+      val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
+      thrown.msg should include("Algorithm 0 is not a supported DNSSEC algorithm")
+    }
+    "reject a DS record with digest type" in {
+      val dsData = ("keytag" -> 60485) ~
+        ("algorithm" -> 5) ~
+        ("digesttype" -> 0) ~
+        ("digest" -> "2BB183AF5F22588179A53B0A98631FAD1A292118")
+
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "DS") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List(dsData))
+
+      val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
+      thrown.msg should include("Digest Type 0 is not a supported DS record digest type")
     }
   }
 }

@@ -243,6 +243,29 @@ class SharedZoneTestContext(object):
                 }, status=202)
             self.parent_zone = parent_zone_change['zone']
 
+            # mimicking the spec example
+            ds_zone_change = self.ok_vinyldns_client.create_zone(
+                {
+                    'name': 'example.com.',
+                    'email': 'test@test.com',
+                    'shared': False,
+                    'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
+                    'connection': {
+                        'name': 'example.',
+                        'keyName': VinylDNSTestContext.dns_key_name,
+                        'key': VinylDNSTestContext.dns_key,
+                        'primaryServer': VinylDNSTestContext.dns_ip
+                    },
+                    'transferConnection': {
+                        'name': 'example.',
+                        'keyName': VinylDNSTestContext.dns_key_name,
+                        'key': VinylDNSTestContext.dns_key,
+                        'primaryServer': VinylDNSTestContext.dns_ip
+                    }
+                }, status=202)
+            self.ds_zone = ds_zone_change['zone']
+
             shared_zone_change = self.set_up_shared_zone('shared-zone')
             self.shared_zone = shared_zone_change['zone']
 
@@ -259,6 +282,7 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_exists(classless_zone_delegation_change)
             self.ok_vinyldns_client.wait_until_zone_exists(system_test_zone_change)
             self.ok_vinyldns_client.wait_until_zone_exists(parent_zone_change)
+            self.ok_vinyldns_client.wait_until_zone_exists(ds_zone_change)
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
             shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.shared_zone['id'])
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_zone_change)
@@ -270,7 +294,7 @@ class SharedZoneTestContext(object):
             zones = self.dummy_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(2))
             zones = self.ok_vinyldns_client.list_zones()['zones']
-            assert_that(len(zones), is_(7))
+            assert_that(len(zones), is_(8))
             zones = self.shared_zone_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(2))
 

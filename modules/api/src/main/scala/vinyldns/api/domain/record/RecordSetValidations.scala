@@ -93,6 +93,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
+      case DS => NotAuthorizedError("DS adds are not supported").asLeft
       case _ => isNotDotted(newRecordSet, zone)
     }
 
@@ -107,6 +108,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
+      case DS => NotAuthorizedError("DS updates are not supported").asLeft
       case _ => isNotDotted(newRecordSet, zone)
     }
 
