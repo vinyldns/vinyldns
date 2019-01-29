@@ -93,7 +93,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
-      case DS => NotAuthorizedError("DS adds are not supported").asLeft
+      case DS => dsValidations(newRecordSet, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }
 
@@ -108,7 +108,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
-      case DS => NotAuthorizedError("DS updates are not supported").asLeft
+      case DS => dsValidations(newRecordSet, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }
 
@@ -147,6 +147,23 @@ object RecordSetValidations {
       _ <- isNotDotted(newRecordSet, zone)
     } yield ()
 
+  }
+
+  def dsValidations(newRecordSet: RecordSet,
+                    existingRecordsWithName: List[RecordSet], zone: Zone): Either[Throwable, Unit] = {
+    val nsExists = ensuring(InvalidRequest(s"DS record ${newRecordSet.name} is invalid because there is no NS record" +
+      s"with that name in the zone ${zone.name}"))(
+      existingRecordsWithName.exists(_.typ == NS)
+    )
+
+    for {
+      _ <- isNotDotted(newRecordSet, zone)
+      _ <- isNotOrigin(
+        newRecordSet,
+        zone,
+        s"Record with name ${newRecordSet.name} is an DS record at apex and cannot be added")
+      _ <- nsExists
+    } yield ()
   }
 
   def nsValidations(
