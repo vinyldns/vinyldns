@@ -34,9 +34,9 @@ module.exports = function (grunt) {
                 files: {
                     'app/views/main.scala.html': [
                         'public/gentelella/vendors/jquery/dist/jquery.min.js',
+                        'public/javascripts/angular.min.js',
                         'public/gentelella/vendors/bootstrap/dist/js/bootstrap.min.js',
                         'public/javascripts/ui-bootstrap.min.js',
-                        'public/javascripts/angular.min.js',
                         'public/lib/**/*.module.js',
                         'public/lib/**/*.js',
                         'public/app.js',
