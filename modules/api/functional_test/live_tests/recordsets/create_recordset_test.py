@@ -1905,12 +1905,26 @@ def test_create_ds_success(shared_zone_test_context):
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
-    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_data = [
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'},
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 2, 'digest': 'D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A'}
+        ]
     record_json = get_recordset_json(zone, 'dskey', 'DS', record_data, ttl=3600)
     result_rs = None
     try:
         result = client.create_recordset(record_json, status=202)
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+
+        # get result
+        get_result = client.get_recordset(result_rs['zoneId'], result_rs['id'])['recordSet']
+        verify_recordset(get_result, record_json)
+
+        # verifying recordset in dns backend
+        answers = dns_resolve(zone, result_rs['name'], result_rs['type'])
+        assert_that(answers, has_length(2))
+        rdata_strings = [x.upper() for x in rdata(answers)]
+        assert_that('60485 5 1 2BB183AF5F22588179A53B0A98631FAD1A292118', is_in(rdata_strings))
+        assert_that('60485 5 2 D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A', is_in(rdata_strings))
     finally:
         if result_rs:
             client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))

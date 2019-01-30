@@ -16,6 +16,7 @@
 
 package vinyldns.api.route
 
+import cats.scalatest.ValidatedValues
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -29,6 +30,7 @@ class VinylDNSJsonProtocolSpec
     extends WordSpec
     with Matchers
     with VinylDNSJsonProtocol
+    with ValidatedValues
     with VinylDNSTestHelpers {
 
   private val completeCreateZoneInput = CreateZoneInput(
@@ -490,21 +492,8 @@ class VinylDNSJsonProtocolSpec
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
       thrown.msg should include("NS data must be absolute")
     }
-    "parse a DS record set" in {
-      val dSDataSha1Data = ("keytag" -> 60485) ~
-        ("algorithm" -> 5) ~
-        ("digesttype" -> 1) ~
-        ("digest" -> "2BB183AF5F22588179A53B0A98631FAD1A292118")
-
-      val recordSetJValue: JValue =
-        ("zoneId" -> "1") ~~
-          ("name" -> "TestRecordName") ~~
-          ("type" -> "DS") ~~
-          ("ttl" -> 1000) ~~
-          ("status" -> "Pending") ~~
-          ("records" -> List(dSDataSha1Data))
-
-      val expected = RecordSet(
+    "round trip a DS record set" in {
+      val rs = RecordSet(
         "1",
         "TestRecordName",
         RecordType.DS,
@@ -513,8 +502,7 @@ class VinylDNSJsonProtocolSpec
         new DateTime(2010, 1, 1, 0, 0),
         records = List(dSDataSha1))
 
-      val actual = recordSetJValue.extract[RecordSet]
-      anonymize(actual) shouldBe anonymize(expected)
+      RecordSetSerializer.fromJson(RecordSetSerializer.toJson(rs)) shouldBe rs
     }
     "reject a DS record with non-hex digest" in {
       val dsData = ("keytag" -> 60485) ~
