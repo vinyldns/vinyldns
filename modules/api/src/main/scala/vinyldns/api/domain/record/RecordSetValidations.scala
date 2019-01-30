@@ -33,7 +33,7 @@ object RecordSetValidations {
 
   def validRecordTypes(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
     recordSet.typ match {
-      case CNAME | SOA | TXT | NS => ().asRight
+      case CNAME | SOA | TXT | NS | DS => ().asRight
       case PTR =>
         ensuring(InvalidRequest("PTR is not valid in forward lookup zone"))(zone.isReverse)
       case _ =>

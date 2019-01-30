@@ -2223,3 +2223,105 @@ def test_update_to_group_a_user_is_notin_fails(shared_zone_test_context):
         if create_rs:
             delete_result = shared_client.delete_recordset(zone['id'], create_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+
+def test_update_ds_success(shared_zone_test_context):
+    """
+    Test that creating a valid DS record succeeds
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data_create = [
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}
+    ]
+    record_data_update = [
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'},
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 2, 'digest': 'D4B7D520E7BB5F0F67674A0CCEB1E3E0614B93C4F9E99B8383F6A1E4469DA50A'}
+    ]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data_create, ttl=3600)
+    result_rs = None
+    try:
+        create_call = client.create_recordset(record_json, status=202)
+        result_rs = client.wait_until_recordset_change_status(create_call, 'Complete')['recordSet']
+
+        update_json = result_rs
+        update_json['records'] = record_data_update
+        update_call = client.update_recordset(update_json, status=202)
+        result_rs = client.wait_until_recordset_change_status(update_call, 'Complete')['recordSet']
+
+        # get result
+        get_result = client.get_recordset(result_rs['zoneId'], result_rs['id'])['recordSet']
+        verify_recordset(get_result, update_json)
+    finally:
+        if result_rs:
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
+
+
+def test_update_ds_data_failures(shared_zone_test_context):
+    """
+    Test that updating a DS record fails with bad hex, digest, algorithm
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data_create = [
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}
+    ]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data_create, ttl=3600)
+    result_rs = None
+    try:
+        create_call = client.create_recordset(record_json, status=202)
+        result_rs = client.wait_until_recordset_change_status(create_call, 'Complete')['recordSet']
+
+        update_json_bad_hex = result_rs
+        record_data_update = [
+            {'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': 'BADWWW'}
+        ]
+        update_json_bad_hex['records'] = record_data_update
+        client.update_recordset(update_json_bad_hex, status=400)
+
+        update_json_bad_alg = result_rs
+        record_data_update = [
+            {'keytag': 60485, 'algorithm': 0, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}
+        ]
+        update_json_bad_alg['records'] = record_data_update
+        client.update_recordset(update_json_bad_alg, status=400)
+
+        update_json_bad_dig = result_rs
+        record_data_update = [
+            {'keytag': 60485, 'algorithm': 5, 'digesttype': 0, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}
+        ]
+        update_json_bad_dig['records'] = record_data_update
+        client.update_recordset(update_json_bad_dig, status=400)
+    finally:
+        if result_rs:
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
+
+
+def test_update_ds_bad_ttl(shared_zone_test_context):
+    """
+    Test that updating a DS record with unmatching TTL fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data_create = [
+        {'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}
+    ]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data_create, ttl=3600)
+    result_rs = None
+    try:
+        create_call = client.create_recordset(record_json, status=202)
+        result_rs = client.wait_until_recordset_change_status(create_call, 'Complete')['recordSet']
+
+        update_json = result_rs
+        update_json['ttl'] = 100
+        client.update_recordset(update_json, status=400)
+    finally:
+        if result_rs:
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
