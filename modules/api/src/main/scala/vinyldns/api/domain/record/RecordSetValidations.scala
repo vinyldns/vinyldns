@@ -151,13 +151,12 @@ object RecordSetValidations {
 
   def dsValidations(newRecordSet: RecordSet,
                     existingRecordsWithName: List[RecordSet], zone: Zone): Either[Throwable, Unit] = {
+    // see https://tools.ietf.org/html/rfc4035#section-2.4
     val linkedNs = existingRecordsWithName.find(_.typ == NS)
     val nsExists = ensuring(InvalidRequest(s"DS record ${newRecordSet.name} is invalid because there is no NS record" +
       s"with that name in the zone ${zone.name}"))(
       linkedNs.isDefined
     )
-
-    // https://tools.ietf.org/html/rfc4035#section-2.4
     val nsTtlMatch = ensuring(InvalidRequest(s"DS record ${newRecordSet.name} must have TTL matching its linked NS " +
       s"(${linkedNs.map(_.ttl).getOrElse("n/a")})"))(
       linkedNs.forall(_.ttl == newRecordSet.ttl)
