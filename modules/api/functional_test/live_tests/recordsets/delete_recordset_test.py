@@ -724,8 +724,7 @@ def test_delete_for_user_in_record_owner_group_in_shared_zone_succeeds(shared_zo
     result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
 
     delete_rs = ok_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
-    # TODO: Update to ok_client once access validation for getRecordSetChange endpoint has been updated to use canViewRecordSet
-    shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
+    ok_client.wait_until_recordset_change_status(delete_rs, 'Complete')
 
 def test_delete_for_zone_admin_in_shared_zone_succeeds(shared_zone_test_context):
     """
