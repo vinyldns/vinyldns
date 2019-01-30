@@ -679,7 +679,7 @@ def test_delete_for_user_not_in_record_owner_group_in_shared_zone_fails(shared_z
         result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
 
         error = dummy_client.delete_recordset(shared_zone['id'], result_rs['id'], status=403)
-        assert_that(error, is_('User dummy does not have access to delete test-shared-bad-user.shared.'))
+        assert_that(error, is_('User dummy does not have access to delete test-shared-del-nonog.shared.'))
 
     finally:
         if result_rs:
@@ -702,7 +702,7 @@ def test_delete_for_user_in_record_owner_group_in_non_shared_zone_fails(shared_z
         result_rs = ok_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
 
         error = shared_client.delete_recordset(ok_zone['id'], result_rs['id'], status=403)
-        assert_that(error, is_('User sharedZoneUser does not have access to delete test-shared-bad-user.ok.'))
+        assert_that(error, is_('User sharedZoneUser does not have access to delete test-non-shared-del-og.ok.'))
 
     finally:
         if result_rs:
