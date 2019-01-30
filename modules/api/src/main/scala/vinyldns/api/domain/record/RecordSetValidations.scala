@@ -93,7 +93,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
-      case DS => dsValidations(newRecordSet, zone)
+      case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }
 
@@ -108,7 +108,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
-      case DS => dsValidations(newRecordSet, zone)
+      case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }
 
@@ -151,9 +151,16 @@ object RecordSetValidations {
 
   def dsValidations(newRecordSet: RecordSet,
                     existingRecordsWithName: List[RecordSet], zone: Zone): Either[Throwable, Unit] = {
+    val linkedNs = existingRecordsWithName.find(_.typ == NS)
     val nsExists = ensuring(InvalidRequest(s"DS record ${newRecordSet.name} is invalid because there is no NS record" +
       s"with that name in the zone ${zone.name}"))(
-      existingRecordsWithName.exists(_.typ == NS)
+      linkedNs.isDefined
+    )
+
+    // https://tools.ietf.org/html/rfc4035#section-2.4
+    val nsTtlMatch = ensuring(InvalidRequest(s"DS record ${newRecordSet.name} must have TTL matching its linked NS " +
+      s"(${linkedNs.map(_.ttl).getOrElse("n/a")})"))(
+      linkedNs.forall(_.ttl == newRecordSet.ttl)
     )
 
     for {
@@ -163,6 +170,7 @@ object RecordSetValidations {
         zone,
         s"Record with name ${newRecordSet.name} is an DS record at apex and cannot be added")
       _ <- nsExists
+      _ <- nsTtlMatch
     } yield ()
   }
 
