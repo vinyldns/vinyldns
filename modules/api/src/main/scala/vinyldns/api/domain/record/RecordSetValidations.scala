@@ -149,18 +149,21 @@ object RecordSetValidations {
 
   }
 
-  def dsValidations(newRecordSet: RecordSet,
-                    existingRecordsWithName: List[RecordSet], zone: Zone): Either[Throwable, Unit] = {
+  def dsValidations(
+      newRecordSet: RecordSet,
+      existingRecordsWithName: List[RecordSet],
+      zone: Zone): Either[Throwable, Unit] = {
     // see https://tools.ietf.org/html/rfc4035#section-2.4
-    val linkedNs = existingRecordsWithName.find(_.typ == NS)
-    val nsExists = ensuring(InvalidRequest(s"DS record ${newRecordSet.name} is invalid because there is no NS record" +
-      s"with that name in the zone ${zone.name}"))(
-      linkedNs.isDefined
-    )
-    val nsTtlMatch = ensuring(InvalidRequest(s"DS record ${newRecordSet.name} must have TTL matching its linked NS " +
-      s"(${linkedNs.map(_.ttl).getOrElse("n/a")})"))(
-      linkedNs.forall(_.ttl == newRecordSet.ttl)
-    )
+    val nsChecks = existingRecordsWithName.find(_.typ == NS) match {
+      case Some(ns) if ns.ttl == newRecordSet.ttl => ().asRight
+      case Some(ns) =>
+        InvalidRequest(
+          s"DS record ${newRecordSet.name} must have TTL matching its linked NS (${ns.ttl})").asLeft
+      case None =>
+        InvalidRequest(
+          s"DS record ${newRecordSet.name} is invalid because there is no NS record with that " +
+            s"name in the zone ${zone.name}").asLeft
+    }
 
     for {
       _ <- isNotDotted(newRecordSet, zone)
@@ -168,8 +171,7 @@ object RecordSetValidations {
         newRecordSet,
         zone,
         s"Record with name ${newRecordSet.name} is an DS record at apex and cannot be added")
-      _ <- nsExists
-      _ <- nsTtlMatch
+      _ <- nsChecks
     } yield ()
   }
 

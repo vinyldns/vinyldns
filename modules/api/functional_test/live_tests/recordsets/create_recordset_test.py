@@ -1898,17 +1898,23 @@ def test_create_with_owner_group_when_not_member_fails(shared_zone_test_context)
     assert_that(error, is_('User not in record owner group with id "' + group['id'] + '"'))
 
 
-def test_create_ds_valid_input(shared_zone_test_context):
+def test_create_ds_success(shared_zone_test_context):
     """
-    Test that creating a DS record passes input validations
+    Test that creating a valid DS record succeeds
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ds_zone
     record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
-    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data)
-    # input was successful if it gets past to determine auth; this will be updated to success test
-    client.create_recordset(record_json, status=403)
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data, ttl=3600)
+    result_rs = None
+    try:
+        result = client.create_recordset(record_json, status=202)
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+    finally:
+        if result_rs:
+            client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
+            client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
 
 def test_create_ds_non_hex_digest(shared_zone_test_context):
@@ -1948,3 +1954,56 @@ def test_create_ds_unknown_digest_type(shared_zone_test_context):
     record_json = get_recordset_json(zone, 'dskey', 'DS', record_data)
     errors = client.create_recordset(record_json, status=400)['errors']
     assert_that(errors, contains_inanyorder("Digest Type 0 is not a supported DS record digest type"))
+
+
+def test_create_ds_bad_ttl(shared_zone_test_context):
+    """
+    Test that creating a DS record with unmatching TTL fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_json = get_recordset_json(zone, 'dskey', 'DS', record_data, ttl=100)
+    error = client.create_recordset(record_json, status=422)
+    assert_that(error, is_("DS record dskey must have TTL matching its linked NS (3600)"))
+
+
+def test_create_ds_no_ns_fails(shared_zone_test_context):
+    """
+    Test that creating a DS record when there is no child NS in the zone fails
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_json = get_recordset_json(zone, 'no-ns-exists', 'DS', record_data, ttl=3600)
+    error = client.create_recordset(record_json, status=422)
+    assert_that(error,
+                is_("DS record no-ns-exists is invalid because there is no NS record with that name in the zone example.com."))
+
+
+def test_create_apex_ds_fails(shared_zone_test_context):
+    """
+    Test that creating a DS record fails at apex
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_json = get_recordset_json(zone, '@', 'DS', record_data, ttl=100)
+    error = client.create_recordset(record_json, status=422)
+    assert_that(error, is_("Record with name example.com. is an DS record at apex and cannot be added"))
+
+
+def test_create_dotted_ds_fails(shared_zone_test_context):
+    """
+    Test that creating a DS record fails if dotted
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ds_zone
+    record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
+    record_json = get_recordset_json(zone, 'dotted.ds', 'DS', record_data, ttl=100)
+    error = client.create_recordset(record_json, status=422)
+    assert_that(error, is_("Record with name dotted.ds is a dotted host which is illegal in this zone example.com."))
