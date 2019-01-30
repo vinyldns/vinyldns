@@ -502,7 +502,7 @@ class VinylDNSJsonProtocolSpec
         new DateTime(2010, 1, 1, 0, 0),
         records = List(dSDataSha1))
 
-      RecordSetSerializer.fromJson(RecordSetSerializer.toJson(rs)) shouldBe rs
+      RecordSetSerializer.fromJson(RecordSetSerializer.toJson(rs)).value shouldBe rs
     }
     "reject a DS record with non-hex digest" in {
       val dsData = ("keytag" -> 60485) ~

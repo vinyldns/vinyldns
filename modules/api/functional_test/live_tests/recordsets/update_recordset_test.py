@@ -2320,7 +2320,7 @@ def test_update_ds_bad_ttl(shared_zone_test_context):
 
         update_json = result_rs
         update_json['ttl'] = 100
-        client.update_recordset(update_json, status=400)
+        client.update_recordset(update_json, status=422)
     finally:
         if result_rs:
             client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
