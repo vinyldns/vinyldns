@@ -68,16 +68,6 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit] =
-    ensuring(
-      NotAuthorizedError(s"User ${auth.signedInUser.userName} does not have access to delete " +
-        s"$recordName.${zone.name}"))(
-      getAccessLevel(auth, recordName, recordType, zone) == AccessLevel.Delete)
-
-  def canDeleteRecordSet(
-      auth: AuthPrincipal,
-      recordName: String,
-      recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String]): Either[Throwable, Unit] =
     ensuring(
