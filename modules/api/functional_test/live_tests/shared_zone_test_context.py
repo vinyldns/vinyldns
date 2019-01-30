@@ -266,10 +266,14 @@ class SharedZoneTestContext(object):
                 }, status=202)
             self.ds_zone = ds_zone_change['zone']
 
-            shared_zone_change = self.set_up_shared_zone('shared-zone')
+            get_shared_zones = self.shared_zone_vinyldns_client.list_zones(status=200)['zones']
+            shared_zone = [zone for zone in get_shared_zones if zone["name"] == "shared."]
+            non_test_shared_zone = [zone for zone in get_shared_zones if zone["name"] == "non.test.shared."]
+
+            shared_zone_change = self.set_up_shared_zone(shared_zone[0]["id"])
             self.shared_zone = shared_zone_change['zone']
 
-            non_test_shared_zone_change = self.set_up_shared_zone('non-test-shared-zone')
+            non_test_shared_zone_change = self.set_up_shared_zone(non_test_shared_zone[0]["id"])
             self.non_test_shared_zone = non_test_shared_zone_change['zone']
 
             # wait until our zones are created
