@@ -24,7 +24,7 @@
                     $scope.myGroups = results['groups'];
                 })
                 .catch(function (error) {
-                    handleError(error, 'groupsService::getMyGroupsStored-failure');
+                    handleError(error, 'groupsService::getMyGroups-failure');
                 });
 
             $scope.batch = {};

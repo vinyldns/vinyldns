@@ -30,7 +30,7 @@ describe('BatchChange', function(){
             module('ngMock')
         });
 
-        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, pagingService, utilityService, groupsService) {
+        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, pagingService, utilityService) {
             this.rootScope = $rootScope;
             this.scope = $rootScope.$new();
             this.controller = $controller('BatchChangeDetailController', {'$scope': this.scope});
@@ -84,16 +84,29 @@ describe('BatchChange', function(){
             module('ngMock')
         });
 
-        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, utilityService) {
+        beforeEach(inject(function ($rootScope, $controller, $q, batchChangeService, utilityService, groupsService) {
             this.rootScope = $rootScope;
             this.scope = $rootScope.$new();
+            this.groupsService = groupsService;
             this.scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]};
-            this.controller = $controller('BatchChangeNewController', {'$scope': this.scope});
+            this.scope.myGroups = {};
 
             deferred = $q.defer();
 
             spyOn(batchChangeService, 'createBatchChange').and.returnValue(deferred.promise);
+            groupsService.getMyGroups = function() {
+                return $q.when({
+                    groups: "all my groups"
+                });
+            };
+
+            this.controller = $controller('BatchChangeNewController', {'$scope': this.scope});
         }));
+
+        it("test that we properly get user's groups when loading BatchChangeNewController", function(){
+            this.scope.$digest();
+            expect(this.scope.myGroups).toBe("all my groups");
+        });
 
         describe('$scope.addSingleChange', function() {
             it('adds a change to the changes array', function() {
