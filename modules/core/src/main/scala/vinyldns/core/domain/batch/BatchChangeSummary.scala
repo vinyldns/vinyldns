@@ -45,18 +45,20 @@ object BatchChangeSummary {
       batchchange.id
     )
 
-  def apply(batchChangeInfo: BatchChangeInfo): BatchChangeSummary =
+  def apply(batchChangeInfo: BatchChangeInfo): BatchChangeSummary = {
+    import batchChangeInfo._
     BatchChangeSummary(
-      batchChangeInfo.userId,
-      batchChangeInfo.userName,
-      batchChangeInfo.comments,
-      batchChangeInfo.createdTimestamp,
-      batchChangeInfo.changes.length,
-      batchChangeInfo.status,
-      batchChangeInfo.ownerGroupId,
-      batchChangeInfo.id,
-      batchChangeInfo.ownerGroupName
+      userId,
+      userName,
+      comments,
+      createdTimestamp,
+      changes.length,
+      status,
+      ownerGroupId,
+      id,
+      ownerGroupName
     )
+  }
 }
 
 case class BatchChangeSummaryList(

@@ -191,11 +191,8 @@ def test_list_batch_change_summaries_with_record_owner_group_passes(shared_zone_
 
     finally:
         for result_rs in record_to_delete:
-            try:
-                delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
-                client.wait_until_recordset_change_status(delete_result, 'Complete')
-            except:
-                pass
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
 def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shared_zone_test_context):
@@ -246,8 +243,5 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
 
     finally:
         for result_rs in record_to_delete:
-            try:
-                delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
-                client.wait_until_recordset_change_status(delete_result, 'Complete')
-            except:
-                pass
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')

@@ -74,16 +74,18 @@ case class BatchChangeInfo(
 )
 
 object BatchChangeInfo {
-  def apply(batchChange: BatchChange, ownerGroupName: Option[String] = None): BatchChangeInfo =
+  def apply(batchChange: BatchChange, ownerGroupName: Option[String] = None): BatchChangeInfo = {
+    import batchChange._
     BatchChangeInfo(
-      batchChange.userId,
-      batchChange.userName,
-      batchChange.comments,
-      batchChange.createdTimestamp,
-      batchChange.changes,
-      batchChange.ownerGroupId,
-      batchChange.id,
-      batchChange.status,
+      userId,
+      userName,
+      comments,
+      createdTimestamp,
+      changes,
+      ownerGroupId,
+      id,
+      status,
       ownerGroupName
     )
+  }
 }
