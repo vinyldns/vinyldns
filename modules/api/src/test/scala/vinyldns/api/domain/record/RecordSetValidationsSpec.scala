@@ -47,17 +47,17 @@ class RecordSetValidationsSpec
     "validRecordTypes" should {
       "return invalid request when adding a PTR record to a forward zone" in {
         val error = leftValue(validRecordTypes(ptrIp4, okZone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return invalid request when adding a SRV record to an IP4 reverse zone" in {
         val error = leftValue(validRecordTypes(srv, zoneIp4))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return invalid request when adding a SRV record to an IP6 reverse zone" in {
         val error = leftValue(validRecordTypes(srv, zoneIp6))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return ok when adding an acceptable record to a forward zone" in {
@@ -81,7 +81,7 @@ class RecordSetValidationsSpec
       "return invalid request when zone name + record name > 256 characters" in {
         val rs = rsOk.copy(name = "a" * 256)
         val error = leftValue(validRecordNameLength(rs, okZone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
     }
 
@@ -126,25 +126,25 @@ class RecordSetValidationsSpec
     "isNotDotted" should {
       "return a failure for any record with dotted hosts in forward zones" in {
         val test = aaaa.copy(name = "this.is.a.failure.")
-        leftValue(isNotDotted(test, okZone)) shouldBe a[InvalidRequest]
+        leftValue(isNotDotted(test, okZone)) shouldBe an[InvalidRequest]
       }
 
       "return a failure for any record that is a dotted host ending in the zone name" in {
         val test = aaaa.copy(name = "this.is.a.failure." + okZone.name)
-        leftValue(isNotDotted(test, okZone)) shouldBe a[InvalidRequest]
+        leftValue(isNotDotted(test, okZone)) shouldBe an[InvalidRequest]
       }
 
       "return a failure for a dotted record name that matches a zone name except for a trailing period" in {
         val test = aaaa.copy(name = "boo.hoo.www.comcast.net")
         val zone = okZone.copy(name = "www.comcast.net.")
 
-        leftValue(isNotDotted(test, zone)) shouldBe a[InvalidRequest]
+        leftValue(isNotDotted(test, zone)) shouldBe an[InvalidRequest]
       }
 
       "return a failure for a dotted record name that matches a zone name when the record has a trailing period" in {
         val test = aaaa.copy(name = "boo.hoo.www.comcast.net.")
         val zone = okZone.copy(name = "www.comcast.net")
-        leftValue(isNotDotted(test, zone)) shouldBe a[InvalidRequest]
+        leftValue(isNotDotted(test, zone)) shouldBe an[InvalidRequest]
       }
 
       "return success for any record in a forward zone that is not a dotted host" in {
@@ -165,17 +165,17 @@ class RecordSetValidationsSpec
         "return a failure for any record with dotted hosts in forward zones" in {
           leftValue(
             typeSpecificAddValidations(dottedARecord, List(), okZone)
-          ) shouldBe a[InvalidRequest]
+          ) shouldBe an[InvalidRequest]
         }
         "return a failure for any record with dotted hosts in forward zones (CNAME)" in {
           leftValue(
             typeSpecificAddValidations(dottedARecord.copy(typ = CNAME), List(), okZone)
-          ) shouldBe a[InvalidRequest]
+          ) shouldBe an[InvalidRequest]
         }
         "return a failure for any record with dotted hosts in forward zones (NS)" in {
           leftValue(
             typeSpecificAddValidations(dottedARecord.copy(typ = NS), List(), okZone)
-          ) shouldBe a[InvalidRequest]
+          ) shouldBe an[InvalidRequest]
         }
       }
       "Skip dotted checks on SRV" should {
@@ -252,25 +252,25 @@ class RecordSetValidationsSpec
 
       "return an InvalidRequest if an NS record is '@'" in {
         val error = leftValue(nsValidations(invalidNsApexRs, okZone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record is the same as the zone" in {
         val invalid = invalidNsApexRs.copy(name = okZone.name)
         val error = leftValue(nsValidations(invalid, okZone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if the NS record being updated is '@'" in {
         val valid = invalidNsApexRs.copy(name = "this-is-not-origin-mate")
         val error = leftValue(nsValidations(valid, okZone, Some(invalidNsApexRs)))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return an InvalidRequest if an NS record data is not in the approved server list" in {
         val ns = invalidNsApexRs.copy(records = List(NSData("not.approved.")))
         val error = leftValue(nsValidations(ns, okZone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
     }
 
@@ -285,12 +285,12 @@ class RecordSetValidationsSpec
       }
       "return an InvalidRequest if a cname record set name is '@'" in {
         val error = leftValue(cnameValidations(invalidCnameApexRs, List(), okZone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if a cname record set name is same as zone" in {
         val invalid = invalidCnameApexRs.copy(name = okZone.name)
         val error = leftValue(cnameValidations(invalid, List(), okZone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
     }
 
@@ -300,7 +300,7 @@ class RecordSetValidationsSpec
         val record = ptrIp4.copy(name = "252")
 
         val error = leftValue(isNotHighValueDomain(record, zone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return InvalidRequest if a ptr ip6 record matches a High Value Domain" in {
@@ -308,7 +308,7 @@ class RecordSetValidationsSpec
         val record = ptrIp6.copy(name = "f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0")
 
         val error = leftValue(isNotHighValueDomain(record, zone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return InvalidRequest if a non ptr record matches a High Value Domain" in {
@@ -316,7 +316,7 @@ class RecordSetValidationsSpec
         val record = aaaa.copy(name = "high-value-domain")
 
         val error = leftValue(isNotHighValueDomain(record, zone))
-        error shouldBe a[InvalidRequest]
+        error shouldBe an[InvalidRequest]
       }
 
       "return right if record is not a High Value Domain" in {

@@ -544,3 +544,12 @@ def clear_zoneid_rsid_tuple_list(to_delete, client):
             client.wait_until_recordset_change_status(change, 'Complete')
         except:
             pass
+
+def get_group_json(group_name, email="test@test.com", description="this is a description", members=[{ 'id': 'ok' }], admins=[{ 'id': 'ok' }]):
+    return {
+        'name': group_name,
+        'email': email,
+        'description': description,
+        'members': members,
+        'admins': admins
+    }

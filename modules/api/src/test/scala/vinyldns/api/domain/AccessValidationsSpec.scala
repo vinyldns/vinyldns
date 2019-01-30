@@ -319,18 +319,16 @@ class AccessValidationsSpec
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val mockRecordSet = mock[RecordSet]
 
-      val error = leftValue(
-        accessValidationTest
-          .canDeleteRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+      val error = leftValue(accessValidationTest
+        .canDeleteRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Read" in {
       val mockRecordSet = mock[RecordSet]
 
-      val error = leftValue(
-        accessValidationTest
-          .canDeleteRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead))
+      val error = leftValue(accessValidationTest
+        .canDeleteRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead, None))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -339,7 +337,12 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(userAuthWrite, mockRecordSet.name, mockRecordSet.typ, zoneInWrite))
+          .canDeleteRecordSet(
+            userAuthWrite,
+            mockRecordSet.name,
+            mockRecordSet.typ,
+            zoneInWrite,
+            None))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -349,7 +352,8 @@ class AccessValidationsSpec
         userAuthDelete,
         mockRecordSet.name,
         mockRecordSet.typ,
-        zoneInDelete) should be(right)
+        zoneInDelete,
+        None) should be(right)
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
@@ -358,7 +362,7 @@ class AccessValidationsSpec
 
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+          .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
@@ -368,7 +372,8 @@ class AccessValidationsSpec
       val zone = okZone.copy(isTest = true)
 
       accessValidationTest
-        .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
+        .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone, None) should be(
+        right)
     }
   }
 

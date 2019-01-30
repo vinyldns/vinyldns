@@ -16,19 +16,20 @@
 
 package vinyldns.api.domain.record
 
+import cats.effect._
+import cats.scalatest.EitherMatchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
-import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
+import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
+import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
 import vinyldns.api.route.ListRecordSetsResponse
-import vinyldns.api.ResultHelpers
-import cats.effect._
 import vinyldns.core.TestMembershipData._
-import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
@@ -37,6 +38,7 @@ import vinyldns.core.queue.MessageQueue
 
 class RecordSetServiceSpec
     extends WordSpec
+    with EitherMatchers
     with Matchers
     with MockitoSugar
     with ResultHelpers
@@ -54,6 +56,9 @@ class RecordSetServiceSpec
     .when(mockZoneRepo)
     .getZone(zoneNotAuthorized.id)
   doReturn(IO.unit).when(mockMessageQueue).send(any[RecordSetChange])
+  doReturn(IO.pure(Some(sharedZoneRecord.copy(status = RecordSetStatus.Active))))
+    .when(mockRecordRepo)
+    .getRecordSet(sharedZoneRecord.zoneId, sharedZoneRecord.id)
 
   val underTest = new RecordSetService(
     mockZoneRepo,
@@ -531,6 +536,55 @@ class RecordSetServiceSpec
         leftResultOf(underTest.deleteRecordSet(record.id, okZone.id, okAuth).value)
       result shouldBe InvalidRequest(
         HighValueDomainError(s"high-value-domain.${okZone.name}").message)
+    }
+    "fail for user who is not in record owner group in shared zone" in {
+      val result =
+        leftResultOf(
+          underTest.deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, dummyAuth).value)
+
+      result shouldBe a[NotAuthorizedError]
+    }
+    "fail for user who is in record owner group in non-shared zone" in {
+      doReturn(IO.pure(Some(sharedZone.copy(shared = false))))
+        .when(mockZoneRepo)
+        .getZone(sharedZone.id)
+
+      val result =
+        leftResultOf(
+          underTest.deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, okAuth).value)
+
+      result shouldBe a[NotAuthorizedError]
+    }
+    "succeed for user in record owner group in shared zone" in {
+      doReturn(IO.pure(Some(sharedZone)))
+        .when(mockZoneRepo)
+        .getZone(sharedZone.id)
+
+      val result =
+        underTest
+          .deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, okAuth)
+          .value
+          .unsafeRunSync()
+
+      result should be(right)
+    }
+    "succeed for zone admin in shared zone" in {
+      val result =
+        underTest
+          .deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, sharedAuth)
+          .value
+          .unsafeRunSync()
+
+      result should be(right)
+    }
+    "succeed for super user in shared zone" in {
+      val result =
+        underTest
+          .deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, superUserAuth)
+          .value
+          .unsafeRunSync()
+
+      result should be(right)
     }
   }
 
