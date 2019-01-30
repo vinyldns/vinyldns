@@ -494,7 +494,7 @@ def test_user_cannot_delete_record_with_write_txt_read_all(shared_zone_test_cont
         # dummy should be able to add the RS
         new_rs = get_recordset_json(ok_zone, "www-user-cant-delete", "TXT", [{'text':'should-work'}])
         rs_change = dummy_client.create_recordset(new_rs, status=202)
-        created_rs = client.wait_until_recordset_change_status(rs_change, 'Complete')['recordSet']
+        created_rs = dummy_client.wait_until_recordset_change_status(rs_change, 'Complete')['recordSet']
         verify_recordset(created_rs, new_rs)
 
         #dummy cannot delete the RS
