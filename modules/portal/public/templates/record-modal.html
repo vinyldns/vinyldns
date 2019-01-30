@@ -314,6 +314,16 @@
                 </modal-invalid>
             </modal-element>
 
+            <modal-element label="Record Owner Group" ng-if="sharedDisplayEnabled">
+                <select class="form-control"
+                        ng-model="currentRecord.ownerGroupId"
+                        ng-disabled="recordModal.details.readOnly">
+                    <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
+                            ng-selected="currentRecord.ownerGroupId == group.name">
+                        {{group.name}}</option>
+                </select>
+            </modal-element>
+
         </modal-body>
         <modal-footer>
             <span ng-if="recordModal.action == recordModalState.CREATE">

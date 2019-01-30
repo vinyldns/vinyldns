@@ -15,7 +15,7 @@
  */
 
 angular.module('controller.records', [])
-    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
+    .controller('RecordsController', function ($scope, jsConfig, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
 
     /**
       * Scope data initial setup
@@ -62,6 +62,8 @@ angular.module('controller.records', [])
     };
 
     $scope.isZoneAdmin = false;
+
+    $scope.sharedDisplayEnabled = jsConfig.sharedDisplayEnabled;
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -256,6 +258,7 @@ angular.module('controller.records', [])
     function createRecordSet(record) {
         var payload = recordsService.toVinylRecord(record);
         payload.zoneId = $scope.zoneId;
+        payload.ownerGroupId = record.ownerGroupId;
         return recordsService
             .createRecordSet($scope.zoneId, payload)
             .then(recordSetSuccess("Create Record"))
@@ -267,6 +270,7 @@ angular.module('controller.records', [])
     function updateRecordSet(record) {
         var payload = recordsService.toVinylRecord(record);
         payload.zoneId = $scope.zoneId;
+        payload.ownerGroupId = record.ownerGroupId;
         return recordsService
             .updateRecordSet($scope.zoneId, record.id, payload)
             .then(recordSetSuccess("Update Record"))
