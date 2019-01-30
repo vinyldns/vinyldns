@@ -250,7 +250,7 @@ describe('Controller: RecordsController', function () {
     });
 
     it('isGroupMember returns true if user is a member of a given group', function() {
-        mockGroups = {data: { groups: [
+        this.scope.myGroups = [
             {id: "c8234503-bfda-4b80-897f-d74129051eaa",
                 name: "test",
                 email: "test@test.com",
@@ -258,16 +258,13 @@ describe('Controller: RecordsController', function () {
                 created: "2017-02-15T14:58:31Z",
                 members: [{id: "7096b806-c12a-4171-ba13-7fabb523acee"}],
                 status: "Active"}
-                ],
-            maxItems: 100}};
-
-        this.scope.myGroups = mockGroups.data.groups;
+                ]
 
         expect(this.scope.isGroupMember("c8234503-bfda-4b80-897f-d74129051eaa")).toBe(true);
     });
 
     it('isGroupMember returns true if user is a member of a given group', function() {
-        mockGroups = {data: { groups: [
+        this.scope.myGroups = [
             {id: "c8234503-bfda-4b80-897f-d74129051eaa",
                 name: "test",
                 email: "test@test.com",
@@ -275,10 +272,7 @@ describe('Controller: RecordsController', function () {
                 created: "2017-02-15T14:58:31Z",
                 members: [{id: "7096b806-c12a-4171-ba13-7fabb523acee"}],
                 status: "Active"}
-                ],
-            maxItems: 100}};
-
-        this.scope.myGroups = mockGroups.data.groups;
+                ]
 
         expect(this.scope.isGroupMember("fake")).toBe(false);
     });
