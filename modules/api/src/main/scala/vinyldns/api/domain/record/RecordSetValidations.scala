@@ -158,11 +158,11 @@ object RecordSetValidations {
       case Some(ns) if ns.ttl == newRecordSet.ttl => ().asRight
       case Some(ns) =>
         InvalidRequest(
-          s"DS record ${newRecordSet.name} must have TTL matching its linked NS (${ns.ttl})").asLeft
+          s"DS record [${newRecordSet.name}] must have TTL matching its linked NS (${ns.ttl})").asLeft
       case None =>
         InvalidRequest(
-          s"DS record ${newRecordSet.name} is invalid because there is no NS record with that " +
-            s"name in the zone ${zone.name}").asLeft
+          s"DS record [${newRecordSet.name}] is invalid because there is no NS record with that " +
+            s"name in the zone [${zone.name}]").asLeft
     }
 
     for {
@@ -170,7 +170,7 @@ object RecordSetValidations {
       _ <- isNotOrigin(
         newRecordSet,
         zone,
-        s"Record with name ${newRecordSet.name} is an DS record at apex and cannot be added")
+        s"Record with name [${newRecordSet.name}] is an DS record at apex and cannot be added")
       _ <- nsChecks
     } yield ()
   }

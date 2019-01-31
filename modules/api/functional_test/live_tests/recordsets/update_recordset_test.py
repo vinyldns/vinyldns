@@ -2225,7 +2225,6 @@ def test_update_to_group_a_user_is_notin_fails(shared_zone_test_context):
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-
 def test_update_ds_success(shared_zone_test_context):
     """
     Test that creating a valid DS record succeeds

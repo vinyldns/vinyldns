@@ -1970,7 +1970,7 @@ def test_create_ds_unknown_digest_type(shared_zone_test_context):
     assert_that(errors, contains_inanyorder("Digest Type 0 is not a supported DS record digest type"))
 
 
-def test_create_ds_bad_ttl(shared_zone_test_context):
+def test_create_ds_bad_ttl_fails(shared_zone_test_context):
     """
     Test that creating a DS record with unmatching TTL fails
     """
@@ -1980,7 +1980,7 @@ def test_create_ds_bad_ttl(shared_zone_test_context):
     record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
     record_json = get_recordset_json(zone, 'dskey', 'DS', record_data, ttl=100)
     error = client.create_recordset(record_json, status=422)
-    assert_that(error, is_("DS record dskey must have TTL matching its linked NS (3600)"))
+    assert_that(error, is_("DS record [dskey] must have TTL matching its linked NS (3600)"))
 
 
 def test_create_ds_no_ns_fails(shared_zone_test_context):
@@ -1994,7 +1994,7 @@ def test_create_ds_no_ns_fails(shared_zone_test_context):
     record_json = get_recordset_json(zone, 'no-ns-exists', 'DS', record_data, ttl=3600)
     error = client.create_recordset(record_json, status=422)
     assert_that(error,
-                is_("DS record no-ns-exists is invalid because there is no NS record with that name in the zone example.com."))
+                is_("DS record [no-ns-exists] is invalid because there is no NS record with that name in the zone [example.com.]"))
 
 
 def test_create_apex_ds_fails(shared_zone_test_context):
@@ -2007,7 +2007,7 @@ def test_create_apex_ds_fails(shared_zone_test_context):
     record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
     record_json = get_recordset_json(zone, '@', 'DS', record_data, ttl=100)
     error = client.create_recordset(record_json, status=422)
-    assert_that(error, is_("Record with name example.com. is an DS record at apex and cannot be added"))
+    assert_that(error, is_("Record with name [example.com.] is an DS record at apex and cannot be added"))
 
 
 def test_create_dotted_ds_fails(shared_zone_test_context):
