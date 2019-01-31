@@ -23,6 +23,9 @@ import com.typesafe.config.{Config, ConfigFactory}
 import pureconfig.module.catseffect.loadConfigF
 import vinyldns.api.crypto.Crypto
 import com.comcast.ip4s._
+import net.ceedubs.ficus.Ficus._
+import net.ceedubs.ficus.readers.EnumerationReader._
+import vinyldns.core.domain.record.RecordType
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
@@ -62,6 +65,11 @@ object VinylDNSConfig {
 
   lazy val highValueIpList: List[IpAddress] =
     getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
+
+  lazy val sharedApprovedTypes: Set[RecordType.Value] =
+    if (vinyldnsConfig.hasPath("shared-approved-types")) {
+      vinyldnsConfig.as[Set[RecordType.Value]]("shared-approved-types")
+    } else Set()
 
   lazy val defaultZoneConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")
