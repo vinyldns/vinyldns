@@ -318,6 +318,7 @@
                 <select class="form-control"
                         ng-model="currentRecord.ownerGroupId"
                         ng-disabled="recordModal.details.readOnly">
+                    <option value=""></option>
                     <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
                             ng-selected="currentRecord.ownerGroupId == group.name">
                         {{group.name}}</option>

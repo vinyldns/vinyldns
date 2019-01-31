@@ -270,7 +270,9 @@ angular.module('controller.records', [])
     function updateRecordSet(record) {
         var payload = recordsService.toVinylRecord(record);
         payload.zoneId = $scope.zoneId;
-        payload.ownerGroupId = record.ownerGroupId;
+        if (record.ownerGroupId) {
+            payload.ownerGroupId = record.ownerGroupId;
+        }
         return recordsService
             .updateRecordSet($scope.zoneId, record.id, payload)
             .then(recordSetSuccess("Update Record"))
