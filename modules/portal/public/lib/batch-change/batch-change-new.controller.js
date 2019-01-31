@@ -93,7 +93,5 @@
                 var alert = utilityService.failure(error, type);
                 $scope.alerts.push(alert);
             }
-
-            $timeout($scope.load, 0);
         });
 })();
