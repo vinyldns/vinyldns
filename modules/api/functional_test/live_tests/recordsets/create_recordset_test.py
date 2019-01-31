@@ -1853,6 +1853,26 @@ def test_create_with_owner_group_in_shared_zone_by_acl_passes(shared_zone_test_c
             delete_result = shared_zone_test_context.shared_zone_vinyldns_client.delete_recordset(zone['id'], create_rs['id'], status=202)
             shared_zone_test_context.shared_zone_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+def test_create_in_shared_zone_without_owner_group_id_succeeds(shared_zone_test_context):
+    """
+    Test that creating a record in a shared zone without and owner group ID specified succeeds
+    """
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    create_rs = None
+
+    record_json = get_recordset_json(zone, 'test_shared_no_owner_group', 'A', [{'address': '1.1.1.1'}])
+
+    try:
+        create_response = dummy_client.create_recordset(record_json, status=202)
+        create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs, is_not(has_key('ownerGroupId')))
+
+    finally:
+        if create_rs:
+            delete_result = dummy_client.delete_recordset(create_rs['zoneId'], create_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 def test_create_in_shared_zone_by_unassociated_user_succeeds(shared_zone_test_context):
     """
