@@ -16,6 +16,8 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
+  lazy val playPac4jVersion = "6.1.0"
+  lazy val pac4jVersion = "3.4.0"
 
   lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
@@ -103,6 +105,9 @@ object Dependencies {
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
-    "com.typesafe.play"         %% "play-specs2"                    % playV % "test"
+    "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    "org.pac4j" %% "play-pac4j" % playPac4jVersion,
+    "org.pac4j" % "pac4j-oidc" % pac4jVersion exclude("commons-io", "commons-io"),
+    "commons-io" % "commons-io" % "2.5"
   )
 }

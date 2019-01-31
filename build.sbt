@@ -339,6 +339,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
   .settings(
     name := "portal",
     libraryDependencies ++= portalDependencies,
+    libraryDependencies ++= Seq(ehcache),
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",

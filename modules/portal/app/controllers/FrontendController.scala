@@ -19,6 +19,9 @@ package controllers
 import actions.FrontendAction
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
+import org.pac4j.core.profile.CommonProfile
+import org.pac4j.play.scala.SecurityComponents
+import org.pac4j.play.scala.Security
 import org.slf4j.LoggerFactory
 import play.api.Logger
 import play.api.mvc._
@@ -32,18 +35,29 @@ import scala.concurrent.Future
  */
 @Singleton
 class FrontendController @Inject()(
-    components: ControllerComponents,
+    val controllerComponents: SecurityComponents,
     configuration: Configuration,
     userAccountAccessor: UserAccountAccessor)
-    extends AbstractController(components) {
+    extends Security[CommonProfile] {
 
-  private val userAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  val usingOidc = configuration.get[Boolean]("oidc.enabled")
+
+  private val userAction = if (usingOidc) {
+    println("IN SECURE")
+    Secure.andThen {
+      println("CALLING FRONTEND ACTION")
+      new FrontendAction(userAccountAccessor.get)
+    }
+  } else {
+    Action.andThen(new FrontendAction(userAccountAccessor.get))
+  }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
 
   def loginPage(): Action[AnyContent] = Action { implicit request =>
+    println(s"IN LOGIN ${request}")
     request.session.get("username") match {
       case Some(_) => Redirect("/index")
       case None =>
@@ -68,8 +82,13 @@ class FrontendController @Inject()(
     Unauthorized(views.html.noAccess())
   }
 
-  def index(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.zones.zones(request.user.userName)))
+
+  def index(): Action[AnyContent] = {
+    println("PRE INDEX")
+    userAction.async { implicit request =>
+      println(s"IN INDEX ${request}")
+      Future(Ok(views.html.zones.zones(request.user.userName)))
+    }
   }
 
   def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>

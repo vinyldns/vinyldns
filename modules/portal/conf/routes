@@ -9,6 +9,7 @@ GET           /login                             @controllers.FrontendController
 GET           /logout                            @controllers.FrontendController.logout
 GET           /noaccess                          @controllers.FrontendController.noAccess
 
+
 GET           /groups                            @controllers.FrontendController.viewAllGroups
 GET           /groups/:gid                       @controllers.FrontendController.viewGroup(gid: String)
 GET           /zones                             @controllers.FrontendController.viewAllZones
@@ -53,6 +54,10 @@ PUT           /api/users/:uid/unlock             @controllers.VinylDNS.unlockUse
 GET           /api/batchchanges/:id              @controllers.VinylDNS.getBatchChange(id: String)
 GET           /api/batchchanges                  @controllers.VinylDNS.listBatchChanges
 POST          /api/batchchanges                  @controllers.VinylDNS.newBatchChange
+
+GET           /callback                          @org.pac4j.play.CallbackController.callback()
+POST          /callback                          @org.pac4j.play.CallbackController.callback()
+GET           /logout                            @org.pac4j.play.LogoutController.logout()
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /public/*file                      controllers.Assets.versioned(path="/public", file: Asset)
