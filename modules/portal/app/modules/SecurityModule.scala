@@ -35,49 +35,51 @@ import org.pac4j.play.scala.{DefaultSecurityComponents, SecurityComponents}
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
-  val authEndpoint = configuration.get[String]("oidc.authorization-endpoint")
+  //val authEndpoint = configuration.get[String]("oidc.authorization-endpoint")
   val discoveryUrl = configuration.get[String]("oidc.oidc-metadata")
   val clientId = configuration.get[String]("oidc.client-id")
   val baseUrl = configuration.get[String]("oidc.redirect-uri")
   val secret = configuration.get[String]("oidc.secret")
-  val tenant = configuration.get[String]("oidc.tenant")
+  //val tenant = configuration.get[String]("oidc.tenant")
+  val enabled = configuration.get[Boolean]("oidc.enabled")
 
-  override def configure(): Unit = {
-    bind(classOf[PlaySessionStore]).to(classOf[PlayCacheSessionStore])
+  override def configure(): Unit =
+    if (enabled) {
+      bind(classOf[PlaySessionStore]).to(classOf[PlayCacheSessionStore])
 
-    val clients = new Clients(baseUrl + "/callback", azureClient)
-    val config = new Config(clients)
-    config.setHttpActionAdapter(new DefaultHttpActionAdapter())
-    bind(classOf[Config]).toInstance(config)
+      val clients = new Clients(baseUrl + "/callback", oidcClient)
+      val config = new Config(clients)
+      config.setHttpActionAdapter(new DefaultHttpActionAdapter())
+      bind(classOf[Config]).toInstance(config)
 
-    // callback
-    val callbackController = new CallbackController()
-    callbackController.setDefaultUrl("/")
+      // callback
+      val callbackController = new CallbackController()
+      callbackController.setDefaultUrl("/")
 
-    // callbackController.setDefaultClient(oidcClient.getName)
-    //callbackController.setMultiProfile(true)
-    bind(classOf[CallbackController]).toInstance(callbackController)
+      // callbackController.setDefaultClient(oidcClient.getName)
+      //callbackController.setMultiProfile(true)
+      bind(classOf[CallbackController]).toInstance(callbackController)
 
-    // logout
-    val logoutController = new LogoutController()
-    logoutController.setDefaultUrl("/")
-    bind(classOf[LogoutController]).toInstance(logoutController)
+      // logout
+      val logoutController = new LogoutController()
+      logoutController.setDefaultUrl("/")
+      bind(classOf[LogoutController]).toInstance(logoutController)
 
-    // security components used in controllers
-    bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
-  }
+      // security components used in controllers
+      bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
+    }
 
-  lazy val azureClient: AzureAdClient = {
-    val oidcConfiguration = new AzureAdOidcConfiguration()
-    oidcConfiguration.setClientId(clientId)
-    //oidcConfiguration.set
-    oidcConfiguration.setSecret(secret)
-
-    oidcConfiguration.setDiscoveryURI(discoveryUrl)
-    oidcConfiguration.setTenant(tenant)
-
-    new AzureAdClient(oidcConfiguration)
-  }
+//  lazy val azureClient: AzureAdClient = {
+//    val oidcConfiguration = new AzureAdOidcConfiguration()
+//    oidcConfiguration.setClientId(clientId)
+//    //oidcConfiguration.set
+//    oidcConfiguration.setSecret(secret)
+//
+//    oidcConfiguration.setDiscoveryURI(discoveryUrl)
+//    oidcConfiguration.setTenant(tenant)
+//
+//    new AzureAdClient(oidcConfiguration)
+//  }
 
   lazy val oidcClient: OidcClient[OidcProfile, OidcConfiguration] = {
     val oidcConfiguration = new OidcConfiguration()
@@ -88,6 +90,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
     oidcConfiguration.setUseNonce(true)
     oidcConfiguration.setClientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+    oidcConfiguration.setResponseMode("form_post")
     //  oidcConfiguration.addCustomParam("display", "popup")
     //  oidcConfiguration.addCustomParam("prompt", "consent")
     //  oidcConfiguration.setResponseType("id_token")
