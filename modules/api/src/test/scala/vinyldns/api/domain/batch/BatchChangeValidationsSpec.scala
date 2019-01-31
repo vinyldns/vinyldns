@@ -502,7 +502,8 @@ class BatchChangeValidationsSpec
 
   property(
     "validateChangesWithContext: should fail for update if user does not have sufficient access") {
-    val readAcl = ACLRule(accessLevel = AccessLevel.Read, userId = Some(notAuth.userId))
+    val readAcl =
+      ACLRule(accessLevel = AccessLevel.Read, userId = Some(notAuth.signedInUser.userName))
     val existingRecord = rsOk.copy(zoneId = okZone.id, name = "update", ttl = 300)
     val addUpdateA = AddChangeForValidation(
       okZone.addACLRule(readAcl),
@@ -518,8 +519,10 @@ class BatchChangeValidationsSpec
       notAuth,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
-    result(1) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorized(notAuth.signedInUser.userName))
+    result(1) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorized(notAuth.signedInUser.userName))
   }
 
   property("validateChangesWithContext: should fail for update if record does not exist") {
@@ -881,7 +884,8 @@ class BatchChangeValidationsSpec
           notAuth,
           None)
 
-      result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
+      result(0) should haveInvalid[DomainValidationError](
+        UserIsNotAuthorized(notAuth.signedInUser.userName))
     }
   }
 
@@ -1017,7 +1021,8 @@ class BatchChangeValidationsSpec
       notAuth,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(notAuth.userId))
+    result(0) should haveInvalid[DomainValidationError](
+      UserIsNotAuthorized(notAuth.signedInUser.userName))
   }
 
   property("""validateChangesWithContext: should properly process batch that contains
@@ -1531,7 +1536,7 @@ class BatchChangeValidationsSpec
       None)
 
     result(0) should
-      haveInvalid[DomainValidationError](UserIsNotAuthorized(dummyAuth.signedInUser.id))
+      haveInvalid[DomainValidationError](UserIsNotAuthorized(dummyAuth.signedInUser.userName))
   }
 
   property(
