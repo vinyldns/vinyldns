@@ -15,7 +15,7 @@
  */
 
 angular
-    .module('batch-change')
+    .module('constants', [])
     .constant('jsConfig', {
         batchChangeLimit: 20,
         sharedDisplayEnabled: false

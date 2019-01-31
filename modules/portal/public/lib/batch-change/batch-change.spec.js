@@ -20,7 +20,8 @@ describe('BatchChange', function(){
         module('batch-change'),
         module('service.utility'),
         module('service.paging'),
-        module('service.groups')
+        module('service.groups'),
+        module('constants')
     });
 
     var deferred;
