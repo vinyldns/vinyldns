@@ -161,7 +161,6 @@ object TestDataLoader {
   final val sharedZone = Zone(
     name = "shared.",
     email = "email",
-    id = "shared-zone",
     adminGroupId = sharedZoneGroup.id,
     shared = true,
     isTest = true
@@ -172,7 +171,6 @@ object TestDataLoader {
   final val nonTestSharedZone = Zone(
     name = "non.test.shared.",
     email = "email",
-    id = "non-test-shared-zone",
     adminGroupId = sharedZoneGroup.id,
     shared = true
   )

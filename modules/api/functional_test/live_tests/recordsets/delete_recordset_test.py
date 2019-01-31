@@ -672,14 +672,14 @@ def test_delete_for_user_not_in_record_owner_group_in_shared_zone_fails(shared_z
     shared_zone = shared_zone_test_context.shared_zone
     result_rs = None
 
-    record_json = get_recordset_json(shared_zone, 'test_shared_bad_user', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
+    record_json = get_recordset_json(shared_zone, 'test_shared_del_nonog', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
 
     try:
         create_rs = shared_client.create_recordset(record_json, status=202)
         result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
 
         error = dummy_client.delete_recordset(shared_zone['id'], result_rs['id'], status=403)
-        assert_that(error, is_('User dummy does not have access to delete test-shared-bad-user.shared.'))
+        assert_that(error, is_('User dummy does not have access to delete test-shared-del-nonog.shared.'))
 
     finally:
         if result_rs:
@@ -695,14 +695,14 @@ def test_delete_for_user_in_record_owner_group_in_non_shared_zone_fails(shared_z
     ok_zone = shared_zone_test_context.ok_zone
     result_rs = None
 
-    record_json = get_recordset_json(ok_zone, 'test_shared_bad_user', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
+    record_json = get_recordset_json(ok_zone, 'test_non_shared_del_og', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
 
     try:
         create_rs = ok_client.create_recordset(record_json, status=202)
         result_rs = ok_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
 
         error = shared_client.delete_recordset(ok_zone['id'], result_rs['id'], status=403)
-        assert_that(error, is_('User sharedZoneUser does not have access to delete test-shared-bad-user.ok.'))
+        assert_that(error, is_('User sharedZoneUser does not have access to delete test-non-shared-del-og.ok.'))
 
     finally:
         if result_rs:
@@ -718,7 +718,7 @@ def test_delete_for_user_in_record_owner_group_in_shared_zone_succeeds(shared_zo
     shared_zone = shared_zone_test_context.shared_zone
     shared_group = shared_zone_test_context.shared_record_group
 
-    record_json = get_recordset_json(shared_zone, 'test_shared_bad_user', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_group['id'])
+    record_json = get_recordset_json(shared_zone, 'test_shared_del_og', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_group['id'])
 
     create_rs = shared_client.create_recordset(record_json, status=202)
     result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
@@ -734,7 +734,7 @@ def test_delete_for_zone_admin_in_shared_zone_succeeds(shared_zone_test_context)
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     shared_zone = shared_zone_test_context.shared_zone
 
-    record_json = get_recordset_json(shared_zone, 'test_shared_bad_user', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
+    record_json = get_recordset_json(shared_zone, 'test_shared_del_admin', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
 
     create_rs = shared_client.create_recordset(record_json, status=202)
     result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
