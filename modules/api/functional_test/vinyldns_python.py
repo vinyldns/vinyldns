@@ -116,8 +116,12 @@ class VinylDNSClient(object):
 
         if status_code is not None:
             if isinstance(status_code, collections.Iterable):
+                if not response.status_code in status_code:
+                    print response.text
                 assert_that(response.status_code, is_in(status_code))
             else:
+                if response.status_code != status_code:
+                    print response.text
                 assert_that(response.status_code, is_(status_code))
 
         try:

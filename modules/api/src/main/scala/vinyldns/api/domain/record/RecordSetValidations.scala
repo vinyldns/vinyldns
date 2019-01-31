@@ -33,7 +33,7 @@ object RecordSetValidations {
 
   def validRecordTypes(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
     recordSet.typ match {
-      case CNAME | SOA | TXT | NS => ().asRight
+      case CNAME | SOA | TXT | NS | DS => ().asRight
       case PTR =>
         ensuring(InvalidRequest("PTR is not valid in forward lookup zone"))(zone.isReverse)
       case _ =>
@@ -93,7 +93,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
-      case DS => NotAuthorizedError("DS adds are not supported").asLeft
+      case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }
 
@@ -108,7 +108,7 @@ object RecordSetValidations {
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV => ().asRight // SRV does not go through dotted host check
-      case DS => NotAuthorizedError("DS updates are not supported").asLeft
+      case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }
 
@@ -147,6 +147,32 @@ object RecordSetValidations {
       _ <- isNotDotted(newRecordSet, zone)
     } yield ()
 
+  }
+
+  def dsValidations(
+      newRecordSet: RecordSet,
+      existingRecordsWithName: List[RecordSet],
+      zone: Zone): Either[Throwable, Unit] = {
+    // see https://tools.ietf.org/html/rfc4035#section-2.4
+    val nsChecks = existingRecordsWithName.find(_.typ == NS) match {
+      case Some(ns) if ns.ttl == newRecordSet.ttl => ().asRight
+      case Some(ns) =>
+        InvalidRequest(
+          s"DS record [${newRecordSet.name}] must have TTL matching its linked NS (${ns.ttl})").asLeft
+      case None =>
+        InvalidRequest(
+          s"DS record [${newRecordSet.name}] is invalid because there is no NS record with that " +
+            s"name in the zone [${zone.name}]").asLeft
+    }
+
+    for {
+      _ <- isNotDotted(newRecordSet, zone)
+      _ <- isNotOrigin(
+        newRecordSet,
+        zone,
+        s"Record with name [${newRecordSet.name}] is an DS record at apex and cannot be added")
+      _ <- nsChecks
+    } yield ()
   }
 
   def nsValidations(

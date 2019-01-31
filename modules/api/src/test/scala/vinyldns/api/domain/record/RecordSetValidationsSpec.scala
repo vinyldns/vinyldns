@@ -274,6 +274,36 @@ class RecordSetValidationsSpec
       }
     }
 
+    "DSValidations" should {
+      val matchingNs = ns.copy(zoneId = ds.zoneId, name = ds.name, ttl = ds.ttl)
+      "return ok if the record is non-origin DS with matching NS" in {
+        dsValidations(ds, List(matchingNs), okZone) should be(right)
+      }
+      "return an InvalidRequest if a DS record is '@'" in {
+        val apex = ds.copy(name = "@")
+        val error = leftValue(dsValidations(apex, List(matchingNs), okZone))
+        error shouldBe an[InvalidRequest]
+      }
+      "return an InvalidRequest if a DS record is the same as the zone" in {
+        val apex = ds.copy(name = okZone.name)
+        val error = leftValue(dsValidations(apex, List(matchingNs), okZone))
+        error shouldBe an[InvalidRequest]
+      }
+      "return an InvalidRequest if there is no NS matching the record" in {
+        val error = leftValue(dsValidations(ds, List(), okZone))
+        error shouldBe an[InvalidRequest]
+      }
+      "return an InvalidRequest if the matching NS has a different TTL" in {
+        val error = leftValue(dsValidations(ds, List(matchingNs.copy(ttl = 20)), okZone))
+        error shouldBe an[InvalidRequest]
+      }
+      "return an InvalidRequest if the DS is dotted" in {
+        val error =
+          leftValue(dsValidations(ds.copy(name = "test.dotted"), List(matchingNs), okZone))
+        error shouldBe an[InvalidRequest]
+      }
+    }
+
     "CnameValidations" should {
       val invalidCnameApexRs: RecordSet = cname.copy(name = "@")
       "return a RecordSetAlreadyExistsError if a record with the same name exists and creating a cname" in {

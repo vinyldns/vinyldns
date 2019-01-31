@@ -23,7 +23,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
-import scodec.bits.ByteVector
+import scodec.bits.{Bases, ByteVector}
 import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record._
@@ -468,6 +468,12 @@ trait DnsJsonProtocol extends JsonValidation {
             case None => "Could not convert digest to valid hex".invalidNel
           }
       ).mapN(DSData.apply)
+
+    override def toJson(rr: DSData): JValue =
+      ("keytag" -> Extraction.decompose(rr.keyTag)) ~
+        ("algorithm" -> rr.algorithm.value) ~
+        ("digesttype" -> rr.digestType.value) ~
+        ("digest" -> rr.digest.toHex(Bases.Alphabets.HexUppercase))
   }
 
   case object TXTSerializer extends ValidationSerializer[TXTData] {
