@@ -16,18 +16,22 @@
 
 package modules
 
+import java.util.concurrent.CompletionStage
+
 import com.google.inject.AbstractModule
-import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod
+import org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer
 import org.pac4j.core.client.Clients
-import org.pac4j.oidc.client.{AzureAdClient, OidcClient}
+import org.pac4j.oidc.client.OidcClient
 import org.pac4j.play.{CallbackController, LogoutController}
 import play.api.{Configuration, Environment}
 import org.pac4j.play.store.{PlayCacheSessionStore, PlaySessionStore}
 import org.pac4j.core.config.Config
-import org.pac4j.oidc.config.{AzureAdOidcConfiguration, OidcConfiguration}
+import org.pac4j.core.profile.CommonProfile
+import org.pac4j.oidc.config.OidcConfiguration
 import org.pac4j.oidc.profile.OidcProfile
 import org.pac4j.play.http.DefaultHttpActionAdapter
 import org.pac4j.play.scala.{DefaultSecurityComponents, SecurityComponents}
+import play.mvc.Result
 
 /**
   * Guice DI module to be included in application.conf
@@ -43,6 +47,8 @@ class SecurityModule(environment: Environment, configuration: Configuration)
   //val tenant = configuration.get[String]("oidc.tenant")
   val enabled = configuration.get[Boolean]("oidc.enabled")
 
+  //val tokenEndpoint = configuration.get[String]("oidc.token-endpoint")
+
   override def configure(): Unit =
     if (enabled) {
       bind(classOf[PlaySessionStore]).to(classOf[PlayCacheSessionStore])
@@ -50,54 +56,65 @@ class SecurityModule(environment: Environment, configuration: Configuration)
       val clients = new Clients(baseUrl + "/callback", oidcClient)
       val config = new Config(clients)
       config.setHttpActionAdapter(new DefaultHttpActionAdapter())
+      config.addAuthorizer("admin", new RequireAnyRoleAuthorizer[CommonProfile]("ROLE_ADMIN"))
       bind(classOf[Config]).toInstance(config)
 
       // callback
-      val callbackController = new CallbackController()
-      callbackController.setDefaultUrl("/")
-
+      val callbackController = new TestCallbackController()
+      callbackController.setSaveInSession(false)
+      //callbackController.setDefaultUrl(tokenEndpoint)
+      //callbackController.setDefaultUrl()
       // callbackController.setDefaultClient(oidcClient.getName)
-      //callbackController.setMultiProfile(true)
+      // callbackController.setMultiProfile(true)
       bind(classOf[CallbackController]).toInstance(callbackController)
 
       // logout
       val logoutController = new LogoutController()
-      logoutController.setDefaultUrl("/")
+      logoutController.setDefaultUrl("/?defaulturlafterlogout")
       bind(classOf[LogoutController]).toInstance(logoutController)
 
       // security components used in controllers
       bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
     }
 
-//  lazy val azureClient: AzureAdClient = {
-//    val oidcConfiguration = new AzureAdOidcConfiguration()
-//    oidcConfiguration.setClientId(clientId)
-//    //oidcConfiguration.set
-//    oidcConfiguration.setSecret(secret)
-//
-//    oidcConfiguration.setDiscoveryURI(discoveryUrl)
-//    oidcConfiguration.setTenant(tenant)
-//
-//    new AzureAdClient(oidcConfiguration)
-//  }
-
   lazy val oidcClient: OidcClient[OidcProfile, OidcConfiguration] = {
     val oidcConfiguration = new OidcConfiguration()
     oidcConfiguration.setClientId(clientId)
-    //oidcConfiguration.set
     oidcConfiguration.setSecret(secret)
-
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
-    oidcConfiguration.setUseNonce(true)
-    oidcConfiguration.setClientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-    oidcConfiguration.setResponseMode("form_post")
-    //  oidcConfiguration.addCustomParam("display", "popup")
-    //  oidcConfiguration.addCustomParam("prompt", "consent")
-    //  oidcConfiguration.setResponseType("id_token")
-//    oidcConfiguration.setResponseMode("form_post")
+    // oidcConfiguration.setUseNonce(true)
+    // oidcConfiguration.setResponseMode("form_post")
+    oidcConfiguration.setScope("openid profile email")
+
     val oidcClient = new OidcClient[OidcProfile, OidcConfiguration](oidcConfiguration)
 
-    // oidcClient.addAuthorizationGenerator(new RoleAdminAuthGenerator)
+    oidcClient.addAuthorizationGenerator { (ctx, profile) =>
+      profile.addRole("ROLE_ADMIN")
+      profile
+    }
+    //oidcClient.addAuthorizationGenerator(new RoleAdminAuthGenerator)
     oidcClient
+  }
+}
+
+class TestCallbackController extends CallbackController {
+  override def callback(): CompletionStage[Result] = {
+    println("IN CALLBACK")
+    println(config.getCallbackLogic)
+    println(config.getHttpActionAdapter)
+    println(getDefaultUrl)
+    println(getSaveInSession)
+
+    //oidcClient
+    /*
+        private String defaultUrl;
+
+    private Boolean saveInSession;
+
+    private Boolean multiProfile;
+
+    private String defaultClient;
+     */
+    super.callback()
   }
 }
