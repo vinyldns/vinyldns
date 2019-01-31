@@ -167,6 +167,7 @@ angular.module('service.records', [])
                     newRecord.onlyFour = true;
                     break;
                 default:
+                    newRecord.canBeEdited = false;
             }
             return newRecord;
         };
