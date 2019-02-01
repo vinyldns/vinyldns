@@ -17,19 +17,41 @@
 package actions
 
 import cats.effect.IO
-import play.api.mvc.{ActionFunction, Request, Result}
+import org.pac4j.core.profile.{CommonProfile, ProfileManager}
+import org.pac4j.play.PlayWebContext
+import org.pac4j.play.scala.Security
+import play.api.mvc.{ActionFunction, Request, RequestHeader, Result}
 import vinyldns.core.domain.membership.{LockStatus, User}
+
+import scala.collection.JavaConverters.asScalaBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
+abstract class VinylDnsAction
+    extends ActionFunction[Request, UserRequest]
+    with Security[CommonProfile] {
   val userLookup: String => IO[Option[User]]
   implicit val executionContext: ExecutionContext
+
   def notLoggedInResult: Future[Result]
+
   def cantFindAccountResult(un: String): Future[Result]
+  
   def lockedUserResult(un: String): Future[Result]
 
-  def invokeBlock[A](request: Request[A], block: UserRequest[A] => Future[Result]): Future[Result] =
+
+  private def getProfile(implicit request: RequestHeader): Option[CommonProfile] = {
+    val webContext = new PlayWebContext(request, controllerComponents.playSessionStore)
+    val profileManager = new ProfileManager[CommonProfile](webContext)
+    val profile = profileManager.getAll(true)
+    asScalaBuffer(profile).headOption
+  }
+
+  def invokeBlock[A](
+      request: Request[A],
+      block: UserRequest[A] => Future[Result]): Future[Result] = {
     // if the user name is not in session, reject
+    val prof = getProfile(request).get
+    println(s"IN INVOKE: ${prof.getAttributes}")
     request.session.get("username") match {
       case None => notLoggedInResult
 
@@ -44,4 +66,6 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
           case Some(user) => block(new UserRequest(un, user, request))
         }
     }
+  }
+
 }

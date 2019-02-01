@@ -18,6 +18,7 @@ package actions
 
 import cats.effect.IO
 import controllers.{CacheHeader, VinylDNS}
+import org.pac4j.play.scala.SecurityComponents
 import play.api.mvc.Result
 import play.api.mvc.Results.Redirect
 import vinyldns.core.domain.membership.User
@@ -31,8 +32,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to login screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class FrontendAction(val userLookup: String => IO[Option[User]])(
-    implicit val executionContext: ExecutionContext)
+class FrontendAction(
+    val userLookup: String => IO[Option[User]],
+    val controllerComponents: SecurityComponents)(implicit val executionContext: ExecutionContext)
     extends VinylDnsAction
     with CacheHeader {
 

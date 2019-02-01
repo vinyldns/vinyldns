@@ -16,10 +16,13 @@
 
 package controllers
 
+import java.util.Optional
+
 import actions.FrontendAction
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
-import org.pac4j.core.profile.CommonProfile
+import org.pac4j.core.profile.{CommonProfile, ProfileManager}
+import org.pac4j.play.PlayWebContext
 import org.pac4j.play.scala.SecurityComponents
 import org.pac4j.play.scala.Security
 import org.slf4j.LoggerFactory
@@ -29,6 +32,7 @@ import play.api.Configuration
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.collection.JavaConverters._
 
 /*
  * Controller for specific pages - sends requests along to views
@@ -42,14 +46,21 @@ class FrontendController @Inject()(
 
   val usingOidc = configuration.get[Boolean]("oidc.enabled")
 
+  private def getProfile(implicit request: RequestHeader): Option[CommonProfile] = {
+    val webContext = new PlayWebContext(request, playSessionStore)
+    val profileManager = new ProfileManager[CommonProfile](webContext)
+    val profile = profileManager.getAll(true)
+    asScalaBuffer(profile).headOption
+  }
+
   private val userAction = if (usingOidc) {
     println("IN SECURE")
     Secure.andThen {
       println("CALLING FRONTEND ACTION")
-      new FrontendAction(userAccountAccessor.get)
+      new FrontendAction(userAccountAccessor.get, controllerComponents)
     }
   } else {
-    Action.andThen(new FrontendAction(userAccountAccessor.get))
+    Action.andThen(new FrontendAction(userAccountAccessor.get, controllerComponents))
   }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
@@ -57,7 +68,8 @@ class FrontendController @Inject()(
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
 
   def loginPage(): Action[AnyContent] = Action { implicit request =>
-    println(s"IN LOGIN ${request}")
+    println("IN LOGIN")
+    println(request.session)
     request.session.get("username") match {
       case Some(_) => Redirect("/index")
       case None =>
@@ -86,6 +98,7 @@ class FrontendController @Inject()(
   def index(): Action[AnyContent] = {
     println("PRE INDEX")
     userAction.async { implicit request =>
+      println(s"GOT PROFILE!!!! ${getProfile}")
       println(s"IN INDEX ${request}")
       Future(Ok(views.html.zones.zones(request.user.userName)))
     }

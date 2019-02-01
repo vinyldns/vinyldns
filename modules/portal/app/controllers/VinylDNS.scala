@@ -31,6 +31,10 @@ import java.util.HashMap
 
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
+import org.pac4j.core.profile.CommonProfile
+import org.pac4j.play.scala.{Security, SecurityComponents}
+//import org.apache.http.client.methods.HttpPost
+//import play.api.libs.oauth.{OAuth, ServiceInfo}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
@@ -85,9 +89,9 @@ class VinylDNS @Inject()(
     authenticator: Authenticator,
     userAccountAccessor: UserAccountAccessor,
     wsClient: WSClient,
-    components: ControllerComponents,
+    val controllerComponents: SecurityComponents,
     crypto: CryptoAlgebra)
-    extends AbstractController(components)
+    extends Security[CommonProfile]
     with CacheHeader {
 
   import play.api.mvc._
@@ -99,8 +103,10 @@ class VinylDNS @Inject()(
       .getOrElse("http://localhost:9000")
 
   // Need this guy for user actions, brings the session username and user account into the Action
-  private val userAction = Action.andThen(new ApiAction(userAccountAccessor.get))
-  private val frontendAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  private val userAction =
+    Action.andThen(new ApiAction(userAccountAccessor.get, controllerComponents))
+  private val frontendAction =
+    Action.andThen(new FrontendAction(userAccountAccessor.get, controllerComponents))
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {
@@ -562,4 +568,59 @@ class VinylDNS @Inject()(
         Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*))
     }
   }
+
+//
+//  val tokenEndpoint = configuration.get[String]("oidc.token-endpoint")
+//  val discoveryUrl = configuration.get[String]("oidc.oidc-metadata")
+//  val clientId = configuration.get[String]("oidc.client-id")
+//  val baseUrl = configuration.get[String]("oidc.redirect-uri")
+//  val secret = configuration.get[String]("oidc.secret")
+//  //val tenant = configuration.get[String]("oidc.tenant")
+//  val enabled = configuration.get[Boolean]("oidc.enabled")
+//
+//
+//  def callbackControllerGet(): Action[AnyContent] = Action.async { implicit request =>
+//    println("IN GET")
+//    println(request)
+//    val code = request.getQueryString("code")
+//
+//    val body = s"client_id=${clientId}&scope="
+//
+//    wsClient
+//      .url(tokenEndpoint)
+//      .withHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
+//      .withBody(
+//        signableRequest.getOriginalRequestObject
+//          .asInstanceOf[VinylDNSRequest]
+//          .payload
+//          .getOrElse(""))
+//      .withMethod("POST")
+//      .execute()
+//
+//
+//
+//
+//
+//    val post = new HttpPost(tokenEndpoint)
+//
+//
+//
+//    val vinyldnsRequest =
+//      new VinylDNSRequest(
+//        "POST",
+//        tokenEndpoint)
+//    executeRequest(vinyldnsRequest, request.user).map(response => {
+//      Status(response.status)(response.body)
+//        .withHeaders(cacheHeaders: _*)
+//    })
+//
+//
+//    Future(Redirect(routes.FrontendController.loginPage()))
+//  }
+//
+//  def callbackController(): Action[AnyContent] = Action.async { implicit request =>
+//    println("IN POST")
+//    println(request)
+//    Future(Redirect(routes.FrontendController.loginPage()))
+//  }
 }
