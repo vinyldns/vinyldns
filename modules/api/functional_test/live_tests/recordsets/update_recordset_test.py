@@ -2087,7 +2087,7 @@ def test_update_owner_group_from_admin_in_shared_zone_passes(shared_zone_test_co
 
 def test_update_from_unassociated_user_in_shared_zone_succeeds(shared_zone_test_context):
     """
-    Test that normal user updating record without existing owner group ID in shared zone succeeds
+    Test that an unassociated user updating record without existing owner group ID in shared zone succeeds
     """
 
     ok_client = shared_zone_test_context.ok_vinyldns_client

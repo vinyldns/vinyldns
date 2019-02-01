@@ -1855,7 +1855,7 @@ def test_create_with_owner_group_in_shared_zone_by_acl_passes(shared_zone_test_c
 
 def test_create_in_shared_zone_without_owner_group_id_succeeds(shared_zone_test_context):
     """
-    Test that creating a record in a shared zone without and owner group ID specified succeeds
+    Test that creating a record in a shared zone without an owner group ID specified succeeds
     """
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
@@ -1876,7 +1876,7 @@ def test_create_in_shared_zone_without_owner_group_id_succeeds(shared_zone_test_
 
 def test_create_in_shared_zone_by_unassociated_user_succeeds(shared_zone_test_context):
     """
-    Test that creating a record in a shared zone by a normal user succeeds
+    Test that creating a record in a shared zone by an unassociated user succeeds
     """
 
     dummy_client = shared_zone_test_context.dummy_vinyldns_client

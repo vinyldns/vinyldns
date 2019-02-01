@@ -2777,9 +2777,9 @@ def test_create_batch_change_validation_without_owner_group_id(shared_zone_test_
             delete_result = shared_client.delete_recordset(shared_zone['id'], rsId, status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
-def test_create_batch_delete_record_for_normal_user_in_owner_group_succeeds(shared_zone_test_context):
+def test_create_batch_delete_record_for_unassociated_user_in_owner_group_succeeds(shared_zone_test_context):
     """
-    Test delete change in batch for a record in a shared zone for a normal user belonging to the record owner group succeeds
+    Test delete change in batch for a record in a shared zone for an unassociated user belonging to the record owner group succeeds
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     ok_client = shared_zone_test_context.ok_vinyldns_client
@@ -2803,9 +2803,9 @@ def test_create_batch_delete_record_for_normal_user_in_owner_group_succeeds(shar
     assert_change_success_response_values(completed_batch['changes'], zone=shared_zone, index=0, record_name="shared-delete",
                                           input_name="shared-delete.shared.", record_data=None, change_type="DeleteRecordSet")
 
-def test_create_batch_delete_record_for_normal_user_not_in_owner_group_fails(shared_zone_test_context):
+def test_create_batch_delete_record_for_unassociated_user_not_in_owner_group_fails(shared_zone_test_context):
     """
-    Test delete change in batch for a record in a shared zone for a normal user not belonging to the record owner group fails
+    Test delete change in batch for a record in a shared zone for an unassociated user not belonging to the record owner group fails
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
     dummy_client = shared_zone_test_context.dummy_vinyldns_client
