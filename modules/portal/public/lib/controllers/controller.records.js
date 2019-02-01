@@ -182,6 +182,9 @@ angular.module('controller.records', [])
     $scope.clearRecord = function(record) {
         record.ttl = undefined;
         record.data = undefined;
+        if ($scope.sharedDisplayEnabled) {
+            record.ownerGroupId = undefined;
+        }
     };
 
     $scope.getZoneStatusLabel = function() {
