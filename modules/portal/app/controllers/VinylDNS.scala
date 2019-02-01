@@ -31,6 +31,7 @@ import java.util.HashMap
 
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
+import scodec.bits.ByteVector
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
@@ -112,6 +113,62 @@ class VinylDNS @Inject()(
 
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
+
+  val authEndpoint = configuration.get[String]("oidc.authorization-endpoint")
+  val tokenEndpoint = configuration.get[String]("oidc.token-endpoint")
+  val clientId = configuration.get[String]("oidc.client-id")
+  val secret = configuration.get[String]("oidc.secret")
+  val oidcScope = "openid profile email"
+
+  def oidc(): Action[AnyContent] = Action { implicit request =>
+    // TODO here should 1st check if the user info is already in session (and not expired and such)
+
+    val responseType = "code"
+    val redirectUri = routes.VinylDNS.oidcCallback.absoluteURL()
+
+    val queryParams = (
+      "client_id" -> clientId,
+      "response_type" -> responseType,
+      "redirect_uri" -> redirectUri,
+      "scope" -> "openid profile email")
+
+    val call = wsClient
+      .url(authEndpoint)
+      .withQueryStringParameters(
+        "client_id" -> clientId,
+        "response_type" -> responseType,
+        "redirect_uri" -> redirectUri,
+        "scope" -> "openid profile email")
+
+    Redirect(call.url, call.queryString)
+  }
+
+  def oidcCallback(): Action[AnyContent] = Action { implicit request =>
+    // TODO error handling here
+    val code = request.getQueryString("code").get
+
+    val grantType = "authorization_code"
+    val redirectUri = routes.VinylDNS.oidcCallback.absoluteURL()
+
+    wsClient
+      .url(tokenEndpoint)
+      .post(
+        Map(
+          "client_id" -> Seq(clientId),
+          "grant_type" -> Seq(grantType),
+          "redirect_uri" -> Seq(redirectUri),
+          "scope" -> Seq(oidcScope),
+          "code" -> Seq(code),
+          "client_secret" -> Seq(secret)
+        )
+      )
+      .foreach { resp =>
+        println(resp.body)
+      }
+
+    // ideally should go to the page you were intending to visit
+    Redirect("/")
+  }
 
   def login(): Action[AnyContent] = Action { implicit request =>
     val userForm = Form(
