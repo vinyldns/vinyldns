@@ -18,7 +18,7 @@ package controllers
 
 import java.util
 
-import actions.{ApiAction, FrontendAction}
+import actions.{ApiAction, LdapFrontendAction}
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
@@ -128,7 +128,7 @@ class VinylDNS @Inject()(
 
   // Need this guy for user actions, brings the session username and user account into the Action
   private val userAction = Action.andThen(new ApiAction(userAccountAccessor.get))
-  private val frontendAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  private val frontendAction = Action.andThen(new LdapFrontendAction(userAccountAccessor.get))
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {
@@ -140,6 +140,8 @@ class VinylDNS @Inject()(
 
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
+
+  val oidcEnabled = configuration.get[String]("oidc.enabled")
 
   val authEndpoint = configuration.get[String]("oidc.authorization-endpoint")
   val tokenEndpoint = configuration.get[String]("oidc.token-endpoint")
@@ -182,7 +184,7 @@ class VinylDNS @Inject()(
     Redirect(call.url, call.queryString)
   }
 
-  def oidcCallback(): Action[AnyContent] = Action { implicit request =>
+  def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
     // TODO error handling here
     val code = request.getQueryString("code").get
 
@@ -201,7 +203,7 @@ class VinylDNS @Inject()(
           "client_secret" -> Seq(secret)
         )
       )
-      .foreach { resp =>
+      .map { resp =>
         val response = resp.json.as[OidcResponse]
 
         //TODO need to be validating these tokens
@@ -209,14 +211,8 @@ class VinylDNS @Inject()(
           ByteVector.fromBase64(response.idToken.split("\\.")(1)).get.toArray,
           "UTF-8").trim
 
-        val oidcUserDetails = Json.parse(idDecoded).as[OidcUserDetails]
-        print(s"user details: $oidcUserDetails\n\n")
-
-        processLoginOidc(oidcUserDetails)
+        processLoginOidc(Json.parse(idDecoded).as[OidcUserDetails])
       }
-
-    // ideally should go to the page you were intending to visit
-    Redirect("/")
   }
 
   def login(): Action[AnyContent] = Action { implicit request =>
@@ -400,8 +396,7 @@ class VinylDNS @Inject()(
     }
 
   def processLoginOidc(userDetails: OidcUserDetails): Result = {
-    Logger.info(
-      s"user [${userDetails.username}] logged in through OpenID Connect")
+    Logger.info(s"user [${userDetails.username}] logged in through OpenID Connect")
 
     val user = userAccountAccessor
       .get(userDetails.username)
