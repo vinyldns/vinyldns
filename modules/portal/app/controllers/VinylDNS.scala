@@ -25,12 +25,15 @@ import play.api.{Logger, _}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.functional.syntax._
 import play.api.libs.ws.WSClient
 import play.api.mvc._
 import java.util.HashMap
 
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
+import play.api.libs.json.JsonNaming.SnakeCase
 import scodec.bits.ByteVector
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
@@ -78,6 +81,22 @@ object VinylDNS {
         lockStatus = user.lockStatus
       )
   }
+
+  case class OidcResponse(
+      accessToken: String,
+      tokenType: String,
+      expiresIn: Int,
+      scope: String,
+      idToken: String)
+  implicit val jsonConfig = JsonConfiguration(SnakeCase)
+  implicit val oidcReads = Json.reads[OidcResponse]
+
+  case class OidcUserDetails(
+      username: String,
+      email: Option[String],
+      firstName: Option[String],
+      lastName: Option[String])
+      extends UserDetails
 
   trait UserDetails {
     val username: String
@@ -128,6 +147,18 @@ class VinylDNS @Inject()(
   val secret = configuration.get[String]("oidc.secret")
   val oidcScope = "openid profile email"
 
+  val oidcUsernameField = configuration.get[String]("oidc.jwt-username")
+  val oidcEmailField = configuration.get[String]("oidc.jwt-email")
+  val oidcFirstNameField = configuration.get[String]("oidc.jwt-first-name")
+  val oidcLastNameField = configuration.get[String]("oidc.jwt-last-name")
+
+  implicit val oidcUserReads: Reads[OidcUserDetails] =
+    (JsPath \ oidcUsernameField)
+      .read[String]
+      .and((JsPath \ oidcEmailField).readNullable[String])
+      .and((JsPath \ oidcFirstNameField).readNullable[String])
+      .and((JsPath \ oidcLastNameField).readNullable[String])(OidcUserDetails.apply _)
+
   def oidc(): Action[AnyContent] = Action { implicit request =>
     // TODO here should 1st check if the user info is already in session (and not expired and such)
 
@@ -171,22 +202,14 @@ class VinylDNS @Inject()(
         )
       )
       .foreach { resp =>
-        val id_token_encoded = (Json.parse(resp.body) \ "id_token").validate[String]
-        val id_token_decoded = new String(
-          ByteVector.fromBase64(id_token_encoded.get.split("\\.")(1)).get.toArray,
+        val response = resp.json.as[OidcResponse]
+
+        //TODO need to be validating these tokens
+        val idDecoded = new String(
+          ByteVector.fromBase64(response.idToken.split("\\.")(1)).get.toArray,
           "UTF-8").trim
-        print(s"id_token: $id_token_decoded\n\n")
-        val userName =
-          (Json.parse(id_token_decoded) \ configuration
-            .get[String]("oidc.jwt-username")).validate[String].get
-        val email = (Json.parse(id_token_decoded) \ configuration
-          .get[String]("oidc.jwt-email")).validate[String].get
-        val firstName = (Json.parse(id_token_decoded) \
-          configuration.get[String]("oidc.jwt-first-name")).validate[String].get
-        val lastName = (Json.parse(id_token_decoded) \
-          configuration.get[String]("oidc.jwt-last-name")).validate[String].get
-        val oidcUserDetails =
-          OidcUserDetails(userName, Some(email), Some(firstName), Some(lastName))
+
+        val oidcUserDetails = Json.parse(idDecoded).as[OidcUserDetails]
         print(s"user details: $oidcUserDetails\n\n")
 
         processLoginOidc(oidcUserDetails)
@@ -376,16 +399,9 @@ class VinylDNS @Inject()(
           .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
     }
 
-  case class OidcUserDetails(
-      username: String,
-      email: Option[String],
-      firstName: Option[String],
-      lastName: Option[String])
-      extends UserDetails
-
   def processLoginOidc(userDetails: OidcUserDetails): Result = {
     Logger.info(
-      s"user [${userDetails.username}] logged in through OpenID Connect through domain [].")
+      s"user [${userDetails.username}] logged in through OpenID Connect")
 
     val user = userAccountAccessor
       .get(userDetails.username)
@@ -402,7 +418,7 @@ class VinylDNS @Inject()(
       }
       .unsafeRunSync()
 
-    Logger.info(s"--NEW MEMBERSHIP-- user [${user.userName}] logged in with id [${user.id}]")
+    Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id [${user.id}]")
     Redirect("/index")
       .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
   }
