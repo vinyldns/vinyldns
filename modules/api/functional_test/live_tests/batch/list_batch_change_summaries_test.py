@@ -2,7 +2,6 @@ from hamcrest import *
 from utils import *
 import time
 import pytest
-import uuid
 from vinyldns_python import VinylDNSClient
 from vinyldns_context import VinylDNSTestContext
 
@@ -162,9 +161,8 @@ def test_list_batch_change_summaries_with_record_owner_group_passes(shared_zone_
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
     group = shared_zone_test_context.shared_record_group
-    comments = str(uuid.uuid4())
     batch_change_input = {
-        "comments": comments,
+        "comments": '',
         "changes": [
             get_change_A_AAAA_json("listing-batch-with-owner-group.shared.", address="1.1.1.1")
         ],
@@ -182,7 +180,7 @@ def test_list_batch_change_summaries_with_record_owner_group_passes(shared_zone_
 
         batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
 
-        under_test = [item for item in batch_change_summaries_result if 'comments' in item and item['comments'] == comments]
+        under_test = [item for item in batch_change_summaries_result if item['id'] == completed_batch['id']]
         assert_that(under_test, has_length(1))
 
         under_test = under_test[0]
@@ -209,14 +207,13 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
     'admins': [ { 'id': 'sharedZoneUser'} ]
     }
 
-    comments = str(uuid.uuid4())
     record_to_delete = []
 
     try:
         group_to_delete = client.create_group(temp_group, status=200)
 
         batch_change_input = {
-            "comments": comments,
+            "comments": '',
             "changes": [
                 get_change_A_AAAA_json("list-batch-with-deleted-owner-group.shared.", address="1.1.1.1")
             ],
@@ -234,7 +231,7 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
 
         batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
 
-        under_test = [item for item in batch_change_summaries_result if 'comments' in item and item['comments'] == comments]
+        under_test = [item for item in batch_change_summaries_result if item['id'] == completed_batch['id']]
         assert_that(under_test, has_length(1))
 
         under_test = under_test[0]
