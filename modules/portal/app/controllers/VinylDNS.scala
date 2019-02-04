@@ -82,22 +82,6 @@ object VinylDNS {
       )
   }
 
-  case class OidcResponse(
-      accessToken: String,
-      tokenType: String,
-      expiresIn: Int,
-      scope: String,
-      idToken: String)
-  implicit val jsonConfig = JsonConfiguration(SnakeCase)
-  implicit val oidcReads = Json.reads[OidcResponse]
-
-  case class OidcUserDetails(
-      username: String,
-      email: Option[String],
-      firstName: Option[String],
-      lastName: Option[String])
-      extends UserDetails
-
   trait UserDetails {
     val username: String
     val email: Option[String]
@@ -113,7 +97,8 @@ class VinylDNS @Inject()(
     userAccountAccessor: UserAccountAccessor,
     wsClient: WSClient,
     components: ControllerComponents,
-    crypto: CryptoAlgebra)
+    crypto: CryptoAlgebra,
+    oidcAuthenticator: OidcAuthenticator)
     extends AbstractController(components)
     with CacheHeader {
 
@@ -141,90 +126,40 @@ class VinylDNS @Inject()(
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
-  val oidcEnabled = configuration.get[String]("oidc.enabled")
-
-  val authEndpoint = configuration.get[String]("oidc.authorization-endpoint")
-  val tokenEndpoint = configuration.get[String]("oidc.token-endpoint")
-  val clientId = configuration.get[String]("oidc.client-id")
-  val secret = configuration.get[String]("oidc.secret")
-  val oidcScope = "openid profile email"
-
-  val oidcUsernameField = configuration.get[String]("oidc.jwt-username")
-  val oidcEmailField = configuration.get[String]("oidc.jwt-email")
-  val oidcFirstNameField = configuration.get[String]("oidc.jwt-first-name")
-  val oidcLastNameField = configuration.get[String]("oidc.jwt-last-name")
-
-  implicit val oidcUserReads: Reads[OidcUserDetails] =
-    (JsPath \ oidcUsernameField)
-      .read[String]
-      .and((JsPath \ oidcEmailField).readNullable[String])
-      .and((JsPath \ oidcFirstNameField).readNullable[String])
-      .and((JsPath \ oidcLastNameField).readNullable[String])(OidcUserDetails.apply _)
+  val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
 
   def oidc(): Action[AnyContent] = Action { implicit request =>
-    // TODO here should 1st check if the user info is already in session (and not expired and such)
+    if (oidcEnabled) {
+      val redirectUri = routes.VinylDNS.oidcCallback.absoluteURL()
+      val test = oidcAuthenticator.oidcGetCode(redirectUri)
 
-    val responseType = "code"
-    val redirectUri = routes.VinylDNS.oidcCallback.absoluteURL()
-
-    val queryParams = (
-      "client_id" -> clientId,
-      "response_type" -> responseType,
-      "redirect_uri" -> redirectUri,
-      "scope" -> "openid profile email")
-
-    val call = wsClient
-      .url(authEndpoint)
-      .withQueryStringParameters(
-        "client_id" -> clientId,
-        "response_type" -> responseType,
-        "redirect_uri" -> redirectUri,
-        "scope" -> "openid profile email")
-
-    Redirect(call.url, call.queryString)
+      Redirect(test.url, test.queryString)
+    } else {
+      Redirect("/login")
+    }
   }
 
   def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
-    // TODO error handling here
     val code = request.getQueryString("code").get
-
-    val grantType = "authorization_code"
     val redirectUri = routes.VinylDNS.oidcCallback.absoluteURL()
 
-    wsClient
-      .url(tokenEndpoint)
-      .post(
-        Map(
-          "client_id" -> Seq(clientId),
-          "grant_type" -> Seq(grantType),
-          "redirect_uri" -> Seq(redirectUri),
-          "scope" -> Seq(oidcScope),
-          "code" -> Seq(code),
-          "client_secret" -> Seq(secret)
-        )
-      )
-      .map { resp =>
-        val response = resp.json.as[OidcResponse]
-
-        //TODO need to be validating these tokens
-        val idDecoded = new String(
-          ByteVector.fromBase64(response.idToken.split("\\.")(1)).get.toArray,
-          "UTF-8").trim
-
-        processLoginOidc(Json.parse(idDecoded).as[OidcUserDetails])
-      }
+    oidcAuthenticator.oidcCallback(code, redirectUri).map(processLoginWithDetails)
   }
 
   def login(): Action[AnyContent] = Action { implicit request =>
-    val userForm = Form(
-      tuple(
-        "username" -> text,
-        "password" -> text
+    if (oidcEnabled) {
+      Redirect("/")
+    } else {
+      val userForm = Form(
+        tuple(
+          "username" -> text,
+          "password" -> text
+        )
       )
-    )
-    val (username, password) = userForm.bindFromRequest.get
+      val (username, password) = userForm.bindFromRequest.get
 
-    processLogin(username, password)
+      processLogin(username, password)
+    }
   }
 
   def newGroup(): Action[AnyContent] = userAction.async { implicit request =>
@@ -374,29 +309,11 @@ class VinylDNS @Inject()(
       case Success(userDetails: LdapUserDetails) =>
         Logger.info(
           s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
-
-        val user = userAccountAccessor
-          .get(userDetails.username)
-          .flatMap {
-            case None =>
-              Logger.info(s"Creating user account for ${userDetails.username}")
-              createNewUser(userDetails).map { u: User =>
-                Logger.info(s"User account for ${u.userName} created with id ${u.id}")
-                u
-              }
-            case Some(u) =>
-              Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
-              IO.pure(u)
-          }
-          .unsafeRunSync()
-
-        Logger.info(s"--NEW MEMBERSHIP-- user [${user.userName}] logged in with id [${user.id}]")
-        Redirect("/index")
-          .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
+        processLoginWithDetails(userDetails)
     }
 
-  def processLoginOidc(userDetails: OidcUserDetails): Result = {
-    Logger.info(s"user [${userDetails.username}] logged in through OpenID Connect")
+  def processLoginWithDetails(userDetails: UserDetails): Result = {
+    Logger.info(s"user [${userDetails.username}] logged in")
 
     val user = userAccountAccessor
       .get(userDetails.username)
