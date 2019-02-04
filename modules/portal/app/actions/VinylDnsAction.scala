@@ -24,12 +24,16 @@ import scala.concurrent.{ExecutionContext, Future}
 trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
   val userLookup: String => IO[Option[User]]
   implicit val executionContext: ExecutionContext
+
   def notLoggedInResult: Future[Result]
+
   def cantFindAccountResult(un: String): Future[Result]
+
   def lockedUserResult: Future[Result]
 
   def invokeBlock[A](request: Request[A], block: UserRequest[A] => Future[Result]): Future[Result] =
     // if the user name is not in session, reject
+    // TODO - double check that we dont need to explicitly check for token expiration here
     request.session.get("username") match {
       case None => notLoggedInResult
 
