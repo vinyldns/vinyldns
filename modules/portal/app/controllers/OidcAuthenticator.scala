@@ -16,12 +16,17 @@
 
 package controllers
 
+import java.math.BigInteger
+import java.security.spec.RSAPublicKeySpec
+import java.security.{KeyFactory, PublicKey}
+
 import controllers.VinylDNS.UserDetails
 import javax.inject.{Inject, Singleton}
+import org.apache.commons.codec.binary.Base64
+import pdi.jwt.{Jwt, JwtAlgorithm}
 import play.api.Configuration
 import play.api.libs.json.{JsPath, Json, JsonConfiguration, Reads}
 import play.api.libs.ws.{WSClient, WSRequest}
-import play.api.mvc._
 import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
 import play.api.libs.json.JsonNaming.SnakeCase
@@ -33,6 +38,7 @@ object OidcAuthenticator {
   case class OidcConfig(
       authorizationEndpoint: String,
       tokenEndpoint: String,
+      jwksEndpoint: String,
       clientId: String,
       secret: String,
       jwtUsernameField: String,
@@ -53,6 +59,49 @@ object OidcAuthenticator {
       firstName: Option[String],
       lastName: Option[String])
       extends UserDetails
+
+  case class OidcIdTokenHeader(
+      typ: String,
+      alg: String,
+      kid: String
+  )
+
+  case class JwksKey(
+      kty: String,
+      use: String,
+      kid: String,
+      x5t: String,
+      n: String,
+      e: String,
+      x5c: Seq[String]
+  )
+
+  case class JwksResponse(
+      keys: Seq[JwksKey]
+  )
+
+  implicit val oidcIdTokenHeaderReads = Json.reads[OidcIdTokenHeader]
+  implicit val jwksKeyReads = Json.reads[JwksKey]
+  implicit val jwksResponseReads = Json.reads[JwksResponse]
+
+  def getKidFromToken(oidcResponse: OidcResponse): String = {
+    val header = oidcResponse.idToken.split("\\.")(0)
+    val decoded = new String(ByteVector.fromBase64(header).get.toArray, "UTF-8").trim()
+    Json.parse(decoded).as[OidcIdTokenHeader].kid
+  }
+
+  def getJwksKeyFromKid(kid: String, jwksResponse: JwksResponse): Option[JwksKey] =
+    jwksResponse.keys.find(k => k.kid.equals(kid))
+
+  def jwksKeyToPublicKey(jwksKey: JwksKey): PublicKey = {
+    val keyType = jwksKey.kty
+    val modulusBase64 = jwksKey.n
+    val exponentBase64 = jwksKey.e
+    val modulus = new BigInteger(1, Base64.decodeBase64(modulusBase64))
+    val exponent = new BigInteger(1, Base64.decodeBase64(exponentBase64))
+    val kf = KeyFactory.getInstance(keyType)
+    kf.generatePublic(new RSAPublicKeySpec(modulus, exponent))
+  }
 }
 @Singleton
 class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configuration) {
@@ -98,29 +147,41 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
   }
 
   def oidcCallback(code: String, redirectUri: String)(
-      implicit executionContext: ExecutionContext): Future[OidcUserDetails] =
+      implicit executionContext: ExecutionContext): Future[OidcUserDetails] = {
+
     // TODO error handling here
-    wsClient
-      .url(oidcInfo.tokenEndpoint)
-      .post(
-        Map(
-          "client_id" -> Seq(oidcInfo.clientId),
-          "grant_type" -> Seq(grantType),
-          "redirect_uri" -> Seq(redirectUri),
-          "scope" -> Seq(oidcScope),
-          "code" -> Seq(code),
-          "client_secret" -> Seq(oidcInfo.secret)
+    val tokenResponse =
+      wsClient
+        .url(oidcInfo.tokenEndpoint)
+        .post(
+          Map(
+            "client_id" -> Seq(oidcInfo.clientId),
+            "grant_type" -> Seq(grantType),
+            "redirect_uri" -> Seq(redirectUri),
+            "scope" -> Seq(oidcScope),
+            "code" -> Seq(code),
+            "client_secret" -> Seq(oidcInfo.secret)
+          )
         )
-      )
-      .map { resp =>
-        val response = resp.json.as[OidcResponse]
+        .map { resp =>
+          resp.json.as[OidcResponse]
+        }
 
-        //TODO need to be validating these tokens
-        val idDecoded = new String(
-          ByteVector.fromBase64(response.idToken.split("\\.")(1)).get.toArray,
-          "UTF-8").trim
+    val keyStoreResponse =
+      wsClient
+        .url(oidcInfo.jwksEndpoint)
+        .get()
+        .map { resp =>
+          resp.json.as[JwksResponse]
+        }
 
-        Json.parse(idDecoded).as[OidcUserDetails]
-      }
-
+    for {
+      token <- tokenResponse
+      jwksKeys <- keyStoreResponse
+      kid = getKidFromToken(token)
+      jwksKey = getJwksKeyFromKid(kid, jwksKeys).get
+      publicKey = jwksKeyToPublicKey(jwksKey)
+      idDecoded = Jwt.decodeRawAll(token.idToken, publicKey, Seq(JwtAlgorithm.RS256)).get
+    } yield Json.parse(idDecoded._2).as[OidcUserDetails]
+  }
 }
