@@ -78,6 +78,13 @@ object VinylDNS {
         lockStatus = user.lockStatus
       )
   }
+
+  trait UserDetails {
+    val username: String
+    val email: Option[String]
+    val firstName: Option[String]
+    val lastName: Option[String]
+  }
 }
 
 @Singleton
@@ -92,6 +99,7 @@ class VinylDNS @Inject()(
     with CacheHeader {
 
   import play.api.mvc._
+  import VinylDNS._
 
   private val signer = SignerFactory.getSigner("VinylDNS", "us/east")
   private val vinyldnsServiceBackend =
@@ -163,7 +171,25 @@ class VinylDNS @Inject()(
         )
       )
       .foreach { resp =>
-        println(resp.body)
+        val id_token_encoded = (Json.parse(resp.body) \ "id_token").validate[String]
+        val id_token_decoded = new String(
+          ByteVector.fromBase64(id_token_encoded.get.split("\\.")(1)).get.toArray,
+          "UTF-8").trim
+        print(s"id_token: $id_token_decoded\n\n")
+        val userName =
+          (Json.parse(id_token_decoded) \ configuration
+            .get[String]("oidc.jwt-username")).validate[String].get
+        val email = (Json.parse(id_token_decoded) \ configuration
+          .get[String]("oidc.jwt-email")).validate[String].get
+        val firstName = (Json.parse(id_token_decoded) \
+          configuration.get[String]("oidc.jwt-first-name")).validate[String].get
+        val lastName = (Json.parse(id_token_decoded) \
+          configuration.get[String]("oidc.jwt-last-name")).validate[String].get
+        val oidcUserDetails =
+          OidcUserDetails(userName, Some(email), Some(firstName), Some(lastName))
+        print(s"user details: $oidcUserDetails\n\n")
+
+        processLoginOidc(oidcUserDetails)
       }
 
     // ideally should go to the page you were intending to visit
@@ -326,7 +352,7 @@ class VinylDNS @Inject()(
         Logger.error(s"Authentication failed for [$username]", error)
         Redirect("/login").flashing(
           VinylDNS.Alerts.error("Authentication failed, please try again"))
-      case Success(userDetails: UserDetails) =>
+      case Success(userDetails: LdapUserDetails) =>
         Logger.info(
           s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
 
@@ -349,6 +375,37 @@ class VinylDNS @Inject()(
         Redirect("/index")
           .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
     }
+
+  case class OidcUserDetails(
+      username: String,
+      email: Option[String],
+      firstName: Option[String],
+      lastName: Option[String])
+      extends UserDetails
+
+  def processLoginOidc(userDetails: OidcUserDetails): Result = {
+    Logger.info(
+      s"user [${userDetails.username}] logged in through OpenID Connect through domain [].")
+
+    val user = userAccountAccessor
+      .get(userDetails.username)
+      .flatMap {
+        case None =>
+          Logger.info(s"Creating user account for ${userDetails.username}")
+          createNewUser(userDetails).map { u: User =>
+            Logger.info(s"User account for ${u.userName} created with id ${u.id}")
+            u
+          }
+        case Some(u) =>
+          Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
+          IO.pure(u)
+      }
+      .unsafeRunSync()
+
+    Logger.info(s"--NEW MEMBERSHIP-- user [${user.userName}] logged in with id [${user.id}]")
+    Redirect("/index")
+      .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
+  }
 
   def getZones: Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$

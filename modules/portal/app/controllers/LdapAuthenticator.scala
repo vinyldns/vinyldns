@@ -21,25 +21,27 @@ import java.util
 import cats.effect.IO
 import cats.implicits._
 import controllers.LdapAuthenticator.LdapByDomainAuthenticator
+import controllers.VinylDNS.UserDetails
 import javax.naming.Context
 import javax.naming.directory._
 import vinyldns.core.health.HealthCheck._
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
-case class UserDetails(
+case class LdapUserDetails(
     nameInNamespace: String,
     username: String,
     email: Option[String],
     firstName: Option[String],
     lastName: Option[String])
+    extends UserDetails
 
-object UserDetails {
+object LdapUserDetails {
   private def getValue(attributes: Attributes, attributeName: String): Option[String] =
     Option(attributes.get(attributeName)).map(_.get.toString)
 
-  def apply(rawResult: SearchResult): UserDetails = {
+  def apply(rawResult: SearchResult): LdapUserDetails = {
     val attributes = rawResult.getAttributes
     val nameInNamespace = rawResult.getNameInNamespace
     val username = attributes.get("sAMAccountName").get.toString
@@ -47,7 +49,7 @@ object UserDetails {
     val firstName = getValue(attributes, "givenName")
     val lastName = getValue(attributes, "sn")
 
-    new UserDetails(nameInNamespace, username, email, firstName, lastName)
+    new LdapUserDetails(nameInNamespace, username, email, firstName, lastName)
   }
 }
 
@@ -105,7 +107,7 @@ object LdapAuthenticator {
     private[controllers] def authenticate(
         searchDomain: LdapSearchDomain,
         username: String,
-        password: String): Try[UserDetails] =
+        password: String): Try[LdapUserDetails] =
       createContext(s"${searchDomain.organization}\\$username", password).map { context =>
         try {
           val searchControls = new SearchControls()
@@ -119,7 +121,7 @@ object LdapAuthenticator {
               s"[$username] can authenticate but LDAP entity " +
                 s"does not exist")
 
-          UserDetails(result.next())
+          LdapUserDetails(result.next())
 
         } finally {
           // try to close but don't care if anything happens
@@ -130,7 +132,7 @@ object LdapAuthenticator {
     private[controllers] def lookup(
         searchDomain: LdapSearchDomain,
         user: String,
-        serviceAccount: ServiceAccount): Try[UserDetails] =
+        serviceAccount: ServiceAccount): Try[LdapUserDetails] =
       createContext(s"${serviceAccount.domain}\\${serviceAccount.name}", serviceAccount.password)
         .map { context =>
           try {
@@ -143,7 +145,7 @@ object LdapAuthenticator {
             if (!result.hasMore)
               throw new UserDoesNotExistException(s"[$user] LDAP entity does not exist")
 
-            UserDetails(result.next())
+            LdapUserDetails(result.next())
 
           } finally {
             // try to close but don't care if anything happens
@@ -190,15 +192,15 @@ class LdapAuthenticator(
   private def findUserDetails(
       domains: List[LdapSearchDomain],
       userName: String,
-      f: LdapSearchDomain => Try[UserDetails]): Try[UserDetails] = domains match {
+      f: LdapSearchDomain => Try[LdapUserDetails]): Try[LdapUserDetails] = domains match {
     case Nil => Failure(new UserDoesNotExistException(s"[$userName] LDAP entity does not exist"))
     case h :: t => f(h).recoverWith { case _ => findUserDetails(t, userName, f) }
   }
 
-  def authenticate(username: String, password: String): Try[UserDetails] =
+  def authenticate(username: String, password: String): Try[LdapUserDetails] =
     findUserDetails(searchBase, username, authenticator.authenticate(_, username, password))
 
-  def lookup(username: String): Try[UserDetails] =
+  def lookup(username: String): Try[LdapUserDetails] =
     findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount))
 
   def healthCheck(): HealthCheck =
@@ -213,8 +215,8 @@ class LdapAuthenticator(
 }
 
 trait Authenticator {
-  def authenticate(username: String, password: String): Try[UserDetails]
-  def lookup(username: String): Try[UserDetails]
+  def authenticate(username: String, password: String): Try[LdapUserDetails]
+  def lookup(username: String): Try[LdapUserDetails]
   def healthCheck(): HealthCheck
 }
 
@@ -224,27 +226,27 @@ trait Authenticator {
   * @param authenticator the real authenticator for when the user is not the test user
   */
 class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
-  private val testUserDetails = UserDetails(
+  private val testUserDetails = LdapUserDetails(
     "O=test,OU=testdata,CN=testuser",
     "testuser",
     Some("test@test.test"),
     Some("Test"),
     Some("User"))
-  private val recordPagingTestUserDetails = UserDetails(
+  private val recordPagingTestUserDetails = LdapUserDetails(
     "O=test,OU=testdata,CN=recordPagingTestUser",
     "recordPagingTestUser",
     Some("test@test.test"),
     Some("Test"),
     Some("User"))
 
-  def authenticate(username: String, password: String): Try[UserDetails] =
+  def authenticate(username: String, password: String): Try[LdapUserDetails] =
     (username, password) match {
       case ("recordPagingTestUser", "testpassword") => Try(recordPagingTestUserDetails)
       case ("testuser", "testpassword") => Try(testUserDetails)
       case _ => authenticator.authenticate(username, password)
     }
 
-  def lookup(username: String): Try[UserDetails] =
+  def lookup(username: String): Try[LdapUserDetails] =
     username match {
       case "recordPagingTestUser" => Try(recordPagingTestUserDetails)
       case "testuser" => Try(testUserDetails)
