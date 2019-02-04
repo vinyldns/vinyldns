@@ -34,11 +34,11 @@ import scala.concurrent.Future
 class FrontendController @Inject()(
     components: ControllerComponents,
     configuration: Configuration,
-    userAccountAccessor: UserAccountAccessor)
-    extends AbstractController(components) {
+    userAccountAccessor: UserAccountAccessor
+) extends AbstractController(components) {
 
-  val oidcEnabled = configuration.get[Boolean]("oidc.enabled")
-
+  private val oidcEnabled: Boolean =
+    configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
   private val userAction = if (oidcEnabled) {
     Action.andThen(new OidcFrontendAction(userAccountAccessor.get))
   } else {
