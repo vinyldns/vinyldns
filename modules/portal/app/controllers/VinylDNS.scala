@@ -25,16 +25,12 @@ import play.api.{Logger, _}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json._
-import play.api.libs.json.Reads._
-import play.api.libs.functional.syntax._
 import play.api.libs.ws.WSClient
 import play.api.mvc._
 import java.util.HashMap
 
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.JsonNaming.SnakeCase
-import scodec.bits.ByteVector
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
