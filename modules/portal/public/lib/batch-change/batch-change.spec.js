@@ -96,7 +96,9 @@ describe('BatchChange', function(){
             spyOn(batchChangeService, 'createBatchChange').and.returnValue(deferred.promise);
             groupsService.getMyGroups = function() {
                 return $q.when({
-                    groups: "all my groups"
+                    data: {
+                        groups: "all my groups"
+                    }
                 });
             };
 

@@ -21,7 +21,7 @@
         .controller('BatchChangeNewController', function($scope, jsConfig, $log, $location, $timeout, batchChangeService, utilityService, groupsService){
             groupsService.getMyGroups()
                 .then(function (results) {
-                    $scope.myGroups = results['groups'];
+                    $scope.myGroups = results['data']['groups'];
                 })
                 .catch(function (error) {
                     handleError(error, 'groupsService::getMyGroups-failure');
