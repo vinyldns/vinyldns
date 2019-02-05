@@ -198,8 +198,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case _ => ().validNel
     }
 
-    val validations = typedValidations |+|
-      userCanUpdateRecordSet(change, auth, batchOwnerGroupId) |+|
+    val validations = typedValidations |+| userCanAddRecordSet(change, auth) |+|
       ownerGroupProvidedIfNeeded(
         change,
         existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
