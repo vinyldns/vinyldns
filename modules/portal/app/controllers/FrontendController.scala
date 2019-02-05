@@ -43,6 +43,8 @@ class FrontendController @Inject()(
     extends Security[CommonProfile] {
 
   val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
+  lazy val oidcUsernameField: String =
+    configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
 
   private val vinyldnsServiceBackend =
     configuration
@@ -52,14 +54,12 @@ class FrontendController @Inject()(
   private val userAction = if (oidcEnabled) {
     Secure.andThen {
       new OidcFrontendAction(
-        configuration,
         userAccountAccessor.get,
         userAccountAccessor.create,
-        controllerComponents)
+        oidcUsernameField)
     }
   } else {
-    Action.andThen(
-      new LdapFrontendAction(configuration, userAccountAccessor.get, controllerComponents))
+    Action.andThen(new LdapFrontendAction(userAccountAccessor.get))
   }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)

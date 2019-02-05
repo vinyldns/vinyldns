@@ -23,6 +23,7 @@ import org.pac4j.core.profile.CommonProfile
 import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, SecurityComponents}
 import play.api.{Configuration, Logger}
 import play.api.mvc.Result
+import play.api.mvc.Results.Redirect
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,15 +35,16 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to login screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class OidcFrontendAction @Inject()(
-    configuration: Configuration,
+class OidcFrontendAction(
     val userLookup: String => IO[Option[User]],
     val userCreate: User => IO[User],
-    val controllerComponents: SecurityComponents)(
+    val oidcUsernameField: String)(
     implicit val executionContext: ExecutionContext,
     pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
-    extends VinylDnsAction(configuration)
+    extends VinylDnsAction
     with CacheHeader {
+
+  val oidcEnabled: Boolean = true
 
   def notLoggedInResult: Future[Result] =
     Future.successful(

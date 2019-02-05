@@ -100,9 +100,13 @@ class VinylDNS @Inject()(
       .getOptional[String]("portal.vinyldns.backend.url")
       .getOrElse("http://localhost:9000")
 
+  val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
+  lazy val oidcUsernameField: String =
+    configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
+
   // Need this guy for user actions, brings the session username and user account into the Action
   private val userAction = {
-    Action.andThen(new ApiAction(configuration, userAccountAccessor.get, controllerComponents))
+    Action.andThen(new ApiAction(userAccountAccessor.get, oidcEnabled, oidcUsernameField))
   }
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {

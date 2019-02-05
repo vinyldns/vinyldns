@@ -19,22 +19,21 @@ package actions
 import cats.data.OptionT
 import cats.implicits._
 import cats.effect.IO
-import javax.inject.Inject
-import org.pac4j.core.profile.{CommonProfile, ProfileManager}
-import org.pac4j.play.PlayWebContext
-import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, Security}
-import play.api.Configuration
-import play.api.mvc.{ActionFunction, Request, RequestHeader, Result}
+import org.pac4j.core.profile.CommonProfile
+import org.pac4j.play.scala.Pac4jScalaTemplateHelper
+
+import play.api.mvc.{ActionFunction, Request, Result}
 import vinyldns.core.domain.membership.{LockStatus, User}
 
-import scala.collection.JavaConverters.asScalaBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class VinylDnsAction @Inject()(configuration: Configuration)(
+abstract class VinylDnsAction(
     implicit val pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
-    extends ActionFunction[Request, UserRequest]
-    with Security[CommonProfile] {
+    extends ActionFunction[Request, UserRequest] {
+
   val userLookup: String => IO[Option[User]]
+  val oidcEnabled: Boolean
+  val oidcUsernameField: String
 
   implicit val executionContext: ExecutionContext
 
@@ -51,18 +50,6 @@ abstract class VinylDnsAction @Inject()(configuration: Configuration)(
       lname: Option[String],
       email: Option[String]): Future[Option[User]] = Future.successful(None)
 
-  lazy val oidcEnabled: Boolean =
-    configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
-  lazy val oidcUsernameField: String =
-    configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
-
-  private def getProfile(implicit request: RequestHeader): Option[CommonProfile] = {
-    val webContext = new PlayWebContext(request, controllerComponents.playSessionStore)
-    val profileManager = new ProfileManager[CommonProfile](webContext)
-    val profile = profileManager.getAll(true)
-    asScalaBuffer(profile).headOption
-  }
-
   def invokeBlock[A](
       request: Request[A],
       block: UserRequest[A] => Future[Result]): Future[Result] = {
@@ -78,7 +65,7 @@ abstract class VinylDnsAction @Inject()(configuration: Configuration)(
     val expired = oidcProfile.exists(_.isExpired)
 
     val username = if (oidcEnabled) {
-      oidcProfile.map(x => x.getUsername)
+      oidcProfile.map(_.getAttribute(oidcUsernameField).toString)
     } else {
       request.session.get("username")
     }
@@ -114,7 +101,8 @@ abstract class VinylDnsAction @Inject()(configuration: Configuration)(
 
           case Some(user) if user.lockStatus == LockStatus.Locked => lockedUserResult(un)
 
-          case Some(user) => block(new UserRequest(un, user, request))
+          case Some(user) =>
+            block(new UserRequest(un, user, request))
         }
     }
   }
