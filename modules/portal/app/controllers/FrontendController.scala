@@ -54,11 +54,12 @@ class FrontendController @Inject()(
       new OidcFrontendAction(
         configuration,
         userAccountAccessor.get,
-        controllerComponents,
-        userAccountAccessor)
+        userAccountAccessor.create,
+        controllerComponents)
     }
   } else {
-    Action.andThen(new LdapFrontendAction(configuration, userAccountAccessor.get, controllerComponents))
+    Action.andThen(
+      new LdapFrontendAction(configuration, userAccountAccessor.get, controllerComponents))
   }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)

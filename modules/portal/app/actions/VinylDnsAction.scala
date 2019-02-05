@@ -51,9 +51,9 @@ abstract class VinylDnsAction @Inject()(configuration: Configuration)(
       lname: Option[String],
       email: Option[String]): Future[Option[User]] = Future.successful(None)
 
-  lazy val oidcEnabled = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
-
-  lazy val oidcUsernameField =
+  lazy val oidcEnabled: Boolean =
+    configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
+  lazy val oidcUsernameField: String =
     configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
 
   private def getProfile(implicit request: RequestHeader): Option[CommonProfile] = {
@@ -66,11 +66,19 @@ abstract class VinylDnsAction @Inject()(configuration: Configuration)(
   def invokeBlock[A](
       request: Request[A],
       block: UserRequest[A] => Future[Result]): Future[Result] = {
-    // Get user from session
-    val username = if (oidcEnabled) {
+    // Get user from session.
+
+    val oidcProfile = if (oidcEnabled) {
       pac4jTemplateHelper
         .getCurrentProfile(request)
-        .map(x => x.getAttribute(oidcUsernameField).toString)
+    } else {
+      None
+    }
+
+    val expired = oidcProfile.exists(_.isExpired)
+
+    val username = if (oidcEnabled) {
+      oidcProfile.map(x => x.getUsername)
     } else {
       request.session.get("username")
     }
@@ -78,16 +86,18 @@ abstract class VinylDnsAction @Inject()(configuration: Configuration)(
     username match {
       case None => notLoggedInResult
 
+      case Some(un) if oidcEnabled && expired => notLoggedInResult
+
       case Some(un) =>
         // user name in session, let's get it from the repo
         userLookup(un).unsafeToFuture().flatMap {
           // At this point, will create the user if this is coming from a frontend action
           case None if oidcEnabled => {
             val userCreation = for {
-              prof <- OptionT.fromOption[Future](pac4jTemplateHelper.getCurrentProfile(request))
+              prof <- OptionT.fromOption[Future](oidcProfile)
               user <- OptionT(
                 createUser(
-                  prof.getAttribute(oidcUsernameField).toString,
+                  un,
                   Some(prof.getFirstName),
                   Some(prof.getFamilyName),
                   Some(prof.getEmail)))
@@ -98,10 +108,8 @@ abstract class VinylDnsAction @Inject()(configuration: Configuration)(
               case Some(res) => Future.successful(res)
               case None => cantFindAccountResult(un)
             }
-
           }
 
-          // Odd case, but let's handle with a different error message
           case None => cantFindAccountResult(un)
 
           case Some(user) if user.lockStatus == LockStatus.Locked => lockedUserResult(un)

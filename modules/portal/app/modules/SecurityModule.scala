@@ -19,7 +19,7 @@ package modules
 import com.google.inject.AbstractModule
 import org.pac4j.core.client.Clients
 import org.pac4j.oidc.client.OidcClient
-import org.pac4j.play.{CallbackController, LogoutController}
+import org.pac4j.play.CallbackController
 import play.api.{Configuration, Environment}
 import org.pac4j.play.store.{PlayCacheSessionStore, PlaySessionStore}
 import org.pac4j.core.config.Config
@@ -40,41 +40,46 @@ import org.pac4j.play.scala.{
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
-  //val authEndpoint = configuration.get[String]("oidc.authorization-endpoint")
-  lazy val discoveryUrl = configuration.get[String]("oidc.oidc-metadata")
-  lazy val clientId = configuration.get[String]("oidc.client-id")
-  lazy val baseUrl = configuration.get[String]("oidc.redirect-uri")
-  lazy val secret = configuration.get[String]("oidc.secret")
-  lazy val enabled = configuration.get[Boolean]("oidc.enabled")
+  lazy val discoveryUrl: String = configuration.get[String]("oidc.oidc-metadata")
+  lazy val clientId: String = configuration.get[String]("oidc.client-id")
+  lazy val baseUrl: String = configuration.get[String]("oidc.redirect-uri")
+  lazy val secret: String = configuration.get[String]("oidc.secret")
+  lazy val oidcUsernameField: String =
+    configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
 
-  override def configure(): Unit =
-    if (enabled) {
-      bind(classOf[PlaySessionStore]).to(classOf[PlayCacheSessionStore])
+  val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
 
-      val clients = new Clients(baseUrl + "/callback", oidcClient)
-      val config = new Config(clients)
-      config.setHttpActionAdapter(new DefaultHttpActionAdapter())
-      // config.addAuthorizer("admin", new RequireAnyRoleAuthorizer[CommonProfile]("ROLE_ADMIN"))
-      bind(classOf[Config]).toInstance(config)
-
-      bind(classOf[Pac4jScalaTemplateHelper[CommonProfile]])
-
-      // callback
-      val callbackController = new CallbackController()
-      callbackController.setDefaultUrl("/")
-      callbackController.setMultiProfile(false)
-      bind(classOf[CallbackController]).toInstance(callbackController)
-
-      // security components used in controllers
-      bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
+  override def configure(): Unit = {
+    // need to bind something, just empty module in the case this is disabled
+    val clients = if (oidcEnabled) {
+      new Clients(baseUrl + "/callback", oidcClient)
+    } else {
+      new Clients()
     }
+
+    bind(classOf[PlaySessionStore]).to(classOf[PlayCacheSessionStore])
+
+    val config = new Config(clients)
+    config.setHttpActionAdapter(new DefaultHttpActionAdapter())
+    bind(classOf[Config]).toInstance(config)
+
+    bind(classOf[Pac4jScalaTemplateHelper[CommonProfile]])
+
+    // callback
+    val callbackController = new CallbackController()
+    callbackController.setDefaultUrl("/")
+    callbackController.setMultiProfile(false)
+    bind(classOf[CallbackController]).toInstance(callbackController)
+
+    // security components used in controllers
+    bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
+  }
 
   lazy val oidcClient: OidcClient[OidcProfile, OidcConfiguration] = {
     val oidcConfiguration = new OidcConfiguration()
     oidcConfiguration.setClientId(clientId)
     oidcConfiguration.setSecret(secret)
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
-    oidcConfiguration.setUseNonce(true)
     oidcConfiguration.setWithState(true)
 
     oidcConfiguration.setScope("openid profile email")
@@ -82,7 +87,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
 
     oidcClient.setCallbackUrlResolver(new NoParameterCallbackUrlResolver())
     oidcClient.addAuthorizationGenerator { (ctx, profile) =>
-      profile.addRole("ROLE_ADMIN")
+      profile.addRole("USER")
       profile
     }
 
