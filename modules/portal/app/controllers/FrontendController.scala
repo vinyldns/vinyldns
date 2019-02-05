@@ -16,24 +16,20 @@
 
 package controllers
 
-import java.util.Optional
-
-import actions.FrontendAction
+import actions.{FrontendAction, OidcFrontendAction}
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
-import org.pac4j.core.profile.{CommonProfile, ProfileManager}
-import org.pac4j.play.PlayWebContext
-import org.pac4j.play.scala.SecurityComponents
-import org.pac4j.play.scala.Security
+import org.pac4j.core.profile.CommonProfile
+import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, Security, SecurityComponents}
 import org.slf4j.LoggerFactory
 import play.api.Logger
 import play.api.mvc._
 import play.api.Configuration
+import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.membership.User
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.collection.JavaConverters._
-
 /*
  * Controller for specific pages - sends requests along to views
  */
@@ -41,26 +37,28 @@ import scala.collection.JavaConverters._
 class FrontendController @Inject()(
     val controllerComponents: SecurityComponents,
     configuration: Configuration,
-    userAccountAccessor: UserAccountAccessor)
+    userAccountAccessor: UserAccountAccessor,
+    crypto: CryptoAlgebra)(
+    implicit val pac4jScalaTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
     extends Security[CommonProfile] {
 
-  val usingOidc = configuration.get[Boolean]("oidc.enabled")
+  val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
 
-  private def getProfile(implicit request: RequestHeader): Option[CommonProfile] = {
-    val webContext = new PlayWebContext(request, playSessionStore)
-    val profileManager = new ProfileManager[CommonProfile](webContext)
-    val profile = profileManager.getAll(true)
-    asScalaBuffer(profile).headOption
-  }
+  private val vinyldnsServiceBackend =
+    configuration
+      .getOptional[String]("portal.vinyldns.backend.url")
+      .getOrElse("http://localhost:9000")
 
-  private val userAction = if (usingOidc) {
-    println("IN SECURE")
+  private val userAction = if (oidcEnabled) {
     Secure.andThen {
-      println("CALLING FRONTEND ACTION")
-      new FrontendAction(userAccountAccessor.get, controllerComponents)
+      new OidcFrontendAction(
+        configuration,
+        userAccountAccessor.get,
+        controllerComponents,
+        userAccountAccessor)
     }
   } else {
-    Action.andThen(new FrontendAction(userAccountAccessor.get, controllerComponents))
+    Action.andThen(new FrontendAction(configuration, userAccountAccessor.get, controllerComponents))
   }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
@@ -68,24 +66,30 @@ class FrontendController @Inject()(
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
 
   def loginPage(): Action[AnyContent] = Action { implicit request =>
-    println("IN LOGIN")
-    println(request.session)
-    request.session.get("username") match {
-      case Some(_) => Redirect("/index")
-      case None =>
-        val flash = request.flash
-        Logger.error(s"$flash")
-        VinylDNS.Alerts.fromFlash(flash) match {
-          case Some(VinylDNS.Alert("danger", message)) =>
-            Ok(views.html.login(Some(message)))
-          case _ =>
-            Ok(views.html.login())
-        }
+    if (oidcEnabled) {
+      Redirect("/")
+    } else {
+      request.session.get("username") match {
+        case Some(_) => Redirect("/index")
+        case None =>
+          val flash = request.flash
+          Logger.error(s"$flash")
+          VinylDNS.Alerts.fromFlash(flash) match {
+            case Some(VinylDNS.Alert("danger", message)) =>
+              Ok(views.html.login(Some(message)))
+            case _ =>
+              Ok(views.html.login())
+          }
+      }
     }
   }
 
   def logout(): Action[AnyContent] = Action { implicit request =>
-    Redirect("/login").withNewSession
+    if (oidcEnabled) {
+      Redirect("/").withNewSession
+    } else {
+      Redirect("/login").withNewSession
+    }
   }
 
   def noAccess(): Action[AnyContent] = Action { implicit request =>
@@ -94,15 +98,10 @@ class FrontendController @Inject()(
     Unauthorized(views.html.noAccess())
   }
 
-
-  def index(): Action[AnyContent] = {
-    println("PRE INDEX")
+  def index(): Action[AnyContent] =
     userAction.async { implicit request =>
-      println(s"GOT PROFILE!!!! ${getProfile}")
-      println(s"IN INDEX ${request}")
       Future(Ok(views.html.zones.zones(request.user.userName)))
     }
-  }
 
   def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>
     Future(Ok(views.html.groups.groups(request.user.userName)))
@@ -132,5 +131,23 @@ class FrontendController @Inject()(
 
   def viewNewBatchChange(): Action[AnyContent] = userAction.async { implicit request =>
     Future(Ok(views.html.batchChanges.batchChangeNew(request.user.userName)))
+  }
+
+  def serveCredsFile(fileName: String): Action[AnyContent] = userAction.async { implicit request =>
+    Logger.info(s"Serving credentials for file $fileName")
+    Future(processCsv(request.user))
+  }
+
+  private def processCsv(user: User): Result = {
+    Logger.info(
+      s"Sending credentials for user=${user.userName} with key accessKey=${user.accessKey}")
+    Ok(
+      s"NT ID, access key, secret key,api url\n%s,%s,%s,%s"
+        .format(
+          user.userName,
+          user.accessKey,
+          crypto.decrypt(user.secretKey),
+          vinyldnsServiceBackend))
+      .as("text/csv")
   }
 }

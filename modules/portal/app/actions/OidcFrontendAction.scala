@@ -17,16 +17,16 @@
 package actions
 
 import cats.effect.IO
-import controllers.{CacheHeader, VinylDNS}
+import controllers.{CacheHeader, UserAccountAccessor, UserDetails, VinylDNS}
 import javax.inject.Inject
 import org.pac4j.core.profile.CommonProfile
 import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, SecurityComponents}
-import play.api.Configuration
+import play.api.{Configuration, Logger}
 import play.api.mvc.Result
-import play.api.mvc.Results.Redirect
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
   * Custom action that will take a request and do an account lookup for the user
@@ -35,10 +35,11 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to login screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class FrontendAction @Inject()(
+class OidcFrontendAction @Inject()(
     configuration: Configuration,
     val userLookup: String => IO[Option[User]],
-    val controllerComponents: SecurityComponents)(
+    val controllerComponents: SecurityComponents,
+    val userAccountAccessor: UserAccountAccessor)(
     implicit val executionContext: ExecutionContext,
     pac4jScalaTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
     extends VinylDnsAction(configuration)
@@ -50,14 +51,51 @@ class FrontendAction @Inject()(
         .flashing(VinylDNS.Alerts.error("You are not logged in. Please login to continue."))
         .withHeaders(cacheHeaders: _*))
 
-  def cantFindAccountResult(un: String): Future[Result] =
+  def cantFindAccountResult(un: String): Future[Result] = {
+    println("OIDC CANT FIND")
     Future.successful(
       Redirect("/login")
         .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
         .withHeaders(cacheHeaders: _*))
+  }
 
-  def lockedUserResult(un: String): Future[Result] =
+  def lockedUserResult: Future[Result] =
     Future.successful(
-      Redirect("/noaccess")
+      Redirect("/login")
+        .flashing(VinylDNS.Alerts.error(s"Account locked"))
+        .withNewSession
         .withHeaders(cacheHeaders: _*))
+
+  override def createUser(
+      un: String,
+      fname: Option[String],
+      lname: Option[String],
+      email: Option[String]): Future[Option[User]] = {
+    println("in oidc create")
+    val user = userAccountAccessor
+      .get(un)
+      .flatMap {
+        case None =>
+          Logger.info(s"Creating user account for ${un}")
+          createNewUser(un, fname, lname, email).map { u: User =>
+            Logger.info(s"User account for ${u.userName} created with id ${u.id}")
+            u
+          }
+        case Some(u) =>
+          Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
+          IO.pure(u)
+      }
+
+    user.map(Some(_)).unsafeToFuture()
+  }
+
+  private def createNewUser(
+      un: String,
+      fname: Option[String],
+      lname: Option[String],
+      email: Option[String]): IO[User] = {
+    val newUser =
+      User(un, User.generateKey, User.generateKey, fname, lname, email)
+    userAccountAccessor.create(newUser)
+  }
 }

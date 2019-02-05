@@ -16,20 +16,26 @@
 
 package actions
 
+import cats.data.OptionT
+import cats.implicits._
 import cats.effect.IO
+import javax.inject.Inject
 import org.pac4j.core.profile.{CommonProfile, ProfileManager}
 import org.pac4j.play.PlayWebContext
-import org.pac4j.play.scala.Security
+import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, Security}
+import play.api.Configuration
 import play.api.mvc.{ActionFunction, Request, RequestHeader, Result}
 import vinyldns.core.domain.membership.{LockStatus, User}
 
 import scala.collection.JavaConverters.asScalaBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class VinylDnsAction
+abstract class VinylDnsAction @Inject()(configuration: Configuration)(
+    implicit val pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
     extends ActionFunction[Request, UserRequest]
     with Security[CommonProfile] {
   val userLookup: String => IO[Option[User]]
+
   implicit val executionContext: ExecutionContext
 
   def notLoggedInResult: Future[Result]
@@ -38,6 +44,17 @@ abstract class VinylDnsAction
   
   def lockedUserResult(un: String): Future[Result]
 
+
+  def createUser(
+      un: String,
+      fname: Option[String],
+      lname: Option[String],
+      email: Option[String]): Future[Option[User]] = Future.successful(None)
+
+  lazy val oidcEnabled = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
+
+  lazy val oidcUsernameField =
+    configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
 
   private def getProfile(implicit request: RequestHeader): Option[CommonProfile] = {
     val webContext = new PlayWebContext(request, controllerComponents.playSessionStore)
@@ -49,15 +66,41 @@ abstract class VinylDnsAction
   def invokeBlock[A](
       request: Request[A],
       block: UserRequest[A] => Future[Result]): Future[Result] = {
-    // if the user name is not in session, reject
-    val prof = getProfile(request).get
-    println(s"IN INVOKE: ${prof.getAttributes}")
-    request.session.get("username") match {
+    // Get user from session
+    val username = if (oidcEnabled) {
+      pac4jTemplateHelper
+        .getCurrentProfile(request)
+        .map(x => x.getAttribute(oidcUsernameField).toString)
+    } else {
+      request.session.get("username")
+    }
+
+    username match {
       case None => notLoggedInResult
 
       case Some(un) =>
         // user name in session, let's get it from the repo
         userLookup(un).unsafeToFuture().flatMap {
+          // At this point, will create the user if this is coming from a frontend action
+          case None if oidcEnabled => {
+            val userCreation = for {
+              prof <- OptionT.fromOption[Future](pac4jTemplateHelper.getCurrentProfile(request))
+              user <- OptionT(
+                createUser(
+                  prof.getAttribute(oidcUsernameField).toString,
+                  Some(prof.getFirstName),
+                  Some(prof.getFamilyName),
+                  Some(prof.getEmail)))
+              blk <- OptionT.liftF(block(new UserRequest(un, user, request)))
+            } yield blk
+
+            userCreation.value.flatMap {
+              case Some(res) => Future.successful(res)
+              case None => cantFindAccountResult(un)
+            }
+
+          }
+
           // Odd case, but let's handle with a different error message
           case None => cantFindAccountResult(un)
 

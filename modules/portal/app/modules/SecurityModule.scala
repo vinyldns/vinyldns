@@ -24,11 +24,15 @@ import play.api.{Configuration, Environment}
 import org.pac4j.play.store.{PlayCacheSessionStore, PlaySessionStore}
 import org.pac4j.core.config.Config
 import org.pac4j.core.http.callback.NoParameterCallbackUrlResolver
+import org.pac4j.core.profile.CommonProfile
 import org.pac4j.oidc.config.OidcConfiguration
 import org.pac4j.oidc.profile.OidcProfile
 import org.pac4j.play.http.DefaultHttpActionAdapter
-import org.pac4j.play.scala.{DefaultSecurityComponents, SecurityComponents}
-
+import org.pac4j.play.scala.{
+  DefaultSecurityComponents,
+  Pac4jScalaTemplateHelper,
+  SecurityComponents
+}
 
 /**
   * Guice DI module to be included in application.conf
@@ -53,18 +57,13 @@ class SecurityModule(environment: Environment, configuration: Configuration)
       // config.addAuthorizer("admin", new RequireAnyRoleAuthorizer[CommonProfile]("ROLE_ADMIN"))
       bind(classOf[Config]).toInstance(config)
 
+      bind(classOf[Pac4jScalaTemplateHelper[CommonProfile]])
+
       // callback
       val callbackController = new CallbackController()
-//      callbackController.setSaveInSession(false)
-
       callbackController.setDefaultUrl("/")
       callbackController.setMultiProfile(false)
       bind(classOf[CallbackController]).toInstance(callbackController)
-
-      // logout
-      val logoutController = new LogoutController()
-      logoutController.setDefaultUrl("/?defaulturlafterlogout")
-      bind(classOf[LogoutController]).toInstance(logoutController)
 
       // security components used in controllers
       bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
@@ -76,6 +75,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     oidcConfiguration.setSecret(secret)
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
     oidcConfiguration.setUseNonce(true)
+    oidcConfiguration.setWithState(true)
 
     oidcConfiguration.setScope("openid profile email")
     val oidcClient = new OidcClient[OidcProfile, OidcConfiguration](oidcConfiguration)

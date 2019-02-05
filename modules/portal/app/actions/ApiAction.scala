@@ -17,8 +17,11 @@
 package actions
 
 import cats.effect.IO
-import controllers.CacheHeader
-import org.pac4j.play.scala.SecurityComponents
+import controllers.{CacheHeader, UserAccountAccessor}
+import javax.inject.{Inject, Singleton}
+import org.pac4j.core.profile.CommonProfile
+import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, Security, SecurityComponents}
+import play.api.Configuration
 import play.api.mvc.Result
 import play.api.mvc.Results.{Forbidden, NotFound, Unauthorized}
 import vinyldns.core.domain.membership.User
@@ -32,10 +35,13 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, return Forbidden message
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class ApiAction(
+class ApiAction @Inject()(
+    configuration: Configuration,
     val userLookup: String => IO[Option[User]],
-    val controllerComponents: SecurityComponents)(implicit val executionContext: ExecutionContext)
-    extends VinylDnsAction
+    val controllerComponents: SecurityComponents)(
+    implicit val executionContext: ExecutionContext,
+    pac4jScalaTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
+    extends VinylDnsAction(configuration)
     with CacheHeader {
 
   def notLoggedInResult: Future[Result] =
