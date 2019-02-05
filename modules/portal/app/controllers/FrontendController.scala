@@ -62,6 +62,10 @@ class FrontendController @Inject()(
     Redirect("/login").withNewSession
   }
 
+  def noAccess(): Action[AnyContent] = Action { implicit request =>
+    Ok(views.html.noAccess())
+  }
+
   def index(): Action[AnyContent] = userAction.async { implicit request =>
     Future(Ok(views.html.zones.zones(request.user.userName)))
   }
