@@ -41,28 +41,25 @@ class OidcFrontendAction @Inject()(
     val controllerComponents: SecurityComponents,
     val userAccountAccessor: UserAccountAccessor)(
     implicit val executionContext: ExecutionContext,
-    pac4jScalaTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
+    pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
     extends VinylDnsAction(configuration)
     with CacheHeader {
 
   def notLoggedInResult: Future[Result] =
     Future.successful(
-      Redirect("/login")
-        .flashing(VinylDNS.Alerts.error("You are not logged in. Please login to continue."))
+      Redirect("/")
         .withHeaders(cacheHeaders: _*))
 
   def cantFindAccountResult(un: String): Future[Result] = {
-    println("OIDC CANT FIND")
     Future.successful(
-      Redirect("/login")
-        .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
+      Redirect("/")
         .withHeaders(cacheHeaders: _*))
   }
 
+  // TODO need new screen for this
   def lockedUserResult: Future[Result] =
     Future.successful(
-      Redirect("/login")
-        .flashing(VinylDNS.Alerts.error(s"Account locked"))
+      Redirect("/")
         .withNewSession
         .withHeaders(cacheHeaders: _*))
 
@@ -71,7 +68,6 @@ class OidcFrontendAction @Inject()(
       fname: Option[String],
       lname: Option[String],
       email: Option[String]): Future[Option[User]] = {
-    println("in oidc create")
     val user = userAccountAccessor
       .get(un)
       .flatMap {

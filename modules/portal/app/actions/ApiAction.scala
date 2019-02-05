@@ -17,13 +17,12 @@
 package actions
 
 import cats.effect.IO
-import controllers.{CacheHeader, UserAccountAccessor}
-import javax.inject.{Inject, Singleton}
+import controllers.CacheHeader
+import javax.inject.Inject
 import org.pac4j.core.profile.CommonProfile
-import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, Security, SecurityComponents}
+import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, SecurityComponents}
 import play.api.Configuration
 import play.api.mvc.Result
-import play.api.mvc.Results.{Forbidden, NotFound, Unauthorized}
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -40,7 +39,7 @@ class ApiAction @Inject()(
     val userLookup: String => IO[Option[User]],
     val controllerComponents: SecurityComponents)(
     implicit val executionContext: ExecutionContext,
-    pac4jScalaTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
+    pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
     extends VinylDnsAction(configuration)
     with CacheHeader {
 

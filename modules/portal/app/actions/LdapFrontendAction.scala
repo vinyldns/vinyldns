@@ -35,12 +35,12 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to login screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class FrontendAction @Inject()(
+class LdapFrontendAction @Inject()(
     configuration: Configuration,
     val userLookup: String => IO[Option[User]],
     val controllerComponents: SecurityComponents)(
     implicit val executionContext: ExecutionContext,
-    pac4jScalaTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
+    pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
     extends VinylDnsAction(configuration)
     with CacheHeader {
 

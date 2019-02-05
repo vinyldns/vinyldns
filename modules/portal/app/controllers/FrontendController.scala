@@ -16,7 +16,7 @@
 
 package controllers
 
-import actions.{FrontendAction, OidcFrontendAction}
+import actions.{LdapFrontendAction, OidcFrontendAction}
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
 import org.pac4j.core.profile.CommonProfile
@@ -58,7 +58,7 @@ class FrontendController @Inject()(
         userAccountAccessor)
     }
   } else {
-    Action.andThen(new FrontendAction(configuration, userAccountAccessor.get, controllerComponents))
+    Action.andThen(new LdapFrontendAction(configuration, userAccountAccessor.get, controllerComponents))
   }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
