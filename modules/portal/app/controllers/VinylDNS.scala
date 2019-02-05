@@ -121,15 +121,19 @@ class VinylDNS @Inject()(
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
   def login(): Action[AnyContent] = Action { implicit request =>
-    val userForm = Form(
-      tuple(
-        "username" -> text,
-        "password" -> text
+    if (oidcEnabled) {
+      Redirect("/")
+    } else {
+      val userForm = Form(
+        tuple(
+          "username" -> text,
+          "password" -> text
+        )
       )
-    )
-    val (username, password) = userForm.bindFromRequest.get
+      val (username, password) = userForm.bindFromRequest.get
 
-    processLogin(username, password)
+      processLogin(username, password)
+    }
   }
 
   def newGroup(): Action[AnyContent] = userAction.async { implicit request =>
