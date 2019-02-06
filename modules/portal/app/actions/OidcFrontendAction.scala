@@ -58,7 +58,7 @@ class OidcFrontendAction(
   // TODO need new screen for this
   def lockedUserResult(un: String): Future[Result] =
     Future.successful(
-      Redirect("/").withNewSession
+      Redirect("/noaccess")
         .withHeaders(cacheHeaders: _*))
 
   // already checked for user in DB when this is called; user does not exist
