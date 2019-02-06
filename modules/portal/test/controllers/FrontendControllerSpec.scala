@@ -22,12 +22,12 @@ import org.pac4j.play.scala.SecurityComponents
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import play.api.{Configuration, Environment}
+import play.api.Configuration
+import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._
 import play.api.test._
-import vinyldns.core.domain.membership.User
-import play.api.test.CSRFTokenHelper._
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+import vinyldns.core.domain.membership.User
 
 @RunWith(classOf[JUnitRunner])
 class FrontendControllerSpec extends Specification with Mockito with TestApplicationData {

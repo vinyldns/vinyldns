@@ -16,19 +16,15 @@
 
 package controllers
 
+import controllers.LdapAuthenticator.{ContextCreator, LdapByDomainAuthenticator}
 import javax.naming.NamingEnumeration
 import javax.naming.directory._
-import controllers.LdapAuthenticator.{ContextCreator, LdapByDomainAuthenticator}
-import org.specs2.matcher.EitherMatchers
 import org.specs2.mock.Mockito
 import org.specs2.mock.mockito.ArgumentCapture
 import org.specs2.mutable.Specification
 import play.api.{Configuration, Environment}
-import play.api.test.WithApplication
-import play.api.inject.guice.GuiceApplicationBuilder
 import vinyldns.core.health.HealthCheck.HealthCheckError
 
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 class LdapAuthenticatorSpec extends Specification with Mockito {
