@@ -7,6 +7,7 @@ GET           /                                  @controllers.FrontendController
 GET           /index                             @controllers.FrontendController.index
 GET           /login                             @controllers.FrontendController.loginPage
 GET           /logout                            @controllers.FrontendController.logout
+GET           /noaccess                          @controllers.FrontendController.noAccess
 
 GET           /groups                            @controllers.FrontendController.viewAllGroups
 GET           /groups/:gid                       @controllers.FrontendController.viewGroup(gid: String)

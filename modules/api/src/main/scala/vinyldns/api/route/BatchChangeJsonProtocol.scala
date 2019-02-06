@@ -24,12 +24,7 @@ import cats.implicits._
 import vinyldns.api.domain.DomainValidationError
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
-import vinyldns.core.domain.batch.{
-  BatchChange,
-  SingleAddChange,
-  SingleChangeStatus,
-  SingleDeleteChange
-}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 
@@ -151,6 +146,19 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("status" -> bc.status.toString) ~
         ("id" -> bc.id) ~
         ("ownerGroupId" -> bc.ownerGroupId)
+  }
+
+  case object BatchChangeInfoSerializer extends ValidationSerializer[BatchChangeInfo] {
+    override def toJson(bc: BatchChangeInfo): JValue =
+      ("userId" -> bc.userId) ~
+        ("userName" -> bc.userName) ~
+        ("comments" -> bc.comments) ~
+        ("createdTimestamp" -> Extraction.decompose(bc.createdTimestamp)) ~
+        ("changes" -> Extraction.decompose(bc.changes)) ~
+        ("status" -> bc.status.toString) ~
+        ("id" -> bc.id) ~
+        ("ownerGroupId" -> bc.ownerGroupId) ~
+        ("ownerGroupName" -> bc.ownerGroupName)
   }
 
   case object BatchChangeErrorListSerializer

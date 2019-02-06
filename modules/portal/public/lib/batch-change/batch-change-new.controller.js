@@ -18,7 +18,14 @@
     'use strict';
 
     angular.module('batch-change')
-        .controller('BatchChangeNewController', function($scope, jsConfig, $log, $location, $timeout, batchChangeService, utilityService){
+        .controller('BatchChangeNewController', function($scope, jsConfig, $log, $location, $timeout, batchChangeService, utilityService, groupsService){
+            groupsService.getMyGroups()
+                .then(function (results) {
+                    $scope.myGroups = results['data']['groups'];
+                })
+                .catch(function (error) {
+                    handleError(error, 'groupsService::getMyGroups-failure');
+                });
 
             $scope.batch = {};
             $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]};
