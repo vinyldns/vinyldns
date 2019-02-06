@@ -46,6 +46,6 @@ class ApiAction(val userLookup: String => IO[Option[User]])(
       NotFound(s"Unable to find user account for user name '$un'")
         .withHeaders(cacheHeaders: _*))
 
-  def lockedUserResult: Future[Result] =
-    Future.successful(Forbidden(s"Account is locked.").withHeaders(cacheHeaders: _*))
+  def lockedUserResult(un: String): Future[Result] =
+    Future.successful(Forbidden(s"User account for `$un` is locked.").withHeaders(cacheHeaders: _*))
 }

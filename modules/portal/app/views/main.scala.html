@@ -1,5 +1,5 @@
 @import helper.CSRF
-@(rootAccountName: String)(controller: String)(pageHeader: String)(pageContent: Html)(pagePlugins: Html)(implicit request: play.api.mvc.Request[Any], requestHeader: RequestHeader, customLinks: models.CustomLinks)
+@(rootAccountName: String)(controller: String)(pageHeader: String)(pageContent: Html)(pagePlugins: Html)(implicit request: play.api.mvc.Request[Any], requestHeader: RequestHeader, customLinks: models.CustomLinks, meta: models.Meta)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -88,7 +88,7 @@
                 @header(rootAccountName)(request)
                 @pageContent
 
-                <footer/></footer>
+                <footer/><p class="main-footer-text text-right">VinylDNS (version @{meta.version})</p></footer>
 
             </div>
             <!-- END PAGE CONTAINER -->

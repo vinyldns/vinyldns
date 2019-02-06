@@ -127,7 +127,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           )
 
         status(result) must beEqualTo(403)
-        contentAsString(result) must beEqualTo("Account is locked.")
+        contentAsString(result) must beEqualTo("User account for `frodo` is locked.")
       }
       "return unauthorized (401) if the current user account is locked" in new WithApplication(app) {
         val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
@@ -209,7 +209,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 "accessKey" -> lockedFrodoUser.accessKey))
 
         status(result) must beEqualTo(403)
-        contentAsString(result) must beEqualTo("Account is locked.")
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
         hasCacheHeaders(result)
       }
       "return unauthorized (401) if user account is locked" in new WithApplication(app) {
@@ -712,7 +713,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                   "accessKey" -> lockedFrodoUser.accessKey))
 
             status(result) mustEqual 403
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
             hasCacheHeaders(result)
           }
         }
@@ -856,7 +858,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -968,7 +971,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -1143,7 +1147,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                   "accessKey" -> lockedFrodoUser.accessKey))
 
             status(result) mustEqual 403
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
             hasCacheHeaders(result)
           }
         }
@@ -1349,7 +1354,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) must beEqualTo(FORBIDDEN)
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -1519,7 +1525,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -1605,9 +1612,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               "accessKey" -> lockedFrodoUser.accessKey))
 
         status(result) mustEqual 303
-        redirectLocation(result) must beSome("/login")
-        flash(result).get("alertType") must beSome("danger")
-        flash(result).get("alertMessage") must beSome("Account locked")
+        redirectLocation(result) must beSome("/noaccess")
       }
       "redirect to login if user account is not found" in new WithApplication(app) {
         import play.api.mvc.Result
@@ -1685,7 +1690,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         status(result) must beEqualTo(403)
         hasCacheHeaders(result)
-        contentAsString(result) must beEqualTo("Account is locked.")
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
       "return a 404 if the account is not found" in new WithApplication(app) {
         val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
@@ -1756,7 +1762,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -1810,7 +1817,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -1864,7 +1872,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -1919,7 +1928,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -1974,7 +1984,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2030,7 +2041,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2087,7 +2099,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2145,7 +2158,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2202,7 +2216,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2260,7 +2275,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2317,7 +2333,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2375,7 +2392,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2432,7 +2450,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
@@ -2489,7 +2508,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             status(result) mustEqual 403
             hasCacheHeaders(result)
-            contentAsString(result) must beEqualTo("Account is locked.")
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
           }
         }
       }
