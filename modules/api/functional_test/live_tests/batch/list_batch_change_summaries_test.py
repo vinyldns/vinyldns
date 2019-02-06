@@ -153,3 +153,92 @@ def test_list_batch_change_summaries_with_list_batch_change_summaries_with_no_ch
 
     batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
     assert_that(batch_change_summaries_result, has_length(0))
+
+
+def test_list_batch_change_summaries_with_record_owner_group_passes(shared_zone_test_context):
+    """
+    Test that getting a batch change summary with an record owner group set returns the record owner group name and id
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    group = shared_zone_test_context.shared_record_group
+    batch_change_input = {
+        "comments": '',
+        "changes": [
+            get_change_A_AAAA_json("listing-batch-with-owner-group.shared.", address="1.1.1.1")
+        ],
+        "ownerGroupId": group['id']
+    }
+
+    record_to_delete = []
+
+    try:
+        batch_change = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(batch_change)
+
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        record_to_delete = set(record_set_list)
+
+        batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
+
+        under_test = [item for item in batch_change_summaries_result if item['id'] == completed_batch['id']]
+        assert_that(under_test, has_length(1))
+
+        under_test = under_test[0]
+        assert_that(under_test['ownerGroupId'], is_(group['id']))
+        assert_that(under_test['ownerGroupName'], is_(group['name']))
+
+    finally:
+        for result_rs in record_to_delete:
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shared_zone_test_context):
+    """
+    Test that getting a batch change summary with an record owner group that was deleted passes and return None
+    for record owner group name
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    temp_group = {
+    'name': 'test-get-batch-record-owner-group',
+    'email': 'test@test.com',
+    'description': 'for testing that a get batch change still works when record owner group is deleted',
+    'members': [ { 'id': 'sharedZoneUser'} ],
+    'admins': [ { 'id': 'sharedZoneUser'} ]
+    }
+
+    record_to_delete = []
+
+    try:
+        group_to_delete = client.create_group(temp_group, status=200)
+
+        batch_change_input = {
+            "comments": '',
+            "changes": [
+                get_change_A_AAAA_json("list-batch-with-deleted-owner-group.shared.", address="1.1.1.1")
+            ],
+            "ownerGroupId": group_to_delete['id']
+        }
+
+        batch_change = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(batch_change)
+
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        record_to_delete = set(record_set_list)
+
+        # delete group
+        client.delete_group(group_to_delete['id'], status=200)
+
+        batch_change_summaries_result = client.list_batch_change_summaries(status=200)["batchChanges"]
+
+        under_test = [item for item in batch_change_summaries_result if item['id'] == completed_batch['id']]
+        assert_that(under_test, has_length(1))
+
+        under_test = under_test[0]
+        assert_that(under_test['ownerGroupId'], is_(group_to_delete['id']))
+        assert_that(under_test, is_not(has_key('ownerGroupName')))
+
+    finally:
+        for result_rs in record_to_delete:
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
