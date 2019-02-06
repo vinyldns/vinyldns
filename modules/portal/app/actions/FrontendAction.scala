@@ -48,10 +48,8 @@ class FrontendAction(val userLookup: String => IO[Option[User]])(
         .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
         .withHeaders(cacheHeaders: _*))
 
-  def lockedUserResult: Future[Result] =
+  def lockedUserResult(un: String): Future[Result] =
     Future.successful(
-      Redirect("/login")
-        .flashing(VinylDNS.Alerts.error(s"Account locked"))
-        .withNewSession
+      Redirect("/noaccess")
         .withHeaders(cacheHeaders: _*))
 }

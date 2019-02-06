@@ -62,6 +62,12 @@ class FrontendController @Inject()(
     Redirect("/login").withNewSession
   }
 
+  def noAccess(): Action[AnyContent] = Action { implicit request =>
+    logger.info(
+      s"User account for '${request.session.get("username").getOrElse("username not found")}' is locked.")
+    Unauthorized(views.html.noAccess())
+  }
+
   def index(): Action[AnyContent] = userAction.async { implicit request =>
     Future(Ok(views.html.zones.zones(request.user.userName)))
   }
