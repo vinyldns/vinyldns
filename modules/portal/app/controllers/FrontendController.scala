@@ -53,10 +53,7 @@ class FrontendController @Inject()(
 
   private val userAction = if (oidcEnabled) {
     Secure.andThen {
-      new OidcFrontendAction(
-        userAccountAccessor.get,
-        userAccountAccessor.create,
-        oidcUsernameField)
+      new OidcFrontendAction(userAccountAccessor.get, userAccountAccessor.create, oidcUsernameField)
     }
   } else {
     Action.andThen(new LdapFrontendAction(userAccountAccessor.get))

@@ -19,6 +19,8 @@ package controllers
 import cats.effect.IO
 import controllers.VinylDNS.Alert
 import org.junit.runner._
+import org.pac4j.core.profile.CommonProfile
+import org.pac4j.play.scala.{Pac4jScalaTemplateHelper, SecurityComponents}
 import org.specs2.mock.Mockito
 import org.specs2.mutable._
 import org.specs2.runner._
@@ -50,10 +52,10 @@ import scala.util.{Failure, Success}
 @RunWith(classOf[JUnitRunner])
 class VinylDNSSpec extends Specification with Mockito with TestApplicationData with BeforeEach {
 
-  val components: ControllerComponents = Helpers.stubControllerComponents()
+  val components: SecurityComponents = mockControllerComponents
   val defaultActionBuilder = DefaultActionBuilder(Helpers.stubBodyParser())
   val crypto: CryptoAlgebra = spy(new NoOpCrypto())
-  val config: Configuration = Configuration.load(Environment.simple())
+  val config: Configuration = testConfigLdap
 
   protected def before: Any = org.mockito.Mockito.reset(crypto)
 
@@ -584,7 +586,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -614,7 +616,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -644,7 +646,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -673,7 +675,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -699,7 +701,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -729,7 +731,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -761,7 +763,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -791,7 +793,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -819,7 +821,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -843,7 +845,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -873,7 +875,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -905,7 +907,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -930,7 +932,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -956,7 +958,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -990,7 +992,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1019,7 +1021,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1047,7 +1049,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1079,7 +1081,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1106,7 +1108,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1133,7 +1135,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -1167,7 +1169,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1196,7 +1198,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1226,7 +1228,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1256,7 +1258,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1288,7 +1290,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1314,7 +1316,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -1340,7 +1342,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -1373,7 +1375,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1401,7 +1403,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1430,7 +1432,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1461,7 +1463,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1486,7 +1488,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1511,7 +1513,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockLockedUserAccessor,
                 client,
@@ -1543,7 +1545,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -1556,81 +1558,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             hasCacheHeaders(result)
           }
         }
-      }
-    }
-
-    ".serveCredFile" should {
-      "return a csv file with the new style credentials" in new WithApplication(app) {
-        import play.api.mvc.Result
-
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
-        val underTest =
-          new VinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
-
-        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-        val content: String = contentAsString(result)
-        content must contain("NT ID")
-        content must contain(frodoUser.userName)
-        content must contain(frodoUser.accessKey)
-        content must contain(frodoUser.secretKey)
-        there.was(one(crypto).decrypt(frodoUser.secretKey))
-      }
-      "redirect to login if user is not logged in" in new WithApplication(app) {
-        import play.api.mvc.Result
-
-        val underTest =
-          new VinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, components, crypto)
-
-        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-          FakeRequest(GET, s"/download-creds-file/credsfile.csv"))
-
-        status(result) mustEqual 303
-        redirectLocation(result) must beSome("/login")
-        flash(result).get("alertType") must beSome("danger")
-        flash(result).get("alertMessage") must beSome(
-          "You are not logged in. Please login to continue.")
-      }
-      "redirect to login if user account is locked" in new WithApplication(app) {
-        import play.api.mvc.Result
-
-        val underTest =
-          new VinylDNS(
-            config,
-            mockLdapAuthenticator,
-            mockLockedUserAccessor,
-            ws,
-            components,
-            crypto)
-
-        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-            .withSession(
-              "username" -> lockedFrodoUser.userName,
-              "accessKey" -> lockedFrodoUser.accessKey))
-
-        status(result) mustEqual 303
-        redirectLocation(result) must beSome("/noaccess")
-      }
-      "redirect to login if user account is not found" in new WithApplication(app) {
-        import play.api.mvc.Result
-
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-        userAccessor.get(frodoUser.userName).returns(IO.pure(None))
-        val underTest =
-          new VinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
-
-        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-
-        status(result) mustEqual 303
-        redirectLocation(result) must beSome("/login")
-        flash(result).get("alertType") must beSome("danger")
-        flash(result).get("alertMessage") must beSome(
-          s"Unable to find user account for user name '${frodoUser.userName}'")
       }
     }
 
@@ -1725,7 +1652,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -1749,7 +1676,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -1779,7 +1706,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -1804,7 +1731,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -1834,7 +1761,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -1859,7 +1786,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -1889,7 +1816,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -1915,7 +1842,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -1945,7 +1872,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -1971,7 +1898,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2001,7 +1928,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -2026,7 +1953,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2058,7 +1985,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -2084,7 +2011,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2116,7 +2043,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -2143,7 +2070,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2175,7 +2102,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               buildmockUserAccessor,
               client,
@@ -2201,7 +2128,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2233,7 +2160,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockUserAccessor,
               client,
@@ -2260,7 +2187,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2292,7 +2219,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockUserAccessor,
               client,
@@ -2318,7 +2245,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2350,7 +2277,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockUserAccessor,
               client,
@@ -2377,7 +2304,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2409,7 +2336,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockUserAccessor,
               client,
@@ -2435,7 +2362,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2467,7 +2394,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockUserAccessor,
               client,
@@ -2493,7 +2420,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         } { implicit port =>
           WsTestClient.withClient { client =>
             val underTest = new VinylDNS(
-              testConfig,
+              testConfigLdap,
               mockLdapAuthenticator,
               mockLockedUserAccessor,
               client,
@@ -2526,7 +2453,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockMultiUserAccessor,
                 client,
@@ -2554,7 +2481,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockMultiUserAccessor,
                 client,
@@ -2580,7 +2507,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -2609,7 +2536,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockMultiUserAccessor,
                 client,
@@ -2637,7 +2564,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
@@ -2663,7 +2590,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           WsTestClient.withClient { client =>
             val underTest =
               new VinylDNS(
-                testConfig,
+                testConfigLdap,
                 mockLdapAuthenticator,
                 mockUserAccessor,
                 client,
