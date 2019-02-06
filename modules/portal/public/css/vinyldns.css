@@ -158,6 +158,7 @@ a.action-link {
 
 .vinyldns-login-footer {
     color: #FFFFFF;
+    margin-top: 20px;
 }
 
 .vinyldns-login-footer a {
@@ -376,5 +377,9 @@ label.switch {
 }
 
 .batch-label {
+    color: #73879C;
+}
+
+.main-footer-text {
     color: #73879C;
 }
