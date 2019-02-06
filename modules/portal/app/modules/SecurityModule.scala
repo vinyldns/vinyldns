@@ -40,7 +40,7 @@ import org.pac4j.play.scala.{
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
-  lazy val discoveryUrl: String = configuration.get[String]("oidc.metadata")
+  lazy val discoveryUrl: String = configuration.get[String]("oidc.metadata-url")
   lazy val clientId: String = configuration.get[String]("oidc.client-id")
   lazy val baseUrl: String = configuration.get[String]("oidc.redirect-uri")
   lazy val secret: String = configuration.get[String]("oidc.secret")
