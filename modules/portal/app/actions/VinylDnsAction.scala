@@ -26,7 +26,7 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
   implicit val executionContext: ExecutionContext
   def notLoggedInResult: Future[Result]
   def cantFindAccountResult(un: String): Future[Result]
-  def lockedUserResult: Future[Result]
+  def lockedUserResult(un: String): Future[Result]
 
   def invokeBlock[A](request: Request[A], block: UserRequest[A] => Future[Result]): Future[Result] =
     // if the user name is not in session, reject
@@ -39,7 +39,7 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
           // Odd case, but let's handle with a different error message
           case None => cantFindAccountResult(un)
 
-          case Some(user) if user.lockStatus == LockStatus.Locked => lockedUserResult
+          case Some(user) if user.lockStatus == LockStatus.Locked => lockedUserResult(un)
 
           case Some(user) => block(new UserRequest(un, user, request))
         }
