@@ -40,10 +40,11 @@ import org.pac4j.play.scala.{
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
-  lazy val discoveryUrl: String = configuration.get[String]("oidc.oidc-metadata")
+  lazy val discoveryUrl: String = configuration.get[String]("oidc.metadata")
   lazy val clientId: String = configuration.get[String]("oidc.client-id")
   lazy val baseUrl: String = configuration.get[String]("oidc.redirect-uri")
   lazy val secret: String = configuration.get[String]("oidc.secret")
+  lazy val scope: String = configuration.get[String]("oidc.scope")
   lazy val oidcUsernameField: String =
     configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
 
@@ -80,13 +81,16 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     oidcConfiguration.setClientId(clientId)
     oidcConfiguration.setSecret(secret)
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
+    oidcConfiguration.setScope(scope)
     oidcConfiguration.setWithState(true)
 
-    oidcConfiguration.setScope("openid profile email")
+    oidcConfiguration.setExpireSessionWithToken(true)
+    oidcConfiguration.setUseNonce(true)
+
     val oidcClient = new OidcClient[OidcProfile, OidcConfiguration](oidcConfiguration)
 
     oidcClient.setCallbackUrlResolver(new NoParameterCallbackUrlResolver())
-    oidcClient.addAuthorizationGenerator { (ctx, profile) =>
+    oidcClient.addAuthorizationGenerator { (_, profile) =>
       profile.addRole("USER")
       profile
     }
