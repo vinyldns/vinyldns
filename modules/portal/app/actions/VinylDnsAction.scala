@@ -40,9 +40,8 @@ abstract class VinylDnsAction(
   def notLoggedInResult: Future[Result]
 
   def cantFindAccountResult(un: String): Future[Result]
-  
-  def lockedUserResult(un: String): Future[Result]
 
+  def lockedUserResult(un: String): Future[Result]
 
   def createUser(
       un: String,

@@ -27,13 +27,14 @@ import play.api.test.Helpers._
 import play.api.test._
 import vinyldns.core.domain.membership.User
 import play.api.test.CSRFTokenHelper._
-import vinyldns.core.crypto.NoOpCrypto
+import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 
 @RunWith(classOf[JUnitRunner])
 class FrontendControllerSpec extends Specification with Mockito with TestApplicationData {
 
   val components: SecurityComponents = mockControllerComponents
   val config: Configuration = testConfigLdap
+  val crypto: CryptoAlgebra = new NoOpCrypto()
   val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
   val underTest = new FrontendController(
     components,
@@ -45,7 +46,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   val lockedUserUnderTest = new FrontendController(
     components,
     config,
-    lockedUserAccessor
+    lockedUserAccessor,
+    crypto
   )
 
   "FrontendController" should {
