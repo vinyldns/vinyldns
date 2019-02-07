@@ -23,24 +23,27 @@ import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 import play.api.Configuration
+import play.api.mvc.Result
 import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._
 import play.api.test._
-import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
+import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.User
+
+import scala.concurrent.Future
 
 @RunWith(classOf[JUnitRunner])
 class FrontendControllerSpec extends Specification with Mockito with TestApplicationData {
 
   val components: SecurityComponents = mockControllerComponents
   val config: Configuration = testConfigLdap
-  val crypto: CryptoAlgebra = new NoOpCrypto()
+  val crypto: CryptoAlgebra = mock[CryptoAlgebra]
   val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
   val underTest = new FrontendController(
     components,
     config,
     userAccessor,
-    new NoOpCrypto()
+    crypto
   )
   val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
   val lockedUserUnderTest = new FrontendController(
@@ -331,83 +334,54 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         contentAsString(result) must not(contain("test link login"))
       }
     }
-//    ".serveCredFile" should {
-//      "return a csv file with the new style credentials" in new WithApplication(app) {
-//        import play.api.mvc.Result
-//
-//        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-//        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
-//        val underTest =
-//          new VinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
-//
-//        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-//          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-//            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-//        val content: String = contentAsString(result)
-//        content must contain("NT ID")
-//        content must contain(frodoUser.userName)
-//        content must contain(frodoUser.accessKey)
-//        content must contain(frodoUser.secretKey)
-//        there.was(one(crypto).decrypt(frodoUser.secretKey))
-//      }
-//      "redirect to login if user is not logged in" in new WithApplication(app) {
-//        import play.api.mvc.Result
-//
-//        val underTest =
-//          new VinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, components, crypto)
-//
-//        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-//          FakeRequest(GET, s"/download-creds-file/credsfile.csv"))
-//
-//        status(result) mustEqual 303
-//        redirectLocation(result) must beSome("/login")
-//        flash(result).get("alertType") must beSome("danger")
-//        flash(result).get("alertMessage") must beSome(
-//          "You are not logged in. Please login to continue.")
-//      }
-//      "redirect to login if user account is locked" in new WithApplication(app) {
-//        import play.api.mvc.Result
-//
-//        val underTest =
-//          new VinylDNS(
-//            config,
-//            mockLdapAuthenticator,
-//            mockLockedUserAccessor,
-//            ws,
-//            components,
-//            crypto)
-//
-//        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-//          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-//            .withSession(
-//              "username" -> lockedFrodoUser.userName,
-//              "accessKey" -> lockedFrodoUser.accessKey))
-//
-//        status(result) mustEqual 303
-//        redirectLocation(result) must beSome("/login")
-//        flash(result).get("alertType") must beSome("danger")
-//        flash(result).get("alertMessage") must beSome("Account locked")
-//      }
-//      "redirect to login if user account is not found" in new WithApplication(app) {
-//        import play.api.mvc.Result
-//
-//        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-//        userAccessor.get(frodoUser.userName).returns(IO.pure(None))
-//        val underTest =
-//          new VinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
-//
-//        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
-//          FakeRequest(GET, s"/download-creds-file/credsfile.csv")
-//            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
-//
-//        status(result) mustEqual 303
-//        redirectLocation(result) must beSome("/login")
-//        flash(result).get("alertType") must beSome("danger")
-//        flash(result).get("alertMessage") must beSome(
-//          s"Unable to find user account for user name '${frodoUser.userName}'")
-//      }
-//    }
 
+    ".serveCredFile" should {
+      "return a csv file with the new style credentials" in new WithApplication(app) {
+        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
+
+        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
+          FakeRequest(GET, "/download-creds-file/credsfile.csv")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+        val content: String = contentAsString(result)
+        content must contain("NT ID")
+        content must contain(frodoUser.userName)
+        content must contain(frodoUser.accessKey)
+        content must contain(frodoUser.secretKey)
+        there.was(one(crypto).decrypt(frodoUser.secretKey))
+      }
+      "redirect to login if user is not logged in" in new WithApplication(app) {
+        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
+          FakeRequest(GET, "/download-creds-file/credsfile.csv"))
+
+        status(result) mustEqual 303
+        redirectLocation(result) must beSome("/login")
+        flash(result).get("alertType") must beSome("danger")
+        flash(result).get("alertMessage") must beSome(
+          "You are not logged in. Please login to continue.")
+      }
+      "redirect to login if user account is locked" in new WithApplication(app) {
+        val result: Future[Result] = lockedUserUnderTest.serveCredsFile("credsfile.csv")(
+          FakeRequest(GET, "/download-creds-file/credsfile.csv")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey))
+
+        status(result) mustEqual 303
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+      "redirect to login if user account is not found" in new WithApplication(app) {
+        userAccessor.get(frodoUser.userName).returns(IO.pure(None))
+
+        val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
+          FakeRequest(GET, "/download-creds-file/credsfile.csv")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+        redirectLocation(result) must beSome("/login")
+        flash(result).get("alertType") must beSome("danger")
+        flash(result).get("alertMessage") must beSome(
+          s"Unable to find user account for user name '${frodoUser.userName}'")
+      }
+    }
   }
 
   def buildMockUserAccountAccessor: UserAccountAccessor = {
