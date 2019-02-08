@@ -83,7 +83,6 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     oidcConfiguration.setSecret(secret)
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
     oidcConfiguration.setScope(scope)
-    oidcConfiguration.setWithState(true)
 
     oidcConfiguration.setExpireSessionWithToken(true)
     oidcConfiguration.setUseNonce(true)
