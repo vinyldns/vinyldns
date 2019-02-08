@@ -105,8 +105,12 @@ class VinylDNS @Inject()(
     configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
 
   // Need this guy for user actions, brings the session username and user account into the Action
-  private val userAction = {
-    Action.andThen(new ApiAction(userAccountAccessor.get, oidcEnabled, oidcUsernameField))
+  private val userAction = if (oidcEnabled) {
+    Secure.andThen {
+      new ApiAction(userAccountAccessor.get, true, oidcUsernameField)
+    }
+  } else {
+    Action.andThen(new ApiAction(userAccountAccessor.get, false, oidcUsernameField))
   }
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
