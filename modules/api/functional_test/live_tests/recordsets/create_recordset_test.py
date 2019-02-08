@@ -1874,28 +1874,44 @@ def test_create_in_shared_zone_without_owner_group_id_succeeds(shared_zone_test_
             delete_result = dummy_client.delete_recordset(create_rs['zoneId'], create_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
-def test_create_in_shared_zone_by_unassociated_user_succeeds(shared_zone_test_context):
+def test_create_in_shared_zone_by_unassociated_user_succeeds_if_record_type_is_approved(shared_zone_test_context):
     """
-    Test that creating a record in a shared zone by an unassociated user succeeds
+    Test that creating a record in a shared zone by a user with no write permissions succeeds if the record type is approved
     """
 
-    dummy_client = shared_zone_test_context.dummy_vinyldns_client
-    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    client = shared_zone_test_context.dummy_vinyldns_client
     zone = shared_zone_test_context.shared_zone
     group = shared_zone_test_context.dummy_group
+
+    record_json = get_recordset_json(zone, 'test_shared_approved_record_type', 'A', [{'address': '1.1.1.1'}])
+    record_json['ownerGroupId'] = group['id']
+
     create_rs = None
 
-    record_json = get_recordset_json(zone, 'test_shared_bad_user', 'A', [{'address': '1.1.1.1'}], ownergroup_id=group['id'])
-
     try:
-        create_response = dummy_client.create_recordset(record_json, status=202)
-        create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        create_response = client.create_recordset(record_json, status=202)
+        create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
         assert_that(create_rs['ownerGroupId'], is_(group['id']))
 
     finally:
         if create_rs:
-            delete_result = dummy_client.delete_recordset(create_rs['zoneId'], create_rs['id'], status=202)
-            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+            delete_result = shared_zone_test_context.shared_zone_vinyldns_client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            shared_zone_test_context.shared_zone_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_create_in_shared_zone_by_unassociated_user_fails_if_record_type_is_not_approved(shared_zone_test_context):
+    """
+    Test that creating a record in a shared zone by a user with no write permissions fails if the record type is not approved
+    """
+
+    client = shared_zone_test_context.dummy_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    group = shared_zone_test_context.dummy_group
+
+    record_json = get_recordset_json(zone, 'test_shared_not_approved_record_type', 'MX', [{'preference': 3, 'exchange': 'mx'}])
+    record_json['ownerGroupId'] = group['id']
+    error = client.create_recordset(record_json, status=403)
+    assert_that(error, is_('User dummy does not have access to create test-shared-not-approved-record-type.shared.'))
 
 def test_create_with_not_found_owner_group_fails(shared_zone_test_context):
     """

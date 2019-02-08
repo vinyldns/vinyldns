@@ -85,7 +85,6 @@ object Boot extends App {
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
       msgsPerPoll <- IO.fromEither(MessageCount(queueConfig.messagesPerPoll))
       healthCheckTimeout <- VinylDNSConfig.healthCheckTimeout
-      _ <- IO(print(s"sharedApprovedTypes: ${VinylDNSConfig.sharedApprovedTypes}\n\n"))
       _ <- CommandHandler
         .run(
           messageQueue,

@@ -654,17 +654,32 @@ class RecordSetServiceSpec
       result shouldBe a[NotAuthorizedError]
     }
 
-    "fail when the account is not authorized for the record" in {
-      doReturn(IO.pure(Some(sharedZoneRecordNotFoundOwnerGroup)))
+    "return the unowed record in a shared zone when the record has an approved record type" in {
+      doReturn(IO.pure(Some(sharedZoneRecordNoOwnerGroup)))
         .when(mockRecordRepo)
         .getRecordSet(sharedZone.id, sharedZoneRecordNotFoundOwnerGroup.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val expectedRecordSetInfo = RecordSetInfo(sharedZoneRecordNoOwnerGroup, None)
+
+      val result: RecordSetInfo =
+        rightResultOf(
+          underTest.getRecordSet(sharedZoneRecordNoOwnerGroup.id, sharedZone.id, sharedAuth).value)
+      result shouldBe expectedRecordSetInfo
+    }
+
+    "fail when the unowned record in a shared zone is not an approved record type and user is unassociated with it" in {
+      doReturn(IO.pure(Some(sharedZoneRecordNotApprovedRecordType)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneRecordNotApprovedRecordType.id)
 
       doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
 
       val result =
         leftResultOf(
           underTest
-            .getRecordSet(sharedZoneRecordNotFoundOwnerGroup.id, sharedZone.id, okAuth)
+            .getRecordSet(sharedZoneRecordNotApprovedRecordType.id, sharedZone.id, okAuth)
             .value)
       result shouldBe a[NotAuthorizedError]
     }
