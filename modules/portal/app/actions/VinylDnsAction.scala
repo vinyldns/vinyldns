@@ -72,7 +72,7 @@ abstract class VinylDnsAction(
     username match {
       case None => notLoggedInResult
 
-      case Some(un) if oidcEnabled && expired => notLoggedInResult
+      case Some(_) if oidcEnabled && expired => notLoggedInResult
 
       case Some(un) =>
         // user name in session, let's get it from the repo
@@ -105,5 +105,4 @@ abstract class VinylDnsAction(
         }
     }
   }
-
 }

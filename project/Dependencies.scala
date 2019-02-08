@@ -109,6 +109,6 @@ object Dependencies {
     "com.typesafe.play"         %  "play-cache_2.12"                % playV,
     "org.pac4j"                 %% "play-pac4j"                     % playPac4jVersion,
     "org.pac4j"                 % "pac4j-oidc"                      % pac4jVersion exclude("commons-io", "commons-io"),
-    "commons-io" % "commons-io" % "2.5"
+    "commons-io"                % "commons-io"                      % "2.5"
   )
 }
