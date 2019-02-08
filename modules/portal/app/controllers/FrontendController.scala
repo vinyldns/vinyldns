@@ -84,7 +84,7 @@ class FrontendController @Inject()(
 
   def logout(): Action[AnyContent] = Action { implicit request =>
     if (oidcEnabled) {
-      Redirect("/odic-logout")
+      Redirect("/oidc-logout")
     } else {
       Redirect("/login").withNewSession
     }
