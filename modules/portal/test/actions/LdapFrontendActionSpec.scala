@@ -18,7 +18,7 @@ package actions
 
 import cats.effect.IO
 import controllers.UserAccountAccessor
-import org.joda.time.DateTime
+import models.TestApplicationData._
 import org.junit.runner.RunWith
 import org.pac4j.core.profile.CommonProfile
 import org.pac4j.play.scala.Pac4jScalaTemplateHelper
@@ -34,17 +34,6 @@ import scala.concurrent.Future
 
 @RunWith(classOf[JUnitRunner])
 class LdapFrontendActionSpec extends Specification with Mockito {
-
-  val frodoUser = User(
-    "fbaggins",
-    "key",
-    "secret",
-    Some("Frodo"),
-    Some("Baggins"),
-    Some("fbaggins@hobbitmail.me"),
-    DateTime.now,
-    "frodo-uuid")
-
   val mockUserAccountAccessor: UserAccountAccessor = {
     val accessor = mock[UserAccountAccessor]
     doReturn(IO.pure(None)).when(accessor).get("no-existo")

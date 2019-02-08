@@ -17,6 +17,7 @@
 package controllers
 
 import cats.effect.IO
+import models.TestApplicationData._
 import controllers.VinylDNS.Alert
 import org.junit.runner._
 import org.pac4j.core.profile.CommonProfile
@@ -50,7 +51,11 @@ import play.api.routing.sird.{
 import scala.util.{Failure, Success}
 
 @RunWith(classOf[JUnitRunner])
-class VinylDNSSpec extends Specification with Mockito with TestApplicationData with BeforeEach {
+class VinylDNSSpec
+    extends Specification
+    with Mockito
+    with TestControllerMockHelper
+    with BeforeEach {
 
   val components: SecurityComponents = mockControllerComponents
   val defaultActionBuilder = DefaultActionBuilder(Helpers.stubBodyParser())

@@ -17,6 +17,7 @@
 package controllers
 
 import cats.effect.IO
+import models.TestApplicationData._
 import org.junit.runner.RunWith
 import org.pac4j.play.scala.SecurityComponents
 import org.specs2.mock.Mockito
@@ -33,7 +34,7 @@ import vinyldns.core.domain.membership.User
 import scala.concurrent.Future
 
 @RunWith(classOf[JUnitRunner])
-class FrontendControllerSpec extends Specification with Mockito with TestApplicationData {
+class FrontendControllerSpec extends Specification with Mockito with TestControllerMockHelper {
 
   val components: SecurityComponents = mockControllerComponents
   val config: Configuration = testConfigLdap
