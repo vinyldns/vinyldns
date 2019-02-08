@@ -6,6 +6,7 @@
 GET           /                                  @controllers.FrontendController.index
 GET           /index                             @controllers.FrontendController.index
 GET           /login                             @controllers.FrontendController.loginPage
+GET           /oidc-logout                       @org.pac4j.play.LogoutController.logout
 GET           /logout                            @controllers.FrontendController.logout
 GET           /noaccess                          @controllers.FrontendController.noAccess
 

@@ -19,7 +19,7 @@ package modules
 import com.google.inject.AbstractModule
 import org.pac4j.core.client.Clients
 import org.pac4j.oidc.client.OidcClient
-import org.pac4j.play.CallbackController
+import org.pac4j.play.{CallbackController, LogoutController}
 import play.api.{Configuration, Environment}
 import org.pac4j.play.store.{PlayCacheSessionStore, PlaySessionStore}
 import org.pac4j.core.config.Config
@@ -28,11 +28,7 @@ import org.pac4j.core.profile.CommonProfile
 import org.pac4j.oidc.config.OidcConfiguration
 import org.pac4j.oidc.profile.OidcProfile
 import org.pac4j.play.http.DefaultHttpActionAdapter
-import org.pac4j.play.scala.{
-  DefaultSecurityComponents,
-  Pac4jScalaTemplateHelper,
-  SecurityComponents
-}
+import org.pac4j.play.scala.{DefaultSecurityComponents, Pac4jScalaTemplateHelper, SecurityComponents}
 
 /**
   * Guice DI module to be included in application.conf
@@ -71,6 +67,11 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     callbackController.setDefaultUrl("/")
     callbackController.setMultiProfile(false)
     bind(classOf[CallbackController]).toInstance(callbackController)
+
+    val logoutController = new LogoutController()
+    logoutController.setDefaultUrl("/")
+    logoutController.setDestroySession(true)
+    bind(classOf[LogoutController]).toInstance(logoutController)
 
     // security components used in controllers
     bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
