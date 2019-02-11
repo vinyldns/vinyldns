@@ -71,6 +71,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     val logoutController = new LogoutController()
     logoutController.setDefaultUrl("/")
     logoutController.setDestroySession(true)
+    logoutController.setCentralLogout(true)
     bind(classOf[LogoutController]).toInstance(logoutController)
 
     // security components used in controllers
