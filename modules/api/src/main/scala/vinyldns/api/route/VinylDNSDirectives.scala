@@ -16,10 +16,13 @@
 
 package vinyldns.api.route
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.ActorMaterializer
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
 import org.json4s.JsonDSL._
@@ -27,6 +30,7 @@ import org.json4s.jackson.JsonMethods._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.route.Monitor
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
@@ -34,6 +38,10 @@ import scala.util.control.NonFatal
 trait VinylDNSDirectives extends Directives {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator
+
+  implicit val actorSystem: ActorSystem = ActorSystem()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
+  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
     extractStrictEntity(10.seconds).flatMap { strictEntity =>
@@ -88,20 +96,30 @@ trait VinylDNSDirectives extends Directives {
 
   // used to record stats about an http request / response
   def record(monitor: Monitor, startTime: Long): Any => Any = {
-    case res: Complete =>
-      monitor.capture(monitor.duration(startTime), res.response.status.intValue < 500)
+    case res: Complete => {
+      val duration = monitor.duration(startTime)
+      val success = res.response.status.intValue < 500
+      val status = Some(res.response.status.toString)
+      val message: Future[String] = Unmarshal(res.response.entity).to[String]
+      message.map(m => monitor.capture(duration, success, status, Some(m)))
       res
+    }
 
     case rej: Rejected =>
       monitor.capture(monitor.duration(startTime), success = true)
       rej
 
-    case resp: HttpResponse =>
-      monitor.capture(monitor.duration(startTime), resp.status.intValue < 500)
+    case resp: HttpResponse => {
+      val duration = monitor.duration(startTime)
+      val success = resp.status.intValue < 500
+      val status = Some(resp.status.toString)
+      val message: Future[String] = Unmarshal(resp.entity).to[String]
+      message.map(m => monitor.capture(duration, success, status, Some(m)))
       resp
+    }
 
     case Failure(t) =>
-      monitor.fail(monitor.duration(startTime))
+      monitor.fail(monitor.duration(startTime), Some(t.getMessage))
       throw t
 
     case f: akka.actor.Status.Failure =>
@@ -109,7 +127,7 @@ trait VinylDNSDirectives extends Directives {
       f
 
     case e: Throwable =>
-      monitor.fail(monitor.duration(startTime))
+      monitor.fail(monitor.duration(startTime), Some(e.getMessage))
       throw e
 
     case x =>

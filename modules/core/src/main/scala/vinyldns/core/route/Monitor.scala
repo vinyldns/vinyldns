@@ -70,11 +70,18 @@ object Monitor {
 
   def apply(name: String): Monitor = monitors.getOrElseUpdate(name, new Monitor(name))
 
-  def logEntry(monitorName: String, durationMillis: Long, success: Boolean): String = {
+  def logEntry(
+      monitorName: String,
+      durationMillis: Long,
+      success: Boolean,
+      status: Option[String] = None,
+      message: Option[String] = None): String = {
     val sb = new StringBuilder
     sb.append("monitor='").append(monitorName).append("'")
     sb.append(" millis=").append(durationMillis)
     sb.append(" fail=").append(if (success) 0 else 1)
+    status.foreach(s => s" status=$s")
+    message.foreach(m => s" msg=$m")
     sb.toString
   }
 }
@@ -93,14 +100,18 @@ class Monitor(val name: String) extends Instrumented {
 
   def duration(startTimeInMillis: Long): Long = System.currentTimeMillis() - startTimeInMillis
 
-  def capture(duration: Long, success: Boolean): Unit = {
-    logger.info(Monitor.logEntry(name, duration, success))
+  def capture(
+      duration: Long,
+      success: Boolean,
+      status: Option[String] = None,
+      message: Option[String] = None): Unit = {
+    logger.info(Monitor.logEntry(name, duration, success, status, message))
     latency += duration
     if (!success) errors.mark()
   }
 
-  def fail(duration: Long): Unit = {
-    logger.info(Monitor.logEntry(name, duration, success = false))
+  def fail(duration: Long, message: Option[String] = None): Unit = {
+    logger.info(Monitor.logEntry(name, duration, success = false, message = message))
     latency += duration
     errors.mark()
   }
