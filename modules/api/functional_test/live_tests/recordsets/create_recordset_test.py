@@ -1895,8 +1895,8 @@ def test_create_in_shared_zone_by_unassociated_user_succeeds_if_record_type_is_a
 
     finally:
         if create_rs:
-            delete_result = shared_zone_test_context.shared_zone_vinyldns_client.delete_recordset(zone['id'], create_rs['id'], status=202)
-            shared_zone_test_context.shared_zone_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
+            delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
 def test_create_in_shared_zone_by_unassociated_user_fails_if_record_type_is_not_approved(shared_zone_test_context):

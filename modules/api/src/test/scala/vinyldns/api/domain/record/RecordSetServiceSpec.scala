@@ -654,7 +654,7 @@ class RecordSetServiceSpec
       result shouldBe a[NotAuthorizedError]
     }
 
-    "return the unowed record in a shared zone when the record has an approved record type" in {
+    "return the unowned record in a shared zone when the record has an approved record type" in {
       doReturn(IO.pure(Some(sharedZoneRecordNoOwnerGroup)))
         .when(mockRecordRepo)
         .getRecordSet(sharedZone.id, sharedZoneRecordNotFoundOwnerGroup.id)
