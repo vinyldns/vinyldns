@@ -261,7 +261,6 @@ angular.module('controller.records', [])
     function createRecordSet(record) {
         var payload = recordsService.toVinylRecord(record);
         payload.zoneId = $scope.zoneId;
-        payload.ownerGroupId = record.ownerGroupId;
         return recordsService
             .createRecordSet($scope.zoneId, payload)
             .then(recordSetSuccess("Create Record"))
