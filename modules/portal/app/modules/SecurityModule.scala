@@ -37,6 +37,7 @@ import org.pac4j.play.scala.{
 /**
   * Guice DI module to be included in application.conf
   */
+// $COVERAGE-OFF$
 class SecurityModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
@@ -104,3 +105,4 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     oidcClient
   }
 }
+// $COVERAGE-ON$
