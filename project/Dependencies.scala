@@ -1,4 +1,6 @@
 import sbt._
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
 object Dependencies {
 
   lazy val akkaHttpV = "10.1.5"
@@ -16,6 +18,9 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
+  lazy val scalaJSReactVersion = "1.3.1"
+  lazy val scalaCssVersion = "0.5.5"
+  lazy val reactJsVersion = "16.5.1"
 
   lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
@@ -107,5 +112,20 @@ object Dependencies {
     "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
     "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0"
+  )
+
+  lazy val portalv2JsDependencies = Def.setting(
+    Seq(
+      "org.scala-js" %%% "scalajs-dom" % "0.9.1",
+      "com.github.japgolly.scalajs-react" %%% "core" % scalaJSReactVersion,
+      "com.github.japgolly.scalajs-react" %%% "extra" % scalaJSReactVersion,
+      "com.github.japgolly.scalacss" %%% "core" % scalaCssVersion,
+      "com.github.japgolly.scalacss" %%% "ext-react" % scalaCssVersion
+    )
+  )
+
+  lazy val portalv2NpmDependencies = Seq(
+    "react" -> reactJsVersion,
+    "react-dom" -> reactJsVersion
   )
 }
