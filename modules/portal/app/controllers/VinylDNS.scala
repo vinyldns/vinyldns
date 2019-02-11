@@ -96,9 +96,7 @@ class VinylDNS @Inject()(
 
   private val signer = SignerFactory.getSigner("VinylDNS", "us/east")
   private val vinyldnsServiceBackend =
-    configuration
-      .getOptional[String]("portal.vinyldns.backend.url")
-      .getOrElse("http://localhost:9000")
+    configuration.get[String]("portal.vinyldns.backend.url")
 
   val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
   lazy val oidcUsernameField: String =

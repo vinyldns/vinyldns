@@ -47,9 +47,7 @@ class FrontendController @Inject()(
     configuration.getOptional[String]("oidc.jwt-username-field").getOrElse("username")
 
   private val vinyldnsServiceBackend =
-    configuration
-      .getOptional[String]("portal.vinyldns.backend.url")
-      .getOrElse("http://localhost:9000")
+    configuration.get[String]("portal.vinyldns.backend.url")
 
   private val userAction = if (oidcEnabled) {
     Secure.andThen {

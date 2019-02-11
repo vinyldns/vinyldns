@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Custom action that will take a request and do an account lookup for the user
   * If the user is not in session, redirect to the login screen
   * If the user is in session, but the account is not found, redirect to the login screen with a different message
-  * If the user is locked out, redirect to login screen
+  * If the user is locked out, redirect to no access screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
 class LdapFrontendAction(val userLookup: String => IO[Option[User]])(

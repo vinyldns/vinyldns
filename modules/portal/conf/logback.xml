@@ -18,9 +18,4 @@
     <appender-ref ref="STDOUT" />
   </root>
 
-  <logger name="org.pac4j" level="DEBUG">
-    <appender-ref ref="CONSOLE"/>
-  </logger>
-
-
 </configuration>

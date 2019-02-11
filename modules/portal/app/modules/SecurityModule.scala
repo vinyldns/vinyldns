@@ -28,7 +28,11 @@ import org.pac4j.core.profile.CommonProfile
 import org.pac4j.oidc.config.OidcConfiguration
 import org.pac4j.oidc.profile.OidcProfile
 import org.pac4j.play.http.DefaultHttpActionAdapter
-import org.pac4j.play.scala.{DefaultSecurityComponents, Pac4jScalaTemplateHelper, SecurityComponents}
+import org.pac4j.play.scala.{
+  DefaultSecurityComponents,
+  Pac4jScalaTemplateHelper,
+  SecurityComponents
+}
 
 /**
   * Guice DI module to be included in application.conf
@@ -84,6 +88,7 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     oidcConfiguration.setSecret(secret)
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
     oidcConfiguration.setScope(scope)
+    oidcConfiguration.setWithState(false)
 
     oidcConfiguration.setExpireSessionWithToken(true)
     oidcConfiguration.setUseNonce(true)
