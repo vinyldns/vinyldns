@@ -41,7 +41,8 @@ trait BatchChangeValidationsAlgebra {
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): ValidatedBatch[ChangeForValidation]
+      auth: AuthPrincipal,
+      batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
       batchChange: BatchChange,
@@ -148,16 +149,22 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): ValidatedBatch[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation] = {
     val changeGroups = ChangeForValidationMap(changes.getValid)
 
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     changes.mapValid {
       case addUpdate: AddChangeForValidation
           if changeGroups.containsDeleteChangeForValidation(addUpdate.recordKey) =>
-        validateAddUpdateWithContext(addUpdate, changeGroups, auth)
+        validateAddUpdateWithContext(
+          addUpdate,
+          changeGroups,
+          existingRecords,
+          auth,
+          batchOwnerGroupId)
       case add: AddChangeForValidation =>
-        validateAddWithContext(add, changeGroups, existingRecords, auth)
+        validateAddWithContext(add, changeGroups, existingRecords, auth, batchOwnerGroupId)
       case deleteUpdate: DeleteChangeForValidation
           if changeGroups.containsAddChangeForValidation(deleteUpdate.recordKey) =>
         validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth)
@@ -169,13 +176,11 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
-    val validations = recordExists(
-      change.zone.id,
-      change.recordName,
-      change.inputChange.inputName,
-      change.inputChange.typ,
-      existingRecords) |+|
-      userCanDeleteRecordSet(change, auth)
+    val validations =
+      existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+        case Some(rs) => userCanDeleteRecordSet(change, auth, rs.ownerGroupId)
+        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+      }
 
     validations.map(_ => change)
   }
@@ -183,7 +188,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
   def validateAddUpdateWithContext(
       change: AddChangeForValidation,
       changeGroups: ChangeForValidationMap,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      existingRecordSets: ExistingRecordSets,
+      auth: AuthPrincipal,
+      batchOwnerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     // Updates require checking against other batch changes since multiple adds
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
@@ -191,8 +198,18 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case _ => ().validNel
     }
 
-    val validations = typedValidations |+|
-      userCanAddUpdateRecordSet(change, auth)
+    val authAndOwnerGroupValidations: SingleValidation[Unit] =
+      existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+        case Some(rs) =>
+          userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
+            ownerGroupProvidedIfNeeded(
+              change,
+              existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
+              batchOwnerGroupId)
+        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+      }
+
+    val validations = typedValidations |+| authAndOwnerGroupValidations
 
     validations.map(_ => change)
   }
@@ -201,13 +218,11 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
-    val validations = recordExists(
-      change.zone.id,
-      change.recordName,
-      change.inputChange.inputName,
-      change.inputChange.typ,
-      existingRecords) |+|
-      userCanAddUpdateRecordSet(change, auth)
+    val validations =
+      existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+        case Some(rs) => userCanUpdateRecordSet(change, auth, rs.ownerGroupId)
+        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+      }
 
     validations.map(_ => change)
   }
@@ -216,7 +231,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       change: AddChangeForValidation,
       changeGroups: ChangeForValidationMap,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX | PTR =>
         noCnameWithRecordNameInExistingRecords(
@@ -246,13 +262,14 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
 
     val validations =
       typedValidations |+|
-        userCanAddUpdateRecordSet(change, auth) |+|
+        userCanAddRecordSet(change, auth) |+|
         recordDoesNotExist(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
           change.inputChange.typ,
-          existingRecords)
+          existingRecords) |+|
+        ownerGroupProvidedIfNeeded(change, None, ownerGroupId)
 
     validations.map(_ => change)
   }
@@ -294,17 +311,6 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case None => ().validNel
     }
 
-  def recordExists(
-      zoneId: String,
-      recordName: String,
-      inputName: String,
-      typ: RecordType,
-      existingRecordSets: ExistingRecordSets): SingleValidation[Unit] =
-    existingRecordSets.get(zoneId, recordName, typ) match {
-      case Some(_) => ().validNel
-      case None => RecordDoesNotExist(inputName).invalidNel
-    }
-
   def noCnameWithRecordNameInExistingRecords(
       zoneId: String,
       recordName: String,
@@ -341,21 +347,40 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
   }
 
-  // TODO this only works because behind the scenes our ADD and UPDATE is the same
-  // - should update that in the AccessValidations in a different PR
-  def userCanAddUpdateRecordSet(
+  def userCanAddRecordSet(
       input: ChangeForValidation,
       authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
     val result = canAddRecordSet(authPrincipal, input.recordName, input.inputChange.typ, input.zone)
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
+    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
+  }
+
+  def userCanUpdateRecordSet(
+      input: ChangeForValidation,
+      authPrincipal: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[Unit] = {
+    val result =
+      canUpdateRecordSet(
+        authPrincipal,
+        input.recordName,
+        input.inputChange.typ,
+        input.zone,
+        ownerGroupId
+      )
+    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }
 
   def userCanDeleteRecordSet(
       input: ChangeForValidation,
-      authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
+      authPrincipal: AuthPrincipal,
+      ownerGroupId: Option[String]): SingleValidation[Unit] = {
     val result =
-      canDeleteRecordSet(authPrincipal, input.recordName, input.inputChange.typ, input.zone)
-    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.userId)).toValidatedNel
+      canDeleteRecordSet(
+        authPrincipal,
+        input.recordName,
+        input.inputChange.typ,
+        input.zone,
+        ownerGroupId)
+    result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }
 
   def canGetBatchChange(
@@ -375,5 +400,20 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
         ZoneRecordValidations.isNotHighValueFqdn(
           VinylDNSConfig.highValueRegexList,
           change.inputName)
+    }
+
+  def ownerGroupProvidedIfNeeded(
+      change: AddChangeForValidation,
+      existingRecord: Option[RecordSet],
+      ownerGroupId: Option[String]): SingleValidation[Unit] =
+    if (!change.zone.shared || ownerGroupId.isDefined) {
+      ().validNel
+    } else {
+      existingRecord match {
+        case Some(rs) if rs.ownerGroupId.isDefined => ().validNel
+        case _ =>
+          // rs exists without owner group, or this is a create
+          MissingOwnerGroupId(change.recordName, change.zone.name).invalidNel
+      }
     }
 }

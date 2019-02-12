@@ -249,6 +249,10 @@ object TestRecordSetData {
   val completeCreateNS: RecordSetChange =
     pendingCreateNS.copy(status = RecordSetChangeStatus.Complete)
 
+  val pendingCreateSharedRecord: RecordSetChange = makeTestAddChange(sharedZoneRecord, sharedZone)
+  val pendingCreateSharedRecordNotSharedZone: RecordSetChange =
+    makeTestAddChange(notSharedZoneRecordWithOwnerGroup, zoneNotAuthorized)
+
   /* CHANGESETS */
   val pendingChangeSet: ChangeSet = ChangeSet(Seq(pendingCreateAAAA, pendingCreateCNAME))
 

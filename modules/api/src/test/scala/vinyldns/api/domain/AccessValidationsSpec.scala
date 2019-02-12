@@ -490,6 +490,18 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.Delete
     }
 
+    "return AccessLevel.Delete if the record is unowned and the zone is shared" in {
+      val recordOwnerAuth = AuthPrincipal(dummyUser.copy(isSupport = true), Seq())
+      val result =
+        accessValidationTest.getAccessLevel(
+          recordOwnerAuth,
+          sharedZoneRecordNoOwnerGroup.name,
+          sharedZoneRecordNoOwnerGroup.typ,
+          sharedZone,
+          sharedZoneRecordNoOwnerGroup.ownerGroupId)
+      result shouldBe AccessLevel.Delete
+    }
+
     "return the result of getAccessLevel if the user is a record owner but zone is not shared" in {
       val result =
         accessValidationTest.getAccessLevel(

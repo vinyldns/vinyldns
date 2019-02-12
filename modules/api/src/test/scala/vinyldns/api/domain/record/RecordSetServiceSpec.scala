@@ -655,18 +655,33 @@ class RecordSetServiceSpec
     }
 
     "fail when the account is not authorized for the record" in {
-      doReturn(IO.pure(Some(sharedZoneRecordNoOwnerGroup)))
+      doReturn(IO.pure(Some(sharedZoneRecordNotFoundOwnerGroup)))
         .when(mockRecordRepo)
-        .getRecordSet(sharedZone.id, sharedZoneRecordNoOwnerGroup.id)
+        .getRecordSet(sharedZone.id, sharedZoneRecordNotFoundOwnerGroup.id)
 
       doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
 
       val result =
         leftResultOf(
           underTest
-            .getRecordSet(sharedZoneRecordNoOwnerGroup.id, sharedZone.id, okAuth)
+            .getRecordSet(sharedZoneRecordNotFoundOwnerGroup.id, sharedZone.id, okAuth)
             .value)
       result shouldBe a[NotAuthorizedError]
+    }
+
+    "succeed when a record in a shared zone has no owner group ID" in {
+      doReturn(IO.pure(Some(sharedZoneRecordNoOwnerGroup)))
+        .when(mockRecordRepo)
+        .getRecordSet(sharedZone.id, sharedZoneRecordNoOwnerGroup.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val result = underTest
+        .getRecordSet(sharedZoneRecordNoOwnerGroup.id, sharedZone.id, okAuth)
+        .value
+        .unsafeRunSync()
+
+      result should be(right)
     }
 
     "fail if the user is only in the recordSet owner group but the zone is not shared" in {
@@ -852,6 +867,17 @@ class RecordSetServiceSpec
       actual shouldBe pendingCreateAAAA
     }
 
+    "return the record set change if the user is in the record owner group in a shared zone" in {
+      doReturn(IO.pure(Some(pendingCreateSharedRecord)))
+        .when(mockRecordChangeRepo)
+        .getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id)
+
+      val actual: RecordSetChange =
+        rightResultOf(
+          underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id, okAuth).value)
+      actual shouldBe pendingCreateSharedRecord
+    }
+
     "return a RecordSetChangeNotFoundError if it is not found" in {
       doReturn(IO.pure(None))
         .when(mockRecordChangeRepo)
@@ -862,8 +888,26 @@ class RecordSetServiceSpec
     }
 
     "return a NotAuthorizedError if the user is not authorized to access the zone" in {
+      doReturn(IO.pure(Some(zoneActive))).when(mockZoneRepo).getZone(zoneActive.id)
+      doReturn(IO.pure(Some(pendingCreateAAAA)))
+        .when(mockRecordChangeRepo)
+        .getRecordSetChange(zoneActive.id, pendingCreateAAAA.id)
+
       val error = leftResultOf(
-        underTest.getRecordSetChange(zoneNotAuthorized.id, pendingCreateAAAA.id, dummyAuth).value)
+        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id, dummyAuth).value)
+
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return a NotAuthorizedError if the user is in the record owner group but the zone is not shared" in {
+      doReturn(IO.pure(Some(zoneNotAuthorized))).when(mockZoneRepo).getZone(zoneNotAuthorized.id)
+      doReturn(IO.pure(Some(pendingCreateSharedRecordNotSharedZone)))
+        .when(mockRecordChangeRepo)
+        .getRecordSetChange(zoneNotAuthorized.id, pendingCreateSharedRecordNotSharedZone.id)
+
+      val error = leftResultOf(underTest
+        .getRecordSetChange(zoneNotAuthorized.id, pendingCreateSharedRecordNotSharedZone.id, okAuth)
+        .value)
 
       error shouldBe a[NotAuthorizedError]
     }
