@@ -17,6 +17,5 @@
 angular
     .module('constants', [])
     .constant('jsConfig', {
-        batchChangeLimit: 20,
-        sharedDisplayEnabled: false
+        batchChangeLimit: 20
     });

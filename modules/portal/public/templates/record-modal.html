@@ -314,13 +314,13 @@
                 </modal-invalid>
             </modal-element>
 
-            <modal-element label="Record Owner Group" ng-if="sharedDisplayEnabled">
+            <modal-element label="Record Owner Group" ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone">
                 <select class="form-control"
                         ng-model="currentRecord.ownerGroupId"
                         ng-disabled="recordModal.details.readOnly">
                     <option value=""></option>
                     <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
-                            ng-selected="currentRecord.ownerGroupId == group.name">
+                            ng-selected="currentRecord.ownerGroupId == group.id">
                         {{group.name}}</option>
                 </select>
             </modal-element>

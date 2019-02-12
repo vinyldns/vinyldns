@@ -15,7 +15,7 @@
  */
 
 angular.module('controller.records', [])
-    .controller('RecordsController', function ($scope, jsConfig, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
+    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
 
     /**
       * Scope data initial setup
@@ -63,8 +63,6 @@ angular.module('controller.records', [])
 
     $scope.isZoneAdmin = false;
 
-    $scope.sharedDisplayEnabled = jsConfig.sharedDisplayEnabled;
-
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
 
@@ -81,7 +79,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.CONFIRM_DELETE,
             title: "Delete record",
             basics: $scope.recordModalParams.readOnly,
-            details: $scope.recordModalParams.readOnly
+            details: $scope.recordModalParams.readOnly,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $("#record_modal").modal("show");
     };
@@ -99,7 +99,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.CREATE,
             title: "Create record",
             basics: $scope.recordModalParams.editable,
-            details: $scope.recordModalParams.editable
+            details: $scope.recordModalParams.editable,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
@@ -112,7 +114,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.UPDATE,
             title: "Update record",
             basics: $scope.recordModalParams.readOnly,
-            details: $scope.recordModalParams.editable
+            details: $scope.recordModalParams.editable,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
@@ -133,7 +137,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.VIEW_DETAILS,
             title: "Record Info",
             basics: $scope.recordModalParams.readOnly,
-            details: $scope.recordModalParams.readOnly
+            details: $scope.recordModalParams.readOnly,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $("#record_modal").modal("show");
     };
@@ -182,7 +188,7 @@ angular.module('controller.records', [])
     $scope.clearRecord = function(record) {
         record.ttl = undefined;
         record.data = undefined;
-        if ($scope.sharedDisplayEnabled) {
+        if ($scope.sharedDisplayEnabled && $scope.zoneInfo.shared) {
             record.ownerGroupId = undefined;
         }
     };
