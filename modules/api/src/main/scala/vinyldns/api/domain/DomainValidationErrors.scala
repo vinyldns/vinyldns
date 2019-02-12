@@ -123,8 +123,8 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
       s"""Existing record with name "$name" and type "$typ" conflicts with this record."""
 }
 
-final case class UserIsNotAuthorized(user: String) extends DomainValidationError {
-  def message: String = s"""User "$user" is not authorized."""
+final case class UserIsNotAuthorized(userName: String) extends DomainValidationError {
+  def message: String = s"""User "$userName" is not authorized."""
 }
 
 final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)
@@ -142,5 +142,11 @@ final case class RecordInReverseZoneError(name: String, typ: String) extends Dom
 final case class HighValueDomainError(name: String) extends DomainValidationError {
   def message: String =
     s"""Record name "$name" is configured as a High Value Domain, so it cannot be modified."""
+}
+
+final case class MissingOwnerGroupId(recordName: String, zoneName: String)
+    extends DomainValidationError {
+  def message: String =
+    s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record "$recordName"."""
 }
 // $COVERAGE-ON$

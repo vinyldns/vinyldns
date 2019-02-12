@@ -2085,9 +2085,9 @@ def test_update_owner_group_from_admin_in_shared_zone_passes(shared_zone_test_co
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_context):
+def test_update_from_unassociated_user_in_shared_zone_succeeds(shared_zone_test_context):
     """
-    Test that updating with a user that does not have write access fails in a shared zone
+    Test that an unassociated user updating record without existing owner group ID in shared zone succeeds
     """
 
     ok_client = shared_zone_test_context.ok_vinyldns_client
@@ -2103,8 +2103,9 @@ def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_con
 
         update = create_rs
         update['ttl'] = update['ttl'] + 100
-        error = ok_client.update_recordset(update, status=403)
-        assert_that(error, is_('User ok does not have access to update test-shared-success.shared.'))
+        update_response = ok_client.update_recordset(update, status=202)
+        update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')
+        assert_that(update_rs, is_not(has_key('ownerGroupId')))
 
     finally:
         if create_rs:
