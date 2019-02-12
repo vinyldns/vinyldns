@@ -149,17 +149,17 @@ angular.module('service.records', [])
                     newRecord.soaMinimum = record.records[0].minimum;
                     newRecord.canBeEdited = false;
                     break;
-                case 'SRV':
-                    newRecord.srvItems = [];
-                    angular.forEach(record.records, function(item) {
-                        newRecord.srvItems.push(item);
-                    });
-                    newRecord.onlyFour = true;
-                    break;
                 case 'SPF':
                     newRecord.spfRecordData = [];
                     angular.forEach(record.records, function(spfRecord) {
                         newRecord.spfRecordData.push(spfRecord.text);
+                    });
+                    newRecord.onlyFour = true;
+                    break;
+                case 'SRV':
+                    newRecord.srvItems = [];
+                    angular.forEach(record.records, function(item) {
+                        newRecord.srvItems.push(item);
                     });
                     newRecord.onlyFour = true;
                     break;
