@@ -160,7 +160,7 @@ def test_get_recordset_from_shared_zone(shared_zone_test_context):
 
 def test_get_unowned_recordset_from_shared_zone(shared_zone_test_context):
     """
-    Test getting an unowned recordset with no admin rights fails
+    Test getting an unowned recordset with no admin rights succeeds
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
     result_rs = None
@@ -173,7 +173,7 @@ def test_get_unowned_recordset_from_shared_zone(shared_zone_test_context):
 
         # Get the recordset we just made and verify
         ok_client = shared_zone_test_context.ok_vinyldns_client
-        ok_client.get_recordset(result_rs['zoneId'], result_rs['id'], status=403)
+        ok_client.get_recordset(result_rs['zoneId'], result_rs['id'], status=200)
 
     finally:
         if result_rs:
