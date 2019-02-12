@@ -198,11 +198,18 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case _ => ().validNel
     }
 
-    val validations = typedValidations |+| userCanAddRecordSet(change, auth) |+|
-      ownerGroupProvidedIfNeeded(
-        change,
-        existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
-        batchOwnerGroupId)
+    val authAndOwnerGroupValidations: SingleValidation[Unit] =
+      existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+        case Some(rs) =>
+          userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
+            ownerGroupProvidedIfNeeded(
+              change,
+              existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
+              batchOwnerGroupId)
+        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+      }
+
+    val validations = typedValidations |+| authAndOwnerGroupValidations
 
     validations.map(_ => change)
   }

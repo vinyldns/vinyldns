@@ -540,9 +540,31 @@ class BatchChangeValidationsSpec
       okAuth,
       None)
 
-    result(0) shouldBe valid
+    result(0) should haveInvalid[DomainValidationError](
+      RecordDoesNotExist(deleteUpdateA.inputChange.inputName))
     result(1) should haveInvalid[DomainValidationError](
       RecordDoesNotExist(deleteUpdateA.inputChange.inputName))
+  }
+
+  property(
+    """validateChangesWithContext: should succeed for update in shared zone if user belongs to record
+             | owner group""".stripMargin) {
+    val existingRecord =
+      sharedZoneRecord.copy(name = "mx", typ = RecordType.MX, records = List(MXData(200, "mx")))
+    val addUpdateA = AddChangeForValidation(
+      sharedZone,
+      "mx",
+      AddChangeInput("mx.shared.", RecordType.MX, 300, MXData(200, "mx")))
+    val deleteUpdateA =
+      DeleteChangeForValidation(sharedZone, "mx", DeleteChangeInput("mx.shared.", RecordType.MX))
+    val result = validateChangesWithContext(
+      List(addUpdateA.validNel, deleteUpdateA.validNel),
+      ExistingRecordSets(List(existingRecord)),
+      okAuth,
+      None)
+
+    result(0) shouldBe valid
+    result(1) shouldBe valid
   }
 
   property("""validateChangesWithContext: should succeed adding a record

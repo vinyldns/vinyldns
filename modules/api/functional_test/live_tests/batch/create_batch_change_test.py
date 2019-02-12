@@ -1427,7 +1427,8 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Record \"delete-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[9], input_name="update-nonexistent.ok.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="AAAA", record_data="1::1",)
+        assert_failed_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="AAAA", record_data="1::1",
+                                               error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[11], input_name="delete-unauthorized.dummy.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"ok\" is not authorized."])
         assert_failed_change_in_error_response(response[12], input_name="update-unauthorized.dummy.", record_type="AAAA", record_data="1::1",
@@ -1649,7 +1650,8 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Record "non-existent-delete.ok." Does Not Exist: cannot delete a record that does not exist.'])
         assert_failed_change_in_error_response(response[11], input_name="non-existent-update.ok.", record_type="CNAME", change_type="DeleteRecordSet",
                                                error_messages=['Record "non-existent-update.ok." Does Not Exist: cannot delete a record that does not exist.'])
-        assert_successful_change_in_error_response(response[12], input_name="non-existent-update.ok.", record_type="CNAME", record_data="test.com.")
+        assert_failed_change_in_error_response(response[12], input_name="non-existent-update.ok.", record_type="CNAME", record_data="test.com.",
+                                               error_messages=['Record "non-existent-update.ok." Does Not Exist: cannot delete a record that does not exist.'])
         assert_failed_change_in_error_response(response[13], input_name="delete-unauthorized.dummy.", record_type="CNAME", change_type="DeleteRecordSet",
                                                error_messages=['User "ok" is not authorized.'])
         assert_failed_change_in_error_response(response[14], input_name="update-unauthorized.dummy.", record_type="CNAME", change_type="DeleteRecordSet",
@@ -1893,7 +1895,8 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         # context validation failures: record does not exist
         assert_failed_change_in_error_response(response[11], input_name="192.0.2.199", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"192.0.2.199\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[12], ttl=300, input_name="192.0.2.200", record_type="PTR", record_data="has-updated.ptr.")
+        assert_failed_change_in_error_response(response[12], ttl=300, input_name="192.0.2.200", record_type="PTR", record_data="has-updated.ptr.",
+                                                   error_messages=["Record \"192.0.2.200\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[13], input_name="192.0.2.200", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"192.0.2.200\" Does Not Exist: cannot delete a record that does not exist."])
 
@@ -2040,7 +2043,8 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         # context validation failures: record does not exist, failure on update with double add
         assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91::60", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"fd69:27cc:fe91::60\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[8], ttl=300, input_name="fd69:27cc:fe91::65", record_type="PTR", record_data="has-updated.ptr.")
+        assert_failed_change_in_error_response(response[8], ttl=300, input_name="fd69:27cc:fe91::65", record_type="PTR", record_data="has-updated.ptr.",
+                                                   error_messages=["Record \"fd69:27cc:fe91::65\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[9], input_name="fd69:27cc:fe91::65", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"fd69:27cc:fe91::65\" Does Not Exist: cannot delete a record that does not exist."])
         assert_successful_change_in_error_response(response[10], input_name="fd69:27cc:fe91::1122", record_type="PTR", change_type="DeleteRecordSet")
@@ -2203,7 +2207,8 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Record \"delete-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[7], input_name="update-nonexistent.ok.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[8], input_name="update-nonexistent.ok.", record_type="TXT", record_data="test",)
+        assert_failed_change_in_error_response(response[8], input_name="update-nonexistent.ok.", record_type="TXT", record_data="test",
+                                               error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[9], input_name="delete-unauthorized.dummy.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"ok\" is not authorized."])
         assert_failed_change_in_error_response(response[10], input_name="update-unauthorized.dummy.", record_type="TXT", record_data="test",
@@ -2378,7 +2383,8 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Record \"delete-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[9], input_name="update-nonexistent.ok.", record_type="MX", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="MX", record_data={"preference": 1000, "exchange": "foo.bar."},)
+        assert_failed_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="MX", record_data={"preference": 1000, "exchange": "foo.bar."},
+                                               error_messages=['Record "update-nonexistent.ok." Does Not Exist: cannot delete a record that does not exist.'])
         assert_failed_change_in_error_response(response[11], input_name="delete-unauthorized.dummy.", record_type="MX", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"ok\" is not authorized."])
         assert_failed_change_in_error_response(response[12], input_name="update-unauthorized.dummy.", record_type="MX", record_data={"preference": 1000, "exchange": "foo.bar."},
@@ -2859,3 +2865,39 @@ def test_create_batch_delete_record_for_zone_admin_not_in_owner_group_succeeds(s
 
     assert_change_success_response_values(completed_batch['changes'], zone=shared_zone, index=0, record_name="shared-delete",
                                           input_name="shared-delete.shared.", record_data=None, change_type="DeleteRecordSet")
+
+def test_create_batch_update_record_in_shared_zone_for_unassociated_user_in_owner_group_succeeds(shared_zone_test_context):
+    """
+    Test update change in batch for a record for a user belonging to record owner group succeeds
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    shared_zone = shared_zone_test_context.shared_zone
+    shared_record_group = shared_zone_test_context.shared_record_group
+    create_rs = None
+
+    shared_update = get_recordset_json(shared_zone, "mx", "MX", [{"preference": 1, "exchange": "foo.bar."}], 200, shared_record_group['id'])
+
+    batch_change_input = {
+        "changes": [
+            get_change_MX_json("mx.shared.", ttl=300),
+            get_change_MX_json("mx.shared.", change_type="DeleteRecordSet")
+        ]
+    }
+
+    try:
+        create_rs = shared_client.create_recordset(shared_update, status=202)
+        shared_client.wait_until_recordset_change_status(create_rs, 'Complete')
+
+        result = ok_client.create_batch_change(batch_change_input, status=202)
+        completed_batch = ok_client.wait_until_batch_change_completed(result)
+
+        assert_change_success_response_values(completed_batch['changes'], zone=shared_zone, index=0, record_name="mx", ttl=300,
+                                              record_type="MX", input_name="mx.shared.", record_data={'preference': 1, 'exchange': 'foo.bar.'})
+        assert_change_success_response_values(completed_batch['changes'], zone=shared_zone, index=1, record_name="mx",
+                                              record_type="MX", input_name="mx.shared.", record_data=None, change_type="DeleteRecordSet")
+
+    finally:
+        if create_rs:
+            delete_rs = shared_client.delete_recordset(shared_zone['id'], create_rs['recordSet']['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
