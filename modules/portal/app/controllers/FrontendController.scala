@@ -51,6 +51,9 @@ class FrontendController @Inject()(
 
   private val userAction = if (oidcEnabled) {
     Secure.andThen {
+      println("DONE SECURE IN UA")
+      // TODO temp just to get out of security
+      Redirect("/noaccess")
       new OidcFrontendAction(userAccountAccessor.get, userAccountAccessor.create, oidcUsernameField)
     }
   } else {

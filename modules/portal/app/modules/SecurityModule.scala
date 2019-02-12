@@ -16,8 +16,10 @@
 
 package modules
 
-import com.google.inject.AbstractModule
+import com.google.inject.{AbstractModule, Provides}
 import com.nimbusds.jose.JWSAlgorithm
+import org.pac4j.core.authorization.authorizer.RequireAnyRoleAuthorizer
+import org.pac4j.core.authorization.generator.AuthorizationGenerator
 import org.pac4j.core.client.Clients
 import org.pac4j.oidc.client.OidcClient
 import org.pac4j.play.{CallbackController, LogoutController}
@@ -29,6 +31,7 @@ import org.pac4j.play.store.{
   ShiroAesDataEncrypter
 }
 import org.pac4j.core.config.Config
+import org.pac4j.core.context.WebContext
 import org.pac4j.core.http.callback.NoParameterCallbackUrlResolver
 import org.pac4j.core.profile.CommonProfile
 import org.pac4j.oidc.config.OidcConfiguration
@@ -59,22 +62,25 @@ class SecurityModule(environment: Environment, configuration: Configuration)
 
   override def configure(): Unit = {
     // need to bind something, just empty module in the case this is disabled
-    val clients = if (oidcEnabled) {
-      new Clients(baseUrl + "/callback", oidcClient)
-    } else {
-      new Clients()
-    }
+//    val clients = if (oidcEnabled) {
+//      new Clients(baseUrl + "/callback", oidcClient)
+//    } else {
+//      new Clients()
+//    }
 
     val sKey = configuration.get[String]("play.http.secret.key").substring(0, 16)
     val dataEncrypter = new ShiroAesDataEncrypter(sKey)
     val playSessionStore = new PlayCookieSessionStore(dataEncrypter)
     bind(classOf[PlaySessionStore]).toInstance(playSessionStore)
 
-    val config = new Config(clients)
-    config.setHttpActionAdapter(new PlayHttpActionAdapter())
-    bind(classOf[Config]).toInstance(config)
-
     bind(classOf[Pac4jScalaTemplateHelper[CommonProfile]])
+
+    // security components used in controllers
+    bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
+
+//    val config = new Config(clients)
+//    config.setHttpActionAdapter(new PlayHttpActionAdapter())
+//    bind(classOf[Config]).toInstance(config)
 
     // callback
     val callbackController = new CallbackController()
@@ -82,37 +88,45 @@ class SecurityModule(environment: Environment, configuration: Configuration)
     callbackController.setMultiProfile(false)
     bind(classOf[CallbackController]).toInstance(callbackController)
 
+    // logout
     val logoutController = new LogoutController()
     logoutController.setDefaultUrl("/")
     logoutController.setDestroySession(true)
     logoutController.setCentralLogout(true)
     bind(classOf[LogoutController]).toInstance(logoutController)
 
-    // security components used in controllers
-    bind(classOf[SecurityComponents]).to(classOf[DefaultSecurityComponents])
   }
-
-  lazy val oidcClient: OidcClient[OidcProfile, OidcConfiguration] = {
+  @Provides
+  def provideOidcClient: OidcClient[OidcProfile, OidcConfiguration] = {
     val oidcConfiguration = new OidcConfiguration()
     oidcConfiguration.setClientId(clientId)
     oidcConfiguration.setSecret(secret)
     oidcConfiguration.setDiscoveryURI(discoveryUrl)
     oidcConfiguration.setScope(scope)
-    oidcConfiguration.setWithState(false)
-    oidcConfiguration.setPreferredJwsAlgorithm(JWSAlgorithm.RS256)
+    // oidcConfiguration.setWithState(false)
+    // oidcConfiguration.setPreferredJwsAlgorithm(JWSAlgorithm.RS256)
 
-    oidcConfiguration.setExpireSessionWithToken(true)
-    oidcConfiguration.setUseNonce(true)
+    //oidcConfiguration.setExpireSessionWithToken(true)
+    //  oidcConfiguration.setUseNonce(true)
 
     val oidcClient = new OidcClient[OidcProfile, OidcConfiguration](oidcConfiguration)
 
     oidcClient.setCallbackUrlResolver(new NoParameterCallbackUrlResolver())
-    oidcClient.addAuthorizationGenerator { (_, profile) =>
-      profile.addRole("USER")
-      profile
-    }
 
+//    oidcClient.addAuthorizationGenerator { (_, profile) =>
+//      profile.addRole("USER")
+//      profile
+//    }
     oidcClient
   }
+  @Provides
+  def provideConfig(oidcClient: OidcClient[OidcProfile, OidcConfiguration]): Config = {
+    val clients = new Clients(baseUrl + "/callback", oidcClient)
+
+    val config = new Config(clients)
+    config.setHttpActionAdapter(new PlayHttpActionAdapter())
+    config
+  }
+
 }
 // $COVERAGE-ON$

@@ -104,7 +104,7 @@ class VinylDNS @Inject()(
 
   // Need this guy for user actions, brings the session username and user account into the Action
   private val userAction = if (oidcEnabled) {
-    Secure.andThen {
+    Action.andThen {
       new ApiAction(userAccountAccessor.get, true, oidcUsernameField)
     }
   } else {
