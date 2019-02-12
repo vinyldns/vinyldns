@@ -100,16 +100,6 @@ angular.module('service.records', [])
                     });
                     newRecord.onlyFour = true;
                     break;
-                case 'CNAME':
-                    newRecord.cnameRecordData = record.records[0].cname;
-                    break;
-                case 'MX':
-                    newRecord.mxItems = [];
-                    angular.forEach(record.records, function(item) {
-                        newRecord.mxItems.push(item);
-                    });
-                    newRecord.onlyFour = true;
-                    break;
                 case 'AAAA':
                     newRecord.aaaaRecordData = [];
                     angular.forEach(record.records, function(aaaaRecord) {
@@ -117,8 +107,22 @@ angular.module('service.records', [])
                     });
                     newRecord.onlyFour = true;
                     break;
-                case 'TXT':
-                    newRecord.textRecordData = record.records[0].text;
+                case 'CNAME':
+                    newRecord.cnameRecordData = record.records[0].cname;
+                    break;
+                case 'DS':
+                    newRecord.dsKeyTag = record.records[0].keytag;
+                    newRecord.dsAlgorithm = record.records[0].algorithm;
+                    newRecord.dsDigestType = record.records[0].digesttype;
+                    newRecord.dsDigest = record.records[0].digest;
+                    newRecord.canBeEdited = false;
+                    break;
+                case 'MX':
+                    newRecord.mxItems = [];
+                    angular.forEach(record.records, function(item) {
+                        newRecord.mxItems.push(item);
+                    });
+                    newRecord.onlyFour = true;
                     break;
                 case 'NS':
                     newRecord.nsRecordData = [];
@@ -166,6 +170,9 @@ angular.module('service.records', [])
                     });
                     newRecord.onlyFour = true;
                     break;
+                case 'TXT':
+                    newRecord.textRecordData = record.records[0].text;
+                    break;
                 default:
                     newRecord.canBeEdited = false;
             }
@@ -186,6 +193,12 @@ angular.module('service.records', [])
                         newRecord.records.push({"address": address});
                     });
                     break;
+                case 'AAAA':
+                    newRecord.records = [];
+                    angular.forEach(record.aaaaRecordData, function(address) {
+                        newRecord.records.push({"address": address});
+                    });
+                    break;
                 case 'CNAME':
                     newRecord.records = [{"cname": record.cnameRecordData}];
                     break;
@@ -195,14 +208,11 @@ angular.module('service.records', [])
                         newRecord.records.push({"preference": Number(record.preference), "exchange": record.exchange})
                     });
                     break;
-                case 'AAAA':
+                case 'NS':
                     newRecord.records = [];
-                    angular.forEach(record.aaaaRecordData, function(address) {
-                        newRecord.records.push({"address": address});
+                    angular.forEach(record.nsRecordData, function(address) {
+                      newRecord.records.push({"nsdname": address});
                     });
-                    break;
-                case 'TXT':
-                    newRecord.records = [{"text": record.textRecordData}];
                     break;
                 case 'PTR':
                     newRecord.records = [];
@@ -232,16 +242,11 @@ angular.module('service.records', [])
                             "fingerprint": record.fingerprint})
                     });
                     break;
-                case 'NS':
-                    newRecord.records = [];
-                    angular.forEach(record.nsRecordData, function(address) {
-                      newRecord.records.push({"nsdname": address});
-                    });
+                case 'TXT':
+                    newRecord.records = [{"text": record.textRecordData}];
                     break;
                 default:
             }
             return newRecord;
         };
-
-
     });
