@@ -19,17 +19,16 @@ package actions
 import cats.data.OptionT
 import cats.implicits._
 import cats.effect.IO
-import org.pac4j.core.profile.CommonProfile
-import org.pac4j.play.scala.Pac4jScalaTemplateHelper
-
-import play.api.mvc.{ActionFunction, Request, Result}
+import org.pac4j.core.profile.{CommonProfile, ProfileManager}
+import org.pac4j.play.PlayWebContext
+import org.pac4j.play.scala.Security
+import play.api.mvc.{ActionFunction, Request, RequestHeader, Result}
 import vinyldns.core.domain.membership.{LockStatus, User}
 
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class VinylDnsAction(
-    implicit val pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
-    extends ActionFunction[Request, UserRequest] {
+trait VinylDnsAction extends ActionFunction[Request, UserRequest] with Security[CommonProfile] {
 
   val userLookup: String => IO[Option[User]]
   val oidcEnabled: Boolean
@@ -49,13 +48,18 @@ abstract class VinylDnsAction(
       lname: Option[String],
       email: Option[String]): Future[Option[User]] = Future.successful(None)
 
+  private def getProfile(implicit request: RequestHeader): Option[CommonProfile] = {
+    val webContext = new PlayWebContext(request, playSessionStore)
+    val profileManager = new ProfileManager[CommonProfile](webContext)
+    toScala(profileManager.get(true))
+  }
+
   def invokeBlock[A](
       request: Request[A],
       block: UserRequest[A] => Future[Result]): Future[Result] = {
 
     val oidcProfile = if (oidcEnabled) {
-      pac4jTemplateHelper
-        .getCurrentProfile(request)
+      getProfile(request)
     } else {
       None
     }
@@ -68,16 +72,10 @@ abstract class VinylDnsAction(
       request.session.get("username")
     }
 
-    println(s"IN INVOKE; GOT USERNAME: ${username}")
-
     username match {
-      case None =>
-        // TODO switch back, this is just here to exit out of Secure
-        lockedUserResult("test")
-      //notLoggedInResult
+      case None => notLoggedInResult
 
       case Some(_) if oidcEnabled && expired => notLoggedInResult
-
       case Some(un) =>
         // user name in session, let's get it from the repo
         userLookup(un).unsafeToFuture().flatMap {

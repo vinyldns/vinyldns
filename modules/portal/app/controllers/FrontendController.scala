@@ -51,12 +51,14 @@ class FrontendController @Inject()(
 
   private val userAction = if (oidcEnabled) {
     Secure.andThen {
-      println("DONE SECURE IN UA")
-      // TODO temp just to get out of security
-      new OidcFrontendAction(userAccountAccessor.get, userAccountAccessor.create, oidcUsernameField)
+      new OidcFrontendAction(
+        controllerComponents,
+        userAccountAccessor.get,
+        userAccountAccessor.create,
+        oidcUsernameField)
     }
   } else {
-    Action.andThen(new LdapFrontendAction(userAccountAccessor.get))
+    Action.andThen(new LdapFrontendAction(controllerComponents, userAccountAccessor.get))
   }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)

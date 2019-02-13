@@ -18,10 +18,9 @@ package actions
 
 import cats.effect.IO
 import controllers.{CacheHeader, VinylDNS}
-import org.pac4j.core.profile.CommonProfile
-import org.pac4j.play.scala.Pac4jScalaTemplateHelper
+import javax.inject.Inject
+import org.pac4j.play.scala.SecurityComponents
 import play.api.mvc.Result
-import play.api.mvc.Results.Redirect
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,9 +32,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to no access screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class LdapFrontendAction(val userLookup: String => IO[Option[User]])(
-    implicit val executionContext: ExecutionContext,
-    pac4jTemplateHelper: Pac4jScalaTemplateHelper[CommonProfile])
+class LdapFrontendAction @Inject()(
+    val controllerComponents: SecurityComponents,
+    val userLookup: String => IO[Option[User]])(implicit val executionContext: ExecutionContext)
     extends VinylDnsAction
     with CacheHeader {
 
