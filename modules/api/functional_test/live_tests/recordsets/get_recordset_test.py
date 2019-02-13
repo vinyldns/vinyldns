@@ -197,7 +197,8 @@ def test_get_unowned_recordset_from_shared_zone_fails_if_record_type_not_approve
 
         # Get the recordset we just made and verify
         ok_client = shared_zone_test_context.ok_vinyldns_client
-        ok_client.get_recordset(result_rs['zoneId'], result_rs['id'], status=200)
+        error = ok_client.get_recordset(result_rs['zoneId'], result_rs['id'], status=403)
+        assert_that(error, is_("User ok does not have access to view test-get-unowned-recordset.shared."))
 
     finally:
         if result_rs:
