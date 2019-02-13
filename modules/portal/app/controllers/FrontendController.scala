@@ -53,7 +53,6 @@ class FrontendController @Inject()(
     Secure.andThen {
       println("DONE SECURE IN UA")
       // TODO temp just to get out of security
-      Redirect("/noaccess")
       new OidcFrontendAction(userAccountAccessor.get, userAccountAccessor.create, oidcUsernameField)
     }
   } else {

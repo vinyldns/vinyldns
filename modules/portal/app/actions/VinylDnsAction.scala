@@ -52,7 +52,6 @@ abstract class VinylDnsAction(
   def invokeBlock[A](
       request: Request[A],
       block: UserRequest[A] => Future[Result]): Future[Result] = {
-    // Get user from session.
 
     val oidcProfile = if (oidcEnabled) {
       pac4jTemplateHelper
@@ -69,8 +68,13 @@ abstract class VinylDnsAction(
       request.session.get("username")
     }
 
+    println(s"IN INVOKE; GOT USERNAME: ${username}")
+
     username match {
-      case None => notLoggedInResult
+      case None =>
+        // TODO switch back, this is just here to exit out of Secure
+        lockedUserResult("test")
+      //notLoggedInResult
 
       case Some(_) if oidcEnabled && expired => notLoggedInResult
 

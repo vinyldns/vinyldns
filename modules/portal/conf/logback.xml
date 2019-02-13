@@ -18,7 +18,7 @@
     <appender-ref ref="STDOUT" />
   </root>
 
-  <root name="org.pac4j" level="DEBUG">
+  <root name="org.pac4j" level="INFO">
     <appender-ref ref="STDOUT" />
   </root>
 
