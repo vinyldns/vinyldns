@@ -19,7 +19,7 @@ package controllers
 import java.net.{URI, URL}
 import java.util
 
-import actions.{ApiAction, LdapFrontendAction}
+import actions.{ApiAction, FrontendAction}
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
@@ -111,7 +111,7 @@ class VinylDNS @Inject()(
 
   // Need this guy for user actions, brings the session username and user account into the Action
   private val userAction = Action.andThen(new ApiAction(userAccountAccessor.get))
-  private val frontendAction = Action.andThen(new LdapFrontendAction(userAccountAccessor.get))
+  private val frontendAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {

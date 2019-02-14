@@ -16,7 +16,7 @@
 
 package controllers
 
-import actions.{LdapFrontendAction, OidcFrontendAction}
+import actions.FrontendAction
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
 import org.slf4j.LoggerFactory
@@ -42,11 +42,7 @@ class FrontendController @Inject()(
 
   private val oidcEnabled: Boolean =
     configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
-  private val userAction = if (oidcEnabled) {
-    Action.andThen(new OidcFrontendAction(userAccountAccessor.get))
-  } else {
-    Action.andThen(new LdapFrontendAction(userAccountAccessor.get))
-  }
+  private val userAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)

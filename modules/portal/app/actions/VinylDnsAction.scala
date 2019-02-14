@@ -17,8 +17,9 @@
 package actions
 
 import cats.effect.IO
-import play.api.mvc.{ActionFunction, Request, Result}
+import play.api.mvc.{ActionFunction, Request, Result, Session}
 import vinyldns.core.domain.membership.{LockStatus, User}
+
 import scala.concurrent.{ExecutionContext, Future}
 
 trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
@@ -31,9 +32,13 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
 
   def lockedUserResult(un: String): Future[Result]
 
+  def getValidUsernameLdap(session: Session): Option[String] = {
+    session.get("username")
+  }
+
   def invokeBlock[A](request: Request[A], block: UserRequest[A] => Future[Result]): Future[Result] =
     // if the user name is not in session, reject
-    request.session.get("username") match {
+    getValidUsernameLdap(request.session) match {
       case None => notLoggedInResult
 
       case Some(un) =>
