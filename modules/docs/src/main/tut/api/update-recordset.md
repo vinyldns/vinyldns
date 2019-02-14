@@ -23,6 +23,7 @@ name          | string        | yes         | the name of the recordset being up
 type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
 records       | array of record data | yes  | record data for recordset, see [RecordSet Model](../api/recordset-model) |
+ownerGroupId  | string        | no          | ownership assignment, applicable if the recordset is in a [shared zone](../api/zone-model#shared-zones) |
 
 #### EXAMPLE HTTP REQUEST
 ```
@@ -36,7 +37,8 @@ records       | array of record data | yes  | record data for recordset, see [Re
       "address": "6.5.4.3"
     }
   ],
-  "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c"
+  "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c",
+  "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
 }
 ```
 
@@ -118,7 +120,8 @@ id            | string        | the id of the change.  This is not the id of the
       }
     ],
     "id": "dd9c1120-0594-4e61-982e-8ddcbc8b2d21",
-    "account": "9b22b686-54bc-47fb-a8f8-cdc48e6d04ae"
+    "account": "9b22b686-54bc-47fb-a8f8-cdc48e6d04ae",
+    "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   },
   "id": "df69bc45-2942-4fb7-813c-4dd21cfad7fa"
 }

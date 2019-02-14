@@ -16,6 +16,7 @@ section: "api"
 - [Zone ACL Rule Examples](#zone-acl-rule-example)
 - [PTR ACL Rule](#ptr-acl-rule)
 - [PTR ACL Rule Examples](#ptr-acl-rule-example)
+- [Shared Zones](#shared-zones) 
 
 #### ZONE ATTRIBUTES <a id="zone-attributes"></a>
 
@@ -30,7 +31,7 @@ account       | string      | **DEPRECATED** The account that created the zone |
 email         | string      | The distribution email for the zone |
 connection    | ZoneConnection | The connection used to issue DDNS updates to the backend zone.  If not provided, default keys will be used.  See the [Zone Connection Attributes](#zone-conn-attr) for more information |
 transferConnection | ZoneConnection | The connection that is used to sync the zone with the DNS backend.  This can be different than the update connection.  If not provided, default keys will be used |
-shared        | boolean     | **DEPRECATED** An indicator that the zone is shared with anyone.  No longer used as ACLs are now used to manage zones. |
+shared        | boolean     | An indicator that the zone is shared with anyone. At this time only VinylDNS administrators can set this to true.|
 acl           | ZoneACL     | The access control rules governing the zone.  See the [Zone ACL Rule Attributes](#zone-acl-rule-attr) for more information
 id            | string      | The unique identifier for this zone
 
@@ -199,7 +200,7 @@ Under this rule, the user specified will be able to view, create, edit, and dele
 ```
 
 ### PTR ACL RULES WITH CIDR MASKS <a id="ptr-acl-rule"></a>
-Acl rules can be applied to specific record types and can include record masks to further narrow down which records they
+ACL rules can be applied to specific record types and can include record masks to further narrow down which records they
 apply to. These record masks apply to record names, but because PTR record names are part their reverse zone ip, the use of regular
 expressions for record masks are not supported.
 <br><br>
@@ -241,5 +242,8 @@ The **IPv6** ACL Rule
 }
 ```
 
-Will give Read permissions to PTR Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address
-<br><br>
+Will give Read permissions to PTR Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address.
+
+### SHARED ZONES <a id="shared-zones"></a>
+
+Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in those zones. Once a record is owned, only users in the record owner group, the zone administrators and those with relevant ACL rules can modify or delete the record. The [batch change API endpoint](../api/create-batchchange) and [batch change area of the portal](../portal/batch-changes) are where users can create new records in shared zones, modify records they own, or claim unowned records. If a zone's shared state changes to false the record ownership access is no longer applicable.
