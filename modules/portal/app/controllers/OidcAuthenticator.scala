@@ -33,6 +33,7 @@ import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse
 import controllers.VinylDNS.UserDetails
 import javax.inject.{Inject, Singleton}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.ws.{WSClient, WSRequest}
 
@@ -63,17 +64,20 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
 
   import OidcAuthenticator._
 
+  private val logger: Logger = LoggerFactory.getLogger(classOf[OidcAuthenticator])
+  val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
+
   lazy val oidcInfo: OidcConfig = pureconfig.loadConfigOrThrow[OidcConfig]("oidc")
 
-  val clientID = new ClientID(oidcInfo.clientId)
-  val clientSecret = new Secret(oidcInfo.secret)
-  val clientAuth = new ClientSecretBasic(clientID, clientSecret)
-  val tokenEndpoint = new URI(oidcInfo.tokenEndpoint)
-  val redirectUri: String = oidcInfo.redirectUri + "/callback"
+  lazy val clientID = new ClientID(oidcInfo.clientId)
+  lazy val clientSecret = new Secret(oidcInfo.secret)
+  lazy val clientAuth = new ClientSecretBasic(clientID, clientSecret)
+  lazy val tokenEndpoint = new URI(oidcInfo.tokenEndpoint)
+  lazy val redirectUri: String = oidcInfo.redirectUri + "/callback"
 
-  val sc = new SimpleSecurityContext()
+  lazy val sc = new SimpleSecurityContext()
 
-  val jwtProcessor: JWTProcessor[SimpleSecurityContext] = {
+  lazy val jwtProcessor: JWTProcessor[SimpleSecurityContext] = {
     val processor = new DefaultJWTProcessor[SimpleSecurityContext]()
 
     val keySource =
@@ -86,7 +90,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     processor
   }
 
-  def oidcGetCode(): WSRequest = {
+  lazy val (oidcGetCodeUrl, oidcGetCodeQueryString) = {
     val responseType = "code"
 
     val call = wsClient
@@ -97,27 +101,60 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
         "redirect_uri" -> redirectUri,
         "scope" -> "openid profile email")
 
-    call
+    (call.url, call.queryString)
   }
 
-  def isNotExpired(claims: JWTClaimsSet): Boolean = {
+  def isNotExpired(claimsSet: JWTClaimsSet): Boolean = {
     val now = new Date()
+    val expirationTime = claimsSet.getExpirationTime
 
-    now.before(claims.getExpirationTime) &&
-    now.after(claims.getNotBeforeTime) &&
-    now.after(claims.getIssueTime)
+    val user = getUsernameFromClaims(claimsSet)
+    logger.debug(s"Current time: $now, token for $user will expire at: $expirationTime")
+
+    val expired = now.before(expirationTime) &&
+      now.after(claimsSet.getNotBeforeTime) &&
+      now.after(claimsSet.getIssueTime)
+
+    if (expired) {
+      logger.info(s"Token for $user is expired")
+    }
+
+    expired
   }
 
   def validateIdToken(claimsSet: JWTClaimsSet): Boolean = {
-    val tid = claimsSet.getStringClaim("tid")
-    val appId = claimsSet.getStringListClaim("aud").get(0)
+    val isValidTenantId =
+      Try(claimsSet.getStringClaim("tid") == oidcInfo.tenantId).toOption.getOrElse(false)
+    val isValidAppId =
+      Try(claimsSet.getStringListClaim("aud").get(0) == oidcInfo.clientId).toOption.getOrElse(false)
 
-    isNotExpired(claimsSet) && tid == oidcInfo.tenantId && oidcInfo.clientId == appId
+    if (isValidAppId && isValidTenantId) {
+      isNotExpired(claimsSet)
+    } else {
+      val user = getUsernameFromClaims(claimsSet)
+      logger.error(
+        s"Token issue for user $user; isValidTenantId = $isValidTenantId, isValidAppId = $isValidAppId")
+      false
+    }
+  }
+
+  private def getUsernameFromClaims(claimsSet: JWTClaimsSet): Option[String] =
+    Try(claimsSet.getStringClaim(oidcInfo.jwtUsernameField)).toOption
+
+  def getUsernameFromToken(jwtClaimsSetString: String): Option[String] = {
+    val claimsSet = JWTClaimsSet.parse(jwtClaimsSetString)
+    val isValid = validateIdToken(claimsSet)
+    if (isValid) {
+      // only return username if the token is valid
+      getUsernameFromClaims(claimsSet)
+    } else {
+      None
+    }
   }
 
   def getUserFromClaims(claimsSet: JWTClaimsSet): Option[OidcUserDetails] =
     for {
-      username <- Try(claimsSet.getStringClaim(oidcInfo.jwtUsernameField)).toOption
+      username <- getUsernameFromClaims(claimsSet)
       email = Try(claimsSet.getStringClaim("email")).toOption
       firstname = Try(claimsSet.getStringClaim("givenname")).toOption
       lastname = Try(claimsSet.getStringClaim("surname")).toOption
@@ -139,9 +176,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     }
 
     val successResponse = tokenResponse.toSuccessResponse.asInstanceOf[OIDCTokenResponse]
-    // Get the ID and access token
     val idToken = successResponse.getOIDCTokens.getIDToken
-    //val accessToken = successResponse.getOIDCTokens.getAccessToken
 
     val claimsSet = jwtProcessor.process(idToken, sc)
     if (validateIdToken(claimsSet)) {

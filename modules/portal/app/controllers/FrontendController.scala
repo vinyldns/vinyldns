@@ -38,11 +38,9 @@ class FrontendController @Inject()(
     oidcAuthenticator: OidcAuthenticator
 ) extends AbstractController(components) {
 
-  val ID_TOKEN = "idToken"
-
-  private val oidcEnabled: Boolean =
-    configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
-  private val userAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  private val oidcEnabled: Boolean = oidcAuthenticator.oidcEnabled
+  private val userAction =
+    Action.andThen(new FrontendAction(userAccountAccessor.get, oidcAuthenticator))
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)
@@ -50,11 +48,13 @@ class FrontendController @Inject()(
 
   def loginPage(): Action[AnyContent] = Action { implicit request =>
     if (oidcEnabled) {
-      request.session.get(ID_TOKEN) match {
-        case Some(t) => Redirect("/index")
+      request.session.get(VinylDNS.ID_TOKEN) match {
+        case Some(_) => Redirect("/index")
         case None =>
-          val oidcRedirect = oidcAuthenticator.oidcGetCode()
-          Redirect(oidcRedirect.url, oidcRedirect.queryString)
+          logger.info(s"No ${VinylDNS.ID_TOKEN} in session; Initializing oidc login")
+          println(oidcAuthenticator.oidcGetCodeUrl)
+          print(oidcAuthenticator.oidcGetCodeQueryString)
+          Redirect(oidcAuthenticator.oidcGetCodeUrl, oidcAuthenticator.oidcGetCodeQueryString)
       }
     } else {
       request.session.get("username") match {

@@ -16,7 +16,6 @@
 
 package controllers
 
-import java.net.{URI, URL}
 import java.util
 
 import actions.{ApiAction, FrontendAction}
@@ -45,6 +44,8 @@ import scala.util.{Failure, Success, Try}
 object VinylDNS {
 
   import play.api.mvc._
+
+  val ID_TOKEN = "idToken"
 
   object Alerts {
     private val TYPE = "alertType"
@@ -110,8 +111,10 @@ class VinylDNS @Inject()(
       .getOrElse("http://localhost:9000")
 
   // Need this guy for user actions, brings the session username and user account into the Action
-  private val userAction = Action.andThen(new ApiAction(userAccountAccessor.get))
-  private val frontendAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  private val userAction =
+    Action.andThen(new ApiAction(userAccountAccessor.get, oidcAuthenticator))
+  private val frontendAction =
+    Action.andThen(new FrontendAction(userAccountAccessor.get, oidcAuthenticator))
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {
@@ -124,9 +127,8 @@ class VinylDNS @Inject()(
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
-  val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
-
   def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
+    Logger.error(s"IN OIDC CALLBACK")
     val validToken = oidcAuthenticator.oidcCallback(request.getQueryString("code"))
 
     validToken.map {
@@ -137,7 +139,7 @@ class VinylDNS @Inject()(
 
         user match {
           case Some(u) =>
-            Redirect("/index").withSession("idToken" -> t.toString, "username" -> u.userName)
+            Redirect("/index").withSession(ID_TOKEN -> t.toString)
           case None => Redirect("/login").withNewSession
         }
 
