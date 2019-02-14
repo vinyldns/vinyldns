@@ -111,15 +111,15 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     val user = getUsernameFromClaims(claimsSet)
     logger.debug(s"Current time: $now, token for $user will expire at: $expirationTime")
 
-    val expired = now.before(expirationTime) &&
+    val idTokenStillValid = now.before(expirationTime) &&
       now.after(claimsSet.getNotBeforeTime) &&
       now.after(claimsSet.getIssueTime)
 
-    if (expired) {
+    if (!idTokenStillValid) {
       logger.info(s"Token for $user is expired")
     }
 
-    expired
+    idTokenStillValid
   }
 
   def validateIdToken(claimsSet: JWTClaimsSet): Boolean = {
