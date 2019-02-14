@@ -33,8 +33,18 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                <h5>Created: {{batch.createdTimestamp}}</h5>
-                <h5 ng-if="batch.comments">Description: {{batch.comments}}</h5>
+                <p><strong>Created:</strong> {{batch.createdTimestamp}}</p>
+                <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
+                @if(meta.sharedDisplayEnabled) {
+                    <p ng-if="batch.ownerGroupName"><strong>Record Owner Group:</strong> {{batch.ownerGroupName}}</p>
+                    <p ng-if="batch.ownerGroupId && !batch.ownerGroupName">
+                        <strong>Record Owner Group:</strong>
+                        <span class="text-danger" data-toggle="tooltip" data-placement="top"
+                              title="Group with ID {{batch.ownerGroupId}} no longer exists.">
+                            <span class="fa fa-warning"></span> Group deleted
+                        </span>
+                    </p>
+                }
             </div>
         </div>
         <br>
