@@ -24,8 +24,11 @@ import scala.concurrent.{ExecutionContext, Future}
 trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
   val userLookup: String => IO[Option[User]]
   implicit val executionContext: ExecutionContext
+
   def notLoggedInResult: Future[Result]
+
   def cantFindAccountResult(un: String): Future[Result]
+
   def lockedUserResult(un: String): Future[Result]
 
   def invokeBlock[A](request: Request[A], block: UserRequest[A] => Future[Result]): Future[Result] =

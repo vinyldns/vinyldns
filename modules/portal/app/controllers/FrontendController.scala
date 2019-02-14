@@ -16,7 +16,7 @@
 
 package controllers
 
-import actions.FrontendAction
+import actions.{LdapFrontendAction, OidcFrontendAction}
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
 import org.slf4j.LoggerFactory
@@ -34,27 +34,45 @@ import scala.concurrent.Future
 class FrontendController @Inject()(
     components: ControllerComponents,
     configuration: Configuration,
-    userAccountAccessor: UserAccountAccessor)
-    extends AbstractController(components) {
+    userAccountAccessor: UserAccountAccessor,
+    oidcAuthenticator: OidcAuthenticator
+) extends AbstractController(components) {
 
-  private val userAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  val ID_TOKEN = "idToken"
+
+  private val oidcEnabled: Boolean =
+    configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
+  private val userAction = if (oidcEnabled) {
+    Action.andThen(new OidcFrontendAction(userAccountAccessor.get))
+  } else {
+    Action.andThen(new LdapFrontendAction(userAccountAccessor.get))
+  }
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
 
   def loginPage(): Action[AnyContent] = Action { implicit request =>
-    request.session.get("username") match {
-      case Some(_) => Redirect("/index")
-      case None =>
-        val flash = request.flash
-        Logger.error(s"$flash")
-        VinylDNS.Alerts.fromFlash(flash) match {
-          case Some(VinylDNS.Alert("danger", message)) =>
-            Ok(views.html.login(Some(message)))
-          case _ =>
-            Ok(views.html.login())
-        }
+    if (oidcEnabled) {
+      request.session.get(ID_TOKEN) match {
+        case Some(t) => Redirect("/index")
+        case None =>
+          val oidcRedirect = oidcAuthenticator.oidcGetCode()
+          Redirect(oidcRedirect.url, oidcRedirect.queryString)
+      }
+    } else {
+      request.session.get("username") match {
+        case Some(_) => Redirect("/index")
+        case None =>
+          val flash = request.flash
+          Logger.error(s"$flash")
+          VinylDNS.Alerts.fromFlash(flash) match {
+            case Some(VinylDNS.Alert("danger", message)) =>
+              Ok(views.html.login(Some(message)))
+            case _ =>
+              Ok(views.html.login())
+          }
+      }
     }
   }
 

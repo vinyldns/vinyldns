@@ -31,7 +31,7 @@ import vinyldns.core.health.HealthService
 import scala.util.Success
 
 trait TestApplicationData { this: Mockito =>
-  val frodoDetails = UserDetails(
+  val frodoDetails = LdapUserDetails(
     "CN=frodo,OU=hobbits,DC=middle,DC=earth",
     "frodo",
     Some("fbaggins@hobbitmail.me"),
@@ -84,7 +84,7 @@ trait TestApplicationData { this: Mockito =>
   ).toOption.get
 
   val serviceAccountDetails =
-    UserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
+    LdapUserDetails("CN=frodo,OU=hobbits,DC=middle,DC=earth", "service", None, None, None)
   val serviceAccount =
     User("service", "key", "secret", None, None, None, DateTime.now, "service-uuid")
 
@@ -108,7 +108,7 @@ trait TestApplicationData { this: Mockito =>
     Some("sgamgee@hobbitmail.me"),
     DateTime.now,
     "sam-uuid")
-  val samDetails = UserDetails(
+  val samDetails = LdapUserDetails(
     "CN=sam,OU=hobbits,DC=middle,DC=earth",
     "sam",
     Some("sgamgee@hobbitmail.me"),

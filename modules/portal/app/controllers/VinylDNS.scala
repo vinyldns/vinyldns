@@ -16,9 +16,10 @@
 
 package controllers
 
+import java.net.{URI, URL}
 import java.util
 
-import actions.{ApiAction, FrontendAction}
+import actions.{ApiAction, LdapFrontendAction}
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
@@ -30,8 +31,8 @@ import play.api.mvc._
 import java.util.HashMap
 
 import cats.effect.IO
+
 import javax.inject.{Inject, Singleton}
-import scodec.bits.ByteVector
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
@@ -78,6 +79,13 @@ object VinylDNS {
         lockStatus = user.lockStatus
       )
   }
+
+  trait UserDetails {
+    val username: String
+    val email: Option[String]
+    val firstName: Option[String]
+    val lastName: Option[String]
+  }
 }
 
 @Singleton
@@ -87,11 +95,13 @@ class VinylDNS @Inject()(
     userAccountAccessor: UserAccountAccessor,
     wsClient: WSClient,
     components: ControllerComponents,
-    crypto: CryptoAlgebra)
+    crypto: CryptoAlgebra,
+    oidcAuthenticator: OidcAuthenticator)
     extends AbstractController(components)
     with CacheHeader {
 
   import play.api.mvc._
+  import VinylDNS._
 
   private val signer = SignerFactory.getSigner("VinylDNS", "us/east")
   private val vinyldnsServiceBackend =
@@ -101,7 +111,7 @@ class VinylDNS @Inject()(
 
   // Need this guy for user actions, brings the session username and user account into the Action
   private val userAction = Action.andThen(new ApiAction(userAccountAccessor.get))
-  private val frontendAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  private val frontendAction = Action.andThen(new LdapFrontendAction(userAccountAccessor.get))
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {
@@ -114,60 +124,25 @@ class VinylDNS @Inject()(
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
-  val authEndpoint = configuration.get[String]("oidc.authorization-endpoint")
-  val tokenEndpoint = configuration.get[String]("oidc.token-endpoint")
-  val clientId = configuration.get[String]("oidc.client-id")
-  val secret = configuration.get[String]("oidc.secret")
-  val oidcScope = "openid profile email"
+  val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
 
-  def oidc(): Action[AnyContent] = Action { implicit request =>
-    // TODO here should 1st check if the user info is already in session (and not expired and such)
+  def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
+    val validToken = oidcAuthenticator.oidcCallback(request.getQueryString("code"))
 
-    val responseType = "code"
-    val redirectUri = routes.VinylDNS.oidcCallback.absoluteURL()
+    validToken.map {
+      case Some(t) =>
+        val userDetails = oidcAuthenticator.getUserFromClaims(t)
+        val user = userDetails.map(processLoginWithDetails)
+        val jsonClaims = t.toString
 
-    val queryParams = (
-      "client_id" -> clientId,
-      "response_type" -> responseType,
-      "redirect_uri" -> redirectUri,
-      "scope" -> "openid profile email")
+        user match {
+          case Some(u) =>
+            Redirect("/index").withSession("idToken" -> t.toString, "username" -> u.userName)
+          case None => Redirect("/login").withNewSession
+        }
 
-    val call = wsClient
-      .url(authEndpoint)
-      .withQueryStringParameters(
-        "client_id" -> clientId,
-        "response_type" -> responseType,
-        "redirect_uri" -> redirectUri,
-        "scope" -> "openid profile email")
-
-    Redirect(call.url, call.queryString)
-  }
-
-  def oidcCallback(): Action[AnyContent] = Action { implicit request =>
-    // TODO error handling here
-    val code = request.getQueryString("code").get
-
-    val grantType = "authorization_code"
-    val redirectUri = routes.VinylDNS.oidcCallback.absoluteURL()
-
-    wsClient
-      .url(tokenEndpoint)
-      .post(
-        Map(
-          "client_id" -> Seq(clientId),
-          "grant_type" -> Seq(grantType),
-          "redirect_uri" -> Seq(redirectUri),
-          "scope" -> Seq(oidcScope),
-          "code" -> Seq(code),
-          "client_secret" -> Seq(secret)
-        )
-      )
-      .foreach { resp =>
-        println(resp.body)
-      }
-
-    // ideally should go to the page you were intending to visit
-    Redirect("/")
+      case None => Redirect("/login").withNewSession
+    }
   }
 
   def login(): Action[AnyContent] = Action { implicit request =>
@@ -178,7 +153,6 @@ class VinylDNS @Inject()(
       )
     )
     val (username, password) = userForm.bindFromRequest.get
-
     processLogin(username, password)
   }
 
@@ -326,29 +300,35 @@ class VinylDNS @Inject()(
         Logger.error(s"Authentication failed for [$username]", error)
         Redirect("/login").flashing(
           VinylDNS.Alerts.error("Authentication failed, please try again"))
-      case Success(userDetails: UserDetails) =>
+      case Success(userDetails: LdapUserDetails) =>
         Logger.info(
           s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
-
-        val user = userAccountAccessor
-          .get(userDetails.username)
-          .flatMap {
-            case None =>
-              Logger.info(s"Creating user account for ${userDetails.username}")
-              createNewUser(userDetails).map { u: User =>
-                Logger.info(s"User account for ${u.userName} created with id ${u.id}")
-                u
-              }
-            case Some(u) =>
-              Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
-              IO.pure(u)
-          }
-          .unsafeRunSync()
-
-        Logger.info(s"--NEW MEMBERSHIP-- user [${user.userName}] logged in with id [${user.id}]")
+        val user = processLoginWithDetails(userDetails)
         Redirect("/index")
           .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
     }
+
+  def processLoginWithDetails(userDetails: UserDetails): User = {
+    Logger.info(s"user [${userDetails.username}] logged in")
+
+    val user = userAccountAccessor
+      .get(userDetails.username)
+      .flatMap {
+        case None =>
+          Logger.info(s"Creating user account for ${userDetails.username}")
+          createNewUser(userDetails).map { u: User =>
+            Logger.info(s"User account for ${u.userName} created with id ${u.id}")
+            u
+          }
+        case Some(u) =>
+          Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
+          IO.pure(u)
+      }
+      .unsafeRunSync()
+
+    Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id [${user.id}]")
+    user
+  }
 
   def getZones: Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$

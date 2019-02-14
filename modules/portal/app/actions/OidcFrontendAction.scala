@@ -31,25 +31,26 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to login screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class FrontendAction(val userLookup: String => IO[Option[User]])(
+class OidcFrontendAction(val userLookup: String => IO[Option[User]])(
     implicit val executionContext: ExecutionContext)
     extends VinylDnsAction
     with CacheHeader {
 
   def notLoggedInResult: Future[Result] =
     Future.successful(
-      Redirect("/login")
-        .flashing(VinylDNS.Alerts.error("You are not logged in. Please login to continue."))
+      Redirect("/login").withNewSession
         .withHeaders(cacheHeaders: _*))
 
   def cantFindAccountResult(un: String): Future[Result] =
     Future.successful(
-      Redirect("/login")
-        .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
+      Redirect("/login").withNewSession
         .withHeaders(cacheHeaders: _*))
 
-  def lockedUserResult(un: String): Future[Result] =
+  def lockedUserResult: Future[Result] =
     Future.successful(
-      Redirect("/noaccess")
+      Redirect("/login")
+        .flashing(VinylDNS.Alerts.error(s"Account locked"))
+        .withNewSession
         .withHeaders(cacheHeaders: _*))
+
 }

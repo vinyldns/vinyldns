@@ -103,6 +103,9 @@ object Dependencies {
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
-    "com.typesafe.play"         %% "play-specs2"                    % playV % "test"
+    "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    "com.pauldijou"             %% "jwt-core"                       % "1.1.0",
+    "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
+    "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0"
   )
 }
