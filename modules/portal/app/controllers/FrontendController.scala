@@ -52,8 +52,6 @@ class FrontendController @Inject()(
         case Some(_) => Redirect("/index")
         case None =>
           logger.info(s"No ${VinylDNS.ID_TOKEN} in session; Initializing oidc login")
-          println(oidcAuthenticator.oidcGetCodeUrl)
-          print(oidcAuthenticator.oidcGetCodeQueryString)
           Redirect(oidcAuthenticator.oidcGetCodeUrl, oidcAuthenticator.oidcGetCodeQueryString)
       }
     } else {
