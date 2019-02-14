@@ -23,7 +23,7 @@ name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 comments      | string        | no          | Optional comments about the batch change. |
 changes       | Array of ChangeInput| yes         | Set of *ChangeInput*s in the batch change. A *ChangeInput*  is an [AddChangeInput](#addchangeinput-attributes) or [DeleteChangeInput](#deletechangeinput-attributes). Type is inferred from specified *changeType*.|
-
+ownerGroupId  | string        | sometimes   | Ownership assignment. Required if any records in the batch change are in [shared zones](../api/zone-model#shared-zones) and are new or unowned. |
 
 ##### AddChangeInput <a id="addchangeinput-attributes" />
 
@@ -48,6 +48,7 @@ type          | RecordType    | yes         | Type of DNS record. Supported reco
 ```
 {
     "comments": "this is optional",
+    "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
     "changes": [
         {
             "inputName": "example.com.",
@@ -117,7 +118,8 @@ On success, the response from create batch change includes the fields the user i
     "userId": "vinyl", 
     "userName": "vinyl201", 
     "comments": "this is optional", 
-    "createdTimestamp": "2018-05-09T14:19:34Z", 
+    "createdTimestamp": "2018-05-09T14:19:34Z",
+    "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe" 
     "changes": [
         {
             "changeType": "Add",

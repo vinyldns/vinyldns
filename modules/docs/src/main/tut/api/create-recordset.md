@@ -35,7 +35,7 @@ ownerGroupId  | string        | no          | ownership assignment, applicable i
     }
   ],
   "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c",
-  "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
+  "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
 }
 ```
 
