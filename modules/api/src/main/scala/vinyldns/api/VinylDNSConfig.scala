@@ -67,9 +67,7 @@ object VinylDNSConfig {
     getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
 
   lazy val sharedApprovedTypes: Set[RecordType.Value] =
-    if (vinyldnsConfig.hasPath("shared-approved-types")) {
-      vinyldnsConfig.as[Set[RecordType.Value]]("shared-approved-types")
-    } else Set()
+    vinyldnsConfig.as[Option[Set[RecordType.Value]]]("shared-approved-types").getOrElse(Set())
 
   lazy val defaultZoneConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")
