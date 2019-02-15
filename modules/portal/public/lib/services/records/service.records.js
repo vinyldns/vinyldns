@@ -240,6 +240,9 @@ angular.module('service.records', [])
                     break;
                 default:
             }
+            if (record.ownerGroupId) {
+                newRecord.ownerGroupId = record.ownerGroupId
+            }
             return newRecord;
         };
 

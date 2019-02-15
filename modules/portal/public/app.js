@@ -2,7 +2,8 @@ angular.module('vinyldns', [
     'services.module',
     'controllers.module',
     'directives.module',
-    'batch-change'
+    'batch-change',
+    'constants'
 ])
     .config(function ($httpProvider, $animateProvider, $logProvider) {
         $httpProvider
