@@ -129,21 +129,21 @@ class VinylDNS @Inject()(
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
   def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
-    Logger.error(s"IN OIDC CALLBACK")
-
-    val jwtClaims = for {
-      validToken <- oidcAuthenticator.oidcCallback(request.getQueryString("code"))
+    val details = for {
+      code <- EitherT.fromEither[IO](oidcAuthenticator.getCodeFromAuthResponse(request))
+      validToken <- oidcAuthenticator.oidcCallback(code)
       userDetails <- EitherT.fromEither[IO](oidcAuthenticator.getUserFromClaims(validToken))
-      _ <- EitherT.right[ErrorResponse](processLoginWithDetails(userDetails))
+      userCreate <- EitherT.right[ErrorResponse](processLoginWithDetails(userDetails))
+    } yield (userCreate, validToken)
 
-    } yield validToken
-
-    jwtClaims.value
+    details.value
       .map {
-        case Right(t) => Redirect("/index").withSession(ID_TOKEN -> t.toString)
-        case Left(_) =>
-          // TODO should do real error handing here
-          Redirect("/login").withNewSession
+        case Right((user, token)) =>
+          Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id ${user.id}")
+          Redirect("/index").withSession(ID_TOKEN -> token.toString)
+        case Left(err) =>
+          Logger.error(s"Oidc callback error response: $err")
+          Status(err.code)(err.message)
       }
       .unsafeToFuture()
   }
