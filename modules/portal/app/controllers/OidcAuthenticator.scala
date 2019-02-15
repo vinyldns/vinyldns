@@ -51,8 +51,11 @@ object OidcAuthenticator {
       tenantId: String,
       clientId: String,
       secret: String,
-      jwtUsernameField: String,
       redirectUri: String,
+      jwtUsernameField: String,
+      jwtFirstnameField: String,
+      jwtLastnameField: String,
+      jwtEmailField: String = "email",
       scope: String = "openid profile email")
 
   final case class OidcUserDetails(
@@ -182,9 +185,9 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       username <- getStringFieldOption(claimsSet, oidcInfo.jwtUsernameField)
         .toRight[ErrorResponse](
           ErrorResponse(500, "Username field not included in token from from OIDC provider"))
-      email = getStringFieldOption(claimsSet, "email")
-      firstname = getStringFieldOption(claimsSet, "givenname")
-      lastname = getStringFieldOption(claimsSet, "surname")
+      email = getStringFieldOption(claimsSet, oidcInfo.jwtEmailField)
+      firstname = getStringFieldOption(claimsSet, oidcInfo.jwtFirstnameField)
+      lastname = getStringFieldOption(claimsSet, oidcInfo.jwtLastnameField)
     } yield OidcUserDetails(username, email, firstname, lastname)
 
   def oidcCallback(code: AuthorizationCode)(
