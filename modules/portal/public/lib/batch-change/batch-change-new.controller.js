@@ -56,6 +56,9 @@
                 $scope.processing = true;
 
                 var payload = $scope.newBatch;
+                if (!$scope.newBatch.ownerGroupId) {
+                     delete payload.ownerGroupId
+                }
 
                 function success(response) {
                     var alert = utilityService.success('Successfully Created Batch Change', response, 'createBatchChange: createBatchChange successful');

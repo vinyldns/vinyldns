@@ -18,7 +18,7 @@ services:
     command: "--sharedDb --inMemory"
 
   bind9:
-    image: "vinyldns/bind9:0.0.1"
+    image: "vinyldns/bind9:0.0.4"
     env_file:
       .env
     container_name: "vinyldns-bind9"

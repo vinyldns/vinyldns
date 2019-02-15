@@ -23,6 +23,7 @@ describe('Controller: RecordsController', function () {
         module('service.utility'),
         module('directives.modals.record.module'),
         module('controller.records')
+        module('constants')
     });
     beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService) {
         this.rootScope = $rootScope;
