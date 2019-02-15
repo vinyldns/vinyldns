@@ -122,8 +122,8 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       .flatMap {
         case s: AuthenticationSuccessResponse => Right(s.getAuthorizationCode)
         case err: AuthorizationErrorResponse =>
-          val asHttp = err.toHTTPResponse
-          Left(ErrorResponse(asHttp.getStatusCode, asHttp.getStatusMessage))
+          val errorMessage = s"Sign in error: ${err.getErrorObject.getDescription}"
+          Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
       }
 
   def isNotExpired(claimsSet: JWTClaimsSet): Boolean = {
@@ -197,8 +197,8 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
         val parsedResponse = OIDCTokenResponseParser.parse(tokenResponse) match {
           case success: OIDCTokenResponse => Right(success)
           case err: TokenErrorResponse =>
-            val asHttp = err.toHTTPResponse
-            Left(ErrorResponse(asHttp.getStatusCode, asHttp.getStatusMessage))
+            val errorMessage = s"Sign in token error: ${err.getErrorObject.getDescription}"
+            Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
           case err => Left(ErrorResponse(500, "Unable to parse OIDC token response"))
         }
 
