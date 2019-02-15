@@ -19,6 +19,7 @@ package controllers
 import java.util
 
 import actions.{ApiAction, FrontendAction}
+import controllers.OidcAuthenticator.ErrorResponse
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
@@ -29,8 +30,8 @@ import play.api.libs.ws.WSClient
 import play.api.mvc._
 import java.util.HashMap
 
+import cats.data.EitherT
 import cats.effect.IO
-
 import javax.inject.{Inject, Singleton}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
@@ -129,22 +130,22 @@ class VinylDNS @Inject()(
 
   def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
     Logger.error(s"IN OIDC CALLBACK")
-    val validToken = oidcAuthenticator.oidcCallback(request.getQueryString("code"))
 
-    validToken.map {
-      case Some(t) =>
-        val userDetails = oidcAuthenticator.getUserFromClaims(t)
-        val user = userDetails.map(processLoginWithDetails)
-        val jsonClaims = t.toString
+    val jwtClaims = for {
+      validToken <- oidcAuthenticator.oidcCallback(request.getQueryString("code"))
+      userDetails <- EitherT.fromEither[IO](oidcAuthenticator.getUserFromClaims(validToken))
+      _ <- EitherT.right[ErrorResponse](processLoginWithDetails(userDetails))
 
-        user match {
-          case Some(u) =>
-            Redirect("/index").withSession(ID_TOKEN -> t.toString)
-          case None => Redirect("/login").withNewSession
-        }
+    } yield validToken
 
-      case None => Redirect("/login").withNewSession
-    }
+    jwtClaims.value
+      .map {
+        case Right(t) => Redirect("/index").withSession(ID_TOKEN -> t.toString)
+        case Left(_) =>
+          // TODO should do real error handing here
+          Redirect("/login").withNewSession
+      }
+      .unsafeToFuture()
   }
 
   def login(): Action[AnyContent] = Action { implicit request =>
@@ -305,15 +306,14 @@ class VinylDNS @Inject()(
       case Success(userDetails: LdapUserDetails) =>
         Logger.info(
           s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
-        val user = processLoginWithDetails(userDetails)
+        val user = processLoginWithDetails(userDetails).unsafeRunSync()
+        Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id [${user.id}]")
         Redirect("/index")
           .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
     }
 
-  def processLoginWithDetails(userDetails: UserDetails): User = {
-    Logger.info(s"user [${userDetails.username}] logged in")
-
-    val user = userAccountAccessor
+  def processLoginWithDetails(userDetails: UserDetails): IO[User] =
+    userAccountAccessor
       .get(userDetails.username)
       .flatMap {
         case None =>
@@ -326,11 +326,6 @@ class VinylDNS @Inject()(
           Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
           IO.pure(u)
       }
-      .unsafeRunSync()
-
-    Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id [${user.id}]")
-    user
-  }
 
   def getZones: Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$
