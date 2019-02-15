@@ -71,7 +71,12 @@ class FrontendController @Inject()(
   }
 
   def logout(): Action[AnyContent] = Action { implicit request =>
-    Redirect("/login").withNewSession
+    if (oidcEnabled) {
+      logger.info(s"Initializing oidc logout")
+      Redirect(oidcAuthenticator.oidcLogoutUrl).withNewSession
+    } else {
+      Redirect("/login").withNewSession
+    }
   }
 
   def noAccess(): Action[AnyContent] = Action { implicit request =>

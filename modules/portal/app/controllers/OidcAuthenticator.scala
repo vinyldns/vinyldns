@@ -20,17 +20,14 @@ import java.net.{URI, URL}
 import java.util.Date
 
 import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.oauth2.sdk.AuthorizationCode
-import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant
+import com.nimbusds.oauth2.sdk._
 import com.nimbusds.jose.jwk.source.RemoteJWKSet
 import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SimpleSecurityContext}
 import com.nimbusds.jwt.proc.{DefaultJWTProcessor, JWTProcessor}
 import com.nimbusds.jwt._
-import com.nimbusds.oauth2.sdk.TokenRequest
 import com.nimbusds.oauth2.sdk.auth.{ClientSecretBasic, Secret}
-import com.nimbusds.oauth2.sdk.id.ClientID
-import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser
-import com.nimbusds.openid.connect.sdk.OIDCTokenResponse
+import com.nimbusds.oauth2.sdk.id.{ClientID, State}
+import com.nimbusds.openid.connect.sdk._
 import controllers.VinylDNS.UserDetails
 import javax.inject.{Inject, Singleton}
 import org.slf4j.{Logger, LoggerFactory}
@@ -45,6 +42,7 @@ object OidcAuthenticator {
       authorizationEndpoint: String,
       tokenEndpoint: String,
       jwksEndpoint: String,
+      logoutEndpoint: String,
       tenantId: String,
       clientId: String,
       secret: String,
@@ -74,6 +72,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
   lazy val clientAuth = new ClientSecretBasic(clientID, clientSecret)
   lazy val tokenEndpoint = new URI(oidcInfo.tokenEndpoint)
   lazy val redirectUri: String = oidcInfo.redirectUri + "/callback"
+  lazy val oidcLogoutUrl: String = oidcInfo.logoutEndpoint
 
   lazy val sc = new SimpleSecurityContext()
 
