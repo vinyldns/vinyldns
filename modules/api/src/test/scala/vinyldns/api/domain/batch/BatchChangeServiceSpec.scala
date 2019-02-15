@@ -86,7 +86,7 @@ class BatchChangeServiceSpec
   private val onlyApexZone = Zone("only.apex.exists.", "email", id = "onlyApex")
   private val onlyBaseZone = Zone("only.base.", "email", id = "onlyBase")
   private val ptrZone = Zone("55.144.10.in-addr.arpa.", "email", id = "nonDelegatedPTR")
-  private val delegatedPTRZone = Zone("64/25.55.144.10.in-addr.arpa.", "email", id = "delegatedPTR")
+  private val delegatedPTRZone = Zone("64/25.55.144.10.in-addr.arpa.", "email", id = "delegatedPTR") /**/
   private val otherPTRZone = Zone("56.144.10.in-addr.arpa.", "email", id = "otherPTR")
 
   private val apexAddForVal = AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
@@ -538,6 +538,14 @@ class BatchChangeServiceSpec
       val result = underTest.zoneDiscovery(List(ptrAdd.validNel), ExistingZones(Set(apexZone)))
 
       result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError("10.144.55.11"))
+    }
+
+    "return an error for PTR if there are zone matches for the IP but no match on the record name" in {
+      val result = underTest.zoneDiscovery(
+        List(ptrAdd.validNel),
+        ExistingZones(Set(delegatedPTRZone.copy(name = "192/30.55.144.10.in-addr.arpa."))))
+
+      result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError(ptrAdd.inputName))
     }
 
     "map the batch change input to the delegated PTR zone for PTR records (ipv6)" in {
