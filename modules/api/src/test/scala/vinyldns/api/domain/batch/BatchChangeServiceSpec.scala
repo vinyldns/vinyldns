@@ -86,7 +86,7 @@ class BatchChangeServiceSpec
   private val onlyApexZone = Zone("only.apex.exists.", "email", id = "onlyApex")
   private val onlyBaseZone = Zone("only.base.", "email", id = "onlyBase")
   private val ptrZone = Zone("55.144.10.in-addr.arpa.", "email", id = "nonDelegatedPTR")
-  private val delegatedPTRZone = Zone("64/25.55.144.10.in-addr.arpa.", "email", id = "delegatedPTR") /**/
+  private val delegatedPTRZone = Zone("64/25.55.144.10.in-addr.arpa.", "email", id = "delegatedPTR")
   private val otherPTRZone = Zone("56.144.10.in-addr.arpa.", "email", id = "otherPTR")
 
   private val apexAddForVal = AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
