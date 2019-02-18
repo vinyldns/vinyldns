@@ -44,7 +44,7 @@ createdTimestamp | date-time      | The timestamp (in GMT) when the batch change
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](#singleaddchange-attributes) or a [SingleDeleteChange](#singledeletechange-attributes). |
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
-ownerGroupId  | string      | Ownership assignment. Required if any records in the batch change are in shared zones and are new or unowned. |
+ownerGroupId  | string      | Record ownership assignment. Required if any records in the batch change are in shared zones and are new or unowned. |
 
 #### SINGLE CHANGE ATTRIBUTES <a id="singlechange-attributes" />
 

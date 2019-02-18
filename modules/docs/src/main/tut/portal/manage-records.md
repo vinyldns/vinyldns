@@ -10,7 +10,7 @@ There are currently two ways to manage records in the VinylDNS portal. This cove
 Only zone administrators and users with ACL rules can manage records this way.
 
 #### Supported record types
-A, AAAA, CNAME, MX, PTR, NS, TXT, SPF, SRV, and SSHFP
+A, AAAA, CNAME, MX, NS, PTR, SPF, SRV, SSHFP, and TXT
 
 ---
 
