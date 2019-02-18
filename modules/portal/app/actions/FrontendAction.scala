@@ -51,6 +51,7 @@ class FrontendAction(
     Future.successful(
       Redirect("/login")
         .flashing(VinylDNS.Alerts.error(s"Unable to find user account for user name '$un'"))
+        .withNewSession
         .withHeaders(cacheHeaders: _*))
 
   def lockedUserResult(un: String): Future[Result] =
