@@ -23,6 +23,6 @@ object Meta {
     Meta(
       config.getOptional[String]("vinyldns.version").getOrElse("unknown"),
       config.getOptional[Boolean]("shared-display-enabled").getOrElse(false),
-      config.get[Int]("batch-change-limit")
+      config.getOptional[Int]("batch-change-limit").getOrElse(20)
     )
 }
