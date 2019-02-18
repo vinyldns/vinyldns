@@ -55,16 +55,18 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
   val crypto: CryptoAlgebra = spy(new NoOpCrypto())
   val config: Configuration = Configuration.load(Environment.simple())
   val mockOidcAuth: OidcAuthenticator = mock[OidcAuthenticator]
+  val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+  val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
 
-  protected def before: Any = org.mockito.Mockito.reset(crypto)
+  protected def before: Any = org.mockito.Mockito.reset(crypto, authenticator, userAccessor)
 
   def TestVinylDNS(
-      configuration: Configuration,
-      authenticator: Authenticator,
-      userAccountAccessor: UserAccountAccessor,
-      wsClient: WSClient,
-      components: ControllerComponents,
-      crypto: CryptoAlgebra,
+      configuration: Configuration = config,
+      authenticator: Authenticator = authenticator,
+      userAccountAccessor: UserAccountAccessor = userAccessor,
+      wsClient: WSClient = ws,
+      components: ControllerComponents = components,
+      crypto: CryptoAlgebra = crypto,
       oidcAuthenticator: OidcAuthenticator = mockOidcAuth): VinylDNS =
     new VinylDNS(
       configuration,
@@ -74,6 +76,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       components,
       crypto,
       oidcAuthenticator)
+
+  val vinyldnsPortal: VinylDNS = TestVinylDNS()
 
   "VinylDNS.Alerts" should {
     "return alertType and alertMessage are given" in {
@@ -116,7 +120,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         (userInfo \ "isSuper").as[Boolean] must beFalse
       }
       "return Not found if the current logged in user was not found" in new WithApplication(app) {
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         userAccessor.get(frodoUser.userName).returns(IO.pure(None))
 
         val vinyldnsPortal =
@@ -130,14 +133,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         status(result) must beEqualTo(404)
       }
       "return Forbidden if the current user account is locked" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
         userAccessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .getAuthenticatedUserData()
           .apply(
@@ -148,14 +146,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         contentAsString(result) must beEqualTo("User account for `frodo` is locked.")
       }
       "return unauthorized (401) if the current user account is locked" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
         userAccessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .getAuthenticatedUserData()
           .apply(FakeRequest(GET, "/api/users/currentuser"))
@@ -167,15 +160,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
     ".regenerateCreds" should {
       "change the access key and secret for the current user" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
         userAccessor.get("fbaggins").returns(IO.pure(Some(frodoUser)))
         userAccessor.update(any[User], any[User]).returns(IO.pure(frodoUser))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .regenerateCreds()
           .apply(FakeRequest(POST, "/regenerate-creds")
@@ -191,15 +179,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
 
       "fail if user is not found" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
         userAccessor.get("fbaggins").returns(IO.pure(None))
-
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .regenerateCreds()
           .apply(FakeRequest(POST, "/regenerate-creds")
@@ -209,15 +191,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         hasCacheHeaders(result)
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-
         userAccessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .regenerateCreds()
           .apply(
@@ -232,15 +208,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         hasCacheHeaders(result)
       }
       "return unauthorized (401) if user account is locked" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
         authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
-
         userAccessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .regenerateCreds()
           .apply(FakeRequest(POST, "/regenerate-creds"))
@@ -254,14 +224,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     ".login" should {
       "if login is correct with a valid key" should {
         "call the authenticator and the account accessor" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -273,15 +238,11 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
         "call the new user account accessor and return the new style account" in new WithApplication(
           app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -294,14 +255,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
         "call the user accessor to create the new user account if it is not found" in new WithApplication(
           app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -313,17 +270,12 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
         "call the user accessor to create the new style user account if it is not found" in new WithApplication(
           app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
-
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -337,13 +289,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         "do not call the user accessor to create the new user account if it is found" in new WithApplication(
           app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = buildmockUserAccessor
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
           userAccessor.get(any[String]).returns(IO.pure(Some(frodoUser)))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -355,15 +303,11 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
 
         "set the username, and key for the new style membership" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -377,15 +321,11 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         }
         "redirect to index using the new style accounts" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
             .returns(Success(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -400,14 +340,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
       "if login is correct but no account is found" should {
         "call the authenticator and the user account accessor" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -418,14 +354,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           there.was(one(userAccessor).get("frodo"))
         }
         "set the username and the key" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -436,14 +368,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           session(response).get("accessKey") must beSome(frodoUser.accessKey)
         }
         "redirect to index" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -457,14 +385,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
       "if service account login is correct but no account is found" should {
         "call the authenticator and the user account accessor" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -475,14 +399,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           there.was(one(userAccessor).get("service"))
         }
         "set the username and the key" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -493,14 +413,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           session(response).get("accessKey") must beSome(serviceAccount.accessKey)
         }
         "redirect to index" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -514,14 +430,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
       "if login is not correct" should {
         "call the authenticator not the account accessor" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator
             .authenticate("frodo", "secondbreakfast")
             .returns(Failure(new RuntimeException("login failed")))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -532,8 +444,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           there.was(no(userAccessor).get(anyString))
         }
         "do not set the username and key" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator
             .authenticate("frodo", "secondbreakfast")
             .returns(Failure(new RuntimeException("login failed")))
@@ -550,14 +460,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           session(response).get("accessKey") must beNone
         }
         "redirect to login" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator
             .authenticate("frodo", "secondbreakfast")
             .returns(Failure(new RuntimeException("login failed")))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -568,14 +474,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           redirectLocation(response) must beSome("/login")
         }
         "set the flash with an error message" in new WithApplication(app) {
-          val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-          val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
           authenticator
             .authenticate("frodo", "secondbreakfast")
             .returns(Failure(new RuntimeException("login failed")))
 
-          val vinyldnsPortal =
-            TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
           val response = vinyldnsPortal
             .login()
             .apply(
@@ -1580,8 +1482,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     ".serveCredFile" should {
       "return a csv file with the new style credentials" in new WithApplication(app) {
         import play.api.mvc.Result
-
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
         val underTest =
           TestVinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
@@ -1634,8 +1534,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "redirect to login if user account is not found" in new WithApplication(app) {
         import play.api.mvc.Result
-
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         userAccessor.get(frodoUser.userName).returns(IO.pure(None))
         val underTest =
           TestVinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
@@ -1656,16 +1554,12 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       implicit val userInfoWrites: OWrites[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
       "return a list of users from a list of usernames" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         val lookupValue = "someNTID"
         authenticator.lookup(lookupValue).returns(Success(frodoDetails))
         userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
         val expected = Json.toJson(VinylDNS.UserInfo.fromUser(frodoUser))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .getUserDataByUsername(lookupValue)
           .apply(
@@ -1677,7 +1571,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         contentAsJson(result) must beEqualTo(expected)
       }
       "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
         val lookupValue = "someNTID"
         authenticator.lookup(lookupValue).returns(Success(frodoDetails))
 
@@ -1692,7 +1585,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         hasCacheHeaders(result)
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
+
         val lookupValue = "someNTID"
         authenticator.lookup(lookupValue).returns(Success(frodoDetails))
 
@@ -1712,15 +1605,11 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           s"User account for `${lockedFrodoUser.userName}` is locked.")
       }
       "return a 404 if the account is not found" in new WithApplication(app) {
-        val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
-        val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
         userAccessor.get(any[String]).returns(IO.pure(None))
         authenticator
           .lookup(frodoUser.userName)
           .returns(Failure(new UserDoesNotExistException("not found")))
 
-        val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto)
         val result = vinyldnsPortal
           .getUserDataByUsername(frodoUser.userName)
           .apply(
@@ -1745,7 +1634,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -1799,7 +1688,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -1854,7 +1743,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -1909,7 +1798,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -1965,7 +1854,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -2021,7 +1910,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -2078,7 +1967,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -2136,7 +2025,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
@@ -2195,7 +2084,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val underTest = TestVinylDNS(
               testConfigLdap,
               mockLdapAuthenticator,
-              buildmockUserAccessor,
+              mockUserAccessor,
               client,
               components,
               crypto)
