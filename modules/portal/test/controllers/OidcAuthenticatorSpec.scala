@@ -16,28 +16,23 @@
 
 package controllers
 
-import java.net.URI
 import java.util.Date
 
-import com.nimbusds.jose.Header
 import com.nimbusds.jose.proc.SimpleSecurityContext
-import com.nimbusds.jose.util.Base64URL
 import com.nimbusds.jwt.proc.JWTProcessor
 import com.nimbusds.jwt._
-import com.nimbusds.oauth2.sdk.{AuthorizationCode, ResponseMode}
-import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse
+import com.nimbusds.oauth2.sdk.AuthorizationCode
 import com.nimbusds.oauth2.sdk.http.HTTPResponse
 import controllers.OidcAuthenticator.{ErrorResponse, OidcUserDetails}
-import net.minidev.json.JSONObject
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
-import play.api.libs.json.JsObject
 import play.api.libs.ws.WSClient
-import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
-import play.api.{Configuration, Environment}
+import play.api.Configuration
 
 class OidcAuthenticatorSpec extends Specification with Mockito {
+
+  val ws: WSClient = mock[WSClient]
 
   val oidcConfigMap: Map[String, Any] = Map(
     "logout-endpoint" -> "http://test.logout.url",
@@ -55,7 +50,6 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
     "jwt-lastname-field" -> "lastname",
     "enabled" -> true
   )
-  val ws: WSClient = mock[WSClient]
 
   val oidcConfig: Configuration = Configuration.from(Map("oidc" -> oidcConfigMap))
 
@@ -108,6 +102,14 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
 
         val out = testOidcAuthenticator.getCodeFromAuthResponse(request)
         out must beLeft(ErrorResponse(500, "No code value in getCodeFromAuthResponse"))
+      }
+      "fail if there is some other parse error in the code response" in {
+        val request = FakeRequest("GET", "/callback?code=")
+
+        val out = testOidcAuthenticator.getCodeFromAuthResponse(request)
+        out must beLeft.like {
+          case e: ErrorResponse => e.code == 500
+        }
       }
       "fail if some other error in code call response" in {
         val request =
