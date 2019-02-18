@@ -31,7 +31,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     with Monitored
     with ProtobufConversions {
 
-  private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneChangeRepository])
+  private final val logger = LoggerFactory.getLogger(classOf[MySqlUserRepository])
 
   private final val PUT_USER =
     sql"""
