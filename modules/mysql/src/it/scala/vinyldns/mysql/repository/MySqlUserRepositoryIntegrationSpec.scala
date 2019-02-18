@@ -36,6 +36,13 @@ class MySqlUserRepositoryIntegrationSpec
     User(id = id, userName = "name" + id, accessKey = s"abc$id", secretKey = "123")
   }
 
+  private val case_insensitive_user1 =
+    User(id = "case_insensitive_user1", userName = "Name1", accessKey = "a1", secretKey = "s1")
+  private val case_insensitive_user2 =
+    User(id = "case_insensitive_user2", userName = "namE2", accessKey = "a2", secretKey = "s2")
+  private val case_insensitive_user3 =
+    User(id = "case_insensitive_user3", userName = "name3", accessKey = "a3", secretKey = "s3")
+
   override protected def beforeAll(): Unit = {
     repo = TestMySqlInstance.userRepository
 
@@ -46,6 +53,10 @@ class MySqlUserRepositoryIntegrationSpec
     for (user <- users) {
       repo.save(user).unsafeRunSync()
     }
+
+    repo.save(case_insensitive_user1).unsafeRunSync()
+    repo.save(case_insensitive_user2).unsafeRunSync()
+    repo.save(case_insensitive_user3).unsafeRunSync()
   }
 
   override protected def afterAll(): Unit = {
@@ -136,6 +147,17 @@ class MySqlUserRepositoryIntegrationSpec
 
     "returns None when user does not exist" in {
       repo.getUserByName("no-existo").unsafeRunSync() shouldBe None
+    }
+
+    "be case insensitive" in {
+      repo.getUserByName("name1").unsafeRunSync() shouldBe Some(case_insensitive_user1)
+      repo.getUserByName("NAME1").unsafeRunSync() shouldBe Some(case_insensitive_user1)
+
+      repo.getUserByName("name2").unsafeRunSync() shouldBe Some(case_insensitive_user2)
+      repo.getUserByName("NAME2").unsafeRunSync() shouldBe Some(case_insensitive_user2)
+
+      repo.getUserByName("name3").unsafeRunSync() shouldBe Some(case_insensitive_user3)
+      repo.getUserByName("NAME3").unsafeRunSync() shouldBe Some(case_insensitive_user3)
     }
   }
 
