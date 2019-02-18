@@ -2,7 +2,7 @@
 
     <!-- START ACCORDION -->
     <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
-<div class="panel panel-default x_panel">
+<div class="panel panel-default x_panel" ng-init="sharedDisplayEnabled = @meta.sharedDisplayEnabled">
     <div class="panel-heading">
         <h3 class="panel-title">
             <a class="collapse-link">
@@ -147,19 +147,27 @@
                                 </li>
                             </ul>
                         </span>
-                        <span ng-if="record.type == 'SPF'">
-                            <ul class="table-cell-list">
-                                <li ng-repeat="item in record.spfRecordData track by $index"
-                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.spfRecordData.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
-                            </ul>
-                        </span>
                         <span ng-if="record.type == 'CNAME'">{{ record.cnameRecordData }}</span>
+                        <span ng-if="record.type == 'DS'">
+                            <table>
+                                <tr>
+                                    <td>Keytag:</td>
+                                    <td> {{record.dsKeyTag}} </td>
+                                </tr>
+                                <tr>
+                                    <td>Algorithm:</td>
+                                    <td> {{record.dsAlgorithm}} </td>
+                                </tr>
+                                <tr>
+                                    <td>Digesttype:</td>
+                                    <td> {{record.dsDigestType}} </td>
+                                </tr>
+                                <tr>
+                                    <td>Digest:</td>
+                                    <td> {{record.dsDigest}} </td>
+                                </tr>
+                            </table>
+                        </span>
                         <span ng-if="record.type == 'MX'">
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.mxItems track by $index"
@@ -174,11 +182,11 @@
                                 </li>
                             </ul>
                         </span>
-                        <span ng-if="record.type == 'PTR'">
+                        <span ng-if="record.type == 'NS'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.ptrRecordData track by $index"
+                                <li ng-repeat="item in record.nsRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.ptrRecordData.length > 4">
+                                <li ng-if="record.onlyFour && record.nsRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">more...</a>
                                 </li>
                                 <li ng-if="!record.onlyFour">
@@ -186,12 +194,11 @@
                                 </li>
                             </ul>
                         </span>
-                        <span ng-if="record.type == 'TXT'">{{ record.textRecordData }}</span>
-                        <span ng-if="record.type == 'NS'">
+                        <span ng-if="record.type == 'PTR'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.nsRecordData track by $index"
-                                ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.nsRecordData.length > 4">
+                                <li ng-repeat="item in record.ptrRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <li ng-if="record.onlyFour && record.ptrRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">more...</a>
                                 </li>
                                 <li ng-if="!record.onlyFour">
@@ -231,6 +238,18 @@
                                 </tr>
                             </table>
                         </span>
+                        <span ng-if="record.type == 'SPF'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.spfRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <li ng-if="record.onlyFour && record.spfRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
                         <span ng-if="record.type == 'SRV'">
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.srvItems track by $index"
@@ -262,6 +281,7 @@
                                 </li>
                             </ul>
                         </span>
+                        <span ng-if="record.type == 'TXT'">{{ record.textRecordData }}</span>
                         </span>
                     </td>
                     @if(meta.sharedDisplayEnabled) {

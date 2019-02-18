@@ -24,7 +24,7 @@ angular.module('controller.records', [])
     $scope.query = "";
     $scope.alerts = [];
 
-    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SRV', 'PTR', 'SPF', 'SSHFP'];
+    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'SSHFP', 'TXT'];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
         {name: '(4) Ed25519', number: 4}];
     $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
@@ -79,7 +79,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.CONFIRM_DELETE,
             title: "Delete record",
             basics: $scope.recordModalParams.readOnly,
-            details: $scope.recordModalParams.readOnly
+            details: $scope.recordModalParams.readOnly,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $("#record_modal").modal("show");
     };
@@ -97,7 +99,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.CREATE,
             title: "Create record",
             basics: $scope.recordModalParams.editable,
-            details: $scope.recordModalParams.editable
+            details: $scope.recordModalParams.editable,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
@@ -110,7 +114,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.UPDATE,
             title: "Update record",
             basics: $scope.recordModalParams.readOnly,
-            details: $scope.recordModalParams.editable
+            details: $scope.recordModalParams.editable,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $scope.addRecordForm.$setPristine();
         $("#record_modal").modal("show");
@@ -131,7 +137,9 @@ angular.module('controller.records', [])
             action: $scope.recordModalState.VIEW_DETAILS,
             title: "Record Info",
             basics: $scope.recordModalParams.readOnly,
-            details: $scope.recordModalParams.readOnly
+            details: $scope.recordModalParams.readOnly,
+            sharedZone: $scope.zoneInfo.shared,
+            sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
         $("#record_modal").modal("show");
     };
@@ -180,6 +188,9 @@ angular.module('controller.records', [])
     $scope.clearRecord = function(record) {
         record.ttl = undefined;
         record.data = undefined;
+        if ($scope.sharedDisplayEnabled && $scope.zoneInfo.shared) {
+            record.ownerGroupId = undefined;
+        }
     };
 
     $scope.getZoneStatusLabel = function() {
@@ -267,6 +278,9 @@ angular.module('controller.records', [])
     function updateRecordSet(record) {
         var payload = recordsService.toVinylRecord(record);
         payload.zoneId = $scope.zoneId;
+        if (record.ownerGroupId) {
+            payload.ownerGroupId = record.ownerGroupId;
+        }
         return recordsService
             .updateRecordSet($scope.zoneId, record.id, payload)
             .then(recordSetSuccess("Update Record"))
