@@ -34,16 +34,19 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   val components: ControllerComponents = Helpers.stubControllerComponents()
   val config: Configuration = Configuration.load(Environment.simple())
   val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+  val mockOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   val underTest = new FrontendController(
     components,
     config,
-    userAccessor
+    userAccessor,
+    mockOidcAuthenticator
   )
   val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
   val lockedUserUnderTest = new FrontendController(
     components,
     config,
-    lockedUserAccessor
+    lockedUserAccessor,
+    mockOidcAuthenticator
   )
 
   "FrontendController" should {

@@ -451,7 +451,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
     }
     "authenticate a user that is not the test user" in {
       val mockLdapAuth = mock[LdapAuthenticator]
-      val userDetails = LdapUserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
+      val userDetails =
+        LdapUserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
       mockLdapAuth.authenticate(anyString, anyString).returns(Success(userDetails))
 
       val underTest = new TestAuthenticator(mockLdapAuth)
@@ -480,7 +481,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
     }
     "lookup a user that is not the test user" in {
       val mockLdapAuth = mock[LdapAuthenticator]
-      val userDetails = LdapUserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
+      val userDetails =
+        LdapUserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
       mockLdapAuth.lookup(anyString).returns(Success(userDetails))
 
       val underTest = new TestAuthenticator(mockLdapAuth)

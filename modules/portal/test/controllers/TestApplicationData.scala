@@ -222,9 +222,12 @@ trait TestApplicationData { this: Mockito =>
 
   val simulatedBackendPort: Int = 9001
 
-  val testConfig: Configuration =
+  val testConfigLdap: Configuration =
     Configuration.load(Environment.simple()) ++ Configuration.from(
-      Map("portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort"))
+      Map(
+        "portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort",
+        "oidc.enabled" -> false)
+    )
 
   val mockAuth: Authenticator = mock[Authenticator]
   val mockUserRepo: UserRepository = mock[UserRepository]
@@ -244,6 +247,6 @@ trait TestApplicationData { this: Mockito =>
         bind[CryptoAlgebra].to(new NoOpCrypto()),
         bind[HealthService].to(new HealthService(List()))
       )
-      .configure(testConfig)
+      .configure(testConfigLdap)
       .build()
 }
