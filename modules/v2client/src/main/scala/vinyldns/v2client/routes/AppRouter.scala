@@ -19,7 +19,7 @@ package vinyldns.v2client.routes
 import japgolly.scalajs.react.extra.router.{Resolution, RouterConfigDsl, RouterCtl, _}
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
-import vinyldns.v2client.components.{Footer, LeftNav, TopNav}
+import vinyldns.v2client.components.{LeftNav, TopNav}
 import vinyldns.v2client.models.Menu
 import vinyldns.v2client.pages.HomePage
 import vinyldns.v2client.pages.OtherPage
@@ -48,8 +48,7 @@ object AppRouter {
     <.div(
       TopNav(TopNav.Props(menu, r.page, c)),
       LeftNav(LeftNav.Props(menu, r.page, c)),
-      r.render(),
-      Footer()
+      r.render()
     )
 
   val baseUrl = BaseUrl.fromWindowOrigin / "v2/"

@@ -120,7 +120,8 @@ object Dependencies {
       "com.github.japgolly.scalajs-react" %%% "core" % scalaJSReactVersion,
       "com.github.japgolly.scalajs-react" %%% "extra" % scalaJSReactVersion,
       "com.github.japgolly.scalacss" %%% "core" % scalaCssVersion,
-      "com.github.japgolly.scalacss" %%% "ext-react" % scalaCssVersion
+      "com.github.japgolly.scalacss" %%% "ext-react" % scalaCssVersion,
+      "com.lihaoyi" %%% "upickle" % "0.7.1"
     )
   )
 

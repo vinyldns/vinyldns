@@ -36,7 +36,8 @@ object LeftNav {
     val container = style(
       listStyle := "none",
       padding.`0`,
-      borderRight :=! "1px solid rgb(223, 220, 220)"
+      borderRight :=! "1px solid rgb(223, 220, 220)",
+      height :=! "100vh"
     )
 
     val menuItem = styleF.bool { selected =>

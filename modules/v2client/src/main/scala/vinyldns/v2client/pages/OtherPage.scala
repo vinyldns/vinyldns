@@ -19,7 +19,7 @@ package vinyldns.v2client.pages
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import scalacss.ScalaCssReact._
+import vinyldns.v2client.pages.group.CreateGroupForm
 
 object OtherPage {
   val CssSettings = scalacss.devOrProdDefaults
@@ -32,7 +32,7 @@ object OtherPage {
 
   val component = {
     ScalaComponent.builder
-      .static("OtherPage")(<.div(Style.content, "Other"))
+      .static("HomePage")(<.div(CreateGroupForm()))
       .build
   }
 

@@ -389,13 +389,14 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
   .dependsOn(dynamodb, mysql)
 
 lazy val v2client = (project in file("modules/v2client"))
-  .enablePlugins(AutomateHeaderPlugin, ScalaJSBundlerPlugin)
+  .enablePlugins(AutomateHeaderPlugin, ScalaJSBundlerPlugin, ScalaJSPlugin)
   .settings(sharedSettings)
   .settings(
     name := "v2client",
     libraryDependencies ++= portalv2JsDependencies.value,
     npmDependencies in Compile ++= portalv2NpmDependencies,
-    webpackBundlingMode := BundlingMode.LibraryAndApplication()
+    webpackBundlingMode := BundlingMode.LibraryAndApplication(),
+    unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
   )
   .dependsOn(core)
 
