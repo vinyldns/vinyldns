@@ -19,6 +19,8 @@ package controllers
 import java.net.{URI, URL}
 import java.util.Date
 
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Query
 import cats.data.EitherT
 import cats.effect.IO
 import cats.implicits._
@@ -29,6 +31,7 @@ import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SimpleSecurityContext
 import com.nimbusds.jwt.proc.{DefaultJWTProcessor, JWTProcessor}
 import com.nimbusds.jwt._
 import com.nimbusds.oauth2.sdk.auth.{ClientSecretBasic, Secret}
+import com.nimbusds.oauth2.sdk.http.HTTPResponse
 import com.nimbusds.oauth2.sdk.id.ClientID
 import com.nimbusds.openid.connect.sdk._
 import controllers.VinylDNS.UserDetails
@@ -38,7 +41,7 @@ import play.api.Configuration
 import play.api.libs.ws.WSClient
 import play.api.mvc.RequestHeader
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.collection.JavaConverters._
 
@@ -74,8 +77,8 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[OidcAuthenticator])
   val oidcEnabled: Boolean = configuration.getOptional[Boolean]("oidc.enabled").getOrElse(false)
-
-  lazy val oidcInfo: OidcConfig = pureconfig.loadConfigOrThrow[OidcConfig]("oidc")
+  lazy val oidcInfo: OidcConfig =
+    pureconfig.loadConfigOrThrow[OidcConfig](configuration.underlying, "oidc")
 
   lazy val clientID = new ClientID(oidcInfo.clientId)
   lazy val clientSecret = new Secret(oidcInfo.secret)
@@ -100,20 +103,18 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     processor
   }
 
-  def getCodeCall: (String, Map[String, Seq[String]]) = {
+  def getCodeCall: Uri = {
     val nonce = new Nonce()
 
-    val call = wsClient
-      .url(oidcInfo.authorizationEndpoint)
-      .withQueryStringParameters(
-        "client_id" -> oidcInfo.clientId,
-        "response_type" -> "code",
-        "redirect_uri" -> redirectUriString,
-        "scope" -> oidcInfo.scope,
-        "nonce" -> nonce.toString
-      )
+    val query = Query(
+      "client_id" -> oidcInfo.clientId,
+      "response_type" -> "code",
+      "redirect_uri" -> redirectUriString,
+      "scope" -> oidcInfo.scope,
+      "nonce" -> nonce.toString
+    )
 
-    (call.url, call.queryString)
+    Uri(s"${oidcInfo.authorizationEndpoint}").withQuery(query)
   }
 
   def getCodeFromAuthResponse(request: RequestHeader): Either[ErrorResponse, AuthorizationCode] =
@@ -123,7 +124,13 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
         ErrorResponse(500, err.getMessage)
       }
       .flatMap {
-        case s: AuthenticationSuccessResponse => Right(s.getAuthorizationCode)
+        case s: AuthenticationSuccessResponse =>
+          val code = Option(s.getAuthorizationCode)
+          code match {
+            case Some(c) => Right(c)
+            case None =>
+              Left(ErrorResponse(500, "No code value in getCodeFromAuthResponse"))
+          }
         case err: AuthorizationErrorResponse =>
           val errorMessage = s"Sign in error: ${err.getErrorObject.getDescription}"
           Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
@@ -150,11 +157,11 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
   }
 
   def getStringFieldOption(claimsSet: JWTClaimsSet, field: String): Option[String] =
-    Try(claimsSet.getStringClaim(field)).toOption
+    Try(Option(claimsSet.getStringClaim(field))).toOption.flatten
 
   def isValidIdToken(claimsSet: JWTClaimsSet): Boolean = {
     val tid = getStringFieldOption(claimsSet, "tid")
-    val aid = Try(claimsSet.getStringListClaim("aud").asScala).toOption.toList.flatten
+    val aid = Try(List(claimsSet.getStringListClaim("aud").asScala).flatten).getOrElse(List())
 
     val isValidTenantId = tid.contains(oidcInfo.tenantId)
     val isValidAppId = aid.contains(oidcInfo.clientId)
@@ -168,7 +175,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     }
   }
 
-  def getUsernameFromToken(jwtClaimsSetString: String): Option[String] = {
+  def getValidUsernameFromToken(jwtClaimsSetString: String): Option[String] = {
     val claimsSet = Try(JWTClaimsSet.parse(jwtClaimsSetString)).toOption
 
     val isValid = claimsSet.exists(isValidIdToken)
@@ -190,32 +197,48 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       lastname = getStringFieldOption(claimsSet, oidcInfo.jwtLastnameField)
     } yield OidcUserDetails(username, email, firstname, lastname)
 
+  def handleCallbackResponse(response: HTTPResponse): Either[ErrorResponse, JWTClaimsSet] = {
+    def matchTokenResponse(token: TokenResponse) = token match {
+      case success: OIDCTokenResponse => Right(success)
+      case err: TokenErrorResponse =>
+        val errorMessage = s"Sign in token error: ${err.getErrorObject.getDescription}"
+        Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
+      case _ => Left(ErrorResponse(500, "Unable to parse OIDC token response"))
+    }
+
+    def getClaimSet(oidcTokenResposne: OIDCTokenResponse): Either[ErrorResponse, JWTClaimsSet] = {
+      val idToken = oidcTokenResposne.getOIDCTokens.getIDToken
+
+      oidcTry(jwtProcessor.process(idToken, sc)).flatMap { claims =>
+        if (isValidIdToken(claims)) {
+          Right(claims)
+        } else {
+          Left(ErrorResponse(500, "Invalid ID token response received from from OIDC provider"))
+        }
+      }
+    }
+
+    for {
+      asTokenResponse <- oidcTry(OIDCTokenResponseParser.parse(response))
+      asOidcToken <- matchTokenResponse(asTokenResponse)
+      claims <- getClaimSet(asOidcToken)
+    } yield claims
+  }
+
   def oidcCallback(code: AuthorizationCode)(
       implicit executionContext: ExecutionContext): EitherT[IO, ErrorResponse, JWTClaimsSet] =
     EitherT {
       val codeGrant = new AuthorizationCodeGrant(code, redirectUri)
       val request = new TokenRequest(tokenEndpoint, clientAuth, codeGrant)
 
-      IO(request.toHTTPRequest.send()).map { tokenResponse =>
-        val parsedResponse = OIDCTokenResponseParser.parse(tokenResponse) match {
-          case success: OIDCTokenResponse => Right(success)
-          case err: TokenErrorResponse =>
-            val errorMessage = s"Sign in token error: ${err.getErrorObject.getDescription}"
-            Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
-          case err => Left(ErrorResponse(500, "Unable to parse OIDC token response"))
-        }
-
-        parsedResponse.flatMap { successResponse =>
-          val idToken = successResponse.getOIDCTokens.getIDToken
-
-          val claimsSet = jwtProcessor.process(idToken, sc)
-
-          if (isValidIdToken(claimsSet)) {
-            Right(claimsSet)
-          } else {
-            Left(ErrorResponse(500, "Invalid ID token response received from from OIDC provider"))
-          }
-        }
-      }
+      IO(request.toHTTPRequest.send()).map(handleCallbackResponse)
     }
+
+  private def oidcTry[A](t: => A): Either[ErrorResponse, A] =
+    Either
+      .fromTry(Try(t))
+      .leftMap { err =>
+        logger.error(s"Unexpected error in OIDC flow: ${err.getMessage}")
+        ErrorResponse(500, err.getMessage)
+      }
 }

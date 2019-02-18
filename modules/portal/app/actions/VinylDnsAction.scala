@@ -45,7 +45,7 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
 
   def getValidUsernameOidc(session: Session): Option[String] =
     session.get(VinylDNS.ID_TOKEN).flatMap {
-      oidcAuthenticator.getUsernameFromToken
+      oidcAuthenticator.getValidUsernameFromToken
     }
 
   def invokeBlock[A](
