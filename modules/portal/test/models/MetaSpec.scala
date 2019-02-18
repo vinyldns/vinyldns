@@ -33,5 +33,9 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("shared-display-enabled" -> true)
       Meta(Configuration.from(config)).sharedDisplayEnabled must beTrue
     }
+    "get the batch-change-limit value in config" in {
+      val config = Map("batch-change-limit" -> 20)
+      Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(20)
+    }
   }
 }
