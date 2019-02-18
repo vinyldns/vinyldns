@@ -68,7 +68,7 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
         userLookup(un).unsafeToFuture().flatMap {
           // Odd case, but let's handle with a different error message
           case None =>
-            logger.error(s"Cant find account for user  with username $un")
+            logger.error(s"Cant find account for user with username $un")
             cantFindAccountResult(un)
 
           case Some(user) if user.lockStatus == LockStatus.Locked =>
