@@ -601,6 +601,9 @@ akka.http {
     # akka-http doesn't like the AWS4 headers
     illegal-header-warnings = on
   }
+
+   # types of unowned records that users can access in shared zones
+    shared-approved-types = ["A", "AAAA", "CNAME", "PTR"]
 }
 
 ```
