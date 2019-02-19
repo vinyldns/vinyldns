@@ -81,10 +81,6 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       }
     }
 
-  /*
-   * startFrom and maxItems were originally made to batch the search in the dynamodb implementation,
-   * not needed here with the current sql statement. This function is not exposed by an API route
-   */
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String],
