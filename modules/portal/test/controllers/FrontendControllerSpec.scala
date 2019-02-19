@@ -57,11 +57,12 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   enabledOidcAuthenticator.oidcEnabled.returns(true)
   enabledOidcAuthenticator.getCodeCall.returns(Uri("http://test.com"))
   enabledOidcAuthenticator.oidcLogoutUrl.returns("http://logout-test.com")
+  enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
   val oidcUnderTest = new FrontendController(
     components,
     oidcConfig,
-    lockedUserAccessor,
+    userAccessor,
     enabledOidcAuthenticator
   )
 
@@ -86,25 +87,44 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     }
 
     "Get for '/index'" should {
-      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/index")).get
-        status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+      "with ldap enabled" should {
+        "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+          val result = route(app, FakeRequest(GET, "/index")).get
+          status(result) must equalTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "/login")
+        }
+        "render the zone page when the user is logged in" in new WithApplication(app) {
+          val result =
+            underTest.index()(
+              FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
+          status(result) must beEqualTo(OK)
+          contentType(result) must beSome.which(_ == "text/html")
+          contentAsString(result) must contain("Are you sure you want to log out")
+          contentAsString(result) must contain("Zones | VinylDNS")
+        }
+        "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+          val result =
+            lockedUserUnderTest.index()(
+              FakeRequest(GET, "/index").withSession("username" -> "lockedFbaggins").withCSRFToken)
+          headers(result) must contain("Location" -> "/noaccess")
+        }
       }
-      "render the zone page when the user is logged in" in new WithApplication(app) {
-        val result =
-          underTest.index()(
-            FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
-        status(result) must beEqualTo(OK)
-        contentType(result) must beSome.which(_ == "text/html")
-        contentAsString(result) must contain("Are you sure you want to log out")
-        contentAsString(result) must contain("Zones | VinylDNS")
-      }
-      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
-        val result =
-          lockedUserUnderTest.index()(
-            FakeRequest(GET, "/index").withSession("username" -> "lockedFbaggins").withCSRFToken)
-        headers(result) must contain("Location" -> "/noaccess")
+      "with oidc enabled" should {
+        "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+          val result = oidcUnderTest.index()(FakeRequest(GET, "/index").withCSRFToken)
+          status(result) must equalTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "/login")
+        }
+        "render the zone page when the user is logged in" in new WithApplication(app) {
+          val result =
+            oidcUnderTest.index()(
+              FakeRequest(GET, "/index").withSession(VinylDNS.ID_TOKEN -> "test").withCSRFToken)
+
+          status(result) must beEqualTo(OK)
+          contentType(result) must beSome.which(_ == "text/html")
+          contentAsString(result) must contain("Are you sure you want to log out")
+          contentAsString(result) must contain("Zones | VinylDNS")
+        }
       }
     }
 
