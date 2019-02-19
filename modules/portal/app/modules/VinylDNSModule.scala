@@ -40,6 +40,8 @@ import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.health.HealthService
 import vinyldns.core.repository.DataStoreLoader
+
+// $COVERAGE-OFF$
 class VinylDNSModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
@@ -75,3 +77,4 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       */
     LdapAuthenticator(settings)
 }
+// $COVERAGE-ON$

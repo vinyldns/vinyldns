@@ -34,32 +34,49 @@ import scala.concurrent.Future
 class FrontendController @Inject()(
     components: ControllerComponents,
     configuration: Configuration,
-    userAccountAccessor: UserAccountAccessor)
-    extends AbstractController(components) {
+    userAccountAccessor: UserAccountAccessor,
+    oidcAuthenticator: OidcAuthenticator
+) extends AbstractController(components) {
 
-  private val userAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  private val oidcEnabled: Boolean = oidcAuthenticator.oidcEnabled
+  private val userAction =
+    Action.andThen(new FrontendAction(userAccountAccessor.get, oidcAuthenticator))
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
 
   def loginPage(): Action[AnyContent] = Action { implicit request =>
-    request.session.get("username") match {
-      case Some(_) => Redirect("/index")
-      case None =>
-        val flash = request.flash
-        Logger.error(s"$flash")
-        VinylDNS.Alerts.fromFlash(flash) match {
-          case Some(VinylDNS.Alert("danger", message)) =>
-            Ok(views.html.login(Some(message)))
-          case _ =>
-            Ok(views.html.login())
-        }
+    if (oidcEnabled) {
+      request.session.get(VinylDNS.ID_TOKEN) match {
+        case Some(_) => Redirect("/index")
+        case None =>
+          logger.info(s"No ${VinylDNS.ID_TOKEN} in session; Initializing oidc login")
+          Redirect(oidcAuthenticator.getCodeCall.toString)
+      }
+    } else {
+      request.session.get("username") match {
+        case Some(_) => Redirect("/index")
+        case None =>
+          val flash = request.flash
+          Logger.error(s"$flash")
+          VinylDNS.Alerts.fromFlash(flash) match {
+            case Some(VinylDNS.Alert("danger", message)) =>
+              Ok(views.html.login(Some(message)))
+            case _ =>
+              Ok(views.html.login())
+          }
+      }
     }
   }
 
   def logout(): Action[AnyContent] = Action { implicit request =>
-    Redirect("/login").withNewSession
+    if (oidcEnabled) {
+      logger.info(s"Initializing oidc logout")
+      Redirect(oidcAuthenticator.oidcLogoutUrl).withNewSession
+    } else {
+      Redirect("/login").withNewSession
+    }
   }
 
   def noAccess(): Action[AnyContent] = Action { implicit request =>
