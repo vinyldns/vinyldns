@@ -183,6 +183,17 @@ object TestRecordSetData {
   val sharedZoneRecordNotFoundOwnerGroup: RecordSet =
     sharedZoneRecord.copy(name = "records", ownerGroupId = Some("not-in-backend"))
 
+  val sharedZoneRecordNotApprovedRecordType: RecordSet =
+    RecordSet(
+      sharedZone.id,
+      "mxsharedrecord",
+      RecordType.MX,
+      200,
+      RecordSetStatus.Pending,
+      DateTime.now,
+      None,
+      List(MXData(3, "mx")))
+
   /* RECORDSET CHANGES */
 
   def makeTestAddChange(

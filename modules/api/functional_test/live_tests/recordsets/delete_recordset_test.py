@@ -662,53 +662,6 @@ def test_no_delete_access_non_test_zone(shared_zone_test_context):
 
     client.delete_recordset(zone_id, record_delete['id'], status=403)
 
-def test_delete_for_user_not_in_record_owner_group_in_shared_zone_fails(shared_zone_test_context):
-    """
-    Test that a user cannot delete a record in a shared zone if not part of record owner group
-    """
-
-    dummy_client = shared_zone_test_context.dummy_vinyldns_client
-    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
-    shared_zone = shared_zone_test_context.shared_zone
-    result_rs = None
-
-    record_json = get_recordset_json(shared_zone, 'test_shared_del_nonog', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
-
-    try:
-        create_rs = shared_client.create_recordset(record_json, status=202)
-        result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
-
-        error = dummy_client.delete_recordset(shared_zone['id'], result_rs['id'], status=403)
-        assert_that(error, is_('User dummy does not have access to delete test-shared-del-nonog.shared.'))
-
-    finally:
-        if result_rs:
-            delete_rs = shared_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
-            shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
-
-def test_delete_for_user_in_record_owner_group_in_non_shared_zone_fails(shared_zone_test_context):
-    """
-    Test that a user in record owner group cannot delete a record in a non-shared zone
-    """
-    ok_client = shared_zone_test_context.ok_vinyldns_client
-    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
-    ok_zone = shared_zone_test_context.ok_zone
-    result_rs = None
-
-    record_json = get_recordset_json(ok_zone, 'test_non_shared_del_og', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
-
-    try:
-        create_rs = ok_client.create_recordset(record_json, status=202)
-        result_rs = ok_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
-
-        error = shared_client.delete_recordset(ok_zone['id'], result_rs['id'], status=403)
-        assert_that(error, is_('User sharedZoneUser does not have access to delete test-non-shared-del-og.ok.'))
-
-    finally:
-        if result_rs:
-            delete_rs = ok_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
-            ok_client.wait_until_recordset_change_status(delete_rs, 'Complete')
-
 def test_delete_for_user_in_record_owner_group_in_shared_zone_succeeds(shared_zone_test_context):
     """
     Test that a user in record owner group can delete a record in a shared zone
@@ -740,3 +693,90 @@ def test_delete_for_zone_admin_in_shared_zone_succeeds(shared_zone_test_context)
 
     delete_rs = shared_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
     shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
+
+def test_delete_for_unowned_record_with_approved_record_type_in_shared_zone_succeeds(shared_zone_test_context):
+    """
+    Test that a user not associated with a unowned record can delete it in a shared zone
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    shared_zone = shared_zone_test_context.shared_zone
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+
+    record_json = get_recordset_json(shared_zone, 'test_shared_approved_record_type', 'A', [{'address': '1.1.1.1'}])
+
+    create_rs = shared_client.create_recordset(record_json, status=202)
+    result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
+
+    delete_rs = ok_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+    ok_client.wait_until_recordset_change_status(delete_rs, 'Complete')
+
+def test_delete_for_user_not_in_record_owner_group_in_shared_zone_fails(shared_zone_test_context):
+    """
+    Test that a user cannot delete a record in a shared zone if not part of record owner group
+    """
+
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    shared_zone = shared_zone_test_context.shared_zone
+    result_rs = None
+
+    record_json = get_recordset_json(shared_zone, 'test_shared_del_nonog', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
+
+    try:
+        create_rs = shared_client.create_recordset(record_json, status=202)
+        result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
+
+        error = dummy_client.delete_recordset(shared_zone['id'], result_rs['id'], status=403)
+        assert_that(error, is_('User dummy does not have access to delete test-shared-del-nonog.shared.'))
+
+    finally:
+        if result_rs:
+            delete_rs = shared_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
+
+def test_delete_for_user_not_in_unowned_record_in_shared_zone_fails_if_record_type_is_not_approved(shared_zone_test_context):
+    """
+    Test that a user cannot delete a record in a shared zone if the record is unowned and the record type is not approved
+    """
+
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    shared_zone = shared_zone_test_context.shared_zone
+    result_rs = None
+
+    record_json = get_recordset_json(shared_zone, 'test_shared_del_not_approved_record_type', 'MX', [{'preference': 3, 'exchange': 'mx'}])
+
+    try:
+        create_rs = shared_client.create_recordset(record_json, status=202)
+        result_rs = shared_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
+
+        error = dummy_client.delete_recordset(shared_zone['id'], result_rs['id'], status=403)
+        assert_that(error, is_('User dummy does not have access to delete test-shared-del-not-approved-record-type.shared.'))
+
+    finally:
+        if result_rs:
+            delete_rs = shared_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
+
+def test_delete_for_user_in_record_owner_group_in_non_shared_zone_fails(shared_zone_test_context):
+    """
+    Test that a user in record owner group cannot delete a record in a non-shared zone
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    result_rs = None
+
+    record_json = get_recordset_json(ok_zone, 'test_non_shared_del_og', 'A', [{'address': '1.1.1.1'}], ownergroup_id = shared_zone_test_context.shared_record_group['id'])
+
+    try:
+        create_rs = ok_client.create_recordset(record_json, status=202)
+        result_rs = ok_client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
+
+        error = shared_client.delete_recordset(ok_zone['id'], result_rs['id'], status=403)
+        assert_that(error, is_('User sharedZoneUser does not have access to delete test-non-shared-del-og.ok.'))
+
+    finally:
+        if result_rs:
+            delete_rs = ok_client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+            ok_client.wait_until_recordset_change_status(delete_rs, 'Complete')

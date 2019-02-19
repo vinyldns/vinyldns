@@ -48,7 +48,8 @@ object Dependencies {
     "org.typelevel"             %% "cats-effect"                    % catsEffectV,
     "com.47deg"                 %% "github4s"                       % "0.18.6",
     "com.comcast"               %% "ip4s-core"                      % ip4sV,
-    "com.comcast"               %% "ip4s-cats"                      % ip4sV
+    "com.comcast"               %% "ip4s-cats"                      % ip4sV,
+    "com.iheart"                %% "ficus"                          % "1.4.3"
   )
 
   lazy val coreDependencies = Seq(
