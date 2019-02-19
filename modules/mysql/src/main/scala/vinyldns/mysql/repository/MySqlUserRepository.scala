@@ -101,6 +101,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
             sb.append(" IN (" + userIds.toList.as("?").mkString(",") + ")")
             startFrom.foreach(start => sb.append(s" AND id > '$start'"))
             sb.append(" ORDER BY id ASC")
+            // Grab one more than the maxItem limit, if provided, to determine whether nextId should be returned
             maxItems.foreach(limit => sb.append(s" LIMIT ${limit + 1}"))
             val query = sb.toString
             SQL(query)
