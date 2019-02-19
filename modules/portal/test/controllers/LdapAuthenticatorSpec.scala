@@ -88,7 +88,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
         byDomainAuthenticator
           .authenticate(testDomain1, "foo", "bar")
-          .returns(Success(UserDetails("", "", None, None, None)))
+          .returns(Success(LdapUserDetails("", "", None, None, None)))
         val authenticator =
           new LdapAuthenticator(List(testDomain1), byDomainAuthenticator, mock[ServiceAccount])
         val response = authenticator.authenticate("foo", "bar")
@@ -108,7 +108,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           .returns(Failure(new RuntimeException("first failed")))
         byDomainAuthenticator
           .authenticate(testDomain2, "foo", "bar")
-          .returns(Success(UserDetails("", "", None, None, None)))
+          .returns(Success(LdapUserDetails("", "", None, None, None)))
         val authenticator = new LdapAuthenticator(
           List(testDomain1, testDomain2),
           byDomainAuthenticator,
@@ -153,7 +153,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         val serviceAccount = ServiceAccount("first", "foo", "bar")
         byDomainAuthenticator
           .lookup(testDomain1, "foo", serviceAccount)
-          .returns(Success(UserDetails("", "", None, None, None)))
+          .returns(Success(LdapUserDetails("", "", None, None, None)))
         val authenticator =
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
@@ -178,7 +178,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           .returns(Failure(new RuntimeException("first failed")))
         byDomainAuthenticator
           .lookup(testDomain2, "foo", serviceAccount)
-          .returns(Success(UserDetails("", "", None, None, None)))
+          .returns(Success(LdapUserDetails("", "", None, None, None)))
         val authenticator =
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
@@ -260,7 +260,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         val serviceAccount = mock[ServiceAccount]
         byDomainAuthenticator
           .lookup(testDomain1, "healthlookup", serviceAccount)
-          .returns(Success(UserDetails("", "", None, None, None)))
+          .returns(Success(LdapUserDetails("", "", None, None, None)))
         val authenticator =
           new LdapAuthenticator(
             List(testDomain1, testDomain2),
@@ -441,7 +441,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
       val result = underTest.authenticate("testuser", "testpassword")
 
       result must beASuccessfulTry(
-        UserDetails(
+        LdapUserDetails(
           "O=test,OU=testdata,CN=testuser",
           "testuser",
           Some("test@test.test"),
@@ -451,7 +451,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
     }
     "authenticate a user that is not the test user" in {
       val mockLdapAuth = mock[LdapAuthenticator]
-      val userDetails = UserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
+      val userDetails =
+        LdapUserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
       mockLdapAuth.authenticate(anyString, anyString).returns(Success(userDetails))
 
       val underTest = new TestAuthenticator(mockLdapAuth)
@@ -470,7 +471,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
       val result = underTest.lookup("testuser")
 
       result must beASuccessfulTry(
-        UserDetails(
+        LdapUserDetails(
           "O=test,OU=testdata,CN=testuser",
           "testuser",
           Some("test@test.test"),
@@ -480,7 +481,8 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
     }
     "lookup a user that is not the test user" in {
       val mockLdapAuth = mock[LdapAuthenticator]
-      val userDetails = UserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
+      val userDetails =
+        LdapUserDetails("o=foo,cn=bar", "foo", Some("bar"), Some("baz"), Some("qux"))
       mockLdapAuth.lookup(anyString).returns(Success(userDetails))
 
       val underTest = new TestAuthenticator(mockLdapAuth)
