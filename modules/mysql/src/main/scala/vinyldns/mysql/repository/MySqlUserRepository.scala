@@ -96,15 +96,27 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
           ListUsersResults(List[User](), None)
         else {
           val users = DB.readOnly { implicit s =>
-            val inClause = " IN (" + userIds.toList.as("?").mkString(",") + ")"
-            val query = BASE_GET_USERS + inClause
+            val sb = new StringBuilder
+            sb.append(BASE_GET_USERS)
+            sb.append(" IN (" + userIds.toList.as("?").mkString(",") + ")")
+            startFrom.foreach(start => sb.append(s" AND id > '$start'"))
+            sb.append(" ORDER BY id ASC")
+            maxItems.foreach(limit => sb.append(s" LIMIT ${limit + 1}"))
+            val query = sb.toString
             SQL(query)
               .bind(userIds.toList: _*)
               .map(toUser(1))
               .list()
               .apply()
           }
-          ListUsersResults(users, None)
+
+          maxItems match {
+            case Some(limit) =>
+              val returnUsers = users.take(limit)
+              if (users.size == limit + 1) ListUsersResults(returnUsers, Some(returnUsers.last.id))
+              else ListUsersResults(returnUsers, None)
+            case None => ListUsersResults(users, None)
+          }
         }
       }
     }
