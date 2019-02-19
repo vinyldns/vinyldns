@@ -57,13 +57,20 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data) VALUES (?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn) VALUES (?, ?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
+
+  private val BASE_FIND_RECORDSETS_BY_FQDNS =
+    """
+      |SELECT data
+      |  FROM recordset
+      | WHERE fqdn
+    """.stripMargin
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
@@ -75,7 +82,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             i.recordSet.zoneId,
             i.recordSet.name,
             fromRecordType(i.recordSet.typ),
-            toPB(i.recordSet).toByteArray
+            toPB(i.recordSet).toByteArray,
+            toFQDN(i.zone.name, i.recordSet.name)
           )
       }
 
@@ -86,6 +94,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             u.recordSet.name,
             fromRecordType(u.recordSet.typ),
             toPB(u.recordSet).toByteArray,
+            toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.id)
       }
 
@@ -213,6 +222,26 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }
     }
+
+  def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]] =
+    monitor("repo.RecordSet.getRecordSetsByFQDNs") {
+      IO {
+        if (names.isEmpty)
+          List[RecordSet]()
+        else {
+          DB.readOnly { implicit s =>
+            val namesList = names.toList
+            val inClause = " IN (" + namesList.as("?").mkString(",") + ")"
+            val query = BASE_FIND_RECORDSETS_BY_FQDNS + inClause
+            SQL(query)
+              .bind(namesList: _*)
+              .map(toRecordSet)
+              .list()
+              .apply()
+          }
+        }
+      }
+    }
 }
 
 object MySqlRecordSetRepository extends ProtobufConversions {
@@ -237,4 +266,18 @@ object MySqlRecordSetRepository extends ProtobufConversions {
       case RecordType.DS => 12
       case RecordType.UNKNOWN => unknownRecordType
     }
+
+  def toFQDN(zoneName: String, recordSetName: String): String = {
+    // note: records with name @ are already converted to the zone name before they are added to any db
+    val absoluteRecordSetName =
+      if (recordSetName.endsWith(".")) recordSetName
+      else recordSetName + "."
+
+    val absoluteZoneName =
+      if (zoneName.endsWith(".")) zoneName
+      else zoneName + "."
+
+    if (absoluteRecordSetName.equals(absoluteZoneName)) absoluteZoneName
+    else absoluteRecordSetName + absoluteZoneName
+  }
 }

@@ -234,4 +234,13 @@ class DynamoDBRecordSetRepository private[repository] (
 
       responseFuture.map(resp => resp.asInstanceOf[QueryResponseCount].count)
     }
+
+  def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]] =
+    monitor("repo.RecordSet.getRecordSetsByFQDNs") {
+      IO(
+        throw UnsupportedDynamoDBRepoFunction(
+          "getRecordSetsByFQDNs is not supported by VinylDNS DynamoDB RecordSetRepository"
+        )
+      )
+    }
 }

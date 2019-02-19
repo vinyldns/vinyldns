@@ -128,12 +128,16 @@ class MySqlRecordSetRepositoryIntegrationSpec
       repo.getRecordSet(okZone.id, deletes(1).recordSet.id).unsafeRunSync() shouldBe None
 
       // make sure the updates are updated
-      repo.getRecordSet(okZone.id, updates(0).recordSet.id).unsafeRunSync().map(_.name) shouldBe Some(updates(0).recordSet.name)
-      repo.getRecordSet(okZone.id, updates(1).recordSet.id).unsafeRunSync().map(_.name) shouldBe Some(updates(1).recordSet.name)
+      repo.getRecordSet(okZone.id, updates(0).recordSet.id).unsafeRunSync().map(_.name) shouldBe
+        Some(updates(0).recordSet.name)
+      repo.getRecordSet(okZone.id, updates(1).recordSet.id).unsafeRunSync().map(_.name) shouldBe
+        Some(updates(1).recordSet.name)
 
       // make sure the new ones are there
-      repo.getRecordSet(okZone.id, inserts(0).recordSet.id).unsafeRunSync().map(_.name) shouldBe Some(inserts(0).recordSet.name)
-      repo.getRecordSet(okZone.id, inserts(1).recordSet.id).unsafeRunSync().map(_.name) shouldBe Some(inserts(1).recordSet.name)
+      repo.getRecordSet(okZone.id, inserts(0).recordSet.id).unsafeRunSync().map(_.name) shouldBe
+        Some(inserts(0).recordSet.name)
+      repo.getRecordSet(okZone.id, inserts(1).recordSet.id).unsafeRunSync().map(_.name) shouldBe
+        Some(inserts(1).recordSet.name)
     }
   }
 
@@ -245,6 +249,39 @@ class MySqlRecordSetRepositoryIntegrationSpec
       insert(okZone, 1).map(_.recordSet)
       val results = repo.getRecordSetsByName(okZone.id, "not-there").unsafeRunSync()
       results shouldBe empty
+    }
+  }
+  "getRecordSetsByFQDNs" should {
+    "omit all non existing recordsets" in {
+      val rname1 = "test-fqdn-omit-1"
+      val rname2 = "test-fqdn-omit-2"
+
+      val fqdn1 = s"$rname1.${okZone.name}"
+      val fqdn2 = s"$rname2.${okZone.name}"
+
+      val change1 = makeTestAddChange(aaaa.copy(name=rname1), okZone)
+      val change2 = makeTestAddChange(aaaa.copy(name=rname2), okZone)
+
+      insert(List(change1, change2))
+      val result = repo.getRecordSetsByFQDNs(Set("no-existo", fqdn1, fqdn2)).unsafeRunSync()
+      result should contain theSameElementsAs List(change1.recordSet, change2.recordSet)
+    }
+
+    "return records of different types with the same fqdn" in {
+      val rname = "test-fqdn-same-type"
+      val fqdn = s"$rname.${okZone.name}"
+
+      val aaaaChange = makeTestAddChange(aaaa.copy(name=rname), okZone)
+      val mxChange = makeTestAddChange(mx.copy(name=rname), okZone)
+
+      insert(List(aaaaChange, mxChange))
+      val result = repo.getRecordSetsByFQDNs(Set(fqdn)).unsafeRunSync()
+      result should contain theSameElementsAs List(aaaaChange.recordSet, mxChange.recordSet)
+    }
+
+    "return an empty list when given no ids" in {
+      val result = repo.getRecordSetsByFQDNs(Set[String]()).unsafeRunSync()
+      result shouldBe List()
     }
   }
 }

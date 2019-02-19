@@ -42,4 +42,32 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
       fromRecordType(RecordType.UNKNOWN) shouldBe unknownRecordType
     }
   }
+
+  "toFQDN" should {
+    "return just zone name if zone and record name are equal" in {
+      val name = "vinyldns"
+      val nameWithDot = "vinyldns."
+
+      val expected = "vinyldns."
+
+      toFQDN(name, name) shouldBe expected
+      toFQDN(name, nameWithDot) shouldBe expected
+      toFQDN(nameWithDot, name) shouldBe expected
+      toFQDN(nameWithDot, nameWithDot) shouldBe expected
+    }
+    "combine zone and record name to make fqdn" in {
+      val recordName = "some-record"
+      val recordNameWithDot = "some-record."
+
+      val zoneName = "some.zone"
+      val zoneNameWithDot = "some.zone."
+
+      val expected = "some-record.some.zone."
+
+      toFQDN(zoneName, recordName) shouldBe expected
+      toFQDN(zoneNameWithDot, recordName) shouldBe expected
+      toFQDN(zoneName, recordNameWithDot) shouldBe expected
+      toFQDN(zoneNameWithDot, recordNameWithDot) shouldBe expected
+    }
+  }
 }
