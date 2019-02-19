@@ -8,7 +8,7 @@ section: "api"
 
 Creates a batch change with [SingleAddChanges](../api/batchchange-model/#singleaddchange-attributes) and/or [SingleDeleteChanges](../api/batchchange-model/#singledeletechange-attributes) across different zones.  A delete and add of the same record will be treated as an update on that record set. Regardless of the input order in the batch change, all deletes for the same recordset will be logically applied before the adds. 
                                                                                                 
-Current supported record types for creating a batch change are: **A**, **AAAA**, **CNAME**, **MX**, **NS**, **PTR**. A batch must contain at least one change and no more than 20 changes.
+Current supported record types for creating a batch change are: **A**, **AAAA**, **CNAME**, **MX**, **PTR**, **TXT**. A batch must contain at least one change and no more than 20 changes.
 
 
 #### HTTP REQUEST
@@ -23,7 +23,7 @@ name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 comments      | string        | no          | Optional comments about the batch change. |
 changes       | Array of ChangeInput| yes         | Set of *ChangeInput*s in the batch change. A *ChangeInput*  is an [AddChangeInput](#addchangeinput-attributes) or [DeleteChangeInput](#deletechangeinput-attributes). Type is inferred from specified *changeType*.|
-ownerGroupId  | string        | sometimes   | Ownership assignment. Required if any records in the batch change are in [shared zones](../api/zone-model#shared-zones) and are new or unowned. |
+ownerGroupId  | string        | sometimes   | Record ownership assignment. Required if any records in the batch change are in [shared zones](../api/zone-model#shared-zones) and are new or unowned. |
 
 ##### AddChangeInput <a id="addchangeinput-attributes" />
 

@@ -21,7 +21,7 @@ name          | string        | yes         | the name of the recordset being up
 type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
 records       | array of record data | yes  | record data for recordset, see [RecordSet Model](../api/recordset-model) |
-ownerGroupId  | string        | no          | ownership assignment, applicable if the recordset is in a [shared zone](../api/zone-model#shared-zones) |
+ownerGroupId  | string        | no          | Record ownership assignment, applicable if the recordset is in a [shared zone](../api/zone-model#shared-zones) |
 
 #### EXAMPLE HTTP REQUEST
 ```

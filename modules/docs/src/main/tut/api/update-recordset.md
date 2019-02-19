@@ -23,7 +23,7 @@ name          | string        | yes         | the name of the recordset being up
 type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
 records       | array of record data | yes  | record data for recordset, see [RecordSet Model](../api/recordset-model) |
-ownerGroupId  | string        | sometimes*          | ownership assignment, applicable if the recordset is in a [shared zone](../api/zone-model#shared-zones) |
+ownerGroupId  | string        | sometimes*          | Record ownership assignment, applicable if the recordset is in a [shared zone](../api/zone-model#shared-zones) |
 
 *Note: If a recordset has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value
  
