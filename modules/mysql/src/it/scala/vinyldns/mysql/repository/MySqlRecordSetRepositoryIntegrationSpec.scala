@@ -283,5 +283,22 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val result = repo.getRecordSetsByFQDNs(Set[String]()).unsafeRunSync()
       result shouldBe List()
     }
+
+    "do case insensitive search" in {
+      val rname1 = "ci-fqdn"
+      val rname2 = "cI-fQdN"
+
+      val fqdn1 = s"$rname1.${okZone.name}"
+      val fqdn2 = s"$rname2.${okZone.name}"
+
+      val change1 = makeTestAddChange(aaaa.copy(name=rname1), okZone)
+      val change2 = makeTestAddChange(mx.copy(name=rname2), okZone)
+
+      insert(List(change1, change2))
+      val result1 = repo.getRecordSetsByFQDNs(Set(fqdn1)).unsafeRunSync()
+      result1 should contain theSameElementsAs List(change1.recordSet, change2.recordSet)
+      val result2 = repo.getRecordSetsByFQDNs(Set(fqdn2)).unsafeRunSync()
+      result2 should contain theSameElementsAs List(change1.recordSet, change2.recordSet)
+    }
   }
 }

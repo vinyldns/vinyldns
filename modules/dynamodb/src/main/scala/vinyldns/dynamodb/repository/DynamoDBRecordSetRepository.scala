@@ -237,8 +237,8 @@ class DynamoDBRecordSetRepository private[repository] (
 
   def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetsByFQDNs") {
-      IO(
-        throw UnsupportedDynamoDBRepoFunction(
+      IO.raiseError(
+        UnsupportedDynamoDBRepoFunction(
           "getRecordSetsByFQDNs is not supported by VinylDNS DynamoDB RecordSetRepository"
         )
       )
