@@ -224,13 +224,13 @@ class BatchChangeService(
     val recordName = change.inputName.split('.').takeRight(1).mkString
     val validZones = zoneMap.getipv4PTRMatches(change.inputName).filter(ptrIsInZone(_, recordName, PTR).isRight)
 
-    if (validZones.isEmpty) {
-      ZoneDiscoveryError(change.inputName).invalidNel
-    } else {
-      val zone =
-        if (validZones.size > 1) validZones.find(zn => zn.name.contains("/")).get
-        else validZones.head
-      ChangeForValidation(zone, recordName, change).validNel
+    val zone = {
+      if (validZones.size > 1) validZones.find(zn => zn.name.contains("/"))
+      else validZones.headOption
+    }
+    zone match {
+      case Some(z) => ChangeForValidation(z, recordName, change).validNel
+      case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
 
