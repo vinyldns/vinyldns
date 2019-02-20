@@ -1805,6 +1805,33 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
         clear_recordset_list(to_delete, client)
 
 
+def test_ipv4_ptr_record_when_zone_discovery_only_finds_mismatched_delegated_zone_fails(shared_zone_test_context):
+    """
+    Test IPv4 PTR record discovery for only delegated zones that do not match the record name fails
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    classless_base_zone = shared_zone_test_context.classless_base_zone
+
+    batch_change_input = {
+        "changes": [
+            get_change_PTR_json("192.0.2.1")
+        ]
+    }
+
+    try:
+        # delete classless base zone (2.0.192.in-addr.arpa); only remaining zone is delegated zone (192/30.2.0.192.in-addr.arpa)
+        ok_client.delete_zone(classless_base_zone['id'], status=202)
+        ok_client.wait_until_zone_deleted(classless_base_zone['id'])
+        response = ok_client.create_batch_change(batch_change_input, status=400)
+        assert_failed_change_in_error_response(response[0], input_name="192.0.2.1", record_type="PTR", record_data="test.com.",
+                                               error_messages=['Zone Discovery Failed: zone for "192.0.2.1" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+
+    finally:
+        # re-create classless base zone and update zone info in shared_zone_test_context for use in future tests
+         zone_create_change = ok_client.create_zone(shared_zone_test_context.classless_base_zone_json, status=202)
+         shared_zone_test_context.classless_base_zone = zone_create_change['zone']
+         ok_client.wait_until_zone_exists(zone_create_change)
+
 def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
     """
     Test all update and delete validations performed on ipv4 PTR records submitted in batch changes

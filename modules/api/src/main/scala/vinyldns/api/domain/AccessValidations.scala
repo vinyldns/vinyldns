@@ -185,7 +185,8 @@ object AccessValidations extends AccessValidationAlgebra {
     case testUser if testUser.isTestUser && !zone.isTest => AccessLevel.NoAccess
     case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) =>
       AccessLevel.Delete
-    case recordOwner if zone.shared && sharedRecordAccess(recordOwner, recordType, recordOwnerGroupId) =>
+    case recordOwner
+        if zone.shared && sharedRecordAccess(recordOwner, recordType, recordOwnerGroupId) =>
       AccessLevel.Delete
     case supportUser if supportUser.canReadAll =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
