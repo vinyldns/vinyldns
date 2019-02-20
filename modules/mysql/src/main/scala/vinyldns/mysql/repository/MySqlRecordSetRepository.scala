@@ -74,9 +74,30 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
-      val byChangeType = changeSet.changes.groupBy(_.changeType)
-      val inserts: Seq[Seq[Any]] = byChangeType.getOrElse(RecordSetChangeType.Create, Nil).map {
-        i =>
+
+      // identify failed changes
+      val (failedChanges, successfulChanges) =
+        changeSet.changes.partition(_.status == RecordSetChangeStatus.Failed)
+
+      // prepare unsuccessful changes for reversion
+      val (failedCreates, failedUpdatesOrDeletes) =
+        failedChanges.partition(_.changeType == RecordSetChangeType.Create)
+      val revertCreates = failedCreates.map(d => Seq[Any](d.recordSet.id))
+      val revertUpdatesOrDeletes = failedUpdatesOrDeletes.map { change =>
+        val oldRs = change.updates.get
+        Seq[Any](
+          oldRs.zoneId,
+          oldRs.name,
+          fromRecordType(oldRs.typ),
+          toPB(oldRs).toByteArray,
+          oldRs.id
+        )
+      }
+
+      // any non-failed changes get processed and saved in the repo
+      val successfulByChangeType = successfulChanges.groupBy(_.changeType)
+      val inserts: Seq[Seq[Any]] =
+        successfulByChangeType.getOrElse(RecordSetChangeType.Create, Nil).map { i =>
           Seq[Any](
             i.recordSet.id,
             i.recordSet.zoneId,
@@ -85,10 +106,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name)
           )
-      }
+        }
 
-      val updates: Seq[Seq[Any]] = byChangeType.getOrElse(RecordSetChangeType.Update, Nil).map {
-        u =>
+      val updates: Seq[Seq[Any]] =
+        successfulByChangeType.getOrElse(RecordSetChangeType.Update, Nil).map { u =>
           Seq[Any](
             u.zoneId,
             u.recordSet.name,
@@ -96,11 +117,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.id)
-      }
+        }
 
       // deletes are just the record set id
       val deletes: Seq[Seq[Any]] =
-        byChangeType.getOrElse(RecordSetChangeType.Delete, Nil).map(d => Seq[Any](d.recordSet.id))
+        successfulByChangeType
+          .getOrElse(RecordSetChangeType.Delete, Nil)
+          .map(d => Seq[Any](d.recordSet.id))
 
       IO {
         DB.localTx { implicit s =>
@@ -109,10 +132,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           inserts.grouped(1000).foreach { group =>
             INSERT_RECORDSET.batch(group: _*).apply()
           }
-          updates.grouped(1000).foreach { group =>
+          (updates ++ revertUpdatesOrDeletes).grouped(1000).foreach { group =>
             UPDATE_RECORDSET.batch(group: _*).apply()
           }
-          deletes.grouped(1000).foreach { group =>
+          (deletes ++ revertCreates).grouped(1000).foreach { group =>
             DELETE_RECORDSET.batch(group: _*).apply()
           }
         }
