@@ -142,26 +142,28 @@ class SharedZoneTestContext(object):
             )
             self.ip4_reverse_zone = ip4_reverse_zone_change['zone']
 
+            self.classless_base_zone_json = {
+                'name': '2.0.192.in-addr.arpa.',
+                'email': 'test@test.com',
+                'shared': False,
+                'adminGroupId': self.ok_group['id'],
+                'isTest': True,
+                'connection': {
+                    'name': 'classless-base.',
+                    'keyName': VinylDNSTestContext.dns_key_name,
+                    'key': VinylDNSTestContext.dns_key,
+                    'primaryServer': VinylDNSTestContext.dns_ip
+                },
+                'transferConnection': {
+                    'name': 'classless-base.',
+                    'keyName': VinylDNSTestContext.dns_key_name,
+                    'key': VinylDNSTestContext.dns_key,
+                    'primaryServer': VinylDNSTestContext.dns_ip
+                }
+            }
+
             classless_base_zone_change = self.ok_vinyldns_client.create_zone(
-                {
-                    'name': '2.0.192.in-addr.arpa.',
-                    'email': 'test@test.com',
-                    'shared': False,
-                    'adminGroupId': self.ok_group['id'],
-                    'isTest': True,
-                    'connection': {
-                        'name': 'classless-base.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    },
-                    'transferConnection': {
-                        'name': 'classless-base.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    }
-                }, status=202
+                self.classless_base_zone_json, status=202
             )
             self.classless_base_zone = classless_base_zone_change['zone']
 
