@@ -20,7 +20,7 @@ import java.util.UUID
 import cats.scalatest.EitherMatchers
 import org.scalatest._
 import scalikejdbc.DB
-import vinyldns.core.domain.record.{ChangeSet, RecordSetChange}
+import vinyldns.core.domain.record.{ChangeSet, RecordSetChange, RecordSetChangeStatus}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
 
@@ -68,6 +68,24 @@ class MySqlRecordSetRepositoryIntegrationSpec
     val bigPendingChangeSet = ChangeSet(changes)
     repo.apply(bigPendingChangeSet).unsafeRunSync()
     ()
+  }
+
+  "apply" should {
+    "properly revert changes that fail processing" in {
+      val existing = insert(okZone, 2).map(_.recordSet)
+
+      val addChange = makeTestAddChange(rsOk.copy(id = UUID.randomUUID().toString))
+        .copy(status = RecordSetChangeStatus.Failed)
+      val updateChange = makeTestUpdateChange(existing(0), existing(0).copy(name = "updated-name"))
+        .copy(status = RecordSetChangeStatus.Failed)
+      val deleteChange = makeTestDeleteChange(existing(1))
+        .copy(status = RecordSetChangeStatus.Failed)
+
+      repo.apply(ChangeSet(Seq(addChange, updateChange, deleteChange))).unsafeRunSync()
+      repo.getRecordSet(rsOk.zoneId, rsOk.id).unsafeRunSync() shouldBe None
+      repo.getRecordSet(existing(0).zoneId, existing(0).id).unsafeRunSync() shouldBe Some(existing(0))
+      repo.getRecordSet(existing(1).zoneId, existing(1).id).unsafeRunSync() shouldBe Some(existing(1))
+    }
   }
 
   "inserting record sets" should {
