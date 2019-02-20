@@ -222,7 +222,8 @@ class BatchChangeService(
       change: ChangeInput,
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
     val recordName = change.inputName.split('.').takeRight(1).mkString
-    val validZones = zoneMap.getipv4PTRMatches(change.inputName).filter(ptrIsInZone(_, recordName, PTR).isRight)
+    val validZones =
+      zoneMap.getipv4PTRMatches(change.inputName).filter(ptrIsInZone(_, recordName, PTR).isRight)
 
     val zone = {
       if (validZones.size > 1) validZones.find(zn => zn.name.contains("/"))
