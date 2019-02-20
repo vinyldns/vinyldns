@@ -2032,11 +2032,11 @@ def test_update_owner_group_from_user_in_record_owner_group_for_shared_zone_pass
     ok_client = shared_zone_test_context.ok_vinyldns_client
     shared_record_group = shared_zone_test_context.shared_record_group
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
-    zone = shared_zone_test_context.shared_zone
+    shared_zone = shared_zone_test_context.shared_zone
     update_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(shared_zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
         record_json['ownerGroupId'] = shared_record_group['id']
         create_response = shared_client.create_recordset(record_json, status=202)
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
@@ -2051,7 +2051,7 @@ def test_update_owner_group_from_user_in_record_owner_group_for_shared_zone_pass
 
     finally:
         if update_rs:
-            delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
+            delete_result = shared_client.delete_recordset(shared_zone['id'], update_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
@@ -2084,10 +2084,35 @@ def test_update_owner_group_from_admin_in_shared_zone_passes(shared_zone_test_co
             delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
 
-
-def test_update_from_unassociated_user_in_shared_zone_succeeds(shared_zone_test_context):
+def test_update_from_unassociated_user_in_shared_zone_passes_when_record_type_is_approved(shared_zone_test_context):
     """
-    Test that an unassociated user updating record without existing owner group ID in shared zone succeeds
+    Test that updating with a user that does not have write access succeeds in a shared zone if the record type is approved
+    """
+
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    update_rs = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_shared_approved_record_type', 'A', [{'address': '1.1.1.1'}])
+        create_response = shared_client.create_recordset(record_json, status=202)
+        create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+        assert_that(create_rs, is_not(has_key('ownerGroupId')))
+
+        update = create_rs
+        update['ttl'] = update['ttl'] + 100
+        update_response = ok_client.update_recordset(update, status=202)
+        update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+
+    finally:
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone['id'], update_rs['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+def test_update_from_unassociated_user_in_shared_zone_fails(shared_zone_test_context):
+    """
+    Test that updating with a user that does not have write access fails in a shared zone
     """
 
     ok_client = shared_zone_test_context.ok_vinyldns_client
@@ -2096,16 +2121,15 @@ def test_update_from_unassociated_user_in_shared_zone_succeeds(shared_zone_test_
     create_rs = None
 
     try:
-        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_shared_unapproved_record_type', 'MX', [{'preference': 3, 'exchange': 'mx'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
         assert_that(create_rs, is_not(has_key('ownerGroupId')))
 
         update = create_rs
         update['ttl'] = update['ttl'] + 100
-        update_response = ok_client.update_recordset(update, status=202)
-        update_rs = shared_client.wait_until_recordset_change_status(update_response, 'Complete')
-        assert_that(update_rs, is_not(has_key('ownerGroupId')))
+        error = ok_client.update_recordset(update, status=403)
+        assert_that(error, is_('User ok does not have access to update test-shared-unapproved-record-type.shared.'))
 
     finally:
         if create_rs:
@@ -2127,7 +2151,7 @@ def test_update_from_acl_for_shared_zone_passes(shared_zone_test_context):
     try:
         add_shared_zone_acl_rules(shared_zone_test_context, [acl_rule])
 
-        record_json = get_recordset_json(zone, 'test_shared_success', 'A', [{'address': '1.1.1.1'}])
+        record_json = get_recordset_json(zone, 'test_shared_acl', 'A', [{'address': '1.1.1.1'}])
         create_response = shared_client.create_recordset(record_json, status=202)
         update = shared_client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
         assert_that(update, is_not(has_key('ownerGroupId')))

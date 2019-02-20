@@ -17,6 +17,7 @@
 package vinyldns.api.domain
 
 import vinyldns.api.Interfaces.ensuring
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
@@ -184,11 +185,18 @@ object AccessValidations extends AccessValidationAlgebra {
     case testUser if testUser.isTestUser && !zone.isTest => AccessLevel.NoAccess
     case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) =>
       AccessLevel.Delete
-    case recordOwner if zone.shared && recordOwnerGroupId.forall(recordOwner.isGroupMember) =>
+    case recordOwner if zone.shared && sharedRecordAccess(recordOwner, recordType, recordOwnerGroupId) =>
       AccessLevel.Delete
     case supportUser if supportUser.canReadAll =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
     case _ => getAccessFromAcl(auth, recordName, recordType, zone)
   }
+
+  def sharedRecordAccess(
+      auth: AuthPrincipal,
+      recordType: RecordType,
+      recordOwnerGroupId: Option[String]): Boolean =
+    recordOwnerGroupId.exists(auth.isGroupMember) ||
+      (recordOwnerGroupId.isEmpty && VinylDNSConfig.sharedApprovedTypes.contains(recordType))
 }

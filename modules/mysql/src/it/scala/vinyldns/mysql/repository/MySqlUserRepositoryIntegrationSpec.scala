@@ -162,17 +162,42 @@ class MySqlUserRepositoryIntegrationSpec
   }
 
   "MySqlUserRepository.getUsers" should {
-    "omits all non existing users" in {
+    "omit all non existing users" in {
       val result = repo.getUsers(Set("no-existo", users.head.id), None, None).unsafeRunSync()
       result.users shouldBe List(users.head)
     }
 
-    "returns all users" in {
+    "return all users when no max item limit is provided" in {
       val result = repo.getUsers(testUserIds.toSet, None, None).unsafeRunSync()
       result.users should contain theSameElementsAs users
+      result.lastEvaluatedId shouldBe None
     }
 
-    "returns empty list when given no ids" in {
+    "return all users when total user size is less than max item limit" in {
+      val result = repo.getUsers(testUserIds.toSet, None, Some(102)).unsafeRunSync()
+      result.users should contain theSameElementsAs users
+      result.lastEvaluatedId shouldBe None
+    }
+
+    "return up to max item limit when total user size is larger than max item limit" in {
+      val result = repo.getUsers(testUserIds.toSet, None, Some(25)).unsafeRunSync()
+      val expected = users.take(25)
+      result.users should contain theSameElementsAs expected
+      result.lastEvaluatedId shouldBe Some(expected.last.id)
+    }
+
+    "return all items if total user size is equal to max item limit" in {
+      val result = repo.getUsers(testUserIds.toSet, None, Some(101)).unsafeRunSync()
+      result.users should contain theSameElementsAs users
+      result.lastEvaluatedId shouldBe None
+    }
+
+    "return all items starting from start ID if provided" in {
+      val result = repo.getUsers(testUserIds.toSet, Some(testUserIds(2)), None).unsafeRunSync()
+      result.users.head.id shouldBe testUserIds(3)
+    }
+
+    "return empty list when given no ids" in {
       val result = repo.getUsers(Set[String](), None, None).unsafeRunSync()
       result.users should contain theSameElementsAs List()
     }
