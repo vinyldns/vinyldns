@@ -48,7 +48,8 @@ object Dependencies {
     "org.typelevel"             %% "cats-effect"                    % catsEffectV,
     "com.47deg"                 %% "github4s"                       % "0.18.6",
     "com.comcast"               %% "ip4s-core"                      % ip4sV,
-    "com.comcast"               %% "ip4s-cats"                      % ip4sV
+    "com.comcast"               %% "ip4s-cats"                      % ip4sV,
+    "com.iheart"                %% "ficus"                          % "1.4.3"
   )
 
   lazy val coreDependencies = Seq(
@@ -103,6 +104,8 @@ object Dependencies {
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
-    "com.typesafe.play"         %% "play-specs2"                    % playV % "test"
+    "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
+    "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0"
   )
 }

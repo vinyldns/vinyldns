@@ -23,6 +23,7 @@ import vinyldns.core.repository.DataStoreLoader.getRepoOf
 import vinyldns.core.repository.RepositoryName._
 import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfig}
 
+// $COVERAGE-OFF$
 object PortalDataAccessorProvider extends DataAccessorProvider[PortalDataAccessor] {
   def repoNames: List[RepositoryName] =
     List(user, userChange)
@@ -34,3 +35,4 @@ object PortalDataAccessorProvider extends DataAccessorProvider[PortalDataAccesso
       getRepoOf[UserChangeRepository](dataStores, userChange)
     ).mapN(PortalDataAccessor)
 }
+// $COVERAGE-ON$

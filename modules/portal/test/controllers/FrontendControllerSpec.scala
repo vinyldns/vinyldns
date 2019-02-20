@@ -16,6 +16,7 @@
 
 package controllers
 
+import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import org.junit.runner.RunWith
 import org.specs2.mock.Mockito
@@ -33,17 +34,36 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
   val components: ControllerComponents = Helpers.stubControllerComponents()
   val config: Configuration = Configuration.load(Environment.simple())
+  val oidcConfig: Configuration = config ++ Configuration.from(Map("oidc.enabled" -> true))
   val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
+  val disabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
+
+  val mockOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   val underTest = new FrontendController(
     components,
     config,
-    userAccessor
+    userAccessor,
+    disabledOidcAuthenticator
   )
   val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
   val lockedUserUnderTest = new FrontendController(
     components,
     config,
-    lockedUserAccessor
+    lockedUserAccessor,
+    disabledOidcAuthenticator
+  )
+
+  val enabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
+  enabledOidcAuthenticator.oidcEnabled.returns(true)
+  enabledOidcAuthenticator.getCodeCall.returns(Uri("http://test.com"))
+  enabledOidcAuthenticator.oidcLogoutUrl.returns("http://logout-test.com")
+  enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
+
+  val oidcUnderTest = new FrontendController(
+    components,
+    oidcConfig,
+    userAccessor,
+    enabledOidcAuthenticator
   )
 
   "FrontendController" should {
@@ -67,25 +87,44 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     }
 
     "Get for '/index'" should {
-      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/index")).get
-        status(result) must equalTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+      "with ldap enabled" should {
+        "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+          val result = route(app, FakeRequest(GET, "/index")).get
+          status(result) must equalTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "/login")
+        }
+        "render the zone page when the user is logged in" in new WithApplication(app) {
+          val result =
+            underTest.index()(
+              FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
+          status(result) must beEqualTo(OK)
+          contentType(result) must beSome.which(_ == "text/html")
+          contentAsString(result) must contain("Are you sure you want to log out")
+          contentAsString(result) must contain("Zones | VinylDNS")
+        }
+        "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+          val result =
+            lockedUserUnderTest.index()(
+              FakeRequest(GET, "/index").withSession("username" -> "lockedFbaggins").withCSRFToken)
+          headers(result) must contain("Location" -> "/noaccess")
+        }
       }
-      "render the zone page when the user is logged in" in new WithApplication(app) {
-        val result =
-          underTest.index()(
-            FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
-        status(result) must beEqualTo(OK)
-        contentType(result) must beSome.which(_ == "text/html")
-        contentAsString(result) must contain("Are you sure you want to log out")
-        contentAsString(result) must contain("Zones | VinylDNS")
-      }
-      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
-        val result =
-          lockedUserUnderTest.index()(
-            FakeRequest(GET, "/index").withSession("username" -> "lockedFbaggins").withCSRFToken)
-        headers(result) must contain("Location" -> "/noaccess")
+      "with oidc enabled" should {
+        "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+          val result = oidcUnderTest.index()(FakeRequest(GET, "/index").withCSRFToken)
+          status(result) must equalTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "/login")
+        }
+        "render the zone page when the user is logged in" in new WithApplication(app) {
+          val result =
+            oidcUnderTest.index()(
+              FakeRequest(GET, "/index").withSession(VinylDNS.ID_TOKEN -> "test").withCSRFToken)
+
+          status(result) must beEqualTo(OK)
+          contentType(result) must beSome.which(_ == "text/html")
+          contentAsString(result) must contain("Are you sure you want to log out")
+          contentAsString(result) must contain("Zones | VinylDNS")
+        }
       }
     }
 
@@ -180,45 +219,80 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     }
 
     "Get for login" should {
-      "render the login page when the user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/login")).get
-        contentType(result) must beSome.which(_ == "text/html")
-        contentAsString(result) must contain("Username")
-        contentAsString(result) must contain("Password")
+      "with ldap enabled" should {
+        "render the login page when the user is not logged in" in new WithApplication(app) {
+          val result = route(app, FakeRequest(GET, "/login")).get
+          contentType(result) must beSome.which(_ == "text/html")
+          contentAsString(result) must contain("Username")
+          contentAsString(result) must contain("Password")
+        }
+        "redirect to the index page when the user is logged in" in new WithApplication(app) {
+          val username = "LoggedInUser"
+          val result = route(
+            app,
+            FakeRequest(GET, "/login")
+              .withSession(("username", username))).get
+          status(result) must beEqualTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "/index")
+        }
+        "redirect to the index page when a user is locked out" in new WithApplication(app) {
+          // redirects to the index page because the user is logged in, then locked status is checked there
+          val result =
+            lockedUserUnderTest.loginPage()(
+              FakeRequest(GET, "/login").withSession("username" -> "lockedFbaggins").withCSRFToken)
+          headers(result) must contain("Location" -> "/index")
+        }
       }
-      "redirect to the index page when the user is logged in" in new WithApplication(app) {
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/login")
-            .withSession(("username", username))).get
-        status(result) must beEqualTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/index")
-      }
-      "redirect to the index page when a user is locked out" in new WithApplication(app) {
-        // redirects to the index page because the user is logged in, then locked status is checked there
-        val result =
-          lockedUserUnderTest.loginPage()(
-            FakeRequest(GET, "/login").withSession("username" -> "lockedFbaggins").withCSRFToken)
-        headers(result) must contain("Location" -> "/index")
+      "with oidc enabled" should {
+        "redirect to code call with no session" in new WithApplication(app) {
+          val result =
+            oidcUnderTest.loginPage()(FakeRequest(GET, "/login").withCSRFToken)
+
+          status(result) must equalTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "http://test.com")
+        }
+        "redirect to the index page when a user is logged in" in new WithApplication(app) {
+          val result =
+            oidcUnderTest.loginPage()(
+              FakeRequest(GET, "/login")
+                .withSession(VinylDNS.ID_TOKEN -> "test")
+                .withCSRFToken)
+
+          status(result) must equalTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "/index")
+        }
       }
     }
 
     "Get for logout" should {
-      "redirect to the login page" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/logout")).get
+      "with ldap enabled" should {
+        "redirect to the login page" in new WithApplication(app) {
+          val result = route(app, FakeRequest(GET, "/logout")).get
 
-        status(result) must beEqualTo(SEE_OTHER)
-        headers(result) must contain("Location" -> "/login")
+          status(result) must beEqualTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "/login")
+        }
+        "clear the session cookie" in new WithApplication(app) {
+          // TODO: cookie behavior is radically different in play 2.6, so we cannot look for a Set-Cookie header
+          val username = "LoggedInUser"
+          val result = route(
+            app,
+            FakeRequest(GET, "/logout")
+              .withSession(("username", username))).get
+          headers(result) must contain("Location" -> "/login")
+        }
       }
-      "clear the session cookie" in new WithApplication(app) {
-        // TODO: cookie behavior is radically different in play 2.6, so we cannot look for a Set-Cookie header
-        val username = "LoggedInUser"
-        val result = route(
-          app,
-          FakeRequest(GET, "/logout")
-            .withSession(("username", username))).get
-        headers(result) must contain("Location" -> "/login")
+      "with oidc enabled" should {
+        "redirect to the logout url" in new WithApplication(app) {
+          val result =
+            oidcUnderTest.logout()(
+              FakeRequest(GET, "/logout")
+                .withSession(VinylDNS.ID_TOKEN -> "test")
+                .withCSRFToken)
+
+          status(result) must equalTo(SEE_OTHER)
+          headers(result) must contain("Location" -> "http://logout-test.com")
+        }
       }
     }
 

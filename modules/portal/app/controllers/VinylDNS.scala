@@ -19,6 +19,7 @@ package controllers
 import java.util
 
 import actions.{ApiAction, FrontendAction}
+import controllers.OidcAuthenticator.ErrorResponse
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
 import models.{SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
@@ -29,6 +30,7 @@ import play.api.libs.ws.WSClient
 import play.api.mvc._
 import java.util.HashMap
 
+import cats.data.EitherT
 import cats.effect.IO
 import javax.inject.{Inject, Singleton}
 import vinyldns.core.crypto.CryptoAlgebra
@@ -43,6 +45,8 @@ import scala.util.{Failure, Success, Try}
 object VinylDNS {
 
   import play.api.mvc._
+
+  val ID_TOKEN = "idToken"
 
   object Alerts {
     private val TYPE = "alertType"
@@ -77,6 +81,13 @@ object VinylDNS {
         lockStatus = user.lockStatus
       )
   }
+
+  trait UserDetails {
+    val username: String
+    val email: Option[String]
+    val firstName: Option[String]
+    val lastName: Option[String]
+  }
 }
 
 @Singleton
@@ -86,11 +97,13 @@ class VinylDNS @Inject()(
     userAccountAccessor: UserAccountAccessor,
     wsClient: WSClient,
     components: ControllerComponents,
-    crypto: CryptoAlgebra)
+    crypto: CryptoAlgebra,
+    oidcAuthenticator: OidcAuthenticator)
     extends AbstractController(components)
     with CacheHeader {
 
   import play.api.mvc._
+  import VinylDNS._
 
   private val signer = SignerFactory.getSigner("VinylDNS", "us/east")
   private val vinyldnsServiceBackend =
@@ -99,8 +112,10 @@ class VinylDNS @Inject()(
       .getOrElse("http://localhost:9000")
 
   // Need this guy for user actions, brings the session username and user account into the Action
-  private val userAction = Action.andThen(new ApiAction(userAccountAccessor.get))
-  private val frontendAction = Action.andThen(new FrontendAction(userAccountAccessor.get))
+  private val userAction =
+    Action.andThen(new ApiAction(userAccountAccessor.get, oidcAuthenticator))
+  private val frontendAction =
+    Action.andThen(new FrontendAction(userAccountAccessor.get, oidcAuthenticator))
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {
@@ -113,6 +128,26 @@ class VinylDNS @Inject()(
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
+  def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
+    val details = for {
+      code <- EitherT.fromEither[IO](oidcAuthenticator.getCodeFromAuthResponse(request))
+      validToken <- oidcAuthenticator.oidcCallback(code)
+      userDetails <- EitherT.fromEither[IO](oidcAuthenticator.getUserFromClaims(validToken))
+      userCreate <- EitherT.right[ErrorResponse](processLoginWithDetails(userDetails))
+    } yield (userCreate, validToken)
+
+    details.value
+      .map {
+        case Right((user, token)) =>
+          Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id ${user.id}")
+          Redirect("/index").withSession(ID_TOKEN -> token.toString)
+        case Left(err) =>
+          Logger.error(s"Oidc callback error response: $err")
+          Status(err.code)(err.message)
+      }
+      .unsafeToFuture()
+  }
+
   def login(): Action[AnyContent] = Action { implicit request =>
     val userForm = Form(
       tuple(
@@ -121,7 +156,6 @@ class VinylDNS @Inject()(
       )
     )
     val (username, password) = userForm.bindFromRequest.get
-
     processLogin(username, password)
   }
 
@@ -269,29 +303,29 @@ class VinylDNS @Inject()(
         Logger.error(s"Authentication failed for [$username]", error)
         Redirect("/login").flashing(
           VinylDNS.Alerts.error("Authentication failed, please try again"))
-      case Success(userDetails: UserDetails) =>
+      case Success(userDetails: LdapUserDetails) =>
         Logger.info(
           s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
-
-        val user = userAccountAccessor
-          .get(userDetails.username)
-          .flatMap {
-            case None =>
-              Logger.info(s"Creating user account for ${userDetails.username}")
-              createNewUser(userDetails).map { u: User =>
-                Logger.info(s"User account for ${u.userName} created with id ${u.id}")
-                u
-              }
-            case Some(u) =>
-              Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
-              IO.pure(u)
-          }
-          .unsafeRunSync()
-
-        Logger.info(s"--NEW MEMBERSHIP-- user [${user.userName}] logged in with id [${user.id}]")
+        val user = processLoginWithDetails(userDetails).unsafeRunSync()
+        Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id [${user.id}]")
         Redirect("/index")
           .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
     }
+
+  def processLoginWithDetails(userDetails: UserDetails): IO[User] =
+    userAccountAccessor
+      .get(userDetails.username)
+      .flatMap {
+        case None =>
+          Logger.info(s"Creating user account for ${userDetails.username}")
+          createNewUser(userDetails).map { u: User =>
+            Logger.info(s"User account for ${u.userName} created with id ${u.id}")
+            u
+          }
+        case Some(u) =>
+          Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
+          IO.pure(u)
+      }
 
   def getZones: Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$
