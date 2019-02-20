@@ -81,10 +81,6 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       }
     }
 
-  /*
-   * startFrom and maxItems were originally made to batch the search in the dynamodb implementation,
-   * not needed here with the current sql statement. This function is not exposed by an API route
-   */
   def getUsers(
       userIds: Set[String],
       startFrom: Option[String],
@@ -96,15 +92,28 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
           ListUsersResults(List[User](), None)
         else {
           val users = DB.readOnly { implicit s =>
-            val inClause = " IN (" + userIds.toList.as("?").mkString(",") + ")"
-            val query = BASE_GET_USERS + inClause
+            val sb = new StringBuilder
+            sb.append(BASE_GET_USERS)
+            sb.append(" IN (" + userIds.toList.as("?").mkString(",") + ")")
+            startFrom.foreach(start => sb.append(s" AND id > '$start'"))
+            sb.append(" ORDER BY id ASC")
+            // Grab one more than the maxItem limit, if provided, to determine whether nextId should be returned
+            maxItems.foreach(limit => sb.append(s" LIMIT ${limit + 1}"))
+            val query = sb.toString
             SQL(query)
               .bind(userIds.toList: _*)
               .map(toUser(1))
               .list()
               .apply()
           }
-          ListUsersResults(users, None)
+
+          maxItems match {
+            case Some(limit) =>
+              val returnUsers = users.take(limit)
+              if (users.size == limit + 1) ListUsersResults(returnUsers, Some(returnUsers.last.id))
+              else ListUsersResults(returnUsers, None)
+            case None => ListUsersResults(users, None)
+          }
         }
       }
     }
