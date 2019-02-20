@@ -128,10 +128,11 @@ class VinylDNS @Inject()(
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
-  def oidcCallback(): Action[AnyContent] = Action.async { implicit request =>
+  def oidcCallback(loginId: String): Action[AnyContent] = Action.async { implicit request =>
+    Logger.info(s"Received callback for LoginId [$loginId]")
     val details = for {
       code <- EitherT.fromEither[IO](oidcAuthenticator.getCodeFromAuthResponse(request))
-      validToken <- oidcAuthenticator.oidcCallback(code)
+      validToken <- oidcAuthenticator.oidcCallback(code, loginId)
       userDetails <- EitherT.fromEither[IO](oidcAuthenticator.getUserFromClaims(validToken))
       userCreate <- EitherT.right[ErrorResponse](processLoginWithDetails(userDetails))
     } yield (userCreate, validToken)
@@ -139,10 +140,11 @@ class VinylDNS @Inject()(
     details.value
       .map {
         case Right((user, token)) =>
-          Logger.info(s"--LOGIN-- user [${user.userName}] logged in with id ${user.id}")
+          Logger.info(
+            s"LoginId [$loginId] complete: --LOGIN-- user [${user.userName}] logged in with id ${user.id}")
           Redirect("/index").withSession(ID_TOKEN -> token.toString)
         case Left(err) =>
-          Logger.error(s"Oidc callback error response: $err")
+          Logger.error(s"LoginId [$loginId] complete with error: $err")
           Status(err.code)(err.message)
       }
       .unsafeToFuture()
