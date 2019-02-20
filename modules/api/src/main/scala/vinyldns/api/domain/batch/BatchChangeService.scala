@@ -221,17 +221,17 @@ class BatchChangeService(
   def ptrIpv4ZoneDiscovery(
       change: ChangeInput,
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
-    val zones = zoneMap.getipv4PTRMatches(change.inputName)
+    val recordName = change.inputName.split('.').takeRight(1).mkString
+    val validZones =
+      zoneMap.getipv4PTRMatches(change.inputName).filter(ptrIsInZone(_, recordName, PTR).isRight)
 
-    if (zones.isEmpty)
-      ZoneDiscoveryError(change.inputName).invalidNel
-    else {
-      val recordName = change.inputName.split('.').takeRight(1).mkString
-      val validZones = zones.filter(zn => ptrIsInZone(zn, recordName, PTR).isRight)
-      val zone =
-        if (validZones.size > 1) validZones.find(zn => zn.name.contains("/")).get
-        else validZones.head
-      ChangeForValidation(zone, recordName, change).validNel
+    val zone = {
+      if (validZones.size > 1) validZones.find(zn => zn.name.contains("/"))
+      else validZones.headOption
+    }
+    zone match {
+      case Some(z) => ChangeForValidation(z, recordName, change).validNel
+      case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
 

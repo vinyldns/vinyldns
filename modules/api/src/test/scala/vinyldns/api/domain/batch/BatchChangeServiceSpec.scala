@@ -540,6 +540,14 @@ class BatchChangeServiceSpec
       result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError("10.144.55.11"))
     }
 
+    "return an error for PTR if there are zone matches for the IP but no match on the record name" in {
+      val result = underTest.zoneDiscovery(
+        List(ptrAdd.validNel),
+        ExistingZones(Set(delegatedPTRZone.copy(name = "192/30.55.144.10.in-addr.arpa."))))
+
+      result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError(ptrAdd.inputName))
+    }
+
     "map the batch change input to the delegated PTR zone for PTR records (ipv6)" in {
       val ptrv6ZoneSmall = Zone("0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.", "email", id = "ptrv6small")
       val ptrv6ZoneMed = Zone("0.8.b.d.0.1.0.0.2.ip6.arpa.", "email", id = "ptrv6med")
