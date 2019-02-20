@@ -18,7 +18,7 @@
     'use strict';
 
     angular.module('batch-change')
-        .controller('BatchChangeNewController', function($scope, jsConfig, $log, $location, $timeout, batchChangeService, utilityService, groupsService){
+        .controller('BatchChangeNewController', function($scope, $log, $location, $timeout, batchChangeService, utilityService, groupsService){
             groupsService.getMyGroups()
                 .then(function (results) {
                     $scope.myGroups = results['data']['groups'];
@@ -30,7 +30,6 @@
             $scope.batch = {};
             $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]};
             $scope.alerts = [];
-            $scope.batchChangeLimit = jsConfig.batchChangeLimit;
             $scope.batchChangeErrors = false;
             $scope.formStatus = "pendingSubmit";
 
