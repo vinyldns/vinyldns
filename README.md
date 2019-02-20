@@ -30,6 +30,7 @@ Integration is simple with first-class language support including:
 * ruby
 * python
 * go-lang
+* javascript
 
 ## Table of Contents
 - [Quickstart](#quickstart)
