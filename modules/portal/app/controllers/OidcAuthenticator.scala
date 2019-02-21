@@ -131,7 +131,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
           code match {
             case Some(c) => Right(c)
             case None =>
-              Left(ErrorResponse(500, s"No code value in getCodeFromAuthResponse"))
+              Left(ErrorResponse(500, "No code value in getCodeFromAuthResponse"))
           }
         case err: AuthorizationErrorResponse =>
           val errorMessage = s"Sign in error: ${err.getErrorObject.getDescription}"
@@ -190,7 +190,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     if (isValid) {
       // only return username if the token is valid
       if (username.isEmpty) {
-        logger.error(s"valid id token is missing username")
+        logger.error("valid id token is missing username")
       }
       username
     } else {
