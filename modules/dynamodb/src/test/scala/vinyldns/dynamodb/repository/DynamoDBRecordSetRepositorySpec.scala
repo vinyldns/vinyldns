@@ -386,4 +386,13 @@ class DynamoDBRecordSetRepositorySpec
       store.fromItem(result) shouldBe rsOk
     }
   }
+
+  "DynamoDBRecordSetRepository.getRecordSetsByFQDNs" should {
+    "return an error if used" in {
+      val store = new TestDynamoRecordSetRepo
+      a[UnsupportedDynamoDBRepoFunction] should be thrownBy store
+        .getRecordSetsByFQDNs(Set("test"))
+        .unsafeRunSync()
+    }
+  }
 }

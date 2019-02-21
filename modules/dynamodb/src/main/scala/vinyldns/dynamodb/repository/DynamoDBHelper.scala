@@ -34,6 +34,7 @@ import scala.concurrent.duration._
 private class RetryStateHolder(var retries: Int = 10, var backoff: FiniteDuration = 1.millis)
 
 case class DynamoDBRetriesExhaustedException(msg: String) extends Throwable(msg)
+case class UnsupportedDynamoDBRepoFunction(msg: String) extends Throwable
 class UnexpectedDynamoResponseException(message: String, cause: Throwable)
     extends Exception(message: String, cause: Throwable)
 
