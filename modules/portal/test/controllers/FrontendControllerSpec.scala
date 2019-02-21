@@ -248,7 +248,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           val result =
             oidcUnderTest.loginPage()(FakeRequest(GET, "/login").withCSRFToken)
 
-          status(result) must equalTo(SEE_OTHER)
+          status(result) must equalTo(302)
           headers(result) must contain("Location" -> "http://test.com")
         }
         "redirect to the index page when a user is logged in" in new WithApplication(app) {

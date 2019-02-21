@@ -19,6 +19,7 @@ package vinyldns.api.repository
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import org.joda.time.DateTime
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._
 
@@ -27,6 +28,8 @@ object TestDataLoader {
 
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+  private val logger: Logger = LoggerFactory.getLogger("vinyldns.api.repository.TestDataLoader")
 
   final val testUser = User(
     userName = "testuser",
@@ -186,6 +189,16 @@ object TestDataLoader {
         user =>
           userRepo.save(user)
       }.parSequence
+      // if the test shared zones exist already, clean them out
+      existingShared <- zoneRepo.getZonesByFilters(Set(nonTestSharedZone.name, sharedZone.name))
+      toDelete = existingShared.collect {
+        case test
+            if test.isTest ||
+              (test.name == nonTestSharedZone.name && test.adminGroupId == nonTestSharedZone.adminGroupId) =>
+          test.copy(status = ZoneStatus.Deleted)
+      }.toList
+      _ <- IO(logger.info(s"Deleting existing shared zones on startup: ${toDelete.map(z => (z.name, z.id))}"))
+      _ <- toDelete.map(zoneRepo.save).parSequence
       _ <- groupRepo.save(sharedZoneGroup)
       _ <- membershipRepo.addMembers(
         groupId = "shared-zone-group",
