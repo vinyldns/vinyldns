@@ -198,10 +198,12 @@ object TestDataLoader {
           test.copy(status = ZoneStatus.Deleted)
       }.toList
       _ <- if (toDelete.length > 2) {
+        val msg = s"Unexpected zones to delete on startup: ${toDelete.map(z => (z.name, z.id))}"
         logger.error(s"Unexpected zones to delete on startup: ${toDelete.map(z => (z.name, z.id))}")
-        IO.raiseError(new RuntimeException("Startup attempting to delete too many zones"))
+        IO.raiseError(new RuntimeException(msg))
       } else {
-        logger.info(s"Deleting existing shared zones on startup: ${toDelete.map(z => (z.name, z.id))}")
+        logger.info(
+          s"Deleting existing shared zones on startup: ${toDelete.map(z => (z.name, z.id))}")
         IO.unit
       }
       _ <- toDelete.map(zoneRepo.save).parSequence
