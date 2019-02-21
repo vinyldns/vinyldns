@@ -2928,3 +2928,31 @@ def test_create_batch_update_record_in_shared_zone_for_unassociated_user_in_owne
         if create_rs:
             delete_rs = shared_client.delete_recordset(shared_zone['id'], create_rs['recordSet']['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
+
+def test_create_batch_record_with_max_label_length_succeeds(shared_zone_test_context):
+    """
+    Test creating a change in batch with a record containing the max label length (63) should succeed
+    """
+    parent_zone = shared_zone_test_context.parent_zone
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    rs_name = "a"*63
+    to_delete = []
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json(rs_name + ".parent.com.")
+        ]
+    }
+
+    try:
+        result = ok_client.create_batch_change(batch_change_input, status=202)
+        completed_batch = ok_client.wait_until_batch_change_completed(result)
+
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        to_delete = set(record_set_list) # set here because multiple items in the batch combine to one RS
+
+        assert_change_success_response_values(result['changes'], zone=parent_zone, index=0, record_name=rs_name,
+                                              input_name=rs_name + ".parent.com.", record_data="1.1.1.1")
+
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, ok_client)
