@@ -203,7 +203,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     for {
       username <- getStringFieldOption(claimsSet, oidcInfo.jwtUsernameField)
         .toRight[ErrorResponse](
-          ErrorResponse(500, s"Username field not included in token from from OIDC provider"))
+          ErrorResponse(500, "Username field not included in token from from OIDC provider"))
       email = getStringFieldOption(claimsSet, oidcInfo.jwtEmailField)
       firstname = getStringFieldOption(claimsSet, oidcInfo.jwtFirstnameField)
       lastname = getStringFieldOption(claimsSet, oidcInfo.jwtLastnameField)
@@ -215,7 +215,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       case err: TokenErrorResponse =>
         val errorMessage = s"Sign in token error: ${err.getErrorObject.getDescription}"
         Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
-      case _ => Left(ErrorResponse(500, s"Unable to parse OIDC token response"))
+      case _ => Left(ErrorResponse(500, "Unable to parse OIDC token response"))
     }
 
     def getClaimSet(oidcTokenResposne: OIDCTokenResponse): Either[ErrorResponse, JWTClaimsSet] = {
@@ -225,7 +225,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
         if (isValidIdToken(claims)) {
           Right(claims)
         } else {
-          Left(ErrorResponse(500, s"Invalid ID token response received from from OIDC provider"))
+          Left(ErrorResponse(500, "Invalid ID token response received from from OIDC provider"))
         }
       }
     }
