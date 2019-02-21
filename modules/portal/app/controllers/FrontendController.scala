@@ -52,7 +52,7 @@ class FrontendController @Inject()(
         case Some(_) => Redirect("/index")
         case None =>
           logger.info(s"No ${VinylDNS.ID_TOKEN} in session; Initializing oidc login")
-          Redirect(oidcAuthenticator.getCodeCall.toString)
+          Redirect(oidcAuthenticator.getCodeCall.toString, 302)
       }
     } else {
       request.session.get("username") match {
@@ -70,9 +70,20 @@ class FrontendController @Inject()(
     }
   }
 
-  def logout(): Action[AnyContent] = Action { implicit request =>
+  private def getLoggedInUser(request: RequestHeader) =
     if (oidcEnabled) {
-      logger.info(s"Initializing oidc logout")
+      request.session
+        .get(VinylDNS.ID_TOKEN)
+        .flatMap {
+          oidcAuthenticator.getValidUsernameFromToken
+        }
+    } else {
+      request.session.get("username")
+    }.getOrElse("No user in session")
+
+  def logout(): Action[AnyContent] = Action { implicit request =>
+    logger.info(s"Initializing logout for user [${getLoggedInUser(request)}]")
+    if (oidcEnabled) {
       Redirect(oidcAuthenticator.oidcLogoutUrl).withNewSession
     } else {
       Redirect("/login").withNewSession
@@ -80,8 +91,7 @@ class FrontendController @Inject()(
   }
 
   def noAccess(): Action[AnyContent] = Action { implicit request =>
-    logger.info(
-      s"User account for '${request.session.get("username").getOrElse("username not found")}' is locked.")
+    logger.info(s"User account for '${getLoggedInUser(request)}' is locked.")
     Unauthorized(views.html.noAccess())
   }
 

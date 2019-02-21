@@ -17,7 +17,7 @@
 package controllers
 
 import java.net.{URI, URL}
-import java.util.Date
+import java.util.{Date, UUID}
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
@@ -42,7 +42,7 @@ import play.api.libs.ws.WSClient
 import play.api.mvc.RequestHeader
 
 import scala.concurrent.ExecutionContext
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scala.collection.JavaConverters._
 
 object OidcAuthenticator {
@@ -84,9 +84,8 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
   lazy val clientSecret = new Secret(oidcInfo.secret)
   lazy val clientAuth = new ClientSecretBasic(clientID, clientSecret)
   lazy val tokenEndpoint = new URI(oidcInfo.tokenEndpoint)
-  lazy val redirectUriString: String = oidcInfo.redirectUri + "/callback"
+  lazy val redirectUriString: String = oidcInfo.redirectUri + "/callback/"
   lazy val oidcLogoutUrl: String = oidcInfo.logoutEndpoint
-  lazy val redirectUri = new URI(redirectUriString)
 
   lazy val sc = new SimpleSecurityContext()
 
@@ -105,23 +104,26 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
 
   def getCodeCall: Uri = {
     val nonce = new Nonce()
+    val loginId = UUID.randomUUID().toString
+    val redirectUri = s"${oidcInfo.redirectUri}/callback/$loginId"
 
     val query = Query(
       "client_id" -> oidcInfo.clientId,
       "response_type" -> "code",
-      "redirect_uri" -> redirectUriString,
+      "redirect_uri" -> redirectUri,
       "scope" -> oidcInfo.scope,
       "nonce" -> nonce.toString
     )
 
+    logger.info(s"Generated LoginId $loginId")
     Uri(s"${oidcInfo.authorizationEndpoint}").withQuery(query)
   }
 
   def getCodeFromAuthResponse(request: RequestHeader): Either[ErrorResponse, AuthorizationCode] =
     Try(AuthenticationResponseParser.parse(new URI(request.uri))).toEither
       .leftMap { err =>
-        logger.error(s"Unexpected parse error in getCodeFromAuthResponse: ${err.getMessage}")
-        ErrorResponse(500, err.getMessage)
+        val errorMessage = s"Unexpected parse error in getCodeFromAuthResponse: ${err.getMessage}"
+        ErrorResponse(500, errorMessage)
       }
       .flatMap {
         case s: AuthenticationSuccessResponse =>
@@ -176,13 +178,23 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
   }
 
   def getValidUsernameFromToken(jwtClaimsSetString: String): Option[String] = {
-    val claimsSet = Try(JWTClaimsSet.parse(jwtClaimsSetString)).toOption
+    val claimsSet = Try(JWTClaimsSet.parse(jwtClaimsSetString)) match {
+      case Success(s) => Some(s)
+      case Failure(e) =>
+        logger.error(s"oidc session token parse error: ${e.getMessage}")
+        None
+    }
 
     val isValid = claimsSet.exists(isValidIdToken)
+    val username = claimsSet.flatMap(getStringFieldOption(_, oidcInfo.jwtUsernameField))
     if (isValid) {
       // only return username if the token is valid
-      claimsSet.flatMap(getStringFieldOption(_, oidcInfo.jwtUsernameField))
+      if (username.isEmpty) {
+        logger.error("valid id token is missing username")
+      }
+      username
     } else {
+      logger.info(s"oidc session token for user [$username] is invalid")
       None
     }
   }
@@ -225,12 +237,15 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     } yield claims
   }
 
-  def oidcCallback(code: AuthorizationCode)(
+  def oidcCallback(code: AuthorizationCode, loginId: String)(
       implicit executionContext: ExecutionContext): EitherT[IO, ErrorResponse, JWTClaimsSet] =
     EitherT {
+      val redirectUriString = s"${oidcInfo.redirectUri}/callback/$loginId"
+      val redirectUri = new URI(redirectUriString)
       val codeGrant = new AuthorizationCodeGrant(code, redirectUri)
       val request = new TokenRequest(tokenEndpoint, clientAuth, codeGrant)
 
+      logger.info(s"Sending token_id request for loginId [$loginId]")
       IO(request.toHTTPRequest.send()).map(handleCallbackResponse)
     }
 
