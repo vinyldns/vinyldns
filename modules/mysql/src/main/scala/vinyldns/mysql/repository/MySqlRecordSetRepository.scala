@@ -90,6 +90,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           oldRs.name,
           fromRecordType(oldRs.typ),
           toPB(oldRs).toByteArray,
+          toFQDN(change.zone.name, oldRs.name),
           oldRs.id
         )
       }
