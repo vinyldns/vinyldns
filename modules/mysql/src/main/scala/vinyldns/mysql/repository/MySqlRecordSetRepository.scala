@@ -83,16 +83,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       val (failedCreates, failedUpdatesOrDeletes) =
         failedChanges.partition(_.changeType == RecordSetChangeType.Create)
       val revertCreates = failedCreates.map(d => Seq[Any](d.recordSet.id))
-      val revertUpdatesOrDeletes = failedUpdatesOrDeletes.map { change =>
-        val oldRs = change.updates.get
-        Seq[Any](
-          oldRs.zoneId,
-          oldRs.name,
-          fromRecordType(oldRs.typ),
-          toPB(oldRs).toByteArray,
-          toFQDN(change.zone.name, oldRs.name),
-          oldRs.id
-        )
+      val revertUpdatesOrDeletes = failedUpdatesOrDeletes.flatMap { change =>
+        change.updates.map { oldRs =>
+          Seq[Any](
+            oldRs.zoneId,
+            oldRs.name,
+            fromRecordType(oldRs.typ),
+            toPB(oldRs).toByteArray,
+            toFQDN(change.zone.name, oldRs.name),
+            oldRs.id)
+        }
       }
 
       // any non-failed changes get processed and saved in the repo
