@@ -95,10 +95,15 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }
 
-      // any non-failed changes get processed and saved in the repo
-      val successfulByChangeType = successfulChanges.groupBy(_.changeType)
+      val successfulInserts = successfulChanges.filter(_.changeType == RecordSetChangeType.Create)
+      val pendingDeletes = successfulChanges.filter { d =>
+        d.changeType == RecordSetChangeType.Delete && d.changeType == RecordSetChangeStatus.Pending
+      }
+      // pending deletes save the record with a pending delete status
+      val toBeInserted = successfulInserts ++ pendingDeletes
+
       val inserts: Seq[Seq[Any]] =
-        successfulByChangeType.getOrElse(RecordSetChangeType.Create, Nil).map { i =>
+        toBeInserted.map { i =>
           Seq[Any](
             i.recordSet.id,
             i.recordSet.zoneId,
@@ -110,7 +115,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
 
       val updates: Seq[Seq[Any]] =
-        successfulByChangeType.getOrElse(RecordSetChangeType.Update, Nil).map { u =>
+        successfulChanges.filter(_.changeType == RecordSetChangeType.Update).map { u =>
           Seq[Any](
             u.zoneId,
             u.recordSet.name,
@@ -121,9 +126,12 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
 
       // deletes are just the record set id
+      // only deletes from repo when record change status is complete
       val deletes: Seq[Seq[Any]] =
-        successfulByChangeType
-          .getOrElse(RecordSetChangeType.Delete, Nil)
+        successfulChanges
+          .filter { d =>
+            d.changeType == RecordSetChangeType.Delete && d.status == RecordSetChangeStatus.Complete
+          }
           .map(d => Seq[Any](d.recordSet.id))
 
       IO {
