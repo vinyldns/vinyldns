@@ -20,12 +20,9 @@ import akka.stream.Materializer
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import play.api.mvc.{Filter, RequestHeader, Result}
-import play.http.DefaultHttpFilters
 import play.mvc.Http
 
 import scala.concurrent.{ExecutionContext, Future}
-
-class Filters @Inject()(access: AccessLoggingFilter) extends DefaultHttpFilters(access)
 
 class AccessLoggingFilter @Inject()(
     implicit val mat: Materializer,
