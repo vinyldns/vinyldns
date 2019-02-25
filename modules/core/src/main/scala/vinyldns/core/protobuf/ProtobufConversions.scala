@@ -18,6 +18,7 @@ package vinyldns.core.protobuf
 
 import com.google.protobuf.ByteString
 import org.joda.time.DateTime
+import org.slf4j.{Logger, LoggerFactory}
 import scodec.bits.ByteVector
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChangeType}
@@ -28,8 +29,11 @@ import vinyldns.core.domain.{record, zone}
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 trait ProtobufConversions {
+
+  val protoLogger: Logger = LoggerFactory.getLogger("vinyldns.core.protobuf.ProtobufConversions")
 
   def fromPB(rule: VinylDNSProto.ACLRule): ACLRule =
     ACLRule(
@@ -48,19 +52,27 @@ trait ProtobufConversions {
     if (acl.getRulesCount > 0) ZoneACL(acl.getRulesList.asScala.map(fromPB).toSet)
     else ZoneACL()
 
-  def fromPB(chg: VinylDNSProto.RecordSetChange): RecordSetChange =
+  def fromPB(chg: VinylDNSProto.RecordSetChange): RecordSetChange = {
+    val status = Try(RecordSetChangeStatus.withName(chg.getStatus))
+      .getOrElse {
+        protoLogger.error(
+          s"Encountered unexpected status in RecordSetChange.fromPB: ${chg.getStatus}")
+        // depreciated Submitted, Validated, Applied, Verified -- setting all to "Pending"
+        RecordSetChangeStatus.Pending
+      }
     record.RecordSetChange(
       zone = fromPB(chg.getZone),
       recordSet = fromPB(chg.getRecordSet),
       userId = chg.getUserId,
       changeType = RecordSetChangeType.withName(chg.getTyp),
-      status = RecordSetChangeStatus.withName(chg.getStatus),
+      status = status,
       created = new DateTime(chg.getCreated),
       systemMessage = if (chg.hasSystemMessage) Option(chg.getSystemMessage) else None,
       updates = if (chg.hasUpdates) Option(fromPB(chg.getUpdates)) else None,
       id = chg.getId,
       singleBatchChangeIds = chg.getSingleBatchChangeIdsList.asScala.toList
     )
+  }
 
   def fromPB(rs: VinylDNSProto.RecordSet): RecordSet =
     record.RecordSet(

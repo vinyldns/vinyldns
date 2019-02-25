@@ -212,21 +212,29 @@ class DynamoDBRecordChangeRepository private[repository] (
         throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
     }
 
-  def toChangeSet(item: java.util.Map[String, AttributeValue]): ChangeSet =
+  def toChangeSet(item: java.util.Map[String, AttributeValue]): ChangeSet = {
     try {
+      val statusInt = item.get(CHANGE_SET_STATUS).getN.toInt
+      val status = Try(ChangeSetStatus.fromInt(statusInt)).getOrElse {
+        log.error( s"Encountered unexpected status in toChangeSet: $statusInt")
+        // depreciated status is "Processing" - setting to "Pending"
+        ChangeSetStatus.Pending
+      }
+
       ChangeSet(
         id = item.get(CHANGE_SET_ID).getS,
         zoneId = item.get(ZONE_ID).getS,
         createdTimestamp = item.get(CREATED_TIMESTAMP).getS.toLong,
         processingTimestamp = item.get(PROCESSING_TIMESTAMP).getS.toLong,
         changes = Seq(),
-        status = ChangeSetStatus.fromInt(item.get(CHANGE_SET_STATUS).getN.toInt)
+        status = status
       )
     } catch {
       case ex: Throwable =>
         log.error("fromItem", ex)
         throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
     }
+  }
 
   def toItem(
       changeSet: ChangeSet,

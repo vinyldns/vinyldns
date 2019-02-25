@@ -23,7 +23,6 @@ import org.joda.time.DateTime
 sealed trait ChangeSetStatus {
   def intValue: Int = this match {
     case ChangeSetStatus.Pending => 0
-    case ChangeSetStatus.Processing => 1
     case ChangeSetStatus.Complete => 2
     case ChangeSetStatus.Applied => 100 // must be greater than all the others
   }
@@ -31,13 +30,11 @@ sealed trait ChangeSetStatus {
 
 object ChangeSetStatus {
   case object Pending extends ChangeSetStatus
-  case object Processing extends ChangeSetStatus
   case object Complete extends ChangeSetStatus
   case object Applied extends ChangeSetStatus
 
   def fromInt(value: Int): ChangeSetStatus = value match {
     case 0 => ChangeSetStatus.Pending
-    case 1 => ChangeSetStatus.Processing
     case 2 => ChangeSetStatus.Complete
     case 100 => ChangeSetStatus.Applied
   }
