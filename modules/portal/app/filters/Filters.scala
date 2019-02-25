@@ -20,14 +20,12 @@ import akka.stream.Materializer
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import play.api.mvc.{Filter, RequestHeader, Result}
-import play.filters.csrf.CSRFFilter
 import play.http.DefaultHttpFilters
 import play.mvc.Http
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Filters @Inject()(access: AccessLoggingFilter, csrf: CSRFFilter)
-    extends DefaultHttpFilters(access, csrf)
+class Filters @Inject()(access: AccessLoggingFilter) extends DefaultHttpFilters(access)
 
 class AccessLoggingFilter @Inject()(
     implicit val mat: Materializer,
@@ -40,9 +38,12 @@ class AccessLoggingFilter @Inject()(
     val resultFuture = next(request)
 
     resultFuture.foreach(result => {
-      val msg = s"method=${request.method} uri=${request.uri} status=${result.header.status} " +
-        s"remote-address=${request.remoteAddress}  user-agent=${request.headers.get(Http.HeaderNames.USER_AGENT)}"
-      logger.info(msg)
+      if (!request.uri.contains("/public") && !request.uri.contains("/assets")) {
+        val msg = s"method=${request.method} uri=${request.uri} status=${result.header.status} " +
+          s"remote-address=${request.remoteAddress} " +
+          s"user-agent=${request.headers.get(Http.HeaderNames.USER_AGENT).getOrElse("unknown")}"
+        logger.info(msg)
+      }
     })
 
     resultFuture
