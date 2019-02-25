@@ -17,69 +17,83 @@
 package vinyldns.v2client.components
 
 import scalacss.ScalaCssReact._
-import vinyldns.v2client.models.Menu
-import vinyldns.v2client.routes.AppRouter.AppPage
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
-import japgolly.scalajs.react.extra.Reusability
-import japgolly.scalajs.react.extra.router.RouterCtl
+import japgolly.scalajs.react.extra.Ajax
+import japgolly.scalajs.react.extra.router.BaseUrl
 import japgolly.scalajs.react.vdom.html_<^._
+import vinyldns.v2client.models.User
+import vinyldns.v2client.ReactApp.csrf
+import upickle.default._
+import vinyldns.v2client.css.GlobalStyle
+
+import scala.util.Try
 
 object TopNav {
+  case class State(user: Option[User], drowdownOpen: Boolean)
 
-  val CssSettings = scalacss.devOrProdDefaults
-  import CssSettings._
+  class Backend(bs: BackendScope[Unit, State]) {
+    def getUser: Callback =
+      Ajax("GET", "/api/users/currentuser")
+        .setRequestHeader("Csrf-Token", csrf)
+        .send
+        .onComplete { xhr =>
+          val user = read[User](xhr.responseText)
+          bs.modState(_.copy(user = Some(user)))
+        }
+        .asCallback
 
-  object Style extends StyleSheet.Inline {
-
-    import dsl._
-
-    val navMenu = style(
-      display.flex,
-      alignItems.center,
-      backgroundColor(c"#F2706D"),
-      margin.`0`,
-      listStyle := "none")
-
-    val menuItem = styleF.bool { selected =>
-      styleS(
-        padding(20.px),
-        fontSize(1.5.em),
-        cursor.pointer,
-        color(c"rgb(244, 233, 233)"),
-        mixinIfElse(selected)(backgroundColor(c"#E8433F"), fontWeight._500)(
-          &.hover(backgroundColor(c"#B6413E")))
-      )
+    def toggleDropdown(e: ReactEventFromInput): Callback = {
+      def withState(state: State) = bs.modState(_.copy(drowdownOpen = !state.drowdownOpen))
+      e.preventDefaultCB >> bs.state >>= withState
     }
-  }
 
-  case class Props(menus: Vector[Menu], selectedPage: AppPage, ctrl: RouterCtl[AppPage])
+    def downdown(state: State): VdomNode =
+      if (state.drowdownOpen)
+        <.ul(
+          GlobalStyle.styleSheet.overrideDisplay,
+          ^.className := "dropdown-menu dropdown-usermenu pull-right",
+          <.li(
+            <.a(
+              ^.className := "mb-control",
+              ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
+              "Logout"
+            )
+          )
+        )
+      else <.div()
 
-  implicit val currentPageReuse = Reusability.by_==[AppPage]
-  implicit val propsReuse = Reusability.by((_: Props).selectedPage)
-
-  val component = ScalaComponent
-    .builder[Props]("TopNav")
-    .render_P { P =>
-      <.header(
-        <.nav(
-          <.ul(
-            Style.navMenu,
-            P.menus.toTagMod { item =>
+    def render(s: State): VdomElement =
+      <.div(
+        ^.className := "top-nav",
+        <.div(
+          ^.className := "nav_menu",
+          <.nav(
+            <.ul(
+              ^.className := "nav navbar-nav navbar-right",
               <.li(
-                ^.key := item.name,
-                Style.menuItem(item.route.getClass == P.selectedPage.getClass),
-                item.name,
-                P.ctrl.setOnClick(item.route)
+                <.a(
+                  GlobalStyle.styleSheet.cursorPointer,
+                  ^.className := "user-profile dropdown-toggle",
+                  ^.onClick ==> toggleDropdown,
+                  <.span(^.className := "fa fa-user"),
+                  "  " + Try(s.user.get.userName).getOrElse[String]("Not Logged In") + "  ",
+                  <.span(^.className := "fa fa-angle-down"),
+                ),
+                downdown(s)
               )
-            }
+            )
           )
         )
       )
-    }
-    .configure(Reusability.shouldComponentUpdate)
+  }
+
+  val component = ScalaComponent
+    .builder[Unit]("TopNav")
+    .initialState(State(None, drowdownOpen = false))
+    .renderBackend[Backend]
+    .componentWillMount(e => e.backend.getUser)
     .build
 
-  def apply(props: Props): Unmounted[Props, Unit, Unit] = component(props)
-
+  def apply(): Unmounted[Unit, State, Backend] = component()
 }

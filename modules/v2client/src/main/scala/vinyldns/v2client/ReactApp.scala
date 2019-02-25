@@ -17,6 +17,7 @@
 package vinyldns.v2client
 
 import org.scalajs.dom
+import org.scalajs.dom.document
 import vinyldns.v2client.css.AppCSS
 import vinyldns.v2client.routes.AppRouter
 
@@ -24,6 +25,8 @@ import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 
 @JSExportTopLevel("ReactApp")
 object ReactApp {
+  val csrf: String = document.getElementById("csrf").getAttribute("content")
+
   @JSExport
   def main(containerId: String): Unit = {
     AppCSS.load

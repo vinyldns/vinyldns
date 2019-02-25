@@ -24,12 +24,9 @@ object GlobalStyle {
   object styleSheet extends StyleSheet.Inline {
     import dsl._
 
-    style(
-      unsafeRoot("body")(
-        margin.`0`,
-        padding.`0`,
-        fontSize(14.px)
-      )
-    )
+    val maxHeight = style(height :=! "100vh")
+    val maxWidth = style(width :=! "100%")
+    val overrideDisplay = style(display.block)
+    val cursorPointer = style(cursor.pointer)
   }
 }

@@ -32,8 +32,8 @@ object AppRouter {
   case object Other extends AppPage
 
   val menu = Vector(
-    Menu("Home", Home),
-    Menu("Other", Other)
+    Menu("Home", "fa fa-home", Home),
+    Menu("Other", "fa fa-users", Other)
   )
 
   val config = RouterConfigDsl[AppPage].buildConfig { dsl =>
@@ -46,9 +46,16 @@ object AppRouter {
 
   def layout(c: RouterCtl[AppPage], r: Resolution[AppPage]): VdomTagOf[Div] =
     <.div(
-      TopNav(TopNav.Props(menu, r.page, c)),
-      LeftNav(LeftNav.Props(menu, r.page, c)),
-      r.render()
+      ^.className := "nav-md",
+      <.div(
+        ^.className := "container body",
+        <.div(
+          ^.className := "main_container",
+          TopNav(),
+          LeftNav(LeftNav.Props(menu, r.page, c)),
+          r.render()
+        )
+      )
     )
 
   val baseUrl = BaseUrl.fromWindowOrigin / "v2/"

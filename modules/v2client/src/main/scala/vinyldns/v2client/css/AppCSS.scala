@@ -17,8 +17,6 @@
 package vinyldns.v2client.css
 
 import scalacss.internal.mutable.GlobalRegistry
-import vinyldns.v2client.components.{LeftNav, TopNav}
-import vinyldns.v2client.pages.{HomePage, OtherPage}
 
 object AppCSS {
 
@@ -26,12 +24,7 @@ object AppCSS {
   import CssSettings._
 
   def load: Any = {
-    GlobalRegistry.register(
-      GlobalStyle.styleSheet,
-      TopNav.Style,
-      LeftNav.Style,
-      OtherPage.Style,
-      HomePage.Style)
+    GlobalRegistry.register(GlobalStyle.styleSheet)
     GlobalRegistry.onRegistration(_.addToDocument())
   }
 }

@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-package vinyldns.v2client.pages
+package vinyldns.v2client.models
+import upickle.default.{ReadWriter => RW, macroRW}
 
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.component.Scala.Unmounted
-import japgolly.scalajs.react.vdom.html_<^._
+case class Id(id: String)
 
-object HomePage {
-  val component = {
-    ScalaComponent.builder
-      .static("HomePage")(<.div("Scala js react template"))
-      .build
-  }
-
-  def apply(): Unmounted[Unit, Unit, Unit] = component()
+object Id {
+  implicit val rw: RW[Id] = macroRW
 }
