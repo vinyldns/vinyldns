@@ -43,18 +43,25 @@ object VinylDNSService {
     "(?i)(/?zones/)(?:[0-9a-f]-?)+(/recordsets/)(?:[0-9a-f]-?)+(/changes/)(?:[0-9a-f]-?)+(.*)".r
   val TsigKeyRegex: Regex = """(?is)(.*?\"key\"\s*:\s*\")(?:.+?)(\".*)""".r
 
-  def logMessage(req: HttpRequest, res: HttpResponse, duration: Long): String = {
+  def logMessage(req: HttpRequest, resOption: Option[HttpResponse], duration: Long): String = {
     val requestHeadersNoAuth = req.headers
       .filter(_.name.toLowerCase != "authorization")
       .map(h => s"${h.name}='${h.value}'")
       .mkString(", ")
-    val errorResponse = if (res.status.intValue() > 202) {
-      s", entity=${res.entity}"
-    } else ""
+    // rejections have their response entity discarded by default
+    val response =
+      resOption match {
+        case Some(res) =>
+          val errorResponse = if (res.status.intValue() > 202) {
+            s", entity=${res.entity}"
+          } else ""
+          s"Response: status_code=${res.status.intValue}$errorResponse"
+        case None => ""
+      }
     Seq(
       s"Headers: [$requestHeadersNoAuth]",
       s"Request: protocol=${req.protocol.value}, method=${req.method.value}, path=${sanitizePath(req.uri)}",
-      s"Response: status_code=${res.status.intValue}$errorResponse",
+      s"$response",
       s"Duration: request_duration=$duration"
     ).mkString(" | ")
   }
@@ -82,17 +89,19 @@ object VinylDNSService {
               case false => {
                 r match {
                   case res: HttpResponse =>
-                    Some(LogEntry(VinylDNSService.logMessage(req, res, duration), InfoLevel))
+                    Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), InfoLevel))
                   case res: Complete =>
                     Some(
-                      LogEntry(VinylDNSService.logMessage(req, res.response, duration), InfoLevel))
+                      LogEntry(
+                        VinylDNSService.logMessage(req, Some(res.response), duration),
+                        InfoLevel))
                   case _: Rejected =>
-                    None
+                    Some(LogEntry(VinylDNSService.logMessage(req, None, duration), ErrorLevel))
                   case x => // this can happen if sealRoute below cannot convert into a response.
                     val res = HttpResponse(
                       status = StatusCodes.InternalServerError,
                       entity = HttpEntity(x.toString))
-                    Some(LogEntry(VinylDNSService.logMessage(req, res, duration), ErrorLevel))
+                    Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), ErrorLevel))
                 }
               }
               case true => None
