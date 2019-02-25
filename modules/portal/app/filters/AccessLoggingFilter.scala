@@ -36,9 +36,10 @@ class AccessLoggingFilter @Inject()(
 
     resultFuture.foreach(result => {
       if (!request.uri.contains("/public") && !request.uri.contains("/assets")) {
-        val msg = s"method=${request.method} uri=${request.uri} status=${result.header.status} " +
-          s"remote-address=${request.remoteAddress} " +
-          s"user-agent=${request.headers.get(Http.HeaderNames.USER_AGENT).getOrElse("unknown")}"
+        val msg = s"Request: method=${request.method}, path=${request.uri}, " +
+          s"remote_address=${request.remoteAddress}, " +
+          s"user_agent=${request.headers.get(Http.HeaderNames.USER_AGENT).getOrElse("unknown")} " +
+          s"| Response: status_code=${result.header.status} "
         logger.info(msg)
       }
     })
