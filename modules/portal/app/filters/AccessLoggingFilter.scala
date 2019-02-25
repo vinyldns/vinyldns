@@ -31,7 +31,7 @@ class AccessLoggingFilter @Inject()(
 
   private val logger = LoggerFactory.getLogger(classOf[AccessLoggingFilter])
 
-  def apply(next: (RequestHeader) => Future[Result])(request: RequestHeader): Future[Result] = {
+  def apply(next: RequestHeader => Future[Result])(request: RequestHeader): Future[Result] = {
     val resultFuture = next(request)
 
     resultFuture.foreach(result => {
