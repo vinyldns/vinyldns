@@ -178,23 +178,6 @@ class DynamoDBRecordChangeRepositorySpec
     }
   }
 
-  "DynamoDBRecordChangeRepository.toChangeSet" should {
-    "be able to decode the output of toItem" in {
-      val store = new TestRepo
-      val blob = store.toItem(pendingChangeSet, pendingCreateAAAA)
-      val result = store.toChangeSet(blob)
-
-      result shouldBe pendingChangeSet.copy(changes = Seq())
-    }
-    "throw an error when given bad input" in {
-      val store = new TestRepo
-      val blob = new java.util.HashMap[String, AttributeValue]()
-      intercept[UnexpectedDynamoResponseException] {
-        store.toChangeSet(blob)
-      }
-    }
-  }
-
   "DynamoDBRecordChangeRepository.toItem" should {
     "be able to encode an item" in {
       val store = new TestRepo
