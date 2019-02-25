@@ -57,7 +57,7 @@ trait ProtobufConversions {
       .getOrElse {
         protoLogger.error(
           s"Encountered unexpected status in RecordSetChange.fromPB: ${chg.getStatus}")
-        // depreciated Submitted, Validated, Applied, Verified -- setting all to "Pending"
+        // deprecated Submitted, Validated, Applied, Verified -- setting all to "Pending"
         RecordSetChangeStatus.Pending
       }
     record.RecordSetChange(
