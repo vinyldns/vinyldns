@@ -20,7 +20,6 @@ import cats.effect.IO
 import controllers.{OidcAuthenticator, VinylDNS}
 import org.slf4j.Logger
 import play.api.mvc.{ActionFunction, Request, Result, Session}
-import play.mvc.Http
 import vinyldns.core.domain.membership.{LockStatus, User}
 
 import scala.concurrent.{ExecutionContext, Future}

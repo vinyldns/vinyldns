@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory
 import play.api.Logger
 import play.api.mvc._
 import play.api.Configuration
-import play.mvc.Http
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
