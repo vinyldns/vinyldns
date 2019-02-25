@@ -23,7 +23,6 @@ class ChangeSetSpec extends WordSpec with Matchers {
   "ChangeSet" should {
     "convert status fromInt properly" in {
       ChangeSetStatus.fromInt(ChangeSetStatus.Pending.intValue) shouldBe ChangeSetStatus.Pending
-      ChangeSetStatus.fromInt(ChangeSetStatus.Processing.intValue) shouldBe ChangeSetStatus.Processing
       ChangeSetStatus.fromInt(ChangeSetStatus.Complete.intValue) shouldBe ChangeSetStatus.Complete
       ChangeSetStatus.fromInt(ChangeSetStatus.Applied.intValue) shouldBe ChangeSetStatus.Applied
     }
