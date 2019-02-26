@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-package vinyldns.v2client.pages
+package vinyldns.v2client.models
 
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.component.Scala.Unmounted
-import japgolly.scalajs.react.vdom.html_<^._
-
-object HomePage {
-  val component = {
-    ScalaComponent.builder
-      .static("HomePage")(<.div("Scala js react template"))
-      .build
-  }
-
-  def apply(): Unmounted[Unit, Unit, Unit] = component()
-}
+case class Notification(
+    customMessage: Option[String] = None,
+    ajaxResponseMessage: Option[String] = None,
+    isError: Boolean = false
+)

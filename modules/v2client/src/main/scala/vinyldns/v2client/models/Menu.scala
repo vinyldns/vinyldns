@@ -16,6 +16,6 @@
 
 package vinyldns.v2client.models
 
-import vinyldns.v2client.routes.AppRouter.AppPage
+import vinyldns.v2client.pages.AppPage
 
 case class Menu(name: String, faClassName: String, route: AppPage)

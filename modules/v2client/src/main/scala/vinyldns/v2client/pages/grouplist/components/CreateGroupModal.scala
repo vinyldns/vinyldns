@@ -14,41 +14,18 @@
  * limitations under the License.
  */
 
-package vinyldns.v2client.pages.group
+package vinyldns.v2client.pages.grouplist.components
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.models.{Group, Id, User}
-import japgolly.scalajs.react.extra.Ajax
-import upickle.default._
-import vinyldns.v2client.ReactApp.csrf
 import vinyldns.v2client.components.Modal
+import vinyldns.v2client.models.Group
 
 object CreateGroupModal {
   case class State(group: Group)
-  case class Props(close: () => Callback)
+  case class Props(close: () => Callback, create: Group => Callback)
   class Backend(bs: BackendScope[Props, State]) {
-
-    def createGroup(e: ReactEventFromInput): Callback = {
-      def request(state: State): Callback =
-        Ajax("GET", "/api/users/currentuser")
-          .setRequestHeader("Csrf-Token", csrf)
-          .send
-          .onComplete { xhr =>
-            val user = read[User](xhr.responseText)
-            val g =
-              state.group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
-            Ajax("POST", "/api/groups").setRequestContentTypeJson
-              .setRequestHeader("Csrf-Token", csrf)
-              .send(write(g))
-              .asCallback
-          }
-          .asCallback
-
-      e.preventDefaultCB >> bs.state >>= request
-    }
-
     def changeName(e: ReactEventFromInput): CallbackTo[Unit] = {
       val name = e.target.value
       bs.modState { s =>
@@ -73,9 +50,9 @@ object CreateGroupModal {
       }
     }
 
-    def render(p: Props, s: State): VdomElement =
+    def render(P: Props, S: State): VdomElement =
       Modal(
-        Modal.Props("Create Group", p.close),
+        Modal.Props("Create Group", P.close),
         <.div(
           ^.className := "modal-body",
           <.div(
@@ -91,7 +68,7 @@ object CreateGroupModal {
                 <.input(
                   ^.className := "form-control ",
                   ^.`type` := "text",
-                  ^.value := s.group.name,
+                  ^.value := S.group.name,
                   ^.onChange ==> changeName
                 )
               )
@@ -107,7 +84,7 @@ object CreateGroupModal {
                 <.input(
                   ^.className := "form-control",
                   ^.`type` := "email",
-                  ^.value := s.group.email,
+                  ^.value := S.group.email,
                   ^.onChange ==> changeEmail
                 )
               )
@@ -123,7 +100,7 @@ object CreateGroupModal {
                 <.input(
                   ^.className := "form-control",
                   ^.`type` := "text",
-                  ^.value := s.group.description,
+                  ^.value := S.group.description,
                   ^.onChange ==> changeDescription
                 )
               )
@@ -132,15 +109,15 @@ object CreateGroupModal {
             <.div(
               ^.className := "form-group",
               <.button(
-                ^.`type` := "submit",
+                ^.`type` := "button",
                 ^.className := "btn btn-success pull-right",
-                ^.onClick ==> createGroup,
+                ^.onClick --> P.create(S.group),
                 "Submit"
               ),
               <.button(
                 ^.`type` := "button",
                 ^.className := "btn btn-default pull-right",
-                ^.onClick --> p.close(),
+                ^.onClick --> P.close(),
                 "Close"
               )
             )
@@ -149,7 +126,7 @@ object CreateGroupModal {
       )
   }
 
-  val component = ScalaComponent
+  private val component = ScalaComponent
     .builder[Props]("CreateGroupForm")
     .initialState(State(Group()))
     .renderBackend[Backend]

@@ -21,30 +21,26 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
 import vinyldns.v2client.components.{LeftNav, TopNav}
 import vinyldns.v2client.models.Menu
-import vinyldns.v2client.pages.HomePage
-import vinyldns.v2client.pages.OtherPage
+import vinyldns.v2client.pages.grouplist.GroupListPage
+import vinyldns.v2client.pages.home.HomePage
+import vinyldns.v2client.pages.{AppPage, MainPage}
 
 object AppRouter {
 
-  sealed trait AppPage
-
-  case object Home extends AppPage
-  case object Other extends AppPage
-
-  val menu = Vector(
-    Menu("Home", "fa fa-home", Home),
-    Menu("Other", "fa fa-users", Other)
+  private val menu = Vector(
+    Menu("Home", "fa fa-home", HomePage),
+    Menu("Groups", "fa fa-users", GroupListPage)
   )
 
-  val config = RouterConfigDsl[AppPage].buildConfig { dsl =>
+  private val config = RouterConfigDsl[AppPage].buildConfig { dsl =>
     import dsl._
-    (staticRoute("Home", Home) ~> render(HomePage())
-      | staticRoute("Other", Other) ~> render(OtherPage()))
-      .notFound(redirectToPage(Home)(Redirect.Replace))
+    (staticRoute("home", HomePage) ~> render(MainPage(HomePage))
+      | staticRoute("groups", GroupListPage) ~> render(MainPage(GroupListPage)))
+      .notFound(redirectToPage(HomePage)(Redirect.Replace))
       .renderWith(layout)
   }
 
-  def layout(c: RouterCtl[AppPage], r: Resolution[AppPage]): VdomTagOf[Div] =
+  private def layout(c: RouterCtl[AppPage], r: Resolution[AppPage]): VdomTagOf[Div] =
     <.div(
       ^.className := "nav-md",
       <.div(
@@ -58,7 +54,7 @@ object AppRouter {
       )
     )
 
-  val baseUrl = BaseUrl.fromWindowOrigin / "v2/"
+  private val baseUrl = BaseUrl.fromWindowOrigin / "v2/"
 
   val router = Router(baseUrl, config)
 }

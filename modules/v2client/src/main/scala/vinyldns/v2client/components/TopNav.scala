@@ -88,7 +88,7 @@ object TopNav {
       )
   }
 
-  val component = ScalaComponent
+  private val component = ScalaComponent
     .builder[Unit]("TopNav")
     .initialState(State(None, drowdownOpen = false))
     .renderBackend[Backend]

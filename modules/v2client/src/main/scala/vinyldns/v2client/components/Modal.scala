@@ -26,7 +26,7 @@ import vinyldns.v2client.css.GlobalStyle
 object Modal {
   case class Props(title: String, close: () => Callback)
 
-  val component = ScalaComponent
+  private val component = ScalaComponent
     .builder[Props]("Modal")
     .render_PC { (props: Props, propsChildren: PropsChildren) =>
       <.div(
