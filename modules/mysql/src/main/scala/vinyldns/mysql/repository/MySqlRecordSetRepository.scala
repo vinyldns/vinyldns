@@ -76,14 +76,15 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     monitor("repo.RecordSet.apply") {
 
       // identify failed changes
-      val (failedChanges, successfulChanges) =
-        changeSet.changes.partition(_.status == RecordSetChangeStatus.Failed)
+      val byStatus = changeSet.changes.groupBy(_.status)
 
-      // prepare unsuccessful changes for reversion
+      // address failed changes
+      val failedChanges = byStatus.getOrElse(RecordSetChangeStatus.Failed, Seq())
       val (failedCreates, failedUpdatesOrDeletes) =
         failedChanges.partition(_.changeType == RecordSetChangeType.Create)
-      val revertCreates = failedCreates.map(d => Seq[Any](d.recordSet.id))
-      val revertUpdatesOrDeletes = failedUpdatesOrDeletes.flatMap { change =>
+
+      val reversionDeletes = failedCreates.map(d => Seq[Any](d.recordSet.id))
+      val reversionUpdates = failedUpdatesOrDeletes.flatMap { change =>
         change.updates.map { oldRs =>
           Seq[Any](
             oldRs.zoneId,
@@ -95,15 +96,18 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
       }
 
-      val successfulInserts = successfulChanges.filter(_.changeType == RecordSetChangeType.Create)
-      val pendingDeletes = successfulChanges.filter { d =>
-        d.changeType == RecordSetChangeType.Delete && d.changeType == RecordSetChangeStatus.Pending
-      }
-      // pending deletes save the record with a pending delete status
-      val toBeInserted = successfulInserts ++ pendingDeletes
+      // address successful and pending changes
+      val completeChanges = byStatus.getOrElse(RecordSetChangeStatus.Complete, Seq())
+      val completeChangesByType = completeChanges.groupBy(_.changeType)
+      val completeCreates = completeChangesByType.getOrElse(RecordSetChangeType.Create, Seq())
+      val completeUpdates = completeChangesByType.getOrElse(RecordSetChangeType.Update, Seq())
+      val completeDeletes = completeChangesByType.getOrElse(RecordSetChangeType.Delete, Seq())
 
+      val pendingChanges = byStatus.getOrElse(RecordSetChangeStatus.Pending, Seq())
+
+      // all pending changes are saved as if they are creates
       val inserts: Seq[Seq[Any]] =
-        toBeInserted.map { i =>
+        (completeCreates ++ pendingChanges).map { i =>
           Seq[Any](
             i.recordSet.id,
             i.recordSet.zoneId,
@@ -115,7 +119,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
 
       val updates: Seq[Seq[Any]] =
-        successfulChanges.filter(_.changeType == RecordSetChangeType.Update).map { u =>
+        completeUpdates.map { u =>
           Seq[Any](
             u.zoneId,
             u.recordSet.name,
@@ -125,14 +129,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             u.recordSet.id)
         }
 
-      // deletes are just the record set id
-      // only deletes from repo when record change status is complete
-      val deletes: Seq[Seq[Any]] =
-        successfulChanges
-          .filter { d =>
-            d.changeType == RecordSetChangeType.Delete && d.status == RecordSetChangeStatus.Complete
-          }
-          .map(d => Seq[Any](d.recordSet.id))
+      val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
 
       IO {
         DB.localTx { implicit s =>
@@ -141,10 +138,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           inserts.grouped(1000).foreach { group =>
             INSERT_RECORDSET.batch(group: _*).apply()
           }
-          (updates ++ revertUpdatesOrDeletes).grouped(1000).foreach { group =>
+          (updates ++ reversionUpdates).grouped(1000).foreach { group =>
             UPDATE_RECORDSET.batch(group: _*).apply()
           }
-          (deletes ++ revertCreates).grouped(1000).foreach { group =>
+          (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
             DELETE_RECORDSET.batch(group: _*).apply()
           }
         }
