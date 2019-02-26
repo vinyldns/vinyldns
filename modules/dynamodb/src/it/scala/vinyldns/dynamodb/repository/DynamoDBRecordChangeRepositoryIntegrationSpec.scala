@@ -103,14 +103,14 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
   private val recordSetChangesC = {
     for {
       rs <- recordSetA
-    } yield makeTestDeleteChange(rs, zoneA, auth.userId)
+    } yield makePendingTestDeleteChange(rs, zoneA, auth.userId)
   }.sortBy(_.id)
 
   private val recordSetChangesD = {
     for {
       rs <- recordSetA
       updateRs <- updateRecordSetA
-    } yield makeTestUpdateChange(rs, updateRs, zoneA, auth.userId)
+    } yield makePendingTestUpdateChange(rs, updateRs, zoneA, auth.userId)
   }.sortBy(_.id)
 
   private val changeSetA = ChangeSet(recordSetChangesA)
@@ -172,14 +172,14 @@ class DynamoDBRecordChangeRepositoryIntegrationSpec
     for {
       (rs, index) <- recordSetsC.zipWithIndex
     } yield
-      makeTestUpdateChange(rs, updateRecordSetsC(index), zoneC, auth.userId)
+      makePendingTestUpdateChange(rs, updateRecordSetsC(index), zoneC, auth.userId)
         .copy(created = timeOrder(index + 3))
   }
 
   private val recordSetChangesDeleteC = {
     for {
       (rs, index) <- recordSetsC.zipWithIndex
-    } yield makeTestDeleteChange(rs, zoneC, auth.userId).copy(created = timeOrder(index + 6))
+    } yield makePendingTestDeleteChange(rs, zoneC, auth.userId).copy(created = timeOrder(index + 6))
   }
 
   private val changeSetCreateC = ChangeSet(recordSetChangesCreateC)

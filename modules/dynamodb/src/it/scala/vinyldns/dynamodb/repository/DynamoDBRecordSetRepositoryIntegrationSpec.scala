@@ -24,7 +24,7 @@ import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.{Zone, ZoneStatus}
-import vinyldns.core.TestZoneData.testConnection
+import vinyldns.core.TestZoneData.{okZone, testConnection}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.record._
 
@@ -398,5 +398,120 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
           fail("encountered error running apply test")
       }
     }
+
+    "apply successful and pending creates, and delete failed creates" in {
+      val zone = okZone
+      val recordForSuccess = RecordSet("test-create-converter", "createSuccess", RecordType.A, 123,
+        RecordSetStatus.Active, DateTime.now)
+      val recordForPending = RecordSet("test-create-converter", "createPending", RecordType.A, 123,
+        RecordSetStatus.Pending, DateTime.now)
+      val recordForFailed = RecordSet("test-create-converter", "failed", RecordType.A, 123,
+        RecordSetStatus.Inactive, DateTime.now)
+
+      val successfulChange =
+        RecordSetChange(
+          zone,
+          recordForSuccess,
+          "abc",
+          RecordSetChangeType.Create,
+          RecordSetChangeStatus.Complete)
+
+      val pendingChange = successfulChange.copy(recordSet = recordForPending, status = RecordSetChangeStatus.Pending)
+      val failedChange = successfulChange.copy(recordSet = recordForFailed, status = RecordSetChangeStatus.Failed)
+
+      // to be deleted - assume this was already saved as pending
+      val existingPending = failedChange.copy(recordSet = recordForFailed.copy(status = RecordSetStatus.Pending),
+        status = RecordSetChangeStatus.Pending)
+      repo.apply(ChangeSet(existingPending)).unsafeRunSync()
+      repo.getRecordSet(recordForFailed.zoneId, failedChange.recordSet.id).unsafeRunSync() shouldBe
+        Some(existingPending.recordSet)
+
+      repo.apply(ChangeSet(Seq(successfulChange, pendingChange, failedChange))).unsafeRunSync()
+
+      // success and pending changes have records saved
+      repo.getRecordSet(successfulChange.recordSet.zoneId, successfulChange.recordSet.id).unsafeRunSync() shouldBe
+        Some(successfulChange.recordSet)
+      repo.getRecordSet(pendingChange.recordSet.zoneId, pendingChange.recordSet.id).unsafeRunSync() shouldBe
+        Some(pendingChange.recordSet)
+
+      // check that the pending record was deleted because of failed record change
+      repo.getRecordSet(failedChange.recordSet.zoneId, failedChange.recordSet.id).unsafeRunSync() shouldBe None
+    }
+
+    "apply successful updates and revert records for failed updates" in {
+      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "success")
+      val updateSuccess = oldSuccess.copy(ttl = 200)
+
+      val oldPending = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "pending")
+      val updatePending = oldPending.copy(ttl = 200, status = RecordSetStatus.PendingUpdate)
+
+      val oldFailure = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "failed")
+      val updateFailure = oldFailure.copy(ttl = 200, status = RecordSetStatus.Inactive)
+
+      val successfulUpdate = makeCompleteTestUpdateChange(oldSuccess, updateSuccess)
+      val pendingUpdate = makePendingTestUpdateChange(oldPending, updatePending)
+      val failedUpdate = pendingUpdate.copy(
+        recordSet = updateFailure,
+        updates = Some(oldFailure),
+        status = RecordSetChangeStatus.Failed)
+      val updateChanges = Seq(successfulUpdate, pendingUpdate, failedUpdate)
+      val updateChangeSet = ChangeSet(updateChanges)
+
+      // save old recordsets
+      val oldAddChanges = updateChanges
+        .map(_.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete))
+      val oldChangeSet = ChangeSet(oldAddChanges)
+      repo.apply(oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
+
+      // apply updates
+      repo.apply(updateChangeSet).unsafeRunSync() shouldBe updateChangeSet
+
+      // ensure that success and pending updates store the new recordsets
+      repo.getRecordSet(successfulUpdate.recordSet.zoneId, successfulUpdate.recordSet.id).unsafeRunSync() shouldBe
+        Some(successfulUpdate.recordSet)
+
+      repo.getRecordSet(pendingUpdate.recordSet.zoneId, pendingUpdate.recordSet.id).unsafeRunSync() shouldBe
+        Some(pendingUpdate.recordSet)
+
+      // ensure that failure update store the old recordset
+      repo.getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id).unsafeRunSync() shouldBe
+        failedUpdate.updates
+      repo.getRecordSet(failedUpdate.recordSet.zoneId, failedUpdate.recordSet.id).unsafeRunSync() shouldNot
+        be(Some(failedUpdate.recordSet))
+    }
+
+    "apply successful deletes, save pending deletes, and revert failed deletes" in {
+      val oldSuccess = aaaa.copy(zoneId = "test-update-converter", id = "success")
+      val oldPending = aaaa.copy(zoneId = "test-update-converter", id = "pending")
+      val oldFailure = aaaa.copy(zoneId = "test-update-converter", id = "failed")
+
+      val successfulDelete = makePendingTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
+      val pendingDelete = makePendingTestDeleteChange(oldPending).copy(status = RecordSetChangeStatus.Pending)
+      val failedDelete = makePendingTestDeleteChange(oldFailure).copy(status = RecordSetChangeStatus.Failed)
+
+      val deleteChanges = Seq(successfulDelete, pendingDelete, failedDelete)
+      val deleteChangeSet = ChangeSet(deleteChanges)
+
+      // save old recordsets
+      val oldAddChanges = deleteChanges
+        .map(_.copy(changeType = RecordSetChangeType.Create, status = RecordSetChangeStatus.Complete))
+      val oldChangeSet = ChangeSet(oldAddChanges)
+      repo.apply(oldChangeSet).unsafeRunSync() shouldBe oldChangeSet
+
+      // apply deletes
+      repo.apply(deleteChangeSet).unsafeRunSync() shouldBe deleteChangeSet
+
+      // ensure that successful change deletes the recordset
+      repo.getRecordSet(successfulDelete.recordSet.zoneId, successfulDelete.recordSet.id).unsafeRunSync() shouldBe None
+
+      // ensure that pending change saves the recordset
+      repo.getRecordSet(pendingDelete.recordSet.zoneId, pendingDelete.recordSet.id).unsafeRunSync() shouldBe
+        Some(pendingDelete.recordSet)
+
+      // ensure that failed delete keeps the recordset
+      repo.getRecordSet(failedDelete.recordSet.zoneId, failedDelete.recordSet.id).unsafeRunSync() shouldBe
+        failedDelete.updates
+    }
   }
+
 }
