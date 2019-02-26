@@ -76,9 +76,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
       val addChange = makeTestAddChange(rsOk.copy(id = UUID.randomUUID().toString))
         .copy(status = RecordSetChangeStatus.Failed)
-      val updateChange = makeTestUpdateChange(existing(0), existing(0).copy(name = "updated-name"))
+      val updateChange = makePendingTestUpdateChange(existing(0), existing(0).copy(name = "updated-name"))
         .copy(status = RecordSetChangeStatus.Failed)
-      val deleteChange = makeTestDeleteChange(existing(1))
+      val deleteChange = makePendingTestDeleteChange(existing(1))
         .copy(status = RecordSetChangeStatus.Failed)
 
       repo.apply(ChangeSet(Seq(addChange, updateChange, deleteChange))).unsafeRunSync()
@@ -128,11 +128,11 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val oldFailure = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "failed")
       val updateFailure = aaaa.copy(ttl = 200)
 
-      val successfulUpdate = makeTestUpdateChange(oldSuccess, updateSuccess)
+      val successfulUpdate = makePendingTestUpdateChange(oldSuccess, updateSuccess)
         .copy(status = RecordSetChangeStatus.Complete)
-      val pendingUpdate = makeTestUpdateChange(oldPending, updatePending)
+      val pendingUpdate = makePendingTestUpdateChange(oldPending, updatePending)
         .copy(status = RecordSetChangeStatus.Pending)
-      val failedUpdate = makeTestUpdateChange(oldFailure, updateFailure)
+      val failedUpdate = makePendingTestUpdateChange(oldFailure, updateFailure)
         .copy(status = RecordSetChangeStatus.Failed)
       val updateChanges = Seq(successfulUpdate, pendingUpdate, failedUpdate)
       val updateChangeSet = ChangeSet(updateChanges)
@@ -165,9 +165,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val oldPending = aaaa.copy(zoneId = "test-update-converter", id = "pending")
       val oldFailure = aaaa.copy(zoneId = "test-update-converter", id = "failed")
 
-      val successfulDelete = makeTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
-      val pendingDelete = makeTestDeleteChange(oldPending).copy(status = RecordSetChangeStatus.Pending)
-      val failedDelete = makeTestDeleteChange(oldFailure).copy(status = RecordSetChangeStatus.Failed)
+      val successfulDelete = makePendingTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
+      val pendingDelete = makePendingTestDeleteChange(oldPending).copy(status = RecordSetChangeStatus.Pending)
+      val failedDelete = makePendingTestDeleteChange(oldFailure).copy(status = RecordSetChangeStatus.Failed)
 
       val deleteChanges = Seq(successfulDelete, pendingDelete, failedDelete)
       val deleteChangeSet = ChangeSet(deleteChanges)
@@ -198,7 +198,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
     "properly add and delete DS records" in {
       val addChange = makeTestAddChange(ds, okZone)
       val testRecord = addChange.recordSet
-      val deleteChange = makeTestDeleteChange(testRecord, okZone).copy(status = RecordSetChangeStatus.Complete)
+      val deleteChange = makePendingTestDeleteChange(testRecord, okZone).copy(status = RecordSetChangeStatus.Complete)
 
       val dbCalls = for {
         _ <- repo.apply(ChangeSet(addChange))
@@ -232,12 +232,12 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val existing = insert(okZone, 10).map(_.recordSet)
 
       // update a few, delete a few
-      val deletes = existing.take(2).map(makeTestDeleteChange(_, okZone).copy(status = RecordSetChangeStatus.Complete))
+      val deletes = existing.take(2).map(makePendingTestDeleteChange(_, okZone).copy(status = RecordSetChangeStatus.Complete))
 
       // updates we will just add the letter u to
       val updates = existing.slice(3, 5).map { rs =>
         val update = rs.copy(name = "u" + rs.name)
-        makeTestUpdateChange(rs, update, okZone)
+        makeCompleteTestUpdateChange(rs, update, okZone)
       }
 
       // insert a few more

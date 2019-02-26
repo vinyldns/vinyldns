@@ -212,7 +212,7 @@ object TestRecordSetData {
       RecordSetChangeStatus.Pending
     )
 
-  def makeTestUpdateChange(
+  def makePendingTestUpdateChange(
       oldRecordSet: RecordSet,
       newRecordSet: RecordSet,
       zone: Zone = okZone,
@@ -229,7 +229,22 @@ object TestRecordSetData {
       updates = Some(oldRecordSet)
     )
 
-  def makeTestDeleteChange(
+  def makeCompleteTestUpdateChange(
+      oldRecordSet: RecordSet,
+      newRecordSet: RecordSet,
+      zone: Zone = okZone,
+      userId: String = okUser.id): RecordSetChange =
+    RecordSetChange(
+      zone,
+      newRecordSet
+        .copy(id = oldRecordSet.id, status = RecordSetStatus.Active, updated = Some(DateTime.now)),
+      userId,
+      RecordSetChangeType.Update,
+      RecordSetChangeStatus.Complete,
+      updates = Some(oldRecordSet)
+    )
+
+  def makePendingTestDeleteChange(
       recordSet: RecordSet,
       zone: Zone = okZone,
       userId: String = okUser.id): RecordSetChange =
@@ -254,7 +269,7 @@ object TestRecordSetData {
     pendingCreateCNAME.copy(status = RecordSetChangeStatus.Complete)
 
   val pendingUpdateAAAA: RecordSetChange =
-    makeTestUpdateChange(aaaa, aaaa.copy(ttl = aaaa.ttl + 100), zoneActive)
+    makePendingTestUpdateChange(aaaa, aaaa.copy(ttl = aaaa.ttl + 100), zoneActive)
 
   val pendingCreateNS: RecordSetChange = makeTestAddChange(ns, zoneActive)
   val completeCreateNS: RecordSetChange =
