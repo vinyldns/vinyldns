@@ -212,22 +212,6 @@ class DynamoDBRecordChangeRepository private[repository] (
         throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
     }
 
-  def toChangeSet(item: java.util.Map[String, AttributeValue]): ChangeSet =
-    try {
-      ChangeSet(
-        id = item.get(CHANGE_SET_ID).getS,
-        zoneId = item.get(ZONE_ID).getS,
-        createdTimestamp = item.get(CREATED_TIMESTAMP).getS.toLong,
-        processingTimestamp = item.get(PROCESSING_TIMESTAMP).getS.toLong,
-        changes = Seq(),
-        status = ChangeSetStatus.fromInt(item.get(CHANGE_SET_STATUS).getN.toInt)
-      )
-    } catch {
-      case ex: Throwable =>
-        log.error("fromItem", ex)
-        throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
-    }
-
   def toItem(
       changeSet: ChangeSet,
       change: RecordSetChange): java.util.HashMap[String, AttributeValue] = {
