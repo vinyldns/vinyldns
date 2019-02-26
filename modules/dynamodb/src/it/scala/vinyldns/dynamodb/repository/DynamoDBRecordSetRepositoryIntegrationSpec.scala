@@ -440,11 +440,11 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val oldFailure = aaaa.copy(zoneId = "test-update-converter", ttl = 100, id = "failed")
       val updateFailure = aaaa.copy(ttl = 200)
 
-      val successfulUpdate = makeTestUpdateChange(oldSuccess, updateSuccess)
+      val successfulUpdate = makeCompleteTestUpdateChange(oldSuccess, updateSuccess)
         .copy(status = RecordSetChangeStatus.Complete)
-      val pendingUpdate = makeTestUpdateChange(oldPending, updatePending)
+      val pendingUpdate = makePendingTestUpdateChange(oldPending, updatePending)
         .copy(status = RecordSetChangeStatus.Pending)
-      val failedUpdate = makeTestUpdateChange(oldFailure, updateFailure)
+      val failedUpdate = makePendingTestUpdateChange(oldFailure, updateFailure)
         .copy(status = RecordSetChangeStatus.Failed)
       val updateChanges = Seq(successfulUpdate, pendingUpdate, failedUpdate)
       val updateChangeSet = ChangeSet(updateChanges)
@@ -477,9 +477,9 @@ class DynamoDBRecordSetRepositoryIntegrationSpec
       val oldPending = aaaa.copy(zoneId = "test-update-converter", id = "pending")
       val oldFailure = aaaa.copy(zoneId = "test-update-converter", id = "failed")
 
-      val successfulDelete = makeTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
-      val pendingDelete = makeTestDeleteChange(oldPending).copy(status = RecordSetChangeStatus.Pending)
-      val failedDelete = makeTestDeleteChange(oldFailure).copy(status = RecordSetChangeStatus.Failed)
+      val successfulDelete = makePendingTestDeleteChange(oldSuccess).copy(status = RecordSetChangeStatus.Complete)
+      val pendingDelete = makePendingTestDeleteChange(oldPending).copy(status = RecordSetChangeStatus.Pending)
+      val failedDelete = makePendingTestDeleteChange(oldFailure).copy(status = RecordSetChangeStatus.Failed)
 
       val deleteChanges = Seq(successfulDelete, pendingDelete, failedDelete)
       val deleteChangeSet = ChangeSet(deleteChanges)
