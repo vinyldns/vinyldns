@@ -28,13 +28,13 @@
                 });
 
             $scope.batch = {};
-            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]};
+            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}]};
             $scope.alerts = [];
             $scope.batchChangeErrors = false;
             $scope.formStatus = "pendingSubmit";
 
             $scope.addSingleChange = function() {
-                $scope.newBatch.changes.push({changeType: "Add", type: "A", ttl: 200});
+                $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR", ttl: 200});
                 var changesLength =$scope.newBatch.changes.length;
                 $timeout(function() {document.getElementsByClassName("changeType")[changesLength - 1].focus()});
             };
@@ -59,6 +59,20 @@
                      delete payload.ownerGroupId
                 }
 
+
+                function formatData(payload) {
+                    var i;
+                    for (i = 0; i < payload.changes.length; i++) {
+                        var entry = payload.changes[i]
+                        if(entry.type == 'A+PTR' || entry.type == 'AAAA+PTR') {
+                            entry.type = entry.type.slice(0, -4);
+                            payload.changes[i] = entry;
+                            var newEntry = {changeType: entry.changeType, type: "PTR", ttl: entry.ttl, inputName: entry.record.address, record: {ptrdname: entry.inputName}}
+                            payload.changes.splice(i+1, 0, newEntry)
+                        }
+                    }
+                }
+
                 function success(response) {
                     var alert = utilityService.success('Successfully Created Batch Change', response, 'createBatchChange: createBatchChange successful');
                     $scope.alerts.push(alert);
@@ -67,6 +81,8 @@
                      }, 2000);
                     $scope.batch = response.data;
                 }
+
+                formatData(payload);
 
                 return batchChangeService.createBatchChange(payload)
                     .then(success)
