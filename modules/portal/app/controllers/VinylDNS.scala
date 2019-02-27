@@ -128,11 +128,13 @@ class VinylDNS @Inject()(
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
 
-  def oidcCallback(loginId: String): Action[AnyContent] = Action { implicit request =>
+  def oidcCallback(loginId: String): Action[AnyContent] = Action.async { implicit request =>
     Logger.info(s"Received callback for LoginId [$loginId]")
-
-    Redirect(s"/set-oidc-session/$loginId?${request.rawQueryString}")
-      .withHeaders("" -> "")
+    Future(
+      Ok(
+        views.html.setOidcSession(
+          s"${oidcAuthenticator.redirectUriString}set-oidc-session/$loginId?" +
+            s"${request.rawQueryString}")))
   }
 
   def setOidcSession(loginId: String): Action[AnyContent] = Action.async { implicit request =>
