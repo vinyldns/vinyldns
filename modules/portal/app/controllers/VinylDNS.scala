@@ -276,7 +276,11 @@ class VinylDNS @Inject()(
         details.firstName,
         details.lastName,
         details.email)
-    userAccountAccessor.create(newUser)
+
+    userAccountAccessor.create(newUser).map { u =>
+      Logger.info(s"User account for ${u.userName} created with id ${u.id}")
+      u
+    }
   }
 
   def getUserDataByUsername(username: String): Action[AnyContent] = userAction.async {
@@ -320,10 +324,7 @@ class VinylDNS @Inject()(
       .flatMap {
         case None =>
           Logger.info(s"Creating user account for ${userDetails.username}")
-          createNewUser(userDetails).map { u: User =>
-            Logger.info(s"User account for ${u.userName} created with id ${u.id}")
-            u
-          }
+          createNewUser(userDetails)
         case Some(u) =>
           Logger.info(s"User account for ${u.userName} exists with id ${u.id}")
           IO.pure(u)
