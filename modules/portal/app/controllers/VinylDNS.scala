@@ -132,6 +132,7 @@ class VinylDNS @Inject()(
     Logger.info(s"Received callback for LoginId [$loginId]")
 
     Redirect(s"/set-oidc-session/$loginId?${request.rawQueryString}")
+      .withHeaders("" -> "")
   }
 
   def setOidcSession(loginId: String): Action[AnyContent] = Action.async { implicit request =>
