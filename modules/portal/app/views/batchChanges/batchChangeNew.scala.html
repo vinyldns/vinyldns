@@ -182,8 +182,8 @@
                                 </tr>
                                 </tbody>
                             </table>
-                            <button type="button" id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length == batchChangeLimit"><span class="fa fa-plus"></span> Add a Change</button>
-                            <span ng-if="newBatch.changes.length == batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</span>
+                            <button type="button" id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length >= batchChangeLimit"><span class="fa fa-plus"></span> Add a Change</button>
+                            <span ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</span>
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="formStatus=='pendingSubmit'" class="pull-right">
