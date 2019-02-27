@@ -55,6 +55,7 @@ GET           /api/batchchanges                  @controllers.VinylDNS.listBatch
 POST          /api/batchchanges                  @controllers.VinylDNS.newBatchChange
 
 GET           /callback/:id                          @controllers.VinylDNS.oidcCallback(id: String)
+GET           /set-oidc-session/:id                  @controllers.VinylDNS.setOidcSession(id: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET           /public/*file                      controllers.Assets.versioned(path="/public", file: Asset)
