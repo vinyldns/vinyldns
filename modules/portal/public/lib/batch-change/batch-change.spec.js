@@ -114,7 +114,7 @@ describe('BatchChange', function(){
             it('adds a change to the changes array', function() {
                this.scope.addSingleChange();
 
-               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}, {changeType: "Add", type: "A", ttl: 200}]})
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}, {changeType: "Add", type: "A+PTR", ttl: 200}]})
             });
         });
 
