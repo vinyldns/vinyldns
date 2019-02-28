@@ -34,6 +34,11 @@ object Request {
       .setRequestContentTypeJson
       .send(body)
 
+  def delete(route: Route): Ajax.Step2 =
+    Ajax("DELETE", route.path)
+      .setRequestHeader("Csrf-Token", csrf)
+      .send
+
   def toNotification(
       action: String,
       xhr: XMLHttpRequest,
@@ -67,6 +72,10 @@ final case class PostGroupRoute() extends Route {
   def path: String = "/api/groups"
 }
 
-final case class getGroupRoute(id: String) extends Route {
+final case class GetGroupRoute(id: String) extends Route {
+  def path: String = s"/api/groups/$id"
+}
+
+final case class DeleteGroupRoute(id: String) extends Route {
   def path: String = s"/api/groups/$id"
 }

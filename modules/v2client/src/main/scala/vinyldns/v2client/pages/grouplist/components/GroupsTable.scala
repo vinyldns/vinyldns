@@ -20,13 +20,40 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.models.GroupList
+import org.scalajs.dom
+import vinyldns.v2client.ajax.{DeleteGroupRoute, Request}
+import vinyldns.v2client.models.group.{Group, GroupList}
+import vinyldns.v2client.pages.MainPage.Alerter
 import vinyldns.v2client.routes.AppRouter.{Page, ToGroupViewPage}
 
 object GroupsTable {
-  case class Props(groupsList: Option[GroupList], router: RouterCtl[Page])
+  case class Props(
+      groupsList: Option[GroupList],
+      alerter: Alerter,
+      refresh: Alerter => Callback,
+      router: RouterCtl[Page])
 
   class Backend {
+    def deleteGroup(P: Props, group: Group): Callback =
+      CallbackTo[Boolean](
+        dom.window.confirm(s"""Are you sure you want to delete group "${group.name}"""")) >>= {
+        confirmed =>
+          if (confirmed)
+            Request
+              .delete(DeleteGroupRoute(group.id.getOrElse("")))
+              .onComplete { xhr =>
+                val alert =
+                  P.alerter.set(Request.toNotification(s"deleting group ${group.name}", xhr))
+                val refreshGroups =
+                  if (!Request.isError(xhr.status))
+                    P.refresh(P.alerter)
+                  else Callback(())
+                alert >> refreshGroups
+              }
+              .asCallback
+          else Callback(())
+      }
+
     def render(P: Props): VdomElement =
       <.div(
         P.groupsList match {
@@ -42,22 +69,29 @@ object GroupsTable {
                 )
               ),
               <.tbody(
-                gl.groups.map { group =>
-                  <.tr(
-                    <.td(group.name),
-                    <.td(group.email),
-                    <.td(group.description),
-                    <.td(
-                      <.div(
-                        ^.className := "table-form-group",
-                        <.a(
-                          ^.className := "btn btn-info btn-rounded",
-                          P.router.setOnClick(ToGroupViewPage(group.id.get)),
-                          "View"
+                gl.groups.map {
+                  group =>
+                    <.tr(
+                      <.td(group.name),
+                      <.td(group.email),
+                      <.td(group.description),
+                      <.td(
+                        <.div(
+                          ^.className := "table-form-group",
+                          <.a(
+                            ^.className := "btn btn-info btn-rounded",
+                            P.router.setOnClick(ToGroupViewPage(group.id.get)),
+                            "View"
+                          ),
+                          <.button(
+                            ^.className := "btn btn-danger btn-rounded",
+                            ^.`type` := "button",
+                            ^.onClick --> deleteGroup(P, group),
+                            "Delete"
+                          )
                         )
                       )
                     )
-                  )
                 }.toTagMod
               )
             )

@@ -24,7 +24,7 @@ object GlobalStyle {
   object styleSheet extends StyleSheet.Inline {
     import dsl._
 
-    val fullViewHeight = style(height :=! "100vh")
+    val height100 = style(height :=! "100%")
     val width100 = style(width :=! "100%")
     val overrideDisplay = style(display.block)
     val cursorPointer = style(cursor.pointer)

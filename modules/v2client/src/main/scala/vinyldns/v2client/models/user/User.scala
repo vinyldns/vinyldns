@@ -14,45 +14,21 @@
  * limitations under the License.
  */
 
-package vinyldns.v2client.models
+package vinyldns.v2client.models.user
+
 import upickle.default.{macroRW, ReadWriter => RW}
 import upickle.default._
 
-case class Group(
-    name: String = "",
-    email: String = "",
-    description: String = "",
-    id: Option[String] = None,
-    created: Option[String] = None,
-    members: Option[Seq[Id]] = None,
-    admins: Option[Seq[Id]] = None)
+case class User(
+    userName: String,
+    firstName: Option[String],
+    lastName: Option[String],
+    id: String,
+    isSuper: Boolean = false,
+    lockStatus: String = "Unlocked")
 
-object Group {
-  implicit val rw: RW[Group] = macroRW
-
-  // uPickle by default treats empty options as empty arrays, this has it use None
-  implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
-    implicitly[Writer[T]].comap[Option[T]] {
-      case None => null.asInstanceOf[T]
-      case Some(x) => x
-    }
-
-  implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    implicitly[Reader[T]].mapNulls {
-      case null => None
-      case x => Some(x)
-    }
-}
-
-case class GroupList(
-    groups: List[Group],
-    maxItems: Option[Int],
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
-    groupNameFilter: Option[String] = None)
-
-object GroupList {
-  implicit val rw: RW[GroupList] = macroRW
+object User {
+  implicit val rw: RW[User] = macroRW
 
   // uPickle by default treats empty options as empty arrays, this has it use None
   implicit def OptionWriter[T: Writer]: Writer[Option[T]] =

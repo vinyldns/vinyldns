@@ -17,27 +17,31 @@
 package vinyldns.v2client.pages
 
 import scalacss.ScalaCssReact._
-import vinyldns.v2client.models.{Notification, User}
+import vinyldns.v2client.models.Notification
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
+import scalajs.js.timers.setTimeout
 import upickle.default.read
 import vinyldns.v2client.ajax.{CurrentUserRoute, Request}
-import vinyldns.v2client.components.Notify
+import vinyldns.v2client.components.AlertBox
 import vinyldns.v2client.css.GlobalStyle
+import vinyldns.v2client.models.user.User
 import vinyldns.v2client.pages.MainPage.PropsFromMainPage
 import vinyldns.v2client.routes.AppRouter.Page
 
 import scala.util.Try
 
-// AppPages are pages that can be nested in MainPage
+// AppPages are pages that can be nested in MainPage, all routed to pages extend AppPage
 // Things nested in MainPage need to have access to things like the shared Alerter, hence propsFromMainPage
 trait AppPage {
   def apply(propsFromMainPage: PropsFromMainPage): Unmounted[PropsFromMainPage, _, _]
 }
 
 object MainPage {
+  final private val SUCCESS_ALERT_TIMEOUT_MILLIS = 5000.0
+
   case class State(notification: Option[Notification] = None, loggedInUser: Option[User] = None)
   case class Alerter(set: Option[Notification] => Callback)
   case class Props(childPage: AppPage, router: RouterCtl[Page], argsFromPath: List[String])
@@ -51,7 +55,13 @@ object MainPage {
     def clearNotification: Callback =
       bs.modState(_.copy(notification = None))
     def setNotification(notification: Option[Notification]): Callback =
-      bs.modState(_.copy(notification = notification))
+      notification match {
+        case Some(n) if !n.isError =>
+          bs.modState(_.copy(notification = notification)) >>
+            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
+        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
+        case None => Callback(())
+      }
 
     def getLoggedInUser: Callback =
       Request
@@ -77,11 +87,11 @@ object MainPage {
 
     def render(P: Props, S: State): VdomElement =
       <.div(
-        GlobalStyle.styleSheet.fullViewHeight,
+        GlobalStyle.styleSheet.height100,
         ^.className := "right_col",
         ^.role := "main",
         S.notification match {
-          case Some(n) => Notify(Notify.Props(n, () => clearNotification))
+          case Some(n) => AlertBox(AlertBox.Props(n, () => clearNotification))
           case None => <.div
         },
         renderAppPage(P, S)

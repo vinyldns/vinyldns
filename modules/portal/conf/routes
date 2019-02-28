@@ -9,6 +9,7 @@ GET           /login                             @controllers.FrontendController
 GET           /logout                            @controllers.FrontendController.logout
 GET           /noaccess                          @controllers.FrontendController.noAccess
 GET			  /v2						         @controllers.FrontendController.clientV2(reactRoute: String = "")
+GET			  /v2/						         @controllers.FrontendController.clientV2(reactRoute: String = "")
 GET			  /v2/*reactroute					 @controllers.FrontendController.clientV2(reactroute)
 
 GET           /groups                            @controllers.FrontendController.viewAllGroups

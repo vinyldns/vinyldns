@@ -22,10 +22,10 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.Ajax
 import japgolly.scalajs.react.extra.router.BaseUrl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.models.User
 import vinyldns.v2client.ReactApp.csrf
 import upickle.default._
 import vinyldns.v2client.css.GlobalStyle
+import vinyldns.v2client.models.user.User
 
 import scala.util.Try
 

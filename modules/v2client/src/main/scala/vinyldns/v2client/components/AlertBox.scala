@@ -24,7 +24,7 @@ import japgolly.scalajs.react.vdom.VdomElement
 import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.models.Notification
 
-object Notify {
+object AlertBox {
   case class Props(notification: Notification, closeFunction: () => Callback)
 
   class Backend {

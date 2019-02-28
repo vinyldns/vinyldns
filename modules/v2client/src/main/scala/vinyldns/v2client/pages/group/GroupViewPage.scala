@@ -19,8 +19,8 @@ package vinyldns.v2client.pages.group
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.ajax.{Request, getGroupRoute}
-import vinyldns.v2client.models.Group
+import vinyldns.v2client.ajax.{GetGroupRoute, Request}
+import vinyldns.v2client.models.group.Group
 import vinyldns.v2client.pages.MainPage.PropsFromMainPage
 import vinyldns.v2client.pages.AppPage
 import upickle.default.read
@@ -38,7 +38,7 @@ object GroupViewPage extends AppPage {
     def getGroup(P: PropsFromMainPage): Callback = {
       val groupId = getGroupId(P.argsFromPath)
       Request
-        .get(getGroupRoute(groupId))
+        .get(GetGroupRoute(groupId))
         .onComplete { xhr =>
           val alert =
             P.alerter.set(Request.toNotification("getting group", xhr, onlyOnError = true))
@@ -49,8 +49,10 @@ object GroupViewPage extends AppPage {
     }
 
     def getDescriptionHeader(group: Group): TagMod =
-      if (!group.description.isEmpty) <.h5(s"Description: ${group.description}")
-      else TagMod.empty
+      group.description match {
+        case Some(d) => <.h5(s"Description: $d")
+        case None => TagMod.empty
+      }
 
     def getIdHeader(group: Group): TagMod =
       group.id match {

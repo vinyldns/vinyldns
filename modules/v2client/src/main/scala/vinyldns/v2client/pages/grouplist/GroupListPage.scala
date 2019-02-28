@@ -21,7 +21,8 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.read
 import vinyldns.v2client.ajax.{ListGroupsRoute, Request}
-import vinyldns.v2client.models._
+import vinyldns.v2client.models.group.GroupList
+import vinyldns.v2client.models.user.User
 import vinyldns.v2client.pages.AppPage
 import vinyldns.v2client.pages.MainPage.{Alerter, PropsFromMainPage}
 import vinyldns.v2client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
@@ -46,7 +47,8 @@ object GroupListPage extends AppPage {
     def createGroupModal(isVisible: Boolean, loggedInUser: User, alerter: Alerter): TagMod =
       if (isVisible)
         CreateGroupModal(
-          CreateGroupModal.Props(alerter, loggedInUser, () => makeCreateFormInvisible))
+          CreateGroupModal
+            .Props(alerter, loggedInUser, () => makeCreateFormInvisible, () => listGroups(alerter)))
       else <.div()
 
     def makeCreateFormVisible: Callback =
@@ -91,7 +93,7 @@ object GroupListPage extends AppPage {
                 ),
                 <.div(
                   ^.className := "panel-body",
-                  GroupsTable(GroupsTable.Props(S.groupsList, P.router)))
+                  GroupsTable(GroupsTable.Props(S.groupsList, P.alerter, listGroups, P.router)))
               )
             )
           )

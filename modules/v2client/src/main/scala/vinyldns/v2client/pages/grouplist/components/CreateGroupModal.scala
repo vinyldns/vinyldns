@@ -22,22 +22,35 @@ import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
 import vinyldns.v2client.ajax.{PostGroupRoute, Request}
 import vinyldns.v2client.components.{InputField, InputFieldValidations, Modal}
-import vinyldns.v2client.models.{Group, Id, User}
+import vinyldns.v2client.models.Id
+import vinyldns.v2client.models.group.Group
+import vinyldns.v2client.models.user.User
 import vinyldns.v2client.pages.MainPage.Alerter
 
 object CreateGroupModal {
   case class State(group: Group)
-  case class Props(alerter: Alerter, loggedInUser: User, close: () => Callback)
+  case class Props(
+      alerter: Alerter,
+      loggedInUser: User,
+      close: () => Callback,
+      refreshGroups: () => Callback)
   class Backend(bs: BackendScope[Props, State]) {
-    def createGroup(e: ReactEventFromInput, group: Group, user: User): Callback =
+    def createGroup(e: ReactEventFromInput, P: Props, S: State): Callback =
       if (e.target.checkValidity()) {
-        e.preventDefaultCB >> bs.props >>= { P =>
+        e.preventDefaultCB >> {
           val groupWithUserId =
-            group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
+            S.group.copy(
+              members = Some(Seq(Id(P.loggedInUser.id))),
+              admins = Some(Seq(Id(P.loggedInUser.id))))
           Request
             .post(PostGroupRoute(), write(groupWithUserId))
             .onComplete { xhr =>
-              P.alerter.set(Request.toNotification("creating group", xhr))
+              val alert = P.alerter.set(Request.toNotification("creating group", xhr))
+              val cleanUp =
+                if (!Request.isError(xhr.status))
+                  P.close() >> P.refreshGroups()
+                else Callback(())
+              alert >> cleanUp
             }
             .asCallback
         }
@@ -57,7 +70,7 @@ object CreateGroupModal {
 
     def changeDescription(value: String): CallbackTo[Unit] =
       bs.modState { s =>
-        val g = s.group.copy(description = value)
+        val g = s.group.copy(description = Some(value))
         s.copy(group = g)
       }
 
@@ -81,7 +94,7 @@ object CreateGroupModal {
           ),
           <.form(
             ^.className := "form form-horizontal form-label-left",
-            ^.onSubmit ==> (e => createGroup(e, S.group, P.loggedInUser)),
+            ^.onSubmit ==> (e => createGroup(e, P, S)),
             InputField(
               InputField.Props(
                 "Name",
