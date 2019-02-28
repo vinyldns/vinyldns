@@ -705,7 +705,7 @@ class VinylDNSClient(object):
             retries -= 1
             time.sleep(RETRY_WAIT)
 
-        return response == 404
+        assert_that(response, is_(404))
 
     def wait_until_zone_exists(self, zone_change, **kwargs):
         """
@@ -772,8 +772,7 @@ class VinylDNSClient(object):
 
         # Wait until each zone is gone
         for zone_id in zone_ids:
-            success = self.wait_until_zone_deleted(zone_id)
-            assert_that(success, is_(True))
+            self.wait_until_zone_deleted(zone_id)
 
     def wait_until_recordset_change_status(self, rs_change, expected_status):
         """
