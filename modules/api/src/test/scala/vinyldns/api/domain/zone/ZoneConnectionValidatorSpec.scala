@@ -119,12 +119,22 @@ class ZoneConnectionValidatorSpec
     None,
     List(NSData("some.test.ns."), NSData("not.approved.")))
 
+  private val delegatedNS = RecordSet(
+    testZone.id,
+    s"sub.${testZone.name}",
+    RecordType.NS,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NSData("sub.some.test.ns.")))
+
   private val mockRecordSet = mock[RecordSet]
 
   "ConnectionValidator" should {
     "respond with a success if the connection is resolved" in {
       doReturn(testZone).when(mockZoneView).zone
-      doReturn(generateZoneView(testZone, successSoa, successNS).recordSetsMap)
+      doReturn(generateZoneView(testZone, successSoa, successNS, delegatedNS).recordSetsMap)
         .when(mockZoneView)
         .recordSetsMap
       doReturn(List(successSoa).toResult)
@@ -137,7 +147,7 @@ class ZoneConnectionValidatorSpec
 
     "respond with a failure if NS records are not in the approved server list" in {
       doReturn(testZone).when(mockZoneView).zone
-      doReturn(generateZoneView(testZone, successSoa, failureNs).recordSetsMap)
+      doReturn(generateZoneView(testZone, successSoa, failureNs, delegatedNS).recordSetsMap)
         .when(mockZoneView)
         .recordSetsMap
       doReturn(List(successSoa).toResult)

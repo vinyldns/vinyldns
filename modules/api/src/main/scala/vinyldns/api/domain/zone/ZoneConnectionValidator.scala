@@ -45,8 +45,9 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
 
   def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
-  def runZoneChecks(zoneView: ZoneView): Result[ZoneView] =
-    validateDnsZone(VinylDNSConfig.approvedNameServers, zoneView.recordSetsMap.values.toList)
+  def runZoneChecks(zoneView: ZoneView): Result[ZoneView] = {
+    val apexRecords = zoneView.recordSetsMap.values.filter(_.name == zoneView.zone.name).toList
+    validateDnsZone(VinylDNSConfig.approvedNameServers, apexRecords)
       .map(_ => zoneView)
       .leftMap(
         nel =>
@@ -56,6 +57,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
             "Zone could not be loaded due to validation errors."))
       .toEither
       .toResult
+  }
 
   def getDnsConnection(zone: Zone): Result[DnsConnection] =
     Either.catchNonFatal(dnsConnection(zone.connection.getOrElse(defaultConnection))).toResult
