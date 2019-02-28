@@ -19,16 +19,30 @@ package vinyldns.v2client.pages.grouplist.components
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
+import upickle.default.write
+import vinyldns.v2client.ajax.{PostGroupRoute, Request}
 import vinyldns.v2client.components.{InputField, InputFieldValidations, Modal}
-import vinyldns.v2client.models.{Group, User}
+import vinyldns.v2client.models.{Group, Id, User}
+import vinyldns.v2client.pages.MainPage.Alerter
 
 object CreateGroupModal {
   case class State(group: Group)
-  case class Props(
-      loggedInUser: User,
-      close: () => Callback,
-      create: (ReactEventFromInput, Group, User) => Callback)
+  case class Props(alerter: Alerter, loggedInUser: User, close: () => Callback)
   class Backend(bs: BackendScope[Props, State]) {
+    def createGroup(e: ReactEventFromInput, group: Group, user: User): Callback =
+      if (e.target.checkValidity()) {
+        e.preventDefaultCB >> bs.props >>= { P =>
+          val groupWithUserId =
+            group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
+          Request
+            .post(PostGroupRoute(), write(groupWithUserId))
+            .onComplete { xhr =>
+              P.alerter.set(Request.toNotification("creating group", xhr))
+            }
+            .asCallback
+        }
+      } else Callback(())
+
     def changeName(value: String): CallbackTo[Unit] =
       bs.modState { s =>
         val g = s.group.copy(name = value)
@@ -67,7 +81,7 @@ object CreateGroupModal {
           ),
           <.form(
             ^.className := "form form-horizontal form-label-left",
-            ^.onSubmit ==> (e => P.create(e, S.group, P.loggedInUser)),
+            ^.onSubmit ==> (e => createGroup(e, S.group, P.loggedInUser)),
             InputField(
               InputField.Props(
                 "Name",

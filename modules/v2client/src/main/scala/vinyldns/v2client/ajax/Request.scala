@@ -66,3 +66,7 @@ final case class ListGroupsRoute() extends Route {
 final case class PostGroupRoute() extends Route {
   def path: String = "/api/groups"
 }
+
+final case class getGroupRoute(id: String) extends Route {
+  def path: String = s"/api/groups/$id"
+}

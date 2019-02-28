@@ -19,8 +19,8 @@ package vinyldns.v2client.pages.grouplist
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import upickle.default.{read, write}
-import vinyldns.v2client.ajax.{ListGroupsRoute, PostGroupRoute, Request}
+import upickle.default.read
+import vinyldns.v2client.ajax.{ListGroupsRoute, Request}
 import vinyldns.v2client.models._
 import vinyldns.v2client.pages.AppPage
 import vinyldns.v2client.pages.MainPage.{Alerter, PropsFromMainPage}
@@ -32,34 +32,21 @@ object GroupListPage extends AppPage {
   case class State(groupsList: Option[GroupList] = None, showCreateGroup: Boolean = false)
 
   class Backend(bs: BackendScope[PropsFromMainPage, State]) {
+    // list groups is in the parent and not the table to link to the refresh button
     def listGroups(alerter: Alerter): Callback =
       Request
         .get(ListGroupsRoute())
         .onComplete { xhr =>
-          alerter.set(Request.toNotification("list groups", xhr, onlyOnError = true))
+          val alert = alerter.set(Request.toNotification("list groups", xhr, onlyOnError = true))
           val groupsList = Try(Option(read[GroupList](xhr.responseText))).getOrElse(None)
-          bs.modState(_.copy(groupsList = groupsList))
+          alert >> bs.modState(_.copy(groupsList = groupsList))
         }
         .asCallback
 
-    def createGroup(e: ReactEventFromInput, group: Group, user: User): Callback =
-      if (e.target.checkValidity()) {
-        e.preventDefaultCB >> bs.props >>= { P =>
-          val groupWithUserId =
-            group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
-          Request
-            .post(PostGroupRoute(), write(groupWithUserId))
-            .onComplete { xhr =>
-              P.alerter.set(Request.toNotification("creating group", xhr))
-            }
-            .asCallback
-        }
-      } else Callback(())
-
-    def createGroupModal(isVisible: Boolean, loggedInUser: User): TagMod =
+    def createGroupModal(isVisible: Boolean, loggedInUser: User, alerter: Alerter): TagMod =
       if (isVisible)
         CreateGroupModal(
-          CreateGroupModal.Props(loggedInUser, () => makeCreateFormInvisible, createGroup))
+          CreateGroupModal.Props(alerter, loggedInUser, () => makeCreateFormInvisible))
       else <.div()
 
     def makeCreateFormVisible: Callback =
@@ -77,35 +64,39 @@ object GroupListPage extends AppPage {
             <.h3(<.span(^.className := "fa fa-users"), "  Groups"))),
         <.div(^.className := "clearfix"),
         <.div(
-          ^.className := "row",
+          ^.className := "page-content-wrap",
           <.div(
-            ^.className := "col-md-12 col-sm-12 col-xs-12",
+            ^.className := "row",
             <.div(
-              ^.className := "x_panel",
-              <.br,
+              ^.className := "col-md-12 col-sm-12 col-xs-12",
               <.div(
-                ^.className := "x_title",
+                ^.className := "panel panel-default",
                 <.div(
-                  ^.className := "btn-group",
-                  <.button(
-                    ^.className := "btn btn-default",
-                    ^.`type` := "button",
-                    ^.onClick --> makeCreateFormVisible,
-                    <.span(^.className := "fa fa-plus-square"),
-                    "  Create Group"),
-                  <.button(
-                    ^.className := "btn btn-default",
-                    ^.onClick --> listGroups(P.alerter),
-                    <.span(^.className := "fa fa-refresh"),
-                    "  Refresh"),
-                  <.div(^.className := "clearfix")
-                )
-              ),
-              <.div(^.className := "x_content", GroupsTable(GroupsTable.Props(S.groupsList)))
+                  ^.className := "panel-heading",
+                  <.div(
+                    ^.className := "btn-group",
+                    <.button(
+                      ^.className := "btn btn-default",
+                      ^.`type` := "button",
+                      ^.onClick --> makeCreateFormVisible,
+                      <.span(^.className := "fa fa-plus-square"),
+                      "  Create Group"),
+                    <.button(
+                      ^.className := "btn btn-default",
+                      ^.onClick --> listGroups(P.alerter),
+                      <.span(^.className := "fa fa-refresh"),
+                      "  Refresh"),
+                    <.div(^.className := "clearfix")
+                  )
+                ),
+                <.div(
+                  ^.className := "panel-body",
+                  GroupsTable(GroupsTable.Props(S.groupsList, P.router)))
+              )
             )
           )
         ),
-        createGroupModal(S.showCreateGroup, P.loggedInUser)
+        createGroupModal(S.showCreateGroup, P.loggedInUser, P.alerter)
       )
   }
 

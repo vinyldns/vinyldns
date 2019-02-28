@@ -22,11 +22,11 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.v2client.css.GlobalStyle
-import vinyldns.v2client.pages.AppPage
+import vinyldns.v2client.routes.AppRouter.Page
 
 object LeftNav {
-  case class NavItem(name: String, faClassName: String, page: AppPage)
-  case class Props(menus: List[NavItem], selectedPage: AppPage, ctrl: RouterCtl[AppPage])
+  case class NavItem(name: String, faClassName: String, page: Page)
+  case class Props(menus: List[NavItem], selectedPage: Page, ctrl: RouterCtl[Page])
 
   def activeClass(isActive: Boolean): String =
     if (isActive) "active"

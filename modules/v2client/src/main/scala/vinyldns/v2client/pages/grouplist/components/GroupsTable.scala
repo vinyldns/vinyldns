@@ -18,11 +18,13 @@ package vinyldns.v2client.pages.grouplist.components
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.v2client.models.GroupList
+import vinyldns.v2client.routes.AppRouter.{Page, ToGroupViewPage}
 
 object GroupsTable {
-  case class Props(groupsList: Option[GroupList])
+  case class Props(groupsList: Option[GroupList], router: RouterCtl[Page])
 
   class Backend {
     def render(P: Props): VdomElement =
@@ -35,7 +37,8 @@ object GroupsTable {
                 <.tr(
                   <.th("Name"),
                   <.th("Email"),
-                  <.th("Description")
+                  <.th("Description"),
+                  <.th("Actions")
                 )
               ),
               <.tbody(
@@ -43,7 +46,17 @@ object GroupsTable {
                   <.tr(
                     <.td(group.name),
                     <.td(group.email),
-                    <.td(group.description)
+                    <.td(group.description),
+                    <.td(
+                      <.div(
+                        ^.className := "table-form-group",
+                        <.a(
+                          ^.className := "btn btn-info btn-rounded",
+                          P.router.setOnClick(ToGroupViewPage(group.id.get)),
+                          "View"
+                        )
+                      )
+                    )
                   )
                 }.toTagMod
               )

@@ -60,6 +60,8 @@ object InputField {
       val localOnChange = validatedValue match {
         case Right(_) =>
           bs.modState { S =>
+            // this is kinda cool, in HTML5 if an input has `customValidity` set to a non empty
+            // string it won't let you submit the form
             target.setCustomValidity("")
             S.copy(value = Some(value), isValid = true)
           }

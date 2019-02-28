@@ -21,16 +21,18 @@ import vinyldns.v2client.models.{Notification, User}
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
+import japgolly.scalajs.react.extra.router.RouterCtl
 import upickle.default.read
 import vinyldns.v2client.ajax.{CurrentUserRoute, Request}
 import vinyldns.v2client.components.Notify
 import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.pages.MainPage.PropsFromMainPage
+import vinyldns.v2client.routes.AppRouter.Page
 
 import scala.util.Try
 
 // AppPages are pages that can be nested in MainPage
-// Things nested in MainPage need to have access to the shared Alerter, hence propsFromMainPage
+// Things nested in MainPage need to have access to things like the shared Alerter, hence propsFromMainPage
 trait AppPage {
   def apply(propsFromMainPage: PropsFromMainPage): Unmounted[PropsFromMainPage, _, _]
 }
@@ -38,8 +40,12 @@ trait AppPage {
 object MainPage {
   case class State(notification: Option[Notification] = None, loggedInUser: Option[User] = None)
   case class Alerter(set: Option[Notification] => Callback)
-  case class Props(childPage: AppPage)
-  case class PropsFromMainPage(alerter: Alerter, loggedInUser: User)
+  case class Props(childPage: AppPage, router: RouterCtl[Page], argsFromPath: List[String])
+  case class PropsFromMainPage(
+      alerter: Alerter,
+      loggedInUser: User,
+      router: RouterCtl[Page],
+      argsFromPath: List[String])
 
   class Backend(bs: BackendScope[Props, State]) {
     def clearNotification: Callback =
@@ -61,11 +67,12 @@ object MainPage {
 
     def renderAppPage(P: Props, S: State): VdomNode =
       S.loggedInUser match {
-        case Some(user) => P.childPage(PropsFromMainPage(Alerter(setNotification), user))
+        case Some(user) =>
+          P.childPage(PropsFromMainPage(Alerter(setNotification), user, P.router, P.argsFromPath))
         case None =>
           <.p(
             "Trouble retrieving user info. Please re-login. " +
-              "If needed contact your VinylDNS Administrators.")
+              "If necessary, contact your VinylDNS Administrators.")
       }
 
     def render(P: Props, S: State): VdomElement =
@@ -88,5 +95,9 @@ object MainPage {
     .componentWillMount(e => e.backend.getLoggedInUser)
     .build
 
-  def apply(childPage: AppPage): Unmounted[Props, State, Backend] = component(Props(childPage))
+  def apply(
+      childPage: AppPage,
+      router: RouterCtl[Page],
+      argsFromPath: List[String] = List()): Unmounted[Props, State, Backend] =
+    component(Props(childPage, router, argsFromPath))
 }
