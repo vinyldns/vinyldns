@@ -20,7 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.{read, write}
-import vinyldns.v2client.ajax.{CurrentUserRoute, ListGroupsRoute, PostGroupRoute, Request}
+import vinyldns.v2client.ajax.{ListGroupsRoute, PostGroupRoute, Request}
 import vinyldns.v2client.models._
 import vinyldns.v2client.pages.AppPage
 import vinyldns.v2client.pages.MainPage.{Alerter, PropsFromMainPage}
@@ -42,35 +42,24 @@ object GroupListPage extends AppPage {
         }
         .asCallback
 
-    def createGroup(e: ReactEventFromInput, group: Group): Callback =
+    def createGroup(e: ReactEventFromInput, group: Group, user: User): Callback =
       if (e.target.checkValidity()) {
         e.preventDefaultCB >> bs.props >>= { P =>
+          val groupWithUserId =
+            group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
           Request
-            .get(CurrentUserRoute())
+            .post(PostGroupRoute(), write(groupWithUserId))
             .onComplete { xhr =>
-              P.alerter.set(
-                Request.toNotification("getting logged in user", xhr, onlyOnError = true))
-              val isError = Request.isError(xhr.status)
-              val cb = if (!isError) {
-                val user = read[User](xhr.responseText)
-                val groupWithUserId =
-                  group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
-                Request
-                  .post(PostGroupRoute(), write(groupWithUserId))
-                  .onComplete { xhr =>
-                    P.alerter.set(Request.toNotification("creating group", xhr))
-                  }
-                  .asCallback
-              } else Callback(())
-              cb
+              P.alerter.set(Request.toNotification("creating group", xhr))
             }
             .asCallback
         }
       } else Callback(())
 
-    def createGroupModal(isVisible: Boolean): TagMod =
+    def createGroupModal(isVisible: Boolean, loggedInUser: User): TagMod =
       if (isVisible)
-        CreateGroupModal(CreateGroupModal.Props(() => makeCreateFormInvisible, createGroup))
+        CreateGroupModal(
+          CreateGroupModal.Props(loggedInUser, () => makeCreateFormInvisible, createGroup))
       else <.div()
 
     def makeCreateFormVisible: Callback =
@@ -116,7 +105,7 @@ object GroupListPage extends AppPage {
             )
           )
         ),
-        createGroupModal(S.showCreateGroup)
+        createGroupModal(S.showCreateGroup, P.loggedInUser)
       )
   }
 

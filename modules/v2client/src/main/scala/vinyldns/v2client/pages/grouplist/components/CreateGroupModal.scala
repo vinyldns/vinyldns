@@ -19,83 +19,80 @@ package vinyldns.v2client.pages.grouplist.components
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.components.{InputField, Modal}
-import vinyldns.v2client.models.Group
+import vinyldns.v2client.components.{InputField, InputFieldValidations, Modal}
+import vinyldns.v2client.models.{Group, User}
 
 object CreateGroupModal {
   case class State(group: Group)
-  case class Props(close: () => Callback, create: (ReactEventFromInput, Group) => Callback)
+  case class Props(
+      loggedInUser: User,
+      close: () => Callback,
+      create: (ReactEventFromInput, Group, User) => Callback)
   class Backend(bs: BackendScope[Props, State]) {
-    def changeName(e: ReactEventFromInput): CallbackTo[Unit] = {
-      val name = e.target.value
+    def changeName(value: String): CallbackTo[Unit] =
       bs.modState { s =>
-        val g = s.group.copy(name = name)
+        val g = s.group.copy(name = value)
         s.copy(group = g)
       }
-    }
 
-    def changeEmail(e: ReactEventFromInput): CallbackTo[Unit] = {
-      val email = e.target.value
+    def changeEmail(value: String): CallbackTo[Unit] =
       bs.modState { s =>
-        val g = s.group.copy(email = email)
+        val g = s.group.copy(email = value)
         s.copy(group = g)
       }
-    }
 
-    def changeDescription(e: ReactEventFromInput): CallbackTo[Unit] = {
-      val description = e.target.value
+    def changeDescription(value: String): CallbackTo[Unit] =
       bs.modState { s =>
-        val g = s.group.copy(description = description)
+        val g = s.group.copy(description = value)
         s.copy(group = g)
       }
-    }
+
+    private val header =
+      """
+        |Groups simplify setup and access to resources in Vinyl.
+        | A Group consists of one or more members,
+        | who are registered users of Vinyl.
+        | Any member in the group can be designated as a Group Admin, which
+        | allows that member full administrative access to the group, including deleting the group.
+      """.stripMargin
 
     def render(P: Props, S: State): VdomElement =
       Modal(
         Modal.Props("Create Group", P.close),
         <.div(
           ^.className := "modal-body",
+          <.div(
+            ^.className := "panel-header",
+            <.p(header)
+          ),
           <.form(
             ^.className := "form form-horizontal form-label-left",
-            ^.onSubmit ==> (e => P.create(e, S.group)),
+            ^.onSubmit ==> (e => P.create(e, S.group, P.loggedInUser)),
             InputField(
               InputField.Props(
-                "name",
-                placeholder = Some("Group name. Cannot contain spaces."),
-                required = true,
-                maxSize = Some(255)
+                "Name",
+                changeName,
+                helpText = Some("Group name. Cannot contain spaces"),
+                validations = Some(
+                  InputFieldValidations(
+                    required = true,
+                    maxSize = Some(255),
+                    canContainSpaces = false))
               )
             ),
-            <.div(
-              ^.className := "form-group",
-              <.label(
-                ^.className := "control-label col-md-3 col-sm-3 col-xs-12",
-                "Email"
-              ),
-              <.div(
-                ^.className := "col-md-6 col-sm-6 col-xs-12",
-                <.input(
-                  ^.className := "form-control",
-                  ^.`type` := "email",
-                  ^.value := S.group.email,
-                  ^.onChange ==> changeEmail
-                )
+            InputField(
+              InputField.Props(
+                "Email",
+                changeEmail,
+                helpText = Some("Group contact email. Preferably a multi user distribution"),
+                isEmail = true,
+                validations = Some(InputFieldValidations(required = true))
               )
             ),
-            <.div(
-              ^.className := "form-group",
-              <.label(
-                ^.className := "control-label col-md-3 col-sm-3 col-xs-12",
-                "Description"
-              ),
-              <.div(
-                ^.className := "col-md-6 col-sm-6 col-xs-12",
-                <.input(
-                  ^.className := "form-control",
-                  ^.`type` := "text",
-                  ^.value := S.group.description,
-                  ^.onChange ==> changeDescription
-                )
+            InputField(
+              InputField.Props(
+                "Description",
+                changeDescription
               )
             ),
             <.div(^.className := "ln_solid"),

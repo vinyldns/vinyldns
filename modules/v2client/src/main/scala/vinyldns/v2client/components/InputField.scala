@@ -21,31 +21,43 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 
+import scala.util.Try
+
+case class InputFieldValidations(
+    maxSize: Option[Int] = None,
+    canContainSpaces: Boolean = true,
+    required: Boolean = false)
+
 object InputField {
   case class Props(
       label: String,
+      parentOnChange: String => Callback,
       labelClass: String = "control-label",
       labelSize: String = "col-md-3 col-sm-3 col-xs-12",
       inputClass: String = "form-control",
       inputSize: String = "col-md-6 col-sm-6 col-xs-12",
       placeholder: Option[String] = None,
+      helpText: Option[String] = None,
       initialValue: Option[String] = None,
       isNumber: Boolean = false,
-      maxSize: Option[Int] = None,
-      required: Boolean = false)
+      isEmail: Boolean = false,
+      validations: Option[InputFieldValidations] = None)
   case class State(
       value: Option[String],
       isValid: Boolean = true,
       errorMessage: Option[String] = None)
 
   class Backend(bs: BackendScope[Props, State]) {
-    def toInputType(P: Props): String = if (P.isNumber) "number" else "text"
+    def toInputType(P: Props): String =
+      if (P.isNumber) "number"
+      else if (P.isEmail) "email"
+      else "text"
 
     def onChange(e: ReactEventFromInput, P: Props): Callback = {
       val target = e.target
       val value = target.value
       val validatedValue = validate(value, P)
-      validatedValue match {
+      val localOnChange = validatedValue match {
         case Right(_) =>
           bs.modState { S =>
             target.setCustomValidity("")
@@ -58,16 +70,22 @@ object InputField {
           }
         }
       }
+      localOnChange >> P.parentOnChange(value)
     }
 
     def validate(value: String, P: Props): Either[String, Unit] =
-      for {
-        _ <- validateRequired(value, P)
-        _ <- validateMaxSize(value, P)
-      } yield ()
+      P.validations match {
+        case Some(checks) =>
+          for {
+            _ <- validateRequired(value, checks)
+            _ <- validateMaxSize(value, checks)
+            _ <- validateNoSpaces(value, checks)
+          } yield ()
+        case None => ().asRight
+      }
 
-    def validateRequired(value: String, P: Props): Either[String, Unit] =
-      if (P.required)
+    def validateRequired(value: String, checks: InputFieldValidations): Either[String, Unit] =
+      if (checks.required)
         Either.cond(
           value.length > 0,
           (),
@@ -75,8 +93,8 @@ object InputField {
         )
       else ().asRight
 
-    def validateMaxSize(value: String, P: Props): Either[String, Unit] =
-      P.maxSize match {
+    def validateMaxSize(value: String, checks: InputFieldValidations): Either[String, Unit] =
+      checks.maxSize match {
         case Some(max) =>
           Either.cond(
             value.length < max,
@@ -85,6 +103,15 @@ object InputField {
           )
         case None => ().asRight
       }
+
+    def validateNoSpaces(value: String, checks: InputFieldValidations): Either[String, Unit] =
+      if (!checks.canContainSpaces)
+        Either.cond(
+          !value.contains(" "),
+          (),
+          "Cannot contain spaces"
+        )
+      else ().asRight
 
     def generateInputClass(P: Props, S: State): String =
       if (S.isValid) P.inputClass
@@ -101,6 +128,12 @@ object InputField {
           )
         )
 
+    def helpText(text: Option[String]): VdomNode =
+      text match {
+        case Some(t) => <.div(^.className := "help-block", t)
+        case None => <.div
+      }
+
     def render(P: Props, S: State): VdomElement =
       <.div(
         ^.className := "form-group",
@@ -116,8 +149,9 @@ object InputField {
             ^.value := S.value.getOrElse(""),
             ^.placeholder := P.placeholder.getOrElse(""),
             ^.onChange ==> (e => onChange(e, P)),
-            ^.required := P.required
+            ^.required := Try(P.validations.get.required).getOrElse(false)
           ),
+          helpText(P.helpText),
           errors(S)
         )
       )

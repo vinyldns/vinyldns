@@ -17,13 +17,17 @@
 package vinyldns.v2client.pages
 
 import scalacss.ScalaCssReact._
-import vinyldns.v2client.models.Notification
+import vinyldns.v2client.models.{Notification, User}
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
+import upickle.default.read
+import vinyldns.v2client.ajax.{CurrentUserRoute, Request}
 import vinyldns.v2client.components.Notify
 import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.pages.MainPage.PropsFromMainPage
+
+import scala.util.Try
 
 // AppPages are pages that can be nested in MainPage
 // Things nested in MainPage need to have access to the shared Alerter, hence propsFromMainPage
@@ -32,16 +36,37 @@ trait AppPage {
 }
 
 object MainPage {
-  case class State(notification: Option[Notification] = None)
+  case class State(notification: Option[Notification] = None, loggedInUser: Option[User] = None)
   case class Alerter(set: Option[Notification] => Callback)
   case class Props(childPage: AppPage)
-  case class PropsFromMainPage(alerter: Alerter)
+  case class PropsFromMainPage(alerter: Alerter, loggedInUser: User)
 
   class Backend(bs: BackendScope[Props, State]) {
     def clearNotification: Callback =
       bs.modState(_.copy(notification = None))
     def setNotification(notification: Option[Notification]): Callback =
       bs.modState(_.copy(notification = notification))
+
+    def getLoggedInUser: Callback =
+      Request
+        .get(CurrentUserRoute())
+        .onComplete { xhr =>
+          setNotification(Request.toNotification("getting logged in user", xhr, onlyOnError = true))
+          if (!Request.isError(xhr.status)) {
+            val user = Try(read[User](xhr.responseText)).toOption
+            bs.modState(_.copy(loggedInUser = user))
+          } else Callback(())
+        }
+        .asCallback
+
+    def renderAppPage(P: Props, S: State): VdomNode =
+      S.loggedInUser match {
+        case Some(user) => P.childPage(PropsFromMainPage(Alerter(setNotification), user))
+        case None =>
+          <.p(
+            "Trouble retrieving user info. Please re-login. " +
+              "If needed contact your VinylDNS Administrators.")
+      }
 
     def render(P: Props, S: State): VdomElement =
       <.div(
@@ -52,7 +77,7 @@ object MainPage {
           case Some(n) => Notify(Notify.Props(n, () => clearNotification))
           case None => <.div
         },
-        P.childPage(PropsFromMainPage(Alerter(setNotification)))
+        renderAppPage(P, S)
       )
   }
 
@@ -60,6 +85,7 @@ object MainPage {
     .builder[Props]("MainPage")
     .initialState(State())
     .renderBackend[Backend]
+    .componentWillMount(e => e.backend.getLoggedInUser)
     .build
 
   def apply(childPage: AppPage): Unmounted[Props, State, Backend] = component(Props(childPage))
