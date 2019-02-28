@@ -20,16 +20,15 @@ import japgolly.scalajs.react.extra.router.{Resolution, RouterConfigDsl, RouterC
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
 import vinyldns.v2client.components.{LeftNav, TopNav}
-import vinyldns.v2client.models.Menu
 import vinyldns.v2client.pages.grouplist.GroupListPage
 import vinyldns.v2client.pages.home.HomePage
 import vinyldns.v2client.pages.{AppPage, MainPage}
 
 object AppRouter {
 
-  private val menu = Vector(
-    Menu("Home", "fa fa-home", HomePage),
-    Menu("Groups", "fa fa-users", GroupListPage)
+  private val menu = List(
+    LeftNav.NavItem("Home", "fa fa-home", HomePage),
+    LeftNav.NavItem("Groups", "fa fa-users", GroupListPage)
   )
 
   private val config = RouterConfigDsl[AppPage].buildConfig { dsl =>

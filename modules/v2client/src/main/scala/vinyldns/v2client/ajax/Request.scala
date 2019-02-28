@@ -22,14 +22,14 @@ import vinyldns.v2client.ReactApp.csrf
 import vinyldns.v2client.models.Notification
 
 object Request {
-  def get(path: String): Ajax.Step2 =
+  def get(route: Route): Ajax.Step2 =
     Ajax
-      .get(path)
+      .get(route.path)
       .send
 
-  def post(path: String, body: String): Ajax.Step2 =
+  def post(route: Route, body: String): Ajax.Step2 =
     Ajax
-      .post(path)
+      .post(route.path)
       .setRequestHeader("Csrf-Token", csrf)
       .setRequestContentTypeJson
       .send(body)
@@ -49,4 +49,20 @@ object Request {
     }
 
   def isError(status: Int): Boolean = status >= 400
+}
+
+sealed trait Route {
+  def path: String
+}
+
+final case class CurrentUserRoute() extends Route {
+  def path: String = "/api/users/currentuser"
+}
+
+final case class ListGroupsRoute() extends Route {
+  def path: String = "/api/groups"
+}
+
+final case class PostGroupRoute() extends Route {
+  def path: String = "/api/groups"
 }

@@ -20,7 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.{read, write}
-import vinyldns.v2client.ajax.Request
+import vinyldns.v2client.ajax.{CurrentUserRoute, ListGroupsRoute, PostGroupRoute, Request}
 import vinyldns.v2client.models._
 import vinyldns.v2client.pages.AppPage
 import vinyldns.v2client.pages.MainPage.{Alerter, PropsFromMainPage}
@@ -34,7 +34,7 @@ object GroupListPage extends AppPage {
   class Backend(bs: BackendScope[PropsFromMainPage, State]) {
     def listGroups(alerter: Alerter): Callback =
       Request
-        .get("/api/groups")
+        .get(ListGroupsRoute())
         .onComplete { xhr =>
           alerter.set(Request.toNotification("list groups", xhr, onlyOnError = true))
           val groupsList = Try(Option(read[GroupList](xhr.responseText))).getOrElse(None)
@@ -42,28 +42,31 @@ object GroupListPage extends AppPage {
         }
         .asCallback
 
-    def createGroup(group: Group): Callback =
-      bs.props >>= { p =>
-        Request
-          .get("/api/users/currentuser")
-          .onComplete { xhr =>
-            p.alerter.set(Request.toNotification("getting logged in user", xhr, onlyOnError = true))
-            val isError = Request.isError(xhr.status)
-            val cb = if (!isError) {
-              val user = read[User](xhr.responseText)
-              val groupWithUserId =
-                group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
-              Request
-                .post("/api/groups", write(groupWithUserId))
-                .onComplete { xhr =>
-                  p.alerter.set(Request.toNotification("creating group", xhr))
-                }
-                .asCallback
-            } else Callback(())
-            cb
-          }
-          .asCallback
-      }
+    def createGroup(e: ReactEventFromInput, group: Group): Callback =
+      if (e.target.checkValidity()) {
+        e.preventDefaultCB >> bs.props >>= { P =>
+          Request
+            .get(CurrentUserRoute())
+            .onComplete { xhr =>
+              P.alerter.set(
+                Request.toNotification("getting logged in user", xhr, onlyOnError = true))
+              val isError = Request.isError(xhr.status)
+              val cb = if (!isError) {
+                val user = read[User](xhr.responseText)
+                val groupWithUserId =
+                  group.copy(members = Some(Seq(Id(user.id))), admins = Some(Seq(Id(user.id))))
+                Request
+                  .post(PostGroupRoute(), write(groupWithUserId))
+                  .onComplete { xhr =>
+                    P.alerter.set(Request.toNotification("creating group", xhr))
+                  }
+                  .asCallback
+              } else Callback(())
+              cb
+            }
+            .asCallback
+        }
+      } else Callback(())
 
     def createGroupModal(isVisible: Boolean): TagMod =
       if (isVisible)

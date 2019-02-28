@@ -19,18 +19,14 @@ package vinyldns.v2client.components
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
-import japgolly.scalajs.react.extra.Reusability
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.v2client.css.GlobalStyle
-import vinyldns.v2client.models.Menu
 import vinyldns.v2client.pages.AppPage
 
 object LeftNav {
-  case class Props(menus: Vector[Menu], selectedPage: AppPage, ctrl: RouterCtl[AppPage])
-
-  implicit val currentPageReuse: Reusability[AppPage] = Reusability.by_==[AppPage]
-  implicit val propsReuse: Reusability[Props] = Reusability.by((_: Props).selectedPage)
+  case class NavItem(name: String, faClassName: String, page: AppPage)
+  case class Props(menus: List[NavItem], selectedPage: AppPage, ctrl: RouterCtl[AppPage])
 
   def activeClass(isActive: Boolean): String =
     if (isActive) "active"
@@ -64,13 +60,13 @@ object LeftNav {
                 P.menus.toTagMod(
                   item =>
                     <.li(
-                      ^.className := activeClass(item.route.getClass == P.selectedPage.getClass),
+                      ^.className := activeClass(item.page.getClass == P.selectedPage.getClass),
                       ^.key := item.name,
                       <.a(
                         <.i(^.className := item.faClassName),
                         item.name,
                         <.span(^.className := "fa fa-chevron-right"),
-                        P.ctrl.setOnClick(item.route)
+                        P.ctrl.setOnClick(item.page)
                       )
                   )
                 ),
@@ -88,7 +84,6 @@ object LeftNav {
         )
       )
     }
-    .configure(Reusability.shouldComponentUpdate)
     .build
 
   def apply(props: Props): Unmounted[Props, Unit, Unit] = component(props)

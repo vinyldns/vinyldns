@@ -19,12 +19,14 @@ package vinyldns.v2client.pages
 import scalacss.ScalaCssReact._
 import vinyldns.v2client.models.Notification
 import japgolly.scalajs.react.vdom.html_<^._
-import japgolly.scalajs.react.{CtorType, _}
-import japgolly.scalajs.react.component.Scala.{Component, Unmounted}
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.component.Scala.Unmounted
 import vinyldns.v2client.components.Notify
 import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.pages.MainPage.PropsFromMainPage
 
+// AppPages are pages that can be nested in MainPage
+// Things nested in MainPage need to have access to the shared Alerter, hence propsFromMainPage
 trait AppPage {
   def apply(propsFromMainPage: PropsFromMainPage): Unmounted[PropsFromMainPage, _, _]
 }

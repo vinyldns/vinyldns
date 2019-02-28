@@ -19,12 +19,12 @@ package vinyldns.v2client.pages.grouplist.components
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.components.Modal
+import vinyldns.v2client.components.{InputField, Modal}
 import vinyldns.v2client.models.Group
 
 object CreateGroupModal {
   case class State(group: Group)
-  case class Props(close: () => Callback, create: Group => Callback)
+  case class Props(close: () => Callback, create: (ReactEventFromInput, Group) => Callback)
   class Backend(bs: BackendScope[Props, State]) {
     def changeName(e: ReactEventFromInput): CallbackTo[Unit] = {
       val name = e.target.value
@@ -55,22 +55,15 @@ object CreateGroupModal {
         Modal.Props("Create Group", P.close),
         <.div(
           ^.className := "modal-body",
-          <.div(
+          <.form(
             ^.className := "form form-horizontal form-label-left",
-            <.div(
-              ^.className := "form-group",
-              <.label(
-                ^.className := "control-label col-md-3 col-sm-3 col-xs-12",
-                "Name"
-              ),
-              <.div(
-                ^.className := "col-md-6 col-sm-6 col-xs-12",
-                <.input(
-                  ^.className := "form-control ",
-                  ^.`type` := "text",
-                  ^.value := S.group.name,
-                  ^.onChange ==> changeName
-                )
+            ^.onSubmit ==> (e => P.create(e, S.group)),
+            InputField(
+              InputField.Props(
+                "name",
+                placeholder = Some("Group name. Cannot contain spaces."),
+                required = true,
+                maxSize = Some(255)
               )
             ),
             <.div(
@@ -109,9 +102,8 @@ object CreateGroupModal {
             <.div(
               ^.className := "form-group",
               <.button(
-                ^.`type` := "button",
+                ^.`type` := "submit",
                 ^.className := "btn btn-success pull-right",
-                ^.onClick --> P.create(S.group),
                 "Submit"
               ),
               <.button(
