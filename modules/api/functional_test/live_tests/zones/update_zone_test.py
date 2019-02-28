@@ -43,7 +43,7 @@ def test_update_zone_success(shared_zone_test_context):
         }
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result_zone['id'])
 
         result_zone['email'] = 'foo@bar.com'
         result_zone['acl']['rules'] = [acl_rule]
