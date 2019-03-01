@@ -59,14 +59,11 @@
                      delete payload.ownerGroupId
                 }
 
-
                 function formatData(payload) {
-                    var i;
-                    for (i = 0; i < payload.changes.length; i++) {
+                    for (var i = 0; i < payload.changes.length; i++) {
                         var entry = payload.changes[i]
                         if(entry.type == 'A+PTR' || entry.type == 'AAAA+PTR') {
                             entry.type = entry.type.slice(0, -4);
-                            payload.changes[i] = entry;
                             var newEntry = {changeType: entry.changeType, type: "PTR", ttl: entry.ttl, inputName: entry.record.address, record: {ptrdname: entry.inputName}}
                             payload.changes.splice(i+1, 0, newEntry)
                         }
