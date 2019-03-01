@@ -22,8 +22,8 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom
 import vinyldns.v2client.ajax.{DeleteGroupRoute, Request}
-import vinyldns.v2client.models.group.{Group, GroupList}
-import vinyldns.v2client.pages.MainPage.Alerter
+import vinyldns.v2client.models.membership.{Group, GroupList}
+import vinyldns.v2client.pages.MainContainer.Alerter
 import vinyldns.v2client.routes.AppRouter.{Page, ToGroupViewPage}
 
 object GroupsTable {
@@ -96,7 +96,7 @@ object GroupsTable {
               )
             )
           case Some(gl) if gl.groups.isEmpty => <.p("You don't have any groups yet")
-          case None => <.p
+          case None => TagMod.empty
         }
       )
   }

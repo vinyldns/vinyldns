@@ -23,9 +23,9 @@ import upickle.default.write
 import vinyldns.v2client.ajax.{PostGroupRoute, Request}
 import vinyldns.v2client.components.{InputField, InputFieldValidations, Modal}
 import vinyldns.v2client.models.Id
-import vinyldns.v2client.models.group.Group
+import vinyldns.v2client.models.membership.Group
 import vinyldns.v2client.models.user.User
-import vinyldns.v2client.pages.MainPage.Alerter
+import vinyldns.v2client.pages.MainContainer.Alerter
 
 object CreateGroupModal {
   case class State(group: Group)
@@ -39,9 +39,10 @@ object CreateGroupModal {
       if (e.target.checkValidity()) {
         e.preventDefaultCB >> {
           val groupWithUserId =
-            S.group.copy(
-              members = Some(Seq(Id(P.loggedInUser.id))),
-              admins = Some(Seq(Id(P.loggedInUser.id))))
+            S.group
+              .copy(
+                members = Some(Seq(Id(P.loggedInUser.id))),
+                admins = Some(Seq(Id(P.loggedInUser.id))))
           Request
             .post(PostGroupRoute(), write(groupWithUserId))
             .onComplete { xhr =>

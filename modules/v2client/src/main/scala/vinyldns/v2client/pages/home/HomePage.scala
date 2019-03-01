@@ -20,12 +20,12 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.v2client.pages.AppPage
-import vinyldns.v2client.pages.MainPage.PropsFromMainPage
+import vinyldns.v2client.pages.MainContainer.PropsFromMain
 
 object HomePage extends AppPage {
   private val component =
     ScalaComponent
-      .builder[PropsFromMainPage]("HomePage")
+      .builder[PropsFromMain]("HomePage")
       .render_P { _ =>
         <.div(
           <.div(
@@ -49,5 +49,5 @@ object HomePage extends AppPage {
       }
       .build
 
-  def apply(props: PropsFromMainPage): Unmounted[PropsFromMainPage, Unit, Unit] = component(props)
+  def apply(props: PropsFromMain): Unmounted[PropsFromMain, Unit, Unit] = component(props)
 }

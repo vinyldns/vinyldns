@@ -79,3 +79,7 @@ final case class GetGroupRoute(id: String) extends Route {
 final case class DeleteGroupRoute(id: String) extends Route {
   def path: String = s"/api/groups/$id"
 }
+
+final case class GetGroupMembersRoute(id: String) extends Route {
+  def path: String = s"/api/groups/$id/members"
+}

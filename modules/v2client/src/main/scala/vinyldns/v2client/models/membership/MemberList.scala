@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package vinyldns.v2client.models.group
+package vinyldns.v2client.models.membership
 
+import vinyldns.v2client.models.user.User
 import upickle.default.{macroRW, ReadWriter => RW}
 import upickle.default._
-import vinyldns.v2client.models.Id
 
-case class Group(
-    name: String = "",
-    email: String = "",
-    description: Option[String] = None,
-    id: Option[String] = None,
-    created: Option[String] = None,
-    members: Option[Seq[Id]] = None,
-    admins: Option[Seq[Id]] = None)
+case class MemberList(
+    members: List[User],
+    nextId: Option[String] = None,
+    startFrom: Option[String] = None,
+    maxItems: Int
+)
 
-object Group {
-  implicit val rw: RW[Group] = macroRW
+object MemberList {
+  implicit val rw: RW[MemberList] = macroRW
 
   // uPickle by default treats empty options as empty arrays, this has it use None
   implicit def OptionWriter[T: Writer]: Writer[Option[T]] =

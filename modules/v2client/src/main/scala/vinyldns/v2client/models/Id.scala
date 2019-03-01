@@ -15,8 +15,10 @@
  */
 
 package vinyldns.v2client.models
-import upickle.default.{ReadWriter => RW, macroRW}
 
+import upickle.default.{macroRW, ReadWriter => RW}
+
+// this is because sometimes requests want a {id: String} json object
 case class Id(id: String)
 
 object Id {

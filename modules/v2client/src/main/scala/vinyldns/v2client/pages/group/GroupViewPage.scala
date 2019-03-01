@@ -16,26 +16,30 @@
 
 package vinyldns.v2client.pages.group
 
+import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.ajax.{GetGroupRoute, Request}
-import vinyldns.v2client.models.group.Group
-import vinyldns.v2client.pages.MainPage.PropsFromMainPage
+import vinyldns.v2client.ajax.{GetGroupMembersRoute, GetGroupRoute, Request}
+import vinyldns.v2client.models.membership.{Group, MemberList}
+import vinyldns.v2client.pages.MainContainer.PropsFromMain
 import vinyldns.v2client.pages.AppPage
 import upickle.default.read
+import vinyldns.v2client.css.GlobalStyle
+import vinyldns.v2client.models.Id
+import vinyldns.v2client.models.user.User
 
 import scala.util.Try
 
 object GroupViewPage extends AppPage {
-  case class State(group: Option[Group] = None)
+  case class State(group: Option[Group] = None, members: List[User] = List())
 
-  class Backend(bs: BackendScope[PropsFromMainPage, State]) {
+  class Backend(bs: BackendScope[PropsFromMain, State]) {
     def getGroupId(argsFromPath: List[String]): String =
       if (argsFromPath.isEmpty) ""
       else argsFromPath.head
 
-    def getGroup(P: PropsFromMainPage): Callback = {
+    def getGroup(P: PropsFromMain): Callback = {
       val groupId = getGroupId(P.argsFromPath)
       Request
         .get(GetGroupRoute(groupId))
@@ -43,10 +47,29 @@ object GroupViewPage extends AppPage {
           val alert =
             P.alerter.set(Request.toNotification("getting group", xhr, onlyOnError = true))
           val group = Try(Option(read[Group](xhr.responseText))).getOrElse(None)
-          alert >> bs.modState(_.copy(group = group))
+          alert >> getMembers(P, group)
         }
         .asCallback
     }
+
+    def getMembers(P: PropsFromMain, group: Option[Group]): Callback =
+      group match {
+        case Some(g) =>
+          Request
+            .get(GetGroupMembersRoute(g.id.getOrElse("")))
+            .onComplete { xhr =>
+              val alert =
+                P.alerter.set(
+                  Request.toNotification(
+                    s"getting group members for group id ${g.id}",
+                    xhr,
+                    onlyOnError = true))
+              val members = Try(read[MemberList](xhr.responseText).members).getOrElse(List())
+              alert >> bs.modState(_.copy(group = group, members = members))
+            }
+            .asCallback
+        case None => Callback(())
+      }
 
     def getDescriptionHeader(group: Group): TagMod =
       group.description match {
@@ -63,7 +86,41 @@ object GroupViewPage extends AppPage {
     def getEmailHeader(group: Group): TagMod =
       <.h5(s"Email: ${group.email}")
 
-    def render(P: PropsFromMainPage, S: State): VdomNode =
+    def getGroupManager(S: State, member: User): TagMod =
+      S.group match {
+        case Some(g) =>
+          g.admins match {
+            case Some(a) =>
+              if (a.contains(member.id)) <.p("true")
+              else <.p("false")
+            case None => <.p("false")
+          }
+        case None => <.p("false")
+      }
+
+    def toName(user: User): String =
+      (user.lastName, user.firstName) match {
+        case (Some(ln), Some(fn)) => s"$ln, $fn"
+        case (Some(ln), None) => ln
+        case (None, Some(fn)) => fn
+        case (None, None) => ""
+      }
+
+    def groupManagerWidget(user: User, S: State): TagMod = {
+      val isManager = S.group.exists { g =>
+        val admins = g.admins.getOrElse(Seq())
+        admins.contains(Id(user.id))
+      }
+      val hasAccess = isManager || user.isSuper
+      <.input(
+        GlobalStyle.styleSheet.cursorPointer,
+        ^.`type` := "checkbox",
+        ^.checked := hasAccess,
+        ^.disabled := !hasAccess || S.members.size < 2
+      )
+    }
+
+    def render(P: PropsFromMain, S: State): VdomNode =
       S.group match {
         case Some(group) =>
           <.div(
@@ -79,9 +136,54 @@ object GroupViewPage extends AppPage {
             ),
             <.div(^.className := "clearfix"),
             <.div(
-              ^.className := "row",
+              ^.className := "page-content-wrap",
               <.div(
+                ^.className := "row",
+                <.div(
+                  ^.className := "col-md-12 col-sm-12 col-xs-12",
+                  <.div(
+                    ^.className := "panel panel-default",
+                    <.div(
+                      ^.className := "panel-body",
+                      <.table(
+                        ^.className := "table",
+                        <.thead(
+                          <.tr(
+                            <.th("Username"),
+                            <.th("Name"),
+                            <.th("Email"),
+                            <.th(
+                              "Group Manager  ",
+                              <.span(
+                                GlobalStyle.styleSheet.cursorPointer,
+                                ^.className := "fa fa-info-circle",
+                                VdomAttr("data-toggle") := "tooltip",
+                                ^.title := "Managers can and add new members, and edit or delete the Group"
+                              )
+                            ),
+                            <.th("Actions")
+                          )
+                        ),
+                        S.group match {
+                          case Some(_) =>
+                            <.tbody(
+                              S.members.map { m =>
+                                <.tr(
+                                  <.td(m.userName),
+                                  <.td(toName(m)),
+                                  <.td(m.email),
+                                  <.td(groupManagerWidget(m, S)),
+                                  <.td()
+                                )
+                              }.toTagMod
+                            )
+                          case None => TagMod.empty
+                        }
+                      )
+                    )
+                  )
                 )
+              )
             )
           )
         case None =>
@@ -98,12 +200,12 @@ object GroupViewPage extends AppPage {
   }
 
   private val component = ScalaComponent
-    .builder[PropsFromMainPage]("ViewGroup")
+    .builder[PropsFromMain]("ViewGroup")
     .initialState(State())
     .renderBackend[Backend]
     .componentWillMount(e => e.backend.getGroup(e.props))
     .build
 
-  def apply(propsFromMainPage: PropsFromMainPage): Unmounted[PropsFromMainPage, State, Backend] =
+  def apply(propsFromMainPage: PropsFromMain): Unmounted[PropsFromMain, State, Backend] =
     component(propsFromMainPage)
 }

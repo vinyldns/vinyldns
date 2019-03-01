@@ -23,7 +23,7 @@ import vinyldns.v2client.components.{LeftNav, TopNav}
 import vinyldns.v2client.pages.group.GroupViewPage
 import vinyldns.v2client.pages.grouplist.GroupListPage
 import vinyldns.v2client.pages.home.HomePage
-import vinyldns.v2client.pages.MainPage
+import vinyldns.v2client.pages.MainContainer
 
 object AppRouter {
   sealed trait Page
@@ -35,13 +35,13 @@ object AppRouter {
     import dsl._
     (
       staticRoute("home", ToHomePage) ~>
-        renderR(ctl => MainPage(HomePage, ctl))
+        renderR(ctl => MainContainer(HomePage, ctl))
         |
           staticRoute("groups", ToGroupListPage) ~>
-            renderR(ctl => MainPage(GroupListPage, ctl))
+            renderR(ctl => MainContainer(GroupListPage, ctl))
         |
           dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
-            (g => renderR(ctl => MainPage(GroupViewPage, ctl, List(g.id))))
+            (g => renderR(ctl => MainContainer(GroupViewPage, ctl, List(g.id))))
     ).notFound(redirectToPage(ToHomePage)(Redirect.Replace))
       .renderWith(layout)
   }

@@ -28,24 +28,28 @@ import vinyldns.v2client.ajax.{CurrentUserRoute, Request}
 import vinyldns.v2client.components.AlertBox
 import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.models.user.User
-import vinyldns.v2client.pages.MainPage.PropsFromMainPage
+import vinyldns.v2client.pages.MainContainer.PropsFromMain
 import vinyldns.v2client.routes.AppRouter.Page
 
 import scala.util.Try
 
-// AppPages are pages that can be nested in MainPage, all routed to pages extend AppPage
-// Things nested in MainPage need to have access to things like the shared Alerter, hence propsFromMainPage
+// AppPages are pages that can be nested in MainContainer, e.g. HomePage, GroupListPage, etc.
+// All AppPages receive PropsFromMain so they can get access to the Alerter, `Router, LoggedInUser, etc
 trait AppPage {
-  def apply(propsFromMainPage: PropsFromMainPage): Unmounted[PropsFromMainPage, _, _]
+  def apply(propsFromMain: PropsFromMain): Unmounted[PropsFromMain, _, _]
 }
 
-object MainPage {
+object MainContainer {
   final private val SUCCESS_ALERT_TIMEOUT_MILLIS = 5000.0
+  // for now making error alerts never timeout, i.e. user must click close
 
   case class State(notification: Option[Notification] = None, loggedInUser: Option[User] = None)
-  case class Alerter(set: Option[Notification] => Callback)
   case class Props(childPage: AppPage, router: RouterCtl[Page], argsFromPath: List[String])
-  case class PropsFromMainPage(
+
+  case class Alerter(set: Option[Notification] => Callback)
+
+  // these are passed to all child `AppPage`s
+  case class PropsFromMain(
       alerter: Alerter,
       loggedInUser: User,
       router: RouterCtl[Page],
@@ -78,7 +82,7 @@ object MainPage {
     def renderAppPage(P: Props, S: State): VdomNode =
       S.loggedInUser match {
         case Some(user) =>
-          P.childPage(PropsFromMainPage(Alerter(setNotification), user, P.router, P.argsFromPath))
+          P.childPage(PropsFromMain(Alerter(setNotification), user, P.router, P.argsFromPath))
         case None =>
           <.p(
             "Trouble retrieving user info. Please re-login. " +
@@ -92,7 +96,7 @@ object MainPage {
         ^.role := "main",
         S.notification match {
           case Some(n) => AlertBox(AlertBox.Props(n, () => clearNotification))
-          case None => <.div
+          case None => TagMod.empty
         },
         renderAppPage(P, S)
       )

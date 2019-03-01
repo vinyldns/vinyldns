@@ -21,10 +21,10 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.read
 import vinyldns.v2client.ajax.{ListGroupsRoute, Request}
-import vinyldns.v2client.models.group.GroupList
+import vinyldns.v2client.models.membership.GroupList
 import vinyldns.v2client.models.user.User
 import vinyldns.v2client.pages.AppPage
-import vinyldns.v2client.pages.MainPage.{Alerter, PropsFromMainPage}
+import vinyldns.v2client.pages.MainContainer.{Alerter, PropsFromMain}
 import vinyldns.v2client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
 
 import scala.util.Try
@@ -32,7 +32,7 @@ import scala.util.Try
 object GroupListPage extends AppPage {
   case class State(groupsList: Option[GroupList] = None, showCreateGroup: Boolean = false)
 
-  class Backend(bs: BackendScope[PropsFromMainPage, State]) {
+  class Backend(bs: BackendScope[PropsFromMain, State]) {
     // list groups is in the parent and not the table to link to the refresh button
     def listGroups(alerter: Alerter): Callback =
       Request
@@ -49,7 +49,7 @@ object GroupListPage extends AppPage {
         CreateGroupModal(
           CreateGroupModal
             .Props(alerter, loggedInUser, () => makeCreateFormInvisible, () => listGroups(alerter)))
-      else <.div()
+      else TagMod.empty
 
     def makeCreateFormVisible: Callback =
       bs.modState(_.copy(showCreateGroup = true))
@@ -57,7 +57,7 @@ object GroupListPage extends AppPage {
     def makeCreateFormInvisible: Callback =
       bs.modState(_.copy(showCreateGroup = false))
 
-    def render(P: PropsFromMainPage, S: State): VdomElement =
+    def render(P: PropsFromMain, S: State): VdomElement =
       <.div(
         <.div(
           ^.className := "page-title",
@@ -104,13 +104,13 @@ object GroupListPage extends AppPage {
 
   private val component = {
     ScalaComponent
-      .builder[PropsFromMainPage]("GroupPage")
+      .builder[PropsFromMain]("GroupPage")
       .initialState(State())
       .renderBackend[Backend]
       .componentWillMount(e => e.backend.listGroups(e.props.alerter))
       .build
   }
 
-  def apply(props: PropsFromMainPage): Unmounted[PropsFromMainPage, State, Backend] =
+  def apply(props: PropsFromMain): Unmounted[PropsFromMain, State, Backend] =
     component(props)
 }
