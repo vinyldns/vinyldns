@@ -74,9 +74,40 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
-      val byChangeType = changeSet.changes.groupBy(_.changeType)
-      val inserts: Seq[Seq[Any]] = byChangeType.getOrElse(RecordSetChangeType.Create, Nil).map {
-        i =>
+
+      // identify failed changes
+      val byStatus = changeSet.changes.groupBy(_.status)
+
+      // address failed changes
+      val failedChanges = byStatus.getOrElse(RecordSetChangeStatus.Failed, Seq())
+      val (failedCreates, failedUpdatesOrDeletes) =
+        failedChanges.partition(_.changeType == RecordSetChangeType.Create)
+
+      val reversionDeletes = failedCreates.map(d => Seq[Any](d.recordSet.id))
+      val reversionUpdates = failedUpdatesOrDeletes.flatMap { change =>
+        change.updates.map { oldRs =>
+          Seq[Any](
+            oldRs.zoneId,
+            oldRs.name,
+            fromRecordType(oldRs.typ),
+            toPB(oldRs).toByteArray,
+            toFQDN(change.zone.name, oldRs.name),
+            oldRs.id)
+        }
+      }
+
+      // address successful and pending changes
+      val completeChanges = byStatus.getOrElse(RecordSetChangeStatus.Complete, Seq())
+      val completeChangesByType = completeChanges.groupBy(_.changeType)
+      val completeCreates = completeChangesByType.getOrElse(RecordSetChangeType.Create, Seq())
+      val completeUpdates = completeChangesByType.getOrElse(RecordSetChangeType.Update, Seq())
+      val completeDeletes = completeChangesByType.getOrElse(RecordSetChangeType.Delete, Seq())
+
+      val pendingChanges = byStatus.getOrElse(RecordSetChangeStatus.Pending, Seq())
+
+      // all pending changes are saved as if they are creates
+      val inserts: Seq[Seq[Any]] =
+        (completeCreates ++ pendingChanges).map { i =>
           Seq[Any](
             i.recordSet.id,
             i.recordSet.zoneId,
@@ -85,10 +116,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(i.recordSet).toByteArray,
             toFQDN(i.zone.name, i.recordSet.name)
           )
-      }
+        }
 
-      val updates: Seq[Seq[Any]] = byChangeType.getOrElse(RecordSetChangeType.Update, Nil).map {
-        u =>
+      val updates: Seq[Seq[Any]] =
+        completeUpdates.map { u =>
           Seq[Any](
             u.zoneId,
             u.recordSet.name,
@@ -96,11 +127,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.id)
-      }
+        }
 
-      // deletes are just the record set id
-      val deletes: Seq[Seq[Any]] =
-        byChangeType.getOrElse(RecordSetChangeType.Delete, Nil).map(d => Seq[Any](d.recordSet.id))
+      val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
 
       IO {
         DB.localTx { implicit s =>
@@ -109,10 +138,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           inserts.grouped(1000).foreach { group =>
             INSERT_RECORDSET.batch(group: _*).apply()
           }
-          updates.grouped(1000).foreach { group =>
+          (updates ++ reversionUpdates).grouped(1000).foreach { group =>
             UPDATE_RECORDSET.batch(group: _*).apply()
           }
-          deletes.grouped(1000).foreach { group =>
+          (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
             DELETE_RECORDSET.batch(group: _*).apply()
           }
         }

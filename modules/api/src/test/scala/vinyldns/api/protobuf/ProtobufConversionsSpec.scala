@@ -181,7 +181,7 @@ class ProtobufConversionsSpec
       rs,
       "system",
       RecordSetChangeType.Update,
-      RecordSetChangeStatus.Validated,
+      RecordSetChangeStatus.Pending,
       DateTime.now,
       Some("hello"),
       Some(rs),
