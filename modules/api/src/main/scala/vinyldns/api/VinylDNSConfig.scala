@@ -78,6 +78,16 @@ object VinylDNSConfig {
     ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
 
+  val alternateZoneConnections: List[ZoneConnection] = {
+    vinyldnsConfig
+      .getConfigList("namedConnectionKeys")
+      .asScala
+      .map {
+        pureconfig.loadConfigOrThrow[ZoneConnection]
+      }
+      .toList
+  }
+
   lazy val defaultTransferConnection: ZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultTransferConnection")
     val name = connectionConfig.getString("name")

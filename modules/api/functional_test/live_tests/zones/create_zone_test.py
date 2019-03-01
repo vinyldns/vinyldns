@@ -50,16 +50,10 @@ def test_create_zone_success(shared_zone_test_context):
             'email': 'test@test.com',
             'adminGroupId': shared_zone_test_context.ok_group['id'],
             'connection': {
-                'name': 'vinyldns.',
-                'keyName': VinylDNSTestContext.dns_key_name,
-                'key': VinylDNSTestContext.dns_key,
-                'primaryServer': VinylDNSTestContext.dns_ip
+                'name': 'alt-1'
             },
             'transferConnection': {
-                'name': 'vinyldns.',
-                'keyName': VinylDNSTestContext.dns_key_name,
-                'key': VinylDNSTestContext.dns_key,
-                'primaryServer': VinylDNSTestContext.dns_ip
+                'name': 'alt-1'
             }
         }
         result = client.create_zone(zone, status=202)

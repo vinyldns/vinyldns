@@ -24,6 +24,7 @@ import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import scodec.bits.{Bases, ByteVector}
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record._
@@ -111,13 +112,23 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
   case object ZoneConnectionSerializer extends ValidationSerializer[ZoneConnection] {
-    override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] =
-      (
-        (js \ "name").required[String]("Missing ZoneConnection.name"),
+    override def fromJson(js: JValue): ValidatedNel[String, ZoneConnection] = {
+      val name = (js \ "name").required[String]("Missing ZoneConnection.name")
+      val namedConnectionOption =
+        name.map(n => VinylDNSConfig.alternateZoneConnections.find(_.name == n)).toOption.flatten
+
+      val connection: ValidatedNel[String, ZoneConnection] = (
+        name,
         (js \ "keyName").required[String]("Missing ZoneConnection.keyName"),
         (js \ "key").required[String]("Missing ZoneConnection.key"),
         (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer")
       ).mapN(ZoneConnection.apply)
+
+      connection.recoverWith {
+        case _ if namedConnectionOption.isDefined => namedConnectionOption.get.validNel
+      }
+
+    }
   }
 
   def checkDomainNameLen(s: String): Boolean = s.length <= 255
