@@ -21,6 +21,7 @@ import fs2._
 import fs2.concurrent.SignallingRef
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.domain.zone.ZoneConnectionValidator
 import vinyldns.api.engine.{RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncHandler}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
@@ -50,7 +51,7 @@ object CommandHandler {
       count: MessageCount,
       pollingInterval: FiniteDuration,
       pauseSignal: SignallingRef[IO, Boolean],
-      defaultConn: ZoneConnection)(implicit timer: Timer[IO]): Stream[IO, Unit] = {
+      defaultConn: FullZoneConnection)(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
     // Polls queue for message batches, connected to the signal which is toggled in the status endpoint
     val messageSource = startPolling(mq, count, pollingInterval).pauseWhen(pauseSignal)
@@ -129,7 +130,7 @@ object CommandHandler {
       zoneChangeProcessor: ZoneChange => IO[ZoneChange],
       recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange],
-      defaultConn: ZoneConnection): Pipe[IO, CommandMessage, MessageOutcome] =
+      defaultConn: FullZoneConnection): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
         case sync: ZoneChange
@@ -141,7 +142,7 @@ object CommandHandler {
 
         case rcr: RecordSetChange =>
           val dnsConn =
-            DnsConnection(rcr.zone.connection.getOrElse(defaultConn))
+            DnsConnection(ZoneConnectionValidator.getConnection(rcr.zone.connection, defaultConn))
           outcomeOf(message)(recordChangeProcessor(dnsConn, rcr))
       }
     }
@@ -182,7 +183,7 @@ object CommandHandler {
       recordSetRepo: RecordSetRepository,
       recordChangeRepo: RecordChangeRepository,
       batchChangeRepo: BatchChangeRepository,
-      defaultConn: ZoneConnection)(implicit timer: Timer[IO]): IO[Unit] = {
+      defaultConn: FullZoneConnection)(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
       ZoneChangeHandler(zoneRepo, zoneChangeRepo)

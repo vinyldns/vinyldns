@@ -24,7 +24,7 @@ import vinyldns.api.Interfaces.{result, _}
 import vinyldns.api.crypto.Crypto
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{FullZoneConnection, Zone, ZoneConnection}
 
 object DnsProtocol {
 
@@ -198,9 +198,9 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
 
 object DnsConnection {
 
-  def apply(conn: ZoneConnection): DnsConnection = new DnsConnection(createResolver(conn))
+  def apply(conn: FullZoneConnection): DnsConnection = new DnsConnection(createResolver(conn))
 
-  def createResolver(conn: ZoneConnection): DNS.SimpleResolver = {
+  def createResolver(conn: FullZoneConnection): DNS.SimpleResolver = {
     // IMPORTANT!  Make sure we decrypt the zone connection before creating the resolver
     val decryptedConnection = conn.decrypted(Crypto.instance)
     val (host, port) = parseHostAndPort(decryptedConnection.primaryServer)

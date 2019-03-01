@@ -130,11 +130,24 @@ final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
   def deleteRule(rule: ACLRule): ZoneACL = copy(rules = rules - rule)
 }
 
-case class ZoneConnection(name: String, keyName: String, key: String, primaryServer: String) {
+trait ZoneConnection {
+  val name: String
 
-  def encrypted(crypto: CryptoAlgebra): ZoneConnection =
+  def encrypted(crypto: CryptoAlgebra): ZoneConnection
+  def decrypted(crypto: CryptoAlgebra): ZoneConnection
+}
+
+case class FullZoneConnection(name: String, keyName: String, key: String, primaryServer: String)
+    extends ZoneConnection {
+
+  def encrypted(crypto: CryptoAlgebra): FullZoneConnection =
     copy(key = crypto.encrypt(key))
 
-  def decrypted(crypto: CryptoAlgebra): ZoneConnection =
+  def decrypted(crypto: CryptoAlgebra): FullZoneConnection =
     copy(key = crypto.decrypt(key))
+}
+
+case class NamedZoneConnection(name: String) extends ZoneConnection {
+  def encrypted(crypto: CryptoAlgebra): NamedZoneConnection = this
+  def decrypted(crypto: CryptoAlgebra): NamedZoneConnection = this
 }

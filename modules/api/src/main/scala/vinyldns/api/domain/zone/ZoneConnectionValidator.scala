@@ -22,9 +22,10 @@ import cats.effect._
 import cats.syntax.all._
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
+import vinyldns.api.VinylDNSConfig.alternateZoneConnections
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.{RecordSet, RecordType}
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{FullZoneConnection, NamedZoneConnection, Zone, ZoneConnection}
 import vinyldns.core.health.HealthCheck._
 
 import scala.concurrent.duration._
@@ -33,10 +34,23 @@ trait ZoneConnectionValidatorAlgebra {
   def validateZoneConnections(zone: Zone): Result[Unit]
 }
 
-class ZoneConnectionValidator(defaultConnection: ZoneConnection)
+object ZoneConnectionValidator {
+
+  def getConnection(conn: Option[ZoneConnection], default: FullZoneConnection): FullZoneConnection =
+    conn
+      .flatMap {
+        case full: FullZoneConnection => Some(full)
+        case named: NamedZoneConnection =>
+          alternateZoneConnections.find(_.name == named.name)
+      }
+      .getOrElse(default)
+}
+
+class ZoneConnectionValidator(defaultConnection: FullZoneConnection)
     extends ZoneConnectionValidatorAlgebra {
 
   import ZoneRecordValidations._
+  import ZoneConnectionValidator._
 
   val opTimeout: FiniteDuration = 6.seconds
 
@@ -58,7 +72,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
       .toResult
 
   def getDnsConnection(zone: Zone): Result[DnsConnection] =
-    Either.catchNonFatal(dnsConnection(zone.connection.getOrElse(defaultConnection))).toResult
+    Either.catchNonFatal(dnsConnection(getConnection(zone.connection, defaultConnection))).toResult
 
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(
@@ -99,5 +113,5 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
       .attempt
       .asHealthCheck
 
-  private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
+  private[domain] def dnsConnection(conn: FullZoneConnection): DnsConnection = DnsConnection(conn)
 }

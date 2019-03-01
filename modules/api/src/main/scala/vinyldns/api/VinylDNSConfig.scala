@@ -29,7 +29,7 @@ import vinyldns.core.domain.record.RecordType
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
-import vinyldns.core.domain.zone.ZoneConnection
+import vinyldns.core.domain.zone.FullZoneConnection
 import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
 
@@ -69,32 +69,33 @@ object VinylDNSConfig {
   lazy val sharedApprovedTypes: Set[RecordType.Value] =
     vinyldnsConfig.as[Option[Set[RecordType.Value]]]("shared-approved-types").getOrElse(Set())
 
-  lazy val defaultZoneConnection: ZoneConnection = {
+  lazy val defaultZoneConnection: FullZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultZoneConnection")
     val name = connectionConfig.getString("name")
     val keyName = connectionConfig.getString("keyName")
     val key = connectionConfig.getString("key")
     val primaryServer = connectionConfig.getString("primaryServer")
-    ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
+    FullZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
   }
 
-  val alternateZoneConnections: List[ZoneConnection] = {
-    vinyldnsConfig
-      .getConfigList("namedConnectionKeys")
-      .asScala
-      .map {
-        pureconfig.loadConfigOrThrow[ZoneConnection]
-      }
-      .toList
-  }
-
-  lazy val defaultTransferConnection: ZoneConnection = {
+  lazy val defaultTransferConnection: FullZoneConnection = {
     val connectionConfig = VinylDNSConfig.vinyldnsConfig.getConfig("defaultTransferConnection")
     val name = connectionConfig.getString("name")
     val keyName = connectionConfig.getString("keyName")
     val key = connectionConfig.getString("key")
     val primaryServer = connectionConfig.getString("primaryServer")
-    ZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
+    FullZoneConnection(name, keyName, key, primaryServer).encrypted(Crypto.instance)
+  }
+
+  val alternateZoneConnections: List[FullZoneConnection] = {
+    vinyldnsConfig
+      .getConfigList("namedConnectionKeys")
+      .asScala
+      .map {
+        pureconfig.loadConfigOrThrow[FullZoneConnection]
+      }
+      .toList
+      .map(_.encrypted(Crypto.instance))
   }
 
   lazy val healthCheckTimeout: IO[Int] =

@@ -64,10 +64,22 @@ object ZoneChangeGenerator {
     )
 
   private def fixConn(oldZ: Zone, newZ: Zone): Option[ZoneConnection] =
-    newZ.connection.map(newConn => {
-      val oldConn = oldZ.connection.getOrElse(newConn)
-      newConn.copy(
-        key =
-          if (oldConn.key == newConn.decrypted(Crypto.instance).key) oldConn.key else newConn.key)
-    })
+    newZ.connection.map {
+      case newFull: FullZoneConnection =>
+        val oldKeyOpt = oldZ.connection.collect {
+          case oldFull: FullZoneConnection => oldFull.key
+        }
+
+        oldKeyOpt
+          .map { oldKey =>
+            newFull.copy(
+              key =
+                if (oldKey == newFull.decrypted(Crypto.instance).key) oldKey
+                else newFull.key
+            )
+          }
+          .getOrElse(newFull)
+
+      case named => named
+    }
 }
