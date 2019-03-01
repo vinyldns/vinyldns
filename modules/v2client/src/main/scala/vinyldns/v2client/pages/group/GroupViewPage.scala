@@ -28,6 +28,7 @@ import upickle.default.read
 import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.models.Id
 import vinyldns.v2client.models.user.User
+import vinyldns.v2client.routes.AppRouter.ToGroupViewPage
 
 import scala.util.Try
 
@@ -35,12 +36,8 @@ object GroupViewPage extends AppPage {
   case class State(group: Option[Group] = None, members: List[User] = List())
 
   class Backend(bs: BackendScope[PropsFromMain, State]) {
-    def getGroupId(argsFromPath: List[String]): String =
-      if (argsFromPath.isEmpty) ""
-      else argsFromPath.head
-
     def getGroup(P: PropsFromMain): Callback = {
-      val groupId = getGroupId(P.argsFromPath)
+      val groupId = P.page.asInstanceOf[ToGroupViewPage].id
       Request
         .get(GetGroupRoute(groupId))
         .onComplete { xhr =>
@@ -85,18 +82,6 @@ object GroupViewPage extends AppPage {
 
     def getEmailHeader(group: Group): TagMod =
       <.h5(s"Email: ${group.email}")
-
-    def getGroupManager(S: State, member: User): TagMod =
-      S.group match {
-        case Some(g) =>
-          g.admins match {
-            case Some(a) =>
-              if (a.contains(member.id)) <.p("true")
-              else <.p("false")
-            case None => <.p("false")
-          }
-        case None => <.p("false")
-      }
 
     def toName(user: User): String =
       (user.lastName, user.firstName) match {
@@ -147,36 +132,31 @@ object GroupViewPage extends AppPage {
                       ^.className := "panel-body",
                       <.table(
                         ^.className := "table",
-                        <.thead(
-                          <.tr(
-                            <.th("Username"),
-                            <.th("Name"),
-                            <.th("Email"),
-                            <.th(
-                              "Group Manager  ",
-                              <.span(
-                                GlobalStyle.styleSheet.cursorPointer,
-                                ^.className := "fa fa-info-circle",
-                                VdomAttr("data-toggle") := "tooltip",
-                                ^.title := "Managers can and add new members, and edit or delete the Group"
-                              )
-                            ),
-                            <.th("Actions")
-                          )
-                        ),
+                        <.thead(<.tr(
+                          <.th("Username"),
+                          <.th("Name"),
+                          <.th("Email"),
+                          <.th(
+                            "Group Manager  ",
+                            <.span(
+                              GlobalStyle.styleSheet.cursorPointer,
+                              ^.className := "fa fa-info-circle",
+                              VdomAttr("data-toggle") := "tooltip",
+                              ^.title := "Managers can and add new members, and edit or delete the Group"
+                            )
+                          ),
+                          <.th("Actions")
+                        )),
                         S.group match {
                           case Some(_) =>
-                            <.tbody(
-                              S.members.map { m =>
-                                <.tr(
-                                  <.td(m.userName),
-                                  <.td(toName(m)),
-                                  <.td(m.email),
-                                  <.td(groupManagerWidget(m, S)),
-                                  <.td()
-                                )
-                              }.toTagMod
-                            )
+                            <.tbody(S.members.map { m =>
+                              <.tr(
+                                <.td(m.userName),
+                                <.td(toName(m)),
+                                <.td(m.email),
+                                <.td(groupManagerWidget(m, S)),
+                                <.td())
+                            }.toTagMod)
                           case None => TagMod.empty
                         }
                       )
@@ -192,10 +172,7 @@ object GroupViewPage extends AppPage {
               ^.className := "page-title",
               <.div(
                 ^.className := "title_left",
-                s"Group with ID ${getGroupId(P.argsFromPath)} not found"
-              )
-            )
-          )
+                s"Group with ID ${P.page.asInstanceOf[ToGroupViewPage].id} not found")))
       }
   }
 

@@ -22,15 +22,40 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.v2client.css.GlobalStyle
-import vinyldns.v2client.routes.AppRouter.Page
+import vinyldns.v2client.routes.AppRouter.{Page, ToGroupListPage, ToGroupViewPage}
 
 object LeftNav {
   case class NavItem(name: String, faClassName: String, page: Page)
-  case class Props(menus: List[NavItem], selectedPage: Page, ctrl: RouterCtl[Page])
+  case class Props(menus: List[NavItem], selectedPage: Page, router: RouterCtl[Page])
 
   def activeClass(isActive: Boolean): String =
     if (isActive) "active"
     else ""
+
+  def toSubMenu(P: Props, parent: Page): TagMod =
+    (P.selectedPage, parent) match {
+      case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
+        <.ul(
+          GlobalStyle.styleSheet.overrideDisplay,
+          ^.className := "nav child_menu",
+          <.li(
+            ^.className := "active",
+            <.a(
+              <.i(^.className := "fa fa-eye"),
+              groupView.id,
+              P.router.setOnClick(P.selectedPage)
+            )
+          )
+        )
+      case _ => TagMod.empty
+    }
+
+  def mouseEnter(e: ReactEventFromInput): Callback =
+    Callback(e.currentTarget.className = "active")
+
+  def mouseExit(e: ReactEventFromInput, isActive: Boolean): Callback =
+    if (!isActive) Callback(e.currentTarget.className = "")
+    else Callback(())
 
   private val component = ScalaComponent
     .builder[Props]("LeftNav")
@@ -58,20 +83,27 @@ object LeftNav {
               <.ul(
                 ^.className := "nav side-menu",
                 P.menus.toTagMod(
-                  item =>
+                  item => {
+                    val isActive = item.page.getClass == P.selectedPage.getClass
                     <.li(
-                      ^.className := activeClass(item.page.getClass == P.selectedPage.getClass),
+                      ^.className := activeClass(isActive),
+                      ^.onMouseEnter ==> mouseEnter,
+                      ^.onMouseLeave ==> (e => mouseExit(e, isActive)),
                       ^.key := item.name,
                       <.a(
                         <.i(^.className := item.faClassName),
                         item.name,
                         <.span(^.className := "fa fa-chevron-right"),
-                        P.ctrl.setOnClick(item.page)
-                      )
-                  )
+                        P.router.setOnClick(item.page)
+                      ),
+                      toSubMenu(P, item.page)
+                    )
+                  }
                 ),
                 <.li(
                   ^.key := "logout",
+                  ^.onMouseEnter ==> mouseEnter,
+                  ^.onMouseLeave ==> (e => mouseExit(e, false)),
                   <.a(
                     ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
                     <.i(^.className := "fa fa-sign-out"),

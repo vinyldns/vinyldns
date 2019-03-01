@@ -35,13 +35,13 @@ object AppRouter {
     import dsl._
     (
       staticRoute("home", ToHomePage) ~>
-        renderR(ctl => MainContainer(HomePage, ctl))
+        renderR(ctl => MainContainer(HomePage, ctl, ToHomePage))
         |
           staticRoute("groups", ToGroupListPage) ~>
-            renderR(ctl => MainContainer(GroupListPage, ctl))
+            renderR(ctl => MainContainer(GroupListPage, ctl, ToGroupListPage))
         |
           dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
-            (g => renderR(ctl => MainContainer(GroupViewPage, ctl, List(g.id))))
+            (p => renderR(ctl => MainContainer(GroupViewPage, ctl, p)))
     ).notFound(redirectToPage(ToHomePage)(Redirect.Replace))
       .renderWith(layout)
   }

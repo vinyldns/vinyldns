@@ -115,6 +115,7 @@ object Dependencies {
   )
 
   lazy val portalv2JsDependencies = Def.setting(
+    // scala js projects need the `%%%` to know to get the scala js version
     Seq(
       "org.scala-js" %%% "scalajs-dom" % "0.9.1",
       "com.github.japgolly.scalajs-react" %%% "core" % scalaJSReactVersion,

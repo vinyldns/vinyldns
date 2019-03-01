@@ -26,7 +26,7 @@ object GlobalStyle {
 
     val height100 = style(height :=! "100%")
     val width100 = style(width :=! "100%")
-    val overrideDisplay = style(display.block)
+    val overrideDisplay = style(display.block.important)
     val cursorPointer = style(cursor.pointer)
     val maxHeight100 = style(maxHeight :=! "100%")
     val maxWidth100 = style(maxWidth :=! "100%")

@@ -44,7 +44,7 @@ object MainContainer {
   // for now making error alerts never timeout, i.e. user must click close
 
   case class State(notification: Option[Notification] = None, loggedInUser: Option[User] = None)
-  case class Props(childPage: AppPage, router: RouterCtl[Page], argsFromPath: List[String])
+  case class Props(childPage: AppPage, router: RouterCtl[Page], page: Page)
 
   case class Alerter(set: Option[Notification] => Callback)
 
@@ -53,7 +53,7 @@ object MainContainer {
       alerter: Alerter,
       loggedInUser: User,
       router: RouterCtl[Page],
-      argsFromPath: List[String])
+      page: Page)
 
   class Backend(bs: BackendScope[Props, State]) {
     def clearNotification: Callback =
@@ -82,7 +82,7 @@ object MainContainer {
     def renderAppPage(P: Props, S: State): VdomNode =
       S.loggedInUser match {
         case Some(user) =>
-          P.childPage(PropsFromMain(Alerter(setNotification), user, P.router, P.argsFromPath))
+          P.childPage(PropsFromMain(Alerter(setNotification), user, P.router, P.page))
         case None =>
           <.p(
             "Trouble retrieving user info. Please re-login. " +
@@ -112,6 +112,6 @@ object MainContainer {
   def apply(
       childPage: AppPage,
       router: RouterCtl[Page],
-      argsFromPath: List[String] = List()): Unmounted[Props, State, Backend] =
-    component(Props(childPage, router, argsFromPath))
+      page: Page): Unmounted[Props, State, Backend] =
+    component(Props(childPage, router, page))
 }
