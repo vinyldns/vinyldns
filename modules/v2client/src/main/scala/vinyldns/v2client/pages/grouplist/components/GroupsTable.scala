@@ -22,15 +22,15 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom
 import vinyldns.v2client.ajax.{DeleteGroupRoute, Request}
+import vinyldns.v2client.models.Notification
 import vinyldns.v2client.models.membership.{Group, GroupList}
-import vinyldns.v2client.pages.MainContainer.Alerter
 import vinyldns.v2client.routes.AppRouter.{Page, ToGroupViewPage}
 
 object GroupsTable {
   case class Props(
       groupsList: Option[GroupList],
-      alerter: Alerter,
-      refresh: Alerter => Callback,
+      setNotification: Option[Notification] => Callback,
+      refresh: () => Callback,
       router: RouterCtl[Page])
 
   class Backend {
@@ -43,10 +43,10 @@ object GroupsTable {
               .delete(DeleteGroupRoute(group.id.getOrElse("")))
               .onComplete { xhr =>
                 val alert =
-                  P.alerter.set(Request.toNotification(s"deleting group ${group.name}", xhr))
+                  P.setNotification(Request.toNotification(s"deleting group ${group.name}", xhr))
                 val refreshGroups =
                   if (!Request.isError(xhr.status))
-                    P.refresh(P.alerter)
+                    P.refresh()
                   else Callback(())
                 alert >> refreshGroups
               }

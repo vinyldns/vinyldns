@@ -19,44 +19,61 @@ package vinyldns.v2client.pages.group
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.v2client.ajax.{GetGroupMembersRoute, GetGroupRoute, Request}
 import vinyldns.v2client.models.membership.{Group, MemberList}
-import vinyldns.v2client.pages.MainContainer.PropsFromMain
-import vinyldns.v2client.pages.AppPage
 import upickle.default.read
+import vinyldns.v2client.ReactApp.SUCCESS_ALERT_TIMEOUT_MILLIS
+import vinyldns.v2client.components.AlertBox
 import vinyldns.v2client.css.GlobalStyle
-import vinyldns.v2client.models.Id
+import vinyldns.v2client.models.{Id, Notification}
 import vinyldns.v2client.models.user.User
-import vinyldns.v2client.routes.AppRouter.ToGroupViewPage
+import vinyldns.v2client.routes.AppRouter.{Page, PropsFromAppRouter, ToGroupViewPage}
 
+import scala.scalajs.js.timers.setTimeout
 import scala.util.Try
 
-object GroupViewPage extends AppPage {
-  case class State(group: Option[Group] = None, members: List[User] = List())
+object GroupViewPage extends PropsFromAppRouter {
+  case class State(
+      group: Option[Group] = None,
+      members: List[User] = List(),
+      notification: Option[Notification] = None)
 
-  class Backend(bs: BackendScope[PropsFromMain, State]) {
-    def getGroup(P: PropsFromMain): Callback = {
+  class Backend(bs: BackendScope[Props, State]) {
+    def clearNotification: Callback =
+      bs.modState(_.copy(notification = None))
+
+    def setNotification(notification: Option[Notification]): Callback =
+      notification match {
+        case Some(n) if !n.isError =>
+          bs.modState(_.copy(notification = notification)) >>
+            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
+        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
+        case None => Callback(())
+      }
+
+    def getGroup(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
       Request
         .get(GetGroupRoute(groupId))
         .onComplete { xhr =>
           val alert =
-            P.alerter.set(Request.toNotification("getting group", xhr, onlyOnError = true))
+            setNotification(Request.toNotification("getting group", xhr, onlyOnError = true))
           val group = Try(Option(read[Group](xhr.responseText))).getOrElse(None)
-          alert >> getMembers(P, group)
+          alert >> getMembers(group)
         }
         .asCallback
     }
 
-    def getMembers(P: PropsFromMain, group: Option[Group]): Callback =
+    def getMembers(group: Option[Group]): Callback =
       group match {
         case Some(g) =>
           Request
             .get(GetGroupMembersRoute(g.id.getOrElse("")))
             .onComplete { xhr =>
               val alert =
-                P.alerter.set(
+                setNotification(
                   Request.toNotification(
                     s"getting group members for group id ${g.id}",
                     xhr,
@@ -105,10 +122,17 @@ object GroupViewPage extends AppPage {
       )
     }
 
-    def render(P: PropsFromMain, S: State): VdomNode =
+    def render(P: Props, S: State): VdomNode =
       S.group match {
         case Some(group) =>
           <.div(
+            GlobalStyle.styleSheet.height100,
+            ^.className := "right_col",
+            ^.role := "main",
+            S.notification match {
+              case Some(n) => AlertBox(AlertBox.Props(n, () => clearNotification))
+              case None => TagMod.empty
+            },
             <.div(
               ^.className := "page-title",
               <.div(
@@ -177,12 +201,12 @@ object GroupViewPage extends AppPage {
   }
 
   private val component = ScalaComponent
-    .builder[PropsFromMain]("ViewGroup")
+    .builder[Props]("ViewGroup")
     .initialState(State())
     .renderBackend[Backend]
     .componentWillMount(e => e.backend.getGroup(e.props))
     .build
 
-  def apply(propsFromMainPage: PropsFromMain): Unmounted[PropsFromMain, State, Backend] =
-    component(propsFromMainPage)
+  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, State, Backend] =
+    component(Props(page, router))
 }

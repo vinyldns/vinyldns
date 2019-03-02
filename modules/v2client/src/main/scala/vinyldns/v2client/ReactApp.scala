@@ -16,20 +16,41 @@
 
 package vinyldns.v2client
 
+import japgolly.scalajs.react.extra.router.BaseUrl
 import org.scalajs.dom
 import org.scalajs.dom.document
+import org.scalajs.dom.ext.Ajax
+import vinyldns.v2client.ajax.CurrentUserRoute
 import vinyldns.v2client.css.AppCSS
 import vinyldns.v2client.routes.AppRouter
+import upickle.default.read
+import vinyldns.v2client.models.user.User
 
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
+import scala.util.Try
 
 @JSExportTopLevel("ReactApp")
 object ReactApp {
-  val csrf: String = document.getElementById("csrf").getAttribute("content")
+  final val SUCCESS_ALERT_TIMEOUT_MILLIS = 5000.0
+  final val csrf: String = document.getElementById("csrf").getAttribute("content")
+  var loggedInUser: User = _
 
   @JSExport
   def main(containerId: String): Unit = {
     AppCSS.load
-    AppRouter.router().renderIntoDOM(dom.document.getElementById(containerId))
+    implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+    Ajax
+      .get(CurrentUserRoute().path)
+      .onComplete { response =>
+        response.map { xhr =>
+          Try(Option(read[User](xhr.responseText))).getOrElse(None) match {
+            case Some(u) =>
+              loggedInUser = u
+              AppRouter.router().renderIntoDOM(dom.document.getElementById(containerId))
+            case None => dom.window.location.assign((BaseUrl.fromWindowOrigin / "login").value)
+          }
+        }
+      }
   }
 }

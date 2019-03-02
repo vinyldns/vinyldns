@@ -22,16 +22,14 @@ import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
 import vinyldns.v2client.ajax.{PostGroupRoute, Request}
 import vinyldns.v2client.components.{InputField, InputFieldValidations, Modal}
-import vinyldns.v2client.models.Id
+import vinyldns.v2client.models.{Id, Notification}
 import vinyldns.v2client.models.membership.Group
-import vinyldns.v2client.models.user.User
-import vinyldns.v2client.pages.MainContainer.Alerter
+import vinyldns.v2client.ReactApp.loggedInUser
 
 object CreateGroupModal {
   case class State(group: Group)
   case class Props(
-      alerter: Alerter,
-      loggedInUser: User,
+      setNotification: Option[Notification] => Callback,
       close: () => Callback,
       refreshGroups: () => Callback)
   class Backend(bs: BackendScope[Props, State]) {
@@ -41,12 +39,12 @@ object CreateGroupModal {
           val groupWithUserId =
             S.group
               .copy(
-                members = Some(Seq(Id(P.loggedInUser.id))),
-                admins = Some(Seq(Id(P.loggedInUser.id))))
+                members = Some(Seq(Id(loggedInUser.id))),
+                admins = Some(Seq(Id(loggedInUser.id))))
           Request
             .post(PostGroupRoute(), write(groupWithUserId))
             .onComplete { xhr =>
-              val alert = P.alerter.set(Request.toNotification("creating group", xhr))
+              val alert = P.setNotification(Request.toNotification("creating group", xhr))
               val cleanUp =
                 if (!Request.isError(xhr.status))
                   P.close() >> P.refreshGroups()

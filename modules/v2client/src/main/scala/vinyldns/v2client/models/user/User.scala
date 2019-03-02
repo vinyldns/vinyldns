@@ -16,6 +16,7 @@
 
 package vinyldns.v2client.models.user
 
+import japgolly.scalajs.react.extra.Reusability
 import upickle.default.{macroRW, ReadWriter => RW}
 import upickle.default._
 
@@ -30,6 +31,8 @@ case class User(
 
 object User {
   implicit val rw: RW[User] = macroRW
+  implicit val userReuse: Reusability[User] = Reusability.always[User]
+  implicit val userOptionReuse: Reusability[Option[User]] = Reusability.always
 
   // uPickle by default treats empty options as empty arrays, this has it use None
   implicit def OptionWriter[T: Writer]: Writer[Option[T]] =

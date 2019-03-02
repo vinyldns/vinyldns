@@ -50,6 +50,13 @@ object LeftNav {
       case _ => TagMod.empty
     }
 
+  def isActive(P: Props, target: Page): Boolean =
+    (P.selectedPage, target) match {
+      case _ if target.getClass == P.selectedPage.getClass => true
+      case (_: ToGroupViewPage, _: ToGroupListPage.type) => true
+      case _ => false
+    }
+
   def mouseEnter(e: ReactEventFromInput): Callback =
     Callback(e.currentTarget.className = "active")
 
@@ -84,11 +91,11 @@ object LeftNav {
                 ^.className := "nav side-menu",
                 P.menus.toTagMod(
                   item => {
-                    val isActive = item.page.getClass == P.selectedPage.getClass
+                    val active = isActive(P, item.page)
                     <.li(
-                      ^.className := activeClass(isActive),
+                      ^.className := activeClass(active),
                       ^.onMouseEnter ==> mouseEnter,
-                      ^.onMouseLeave ==> (e => mouseExit(e, isActive)),
+                      ^.onMouseLeave ==> (e => mouseExit(e, active)),
                       ^.key := item.name,
                       <.a(
                         <.i(^.className := item.faClassName),

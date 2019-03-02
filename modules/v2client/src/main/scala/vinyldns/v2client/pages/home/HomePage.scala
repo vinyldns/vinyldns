@@ -18,14 +18,14 @@ package vinyldns.v2client.pages.home
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.pages.AppPage
-import vinyldns.v2client.pages.MainContainer.PropsFromMain
+import vinyldns.v2client.routes.AppRouter.{Page, PropsFromAppRouter}
 
-object HomePage extends AppPage {
+object HomePage extends PropsFromAppRouter {
   private val component =
     ScalaComponent
-      .builder[PropsFromMain]("HomePage")
+      .builder[Props]("HomePage")
       .render_P { _ =>
         <.div(
           <.div(
@@ -49,5 +49,6 @@ object HomePage extends AppPage {
       }
       .build
 
-  def apply(props: PropsFromMain): Unmounted[PropsFromMain, Unit, Unit] = component(props)
+  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, Unit, Unit] =
+    component(Props(page, router))
 }

@@ -23,9 +23,12 @@ import vinyldns.v2client.components.{LeftNav, TopNav}
 import vinyldns.v2client.pages.group.GroupViewPage
 import vinyldns.v2client.pages.grouplist.GroupListPage
 import vinyldns.v2client.pages.home.HomePage
-import vinyldns.v2client.pages.MainContainer
 
 object AppRouter {
+  trait PropsFromAppRouter {
+    case class Props(page: Page, router: RouterCtl[Page])
+  }
+
   sealed trait Page
   final case object ToHomePage extends Page
   final case object ToGroupListPage extends Page
@@ -35,13 +38,13 @@ object AppRouter {
     import dsl._
     (
       staticRoute("home", ToHomePage) ~>
-        renderR(ctl => MainContainer(HomePage, ctl, ToHomePage))
+        renderR(ctl => HomePage(ToHomePage, ctl))
         |
           staticRoute("groups", ToGroupListPage) ~>
-            renderR(ctl => MainContainer(GroupListPage, ctl, ToGroupListPage))
+            renderR(ctl => GroupListPage(ToGroupListPage, ctl))
         |
           dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
-            (p => renderR(ctl => MainContainer(GroupViewPage, ctl, p)))
+            (p => renderR(ctl => GroupViewPage(p, ctl)))
     ).notFound(redirectToPage(ToHomePage)(Redirect.Replace))
       .renderWith(layout)
   }

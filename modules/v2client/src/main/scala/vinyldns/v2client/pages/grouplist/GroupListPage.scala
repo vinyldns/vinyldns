@@ -16,39 +16,59 @@
 
 package vinyldns.v2client.pages.grouplist
 
+import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.read
 import vinyldns.v2client.ajax.{ListGroupsRoute, Request}
+import vinyldns.v2client.models.Notification
 import vinyldns.v2client.models.membership.GroupList
-import vinyldns.v2client.models.user.User
-import vinyldns.v2client.pages.AppPage
-import vinyldns.v2client.pages.MainContainer.{Alerter, PropsFromMain}
 import vinyldns.v2client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
+import vinyldns.v2client.ReactApp.SUCCESS_ALERT_TIMEOUT_MILLIS
+import vinyldns.v2client.components.AlertBox
+import vinyldns.v2client.css.GlobalStyle
+import vinyldns.v2client.routes.AppRouter.{Page, PropsFromAppRouter}
 
+import scala.scalajs.js.timers.setTimeout
 import scala.util.Try
 
-object GroupListPage extends AppPage {
-  case class State(groupsList: Option[GroupList] = None, showCreateGroup: Boolean = false)
+object GroupListPage extends PropsFromAppRouter {
+  case class State(
+      groupsList: Option[GroupList] = None,
+      showCreateGroup: Boolean = false,
+      notification: Option[Notification] = None)
 
-  class Backend(bs: BackendScope[PropsFromMain, State]) {
-    // list groups is in the parent and not the table to link to the refresh button
-    def listGroups(alerter: Alerter): Callback =
+  class Backend(bs: BackendScope[Props, State]) {
+    def clearNotification: Callback =
+      bs.modState(_.copy(notification = None))
+
+    def setNotification(notification: Option[Notification]): Callback =
+      notification match {
+        case Some(n) if !n.isError =>
+          bs.modState(_.copy(notification = notification)) >>
+            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
+        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
+        case None => Callback(())
+      }
+
+    def listGroups: Callback =
       Request
         .get(ListGroupsRoute())
         .onComplete { xhr =>
-          val alert = alerter.set(Request.toNotification("list groups", xhr, onlyOnError = true))
+          val alert =
+            setNotification(Request.toNotification("list groups", xhr, onlyOnError = true))
           val groupsList = Try(Option(read[GroupList](xhr.responseText))).getOrElse(None)
           alert >> bs.modState(_.copy(groupsList = groupsList))
         }
         .asCallback
 
-    def createGroupModal(isVisible: Boolean, loggedInUser: User, alerter: Alerter): TagMod =
+    def createGroupModal(isVisible: Boolean): TagMod =
       if (isVisible)
         CreateGroupModal(
           CreateGroupModal
-            .Props(alerter, loggedInUser, () => makeCreateFormInvisible, () => listGroups(alerter)))
+            .Props(setNotification, () => makeCreateFormInvisible, () => listGroups))
       else TagMod.empty
 
     def makeCreateFormVisible: Callback =
@@ -57,8 +77,15 @@ object GroupListPage extends AppPage {
     def makeCreateFormInvisible: Callback =
       bs.modState(_.copy(showCreateGroup = false))
 
-    def render(P: PropsFromMain, S: State): VdomElement =
+    def render(P: Props, S: State): VdomElement =
       <.div(
+        GlobalStyle.styleSheet.height100,
+        ^.className := "right_col",
+        ^.role := "main",
+        S.notification match {
+          case Some(n) => AlertBox(AlertBox.Props(n, () => clearNotification))
+          case None => TagMod.empty
+        },
         <.div(
           ^.className := "page-title",
           <.div(
@@ -85,7 +112,7 @@ object GroupListPage extends AppPage {
                       "  Create Group"),
                     <.button(
                       ^.className := "btn btn-default",
-                      ^.onClick --> listGroups(P.alerter),
+                      ^.onClick --> listGroups,
                       <.span(^.className := "fa fa-refresh"),
                       "  Refresh"),
                     <.div(^.className := "clearfix")
@@ -93,24 +120,23 @@ object GroupListPage extends AppPage {
                 ),
                 <.div(
                   ^.className := "panel-body",
-                  GroupsTable(GroupsTable.Props(S.groupsList, P.alerter, listGroups, P.router)))
+                  GroupsTable(
+                    GroupsTable.Props(S.groupsList, setNotification, () => listGroups, P.router)))
               )
             )
           )
         ),
-        createGroupModal(S.showCreateGroup, P.loggedInUser, P.alerter)
+        createGroupModal(S.showCreateGroup)
       )
   }
 
-  private val component = {
-    ScalaComponent
-      .builder[PropsFromMain]("GroupPage")
-      .initialState(State())
-      .renderBackend[Backend]
-      .componentWillMount(e => e.backend.listGroups(e.props.alerter))
-      .build
-  }
+  private val component = ScalaComponent
+    .builder[Props]("GroupPage")
+    .initialState(State())
+    .renderBackend[Backend]
+    .componentWillMount(e => e.backend.listGroups)
+    .build
 
-  def apply(props: PropsFromMain): Unmounted[PropsFromMain, State, Backend] =
-    component(props)
+  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, State, Backend] =
+    component(Props(page, router))
 }
