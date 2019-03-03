@@ -14,39 +14,36 @@
  * limitations under the License.
  */
 
-package vinyldns.v2client.pages.home
+package vinyldns.v2client.pages.extras
 
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
-import japgolly.scalajs.react.extra.router.RouterCtl
+import japgolly.scalajs.react.extra.router.BaseUrl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.v2client.css.GlobalStyle
-import vinyldns.v2client.routes.AppRouter.{Page, PropsFromAppRouter}
 
-object HomePage extends PropsFromAppRouter {
+object NotFoundPage {
   private val component =
     ScalaComponent
-      .builder[Props]("HomePage")
-      .render_P { _ =>
+      .builder[Unit]("NotFound")
+      .render { _ =>
         <.div(
           GlobalStyle.styleSheet.height100,
           ^.className := "right_col",
           ^.role := "main",
-          <.div(
-            ^.className := "page-title",
-            <.div(
-              ^.className := "title_left",
-              <.h3(<.span(^.className := "fa fa-home"), "  Home")
-            )
-          ),
           <.div(^.className := "clearfix"),
           <.div(
-            ^.className := "row",
+            ^.className := "page-content-wrap",
             <.div(
-              ^.className := "col-md-12 col-sm-12 col-xs-12",
-              <.div(
-                ^.className := "x_panel"
+              ^.className := "row",
+              <.p(
+                ^.textAlign.center,
+                <.img(
+                  ^.src := (BaseUrl.fromWindowOrigin / "public/images/404.png").value
+                ),
+                <.b,
+                <.h4("Oops! That page doesn't appear to be in our records...")
               )
             )
           )
@@ -54,6 +51,5 @@ object HomePage extends PropsFromAppRouter {
       }
       .build
 
-  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, Unit, Unit] =
-    component(Props(page, router))
+  def apply(): Unmounted[Unit, Unit, Unit] = component()
 }

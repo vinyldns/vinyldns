@@ -20,6 +20,7 @@ import japgolly.scalajs.react.extra.router.{Resolution, RouterConfigDsl, RouterC
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
 import vinyldns.v2client.components.{LeftNav, TopNav}
+import vinyldns.v2client.pages.extras.NotFoundPage
 import vinyldns.v2client.pages.group.GroupViewPage
 import vinyldns.v2client.pages.grouplist.GroupListPage
 import vinyldns.v2client.pages.home.HomePage
@@ -31,21 +32,28 @@ object AppRouter {
 
   sealed trait Page
   final case object ToHomePage extends Page
+  final case object ToNotFound extends Page
   final case object ToGroupListPage extends Page
   final case class ToGroupViewPage(id: String) extends Page
 
   private val config = RouterConfigDsl[Page].buildConfig { dsl =>
     import dsl._
     (
-      staticRoute("home", ToHomePage) ~>
+      staticRoute("", ToHomePage) ~>
         renderR(ctl => HomePage(ToHomePage, ctl))
+        |
+          staticRoute("home", ToHomePage) ~>
+            renderR(ctl => HomePage(ToHomePage, ctl))
+        |
+          staticRoute("404", ToNotFound) ~>
+            render(NotFoundPage())
         |
           staticRoute("groups", ToGroupListPage) ~>
             renderR(ctl => GroupListPage(ToGroupListPage, ctl))
         |
           dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
             (p => renderR(ctl => GroupViewPage(p, ctl)))
-    ).notFound(redirectToPage(ToHomePage)(Redirect.Replace))
+    ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }
 

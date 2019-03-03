@@ -202,7 +202,7 @@ object GroupViewPage extends PropsFromAppRouter {
         GlobalStyle.styleSheet.cursorPointer,
         ^.`type` := "checkbox",
         ^.checked := hasAccess,
-        ^.onClick --> toggleFunction
+        ^.onChange --> toggleFunction
       )
     }
 
