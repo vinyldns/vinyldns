@@ -24,6 +24,7 @@ import vinyldns.v2client.pages.extras.NotFoundPage
 import vinyldns.v2client.pages.group.GroupViewPage
 import vinyldns.v2client.pages.grouplist.GroupListPage
 import vinyldns.v2client.pages.home.HomePage
+import vinyldns.v2client.ReactApp.version
 
 object AppRouter {
   trait PropsFromAppRouter {
@@ -72,6 +73,19 @@ object AppRouter {
           TopNav(),
           LeftNav(LeftNav.Props(menu, r.page, c)),
           r.render()
+        ),
+        <.footer(
+          <.p(
+            ^.className := "main-footer-text text-right",
+            s"VinylDNS v$version",
+            <.br,
+            <.a(
+              ^.href := "https://github.com/vinyldns",
+              "Made with ",
+              <.i(^.className := "fa fa-heart"),
+              " on Github"
+            )
+          )
         )
       )
     )

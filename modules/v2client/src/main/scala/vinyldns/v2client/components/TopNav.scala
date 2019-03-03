@@ -63,6 +63,12 @@ object TopNav {
         )
       else <.div()
 
+    def mouseEnter(e: ReactEventFromInput): Callback =
+      Callback(e.currentTarget.className = "active")
+
+    def mouseExit(e: ReactEventFromInput): Callback =
+      Callback(e.currentTarget.className = "")
+
     def render(s: State): VdomElement =
       <.div(
         ^.className := "top-nav",
@@ -72,6 +78,8 @@ object TopNav {
             <.ul(
               ^.className := "nav navbar-nav navbar-right",
               <.li(
+                ^.onMouseEnter ==> mouseEnter,
+                ^.onMouseLeave ==> mouseExit,
                 <.a(
                   GlobalStyle.styleSheet.cursorPointer,
                   ^.className := "user-profile dropdown-toggle",

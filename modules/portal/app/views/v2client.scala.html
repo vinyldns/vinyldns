@@ -1,5 +1,5 @@
 @import helper.CSRF
-@(implicit requestHeader: RequestHeader)
+@(implicit requestHeader: RequestHeader, meta: models.Meta)
 
 <!DOCTYPE html>
 <html lang="en" class="body-full-height">
@@ -7,6 +7,7 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta id="csrf" content="@CSRF.getToken.value" />
+		<meta id="version" content="@meta.version" />
 		<link rel="icon" href="/public/images/favicon.ico" type="image/x-icon" />
 		<link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/vendors/bootstrap/dist/css/bootstrap.min.css"/>
 		<link rel="stylesheet" type="text/css" href="/public/gentelella/vendors/font-awesome/css/font-awesome.css">

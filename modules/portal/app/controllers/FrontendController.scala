@@ -102,7 +102,7 @@ class FrontendController @Inject()(
   }
 
   def clientV2(unusedReactRoute: String): Action[AnyContent] = userAction { implicit request =>
-    if (v2ClientEnabled) Ok(views.html.v2client(request))
+    if (v2ClientEnabled) Ok(views.html.v2client(request, meta))
     else Redirect("/")
   }
 

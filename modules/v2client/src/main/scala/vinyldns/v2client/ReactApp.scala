@@ -34,6 +34,7 @@ import scala.util.Try
 object ReactApp {
   final val SUCCESS_ALERT_TIMEOUT_MILLIS = 5000.0
   final val csrf: String = document.getElementById("csrf").getAttribute("content")
+  final val version: String = document.getElementById("version").getAttribute("content")
   var loggedInUser: User = _
 
   @JSExport
