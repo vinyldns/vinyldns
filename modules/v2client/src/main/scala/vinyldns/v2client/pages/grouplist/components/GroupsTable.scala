@@ -81,13 +81,17 @@ object GroupsTable {
                           <.a(
                             ^.className := "btn btn-info btn-rounded",
                             P.router.setOnClick(ToGroupViewPage(group.id.get)),
-                            "View"
+                            ^.title := s"View group ${group.name}",
+                            VdomAttr("data-toggle") := "tooltip",
+                            <.span(^.className := "fa fa-eye")
                           ),
                           <.button(
                             ^.className := "btn btn-danger btn-rounded",
                             ^.`type` := "button",
                             ^.onClick --> deleteGroup(P, group),
-                            "Delete"
+                            ^.title := s"Delete group ${group.name}",
+                            VdomAttr("data-toggle") := "tooltip",
+                            <.span(^.className := "fa fa-trash")
                           )
                         )
                       )

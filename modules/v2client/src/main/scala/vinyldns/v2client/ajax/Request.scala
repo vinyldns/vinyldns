@@ -34,6 +34,12 @@ object Request {
       .setRequestContentTypeJson
       .send(body)
 
+  def put(route: Route, body: String): Ajax.Step2 =
+    Ajax("PUT", route.path)
+      .setRequestHeader("Csrf-Token", csrf)
+      .setRequestContentTypeJson
+      .send(body)
+
   def delete(route: Route): Ajax.Step2 =
     Ajax("DELETE", route.path)
       .setRequestHeader("Csrf-Token", csrf)
@@ -80,6 +86,14 @@ final case class DeleteGroupRoute(id: String) extends Route {
   def path: String = s"/api/groups/$id"
 }
 
+final case class UpdateGroupRoute(id: String) extends Route {
+  def path: String = s"/api/groups/$id"
+}
+
 final case class GetGroupMembersRoute(id: String) extends Route {
   def path: String = s"/api/groups/$id/members"
+}
+
+final case class LookupUserRoute(username: String) extends Route {
+  def path: String = s"/api/users/lookupuser/$username"
 }

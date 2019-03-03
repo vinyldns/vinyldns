@@ -21,7 +21,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
 import vinyldns.v2client.ajax.{PostGroupRoute, Request}
-import vinyldns.v2client.components.{InputField, InputFieldValidations, Modal}
+import vinyldns.v2client.components.{InputFieldValidations, Modal, ValidatedInputField}
 import vinyldns.v2client.models.{Id, Notification}
 import vinyldns.v2client.models.membership.Group
 import vinyldns.v2client.ReactApp.loggedInUser
@@ -53,7 +53,7 @@ object CreateGroupModal {
             }
             .asCallback
         }
-      } else Callback(())
+      } else e.preventDefaultCB
 
     def changeName(value: String): CallbackTo[Unit] =
       bs.modState { s =>
@@ -94,10 +94,10 @@ object CreateGroupModal {
           <.form(
             ^.className := "form form-horizontal form-label-left",
             ^.onSubmit ==> (e => createGroup(e, P, S)),
-            InputField(
-              InputField.Props(
-                "Name",
+            ValidatedInputField(
+              ValidatedInputField.Props(
                 changeName,
+                label = Some("Name"),
                 helpText = Some("Group name. Cannot contain spaces"),
                 validations = Some(
                   InputFieldValidations(
@@ -106,19 +106,19 @@ object CreateGroupModal {
                     canContainSpaces = false))
               )
             ),
-            InputField(
-              InputField.Props(
-                "Email",
+            ValidatedInputField(
+              ValidatedInputField.Props(
                 changeEmail,
+                label = Some("Email"),
                 helpText = Some("Group contact email. Preferably a multi user distribution"),
                 isEmail = true,
                 validations = Some(InputFieldValidations(required = true))
               )
             ),
-            InputField(
-              InputField.Props(
-                "Description",
-                changeDescription
+            ValidatedInputField(
+              ValidatedInputField.Props(
+                changeDescription,
+                label = Some("Description"),
               )
             ),
             <.div(^.className := "ln_solid"),

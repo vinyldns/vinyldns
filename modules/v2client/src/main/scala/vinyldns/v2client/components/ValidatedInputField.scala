@@ -28,14 +28,14 @@ case class InputFieldValidations(
     canContainSpaces: Boolean = true,
     required: Boolean = false)
 
-object InputField {
+object ValidatedInputField {
   case class Props(
-      label: String,
       parentOnChange: String => Callback,
       labelClass: String = "control-label",
       labelSize: String = "col-md-3 col-sm-3 col-xs-12",
       inputClass: String = "form-control",
       inputSize: String = "col-md-6 col-sm-6 col-xs-12",
+      label: Option[String] = None,
       placeholder: Option[String] = None,
       helpText: Option[String] = None,
       initialValue: Option[String] = None,
@@ -139,10 +139,12 @@ object InputField {
     def render(P: Props, S: State): VdomElement =
       <.div(
         ^.className := "form-group",
-        <.label(
-          ^.className := s"${P.labelClass} ${P.labelSize}",
-          P.label,
-        ),
+        P.label.map { l =>
+          <.label(
+            ^.className := s"${P.labelClass} ${P.labelSize}",
+            l
+          )
+        },
         <.div(
           ^.className := P.inputSize,
           <.input(

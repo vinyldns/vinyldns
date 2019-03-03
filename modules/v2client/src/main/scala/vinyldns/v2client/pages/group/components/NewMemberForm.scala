@@ -1,0 +1,143 @@
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package vinyldns.v2client.pages.group.components
+
+import scalacss.ScalaCssReact._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.component.Scala.Unmounted
+import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.scalajs.react.Callback
+import japgolly.scalajs.react.component.Scala.BackendScope
+import japgolly.scalajs.react.vdom.VdomElement
+import org.scalajs.dom
+import upickle.default.{read, write}
+import vinyldns.v2client.ajax.{LookupUserRoute, Request, UpdateGroupRoute}
+import vinyldns.v2client.components.{InputFieldValidations, ValidatedInputField}
+import vinyldns.v2client.css.GlobalStyle
+import vinyldns.v2client.models.{Id, Notification}
+import vinyldns.v2client.models.membership.Group
+import vinyldns.v2client.models.user.User
+
+object NewMemberForm {
+  case class State(
+      username: String = "",
+      isManager: Boolean = false
+  )
+  case class Props(
+      groupId: String,
+      group: Option[Group],
+      setNotification: Option[Notification] => Callback,
+      refreshMembers: () => Callback)
+
+  class Backend(bs: BackendScope[Props, State]) {
+    def addMember(e: ReactEventFromInput, P: Props, S: State): Callback =
+      if (e.target.checkValidity()) {
+        e.preventDefaultCB >> CallbackTo[Boolean](
+          dom.window.confirm(s"""Are you want to add "${S.username}" to the group?""")) >>= {
+          confirmed =>
+            if (confirmed)
+              P.group match {
+                case Some(g) =>
+                  Request
+                    .get(LookupUserRoute(S.username))
+                    .onComplete { xhr =>
+                      val alert = P.setNotification(
+                        Request
+                          .toNotification(s"getting user ${S.username}", xhr, onlyOnError = true))
+                      val addIfUserExists = if (!Request.isError(xhr.status)) {
+                        val user = read[User](xhr.responseText)
+                        val newMembers = g.members.map(_ ++ Seq(Id(user.id)))
+                        val newAdmins =
+                          if (S.isManager) g.admins.map(_ ++ Seq(Id(user.id))) else g.admins
+                        val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+                        Request
+                          .put(UpdateGroupRoute(P.groupId), write(updatedGroup))
+                          .onComplete { xhr =>
+                            P.setNotification(
+                              Request.toNotification(s"adding member ${S.username}", xhr)) >>
+                              P.refreshMembers()
+                          }
+                          .asCallback
+                      } else Callback(())
+                      alert >> addIfUserExists
+                    }
+                    .asCallback
+                case None => Callback(())
+              } else Callback(())
+        }
+      } else e.preventDefaultCB
+
+    def render(P: Props, S: State): VdomElement =
+      <.form(
+        ^.className := "col-md-9",
+        ^.onSubmit ==> (e => addMember(e, P, S)),
+        <.div(
+          ^.className := "col-md-3",
+          ValidatedInputField(
+            ValidatedInputField.Props(
+              (value: String) => bs.modState(_.copy(username = value)),
+              labelSize = "",
+              inputSize = "",
+              placeholder = Some("username"),
+              initialValue = Some(S.username),
+              validations = Some(
+                InputFieldValidations(
+                  required = true,
+                  canContainSpaces = false
+                ))
+            )
+          )
+        ),
+        <.div(
+          ^.className := "form-group col-md-2",
+          <.label(
+            ^.className := "check",
+            <.input(
+              GlobalStyle.styleSheet.cursorPointer,
+              ^.`type` := "checkbox",
+              ^.checked := S.isManager,
+              ^.onClick --> bs.modState(_.copy(isManager = !S.isManager))
+            ),
+            " Group Manager ",
+            <.span(
+              GlobalStyle.styleSheet.cursorPointer,
+              ^.className := "fa fa-info-circle",
+              VdomAttr("data-toggle") := "tooltip",
+              ^.title := "Managers can add new members, and edit or delete the Group"
+            )
+          )
+        ),
+        <.div(
+          ^.className := "form-group col-md-1",
+          <.button(
+            ^.className := "btn btn-default",
+            ^.`type` := "submit",
+            ^.className := "btn btn-success",
+            "Add Member"
+          )
+        )
+      )
+  }
+
+  private val component = ScalaComponent
+    .builder[Props]("NewGroupMemberForm")
+    .initialState(State())
+    .renderBackend[Backend]
+    .build
+
+  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
+}
