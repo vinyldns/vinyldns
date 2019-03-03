@@ -20,7 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
-import vinyldns.v2client.ajax.{PostGroupRoute, Request}
+import vinyldns.v2client.ajax.{PostGroupRoute, RequestHelper}
 import vinyldns.v2client.components.{InputFieldValidations, Modal, ValidatedInputField}
 import vinyldns.v2client.models.{Id, Notification}
 import vinyldns.v2client.models.membership.Group
@@ -35,24 +35,28 @@ object CreateGroupModal {
   class Backend(bs: BackendScope[Props, State]) {
     def createGroup(e: ReactEventFromInput, P: Props, S: State): Callback =
       if (e.target.checkValidity()) {
-        e.preventDefaultCB >> {
-          val groupWithUserId =
-            S.group
-              .copy(
-                members = Some(Seq(Id(loggedInUser.id))),
-                admins = Some(Seq(Id(loggedInUser.id))))
-          Request
-            .post(PostGroupRoute(), write(groupWithUserId))
-            .onComplete { xhr =>
-              val alert = P.setNotification(Request.toNotification("creating group", xhr))
-              val cleanUp =
-                if (!Request.isError(xhr.status))
-                  P.close() >> P.refreshGroups()
-                else Callback(())
-              alert >> cleanUp
+        e.preventDefaultCB >>
+          RequestHelper.withConfirmation(
+            s"Are you sure you want to create group ${S.group.name}?",
+            Callback.lazily {
+              val groupWithUserId =
+                S.group
+                  .copy(
+                    members = Some(Seq(Id(loggedInUser.id))),
+                    admins = Some(Seq(Id(loggedInUser.id))))
+              RequestHelper
+                .post(PostGroupRoute, write(groupWithUserId))
+                .onComplete { xhr =>
+                  val alert = P.setNotification(RequestHelper.toNotification("creating group", xhr))
+                  val cleanUp =
+                    if (!RequestHelper.isError(xhr))
+                      P.close() >> P.refreshGroups()
+                    else Callback(())
+                  alert >> cleanUp
+                }
+                .asCallback
             }
-            .asCallback
-        }
+          )
       } else e.preventDefaultCB
 
     def changeName(value: String): CallbackTo[Unit] =

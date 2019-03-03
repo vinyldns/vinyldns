@@ -21,10 +21,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
-import org.scalajs.dom
-import vinyldns.v2client.ajax.{GetGroupMembersRoute, GetGroupRoute, Request, UpdateGroupRoute}
+import vinyldns.v2client.ajax.{GetGroupMembersRoute, GetGroupRoute, RequestHelper, UpdateGroupRoute}
 import vinyldns.v2client.models.membership.{Group, MemberList}
-import upickle.default.{read, write}
+import upickle.default.write
 import vinyldns.v2client.ReactApp.SUCCESS_ALERT_TIMEOUT_MILLIS
 import vinyldns.v2client.components.AlertBox
 import vinyldns.v2client.css.GlobalStyle
@@ -34,12 +33,11 @@ import vinyldns.v2client.pages.group.components.NewMemberForm
 import vinyldns.v2client.routes.AppRouter.{Page, PropsFromAppRouter, ToGroupViewPage}
 
 import scala.scalajs.js.timers.setTimeout
-import scala.util.Try
 
 object GroupViewPage extends PropsFromAppRouter {
   case class State(
       group: Option[Group] = None,
-      members: List[User] = List(),
+      memberList: Option[MemberList] = None,
       notification: Option[Notification] = None,
       newUsername: Option[String] = None,
       newUserIsManager: Boolean = false)
@@ -59,109 +57,107 @@ object GroupViewPage extends PropsFromAppRouter {
 
     def getGroup(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-      Request
-        .get(GetGroupRoute(groupId))
+      val route = GetGroupRoute(groupId)
+      RequestHelper
+        .get(route)
         .onComplete { xhr =>
           val alert =
-            setNotification(Request.toNotification("getting group", xhr, onlyOnError = true))
-          val group = Try(Option(read[Group](xhr.responseText))).getOrElse(None)
-          alert >> bs.modState(_.copy(group = group)) >> getMembers
+            setNotification(RequestHelper.toNotification("getting group", xhr, onlyOnError = true))
+          val group = route.parse(xhr)
+          alert >> bs.modState(_.copy(group = group)) >> getMembers(P)
         }
         .asCallback
     }
 
-    def getMembers: Callback =
-      bs.state >>= { S =>
-        S.group match {
-          case Some(g) =>
-            Request
-              .get(GetGroupMembersRoute(g.id.getOrElse("")))
-              .onComplete { xhr =>
-                val alert =
-                  setNotification(
-                    Request.toNotification(
-                      s"getting group members for group id ${g.id}",
-                      xhr,
-                      onlyOnError = true))
-                val members = Try(read[MemberList](xhr.responseText).members).getOrElse(List())
-                alert >> bs.modState(_.copy(members = members))
-              }
-              .asCallback
-          case None => Callback(())
+    def getMembers(P: Props): Callback = {
+      val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+      val route = GetGroupMembersRoute(groupId)
+      RequestHelper
+        .get(route)
+        .onComplete { xhr =>
+          val alert =
+            setNotification(
+              RequestHelper.toNotification(
+                s"getting group members for group id $groupId",
+                xhr,
+                onlyOnError = true))
+          val members = route.parse(xhr)
+          alert >> bs.modState(_.copy(memberList = members))
         }
-      }
+        .asCallback
+    }
 
     def deleteMember(P: Props, S: State, user: User): Callback =
-      CallbackTo[Boolean](
-        dom.window.confirm(s"""Are you sure you want to remove member "${user.userName}"""")) >>= {
-        confirmed =>
-          if (confirmed) {
-            S.group match {
-              case Some(g) =>
-                val newMembers = g.members.map(_.filter(id => id.id != user.id))
-                val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
-                val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
-                val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-                Request
-                  .put(UpdateGroupRoute(groupId), write(updatedGroup))
-                  .onComplete { xhr =>
-                    val alert =
-                      setNotification(Request.toNotification(s"deleting member ${user.id}", xhr))
-                    alert >> getMembers
-                  }
-                  .asCallback
-              case None => Callback(())
-            }
-          } else Callback(())
-      }
+      RequestHelper.withConfirmation(
+        s"Are you sure you want to remove member ${user.userName}",
+        Callback.lazily {
+          S.group match {
+            case Some(g) =>
+              val newMembers = g.members.map(_.filter(id => id.id != user.id))
+              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+              val route = UpdateGroupRoute(groupId)
+              RequestHelper
+                .put(route, write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    setNotification(
+                      RequestHelper.toNotification(s"deleting member ${user.id}", xhr))
+                  alert >> getMembers(P)
+                }
+                .asCallback
+            case None => Callback(())
+          }
+        }
+      )
 
     def addGroupAdmin(P: Props, S: State, user: User): Callback =
-      CallbackTo[Boolean](
-        dom.window.confirm(
-          s"""Are you sure you want to make "${user.userName}" a Group Manager?""")) >>= {
-        confirmed =>
-          if (confirmed) {
-            S.group match {
-              case Some(g) =>
-                val newAdmins = g.admins.map(_ ++ Seq(Id(user.id)))
-                val updatedGroup = g.copy(admins = newAdmins)
-                val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-                Request
-                  .put(UpdateGroupRoute(groupId), write(updatedGroup))
-                  .onComplete { xhr =>
-                    val alert =
-                      setNotification(Request.toNotification(s"adding manager ${user.id}", xhr))
-                    alert >> getMembers
-                  }
-                  .asCallback
-              case None => Callback(())
-            }
-          } else Callback(())
-      }
+      RequestHelper.withConfirmation(
+        s"Are you sure you want to make ${user.userName} a Group Manager?",
+        Callback.lazily {
+          S.group match {
+            case Some(g) =>
+              val newAdmins = g.admins.map(_ ++ Seq(Id(user.id)))
+              val updatedGroup = g.copy(admins = newAdmins)
+              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+              val route = UpdateGroupRoute(groupId)
+              RequestHelper
+                .put(route, write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    setNotification(RequestHelper.toNotification(s"adding manager ${user.id}", xhr))
+                  alert >> getMembers(P)
+                }
+                .asCallback
+            case None => Callback(())
+          }
+        }
+      )
 
     def removeGroupAdmin(P: Props, S: State, user: User): Callback =
-      CallbackTo[Boolean](
-        dom.window.confirm(
-          s"""Are you sure you no longer want "${user.userName}" to be a Group Manager?""")) >>= {
-        confirmed =>
-          if (confirmed) {
-            S.group match {
-              case Some(g) =>
-                val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
-                val updatedGroup = g.copy(admins = newAdmins)
-                val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-                Request
-                  .put(UpdateGroupRoute(groupId), write(updatedGroup))
-                  .onComplete { xhr =>
-                    val alert =
-                      setNotification(Request.toNotification(s"removing manager ${user.id}", xhr))
-                    alert >> getMembers
-                  }
-                  .asCallback
-              case None => Callback(())
-            }
-          } else Callback(())
-      }
+      RequestHelper.withConfirmation(
+        s"Are you sure you no longer want ${user.userName} to be a Group Manager?",
+        Callback.lazily {
+          S.group match {
+            case Some(g) =>
+              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+              val updatedGroup = g.copy(admins = newAdmins)
+              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+              val route = UpdateGroupRoute(groupId)
+              RequestHelper
+                .put(route, write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    setNotification(
+                      RequestHelper.toNotification(s"removing manager ${user.id}", xhr))
+                  alert >> getMembers(P)
+                }
+                .asCallback
+            case None => Callback(())
+          }
+        }
+      )
 
     def getDescriptionHeader(group: Group): TagMod =
       group.description match {
@@ -252,7 +248,7 @@ object GroupViewPage extends PropsFromAppRouter {
                             P.page.asInstanceOf[ToGroupViewPage].id,
                             S.group,
                             setNotification,
-                            () => getMembers)),
+                            () => getMembers(P))),
                         <.div(^.className := "clearfix")
                       ),
                       <.div(
@@ -274,9 +270,9 @@ object GroupViewPage extends PropsFromAppRouter {
                             ),
                             <.th("Actions")
                           )),
-                          S.group match {
-                            case Some(_) =>
-                              <.tbody(S.members.map {
+                          S.memberList match {
+                            case Some(ml) =>
+                              <.tbody(ml.members.map {
                                 m =>
                                   <.tr(
                                     <.td(m.userName),

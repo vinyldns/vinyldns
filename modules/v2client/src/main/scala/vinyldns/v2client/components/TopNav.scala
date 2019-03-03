@@ -19,37 +19,17 @@ package vinyldns.v2client.components
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
-import japgolly.scalajs.react.extra.Ajax
 import japgolly.scalajs.react.extra.router.BaseUrl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.v2client.ReactApp.csrf
-import upickle.default._
 import vinyldns.v2client.css.GlobalStyle
-import vinyldns.v2client.models.user.User
-
-import scala.util.Try
+import vinyldns.v2client.ReactApp.loggedInUser
 
 object TopNav {
-  case class State(user: Option[User], drowdownOpen: Boolean)
+  case class State(dropdownOpen: Boolean = false)
 
   class Backend(bs: BackendScope[Unit, State]) {
-    def getUser: Callback =
-      Ajax("GET", "/api/users/currentuser")
-        .setRequestHeader("Csrf-Token", csrf)
-        .send
-        .onComplete { xhr =>
-          val user = read[User](xhr.responseText)
-          bs.modState(_.copy(user = Some(user)))
-        }
-        .asCallback
-
-    def toggleDropdown(e: ReactEventFromInput): Callback = {
-      def withState(state: State) = bs.modState(_.copy(drowdownOpen = !state.drowdownOpen))
-      e.preventDefaultCB >> bs.state >>= withState
-    }
-
-    def downdown(state: State): VdomNode =
-      if (state.drowdownOpen)
+    def dropdown(state: State): VdomNode =
+      if (state.dropdownOpen)
         <.ul(
           GlobalStyle.styleSheet.overrideDisplay,
           ^.className := "dropdown-menu dropdown-usermenu pull-right",
@@ -69,7 +49,7 @@ object TopNav {
     def mouseExit(e: ReactEventFromInput): Callback =
       Callback(e.currentTarget.className = "")
 
-    def render(s: State): VdomElement =
+    def render(S: State): VdomElement =
       <.div(
         ^.className := "top-nav",
         <.div(
@@ -83,12 +63,12 @@ object TopNav {
                 <.a(
                   GlobalStyle.styleSheet.cursorPointer,
                   ^.className := "user-profile dropdown-toggle",
-                  ^.onClick ==> toggleDropdown,
+                  ^.onClick --> bs.modState(_.copy(dropdownOpen = !S.dropdownOpen)),
                   <.span(^.className := "fa fa-user"),
-                  "  " + Try(s.user.get.userName).getOrElse[String]("Not Logged In") + "  ",
+                  s"  ${loggedInUser.userName}  ",
                   <.span(^.className := "fa fa-angle-down"),
                 ),
-                downdown(s)
+                dropdown(S)
               )
             )
           )
@@ -98,9 +78,8 @@ object TopNav {
 
   private val component = ScalaComponent
     .builder[Unit]("TopNav")
-    .initialState(State(None, drowdownOpen = false))
+    .initialState(State())
     .renderBackend[Backend]
-    .componentWillMount(e => e.backend.getUser)
     .build
 
   def apply(): Unmounted[Unit, State, Backend] = component()

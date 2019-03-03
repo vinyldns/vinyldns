@@ -20,8 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import org.scalajs.dom
-import vinyldns.v2client.ajax.{DeleteGroupRoute, Request}
+import vinyldns.v2client.ajax.{DeleteGroupRoute, RequestHelper}
 import vinyldns.v2client.models.Notification
 import vinyldns.v2client.models.membership.{Group, GroupList}
 import vinyldns.v2client.routes.AppRouter.{Page, ToGroupViewPage}
@@ -35,24 +34,24 @@ object GroupsTable {
 
   class Backend {
     def deleteGroup(P: Props, group: Group): Callback =
-      CallbackTo[Boolean](
-        dom.window.confirm(s"""Are you sure you want to delete group "${group.name}"""")) >>= {
-        confirmed =>
-          if (confirmed)
-            Request
-              .delete(DeleteGroupRoute(group.id.getOrElse("")))
-              .onComplete { xhr =>
-                val alert =
-                  P.setNotification(Request.toNotification(s"deleting group ${group.name}", xhr))
-                val refreshGroups =
-                  if (!Request.isError(xhr.status))
-                    P.refresh()
-                  else Callback(())
-                alert >> refreshGroups
-              }
-              .asCallback
-          else Callback(())
-      }
+      RequestHelper.withConfirmation(
+        s"Are you sure you want to delete group ${group.name}?",
+        Callback.lazily {
+          RequestHelper
+            .delete(DeleteGroupRoute(group.id.getOrElse("")))
+            .onComplete { xhr =>
+              val alert =
+                P.setNotification(
+                  RequestHelper.toNotification(s"deleting group ${group.name}", xhr))
+              val refreshGroups =
+                if (!RequestHelper.isError(xhr))
+                  P.refresh()
+                else Callback(())
+              alert >> refreshGroups
+            }
+            .asCallback
+        }
+      )
 
     def render(P: Props): VdomElement =
       <.div(

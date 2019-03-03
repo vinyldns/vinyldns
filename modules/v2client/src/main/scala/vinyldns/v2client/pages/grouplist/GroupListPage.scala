@@ -21,8 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import upickle.default.read
-import vinyldns.v2client.ajax.{ListGroupsRoute, Request}
+import vinyldns.v2client.ajax.{ListGroupsRoute, RequestHelper}
 import vinyldns.v2client.models.Notification
 import vinyldns.v2client.models.membership.GroupList
 import vinyldns.v2client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
@@ -32,7 +31,6 @@ import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.routes.AppRouter.{Page, PropsFromAppRouter}
 
 import scala.scalajs.js.timers.setTimeout
-import scala.util.Try
 
 object GroupListPage extends PropsFromAppRouter {
   case class State(
@@ -54,12 +52,12 @@ object GroupListPage extends PropsFromAppRouter {
       }
 
     def listGroups: Callback =
-      Request
-        .get(ListGroupsRoute())
+      RequestHelper
+        .get(ListGroupsRoute)
         .onComplete { xhr =>
           val alert =
-            setNotification(Request.toNotification("list groups", xhr, onlyOnError = true))
-          val groupsList = Try(Option(read[GroupList](xhr.responseText))).getOrElse(None)
+            setNotification(RequestHelper.toNotification("list groups", xhr, onlyOnError = true))
+          val groupsList = ListGroupsRoute.parse(xhr)
           alert >> bs.modState(_.copy(groupsList = groupsList))
         }
         .asCallback

@@ -23,12 +23,10 @@ import org.scalajs.dom.ext.Ajax
 import vinyldns.v2client.ajax.CurrentUserRoute
 import vinyldns.v2client.css.AppCSS
 import vinyldns.v2client.routes.AppRouter
-import upickle.default.read
 import vinyldns.v2client.models.user.User
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
-import scala.util.Try
 
 @JSExportTopLevel("ReactApp")
 object ReactApp {
@@ -42,10 +40,10 @@ object ReactApp {
     AppCSS.load
     implicit val ec: ExecutionContextExecutor = ExecutionContext.global
     Ajax
-      .get(CurrentUserRoute().path)
+      .get(CurrentUserRoute.path)
       .onComplete { response =>
         response.map { xhr =>
-          Try(Option(read[User](xhr.responseText))).getOrElse(None) match {
+          CurrentUserRoute.parse(xhr) match {
             case Some(u) =>
               loggedInUser = u
               AppRouter.router().renderIntoDOM(dom.document.getElementById(containerId))

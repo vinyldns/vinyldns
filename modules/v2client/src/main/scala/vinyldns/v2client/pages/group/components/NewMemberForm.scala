@@ -23,9 +23,8 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.VdomElement
-import org.scalajs.dom
 import upickle.default.{read, write}
-import vinyldns.v2client.ajax.{LookupUserRoute, Request, UpdateGroupRoute}
+import vinyldns.v2client.ajax.{LookupUserRoute, RequestHelper, UpdateGroupRoute}
 import vinyldns.v2client.components.{InputFieldValidations, ValidatedInputField}
 import vinyldns.v2client.css.GlobalStyle
 import vinyldns.v2client.models.{Id, Notification}
@@ -49,25 +48,23 @@ object NewMemberForm {
     def addMember(P: Props, S: State, user: Option[User]): Callback =
       (P.group, user) match {
         case (Some(g), Some(u)) =>
-          CallbackTo[Boolean](
-            dom.window
-              .confirm(s"""Are you sure you want to add "${S.username}" to the group?""")) >>= {
-            confirmed =>
-              if (!confirmed) Callback.empty
-              else {
-                val newMembers = g.members.map(_ ++ Seq(Id(u.id)))
-                val newAdmins = if (S.isManager) g.admins.map(_ ++ Seq(Id(u.id))) else g.admins
-                val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
-                Request
-                  .put(UpdateGroupRoute(P.groupId), write(updatedGroup))
-                  .onComplete { xhr =>
-                    val alert =
-                      P.setNotification(Request.toNotification(s"adding member ${S.username}", xhr))
-                    alert >> P.refreshMembers()
-                  }
-                  .asCallback
-              }
-          }
+          RequestHelper.withConfirmation(
+            s"Are you sure you want to add ${S.username} to the group?",
+            Callback.lazily {
+              val newMembers = g.members.map(_ ++ Seq(Id(u.id)))
+              val newAdmins = if (S.isManager) g.admins.map(_ ++ Seq(Id(u.id))) else g.admins
+              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+              RequestHelper
+                .put(UpdateGroupRoute(P.groupId), write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    P.setNotification(
+                      RequestHelper.toNotification(s"adding member ${S.username}", xhr))
+                  alert >> P.refreshMembers()
+                }
+                .asCallback
+            }
+          )
         case _ => Callback.empty
       }
 
@@ -75,11 +72,11 @@ object NewMemberForm {
       if (!e.target.checkValidity()) e.preventDefaultCB
       else
         e.preventDefaultCB >>
-          Request
+          RequestHelper
             .get(LookupUserRoute(S.username))
             .onComplete { xhr =>
               val alert = P.setNotification(
-                Request
+                RequestHelper
                   .toNotification(s"getting user ${S.username}", xhr, onlyOnError = true))
               val user = Try(Option(read[User](xhr.responseText))).getOrElse(None)
               alert >> addMember(P, S, user)
@@ -88,7 +85,7 @@ object NewMemberForm {
 
     def render(P: Props, S: State): VdomElement =
       <.form(
-        ^.className := "col-md-9",
+        ^.className := "col-md-10",
         ^.onSubmit ==> (e => lookupUser(e, P, S)),
         <.div(
           ^.className := "col-md-3",
