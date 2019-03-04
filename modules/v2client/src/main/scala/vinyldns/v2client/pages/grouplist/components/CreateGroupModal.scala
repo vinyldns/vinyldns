@@ -32,60 +32,16 @@ object CreateGroupModal {
       setNotification: Option[Notification] => Callback,
       close: () => Callback,
       refreshGroups: () => Callback)
+
+  private val component = ScalaComponent
+    .builder[Props]("CreateGroupForm")
+    .initialState(State(Group()))
+    .renderBackend[Backend]
+    .build
+
+  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
+
   class Backend(bs: BackendScope[Props, State]) {
-    def createGroup(e: ReactEventFromInput, P: Props, S: State): Callback =
-      if (e.target.checkValidity()) {
-        e.preventDefaultCB >>
-          RequestHelper.withConfirmation(
-            s"Are you sure you want to create group ${S.group.name}?",
-            Callback.lazily {
-              val groupWithUserId =
-                S.group
-                  .copy(
-                    members = Some(Seq(Id(loggedInUser.id))),
-                    admins = Some(Seq(Id(loggedInUser.id))))
-              RequestHelper
-                .post(PostGroupRoute, write(groupWithUserId))
-                .onComplete { xhr =>
-                  val alert = P.setNotification(RequestHelper.toNotification("creating group", xhr))
-                  val cleanUp =
-                    if (!RequestHelper.isError(xhr))
-                      P.close() >> P.refreshGroups()
-                    else Callback(())
-                  alert >> cleanUp
-                }
-                .asCallback
-            }
-          )
-      } else e.preventDefaultCB
-
-    def changeName(value: String): CallbackTo[Unit] =
-      bs.modState { s =>
-        val g = s.group.copy(name = value)
-        s.copy(group = g)
-      }
-
-    def changeEmail(value: String): CallbackTo[Unit] =
-      bs.modState { s =>
-        val g = s.group.copy(email = value)
-        s.copy(group = g)
-      }
-
-    def changeDescription(value: String): CallbackTo[Unit] =
-      bs.modState { s =>
-        val g = s.group.copy(description = Some(value))
-        s.copy(group = g)
-      }
-
-    private val header =
-      """
-        |Groups simplify setup and access to resources in Vinyl.
-        | A Group consists of one or more members,
-        | who are registered users of Vinyl.
-        | Any member in the group can be designated as a Group Admin, which
-        | allows that member full administrative access to the group, including deleting the group.
-      """.stripMargin
-
     def render(P: Props, S: State): VdomElement =
       Modal(
         Modal.Props("Create Group", P.close),
@@ -143,13 +99,58 @@ object CreateGroupModal {
           )
         )
       )
+
+    def createGroup(e: ReactEventFromInput, P: Props, S: State): Callback =
+      if (e.target.checkValidity()) {
+        e.preventDefaultCB >>
+          RequestHelper.withConfirmation(
+            s"Are you sure you want to create group ${S.group.name}?",
+            Callback.lazily {
+              val groupWithUserId =
+                S.group
+                  .copy(
+                    members = Some(Seq(Id(loggedInUser.id))),
+                    admins = Some(Seq(Id(loggedInUser.id))))
+              RequestHelper
+                .post(PostGroupRoute, write(groupWithUserId))
+                .onComplete { xhr =>
+                  val alert = P.setNotification(RequestHelper.toNotification("creating group", xhr))
+                  val cleanUp =
+                    if (!RequestHelper.isError(xhr))
+                      P.close() >> P.refreshGroups()
+                    else Callback.empty
+                  alert >> cleanUp
+                }
+                .asCallback
+            }
+          )
+      } else e.preventDefaultCB
+
+    def changeName(value: String): CallbackTo[Unit] =
+      bs.modState { s =>
+        val g = s.group.copy(name = value)
+        s.copy(group = g)
+      }
+
+    def changeEmail(value: String): CallbackTo[Unit] =
+      bs.modState { s =>
+        val g = s.group.copy(email = value)
+        s.copy(group = g)
+      }
+
+    def changeDescription(value: String): CallbackTo[Unit] =
+      bs.modState { s =>
+        val g = s.group.copy(description = Some(value))
+        s.copy(group = g)
+      }
+
+    private val header =
+      """
+        |Groups simplify setup and access to resources in Vinyl.
+        | A Group consists of one or more members,
+        | who are registered users of Vinyl.
+        | Any member in the group can be designated as a Group Admin, which
+        | allows that member full administrative access to the group, including deleting the group.
+      """.stripMargin
   }
-
-  private val component = ScalaComponent
-    .builder[Props]("CreateGroupForm")
-    .initialState(State(Group()))
-    .renderBackend[Backend]
-    .build
-
-  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
 }

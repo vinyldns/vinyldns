@@ -42,174 +42,17 @@ object GroupViewPage extends PropsFromAppRouter {
       newUsername: Option[String] = None,
       newUserIsManager: Boolean = false)
 
+  private val component = ScalaComponent
+    .builder[Props]("ViewGroup")
+    .initialState(State())
+    .renderBackend[Backend]
+    .componentWillMount(e => e.backend.getGroup(e.props))
+    .build
+
+  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, State, Backend] =
+    component(Props(page, router))
+
   class Backend(bs: BackendScope[Props, State]) {
-    def clearNotification: Callback =
-      bs.modState(_.copy(notification = None))
-
-    def setNotification(notification: Option[Notification]): Callback =
-      notification match {
-        case Some(n) if !n.isError =>
-          bs.modState(_.copy(notification = notification)) >>
-            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
-        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
-        case None => Callback(())
-      }
-
-    def getGroup(P: Props): Callback = {
-      val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-      val route = GetGroupRoute(groupId)
-      RequestHelper
-        .get(route)
-        .onComplete { xhr =>
-          val alert =
-            setNotification(RequestHelper.toNotification("getting group", xhr, onlyOnError = true))
-          val group = route.parse(xhr)
-          alert >> bs.modState(_.copy(group = group)) >> getMembers(P)
-        }
-        .asCallback
-    }
-
-    def getMembers(P: Props): Callback = {
-      val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-      val route = GetGroupMembersRoute(groupId)
-      RequestHelper
-        .get(route)
-        .onComplete { xhr =>
-          val alert =
-            setNotification(
-              RequestHelper.toNotification(
-                s"getting group members for group id $groupId",
-                xhr,
-                onlyOnError = true))
-          val members = route.parse(xhr)
-          alert >> bs.modState(_.copy(memberList = members))
-        }
-        .asCallback
-    }
-
-    def deleteMember(P: Props, S: State, user: User): Callback =
-      RequestHelper.withConfirmation(
-        s"Are you sure you want to remove member ${user.userName}",
-        Callback.lazily {
-          S.group match {
-            case Some(g) =>
-              val newMembers = g.members.map(_.filter(id => id.id != user.id))
-              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
-              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
-              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-              val route = UpdateGroupRoute(groupId)
-              RequestHelper
-                .put(route, write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    setNotification(
-                      RequestHelper.toNotification(s"deleting member ${user.id}", xhr))
-                  alert >> getMembers(P)
-                }
-                .asCallback
-            case None => Callback(())
-          }
-        }
-      )
-
-    def addGroupAdmin(P: Props, S: State, user: User): Callback =
-      RequestHelper.withConfirmation(
-        s"Are you sure you want to make ${user.userName} a Group Manager?",
-        Callback.lazily {
-          S.group match {
-            case Some(g) =>
-              val newAdmins = g.admins.map(_ ++ Seq(Id(user.id)))
-              val updatedGroup = g.copy(admins = newAdmins)
-              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-              val route = UpdateGroupRoute(groupId)
-              RequestHelper
-                .put(route, write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    setNotification(RequestHelper.toNotification(s"adding manager ${user.id}", xhr))
-                  alert >> getMembers(P)
-                }
-                .asCallback
-            case None => Callback(())
-          }
-        }
-      )
-
-    def removeGroupAdmin(P: Props, S: State, user: User): Callback =
-      RequestHelper.withConfirmation(
-        s"Are you sure you no longer want ${user.userName} to be a Group Manager?",
-        Callback.lazily {
-          S.group match {
-            case Some(g) =>
-              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
-              val updatedGroup = g.copy(admins = newAdmins)
-              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-              val route = UpdateGroupRoute(groupId)
-              RequestHelper
-                .put(route, write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    setNotification(
-                      RequestHelper.toNotification(s"removing manager ${user.id}", xhr))
-                  alert >> getMembers(P)
-                }
-                .asCallback
-            case None => Callback(())
-          }
-        }
-      )
-
-    def getDescriptionHeader(group: Group): TagMod =
-      group.description match {
-        case Some(d) => <.h5(s"Description: $d")
-        case None => TagMod.empty
-      }
-
-    def getIdHeader(group: Group): TagMod =
-      group.id match {
-        case Some(id) => <.h5(s"Id: $id")
-        case None => TagMod.empty
-      }
-
-    def getEmailHeader(group: Group): TagMod =
-      <.h5(s"Email: ${group.email}")
-
-    def toName(user: User): String =
-      (user.lastName, user.firstName) match {
-        case (Some(ln), Some(fn)) => s"$ln, $fn"
-        case (Some(ln), None) => ln
-        case (None, Some(fn)) => fn
-        case (None, None) => ""
-      }
-
-    def groupManagerWidget(P: Props, S: State, user: User): TagMod = {
-      val hasAccess = hasUpdateAccess(S, user)
-      val isManager = S.group.exists { g =>
-        val admins = g.admins.getOrElse(Seq())
-        admins.contains(Id(user.id))
-      }
-
-      def toggleFunction: Callback =
-        if (isManager)
-          removeGroupAdmin(P, S, user)
-        else addGroupAdmin(P, S, user)
-
-      <.input(
-        GlobalStyle.styleSheet.cursorPointer,
-        ^.`type` := "checkbox",
-        ^.checked := hasAccess,
-        ^.onChange --> toggleFunction
-      )
-    }
-
-    def hasUpdateAccess(S: State, user: User): Boolean = {
-      val isManager = S.group.exists { g =>
-        val admins = g.admins.getOrElse(Seq())
-        admins.contains(Id(user.id))
-      }
-      isManager || user.isSuper
-    }
-
     def render(P: Props, S: State): VdomNode =
       <.div(
         GlobalStyle.styleSheet.height100,
@@ -312,15 +155,172 @@ object GroupViewPage extends PropsFromAppRouter {
             )
         }
       )
+
+    def clearNotification: Callback =
+      bs.modState(_.copy(notification = None))
+
+    def setNotification(notification: Option[Notification]): Callback =
+      notification match {
+        case Some(n) if !n.isError =>
+          bs.modState(_.copy(notification = notification)) >>
+            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
+        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
+        case None => Callback.empty
+      }
+
+    def getGroup(P: Props): Callback = {
+      val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+      val route = GetGroupRoute(groupId)
+      RequestHelper
+        .get(route)
+        .onComplete { xhr =>
+          val alert =
+            setNotification(RequestHelper.toNotification("getting group", xhr, onlyOnError = true))
+          val group = route.parse(xhr)
+          alert >> bs.modState(_.copy(group = group)) >> getMembers(P)
+        }
+        .asCallback
+    }
+
+    def getMembers(P: Props): Callback = {
+      val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+      val route = GetGroupMembersRoute(groupId)
+      RequestHelper
+        .get(route)
+        .onComplete { xhr =>
+          val alert =
+            setNotification(
+              RequestHelper.toNotification(
+                s"getting group members for group id $groupId",
+                xhr,
+                onlyOnError = true))
+          val members = route.parse(xhr)
+          alert >> bs.modState(_.copy(memberList = members))
+        }
+        .asCallback
+    }
+
+    def deleteMember(P: Props, S: State, user: User): Callback =
+      RequestHelper.withConfirmation(
+        s"Are you sure you want to remove member ${user.userName}",
+        Callback.lazily {
+          S.group match {
+            case Some(g) =>
+              val newMembers = g.members.map(_.filter(id => id.id != user.id))
+              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+              val route = UpdateGroupRoute(groupId)
+              RequestHelper
+                .put(route, write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    setNotification(
+                      RequestHelper.toNotification(s"deleting member ${user.id}", xhr))
+                  alert >> getMembers(P)
+                }
+                .asCallback
+            case None => Callback.empty
+          }
+        }
+      )
+
+    def addGroupAdmin(P: Props, S: State, user: User): Callback =
+      RequestHelper.withConfirmation(
+        s"Are you sure you want to make ${user.userName} a Group Manager?",
+        Callback.lazily {
+          S.group match {
+            case Some(g) =>
+              val newAdmins = g.admins.map(_ ++ Seq(Id(user.id)))
+              val updatedGroup = g.copy(admins = newAdmins)
+              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+              val route = UpdateGroupRoute(groupId)
+              RequestHelper
+                .put(route, write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    setNotification(RequestHelper.toNotification(s"adding manager ${user.id}", xhr))
+                  alert >> getMembers(P)
+                }
+                .asCallback
+            case None => Callback.empty
+          }
+        }
+      )
+
+    def removeGroupAdmin(P: Props, S: State, user: User): Callback =
+      RequestHelper.withConfirmation(
+        s"Are you sure you no longer want ${user.userName} to be a Group Manager?",
+        Callback.lazily {
+          S.group match {
+            case Some(g) =>
+              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+              val updatedGroup = g.copy(admins = newAdmins)
+              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+              val route = UpdateGroupRoute(groupId)
+              RequestHelper
+                .put(route, write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    setNotification(
+                      RequestHelper.toNotification(s"removing manager ${user.id}", xhr))
+                  alert >> getMembers(P)
+                }
+                .asCallback
+            case None => Callback.empty
+          }
+        }
+      )
+
+    def getDescriptionHeader(group: Group): TagMod =
+      group.description match {
+        case Some(d) => <.h5(s"Description: $d")
+        case None => TagMod.empty
+      }
+
+    def getIdHeader(group: Group): TagMod =
+      group.id match {
+        case Some(id) => <.h5(s"Id: $id")
+        case None => TagMod.empty
+      }
+
+    def getEmailHeader(group: Group): TagMod =
+      <.h5(s"Email: ${group.email}")
+
+    def toName(user: User): String =
+      (user.lastName, user.firstName) match {
+        case (Some(ln), Some(fn)) => s"$ln, $fn"
+        case (Some(ln), None) => ln
+        case (None, Some(fn)) => fn
+        case (None, None) => ""
+      }
+
+    def groupManagerWidget(P: Props, S: State, user: User): TagMod = {
+      val hasAccess = hasUpdateAccess(S, user)
+      val isManager = S.group.exists { g =>
+        val admins = g.admins.getOrElse(Seq())
+        admins.contains(Id(user.id))
+      }
+
+      def toggleFunction: Callback =
+        if (isManager)
+          removeGroupAdmin(P, S, user)
+        else addGroupAdmin(P, S, user)
+
+      <.input(
+        GlobalStyle.styleSheet.cursorPointer,
+        ^.`type` := "checkbox",
+        ^.checked := hasAccess,
+        ^.onChange --> toggleFunction
+      )
+    }
+
+    def hasUpdateAccess(S: State, user: User): Boolean = {
+      val isManager = S.group.exists { g =>
+        val admins = g.admins.getOrElse(Seq())
+        admins.contains(Id(user.id))
+      }
+      isManager || user.isSuper
+    }
   }
-
-  private val component = ScalaComponent
-    .builder[Props]("ViewGroup")
-    .initialState(State())
-    .renderBackend[Backend]
-    .componentWillMount(e => e.backend.getGroup(e.props))
-    .build
-
-  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, State, Backend] =
-    component(Props(page, router))
 }

@@ -44,45 +44,15 @@ object NewMemberForm {
       setNotification: Option[Notification] => Callback,
       refreshMembers: () => Callback)
 
+  private val component = ScalaComponent
+    .builder[Props]("NewGroupMemberForm")
+    .initialState(State())
+    .renderBackend[Backend]
+    .build
+
+  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
+
   class Backend(bs: BackendScope[Props, State]) {
-    def addMember(P: Props, S: State, user: Option[User]): Callback =
-      (P.group, user) match {
-        case (Some(g), Some(u)) =>
-          RequestHelper.withConfirmation(
-            s"Are you sure you want to add ${S.username} to the group?",
-            Callback.lazily {
-              val newMembers = g.members.map(_ ++ Seq(Id(u.id)))
-              val newAdmins = if (S.isManager) g.admins.map(_ ++ Seq(Id(u.id))) else g.admins
-              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
-              RequestHelper
-                .put(UpdateGroupRoute(P.groupId), write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    P.setNotification(
-                      RequestHelper.toNotification(s"adding member ${S.username}", xhr))
-                  alert >> P.refreshMembers()
-                }
-                .asCallback
-            }
-          )
-        case _ => Callback.empty
-      }
-
-    def lookupUser(e: ReactEventFromInput, P: Props, S: State): Callback =
-      if (!e.target.checkValidity()) e.preventDefaultCB
-      else
-        e.preventDefaultCB >>
-          RequestHelper
-            .get(LookupUserRoute(S.username))
-            .onComplete { xhr =>
-              val alert = P.setNotification(
-                RequestHelper
-                  .toNotification(s"getting user ${S.username}", xhr, onlyOnError = true))
-              val user = Try(Option(read[User](xhr.responseText))).getOrElse(None)
-              alert >> addMember(P, S, user)
-            }
-            .asCallback
-
     def render(P: Props, S: State): VdomElement =
       <.form(
         ^.className := "col-md-10",
@@ -133,13 +103,43 @@ object NewMemberForm {
           )
         )
       )
+
+    def addMember(P: Props, S: State, user: Option[User]): Callback =
+      (P.group, user) match {
+        case (Some(g), Some(u)) =>
+          RequestHelper.withConfirmation(
+            s"Are you sure you want to add ${S.username} to the group?",
+            Callback.lazily {
+              val newMembers = g.members.map(_ ++ Seq(Id(u.id)))
+              val newAdmins = if (S.isManager) g.admins.map(_ ++ Seq(Id(u.id))) else g.admins
+              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+              RequestHelper
+                .put(UpdateGroupRoute(P.groupId), write(updatedGroup))
+                .onComplete { xhr =>
+                  val alert =
+                    P.setNotification(
+                      RequestHelper.toNotification(s"adding member ${S.username}", xhr))
+                  alert >> P.refreshMembers()
+                }
+                .asCallback
+            }
+          )
+        case _ => Callback.empty
+      }
+
+    def lookupUser(e: ReactEventFromInput, P: Props, S: State): Callback =
+      if (!e.target.checkValidity()) e.preventDefaultCB
+      else
+        e.preventDefaultCB >>
+          RequestHelper
+            .get(LookupUserRoute(S.username))
+            .onComplete { xhr =>
+              val alert = P.setNotification(
+                RequestHelper
+                  .toNotification(s"getting user ${S.username}", xhr, onlyOnError = true))
+              val user = Try(Option(read[User](xhr.responseText))).getOrElse(None)
+              alert >> addMember(P, S, user)
+            }
+            .asCallback
   }
-
-  private val component = ScalaComponent
-    .builder[Props]("NewGroupMemberForm")
-    .initialState(State())
-    .renderBackend[Backend]
-    .build
-
-  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
 }

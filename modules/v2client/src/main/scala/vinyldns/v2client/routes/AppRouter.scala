@@ -19,7 +19,7 @@ package vinyldns.v2client.routes
 import japgolly.scalajs.react.extra.router.{Resolution, RouterConfigDsl, RouterCtl, _}
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
-import vinyldns.v2client.components.{LeftNav, TopNav}
+import vinyldns.v2client.components.{Breadcrumb, LeftNav, TopNav}
 import vinyldns.v2client.pages.extras.NotFoundPage
 import vinyldns.v2client.pages.group.GroupViewPage
 import vinyldns.v2client.pages.grouplist.GroupListPage
@@ -63,7 +63,7 @@ object AppRouter {
     LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage)
   )
 
-  private def layout(c: RouterCtl[Page], r: Resolution[Page]): VdomTagOf[Div] =
+  private def layout(router: RouterCtl[Page], resolution: Resolution[Page]): VdomTagOf[Div] =
     <.div(
       ^.className := "nav-md",
       <.div(
@@ -71,8 +71,9 @@ object AppRouter {
         <.div(
           ^.className := "main_container",
           TopNav(),
-          LeftNav(LeftNav.Props(menu, r.page, c)),
-          r.render()
+          LeftNav(LeftNav.Props(menu, resolution.page, router)),
+          Breadcrumb(Breadcrumb.Props(resolution.page, router)),
+          resolution.render()
         ),
         <.footer(
           <.p(

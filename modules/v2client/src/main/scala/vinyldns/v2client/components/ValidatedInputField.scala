@@ -47,7 +47,41 @@ object ValidatedInputField {
       isValid: Boolean = true,
       errorMessage: Option[String] = None)
 
+  val component = ScalaComponent
+    .builder[Props]("Input")
+    .initialStateFromProps { P =>
+      State(P.initialValue)
+    }
+    .renderBackend[Backend]
+    .build
+
+  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
+
   class Backend(bs: BackendScope[Props, State]) {
+    def render(P: Props, S: State): VdomElement =
+      <.div(
+        ^.className := "form-group",
+        P.label.map { l =>
+          <.label(
+            ^.className := s"${P.labelClass} ${P.labelSize}",
+            l
+          )
+        },
+        <.div(
+          ^.className := P.inputSize,
+          <.input(
+            ^.className := generateInputClass(P, S),
+            ^.`type` := toInputType(P),
+            ^.value := S.value.getOrElse(""),
+            ^.placeholder := P.placeholder.getOrElse(""),
+            ^.onChange ==> (e => onChange(e, P)),
+            ^.required := Try(P.validations.get.required).getOrElse(false)
+          ),
+          helpText(P.helpText),
+          errors(S)
+        )
+      )
+
     def toInputType(P: Props): String =
       if (P.isNumber) "number"
       else if (P.isEmail) "email"
@@ -135,39 +169,5 @@ object ValidatedInputField {
         case Some(t) => <.div(^.className := "help-block", t)
         case None => <.div
       }
-
-    def render(P: Props, S: State): VdomElement =
-      <.div(
-        ^.className := "form-group",
-        P.label.map { l =>
-          <.label(
-            ^.className := s"${P.labelClass} ${P.labelSize}",
-            l
-          )
-        },
-        <.div(
-          ^.className := P.inputSize,
-          <.input(
-            ^.className := generateInputClass(P, S),
-            ^.`type` := toInputType(P),
-            ^.value := S.value.getOrElse(""),
-            ^.placeholder := P.placeholder.getOrElse(""),
-            ^.onChange ==> (e => onChange(e, P)),
-            ^.required := Try(P.validations.get.required).getOrElse(false)
-          ),
-          helpText(P.helpText),
-          errors(S)
-        )
-      )
   }
-
-  val component = ScalaComponent
-    .builder[Props]("Input")
-    .initialStateFromProps { P =>
-      State(P.initialValue)
-    }
-    .renderBackend[Backend]
-    .build
-
-  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
 }

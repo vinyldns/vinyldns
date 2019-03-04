@@ -27,16 +27,14 @@ import vinyldns.v2client.models.Notification
 object AlertBox {
   case class Props(notification: Notification, closeFunction: () => Callback)
 
+  private val component = ScalaComponent
+    .builder[Props]("Notify")
+    .renderBackend[Backend]
+    .build
+
+  def apply(props: Props): Unmounted[Props, Unit, Backend] = component(props)
+
   class Backend {
-    def notificationClass(isError: Boolean): String = {
-      val errorOrSuccess = if (isError) "alert-error" else "alert-success"
-      s"alert ui-pnotify-container ui-pnotify-shadow $errorOrSuccess"
-    }
-
-    def title(isError: Boolean): String =
-      if (isError) "Error"
-      else "Success"
-
     def render(props: Props): VdomElement =
       <.div(
         ^.className := "ui-pnotify ui-pnotify-fade-normal ui-pnotify-in ui-pnotify-fade-in ui-pnotify-move",
@@ -64,12 +62,14 @@ object AlertBox {
           )
         )
       )
+
+    def notificationClass(isError: Boolean): String = {
+      val errorOrSuccess = if (isError) "alert-error" else "alert-success"
+      s"alert ui-pnotify-container ui-pnotify-shadow $errorOrSuccess"
+    }
+
+    def title(isError: Boolean): String =
+      if (isError) "Error"
+      else "Success"
   }
-
-  private val component = ScalaComponent
-    .builder[Props]("Notify")
-    .renderBackend[Backend]
-    .build
-
-  def apply(props: Props): Unmounted[Props, Unit, Backend] = component(props)
 }

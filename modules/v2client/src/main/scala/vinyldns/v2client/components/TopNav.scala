@@ -27,28 +27,15 @@ import vinyldns.v2client.ReactApp.loggedInUser
 object TopNav {
   case class State(dropdownOpen: Boolean = false)
 
+  private val component = ScalaComponent
+    .builder[Unit]("TopNav")
+    .initialState(State())
+    .renderBackend[Backend]
+    .build
+
+  def apply(): Unmounted[Unit, State, Backend] = component()
+
   class Backend(bs: BackendScope[Unit, State]) {
-    def dropdown(state: State): VdomNode =
-      if (state.dropdownOpen)
-        <.ul(
-          GlobalStyle.styleSheet.overrideDisplay,
-          ^.className := "dropdown-menu dropdown-usermenu pull-right",
-          <.li(
-            <.a(
-              ^.className := "mb-control",
-              ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
-              "Logout"
-            )
-          )
-        )
-      else <.div()
-
-    def mouseEnter(e: ReactEventFromInput): Callback =
-      Callback(e.currentTarget.className = "active")
-
-    def mouseExit(e: ReactEventFromInput): Callback =
-      Callback(e.currentTarget.className = "")
-
     def render(S: State): VdomElement =
       <.div(
         ^.className := "top-nav",
@@ -74,13 +61,26 @@ object TopNav {
           )
         )
       )
+
+    def dropdown(state: State): VdomNode =
+      if (state.dropdownOpen)
+        <.ul(
+          GlobalStyle.styleSheet.overrideDisplay,
+          ^.className := "dropdown-menu dropdown-usermenu pull-right",
+          <.li(
+            <.a(
+              ^.className := "mb-control",
+              ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
+              "Logout"
+            )
+          )
+        )
+      else <.div()
+
+    def mouseEnter(e: ReactEventFromInput): Callback =
+      Callback(e.currentTarget.className = "active")
+
+    def mouseExit(e: ReactEventFromInput): Callback =
+      Callback(e.currentTarget.className = "")
   }
-
-  private val component = ScalaComponent
-    .builder[Unit]("TopNav")
-    .initialState(State())
-    .renderBackend[Backend]
-    .build
-
-  def apply(): Unmounted[Unit, State, Backend] = component()
 }

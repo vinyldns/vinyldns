@@ -32,27 +32,14 @@ object GroupsTable {
       refresh: () => Callback,
       router: RouterCtl[Page])
 
-  class Backend {
-    def deleteGroup(P: Props, group: Group): Callback =
-      RequestHelper.withConfirmation(
-        s"Are you sure you want to delete group ${group.name}?",
-        Callback.lazily {
-          RequestHelper
-            .delete(DeleteGroupRoute(group.id.getOrElse("")))
-            .onComplete { xhr =>
-              val alert =
-                P.setNotification(
-                  RequestHelper.toNotification(s"deleting group ${group.name}", xhr))
-              val refreshGroups =
-                if (!RequestHelper.isError(xhr))
-                  P.refresh()
-                else Callback(())
-              alert >> refreshGroups
-            }
-            .asCallback
-        }
-      )
+  private val listGroupsTable = ScalaComponent
+    .builder[Props](displayName = "ListGroupsTable")
+    .renderBackend[Backend]
+    .build
 
+  def apply(props: Props): Unmounted[Props, Unit, Backend] = listGroupsTable(props)
+
+  class Backend {
     def render(P: Props): VdomElement =
       <.div(
         P.groupsList match {
@@ -102,12 +89,25 @@ object GroupsTable {
           case None => TagMod.empty
         }
       )
+
+    def deleteGroup(P: Props, group: Group): Callback =
+      RequestHelper.withConfirmation(
+        s"Are you sure you want to delete group ${group.name}?",
+        Callback.lazily {
+          RequestHelper
+            .delete(DeleteGroupRoute(group.id.getOrElse("")))
+            .onComplete { xhr =>
+              val alert =
+                P.setNotification(
+                  RequestHelper.toNotification(s"deleting group ${group.name}", xhr))
+              val refreshGroups =
+                if (!RequestHelper.isError(xhr))
+                  P.refresh()
+                else Callback.empty
+              alert >> refreshGroups
+            }
+            .asCallback
+        }
+      )
   }
-
-  private val listGroupsTable = ScalaComponent
-    .builder[Props](displayName = "ListGroupsTable")
-    .renderBackend[Backend]
-    .build
-
-  def apply(props: Props): Unmounted[Props, Unit, Backend] = listGroupsTable(props)
 }

@@ -28,41 +28,7 @@ object LeftNav {
   case class NavItem(name: String, faClassName: String, page: Page)
   case class Props(menus: List[NavItem], selectedPage: Page, router: RouterCtl[Page])
 
-  def activeClass(isActive: Boolean): String =
-    if (isActive) "active"
-    else ""
-
-  def toSubMenu(P: Props, parent: Page): TagMod =
-    (P.selectedPage, parent) match {
-      case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
-        <.ul(
-          GlobalStyle.styleSheet.overrideDisplay,
-          ^.className := "nav child_menu",
-          <.li(
-            ^.className := "active",
-            <.a(
-              <.i(^.className := "fa fa-eye"),
-              groupView.id,
-              P.router.setOnClick(P.selectedPage)
-            )
-          )
-        )
-      case _ => TagMod.empty
-    }
-
-  def isActive(P: Props, target: Page): Boolean =
-    (P.selectedPage, target) match {
-      case _ if target.getClass == P.selectedPage.getClass => true
-      case (_: ToGroupViewPage, _: ToGroupListPage.type) => true
-      case _ => false
-    }
-
-  def mouseEnter(e: ReactEventFromInput): Callback =
-    Callback(e.currentTarget.className = "active")
-
-  def mouseExit(e: ReactEventFromInput, isActive: Boolean): Callback =
-    if (!isActive) Callback(e.currentTarget.className = "")
-    else Callback(())
+  def apply(props: Props): Unmounted[Props, Unit, Unit] = component(props)
 
   private val component = ScalaComponent
     .builder[Props]("LeftNav")
@@ -125,6 +91,39 @@ object LeftNav {
     }
     .build
 
-  def apply(props: Props): Unmounted[Props, Unit, Unit] = component(props)
+  def activeClass(isActive: Boolean): String =
+    if (isActive) "active"
+    else ""
 
+  def toSubMenu(P: Props, parent: Page): TagMod =
+    (P.selectedPage, parent) match {
+      case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
+        <.ul(
+          GlobalStyle.styleSheet.overrideDisplay,
+          ^.className := "nav child_menu",
+          <.li(
+            ^.className := "active",
+            <.a(
+              <.i(^.className := "fa fa-eye"),
+              groupView.id,
+              P.router.setOnClick(P.selectedPage)
+            )
+          )
+        )
+      case _ => TagMod.empty
+    }
+
+  def isActive(P: Props, target: Page): Boolean =
+    (P.selectedPage, target) match {
+      case _ if target.getClass == P.selectedPage.getClass => true
+      case (_: ToGroupViewPage, _: ToGroupListPage.type) => true
+      case _ => false
+    }
+
+  def mouseEnter(e: ReactEventFromInput): Callback =
+    Callback(e.currentTarget.className = "active")
+
+  def mouseExit(e: ReactEventFromInput, isActive: Boolean): Callback =
+    if (!isActive) Callback(e.currentTarget.className = "")
+    else Callback.empty
 }

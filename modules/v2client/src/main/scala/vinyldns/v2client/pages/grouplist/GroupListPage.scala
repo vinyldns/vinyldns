@@ -38,43 +38,17 @@ object GroupListPage extends PropsFromAppRouter {
       showCreateGroup: Boolean = false,
       notification: Option[Notification] = None)
 
+  private val component = ScalaComponent
+    .builder[Props]("GroupPage")
+    .initialState(State())
+    .renderBackend[Backend]
+    .componentWillMount(e => e.backend.listGroups)
+    .build
+
+  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, State, Backend] =
+    component(Props(page, router))
+
   class Backend(bs: BackendScope[Props, State]) {
-    def clearNotification: Callback =
-      bs.modState(_.copy(notification = None))
-
-    def setNotification(notification: Option[Notification]): Callback =
-      notification match {
-        case Some(n) if !n.isError =>
-          bs.modState(_.copy(notification = notification)) >>
-            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
-        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
-        case None => Callback(())
-      }
-
-    def listGroups: Callback =
-      RequestHelper
-        .get(ListGroupsRoute)
-        .onComplete { xhr =>
-          val alert =
-            setNotification(RequestHelper.toNotification("list groups", xhr, onlyOnError = true))
-          val groupsList = ListGroupsRoute.parse(xhr)
-          alert >> bs.modState(_.copy(groupsList = groupsList))
-        }
-        .asCallback
-
-    def createGroupModal(isVisible: Boolean): TagMod =
-      if (isVisible)
-        CreateGroupModal(
-          CreateGroupModal
-            .Props(setNotification, () => makeCreateFormInvisible, () => listGroups))
-      else TagMod.empty
-
-    def makeCreateFormVisible: Callback =
-      bs.modState(_.copy(showCreateGroup = true))
-
-    def makeCreateFormInvisible: Callback =
-      bs.modState(_.copy(showCreateGroup = false))
-
     def render(P: Props, S: State): VdomElement =
       <.div(
         GlobalStyle.styleSheet.height100,
@@ -126,15 +100,41 @@ object GroupListPage extends PropsFromAppRouter {
         ),
         createGroupModal(S.showCreateGroup)
       )
+
+    def clearNotification: Callback =
+      bs.modState(_.copy(notification = None))
+
+    def setNotification(notification: Option[Notification]): Callback =
+      notification match {
+        case Some(n) if !n.isError =>
+          bs.modState(_.copy(notification = notification)) >>
+            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
+        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
+        case None => Callback.empty
+      }
+
+    def listGroups: Callback =
+      RequestHelper
+        .get(ListGroupsRoute)
+        .onComplete { xhr =>
+          val alert =
+            setNotification(RequestHelper.toNotification("list groups", xhr, onlyOnError = true))
+          val groupsList = ListGroupsRoute.parse(xhr)
+          alert >> bs.modState(_.copy(groupsList = groupsList))
+        }
+        .asCallback
+
+    def createGroupModal(isVisible: Boolean): TagMod =
+      if (isVisible)
+        CreateGroupModal(
+          CreateGroupModal
+            .Props(setNotification, () => makeCreateFormInvisible, () => listGroups))
+      else TagMod.empty
+
+    def makeCreateFormVisible: Callback =
+      bs.modState(_.copy(showCreateGroup = true))
+
+    def makeCreateFormInvisible: Callback =
+      bs.modState(_.copy(showCreateGroup = false))
   }
-
-  private val component = ScalaComponent
-    .builder[Props]("GroupPage")
-    .initialState(State())
-    .renderBackend[Backend]
-    .componentWillMount(e => e.backend.listGroups)
-    .build
-
-  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, State, Backend] =
-    component(Props(page, router))
 }
