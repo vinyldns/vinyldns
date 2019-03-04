@@ -122,7 +122,7 @@ trait DnsJsonProtocol extends JsonValidation {
       ).mapN(FullZoneConnection.apply)
 
       connection.recoverWith {
-        name.map(NamedZoneConnection)
+        case _ => name.map(NamedZoneConnection)
       }
     }
   }

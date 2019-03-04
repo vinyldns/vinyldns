@@ -34,7 +34,6 @@ import scala.util.Try
 trait ProtobufConversions {
 
   val protoLogger: Logger = LoggerFactory.getLogger("vinyldns.core.protobuf.ProtobufConversions")
-  val zoneConnectionNoneHolder: String = "default"
 
   def fromPB(rule: VinylDNSProto.ACLRule): ACLRule =
     ACLRule(
@@ -117,16 +116,7 @@ trait ProtobufConversions {
   }
 
   def fromPB(zc: VinylDNSProto.ZoneConnection): ZoneConnection =
-    if (zc.getKeyName == zoneConnectionNoneHolder) {
-      NamedZoneConnection(zc.getName)
-    } else {
-      FullZoneConnection(
-        zc.getName,
-        zc.getKeyName,
-        zc.getKey,
-        zc.getPrimaryServer
-      )
-    }
+    ZoneConnection(zc.getName, zc.getKeyName, zc.getKey, zc.getPrimaryServer)
 
   def fromPB(chg: VinylDNSProto.ZoneChange): ZoneChange =
     ZoneChange(
@@ -373,9 +363,9 @@ trait ProtobufConversions {
         VinylDNSProto.ZoneConnection
           .newBuilder()
           .setName(named.name)
-          .setKeyName(zoneConnectionNoneHolder)
-          .setKey(zoneConnectionNoneHolder)
-          .setPrimaryServer(zoneConnectionNoneHolder)
+          .setKeyName(ZoneConnection.NAMED_PLACEHOLDER)
+          .setKey(ZoneConnection.NAMED_PLACEHOLDER)
+          .setPrimaryServer(ZoneConnection.NAMED_PLACEHOLDER)
           .build()
     }
 

@@ -19,6 +19,7 @@ package vinyldns.api.domain.zone
 import cats.effect._
 import org.xbill.DNS
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.core.domain.record.RecordSetRepository
@@ -34,8 +35,9 @@ trait ZoneViewLoader {
 object DnsZoneViewLoader extends DnsConversions {
 
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
-    val conn =
-      ZoneConnectionHelper.getTransferConnection(zone.transferConnection).decrypted(Crypto.instance)
+    val conn = ZoneConnectionValidator
+      .getConnection(zone.transferConnection, VinylDNSConfig.defaultTransferConnection)
+      .decrypted(Crypto.instance)
     val TSIGKey = new TSIG(conn.keyName, conn.key)
     val parts = conn.primaryServer.trim().split(':')
     val (hostName, port) =

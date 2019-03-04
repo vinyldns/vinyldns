@@ -137,6 +137,15 @@ trait ZoneConnection {
   def decrypted(crypto: CryptoAlgebra): ZoneConnection
 }
 
+object ZoneConnection {
+  val NAMED_PLACEHOLDER: String = "named"
+  def apply(name: String, keyName: String, key: String, primaryServer: String): ZoneConnection =
+    (name, keyName, key, primaryServer) match {
+      case (n, NAMED_PLACEHOLDER, NAMED_PLACEHOLDER, NAMED_PLACEHOLDER) => NamedZoneConnection(n)
+      case (n, kn, k, p) => FullZoneConnection(n, kn, k, p)
+    }
+}
+
 case class FullZoneConnection(name: String, keyName: String, key: String, primaryServer: String)
     extends ZoneConnection {
 

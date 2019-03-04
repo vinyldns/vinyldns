@@ -1,5 +1,6 @@
 .DS_Store
 .vagrant
+modules/portal/conf/generated.keystore
 target
 logs
 project/project
