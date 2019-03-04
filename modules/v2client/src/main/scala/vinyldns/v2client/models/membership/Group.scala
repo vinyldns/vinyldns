@@ -16,7 +16,6 @@
 
 package vinyldns.v2client.models.membership
 
-import japgolly.scalajs.react.extra.Reusability
 import upickle.default.{macroRW, ReadWriter => RW}
 import upickle.default._
 import vinyldns.v2client.models.Id
@@ -32,7 +31,6 @@ case class Group(
 
 object Group {
   implicit val rw: RW[Group] = macroRW
-  implicit val groupReuse: Reusability[Group] = Reusability.derive[Group]
 
   // uPickle by default treats empty options as empty arrays, this has it use None
   implicit def OptionWriter[T: Writer]: Writer[Option[T]] =

@@ -16,7 +16,6 @@
 
 package vinyldns.v2client.models
 
-import japgolly.scalajs.react.extra.Reusability
 import upickle.default.{macroRW, ReadWriter => RW}
 
 // this is because sometimes requests want a {id: String} json object
@@ -24,6 +23,4 @@ case class Id(id: String)
 
 object Id {
   implicit val rw: RW[Id] = macroRW
-  implicit val idReuse: Reusability[Id] = Reusability.derive[Id]
-  implicit val idSeqReuse: Reusability[Seq[Id]] = Reusability.byIterator[Seq, Id](idReuse)
 }
