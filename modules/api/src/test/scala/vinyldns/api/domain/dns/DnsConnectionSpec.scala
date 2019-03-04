@@ -32,7 +32,7 @@ import vinyldns.api.domain.dns.DnsProtocol._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{FullZoneConnection, Zone}
 
 import scala.collection.JavaConverters._
 
@@ -45,7 +45,7 @@ class DnsConnectionSpec
     with EitherMatchers {
 
   private val zoneConnection =
-    ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+    FullZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
   private val testZone = Zone("vinyldns", "test@test.com")
   private val testA = RecordSet(
     testZone.id,

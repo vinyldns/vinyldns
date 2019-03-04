@@ -30,13 +30,15 @@ class ZoneConnectionSpec extends WordSpec with Matchers with EitherMatchers {
 
   "ZoneConnection" should {
     "encrypt clear connections" in {
-      val test = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+      val test =
+        FullZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
 
       test.encrypted(testCrypto).key shouldBe "encrypted!"
     }
 
     "decrypt connections" in {
-      val test = ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+      val test =
+        FullZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
       val decrypted = test.decrypted(testCrypto)
 
       decrypted.key shouldBe "decrypted!"

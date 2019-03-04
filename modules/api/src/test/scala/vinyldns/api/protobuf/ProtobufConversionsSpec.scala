@@ -34,7 +34,7 @@ class ProtobufConversionsSpec
     with ProtobufConversions
     with OptionValues {
 
-  private val zoneConnection = ZoneConnection("name", "keyName", "key", "server")
+  private val zoneConnection = FullZoneConnection("name", "keyName", "key", "server")
 
   private val zoneId = "test.zone.id"
 
@@ -242,10 +242,18 @@ class ProtobufConversionsSpec
     if (pb.hasConnection) {
       val pbconn = pb.getConnection
       val conn = zn.connection.get
+
       pbconn.getName shouldBe conn.name
-      pbconn.getKey shouldBe conn.key
-      pbconn.getKeyName shouldBe conn.keyName
-      pbconn.getPrimaryServer shouldBe conn.primaryServer
+      conn match {
+        case full: FullZoneConnection =>
+          pbconn.getKey shouldBe full.key
+          pbconn.getKeyName shouldBe full.keyName
+          pbconn.getPrimaryServer shouldBe full.primaryServer
+        case _: NamedZoneConnection =>
+          pbconn.getKey shouldBe ZoneConnection.NAMED_PLACEHOLDER
+          pbconn.getKeyName shouldBe ZoneConnection.NAMED_PLACEHOLDER
+          pbconn.getPrimaryServer shouldBe ZoneConnection.NAMED_PLACEHOLDER
+      }
     } else {
       zn.connection should not be defined
     }
@@ -253,9 +261,16 @@ class ProtobufConversionsSpec
       val pbTransConn = pb.getTransferConnection
       val transConn = zn.transferConnection.get
       pbTransConn.getName shouldBe transConn.name
-      pbTransConn.getKey shouldBe transConn.key
-      pbTransConn.getKeyName shouldBe transConn.keyName
-      pbTransConn.getPrimaryServer shouldBe transConn.primaryServer
+      transConn match {
+        case full: FullZoneConnection =>
+          pbTransConn.getKey shouldBe full.key
+          pbTransConn.getKeyName shouldBe full.keyName
+          pbTransConn.getPrimaryServer shouldBe full.primaryServer
+        case _: NamedZoneConnection =>
+          pbTransConn.getKey shouldBe ZoneConnection.NAMED_PLACEHOLDER
+          pbTransConn.getKeyName shouldBe ZoneConnection.NAMED_PLACEHOLDER
+          pbTransConn.getPrimaryServer shouldBe ZoneConnection.NAMED_PLACEHOLDER
+      }
     } else {
       zn.transferConnection should not be defined
     }

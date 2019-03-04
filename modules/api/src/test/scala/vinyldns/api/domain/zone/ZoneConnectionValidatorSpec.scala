@@ -27,7 +27,7 @@ import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
 import vinyldns.api.ResultHelpers
 import cats.effect._
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{FullZoneConnection, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 
@@ -45,7 +45,7 @@ class ZoneConnectionValidatorSpec
   override protected def beforeEach(): Unit =
     reset(mockDnsConnection, mockZoneView)
 
-  private def testDnsConnection(conn: ZoneConnection) =
+  private def testDnsConnection(conn: FullZoneConnection) =
     if (conn.keyName == "error.") {
       throw new RuntimeException("main connection failure!")
     } else {
@@ -63,8 +63,8 @@ class ZoneConnectionValidatorSpec
       IO.pure(mockZoneView)
   }
 
-  private def testDefaultConnection: ZoneConnection =
-    ZoneConnection("name", "key-name", "key", "localhost:19001")
+  private def testDefaultConnection: FullZoneConnection =
+    FullZoneConnection("name", "key-name", "key", "localhost:19001")
 
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(
@@ -74,7 +74,7 @@ class ZoneConnectionValidatorSpec
 
   class TestConnectionValidator() extends ZoneConnectionValidator(testDefaultConnection) {
     override val opTimeout: FiniteDuration = 10.milliseconds
-    override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
+    override def dnsConnection(conn: FullZoneConnection): DnsConnection = testDnsConnection(conn)
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
   }
 

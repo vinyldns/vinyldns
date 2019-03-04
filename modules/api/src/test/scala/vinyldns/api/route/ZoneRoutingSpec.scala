@@ -596,13 +596,15 @@ class ZoneRoutingSpec
       post(connectionOk) ~> zoneRoute(okAuth) ~> check {
         status shouldBe Accepted
         val result = responseAs[ZoneChange]
-        val resultKey = result.zone.connection.get.key
-        val resultTCKey = result.zone.transferConnection.get.key
+        val resultKey = result.zone.connection.get.asInstanceOf[FullZoneConnection].key
+        val resultTCKey = result.zone.transferConnection.get.asInstanceOf[FullZoneConnection].key
 
         val decrypted = Crypto.decrypt(resultKey)
         val decryptedTC = Crypto.decrypt(resultTCKey)
-        decrypted shouldBe connectionOk.connection.get.key
-        decryptedTC shouldBe connectionOk.transferConnection.get.key
+        decrypted shouldBe connectionOk.connection.get.asInstanceOf[FullZoneConnection].key
+        decryptedTC shouldBe connectionOk.transferConnection.get
+          .asInstanceOf[FullZoneConnection]
+          .key
       }
     }
 
@@ -695,9 +697,6 @@ class ZoneRoutingSpec
           "Missing Zone.name",
           "Missing Zone.email",
           "Missing ZoneConnection.name",
-          "Missing ZoneConnection.keyName",
-          "Missing ZoneConnection.key",
-          "Missing ZoneConnection.primaryServer",
           "Missing Zone.adminGroupId"
         )
       }
@@ -962,9 +961,6 @@ class ZoneRoutingSpec
           "Missing Zone.name",
           "Missing Zone.email",
           "Missing ZoneConnection.name",
-          "Missing ZoneConnection.keyName",
-          "Missing ZoneConnection.key",
-          "Missing ZoneConnection.primaryServer",
           "Missing Zone.adminGroupId"
         )
       }
