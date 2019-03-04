@@ -21,7 +21,7 @@ import cats.data._
 import com.comcast.ip4s.IpAddress
 import com.comcast.ip4s.interop.cats.implicits._
 import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
-import vinyldns.core.domain.record.{NSData, RecordSet, RecordType}
+import vinyldns.core.domain.record.{NSData, RecordSet}
 
 import scala.util.matching.Regex
 
@@ -54,27 +54,6 @@ object ZoneRecordValidations {
       .map(isApprovedNameServer(approvedServerList, _))
 
     validations.sequence.map(_ => nsRecordSet)
-  }
-
-  /* name server must exist in the approved server list, and have a valid name */
-  def validNameServer(
-      approvedServerList: List[Regex],
-      rs: RecordSet): ValidatedNel[String, RecordSet] =
-    containsApprovedNameServers(approvedServerList, rs)
-
-  /* Performs the actual validations on the zone */
-  def validateDnsZone(
-      approvedServerList: List[Regex],
-      recordSets: List[RecordSet]): ValidatedNel[String, List[RecordSet]] = {
-    val validations: List[ValidatedNel[String, RecordSet]] = recordSets.map {
-      case ns if ns.typ == RecordType.NS =>
-        // This is awful, need to redo the core domain model
-        validNameServer(approvedServerList, ns)
-
-      case otherRecordType =>
-        otherRecordType.validNel[String]
-    }
-    validations.sequence
   }
 
   def isNotHighValueFqdn(
