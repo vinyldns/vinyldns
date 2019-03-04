@@ -705,27 +705,14 @@ class VinylDNSClient(object):
             retries -= 1
             time.sleep(RETRY_WAIT)
 
-        return response == 404
+        assert_that(response, is_(404))
 
+    #TODO Replace calls to this method with wait_until_zone_active and remove
     def wait_until_zone_exists(self, zone_change, **kwargs):
         """
-        Waits a period of time for the zone creation to complete.
-
-        :param zone_change: the create zone change for the zone that has been created.
-        :param kw: Additional parameters for the http request
-        :return: True when the zone creation is complete False if the timeout expires
+        Shim method to invoke wait_until_zone_active
         """
-        zone_id = zone_change[u'zone'][u'id']
-        retries = MAX_RETRIES
-        url = urljoin(self.index_url, u'/zones/{0}'.format(zone_id))
-        response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
-        while response != 200 and retries > 0:
-            url = urljoin(self.index_url, u'/zones/{0}'.format(zone_id))
-            response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, status=(200, 404), **kwargs)
-            retries -= 1
-            time.sleep(RETRY_WAIT)
-
-        return response == 200
+        self.wait_until_zone_active(zone_change[u'zone'][u'id'])
 
     def wait_until_zone_active(self, zone_id):
         """
@@ -772,8 +759,7 @@ class VinylDNSClient(object):
 
         # Wait until each zone is gone
         for zone_id in zone_ids:
-            success = self.wait_until_zone_deleted(zone_id)
-            assert_that(success, is_(True))
+            self.wait_until_zone_deleted(zone_id)
 
     def wait_until_recordset_change_status(self, rs_change, expected_status):
         """

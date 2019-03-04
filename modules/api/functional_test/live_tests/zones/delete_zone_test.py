@@ -35,7 +35,7 @@ def test_delete_zone_success(shared_zone_test_context):
         }
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result_zone['id'])
 
         client.delete_zone(result_zone['id'], status=202)
         client.wait_until_zone_deleted(result_zone['id'])
@@ -76,7 +76,7 @@ def test_delete_zone_twice(shared_zone_test_context):
         }
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result_zone['id'])
 
         client.delete_zone(result_zone['id'], status=202)
         client.wait_until_zone_deleted(result_zone['id'])
