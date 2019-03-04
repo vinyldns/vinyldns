@@ -7,15 +7,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon" />
+    <meta id="oidc" content="@setSessionUrl" />
     <!-- END META SECTION -->
 </head>
-<body>
-<a href="@{setSessionUrl}">Finishing login, if not redirected, click this link</a>
-<script language="javascript" type="text/javascript">
-          window.setTimeout(function() {
-            window.location = "@{setSessionUrl}";
-          }, 0);
-        </script>
+    <a href="@{setSessionUrl}">Finishing login, if not redirected, click this link</a>
+    <script src="/public/lib/oidc-finish.js"></script>
 </body>
 </html>
