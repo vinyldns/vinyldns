@@ -1,3 +1,6 @@
 window.setTimeout(function() {
-    window.location = document.getElementById("oidc").getAttribute("content");
+    var element = document.getElementById("oidc");
+    if (element != null) {
+        window.location = element.getAttribute("content");
+    }
 }, 0);
