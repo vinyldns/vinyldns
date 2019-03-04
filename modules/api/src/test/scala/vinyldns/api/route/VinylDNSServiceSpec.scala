@@ -54,7 +54,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest()
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include("Authorization='fake_auth'")
       actual should include("protocol=HTTP/1.1")
       actual should include("method=GET")
@@ -67,7 +67,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(path = "/zones/1234-56789-0000")
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       actual should include("/zones/")
       actual should include("<zone id>")
       (actual should not).include("1234")
@@ -76,7 +76,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(path = "/zones/1234/recordsets/5678-90")
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       actual should include("/zones/")
       actual should include("<zone id>")
       (actual should not).include("1234")
@@ -88,7 +88,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(path = "/zones/1234/recordsets/5678-90/changes/abcdef")
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       actual should include("/zones/")
       actual should include("<zone id>")
       (actual should not).include("1234")
@@ -103,7 +103,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(path = path)
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       actual should include(s"path=$path")
     }
     "hide the TSIG key in the request" in {
@@ -113,7 +113,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(body = body)
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(tsigKey)
     }
     "hide the TSIG key in the response" in {
@@ -124,7 +124,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest()
       val mockResponse = buildMockResponse(body = body)
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(tsigKey)
     }
     "hide multiple TSIGs key in the request and response" in {
@@ -135,7 +135,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest()
       val mockResponse = buildMockResponse(body = body)
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key1)
       (actual should not).include(key2)
       (actual should not).include(key3)
@@ -147,7 +147,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(body = reqBody)
       val mockResponse = buildMockResponse(body = resBody)
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key)
     }
     "handle spaces around the key value" in {
@@ -157,7 +157,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(body = reqBody)
       val mockResponse = buildMockResponse(body = resBody)
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key)
     }
     "handle multiple whitespace characters" in {
@@ -166,7 +166,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(body = reqBody)
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key)
     }
     "handle comma characters in the key" in {
@@ -175,7 +175,7 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(body = reqBody)
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key)
     }
     "hide the TSIG key when the request body contains newlines" in {
@@ -195,8 +195,13 @@ class VinylDNSServiceSpec
       val mockRequest = buildMockRequest(body = body)
       val mockResponse = buildMockResponse()
 
-      val actual = VinylDNSService.logMessage(mockRequest, mockResponse, 20)
+      val actual = VinylDNSService.logMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include("simulated")
+    }
+    "handle response not being provided" in {
+      val mockRequest = buildMockRequest()
+      val actual = VinylDNSService.logMessage(mockRequest, None, 20)
+      (actual should not).include("Response")
     }
   }
   ".buildLogEntry" should {
