@@ -24,7 +24,7 @@ import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.VdomElement
 import upickle.default.{read, write}
-import vinyldns.client.ajax.{LookupUserRoute, RequestHelper, UpdateGroupRoute}
+import vinyldns.client.ajax.{LookupUserRoute, Request, UpdateGroupRoute}
 import vinyldns.client.components.{InputFieldValidations, ValidatedInputField}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.{Id, Notification}
@@ -39,6 +39,7 @@ object NewMemberForm {
       isManager: Boolean = false
   )
   case class Props(
+      requestHelper: Request,
       groupId: String,
       group: Option[Group],
       setNotification: Option[Notification] => Callback,
@@ -107,18 +108,18 @@ object NewMemberForm {
     def addMember(P: Props, S: State, user: Option[User]): Callback =
       (P.group, user) match {
         case (Some(g), Some(u)) =>
-          RequestHelper.withConfirmation(
+          P.requestHelper.withConfirmation(
             s"Are you sure you want to add ${S.username} to the group?",
             Callback.lazily {
               val newMembers = g.members.map(_ ++ Seq(Id(u.id)))
               val newAdmins = if (S.isManager) g.admins.map(_ ++ Seq(Id(u.id))) else g.admins
               val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
-              RequestHelper
+              P.requestHelper
                 .put(UpdateGroupRoute(P.groupId), write(updatedGroup))
                 .onComplete { xhr =>
                   val alert =
                     P.setNotification(
-                      RequestHelper.toNotification(s"adding member ${S.username}", xhr))
+                      P.requestHelper.toNotification(s"adding member ${S.username}", xhr))
                   alert >> P.refreshMembers()
                 }
                 .asCallback
@@ -131,11 +132,11 @@ object NewMemberForm {
       if (!e.target.checkValidity()) e.preventDefaultCB
       else
         e.preventDefaultCB >>
-          RequestHelper
+          P.requestHelper
             .get(LookupUserRoute(S.username))
             .onComplete { xhr =>
               val alert = P.setNotification(
-                RequestHelper
+                P.requestHelper
                   .toNotification(s"getting user ${S.username}", xhr, onlyOnError = true))
               val user = Try(Option(read[User](xhr.responseText))).getOrElse(None)
               alert >> addMember(P, S, user)

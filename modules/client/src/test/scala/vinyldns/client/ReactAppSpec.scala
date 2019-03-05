@@ -18,17 +18,19 @@ package vinyldns.client
 
 import org.scalatest._
 import japgolly.scalajs.react.test._
-import vinyldns.client.pages.home.HomePage
-import vinyldns.client.routes.AppRouter.{Page, ToHomePage}
+import vinyldns.client.ajax.Request
+import vinyldns.client.routes.AppRouter.{Page, ToGroupListPage}
+import org.scalamock.scalatest.MockFactory
+import vinyldns.client.pages.grouplist.GroupListPage
 
-class ReactAppSpec extends WordSpec with Matchers {
+class ReactAppSpec extends WordSpec with Matchers with MockFactory {
   "test" should {
     "do something" in {
-      val displayName =
-        ReactTestUtils.withRenderedIntoDocument(HomePage(ToHomePage, MockRouterCtl[Page]())) { c =>
-          c.displayName
+        val requestHelper = mock[Request]
+        val router = MockRouterCtl[Page]()
+        ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, router, requestHelper)) { c =>
+          c.displayName shouldBe "GroupListPage"
         }
-      displayName shouldBe "HomePage"
     }
   }
 }

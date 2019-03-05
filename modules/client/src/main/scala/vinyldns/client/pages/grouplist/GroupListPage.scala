@@ -21,7 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.ajax.{ListGroupsRoute, RequestHelper}
+import vinyldns.client.ajax.{ListGroupsRoute, Request}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
@@ -42,11 +42,14 @@ object GroupListPage extends PropsFromAppRouter {
     .builder[Props]("GroupPage")
     .initialState(State())
     .renderBackend[Backend]
-    .componentWillMount(e => e.backend.listGroups)
+    .componentWillMount(e => e.backend.listGroups(e.props))
     .build
 
-  def apply(page: Page, router: RouterCtl[Page]): Unmounted[Props, State, Backend] =
-    component(Props(page, router))
+  def apply(
+      page: Page,
+      router: RouterCtl[Page],
+      requestHelper: Request): Unmounted[Props, State, Backend] =
+    component(Props(page, router, requestHelper))
 
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
@@ -84,7 +87,7 @@ object GroupListPage extends PropsFromAppRouter {
                       "  Create Group"),
                     <.button(
                       ^.className := "btn btn-default",
-                      ^.onClick --> listGroups,
+                      ^.onClick --> listGroups(P),
                       <.span(^.className := "fa fa-refresh"),
                       "  Refresh"),
                     <.div(^.className := "clearfix")
@@ -93,12 +96,17 @@ object GroupListPage extends PropsFromAppRouter {
                 <.div(
                   ^.className := "panel-body",
                   GroupsTable(
-                    GroupsTable.Props(S.groupsList, setNotification, () => listGroups, P.router)))
+                    GroupsTable.Props(
+                      P.requestHelper,
+                      S.groupsList,
+                      setNotification,
+                      () => listGroups(P),
+                      P.router)))
               )
             )
           )
         ),
-        createGroupModal(S.showCreateGroup)
+        createGroupModal(P, S.showCreateGroup)
       )
 
     def clearNotification: Callback =
@@ -113,22 +121,26 @@ object GroupListPage extends PropsFromAppRouter {
         case None => Callback.empty
       }
 
-    def listGroups: Callback =
-      RequestHelper
+    def listGroups(P: Props): Callback =
+      P.requestHelper
         .get(ListGroupsRoute)
         .onComplete { xhr =>
           val alert =
-            setNotification(RequestHelper.toNotification("list groups", xhr, onlyOnError = true))
+            setNotification(P.requestHelper.toNotification("list groups", xhr, onlyOnError = true))
           val groupsList = ListGroupsRoute.parse(xhr)
           alert >> bs.modState(_.copy(groupsList = groupsList))
         }
         .asCallback
 
-    def createGroupModal(isVisible: Boolean): TagMod =
+    def createGroupModal(P: Props, isVisible: Boolean): TagMod =
       if (isVisible)
         CreateGroupModal(
           CreateGroupModal
-            .Props(setNotification, () => makeCreateFormInvisible, () => listGroups))
+            .Props(
+              P.requestHelper,
+              setNotification,
+              () => makeCreateFormInvisible,
+              () => listGroups(P)))
       else TagMod.empty
 
     def makeCreateFormVisible: Callback =

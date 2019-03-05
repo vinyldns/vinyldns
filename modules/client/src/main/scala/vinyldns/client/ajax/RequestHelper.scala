@@ -28,7 +28,8 @@ import org.scalajs.dom
 
 import scala.util.Try
 
-object RequestHelper {
+// we do this so tests can use a mocked version of Request
+object RequestHelper extends Request {
   def get[T](route: Route[T]): Ajax.Step2 =
     Ajax
       .get(route.path)
@@ -52,6 +53,24 @@ object RequestHelper {
       .setRequestHeader("Csrf-Token", csrf)
       .send
 
+  def withConfirmation(message: String, cb: Callback): Callback =
+    CallbackTo[Boolean](dom.window.confirm(message)) >>= { confirmed =>
+      if (confirmed) cb
+      else Callback.empty
+    }
+}
+
+trait Request {
+  def get[T](route: Route[T]): Ajax.Step2
+
+  def post[T](route: Route[T], body: String): Ajax.Step2
+
+  def put[T](route: Route[T], body: String): Ajax.Step2
+
+  def delete[T](route: Route[T]): Ajax.Step2
+
+  def withConfirmation(message: String, cb: Callback): Callback
+
   def toNotification(
       action: String,
       xhr: XMLHttpRequest,
@@ -68,12 +87,6 @@ object RequestHelper {
     }
 
   def isError(xhr: XMLHttpRequest): Boolean = xhr.status >= 400
-
-  def withConfirmation(message: String, cb: Callback): Callback =
-    CallbackTo[Boolean](dom.window.confirm(message)) >>= { confirmed =>
-      if (confirmed) cb
-      else Callback.empty
-    }
 }
 
 sealed trait Route[T] {

@@ -6,7 +6,6 @@ import scoverage.ScoverageKeys.{coverageFailOnMinimum, coverageMinimum}
 import org.scalafmt.sbt.ScalafmtPlugin._
 import microsites._
 import ReleaseTransformations._
-import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 resolvers ++= additionalResolvers
 

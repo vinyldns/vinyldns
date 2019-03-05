@@ -25,10 +25,11 @@ import vinyldns.client.pages.group.GroupViewPage
 import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
+import vinyldns.client.ajax.{Request, RequestHelper}
 
 object AppRouter {
   trait PropsFromAppRouter {
-    case class Props(page: Page, router: RouterCtl[Page])
+    case class Props(page: Page, router: RouterCtl[Page], requestHelper: Request)
   }
 
   sealed trait Page
@@ -41,19 +42,19 @@ object AppRouter {
     import dsl._
     (
       staticRoute("", ToHomePage) ~>
-        renderR(ctl => HomePage(ToHomePage, ctl))
+        renderR(ctl => HomePage(ToHomePage, ctl, RequestHelper))
         |
           staticRoute("home", ToHomePage) ~>
-            renderR(ctl => HomePage(ToHomePage, ctl))
+            renderR(ctl => HomePage(ToHomePage, ctl, RequestHelper))
         |
           staticRoute("404", ToNotFound) ~>
             render(NotFoundPage())
         |
           staticRoute("groups", ToGroupListPage) ~>
-            renderR(ctl => GroupListPage(ToGroupListPage, ctl))
+            renderR(ctl => GroupListPage(ToGroupListPage, ctl, RequestHelper))
         |
           dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
-            (p => renderR(ctl => GroupViewPage(p, ctl)))
+            (p => renderR(ctl => GroupViewPage(p, ctl, RequestHelper)))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }

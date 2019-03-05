@@ -20,7 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
-import vinyldns.client.ajax.{PostGroupRoute, RequestHelper}
+import vinyldns.client.ajax.{PostGroupRoute, Request}
 import vinyldns.client.components.{InputFieldValidations, Modal, ValidatedInputField}
 import vinyldns.client.models.{Id, Notification}
 import vinyldns.client.models.membership.Group
@@ -29,6 +29,7 @@ import vinyldns.client.ReactApp.loggedInUser
 object CreateGroupModal {
   case class State(group: Group)
   case class Props(
+      requestHelper: Request,
       setNotification: Option[Notification] => Callback,
       close: () => Callback,
       refreshGroups: () => Callback)
@@ -103,7 +104,7 @@ object CreateGroupModal {
     def createGroup(e: ReactEventFromInput, P: Props, S: State): Callback =
       if (e.target.checkValidity()) {
         e.preventDefaultCB >>
-          RequestHelper.withConfirmation(
+          P.requestHelper.withConfirmation(
             s"Are you sure you want to create group ${S.group.name}?",
             Callback.lazily {
               val groupWithUserId =
@@ -111,12 +112,13 @@ object CreateGroupModal {
                   .copy(
                     members = Some(Seq(Id(loggedInUser.id))),
                     admins = Some(Seq(Id(loggedInUser.id))))
-              RequestHelper
+              P.requestHelper
                 .post(PostGroupRoute, write(groupWithUserId))
                 .onComplete { xhr =>
-                  val alert = P.setNotification(RequestHelper.toNotification("creating group", xhr))
+                  val alert =
+                    P.setNotification(P.requestHelper.toNotification("creating group", xhr))
                   val cleanUp =
-                    if (!RequestHelper.isError(xhr))
+                    if (!P.requestHelper.isError(xhr))
                       P.close() >> P.refreshGroups()
                     else Callback.empty
                   alert >> cleanUp
