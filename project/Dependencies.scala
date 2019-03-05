@@ -18,7 +18,7 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
-  lazy val scalaJSReactVersion = "1.3.1"
+  lazy val scalaJSReactVersion = "1.4.0"
   lazy val scalaCssVersion = "0.5.5"
   lazy val reactJsVersion = "16.5.1"
 
@@ -114,7 +114,7 @@ object Dependencies {
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0"
   )
 
-  lazy val portalv2JsDependencies = Def.setting(
+  lazy val clientDependencies = Def.setting(
     // scala js projects need the `%%%` to know to get the scala js version
     Seq(
       "org.scala-js" %%% "scalajs-dom" % "0.9.1",
@@ -127,7 +127,13 @@ object Dependencies {
     )
   )
 
-  lazy val portalv2NpmDependencies = Seq(
+  lazy val clientTestDependencies = Def.setting(
+    Seq(
+      "com.github.japgolly.scalajs-react" %%% "test" % scalaJSReactVersion % Test
+    )
+  )
+
+  lazy val clientNpmDependencies = Seq(
     "react" -> reactJsVersion,
     "react-dom" -> reactJsVersion
   )

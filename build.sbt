@@ -240,7 +240,7 @@ lazy val root = (project in file(".")).enablePlugins(AutomateHeaderPlugin)
       "./bin/remove-vinyl-containers.sh" !
     },
   )
-  .aggregate(core, api, portal, dynamodb, mysql, sqs, v2client)
+  .aggregate(core, api, portal, dynamodb, mysql, sqs, client)
 
 lazy val coreBuildSettings = Seq(
   name := "core",
@@ -351,7 +351,7 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     routesGenerator := InjectedRoutesGenerator,
     coverageExcludedPackages := "<empty>;views.html.*;router.*",
     javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
-    
+
     // ads the version when working locally with sbt run
     PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
 
@@ -382,19 +382,19 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
     // change the name of the output to portal.zip
     packageName in Universal := "portal",
 
-    scalaJSProjects := Seq(v2client),
+    scalaJSProjects := Seq(client),
 
     pipelineStages in Assets := Seq(scalaJSPipeline)
   )
   .dependsOn(dynamodb, mysql)
 
-lazy val v2client = (project in file("modules/v2client"))
+lazy val client = (project in file("modules/client"))
   .enablePlugins(AutomateHeaderPlugin, ScalaJSBundlerPlugin, ScalaJSPlugin)
   .settings(sharedSettings)
   .settings(
-    name := "v2client",
-    libraryDependencies ++= portalv2JsDependencies.value,
-    npmDependencies in Compile ++= portalv2NpmDependencies,
+    name := "client",
+    libraryDependencies ++= clientDependencies.value ++ commonTestDependencies.map(_ % "test"),
+    npmDependencies in Compile ++= clientNpmDependencies,
     webpackBundlingMode := BundlingMode.LibraryAndApplication(),
     unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
   )
