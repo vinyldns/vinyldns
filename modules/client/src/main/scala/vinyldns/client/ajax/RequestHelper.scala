@@ -19,7 +19,7 @@ package vinyldns.client.ajax
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.extra.Ajax
 import org.scalajs.dom.raw.XMLHttpRequest
-import vinyldns.client.ReactApp.csrf
+import vinyldns.client.ReactApp
 import vinyldns.client.models.Notification
 import vinyldns.client.models.user.User
 import upickle.default.read
@@ -30,9 +30,13 @@ import scala.util.Try
 
 // we do this so tests can use a mocked version of Request
 object RequestHelper extends Request {
+  val csrf: String = ReactApp.csrf.getOrElse("")
+  val loggedInUser: User = ReactApp.loggedInUser
+
   def get[T](route: Route[T]): Ajax.Step2 =
     Ajax
       .get(route.path)
+      .setRequestHeader("Csrf-Token", csrf)
       .send
 
   def post[T](route: Route[T], body: String): Ajax.Step2 =
@@ -61,6 +65,9 @@ object RequestHelper extends Request {
 }
 
 trait Request {
+  val csrf: String
+  val loggedInUser: User
+
   def get[T](route: Route[T]): Ajax.Step2
 
   def post[T](route: Route[T], body: String): Ajax.Step2

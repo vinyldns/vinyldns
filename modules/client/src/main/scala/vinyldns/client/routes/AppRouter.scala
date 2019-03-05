@@ -71,7 +71,7 @@ object AppRouter {
         ^.className := "container body",
         <.div(
           ^.className := "main_container",
-          TopNav(),
+          TopNav(RequestHelper),
           LeftNav(LeftNav.Props(menu, resolution.page, router)),
           Breadcrumb(Breadcrumb.Props(resolution.page, router)),
           resolution.render()
@@ -79,7 +79,10 @@ object AppRouter {
         <.footer(
           <.p(
             ^.className := "main-footer-text text-right",
-            s"VinylDNS v$version",
+            "VinylDNS",
+            if (version.isDefined)
+              s"version ${version.get}"
+            else TagMod.empty,
             <.br,
             <.a(
               ^.href := "https://github.com/vinyldns",

@@ -21,22 +21,24 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.BaseUrl
 import japgolly.scalajs.react.vdom.html_<^._
+import vinyldns.client.ajax.Request
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.ReactApp.loggedInUser
 
 object TopNav {
   case class State(dropdownOpen: Boolean = false)
+  case class Props(requestHelper: Request)
 
   private val component = ScalaComponent
-    .builder[Unit]("TopNav")
+    .builder[Props]("TopNav")
     .initialState(State())
     .renderBackend[Backend]
     .build
 
-  def apply(): Unmounted[Unit, State, Backend] = component()
+  def apply(requestHelper: Request): Unmounted[Props, State, Backend] =
+    component(Props(requestHelper))
 
-  class Backend(bs: BackendScope[Unit, State]) {
-    def render(S: State): VdomElement =
+  class Backend(bs: BackendScope[Props, State]) {
+    def render(P: Props, S: State): VdomElement =
       <.div(
         ^.className := "top-nav",
         <.div(
@@ -52,7 +54,7 @@ object TopNav {
                   ^.className := "user-profile dropdown-toggle",
                   ^.onClick --> bs.modState(_.copy(dropdownOpen = !S.dropdownOpen)),
                   <.span(^.className := "fa fa-user"),
-                  s"  ${loggedInUser.userName}  ",
+                  s"  ${P.requestHelper.loggedInUser.userName}  ",
                   <.span(^.className := "fa fa-angle-down"),
                 ),
                 dropdown(S)

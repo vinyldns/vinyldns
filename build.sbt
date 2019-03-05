@@ -99,7 +99,7 @@ lazy val apiAssemblySettings = Seq(
   assemblyJarName in assembly := "vinyldns.jar",
   test in assembly := {},
   mainClass in assembly := Some("vinyldns.api.Boot"),
-  mainClass in reStart := Some("vinyldns.api.Boot "),
+  mainClass in reStart := Some("vinyldns.api.Boot"),
   // there are some odd things from dnsjava including update.java and dig.java that we don't use
   assemblyMergeStrategy in assembly := {
     case "update.class"| "dig.class" => MergeStrategy.discard

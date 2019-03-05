@@ -32,10 +32,12 @@ import scala.util.Try
 @JSExportTopLevel("ReactApp")
 object ReactApp {
   final val SUCCESS_ALERT_TIMEOUT_MILLIS = 5000.0
-  final val csrf: String = Try(document.getElementById("csrf").getAttribute("content"))
-    .getOrElse("csrf-unset")
-  final val version: String = Try(document.getElementById("version").getAttribute("content"))
-    .getOrElse("version-unset")
+  final val csrf: Option[String] =
+    Try(Option[String](document.getElementById("csrf").getAttribute("content")))
+      .getOrElse(None)
+  final val version: Option[String] =
+    Try(Option[String](document.getElementById("version").getAttribute("content")))
+      .getOrElse(None)
   var loggedInUser: User = _
 
   @JSExport

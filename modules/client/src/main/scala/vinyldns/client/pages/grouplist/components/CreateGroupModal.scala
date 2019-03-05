@@ -24,7 +24,6 @@ import vinyldns.client.ajax.{PostGroupRoute, Request}
 import vinyldns.client.components.{InputFieldValidations, Modal, ValidatedInputField}
 import vinyldns.client.models.{Id, Notification}
 import vinyldns.client.models.membership.Group
-import vinyldns.client.ReactApp.loggedInUser
 
 object CreateGroupModal {
   case class State(group: Group)
@@ -110,8 +109,8 @@ object CreateGroupModal {
               val groupWithUserId =
                 S.group
                   .copy(
-                    members = Some(Seq(Id(loggedInUser.id))),
-                    admins = Some(Seq(Id(loggedInUser.id))))
+                    members = Some(Seq(Id(P.requestHelper.loggedInUser.id))),
+                    admins = Some(Seq(Id(P.requestHelper.loggedInUser.id))))
               P.requestHelper
                 .post(PostGroupRoute, write(groupWithUserId))
                 .onComplete { xhr =>
