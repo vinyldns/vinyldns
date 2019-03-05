@@ -38,13 +38,18 @@
                             @if(meta.sharedDisplayEnabled) {
                             <div class="form-group row">
                                 <div class="col-md-6">
-                                    <label class="h5" for="recordOwnerGroup">Record Owner Group</label>
+                                    <label class="h5" for="recordOwnerGroup">Record Owner Group
+                                        <span data-toggle="tooltip" data-placement="top" title="Record Owner Group is required if any records in the batch change are in shared zones and not already owned.">
+                                            <span class="fa fa-question-circle"></span>
+                                        </span>
+                                    </label>
                                     <select class="form-control" id="recordOwnerGroup" ng-model="newBatch.ownerGroupId">
                                         <option></option>
                                         <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
                                                 ng-selected="updateZoneInfo.adminGroupName == group.name">
                                             {{group.name}}</option>
                                     </select>
+                                    <p class="help-block"><a href="/groups">Or you can create a new group from the Groups page.</a></p>
                                 </div>
                             </div>
                             }
@@ -57,7 +62,11 @@
                                     <th>#</th>
                                     <th class="col-md-2">Change Type</th>
                                     <th>Record Type</th>
-                                    <th>Input Name</th>
+                                    <th>Input Name
+                                        <span data-toggle="tooltip" data-placement="top" title="Fully qualified domain name or IP address, depending on the record type.">
+                                            <span class="fa fa-question-circle"></span>
+                                        </span>
+                                    </th>
                                     <th class="col-md-1">TTL</th>
                                     <th>Record Data</th>
                                     <th></th>
