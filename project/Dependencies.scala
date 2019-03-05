@@ -12,7 +12,7 @@ object Dependencies {
   lazy val catsEffectV = "1.0.0"
   lazy val configV = "1.3.2"
   lazy val scalikejdbcV = "3.3.1"
-  lazy val scalaTestV = "3.0.4"
+  lazy val scalaTestV = "3.0.5"
   lazy val scodecV = "1.1.5"
   lazy val playV = "2.6.19"
   lazy val awsV = "1.11.423"
@@ -117,19 +117,22 @@ object Dependencies {
   lazy val clientDependencies = Def.setting(
     // scala js projects need the `%%%` to know to get the scala js version
     Seq(
-      "org.scala-js" %%% "scalajs-dom" % "0.9.1",
-      "com.github.japgolly.scalajs-react" %%% "core" % scalaJSReactVersion,
-      "com.github.japgolly.scalajs-react" %%% "extra" % scalaJSReactVersion,
-      "com.github.japgolly.scalacss" %%% "core" % scalaCssVersion,
-      "com.github.japgolly.scalacss" %%% "ext-react" % scalaCssVersion,
-      "com.lihaoyi" %%% "upickle" % "0.7.1",
-      "org.typelevel" %%% "cats-effect" % catsEffectV
+      "org.scala-js" %%% "scalajs-dom"                % "0.9.1",
+      "com.github.japgolly.scalajs-react"             %%% "core"              % scalaJSReactVersion,
+      "com.github.japgolly.scalajs-react"             %%% "extra"             % scalaJSReactVersion,
+      "com.github.japgolly.scalacss"                  %%% "core"              % scalaCssVersion,
+      "com.github.japgolly.scalacss"                  %%% "ext-react"         % scalaCssVersion,
+      "com.lihaoyi"                                   %%% "upickle"           % "0.7.1",
+      "org.typelevel"                                 %%% "cats-effect"       % catsEffectV
     )
   )
 
   lazy val clientTestDependencies = Def.setting(
     Seq(
-      "com.github.japgolly.scalajs-react" %%% "test" % scalaJSReactVersion % Test
+      "com.github.japgolly.scalajs-react"             %%% "test"              % scalaJSReactVersion,
+      "org.scalatest"                                 %%% "scalatest"         % scalaTestV,
+      "com.github.japgolly.test-state"                %%% "core"              % "2.3.0",
+      "com.github.japgolly.test-state"                %%% "ext-scalajs-react" % "2.3.0"
     )
   )
 

@@ -100,7 +100,7 @@ lazy val apiAssemblySettings = Seq(
   assemblyJarName in assembly := "vinyldns.jar",
   test in assembly := {},
   mainClass in assembly := Some("vinyldns.api.Boot"),
-  mainClass in reStart := Some("vinyldns.api.Boot"),
+  mainClass in reStart := Some("vinyldns.api.Boot "),
   // there are some odd things from dnsjava including update.java and dig.java that we don't use
   assemblyMergeStrategy in assembly := {
     case "update.class"| "dig.class" => MergeStrategy.discard
@@ -389,13 +389,15 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
   .dependsOn(dynamodb, mysql)
 
 lazy val client = (project in file("modules/client"))
-  .enablePlugins(AutomateHeaderPlugin, ScalaJSBundlerPlugin, ScalaJSPlugin)
+  .enablePlugins(AutomateHeaderPlugin, ScalaJSBundlerPlugin)
   .settings(sharedSettings)
+  .settings(testSettings)
   .settings(
     name := "client",
-    libraryDependencies ++= clientDependencies.value ++ commonTestDependencies.map(_ % "test"),
+    libraryDependencies ++= clientDependencies.value ++ clientTestDependencies.value.map(_ % "test"),
+    requireJsDomEnv in Test := true,
     npmDependencies in Compile ++= clientNpmDependencies,
-    webpackBundlingMode := BundlingMode.LibraryAndApplication(),
+    webpackBundlingMode := BundlingMode.LibraryOnly(),
     unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
   )
   .dependsOn(core)

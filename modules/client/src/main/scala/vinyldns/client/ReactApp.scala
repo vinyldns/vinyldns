@@ -27,12 +27,15 @@ import vinyldns.client.models.user.User
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
+import scala.util.Try
 
 @JSExportTopLevel("ReactApp")
 object ReactApp {
   final val SUCCESS_ALERT_TIMEOUT_MILLIS = 5000.0
-  final val csrf: String = document.getElementById("csrf").getAttribute("content")
-  final val version: String = document.getElementById("version").getAttribute("content")
+  final val csrf: String = Try(document.getElementById("csrf").getAttribute("content"))
+    .getOrElse("csrf-unset")
+  final val version: String = Try(document.getElementById("version").getAttribute("content"))
+    .getOrElse("version-unset")
   var loggedInUser: User = _
 
   @JSExport
