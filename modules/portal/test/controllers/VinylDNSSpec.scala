@@ -490,6 +490,17 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".oidcCallback" should {
+      "redirect to set session view" in new WithApplication(app) {
+        val response = vinyldnsPortal
+          .oidcCallback("id")
+          .apply(FakeRequest("GET", "id?query=q"))
+
+        status(response) mustEqual 200
+        contentAsString(response) must contain("/public/lib/oidc-finish.js")
+      }
+    }
+
     ".newGroup" should {
       "return the group description on create - status ok (200)" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
