@@ -24,7 +24,7 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.{RecordSet, RecordType}
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
 import vinyldns.core.health.HealthCheck._
 
 import scala.concurrent.duration._
@@ -33,15 +33,48 @@ trait ZoneConnectionValidatorAlgebra {
   def validateZoneConnections(zone: Zone): Result[Unit]
 }
 
-class ZoneConnectionValidator(defaultConnection: ZoneConnection)
+object ZoneConnectionValidator {
+
+  def getZoneConnection(
+      zone: Zone,
+      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection = {
+    val backendConnection = zone.backendId
+      .flatMap(getBackend(_, configuredDnsConnections))
+      .map(_.zoneConnection)
+
+    backendConnection
+      .orElse(zone.connection)
+      .getOrElse(configuredDnsConnections.defaultZoneConnection)
+  }
+
+  def getTransferConnection(
+      zone: Zone,
+      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection = {
+    val backendConnection = zone.backendId
+      .flatMap(getBackend(_, configuredDnsConnections))
+      .map(_.transferConnection)
+
+    backendConnection
+      .orElse(zone.transferConnection)
+      .getOrElse(configuredDnsConnections.defaultTransferConnection)
+  }
+
+  def getBackend(
+      id: String,
+      configuredDnsConnections: ConfiguredDnsConnections): Option[DnsBackend] =
+    configuredDnsConnections.dnsBackends.find(_.id == id)
+}
+
+class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
     extends ZoneConnectionValidatorAlgebra {
 
+  import ZoneConnectionValidator._
   import ZoneRecordValidations._
 
   val opTimeout: FiniteDuration = 6.seconds
 
   val (healthCheckAddress, healthCheckPort) =
-    DnsConnection.parseHostAndPort(defaultConnection.primaryServer)
+    DnsConnection.parseHostAndPort(connections.defaultZoneConnection.primaryServer)
 
   def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
@@ -64,7 +97,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
   }
 
   def getDnsConnection(zone: Zone): Result[DnsConnection] =
-    Either.catchNonFatal(dnsConnection(zone.connection.getOrElse(defaultConnection))).toResult
+    Either.catchNonFatal(dnsConnection(getZoneConnection(zone, connections))).toResult
 
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(

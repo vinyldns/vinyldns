@@ -42,7 +42,8 @@ final case class Zone(
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String = "system",
     latestSync: Option[DateTime] = None,
-    isTest: Boolean = false) {
+    isTest: Boolean = false,
+    backendId: Option[String] = None) {
   val isIPv4: Boolean = name.endsWith("in-addr.arpa.")
   val isIPv6: Boolean = name.endsWith("ip6.arpa.")
   val isReverse: Boolean = isIPv4 || isIPv6
@@ -138,3 +139,19 @@ case class ZoneConnection(name: String, keyName: String, key: String, primarySer
   def decrypted(crypto: CryptoAlgebra): ZoneConnection =
     copy(key = crypto.decrypt(key))
 }
+
+final case class DnsBackend(
+    id: String,
+    zoneConnection: ZoneConnection,
+    transferConnection: ZoneConnection) {
+
+  def encrypted(crypto: CryptoAlgebra): DnsBackend = copy(
+    zoneConnection = zoneConnection.encrypted(crypto),
+    transferConnection = transferConnection.encrypted(crypto)
+  )
+}
+
+class ConfiguredDnsConnections(
+    val defaultZoneConnection: ZoneConnection,
+    val defaultTransferConnection: ZoneConnection,
+    val dnsBackends: List[DnsBackend])

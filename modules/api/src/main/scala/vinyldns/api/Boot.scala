@@ -96,7 +96,7 @@ object Boot extends App {
           repositories.recordSetRepository,
           repositories.recordChangeRepository,
           repositories.batchChangeRepository,
-          VinylDNSConfig.defaultZoneConnection
+          VinylDNSConfig.configuredDnsConnections
         )
         .start
     } yield {
@@ -104,7 +104,7 @@ object Boot extends App {
       val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
       val membershipService = MembershipService(repositories)
       val connectionValidator =
-        new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection)
+        new ZoneConnectionValidator(VinylDNSConfig.configuredDnsConnections)
       val recordSetService = RecordSetService(repositories, messageQueue, AccessValidations)
       val zoneService = ZoneService(
         repositories,
