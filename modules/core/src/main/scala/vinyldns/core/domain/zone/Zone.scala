@@ -87,7 +87,9 @@ object Zone {
       shared = shared,
       acl = acl,
       adminGroupId = adminGroupId,
-      isTest = isTest)
+      isTest = isTest,
+      backendId = backendId
+    )
   }
 
   def apply(updateZoneInput: UpdateZoneInput, currentZone: Zone): Zone = {
@@ -100,7 +102,8 @@ object Zone {
       transferConnection = transferConnection,
       shared = shared,
       acl = acl,
-      adminGroupId = adminGroupId)
+      adminGroupId = adminGroupId,
+      backendId = backendId)
   }
 }
 
@@ -112,7 +115,8 @@ final case class CreateZoneInput(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
-    isTest: Boolean = false)
+    isTest: Boolean = false,
+    backendId: Option[String] = None)
 
 final case class UpdateZoneInput(
     id: String,
@@ -122,7 +126,8 @@ final case class UpdateZoneInput(
     transferConnection: Option[ZoneConnection] = None,
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
-    adminGroupId: String)
+    adminGroupId: String,
+    backendId: Option[String] = None)
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 

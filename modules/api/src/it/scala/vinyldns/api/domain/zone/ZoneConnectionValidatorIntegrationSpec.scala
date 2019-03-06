@@ -18,21 +18,24 @@ package vinyldns.api.domain.zone
 import cats.scalatest.EitherMatchers
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSConfig
+import vinyldns.core.domain.zone.ConfiguredDnsConnections
 import vinyldns.core.health.HealthCheck.HealthCheckError
 
 class ZoneConnectionValidatorIntegrationSpec extends WordSpec with Matchers with EitherMatchers {
   "ZoneConnectionValidatorIntegrationSpec" should {
     "have a valid health check if we can connect to DNS backend" in {
-      val check = new ZoneConnectionValidator(VinylDNSConfig.defaultZoneConnection)
+      val check = new ZoneConnectionValidator(VinylDNSConfig.configuredDnsConnections)
         .healthCheck(10000)
         .unsafeRunSync()
       check should beRight(())
     }
 
     "respond with a failure if health check fails" in {
+      val connections = VinylDNSConfig.configuredDnsConnections
+      val badConn = connections.defaultZoneConnection.copy(primaryServer = "localhost:1234")
+      val toTest = new ConfiguredDnsConnections(badConn, badConn, List())
       val result =
-        new ZoneConnectionValidator(
-          VinylDNSConfig.defaultZoneConnection.copy(primaryServer = "localhost:1234"))
+        new ZoneConnectionValidator(toTest)
           .healthCheck(10000)
           .unsafeRunSync()
       result should beLeft(HealthCheckError("Connection refused (Connection refused)"))

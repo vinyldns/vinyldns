@@ -27,7 +27,7 @@ import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
 import vinyldns.api.ResultHelpers
 import cats.effect._
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 
@@ -66,13 +66,16 @@ class ZoneConnectionValidatorSpec
   private def testDefaultConnection: ZoneConnection =
     ZoneConnection("name", "key-name", "key", "localhost:19001")
 
+  private def testConfiguredConnections: ConfiguredDnsConnections =
+    new ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List())
+
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(
       zone = zone,
       recordSets = recordSets.toList
     )
 
-  class TestConnectionValidator() extends ZoneConnectionValidator(testDefaultConnection) {
+  class TestConnectionValidator() extends ZoneConnectionValidator(testConfiguredConnections) {
     override val opTimeout: FiniteDuration = 10.milliseconds
     override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
