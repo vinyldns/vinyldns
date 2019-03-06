@@ -90,7 +90,8 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
         (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
-        (js \ "isTest").default[Boolean](false)
+        (js \ "isTest").default[Boolean](false),
+        (js \ "backendId").optional[String]
       ).mapN(CreateZoneInput.apply)
   }
 
@@ -106,7 +107,8 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "transferConnection").optional[ZoneConnection],
         (js \ "shared").default[Boolean](false),
         (js \ "acl").default[ZoneACL](ZoneACL()),
-        (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId")
+        (js \ "adminGroupId").required[String]("Missing Zone.adminGroupId"),
+        (js \ "backendId").optional[String]
       ).mapN(UpdateZoneInput.apply)
   }
 
