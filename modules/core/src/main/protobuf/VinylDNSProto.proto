@@ -38,6 +38,7 @@ message Zone {
   optional string adminGroupId = 12 [default = "system"];
   optional int64 latestSync = 13;
   optional bool isTest = 14 [default = false];
+  optional string backendId = 15;
 }
 
 message AData {
