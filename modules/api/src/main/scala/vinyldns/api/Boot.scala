@@ -69,6 +69,7 @@ object Boot extends App {
       loaderResponse <- DataStoreLoader
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
       repositories = loaderResponse.accessor
+      connections = VinylDNSConfig.configuredDnsConnections
       _ <- TestDataLoader
         .loadTestData(
           repositories.userRepository,
@@ -96,7 +97,7 @@ object Boot extends App {
           repositories.recordSetRepository,
           repositories.recordChangeRepository,
           repositories.batchChangeRepository,
-          VinylDNSConfig.configuredDnsConnections
+          connections
         )
         .start
     } yield {
@@ -104,7 +105,7 @@ object Boot extends App {
       val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
       val membershipService = MembershipService(repositories)
       val connectionValidator =
-        new ZoneConnectionValidator(VinylDNSConfig.configuredDnsConnections)
+        new ZoneConnectionValidator(connections)
       val recordSetService = RecordSetService(repositories, messageQueue, AccessValidations)
       val zoneService = ZoneService(
         repositories,

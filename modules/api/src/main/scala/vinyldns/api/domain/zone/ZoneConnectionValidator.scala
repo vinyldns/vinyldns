@@ -30,7 +30,10 @@ import vinyldns.core.health.HealthCheck._
 import scala.concurrent.duration._
 
 trait ZoneConnectionValidatorAlgebra {
+
   def validateZoneConnections(zone: Zone): Result[Unit]
+  def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit]
+
 }
 
 object ZoneConnectionValidator {
@@ -137,6 +140,11 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
         IO(socket.connect(new InetSocketAddress(healthCheckAddress, healthCheckPort), timeout)))
       .attempt
       .asHealthCheck
+
+  def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit] =
+    ensuring(InvalidRequest(s"Invalid backendId: [$backendId]; please check system configuration")) {
+      backendId.forall(id => connections.dnsBackends.exists(_.id == id))
+    }
 
   private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
 }
