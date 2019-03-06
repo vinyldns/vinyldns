@@ -56,7 +56,7 @@
                                 <tr>
                                     <th>#</th>
                                     <th class="col-md-2">Change Type</th>
-                                    <th class="col-md-1">Record Type</th>
+                                    <th>Record Type</th>
                                     <th>Input Name</th>
                                     <th class="col-md-1">TTL</th>
                                     <th>Record Data</th>
@@ -73,8 +73,10 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <select class="form-control" ng-model="change.type" >
-                                            <option value="A" selected>A</option>
+                                        <select class="form-control" ng-model="change.type">
+                                            <option value="A+PTR" selected>A+PTR</option>
+                                            <option>AAAA+PTR</option>
+                                            <option>A</option>
                                             <option>AAAA</option>
                                             <option>CNAME</option>
                                             <option>PTR</option>
@@ -101,10 +103,23 @@
                                     </td>
                                     <!--TTL based on change type-->
                                     <!--record data name based on record type and change type-->
-                                    <td ng-if="change.changeType=='DeleteRecordSet'">
+                                    <td ng-if="change.changeType=='DeleteRecordSet' && change.type!='A+PTR' && change.type!='AAAA+PTR'">
                                         <input class="form-control" placeholder="" disabled/>
                                     </td>
-
+                                    <td ng-if="change.type=='A+PTR'">
+                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" required="string" class="form-control" placeholder="e.g. 1.1.1.1" ipv4>
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.ipv4" class="batch-change-error-help">must be a valid IPv4 Address!</span>
+                                        </p>
+                                    </td>
+                                    <td ng-if="change.type=='AAAA+PTR'">
+                                        <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" required="string" class="form-control" placeholder="e.g. fd69:27cc:fe91::60" ipv6>
+                                        <p ng-show="createBatchChangeForm.$submitted">
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.required" class="batch-change-error-help">Record data is required!</span>
+                                            <span ng-show="createBatchChangeForm.record_address_{{$index}}.$error.ipv6" class="batch-change-error-help">must be a valid IPv6 Address!</span>
+                                        </p>
+                                    </td>
                                     <td ng-if="change.type=='A' && change.changeType=='Add'">
                                         <input name="record_address_{{$index}}" type="text" ng-model="change.record.address" ng-required="change.changeType=='Add'" class="form-control" placeholder="e.g. 1.1.1.1" ng-disabled="change.changeType=='DeleteRecordSet'" ipv4>
                                         <p ng-show="createBatchChangeForm.$submitted">
@@ -167,8 +182,8 @@
                                 </tr>
                                 </tbody>
                             </table>
-                            <button type="button" id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length == batchChangeLimit"><span class="fa fa-plus"></span> Add a Change</button>
-                            <span ng-if="newBatch.changes.length == batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</span>
+                            <button type="button" id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length >= batchChangeLimit"><span class="fa fa-plus"></span> Add a Change</button>
+                            <span ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</span>
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="formStatus=='pendingSubmit'" class="pull-right">
