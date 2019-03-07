@@ -22,11 +22,7 @@ import org.scalajs.dom.raw.XMLHttpRequest
 import vinyldns.client.ReactApp
 import vinyldns.client.models.Notification
 import vinyldns.client.models.user.User
-import upickle.default.read
-import vinyldns.client.models.membership.{Group, GroupList, MemberList}
 import org.scalajs.dom
-
-import scala.util.Try
 
 // we do this so tests can use a mocked version of Request
 object RequestHelper extends Request {
@@ -36,7 +32,7 @@ object RequestHelper extends Request {
   val PUT = "PUT"
   val DELETE = "DELETE"
 
-  def get[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback =
+  def get[T](route: RequestRoute[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback =
     Ajax
       .get(route.path)
       .setRequestHeader("Csrf-Token", csrf)
@@ -48,7 +44,7 @@ object RequestHelper extends Request {
       .asCallback
 
   private def putOrPost[T](
-      route: Route[T],
+      route: RequestRoute[T],
       body: String,
       onSuccess: OnSuccess[T],
       onFailure: OnFailure,
@@ -64,18 +60,18 @@ object RequestHelper extends Request {
       .asCallback
 
   def post[T](
-      route: Route[T],
+      route: RequestRoute[T],
       body: String,
       onSuccess: OnSuccess[T],
       onFailure: OnFailure): Callback = putOrPost(route, body, onSuccess, onFailure, POST)
 
   def put[T](
-      route: Route[T],
+      route: RequestRoute[T],
       body: String,
       onSuccess: OnSuccess[T],
       onFailure: OnFailure): Callback = putOrPost(route, body, onSuccess, onFailure, PUT)
 
-  def delete[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback =
+  def delete[T](route: RequestRoute[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback =
     Ajax(DELETE, route.path)
       .setRequestHeader("Csrf-Token", csrf)
       .send
@@ -90,27 +86,6 @@ object RequestHelper extends Request {
       if (confirmed) cb
       else Callback.empty
     }
-}
-
-trait Request {
-  val csrf: String
-  val loggedInUser: User
-  type OnSuccess[T] = (XMLHttpRequest, Option[T]) => Callback
-  type OnFailure = XMLHttpRequest => Callback
-
-  def get[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback
-
-  def post[T](
-      route: Route[T],
-      body: String,
-      onSuccess: OnSuccess[T],
-      onFailure: OnFailure): Callback
-
-  def put[T](route: Route[T], body: String, onSuccess: OnSuccess[T], onFailure: OnFailure): Callback
-
-  def delete[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback
-
-  def withConfirmation(message: String, cb: Callback): Callback
 
   def toNotification(
       action: String,
@@ -130,57 +105,4 @@ trait Request {
     }
 
   def isError(xhr: XMLHttpRequest): Boolean = xhr.status >= 400
-}
-
-sealed trait Route[T] {
-  def path: String
-  def parse(xhr: XMLHttpRequest): Option[T]
-}
-
-object CurrentUserRoute extends Route[User] {
-  def path: String = "/api/users/currentuser"
-  def parse(xhr: XMLHttpRequest): Option[User] =
-    Try(Option(read[User](xhr.responseText))).getOrElse(None)
-}
-
-object ListGroupsRoute extends Route[GroupList] {
-  def path: String = "/api/groups"
-  def parse(xhr: XMLHttpRequest): Option[GroupList] =
-    Try(Option(read[GroupList](xhr.responseText))).getOrElse(None)
-}
-
-object PostGroupRoute extends Route[Group] {
-  def path: String = "/api/groups"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
-}
-
-final case class GetGroupRoute(id: String) extends Route[Group] {
-  def path: String = s"/api/groups/$id"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
-}
-
-final case class DeleteGroupRoute(id: String) extends Route[Group] {
-  def path: String = s"/api/groups/$id"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
-}
-
-final case class UpdateGroupRoute(id: String) extends Route[Group] {
-  def path: String = s"/api/groups/$id"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
-}
-
-final case class GetGroupMembersRoute(id: String) extends Route[MemberList] {
-  def path: String = s"/api/groups/$id/members"
-  def parse(xhr: XMLHttpRequest): Option[MemberList] =
-    Try(Option(read[MemberList](xhr.responseText))).getOrElse(None)
-}
-
-final case class LookupUserRoute(username: String) extends Route[User] {
-  def path: String = s"/api/users/lookupuser/$username"
-  def parse(xhr: XMLHttpRequest): Option[User] =
-    Try(Option(read[User](xhr.responseText))).getOrElse(None)
 }
