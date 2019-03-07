@@ -21,6 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
+import org.scalajs.dom.raw.XMLHttpRequest
 import vinyldns.client.ajax.{GetGroupMembersRoute, GetGroupRoute, Request, UpdateGroupRoute}
 import vinyldns.client.models.membership.{Group, MemberList}
 import upickle.default.write
@@ -174,60 +175,54 @@ object GroupViewPage extends PropsFromAppRouter {
 
     def getGroup(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-      val route = GetGroupRoute(groupId)
-      P.requestHelper
-        .get(route)
-        .onComplete { xhr =>
-          val alert =
-            setNotification(
-              P.requestHelper.toNotification("getting group", xhr, onlyOnError = true))
-          val group = route.parse(xhr)
-          alert >> bs.modState(_.copy(group = group)) >> getMembers(P)
-        }
-        .asCallback
+      val onFailure = { xhr: XMLHttpRequest =>
+        setNotification(P.requestHelper.toNotification("getting group", xhr, onlyOnError = true))
+      }
+      val onSuccess = { (_: XMLHttpRequest, parsed: Option[Group]) =>
+        bs.modState(_.copy(group = parsed)) >> getMembers(P)
+      }
+
+      P.requestHelper.get(GetGroupRoute(groupId), onSuccess, onFailure)
     }
 
     def getMembers(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-      val route = GetGroupMembersRoute(groupId)
-      P.requestHelper
-        .get(route)
-        .onComplete { xhr =>
-          val alert =
-            setNotification(
-              P.requestHelper.toNotification(
-                s"getting group members for group id $groupId",
-                xhr,
-                onlyOnError = true))
-          val members = route.parse(xhr)
-          alert >> bs.modState(_.copy(memberList = members))
-        }
-        .asCallback
+      val onError = { xhr: XMLHttpRequest =>
+        setNotification(P.requestHelper
+          .toNotification(s"getting group members for group id $groupId", xhr, onlyOnError = true))
+      }
+      val onSuccess = { (_: XMLHttpRequest, parsed: Option[MemberList]) =>
+        bs.modState(_.copy(memberList = parsed))
+      }
+      P.requestHelper.get(GetGroupMembersRoute(groupId), onSuccess, onError)
     }
 
     def deleteMember(P: Props, S: State, user: User): Callback =
       P.requestHelper.withConfirmation(
         s"Are you sure you want to remove member ${user.userName}",
-        Callback.lazily {
-          S.group match {
-            case Some(g) =>
-              val newMembers = g.members.map(_.filter(id => id.id != user.id))
-              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
-              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
-              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-              val route = UpdateGroupRoute(groupId)
-              P.requestHelper
-                .put(route, write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    setNotification(
-                      P.requestHelper.toNotification(s"deleting member ${user.id}", xhr))
-                  alert >> getMembers(P)
+        Callback
+          .lazily {
+            S.group match {
+              case Some(g) =>
+                val newMembers = g.members.map(_.filter(id => id.id != user.id))
+                val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+                val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+                val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+
+                val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+                  setNotification(
+                    P.requestHelper.toNotification(s"deleting member ${user.id}", xhr)) >>
+                    getMembers(P)
                 }
-                .asCallback
-            case None => Callback.empty
+                val onFailure = { xhr: XMLHttpRequest =>
+                  setNotification(
+                    P.requestHelper.toNotification(s"deleting member ${user.id}", xhr))
+                }
+                P.requestHelper
+                  .put(UpdateGroupRoute(groupId), write(updatedGroup), onSuccess, onFailure)
+              case None => Callback.empty
+            }
           }
-        }
       )
 
     def addGroupAdmin(P: Props, S: State, user: User): Callback =
@@ -239,16 +234,17 @@ object GroupViewPage extends PropsFromAppRouter {
               val newAdmins = g.admins.map(_ ++ Seq(Id(user.id)))
               val updatedGroup = g.copy(admins = newAdmins)
               val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-              val route = UpdateGroupRoute(groupId)
+
+              val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+                setNotification(P.requestHelper.toNotification(s"adding manager ${user.id}", xhr)) >>
+                  getMembers(P)
+              }
+              val onFailure = { xhr: XMLHttpRequest =>
+                setNotification(P.requestHelper.toNotification(s"adding manager ${user.id}", xhr))
+              }
+
               P.requestHelper
-                .put(route, write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    setNotification(
-                      P.requestHelper.toNotification(s"adding manager ${user.id}", xhr))
-                  alert >> getMembers(P)
-                }
-                .asCallback
+                .put(UpdateGroupRoute(groupId), write(updatedGroup), onSuccess, onFailure)
             case None => Callback.empty
           }
         }
@@ -257,25 +253,29 @@ object GroupViewPage extends PropsFromAppRouter {
     def removeGroupAdmin(P: Props, S: State, user: User): Callback =
       P.requestHelper.withConfirmation(
         s"Are you sure you no longer want ${user.userName} to be a Group Manager?",
-        Callback.lazily {
-          S.group match {
-            case Some(g) =>
-              val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
-              val updatedGroup = g.copy(admins = newAdmins)
-              val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-              val route = UpdateGroupRoute(groupId)
-              P.requestHelper
-                .put(route, write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    setNotification(
-                      P.requestHelper.toNotification(s"removing manager ${user.id}", xhr))
-                  alert >> getMembers(P)
+        Callback
+          .lazily {
+            S.group match {
+              case Some(g) =>
+                val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+                val updatedGroup = g.copy(admins = newAdmins)
+                val groupId = P.page.asInstanceOf[ToGroupViewPage].id
+
+                val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+                  setNotification(
+                    P.requestHelper.toNotification(s"removing manager ${user.id}", xhr)) >>
+                    getMembers(P)
                 }
-                .asCallback
-            case None => Callback.empty
+                val onFailure = { xhr: XMLHttpRequest =>
+                  setNotification(
+                    P.requestHelper.toNotification(s"removing manager ${user.id}", xhr))
+                }
+
+                P.requestHelper
+                  .put(UpdateGroupRoute(groupId), write(updatedGroup), onSuccess, onFailure)
+              case None => Callback.empty
+            }
           }
-        }
       )
 
     def getDescriptionHeader(group: Group): TagMod =

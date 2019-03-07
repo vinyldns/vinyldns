@@ -19,6 +19,7 @@ package vinyldns.client.pages.grouplist.components
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom.raw.XMLHttpRequest
 import upickle.default.write
 import vinyldns.client.ajax.{PostGroupRoute, Request}
 import vinyldns.client.components.{InputFieldValidations, Modal, ValidatedInputField}
@@ -111,18 +112,15 @@ object CreateGroupModal {
                   .copy(
                     members = Some(Seq(Id(P.requestHelper.loggedInUser.id))),
                     admins = Some(Seq(Id(P.requestHelper.loggedInUser.id))))
-              P.requestHelper
-                .post(PostGroupRoute, write(groupWithUserId))
-                .onComplete { xhr =>
-                  val alert =
-                    P.setNotification(P.requestHelper.toNotification("creating group", xhr))
-                  val cleanUp =
-                    if (!P.requestHelper.isError(xhr))
-                      P.close() >> P.refreshGroups()
-                    else Callback.empty
-                  alert >> cleanUp
-                }
-                .asCallback
+              val onFailure = { xhr: XMLHttpRequest =>
+                P.setNotification(P.requestHelper.toNotification("creating group", xhr))
+              }
+              val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+                P.setNotification(P.requestHelper.toNotification("creating group", xhr)) >>
+                  P.close() >>
+                  P.refreshGroups()
+              }
+              P.requestHelper.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
             }
           )
       } else e.preventDefaultCB

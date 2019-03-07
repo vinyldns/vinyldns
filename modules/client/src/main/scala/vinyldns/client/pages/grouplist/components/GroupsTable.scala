@@ -20,6 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom.raw.XMLHttpRequest
 import vinyldns.client.ajax.{DeleteGroupRoute, Request}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.{Group, GroupList}
@@ -94,21 +95,19 @@ object GroupsTable {
     def deleteGroup(P: Props, group: Group): Callback =
       P.requestHelper.withConfirmation(
         s"Are you sure you want to delete group ${group.name}?",
-        Callback.lazily {
-          P.requestHelper
-            .delete(DeleteGroupRoute(group.id.getOrElse("")))
-            .onComplete { xhr =>
-              val alert =
-                P.setNotification(
-                  P.requestHelper.toNotification(s"deleting group ${group.name}", xhr))
-              val refreshGroups =
-                if (!P.requestHelper.isError(xhr))
-                  P.refresh()
-                else Callback.empty
-              alert >> refreshGroups
+        Callback
+          .lazily {
+            val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+              P.setNotification(
+                P.requestHelper.toNotification(s"deleting group ${group.name}", xhr)) >>
+                P.refresh()
             }
-            .asCallback
-        }
+            val onFailure = { xhr: XMLHttpRequest =>
+              P.setNotification(
+                P.requestHelper.toNotification(s"deleting group ${group.name}", xhr))
+            }
+            P.requestHelper.delete(DeleteGroupRoute(group.id.getOrElse("")), onSuccess, onFailure)
+          }
       )
   }
 }

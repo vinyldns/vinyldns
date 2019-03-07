@@ -32,30 +32,58 @@ import scala.util.Try
 object RequestHelper extends Request {
   val csrf: String = ReactApp.csrf.getOrElse("")
   val loggedInUser: User = ReactApp.loggedInUser
+  val POST = "POST"
+  val PUT = "PUT"
+  val DELETE = "DELETE"
 
-  def get[T](route: Route[T]): Ajax.Step2 =
+  def get[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback =
     Ajax
       .get(route.path)
       .setRequestHeader("Csrf-Token", csrf)
       .send
+      .onComplete { xhr =>
+        if (isError(xhr)) onFailure(xhr)
+        else onSuccess(xhr, route.parse(xhr))
+      }
+      .asCallback
 
-  def post[T](route: Route[T], body: String): Ajax.Step2 =
-    Ajax
-      .post(route.path)
+  private def putOrPost[T](
+      route: Route[T],
+      body: String,
+      onSuccess: OnSuccess[T],
+      onFailure: OnFailure,
+      method: String): Callback =
+    Ajax(method, route.path)
       .setRequestHeader("Csrf-Token", csrf)
       .setRequestContentTypeJson
       .send(body)
+      .onComplete { xhr =>
+        if (isError(xhr)) onFailure(xhr)
+        else onSuccess(xhr, route.parse(xhr))
+      }
+      .asCallback
 
-  def put[T](route: Route[T], body: String): Ajax.Step2 =
-    Ajax("PUT", route.path)
-      .setRequestHeader("Csrf-Token", csrf)
-      .setRequestContentTypeJson
-      .send(body)
+  def post[T](
+      route: Route[T],
+      body: String,
+      onSuccess: OnSuccess[T],
+      onFailure: OnFailure): Callback = putOrPost(route, body, onSuccess, onFailure, POST)
 
-  def delete[T](route: Route[T]): Ajax.Step2 =
-    Ajax("DELETE", route.path)
+  def put[T](
+      route: Route[T],
+      body: String,
+      onSuccess: OnSuccess[T],
+      onFailure: OnFailure): Callback = putOrPost(route, body, onSuccess, onFailure, PUT)
+
+  def delete[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback =
+    Ajax(DELETE, route.path)
       .setRequestHeader("Csrf-Token", csrf)
       .send
+      .onComplete { xhr =>
+        if (isError(xhr)) onFailure(xhr)
+        else onSuccess(xhr, route.parse(xhr))
+      }
+      .asCallback
 
   def withConfirmation(message: String, cb: Callback): Callback =
     CallbackTo[Boolean](dom.window.confirm(message)) >>= { confirmed =>
@@ -67,30 +95,38 @@ object RequestHelper extends Request {
 trait Request {
   val csrf: String
   val loggedInUser: User
+  type OnSuccess[T] = (XMLHttpRequest, Option[T]) => Callback
+  type OnFailure = XMLHttpRequest => Callback
 
-  def get[T](route: Route[T]): Ajax.Step2
+  def get[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback
 
-  def post[T](route: Route[T], body: String): Ajax.Step2
+  def post[T](
+      route: Route[T],
+      body: String,
+      onSuccess: OnSuccess[T],
+      onFailure: OnFailure): Callback
 
-  def put[T](route: Route[T], body: String): Ajax.Step2
+  def put[T](route: Route[T], body: String, onSuccess: OnSuccess[T], onFailure: OnFailure): Callback
 
-  def delete[T](route: Route[T]): Ajax.Step2
+  def delete[T](route: Route[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback
 
   def withConfirmation(message: String, cb: Callback): Callback
 
   def toNotification(
       action: String,
       xhr: XMLHttpRequest,
-      onlyOnError: Boolean = false): Option[Notification] =
-    if (isError(xhr)) {
-      val customMessage = Some(s"$action [${xhr.status}] [${xhr.statusText}]")
-      val responseMessage = Some(xhr.responseText)
-      Some(Notification(customMessage, responseMessage, isError = true))
-    } else if (!onlyOnError) {
-      val customMessage = Some(s"$action [${xhr.status}] [${xhr.statusText}]")
-      Some(Notification(customMessage))
-    } else {
-      None
+      onlyOnError: Boolean = false,
+      verbose: Boolean = false): Option[Notification] =
+    xhr match {
+      case error if isError(xhr) =>
+        val customMessage = Some(s"$action [${error.status}] [${error.statusText}]")
+        val responseMessage = Some(error.responseText)
+        Some(Notification(customMessage, responseMessage, isError = true))
+      case success if !onlyOnError =>
+        val customMessage = Some(s"$action [${success.status}] [${success.statusText}]")
+        val responseMessage = if (verbose) Some(success.responseText) else None
+        Some(Notification(customMessage, responseMessage))
+      case _ => None
     }
 
   def isError(xhr: XMLHttpRequest): Boolean = xhr.status >= 400

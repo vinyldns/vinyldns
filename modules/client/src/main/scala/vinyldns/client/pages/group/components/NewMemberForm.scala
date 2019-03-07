@@ -23,15 +23,14 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.VdomElement
-import upickle.default.{read, write}
+import org.scalajs.dom.raw.XMLHttpRequest
+import upickle.default.write
 import vinyldns.client.ajax.{LookupUserRoute, Request, UpdateGroupRoute}
 import vinyldns.client.components.{InputFieldValidations, ValidatedInputField}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.{Id, Notification}
 import vinyldns.client.models.membership.Group
 import vinyldns.client.models.user.User
-
-import scala.util.Try
 
 object NewMemberForm {
   case class State(
@@ -114,15 +113,20 @@ object NewMemberForm {
               val newMembers = g.members.map(_ ++ Seq(Id(u.id)))
               val newAdmins = if (S.isManager) g.admins.map(_ ++ Seq(Id(u.id))) else g.admins
               val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+
+              val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+                P.setNotification(
+                  P.requestHelper.toNotification(s"adding member ${S.username}", xhr)) >>
+                  P.refreshMembers()
+              }
+
+              val onError = { xhr: XMLHttpRequest =>
+                P.setNotification(
+                  P.requestHelper.toNotification(s"adding member ${S.username}", xhr))
+              }
+
               P.requestHelper
-                .put(UpdateGroupRoute(P.groupId), write(updatedGroup))
-                .onComplete { xhr =>
-                  val alert =
-                    P.setNotification(
-                      P.requestHelper.toNotification(s"adding member ${S.username}", xhr))
-                  alert >> P.refreshMembers()
-                }
-                .asCallback
+                .put(UpdateGroupRoute(P.groupId), write(updatedGroup), onSuccess, onError)
             }
           )
         case _ => Callback.empty
@@ -130,17 +134,16 @@ object NewMemberForm {
 
     def lookupUser(e: ReactEventFromInput, P: Props, S: State): Callback =
       if (!e.target.checkValidity()) e.preventDefaultCB
-      else
-        e.preventDefaultCB >>
-          P.requestHelper
-            .get(LookupUserRoute(S.username))
-            .onComplete { xhr =>
-              val alert = P.setNotification(
-                P.requestHelper
-                  .toNotification(s"getting user ${S.username}", xhr, onlyOnError = true))
-              val user = Try(Option(read[User](xhr.responseText))).getOrElse(None)
-              alert >> addMember(P, S, user)
-            }
-            .asCallback
+      else {
+        val onSuccess = { (_: XMLHttpRequest, response: Option[User]) =>
+          addMember(P, S, response)
+        }
+        val onFailure = { xhr: XMLHttpRequest =>
+          P.setNotification(
+            P.requestHelper
+              .toNotification(s"getting user ${S.username}", xhr, onlyOnError = true))
+        }
+        e.preventDefaultCB >> P.requestHelper.get(LookupUserRoute(S.username), onSuccess, onFailure)
+      }
   }
 }

@@ -21,6 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom.raw.XMLHttpRequest
 import vinyldns.client.ajax.{ListGroupsRoute, Request}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.GroupList
@@ -121,16 +122,15 @@ object GroupListPage extends PropsFromAppRouter {
         case None => Callback.empty
       }
 
-    def listGroups(P: Props): Callback =
-      P.requestHelper
-        .get(ListGroupsRoute)
-        .onComplete { xhr =>
-          val alert =
-            setNotification(P.requestHelper.toNotification("list groups", xhr, onlyOnError = true))
-          val groupsList = ListGroupsRoute.parse(xhr)
-          alert >> bs.modState(_.copy(groupsList = groupsList))
-        }
-        .asCallback
+    def listGroups(P: Props): Callback = {
+      val onSuccess = { (_: XMLHttpRequest, parsed: Option[GroupList]) =>
+        bs.modState(_.copy(groupsList = parsed))
+      }
+      val onFailure = { xhr: XMLHttpRequest =>
+        setNotification(P.requestHelper.toNotification("list groups", xhr, onlyOnError = true))
+      }
+      P.requestHelper.get(ListGroupsRoute, onSuccess, onFailure)
+    }
 
     def createGroupModal(P: Props, isVisible: Boolean): TagMod =
       if (isVisible)
