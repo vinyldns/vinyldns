@@ -21,8 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
-import org.scalajs.dom.raw.XMLHttpRequest
-import vinyldns.client.ajax.{GetGroupMembersRoute, GetGroupRoute, Request, UpdateGroupRoute}
+import vinyldns.client.http._
 import vinyldns.client.models.membership.{Group, MemberList}
 import upickle.default.write
 import vinyldns.client.ReactApp.SUCCESS_ALERT_TIMEOUT_MILLIS
@@ -50,11 +49,8 @@ object GroupViewPage extends PropsFromAppRouter {
     .componentWillMount(e => e.backend.getGroup(e.props))
     .build
 
-  def apply(
-      page: Page,
-      router: RouterCtl[Page],
-      requestHelper: Request): Unmounted[Props, State, Backend] =
-    component(Props(page, router, requestHelper))
+  def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, State, Backend] =
+    component(Props(page, router, http))
 
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomNode =
@@ -92,7 +88,7 @@ object GroupViewPage extends PropsFromAppRouter {
                         ^.className := "panel-heading",
                         NewMemberForm(
                           NewMemberForm.Props(
-                            P.requestHelper,
+                            P.http,
                             P.page.asInstanceOf[ToGroupViewPage].id,
                             S.group,
                             setNotification,
@@ -175,30 +171,34 @@ object GroupViewPage extends PropsFromAppRouter {
 
     def getGroup(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-      val onFailure = { xhr: XMLHttpRequest =>
-        setNotification(P.requestHelper.toNotification("getting group", xhr, onlyOnError = true))
+      val onFailure = { httpResponse: HttpResponse =>
+        setNotification(P.http.toNotification("getting group", httpResponse, onlyOnError = true))
       }
-      val onSuccess = { (_: XMLHttpRequest, parsed: Option[Group]) =>
+      val onSuccess = { (_: HttpResponse, parsed: Option[Group]) =>
         bs.modState(_.copy(group = parsed)) >> getMembers(P)
       }
 
-      P.requestHelper.get(GetGroupRoute(groupId), onSuccess, onFailure)
+      P.http.get(GetGroupRoute(groupId), onSuccess, onFailure)
     }
 
     def getMembers(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
-      val onError = { xhr: XMLHttpRequest =>
-        setNotification(P.requestHelper
-          .toNotification(s"getting group members for group id $groupId", xhr, onlyOnError = true))
+      val onError = { httpResponse: HttpResponse =>
+        setNotification(
+          P.http
+            .toNotification(
+              s"getting group members for group id $groupId",
+              httpResponse,
+              onlyOnError = true))
       }
-      val onSuccess = { (_: XMLHttpRequest, parsed: Option[MemberList]) =>
+      val onSuccess = { (_: HttpResponse, parsed: Option[MemberList]) =>
         bs.modState(_.copy(memberList = parsed))
       }
-      P.requestHelper.get(GetGroupMembersRoute(groupId), onSuccess, onError)
+      P.http.get(GetGroupMembersRoute(groupId), onSuccess, onError)
     }
 
     def deleteMember(P: Props, S: State, user: User): Callback =
-      P.requestHelper.withConfirmation(
+      P.http.withConfirmation(
         s"Are you sure you want to remove member ${user.userName}",
         Callback
           .lazily {
@@ -209,16 +209,16 @@ object GroupViewPage extends PropsFromAppRouter {
                 val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
                 val groupId = P.page.asInstanceOf[ToGroupViewPage].id
 
-                val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+                val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
                   setNotification(
-                    P.requestHelper.toNotification(s"deleting member ${user.id}", xhr)) >>
+                    P.http.toNotification(s"deleting member ${user.id}", httpResponse)) >>
                     getMembers(P)
                 }
-                val onFailure = { xhr: XMLHttpRequest =>
+                val onFailure = { httpResponse: HttpResponse =>
                   setNotification(
-                    P.requestHelper.toNotification(s"deleting member ${user.id}", xhr))
+                    P.http.toNotification(s"deleting member ${user.id}", httpResponse))
                 }
-                P.requestHelper
+                P.http
                   .put(UpdateGroupRoute(groupId), write(updatedGroup), onSuccess, onFailure)
               case None => Callback.empty
             }
@@ -226,7 +226,7 @@ object GroupViewPage extends PropsFromAppRouter {
       )
 
     def addGroupAdmin(P: Props, S: State, user: User): Callback =
-      P.requestHelper.withConfirmation(
+      P.http.withConfirmation(
         s"Are you sure you want to make ${user.userName} a Group Manager?",
         Callback.lazily {
           S.group match {
@@ -235,15 +235,15 @@ object GroupViewPage extends PropsFromAppRouter {
               val updatedGroup = g.copy(admins = newAdmins)
               val groupId = P.page.asInstanceOf[ToGroupViewPage].id
 
-              val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
-                setNotification(P.requestHelper.toNotification(s"adding manager ${user.id}", xhr)) >>
+              val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
+                setNotification(P.http.toNotification(s"adding manager ${user.id}", httpResponse)) >>
                   getMembers(P)
               }
-              val onFailure = { xhr: XMLHttpRequest =>
-                setNotification(P.requestHelper.toNotification(s"adding manager ${user.id}", xhr))
+              val onFailure = { httpResponse: HttpResponse =>
+                setNotification(P.http.toNotification(s"adding manager ${user.id}", httpResponse))
               }
 
-              P.requestHelper
+              P.http
                 .put(UpdateGroupRoute(groupId), write(updatedGroup), onSuccess, onFailure)
             case None => Callback.empty
           }
@@ -251,7 +251,7 @@ object GroupViewPage extends PropsFromAppRouter {
       )
 
     def removeGroupAdmin(P: Props, S: State, user: User): Callback =
-      P.requestHelper.withConfirmation(
+      P.http.withConfirmation(
         s"Are you sure you no longer want ${user.userName} to be a Group Manager?",
         Callback
           .lazily {
@@ -261,17 +261,17 @@ object GroupViewPage extends PropsFromAppRouter {
                 val updatedGroup = g.copy(admins = newAdmins)
                 val groupId = P.page.asInstanceOf[ToGroupViewPage].id
 
-                val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+                val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
                   setNotification(
-                    P.requestHelper.toNotification(s"removing manager ${user.id}", xhr)) >>
+                    P.http.toNotification(s"removing manager ${user.id}", httpResponse)) >>
                     getMembers(P)
                 }
-                val onFailure = { xhr: XMLHttpRequest =>
+                val onFailure = { httpResponse: HttpResponse =>
                   setNotification(
-                    P.requestHelper.toNotification(s"removing manager ${user.id}", xhr))
+                    P.http.toNotification(s"removing manager ${user.id}", httpResponse))
                 }
 
-                P.requestHelper
+                P.http
                   .put(UpdateGroupRoute(groupId), write(updatedGroup), onSuccess, onFailure)
               case None => Callback.empty
             }

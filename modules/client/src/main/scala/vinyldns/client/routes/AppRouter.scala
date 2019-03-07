@@ -25,11 +25,11 @@ import vinyldns.client.pages.group.GroupViewPage
 import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
-import vinyldns.client.ajax.{Request, RequestHelper}
+import vinyldns.client.http.{Http, HttpHelper}
 
 object AppRouter {
   trait PropsFromAppRouter {
-    case class Props(page: Page, router: RouterCtl[Page], requestHelper: Request)
+    case class Props(page: Page, router: RouterCtl[Page], http: Http)
   }
 
   sealed trait Page
@@ -42,19 +42,19 @@ object AppRouter {
     import dsl._
     (
       staticRoute("", ToHomePage) ~>
-        renderR(ctl => HomePage(ToHomePage, ctl, RequestHelper))
+        renderR(ctl => HomePage(ToHomePage, ctl, HttpHelper))
         |
           staticRoute("home", ToHomePage) ~>
-            renderR(ctl => HomePage(ToHomePage, ctl, RequestHelper))
+            renderR(ctl => HomePage(ToHomePage, ctl, HttpHelper))
         |
           staticRoute("404", ToNotFound) ~>
             render(NotFoundPage())
         |
           staticRoute("groups", ToGroupListPage) ~>
-            renderR(ctl => GroupListPage(ToGroupListPage, ctl, RequestHelper))
+            renderR(ctl => GroupListPage(ToGroupListPage, ctl, HttpHelper))
         |
           dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
-            (p => renderR(ctl => GroupViewPage(p, ctl, RequestHelper)))
+            (p => renderR(ctl => GroupViewPage(p, ctl, HttpHelper)))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }
@@ -71,7 +71,7 @@ object AppRouter {
         ^.className := "container body",
         <.div(
           ^.className := "main_container",
-          TopNav(RequestHelper),
+          TopNav(HttpHelper),
           LeftNav(LeftNav.Props(menu, resolution.page, router)),
           Breadcrumb(Breadcrumb.Props(resolution.page, router)),
           resolution.render()
@@ -80,9 +80,7 @@ object AppRouter {
           <.p(
             ^.className := "main-footer-text text-right",
             "VinylDNS",
-            if (version.isDefined)
-              s"version ${version.get}"
-            else TagMod.empty,
+            version.map(v => s" version $v"),
             <.br,
             <.a(
               ^.href := "https://github.com/vinyldns",

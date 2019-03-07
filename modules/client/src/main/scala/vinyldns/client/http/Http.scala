@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package vinyldns.client.ajax
+package vinyldns.client.http
 
 import japgolly.scalajs.react.Callback
-import org.scalajs.dom.raw.XMLHttpRequest
 import vinyldns.client.models.Notification
 import vinyldns.client.models.user.User
 
-trait Request {
+trait Http {
   val csrf: String
   val loggedInUser: User
-  type OnSuccess[T] = (XMLHttpRequest, Option[T]) => Callback
-  type OnFailure = XMLHttpRequest => Callback
+  type OnSuccess[T] = (HttpResponse, Option[T]) => Callback
+  type OnFailure = HttpResponse => Callback
 
   def get[T](route: RequestRoute[T], onSuccess: OnSuccess[T], onFailure: OnFailure): Callback
 
@@ -47,9 +46,9 @@ trait Request {
 
   def toNotification(
       action: String,
-      xhr: XMLHttpRequest,
+      httpResponse: HttpResponse,
       onlyOnError: Boolean = false,
       verbose: Boolean = false): Option[Notification]
 
-  def isError(xhr: XMLHttpRequest): Boolean
+  def isError(httpResponse: HttpResponse): Boolean
 }

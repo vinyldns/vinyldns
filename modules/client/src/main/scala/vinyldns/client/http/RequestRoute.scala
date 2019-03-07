@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package vinyldns.client.ajax
+package vinyldns.client.http
 
-import org.scalajs.dom.raw.XMLHttpRequest
 import upickle.default.read
 import vinyldns.client.models.membership.{Group, GroupList, MemberList}
 import vinyldns.client.models.user.User
@@ -25,53 +24,53 @@ import scala.util.Try
 
 sealed trait RequestRoute[T] {
   def path: String
-  def parse(xhr: XMLHttpRequest): Option[T]
+  def parse(httpResponse: HttpResponse): Option[T]
 }
 
 object CurrentUserRoute extends RequestRoute[User] {
   def path: String = "/api/users/currentuser"
-  def parse(xhr: XMLHttpRequest): Option[User] =
-    Try(Option(read[User](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[User] =
+    Try(Option(read[User](httpResponse.responseText))).getOrElse(None)
 }
 
 object ListGroupsRoute extends RequestRoute[GroupList] {
   def path: String = "/api/groups"
-  def parse(xhr: XMLHttpRequest): Option[GroupList] =
-    Try(Option(read[GroupList](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[GroupList] =
+    Try(Option(read[GroupList](httpResponse.responseText))).getOrElse(None)
 }
 
 object PostGroupRoute extends RequestRoute[Group] {
   def path: String = "/api/groups"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[Group] =
+    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class GetGroupRoute(id: String) extends RequestRoute[Group] {
   def path: String = s"/api/groups/$id"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[Group] =
+    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class DeleteGroupRoute(id: String) extends RequestRoute[Group] {
   def path: String = s"/api/groups/$id"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[Group] =
+    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class UpdateGroupRoute(id: String) extends RequestRoute[Group] {
   def path: String = s"/api/groups/$id"
-  def parse(xhr: XMLHttpRequest): Option[Group] =
-    Try(Option(read[Group](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[Group] =
+    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class GetGroupMembersRoute(id: String) extends RequestRoute[MemberList] {
   def path: String = s"/api/groups/$id/members"
-  def parse(xhr: XMLHttpRequest): Option[MemberList] =
-    Try(Option(read[MemberList](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[MemberList] =
+    Try(Option(read[MemberList](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class LookupUserRoute(username: String) extends RequestRoute[User] {
   def path: String = s"/api/users/lookupuser/$username"
-  def parse(xhr: XMLHttpRequest): Option[User] =
-    Try(Option(read[User](xhr.responseText))).getOrElse(None)
+  def parse(httpResponse: HttpResponse): Option[User] =
+    Try(Option(read[User](httpResponse.responseText))).getOrElse(None)
 }

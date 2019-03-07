@@ -19,30 +19,28 @@ package vinyldns.client
 import org.scalatest._
 import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
-import vinyldns.client.ajax.RequestHelper
+import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
+import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupListPage}
 import vinyldns.client.pages.grouplist.GroupListPage
-//import io.scalajs.npm.nock._
-//import vinyldns.client.models.membership.{Group, GroupList}
-//import upickle.default.write
 
 class ReactAppSpec extends WordSpec with Matchers with MockFactory {
   "test" should {
     "do something" in {
-      //val groupList = GroupList(List(Group("targetnameplease", "email")), Some(100))
-//
-//      val mockRequestHelper = mock[Request]
-//      (mockRequestHelper
-//        .get[GroupList] _).expects(ListGroupsRoute).returns(groupListAjaxResponse(groupList))
-
-//      Nock("/v2")
-//        .get("/api/groups")
-//        .reply(200, write(groupList))
-
+      val groupList =
+        GroupList(List(Group("targetnameplease", "email", id = Some("id"))), Some(100))
       val router = MockRouterCtl[Page]()
-      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, router, RequestHelper)) {
-        c =>
-          c.outerHtmlScrubbed() should contain("targetnameplease")
+      val http = mock[Http]
+
+      (http.get[GroupList] _)
+        .expects(ListGroupsRoute, *, *)
+        .once
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(groupList))
+        }
+
+      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, router, http)) { c =>
+        c.outerHtmlScrubbed() should include("targetnameplease")
       }
     }
   }

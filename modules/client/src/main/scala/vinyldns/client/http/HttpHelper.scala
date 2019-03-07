@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package vinyldns.client.ajax
+package vinyldns.client.http
 
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.extra.Ajax
-import org.scalajs.dom.raw.XMLHttpRequest
 import vinyldns.client.ReactApp
 import vinyldns.client.models.Notification
 import vinyldns.client.models.user.User
 import org.scalajs.dom
 
 // we do this so tests can use a mocked version of Request
-object RequestHelper extends Request {
+object HttpHelper extends Http {
   val csrf: String = ReactApp.csrf.getOrElse("")
   val loggedInUser: User = ReactApp.loggedInUser
   val POST = "POST"
@@ -38,8 +37,9 @@ object RequestHelper extends Request {
       .setRequestHeader("Csrf-Token", csrf)
       .send
       .onComplete { xhr =>
-        if (isError(xhr)) onFailure(xhr)
-        else onSuccess(xhr, route.parse(xhr))
+        val httpResponse = HttpResponse(xhr)
+        if (isError(httpResponse)) onFailure(httpResponse)
+        else onSuccess(httpResponse, route.parse(httpResponse))
       }
       .asCallback
 
@@ -54,8 +54,9 @@ object RequestHelper extends Request {
       .setRequestContentTypeJson
       .send(body)
       .onComplete { xhr =>
-        if (isError(xhr)) onFailure(xhr)
-        else onSuccess(xhr, route.parse(xhr))
+        val httpResponse = HttpResponse(xhr)
+        if (isError(httpResponse)) onFailure(httpResponse)
+        else onSuccess(httpResponse, route.parse(httpResponse))
       }
       .asCallback
 
@@ -76,8 +77,9 @@ object RequestHelper extends Request {
       .setRequestHeader("Csrf-Token", csrf)
       .send
       .onComplete { xhr =>
-        if (isError(xhr)) onFailure(xhr)
-        else onSuccess(xhr, route.parse(xhr))
+        val httpResponse = HttpResponse(xhr)
+        if (isError(httpResponse)) onFailure(httpResponse)
+        else onSuccess(httpResponse, route.parse(httpResponse))
       }
       .asCallback
 
@@ -89,20 +91,20 @@ object RequestHelper extends Request {
 
   def toNotification(
       action: String,
-      xhr: XMLHttpRequest,
+      httpResponse: HttpResponse,
       onlyOnError: Boolean = false,
       verbose: Boolean = false): Option[Notification] =
-    xhr match {
-      case error if isError(xhr) =>
-        val customMessage = Some(s"$action [${error.status}] [${error.statusText}]")
+    httpResponse match {
+      case error if isError(httpResponse) =>
+        val customMessage = Some(s"$action [${error.statusCode}] [${error.statusText}]")
         val responseMessage = Some(error.responseText)
         Some(Notification(customMessage, responseMessage, isError = true))
       case success if !onlyOnError =>
-        val customMessage = Some(s"$action [${success.status}] [${success.statusText}]")
+        val customMessage = Some(s"$action [${success.statusCode}] [${success.statusText}]")
         val responseMessage = if (verbose) Some(success.responseText) else None
         Some(Notification(customMessage, responseMessage))
       case _ => None
     }
 
-  def isError(xhr: XMLHttpRequest): Boolean = xhr.status >= 400
+  def isError(httpResponse: HttpResponse): Boolean = httpResponse.statusCode >= 400
 }

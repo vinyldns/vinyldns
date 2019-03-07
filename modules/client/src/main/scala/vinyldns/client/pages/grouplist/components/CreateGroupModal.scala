@@ -19,9 +19,8 @@ package vinyldns.client.pages.grouplist.components
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import org.scalajs.dom.raw.XMLHttpRequest
 import upickle.default.write
-import vinyldns.client.ajax.{PostGroupRoute, Request}
+import vinyldns.client.http.{Http, HttpResponse, PostGroupRoute}
 import vinyldns.client.components.{InputFieldValidations, Modal, ValidatedInputField}
 import vinyldns.client.models.{Id, Notification}
 import vinyldns.client.models.membership.Group
@@ -29,7 +28,7 @@ import vinyldns.client.models.membership.Group
 object CreateGroupModal {
   case class State(group: Group)
   case class Props(
-      requestHelper: Request,
+      http: Http,
       setNotification: Option[Notification] => Callback,
       close: () => Callback,
       refreshGroups: () => Callback)
@@ -104,23 +103,23 @@ object CreateGroupModal {
     def createGroup(e: ReactEventFromInput, P: Props, S: State): Callback =
       if (e.target.checkValidity()) {
         e.preventDefaultCB >>
-          P.requestHelper.withConfirmation(
+          P.http.withConfirmation(
             s"Are you sure you want to create group ${S.group.name}?",
             Callback.lazily {
               val groupWithUserId =
                 S.group
                   .copy(
-                    members = Some(Seq(Id(P.requestHelper.loggedInUser.id))),
-                    admins = Some(Seq(Id(P.requestHelper.loggedInUser.id))))
-              val onFailure = { xhr: XMLHttpRequest =>
-                P.setNotification(P.requestHelper.toNotification("creating group", xhr))
+                    members = Some(Seq(Id(P.http.loggedInUser.id))),
+                    admins = Some(Seq(Id(P.http.loggedInUser.id))))
+              val onFailure = { httpResponse: HttpResponse =>
+                P.setNotification(P.http.toNotification("creating group", httpResponse))
               }
-              val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
-                P.setNotification(P.requestHelper.toNotification("creating group", xhr)) >>
+              val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
+                P.setNotification(P.http.toNotification("creating group", httpResponse)) >>
                   P.close() >>
                   P.refreshGroups()
               }
-              P.requestHelper.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
+              P.http.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
             }
           )
       } else e.preventDefaultCB

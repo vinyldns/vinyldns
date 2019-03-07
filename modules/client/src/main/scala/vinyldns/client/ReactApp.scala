@@ -20,7 +20,7 @@ import japgolly.scalajs.react.extra.router.BaseUrl
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.ext.Ajax
-import vinyldns.client.ajax.CurrentUserRoute
+import vinyldns.client.http.{CurrentUserRoute, HttpResponse}
 import vinyldns.client.css.AppCSS
 import vinyldns.client.routes.AppRouter
 import vinyldns.client.models.user.User
@@ -48,7 +48,8 @@ object ReactApp {
       .get(CurrentUserRoute.path)
       .onComplete { response =>
         response.map { xhr =>
-          CurrentUserRoute.parse(xhr) match {
+          val httpResponse = HttpResponse(xhr)
+          CurrentUserRoute.parse(httpResponse) match {
             case Some(u) =>
               loggedInUser = u
               AppRouter.router().renderIntoDOM(dom.document.getElementById(containerId))

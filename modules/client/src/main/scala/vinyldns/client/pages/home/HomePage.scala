@@ -21,7 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.ajax.Request
+import vinyldns.client.http.Http
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter}
 
@@ -55,9 +55,6 @@ object HomePage extends PropsFromAppRouter {
       }
       .build
 
-  def apply(
-      page: Page,
-      router: RouterCtl[Page],
-      requestHelper: Request): Unmounted[Props, Unit, Unit] =
-    component(Props(page, router, requestHelper))
+  def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, Unit, Unit] =
+    component(Props(page, router, http))
 }

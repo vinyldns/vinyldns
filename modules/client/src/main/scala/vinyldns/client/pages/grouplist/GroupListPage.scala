@@ -21,8 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import org.scalajs.dom.raw.XMLHttpRequest
-import vinyldns.client.ajax.{ListGroupsRoute, Request}
+import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
@@ -46,11 +45,8 @@ object GroupListPage extends PropsFromAppRouter {
     .componentWillMount(e => e.backend.listGroups(e.props))
     .build
 
-  def apply(
-      page: Page,
-      router: RouterCtl[Page],
-      requestHelper: Request): Unmounted[Props, State, Backend] =
-    component(Props(page, router, requestHelper))
+  def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, State, Backend] =
+    component(Props(page, router, http))
 
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
@@ -96,13 +92,8 @@ object GroupListPage extends PropsFromAppRouter {
                 ),
                 <.div(
                   ^.className := "panel-body",
-                  GroupsTable(
-                    GroupsTable.Props(
-                      P.requestHelper,
-                      S.groupsList,
-                      setNotification,
-                      () => listGroups(P),
-                      P.router)))
+                  GroupsTable(GroupsTable
+                    .Props(P.http, S.groupsList, setNotification, () => listGroups(P), P.router)))
               )
             )
           )
@@ -123,24 +114,20 @@ object GroupListPage extends PropsFromAppRouter {
       }
 
     def listGroups(P: Props): Callback = {
-      val onSuccess = { (_: XMLHttpRequest, parsed: Option[GroupList]) =>
+      val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
         bs.modState(_.copy(groupsList = parsed))
       }
-      val onFailure = { xhr: XMLHttpRequest =>
-        setNotification(P.requestHelper.toNotification("list groups", xhr, onlyOnError = true))
+      val onFailure = { httpResponse: HttpResponse =>
+        setNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
       }
-      P.requestHelper.get(ListGroupsRoute, onSuccess, onFailure)
+      P.http.get(ListGroupsRoute, onSuccess, onFailure)
     }
 
     def createGroupModal(P: Props, isVisible: Boolean): TagMod =
       if (isVisible)
         CreateGroupModal(
           CreateGroupModal
-            .Props(
-              P.requestHelper,
-              setNotification,
-              () => makeCreateFormInvisible,
-              () => listGroups(P)))
+            .Props(P.http, setNotification, () => makeCreateFormInvisible, () => listGroups(P)))
       else TagMod.empty
 
     def makeCreateFormVisible: Callback =

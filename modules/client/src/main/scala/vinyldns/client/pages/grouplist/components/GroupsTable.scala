@@ -20,15 +20,14 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import org.scalajs.dom.raw.XMLHttpRequest
-import vinyldns.client.ajax.{DeleteGroupRoute, Request}
+import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 
 object GroupsTable {
   case class Props(
-      requestHelper: Request,
+      http: Http,
       groupsList: Option[GroupList],
       setNotification: Option[Notification] => Callback,
       refresh: () => Callback,
@@ -93,20 +92,20 @@ object GroupsTable {
       )
 
     def deleteGroup(P: Props, group: Group): Callback =
-      P.requestHelper.withConfirmation(
+      P.http.withConfirmation(
         s"Are you sure you want to delete group ${group.name}?",
         Callback
           .lazily {
-            val onSuccess = { (xhr: XMLHttpRequest, _: Option[Group]) =>
+            val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
               P.setNotification(
-                P.requestHelper.toNotification(s"deleting group ${group.name}", xhr)) >>
+                P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
                 P.refresh()
             }
-            val onFailure = { xhr: XMLHttpRequest =>
+            val onFailure = { httpResponse: HttpResponse =>
               P.setNotification(
-                P.requestHelper.toNotification(s"deleting group ${group.name}", xhr))
+                P.http.toNotification(s"deleting group ${group.name}", httpResponse))
             }
-            P.requestHelper.delete(DeleteGroupRoute(group.id.getOrElse("")), onSuccess, onFailure)
+            P.http.delete(DeleteGroupRoute(group.id.getOrElse("")), onSuccess, onFailure)
           }
       )
   }

@@ -14,25 +14,13 @@
  * limitations under the License.
  */
 
-package vinyldns.client
+package vinyldns.client.http
 
-import org.scalamock.scalatest.MockFactory
+import org.scalajs.dom.raw.XMLHttpRequest
 
-trait RequestTestUtils extends MockFactory {
-  val XHR_COMPLETE = 4
+case class HttpResponse(statusCode: Int, statusText: String, responseText: String)
 
-//  def groupListAjaxResponse(groupList: GroupList): Step2 = {
-//    val testXhr = mock[XMLHttpRequest]
-//    (testXhr.readyState _).expects().returns(XHR_COMPLETE)
-//    (testXhr.status _).expects().returns(202)
-//    (testXhr.statusText _).expects().returns("OK")
-//    (testXhr.responseText _).expects().returns(write(groupList))
-//
-//
-//    (response.onComplete _).expects(*).onCall { f: (XMLHttpRequest => Callback) =>
-//      f.apply(testXhr)
-//      response
-//    }
-//    response
-//  }
+object HttpResponse {
+  def apply(xhr: XMLHttpRequest): HttpResponse =
+    HttpResponse(xhr.status, xhr.statusText, xhr.responseText)
 }
