@@ -59,6 +59,8 @@ class ZoneServiceSpec
       } else {
         ().toResult
       }
+
+    def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit] = Right(())
   }
 
   private val underTest = new ZoneService(

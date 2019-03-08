@@ -79,6 +79,8 @@ class ZoneConnectionValidatorSpec
     override val opTimeout: FiniteDuration = 10.milliseconds
     override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
+    override def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit] =
+      Right(())
   }
 
   private val underTest = new TestConnectionValidator()
