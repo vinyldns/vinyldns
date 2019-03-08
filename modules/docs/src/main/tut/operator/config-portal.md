@@ -31,14 +31,77 @@ The Portal uses the following tables:
 * `userChanges`
 
 Note that the user table is shared between the API and the portal, and *must* be configured with
-the same values in both configs. **At the moment, the user and userChange repository are only implemented in DynamoDB, but we are actively
-working on MySQL implementations**:
+the same values in both configs:
 
 ```yaml
 vinyldns {
 
   # this list should include only the datastores being used by your portal instance (user and userChange repo)
-  data-stores = ["dynamodb"]
+  data-stores = ["dynamodb", "mysql"]
+  
+  mysql {
+    
+    # this is the path to the mysql provider. This should not be edited
+    # from the default in reference.conf
+    class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
+    
+    settings {
+      # the name of the database, recommend to leave this as is
+      name = "vinyldns"
+      
+      # the jdbc driver, recommended to leave this as is
+      driver = "org.mariadb.jdbc.Driver"
+  
+      # the URL used to create the schema, typically this will be without the "database" name
+      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+  
+      # the main connection URL
+      url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
+  
+      # the user to connect to MySQL
+      user = "root"
+  
+      # the password to connect to MySQL
+      password = "pass"
+  
+      ## see https://github.com/brettwooldridge/HikariCP for more detail on the following fields
+      # the maximum number of connections to scale the connection pool to
+      maximum-pool-size = 20
+  
+      # the maximum number of milliseconds to wait for a connection from the connection pool
+      connection-timeout-millis = 1000
+      
+      # the minimum number of idle connections that HikariCP tries to maintain in the pool
+      minimum-idle = 10
+            
+      # the maximum number of milliseconds that a connection is can sit idle in the pool
+      idle-timeout = 10000
+  
+      # The max lifetime of a connection in a pool.  Should be several seconds shorter than the database imposed connection time limit
+      max-lifetime = 600000
+      
+      # controls whether JMX MBeans are registered
+      register-mbeans = true
+      
+      # my-sql-properties allows you to include any additional mysql performance settings you want.
+      # Note that the properties within my-sql-properties must be camel case!
+      # see https://github.com/brettwooldridge/HikariCP/wiki/MySQL-Configuration for guidance
+      my-sql-properties {
+        prepStmtCacheSize = 300
+        prepStmtCacheSqlLimit = 2048
+        cachePrepStmts = true
+        useServerPrepStmts = true
+        rewriteBatchedStatements = true
+      }
+    }
+    
+    repositories {
+      # all repositories with config sections here will be enabled in mysql
+      user {
+      # no additional settings for repositories enabled in mysql
+      }
+    }
+  }
   
   dynamodb {
       
@@ -62,17 +125,12 @@ vinyldns {
     
     repositories {
       # all repositories with config sections here will be enabled in dynamodb
-      user {
+      user-change {
         # Name of the table where recordsets are saved
-        table-name = "usersTest"
+        table-name = "userChangeTest"
         # Provisioned throughput for reads
         provisioned-reads = 30
         # Provisioned throughput for writes
-        provisioned-writes = 20
-      }
-      user-change {
-        table-name = "userChangeTest"
-        provisioned-reads = 30
         provisioned-writes = 20
       }
     }
@@ -201,7 +259,38 @@ portal.vinyldns.backend.url = "http://vinyldns-api:9000"
 portal.test_login = false
 
 # configuration for the users and groups store
-data-stores = ["dynamodb"]
+data-stores = ["dynamodb", "mysql"]
+
+mysql {
+  class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
+  
+  settings {
+    name = "vinyldns"
+    driver = "org.mariadb.jdbc.Driver"
+    migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+    url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
+    user = "root"
+    password = "pass"
+    maximum-pool-size = 20
+    minimum-idle = 10
+    connection-timeout-millis = 1000
+    idle-timeout = 10000
+    max-lifetime = 600000
+    register-mbeans = true
+    my-sql-properties {
+      prepStmtCacheSize = 300
+      prepStmtCacheSqlLimit = 2048
+      cachePrepStmts = true
+      useServerPrepStmts = true
+      rewriteBatchedStatements = true
+    }
+  }
+  
+  repositories {
+    user {
+    }
+  }
+}
 
 dynamodb {
   class-name = "vinyldns.dynamodb.repository.DynamoDBDataStoreProvider"
@@ -214,11 +303,6 @@ dynamodb {
   }
   
   repositories {
-    user {
-      table-name = "usersTest"
-      provisioned-reads = 30
-      provisioned-writes = 20
-    }
     user-change {
       table-name = "userChangeTest"
       provisioned-reads = 30
