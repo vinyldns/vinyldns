@@ -27,9 +27,10 @@ import upickle.default.write
 import vinyldns.client.http.{Http, HttpResponse, LookupUserRoute, UpdateGroupRoute}
 import vinyldns.client.components.{InputFieldValidations, ValidatedInputField}
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.models.{Id, Notification}
+import vinyldns.client.models.Id
 import vinyldns.client.models.membership.Group
 import vinyldns.client.models.user.User
+import vinyldns.client.components.AlertBox.setNotification
 
 object NewMemberForm {
   case class State(
@@ -40,7 +41,6 @@ object NewMemberForm {
       http: Http,
       groupId: String,
       group: Option[Group],
-      setNotification: Option[Notification] => Callback,
       refreshMembers: () => Callback)
 
   private val component = ScalaComponent
@@ -108,25 +108,26 @@ object NewMemberForm {
         case (Some(g), Some(u)) =>
           P.http.withConfirmation(
             s"Are you sure you want to add ${S.username} to the group?",
-            Callback.lazily {
-              val newMembers = g.members.map(_ ++ Seq(Id(u.id)))
-              val newAdmins = if (S.isManager) g.admins.map(_ ++ Seq(Id(u.id))) else g.admins
-              val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
+            Callback
+              .lazily {
+                val newMembers = g.members ++ Seq(Id(u.id))
+                val newAdmins = if (S.isManager) g.admins ++ Seq(Id(u.id)) else g.admins
+                val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
 
-              val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-                P.setNotification(
-                  P.http.toNotification(s"adding member ${S.username}", httpResponse)) >>
-                  P.refreshMembers()
+                val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
+                  setNotification(
+                    P.http.toNotification(s"adding member ${S.username}", httpResponse)) >>
+                    P.refreshMembers()
+                }
+
+                val onError = { httpResponse: HttpResponse =>
+                  setNotification(
+                    P.http.toNotification(s"adding member ${S.username}", httpResponse))
+                }
+
+                P.http
+                  .put(UpdateGroupRoute(P.groupId), write(updatedGroup), onSuccess, onError)
               }
-
-              val onError = { httpResponse: HttpResponse =>
-                P.setNotification(
-                  P.http.toNotification(s"adding member ${S.username}", httpResponse))
-              }
-
-              P.http
-                .put(UpdateGroupRoute(P.groupId), write(updatedGroup), onSuccess, onError)
-            }
           )
         case _ => Callback.empty
       }
@@ -138,7 +139,7 @@ object NewMemberForm {
           addMember(P, S, response)
         }
         val onFailure = { httpResponse: HttpResponse =>
-          P.setNotification(
+          setNotification(
             P.http
               .toNotification(s"getting user ${S.username}", httpResponse, onlyOnError = true))
         }

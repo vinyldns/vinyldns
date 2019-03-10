@@ -25,12 +25,9 @@ import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
-import vinyldns.client.ReactApp.SUCCESS_ALERT_TIMEOUT_MILLIS
-import vinyldns.client.components.AlertBox
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter}
-
-import scala.scalajs.js.timers.setTimeout
+import vinyldns.client.components.AlertBox.setNotification
 
 object GroupListPage extends PropsFromAppRouter {
   case class State(
@@ -54,10 +51,6 @@ object GroupListPage extends PropsFromAppRouter {
         GlobalStyle.styleSheet.height100,
         ^.className := "right_col",
         ^.role := "main",
-        S.notification match {
-          case Some(n) => AlertBox(AlertBox.Props(n, () => clearNotification))
-          case None => TagMod.empty
-        },
         <.div(
           ^.className := "page-title",
           <.div(
@@ -77,13 +70,14 @@ object GroupListPage extends PropsFromAppRouter {
                   <.div(
                     ^.className := "btn-group",
                     <.button(
-                      ^.className := "btn btn-default",
+                      ^.className := "btn btn-default test-create-group",
                       ^.`type` := "button",
                       ^.onClick --> makeCreateFormVisible,
                       <.span(^.className := "fa fa-plus-square"),
-                      "  Create Group"),
+                      "  Create Group"
+                    ),
                     <.button(
-                      ^.className := "btn btn-default",
+                      ^.className := "btn btn-default test-refresh-groups",
                       ^.onClick --> listGroups(P),
                       <.span(^.className := "fa fa-refresh"),
                       "  Refresh"),
@@ -101,18 +95,6 @@ object GroupListPage extends PropsFromAppRouter {
         createGroupModal(P, S.showCreateGroup)
       )
 
-    def clearNotification: Callback =
-      bs.modState(_.copy(notification = None))
-
-    def setNotification(notification: Option[Notification]): Callback =
-      notification match {
-        case Some(n) if !n.isError =>
-          bs.modState(_.copy(notification = notification)) >>
-            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
-        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
-        case None => Callback.empty
-      }
-
     def listGroups(P: Props): Callback = {
       val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
         bs.modState(_.copy(groupsList = parsed))
@@ -127,7 +109,7 @@ object GroupListPage extends PropsFromAppRouter {
       if (isVisible)
         CreateGroupModal(
           CreateGroupModal
-            .Props(P.http, setNotification, () => makeCreateFormInvisible, () => listGroups(P)))
+            .Props(P.http, () => makeCreateFormInvisible, () => listGroups(P)))
       else TagMod.empty
 
     def makeCreateFormVisible: Callback =

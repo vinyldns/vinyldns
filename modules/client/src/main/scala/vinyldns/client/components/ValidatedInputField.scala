@@ -20,6 +20,7 @@ import cats.implicits._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
+import vinyldns.client.components.InputFieldType.InputFieldType
 
 import scala.util.Try
 
@@ -27,6 +28,11 @@ case class InputFieldValidations(
     maxSize: Option[Int] = None,
     canContainSpaces: Boolean = true,
     required: Boolean = false)
+
+object InputFieldType extends Enumeration {
+  type InputFieldType = Value
+  val Text, Email, Number = Value
+}
 
 object ValidatedInputField {
   case class Props(
@@ -39,8 +45,7 @@ object ValidatedInputField {
       placeholder: Option[String] = None,
       helpText: Option[String] = None,
       initialValue: Option[String] = None,
-      isNumber: Boolean = false,
-      isEmail: Boolean = false,
+      typ: InputFieldType = InputFieldType.Text,
       validations: Option[InputFieldValidations] = None)
   case class State(
       value: Option[String],
@@ -48,11 +53,14 @@ object ValidatedInputField {
       errorMessage: Option[String] = None)
 
   val component = ScalaComponent
-    .builder[Props]("Input")
+    .builder[Props]("ValidatedInput")
     .initialStateFromProps { P =>
       State(P.initialValue)
     }
     .renderBackend[Backend]
+    .componentDidMount { e =>
+      e.backend.onChange(e.state.value.getOrElse(""), e.props)
+    }
     .build
 
   def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
@@ -74,7 +82,7 @@ object ValidatedInputField {
             ^.`type` := toInputType(P),
             ^.value := S.value.getOrElse(""),
             ^.placeholder := P.placeholder.getOrElse(""),
-            ^.onChange ==> (e => onChange(e, P)),
+            ^.onChange ==> ((e: ReactEventFromInput) => onChange(e.target.value, P)),
             ^.required := Try(P.validations.get.required).getOrElse(false)
           ),
           helpText(P.helpText),
@@ -82,29 +90,25 @@ object ValidatedInputField {
         )
       )
 
+    // make use of simple html5 validations
     def toInputType(P: Props): String =
-      if (P.isNumber) "number"
-      else if (P.isEmail) "email"
-      else "text"
+      P.typ match {
+        case InputFieldType.Text => "text"
+        case InputFieldType.Number => "number"
+        case InputFieldType.Email => "email"
+      }
 
-    def onChange(e: ReactEventFromInput, P: Props): Callback = {
-      val target = e.target
-      val value = target.value
+    def onChange(value: String, P: Props): Callback = {
       val validatedValue = validate(value, P)
       val localOnChange = validatedValue match {
         case Right(_) =>
           bs.modState { S =>
-            // this is kinda cool, in HTML5 if an input has `customValidity` set to a non empty
-            // string it won't let you submit the form
-            target.setCustomValidity("")
             S.copy(value = Some(value), isValid = true)
           }
-        case Left(error) => {
+        case Left(error) =>
           bs.modState { S =>
-            target.setCustomValidity(error)
             S.copy(value = Some(value), isValid = false, errorMessage = Some(error))
           }
-        }
       }
       localOnChange >> P.parentOnChange(value)
     }

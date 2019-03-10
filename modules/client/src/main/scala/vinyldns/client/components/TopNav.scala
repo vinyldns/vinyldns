@@ -54,7 +54,7 @@ object TopNav {
                   ^.className := "user-profile dropdown-toggle",
                   ^.onClick --> bs.modState(_.copy(dropdownOpen = !S.dropdownOpen)),
                   <.span(^.className := "fa fa-user"),
-                  s"  ${P.http.loggedInUser.userName}  ",
+                  s"  ${P.http.getLoggedInUser().userName}  ",
                   <.span(^.className := "fa fa-angle-down"),
                 ),
                 dropdown(S)

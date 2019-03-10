@@ -51,4 +51,6 @@ trait Http {
       verbose: Boolean = false): Option[Notification]
 
   def isError(httpResponse: HttpResponse): Boolean
+
+  def getLoggedInUser(): User
 }

@@ -12,7 +12,7 @@ object Dependencies {
   lazy val catsEffectV = "1.0.0"
   lazy val configV = "1.3.2"
   lazy val scalikejdbcV = "3.3.1"
-  lazy val scalaTestV = "3.0.6"
+  lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
   lazy val playV = "2.6.19"
   lazy val awsV = "1.11.423"
@@ -130,7 +130,7 @@ object Dependencies {
   lazy val clientTestDependencies = Def.setting(
     Seq(
       "com.github.japgolly.scalajs-react"             %%% "test"                % scalaJSReactVersion,
-      "org.scalatest"                                 %%% "scalatest"           % scalaTestV,
+      "org.scalatest"                                 %%% "scalatest"           % "3.0.6",
       "com.github.japgolly.test-state"                %%% "core"                % "2.3.0",
       "com.github.japgolly.test-state"                %%% "ext-scalajs-react"   % "2.3.0",
       "org.scalamock"                                 %%% "scalamock"           % "4.1.0"

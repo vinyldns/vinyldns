@@ -17,31 +17,28 @@
 package vinyldns.client.models.membership
 
 import upickle.default.{macroRW, ReadWriter => RW}
-import upickle.default._
-import vinyldns.client.models.Id
+import vinyldns.client.models.{Id, OptionRW}
 
-case class Group(
+case class GroupCreateInfo(
     name: String = "",
     email: String = "",
-    description: Option[String] = None,
-    id: Option[String] = None,
-    created: Option[String] = None,
-    members: Option[Seq[Id]] = None,
-    admins: Option[Seq[Id]] = None)
+    members: Seq[Id] = Seq(),
+    admins: Seq[Id] = Seq(),
+    description: Option[String] = None)
 
-object Group {
+object GroupCreateInfo extends OptionRW {
+  implicit val rw: RW[GroupCreateInfo] = macroRW
+}
+
+case class Group(
+    name: String,
+    email: String,
+    id: String,
+    created: String,
+    members: Seq[Id],
+    admins: Seq[Id],
+    description: Option[String] = None)
+
+object Group extends OptionRW {
   implicit val rw: RW[Group] = macroRW
-
-  // uPickle by default treats empty options as empty arrays, this has it use None
-  implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
-    implicitly[Writer[T]].comap[Option[T]] {
-      case None => null.asInstanceOf[T]
-      case Some(x) => x
-    }
-
-  implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    implicitly[Reader[T]].mapNulls {
-      case null => None
-      case x => Some(x)
-    }
 }

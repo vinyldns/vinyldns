@@ -24,15 +24,12 @@ import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.http._
 import vinyldns.client.models.membership.{Group, MemberList}
 import upickle.default.write
-import vinyldns.client.ReactApp.SUCCESS_ALERT_TIMEOUT_MILLIS
-import vinyldns.client.components.AlertBox
+import vinyldns.client.components.AlertBox.setNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.{Id, Notification}
 import vinyldns.client.models.user.User
 import vinyldns.client.pages.group.components.NewMemberForm
 import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter, ToGroupViewPage}
-
-import scala.scalajs.js.timers.setTimeout
 
 object GroupViewPage extends PropsFromAppRouter {
   case class State(
@@ -58,10 +55,6 @@ object GroupViewPage extends PropsFromAppRouter {
         GlobalStyle.styleSheet.height100,
         ^.className := "right_col",
         ^.role := "main",
-        S.notification match {
-          case Some(n) => AlertBox(AlertBox.Props(n, () => clearNotification))
-          case None => TagMod.empty
-        },
         S.group match {
           case Some(group) =>
             <.div(
@@ -91,7 +84,6 @@ object GroupViewPage extends PropsFromAppRouter {
                             P.http,
                             P.page.asInstanceOf[ToGroupViewPage].id,
                             S.group,
-                            setNotification,
                             () => getMembers(P))),
                         <.div(^.className := "clearfix")
                       ),
@@ -157,18 +149,6 @@ object GroupViewPage extends PropsFromAppRouter {
         }
       )
 
-    def clearNotification: Callback =
-      bs.modState(_.copy(notification = None))
-
-    def setNotification(notification: Option[Notification]): Callback =
-      notification match {
-        case Some(n) if !n.isError =>
-          bs.modState(_.copy(notification = notification)) >>
-            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
-        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
-        case None => Callback.empty
-      }
-
     def getGroup(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
       val onFailure = { httpResponse: HttpResponse =>
@@ -204,8 +184,8 @@ object GroupViewPage extends PropsFromAppRouter {
           .lazily {
             S.group match {
               case Some(g) =>
-                val newMembers = g.members.map(_.filter(id => id.id != user.id))
-                val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+                val newMembers = g.members.filter(id => id.id != user.id)
+                val newAdmins = g.admins.filter(id => id.id != user.id)
                 val updatedGroup = g.copy(members = newMembers, admins = newAdmins)
                 val groupId = P.page.asInstanceOf[ToGroupViewPage].id
 
@@ -231,7 +211,7 @@ object GroupViewPage extends PropsFromAppRouter {
         Callback.lazily {
           S.group match {
             case Some(g) =>
-              val newAdmins = g.admins.map(_ ++ Seq(Id(user.id)))
+              val newAdmins = g.admins ++ Seq(Id(user.id))
               val updatedGroup = g.copy(admins = newAdmins)
               val groupId = P.page.asInstanceOf[ToGroupViewPage].id
 
@@ -257,7 +237,7 @@ object GroupViewPage extends PropsFromAppRouter {
           .lazily {
             S.group match {
               case Some(g) =>
-                val newAdmins = g.admins.map(_.filter(id => id.id != user.id))
+                val newAdmins = g.admins.filter(id => id.id != user.id)
                 val updatedGroup = g.copy(admins = newAdmins)
                 val groupId = P.page.asInstanceOf[ToGroupViewPage].id
 
@@ -284,14 +264,9 @@ object GroupViewPage extends PropsFromAppRouter {
         case None => TagMod.empty
       }
 
-    def getIdHeader(group: Group): TagMod =
-      group.id match {
-        case Some(id) => <.h5(s"Id: $id")
-        case None => TagMod.empty
-      }
+    def getIdHeader(group: Group): TagMod = <.h5(s"Id: ${group.id}")
 
-    def getEmailHeader(group: Group): TagMod =
-      <.h5(s"Email: ${group.email}")
+    def getEmailHeader(group: Group): TagMod = <.h5(s"Email: ${group.email}")
 
     def toName(user: User): String =
       (user.lastName, user.firstName) match {
@@ -304,7 +279,7 @@ object GroupViewPage extends PropsFromAppRouter {
     def groupManagerWidget(P: Props, S: State, user: User): TagMod = {
       val hasAccess = hasUpdateAccess(S, user)
       val isManager = S.group.exists { g =>
-        val admins = g.admins.getOrElse(Seq())
+        val admins = g.admins
         admins.contains(Id(user.id))
       }
 
@@ -323,7 +298,7 @@ object GroupViewPage extends PropsFromAppRouter {
 
     def hasUpdateAccess(S: State, user: User): Boolean = {
       val isManager = S.group.exists { g =>
-        val admins = g.admins.getOrElse(Seq())
+        val admins = g.admins
         admins.contains(Id(user.id))
       }
       isManager || user.isSuper

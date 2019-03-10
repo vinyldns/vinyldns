@@ -107,4 +107,6 @@ object HttpHelper extends Http {
     }
 
   def isError(httpResponse: HttpResponse): Boolean = httpResponse.statusCode >= 400
+
+  def getLoggedInUser(): User = loggedInUser
 }

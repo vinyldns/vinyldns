@@ -16,16 +16,17 @@
 
 package vinyldns.client.routes
 
+import japgolly.scalajs.react.Ref
 import japgolly.scalajs.react.extra.router.{Resolution, RouterConfigDsl, RouterCtl, _}
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
-import vinyldns.client.components.{Breadcrumb, LeftNav, TopNav}
+import vinyldns.client.components.{AlertBox, Breadcrumb, LeftNav, TopNav}
 import vinyldns.client.pages.extras.NotFoundPage
 import vinyldns.client.pages.group.GroupViewPage
-import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
+import vinyldns.client.pages.grouplist.GroupListPage
 
 object AppRouter {
   trait PropsFromAppRouter {
@@ -64,6 +65,9 @@ object AppRouter {
     LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage)
   )
 
+  val alertBoxRef =
+    Ref.toScalaComponent(AlertBox.component)
+
   private def layout(router: RouterCtl[Page], resolution: Resolution[Page]): VdomTagOf[Div] =
     <.div(
       ^.className := "nav-md",
@@ -73,6 +77,7 @@ object AppRouter {
           ^.className := "main_container",
           TopNav(HttpHelper),
           LeftNav(LeftNav.Props(menu, resolution.page, router)),
+          alertBoxRef.component(),
           Breadcrumb(Breadcrumb.Props(resolution.page, router)),
           resolution.render()
         ),

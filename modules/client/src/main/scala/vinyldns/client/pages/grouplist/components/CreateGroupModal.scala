@@ -21,21 +21,18 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
 import vinyldns.client.http.{Http, HttpResponse, PostGroupRoute}
-import vinyldns.client.components.{InputFieldValidations, Modal, ValidatedInputField}
-import vinyldns.client.models.{Id, Notification}
-import vinyldns.client.models.membership.Group
+import vinyldns.client.components._
+import vinyldns.client.models.Id
+import vinyldns.client.models.membership.{Group, GroupCreateInfo}
+import vinyldns.client.components.AlertBox.setNotification
 
 object CreateGroupModal {
-  case class State(group: Group)
-  case class Props(
-      http: Http,
-      setNotification: Option[Notification] => Callback,
-      close: () => Callback,
-      refreshGroups: () => Callback)
+  case class State(group: GroupCreateInfo)
+  case class Props(http: Http, close: () => Callback, refreshGroups: () => Callback)
 
-  private val component = ScalaComponent
+  val component = ScalaComponent
     .builder[Props]("CreateGroupForm")
-    .initialState(State(Group()))
+    .initialState(State(GroupCreateInfo()))
     .renderBackend[Backend]
     .build
 
@@ -51,96 +48,95 @@ object CreateGroupModal {
             ^.className := "panel-header",
             <.p(header)
           ),
-          <.form(
-            ^.className := "form form-horizontal form-label-left",
-            ^.onSubmit ==> (e => createGroup(e, P, S)),
-            ValidatedInputField(
-              ValidatedInputField.Props(
-                changeName,
-                label = Some("Name"),
-                helpText = Some("Group name. Cannot contain spaces"),
-                validations = Some(
-                  InputFieldValidations(
-                    required = true,
-                    maxSize = Some(255),
-                    canContainSpaces = false))
-              )
-            ),
-            ValidatedInputField(
-              ValidatedInputField.Props(
-                changeEmail,
-                label = Some("Email"),
-                helpText = Some("Group contact email. Preferably a multi user distribution"),
-                isEmail = true,
-                validations = Some(InputFieldValidations(required = true))
-              )
-            ),
-            ValidatedInputField(
-              ValidatedInputField.Props(
-                changeDescription,
-                label = Some("Description"),
-              )
-            ),
-            <.div(^.className := "ln_solid"),
+          ValidatedForm(
+            ValidatedForm.Props(
+              "form form-horizontal form-label-left test-create-group-form",
+              generateInputFieldProps(S),
+              () => createGroup(P, S)),
             <.div(
-              ^.className := "form-group",
-              <.button(
-                ^.`type` := "submit",
-                ^.className := "btn btn-success pull-right",
-                "Submit"
-              ),
-              <.button(
-                ^.`type` := "button",
-                ^.className := "btn btn-default pull-right",
-                ^.onClick --> P.close(),
-                "Close"
+              <.div(^.className := "ln_solid"),
+              <.div(
+                ^.className := "form-group",
+                <.button(
+                  ^.`type` := "submit",
+                  ^.className := "btn btn-success pull-right",
+                  "Submit"
+                ),
+                <.button(
+                  ^.`type` := "button",
+                  ^.className := "btn btn-default pull-right test-close-create-group",
+                  ^.onClick --> P.close(),
+                  "Close"
+                )
               )
             )
           )
         )
       )
 
-    def createGroup(e: ReactEventFromInput, P: Props, S: State): Callback =
-      if (e.target.checkValidity()) {
-        e.preventDefaultCB >>
-          P.http.withConfirmation(
-            s"Are you sure you want to create group ${S.group.name}?",
-            Callback.lazily {
-              val groupWithUserId =
-                S.group
-                  .copy(
-                    members = Some(Seq(Id(P.http.loggedInUser.id))),
-                    admins = Some(Seq(Id(P.http.loggedInUser.id))))
-              val onFailure = { httpResponse: HttpResponse =>
-                P.setNotification(P.http.toNotification("creating group", httpResponse))
-              }
-              val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-                P.setNotification(P.http.toNotification("creating group", httpResponse)) >>
-                  P.close() >>
-                  P.refreshGroups()
-              }
-              P.http.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
-            }
-          )
-      } else e.preventDefaultCB
+    def generateInputFieldProps(S: State): List[ValidatedInputField.Props] =
+      List(
+        ValidatedInputField.Props(
+          changeName,
+          inputClass = "form-control test-name",
+          label = Some("Name"),
+          helpText = Some("Group name. Cannot contain spaces"),
+          initialValue = Some(S.group.name),
+          validations = Some(
+            InputFieldValidations(required = true, maxSize = Some(255), canContainSpaces = false))
+        ),
+        ValidatedInputField.Props(
+          changeEmail,
+          label = Some("Email"),
+          inputClass = "form-control test-email",
+          helpText = Some("Group contact email. Preferably a multi user distribution"),
+          initialValue = Some(S.group.email),
+          typ = InputFieldType.Email,
+          validations = Some(InputFieldValidations(required = true))
+        ),
+        ValidatedInputField.Props(
+          changeDescription,
+          label = Some("Description")
+        )
+      )
 
-    def changeName(value: String): CallbackTo[Unit] =
+    def createGroup(P: Props, S: State): Callback =
+      P.http.withConfirmation(
+        s"Are you sure you want to create group ${S.group.name}?",
+        Callback.lazily {
+          val user = P.http.getLoggedInUser()
+          val groupWithUserId =
+            S.group
+              .copy(members = Seq(Id(user.id)), admins = Seq(Id(user.id)))
+          val onFailure = { httpResponse: HttpResponse =>
+            setNotification(P.http.toNotification("creating group", httpResponse))
+          }
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
+            setNotification(P.http.toNotification("creating group", httpResponse)) >>
+              P.close() >>
+              P.refreshGroups()
+          }
+          P.http.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
+        }
+      )
+
+    def changeName(value: String): Callback =
       bs.modState { s =>
         val g = s.group.copy(name = value)
         s.copy(group = g)
       }
 
-    def changeEmail(value: String): CallbackTo[Unit] =
+    def changeEmail(value: String): Callback =
       bs.modState { s =>
         val g = s.group.copy(email = value)
         s.copy(group = g)
       }
 
-    def changeDescription(value: String): CallbackTo[Unit] =
-      bs.modState { s =>
+    def changeDescription(value: String): Callback =
+      if (!value.isEmpty) bs.modState { s =>
         val g = s.group.copy(description = Some(value))
         s.copy(group = g)
-      }
+      } else Callback.empty
 
     private val header =
       """

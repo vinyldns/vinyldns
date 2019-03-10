@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.membership
+package vinyldns.client.models
 
-import upickle.default.{macroRW, ReadWriter => RW}
-import vinyldns.client.models.OptionRW
+import upickle.default._
 
-case class GroupList(
-    groups: List[Group],
-    maxItems: Option[Int],
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
-    groupNameFilter: Option[String] = None)
+trait OptionRW {
+  // uPickle by default treats empty options as empty json arrays, this has it use None and js.null
+  implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
+    implicitly[Writer[T]].comap[Option[T]] {
+      case None => null.asInstanceOf[T]
+      case Some(x) => x
+    }
 
-object GroupList extends OptionRW {
-  implicit val rw: RW[GroupList] = macroRW
+  implicit def OptionReader[T: Reader]: Reader[Option[T]] =
+    implicitly[Reader[T]].mapNulls {
+      case null => None
+      case x => Some(x)
+    }
 }

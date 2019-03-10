@@ -33,12 +33,12 @@ object GroupsTable {
       refresh: () => Callback,
       router: RouterCtl[Page])
 
-  private val listGroupsTable = ScalaComponent
+  val component = ScalaComponent
     .builder[Props](displayName = "ListGroupsTable")
     .renderBackend[Backend]
     .build
 
-  def apply(props: Props): Unmounted[Props, Unit, Backend] = listGroupsTable(props)
+  def apply(props: Props): Unmounted[Props, Unit, Backend] = component(props)
 
   class Backend {
     def render(P: Props): VdomElement =
@@ -56,39 +56,39 @@ object GroupsTable {
                 )
               ),
               <.tbody(
-                gl.groups.map {
-                  group =>
-                    <.tr(
-                      <.td(group.name),
-                      <.td(group.email),
-                      <.td(group.description),
-                      <.td(
-                        <.div(
-                          ^.className := "table-form-group",
-                          <.a(
-                            ^.className := "btn btn-info btn-rounded",
-                            P.router.setOnClick(ToGroupViewPage(group.id.get)),
-                            ^.title := s"View group ${group.name}",
-                            VdomAttr("data-toggle") := "tooltip",
-                            <.span(^.className := "fa fa-eye")
-                          ),
-                          <.button(
-                            ^.className := "btn btn-danger btn-rounded",
-                            ^.`type` := "button",
-                            ^.onClick --> deleteGroup(P, group),
-                            ^.title := s"Delete group ${group.name}",
-                            VdomAttr("data-toggle") := "tooltip",
-                            <.span(^.className := "fa fa-trash")
-                          )
-                        )
-                      )
-                    )
-                }.toTagMod
+                gl.groups.map(toTableRow(P, _)).toTagMod
               )
             )
           case Some(gl) if gl.groups.isEmpty => <.p("You don't have any groups yet")
           case None => TagMod.empty
         }
+      )
+
+    def toTableRow(P: Props, group: Group): TagMod =
+      <.tr(
+        <.td(group.name),
+        <.td(group.email),
+        <.td(group.description),
+        <.td(
+          <.div(
+            ^.className := "table-form-group",
+            <.a(
+              ^.className := "btn btn-info btn-rounded",
+              P.router.setOnClick(ToGroupViewPage(group.id)),
+              ^.title := s"View group ${group.name}",
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-eye")
+            ),
+            <.button(
+              ^.className := "btn btn-danger btn-rounded",
+              ^.`type` := "button",
+              ^.onClick --> deleteGroup(P, group),
+              ^.title := s"Delete group ${group.name}",
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-trash")
+            )
+          )
+        )
       )
 
     def deleteGroup(P: Props, group: Group): Callback =
@@ -105,7 +105,7 @@ object GroupsTable {
               P.setNotification(
                 P.http.toNotification(s"deleting group ${group.name}", httpResponse))
             }
-            P.http.delete(DeleteGroupRoute(group.id.getOrElse("")), onSuccess, onFailure)
+            P.http.delete(DeleteGroupRoute(group.id), onSuccess, onFailure)
           }
       )
   }

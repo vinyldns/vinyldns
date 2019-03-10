@@ -18,7 +18,7 @@ package vinyldns.client.models.membership
 
 import vinyldns.client.models.user.User
 import upickle.default.{macroRW, ReadWriter => RW}
-import upickle.default._
+import vinyldns.client.models.OptionRW
 
 case class MemberList(
     members: List[User],
@@ -27,19 +27,6 @@ case class MemberList(
     maxItems: Int
 )
 
-object MemberList {
+object MemberList extends OptionRW {
   implicit val rw: RW[MemberList] = macroRW
-
-  // uPickle by default treats empty options as empty arrays, this has it use None
-  implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
-    implicitly[Writer[T]].comap[Option[T]] {
-      case None => null.asInstanceOf[T]
-      case Some(x) => x
-    }
-
-  implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    implicitly[Reader[T]].mapNulls {
-      case null => None
-      case x => Some(x)
-    }
 }

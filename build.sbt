@@ -383,6 +383,8 @@ lazy val portal = (project in file("modules/portal")).enablePlugins(PlayScala, A
 
     scalaJSProjects := Seq(client),
 
+    devCommands in scalaJSPipeline ++= Seq("test", "testOnly"),
+
     pipelineStages in Assets := Seq(scalaJSPipeline)
   )
   .dependsOn(dynamodb, mysql)
@@ -391,15 +393,17 @@ lazy val client = (project in file("modules/client"))
   .enablePlugins(AutomateHeaderPlugin, ScalaJSBundlerPlugin)
   .settings(sharedSettings)
   .settings(testSettings)
+  .settings(scalaStyleCompile ++ scalaStyleTest)
   .settings(
     name := "client",
     libraryDependencies ++= clientDependencies.value ++ clientTestDependencies.value.map(_ % "test"),
     requireJsDomEnv in Test := true,
     npmDependencies in Compile ++= clientNpmDependencies,
-    webpackBundlingMode := BundlingMode.LibraryOnly(),
-    unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
+    coverageEnabled := false,
+    webpackBundlingMode := BundlingMode.LibraryOnly()
+    // if we ever need to depend on core we need to add this setting
+    // unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
   )
-  .dependsOn(core)
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",
