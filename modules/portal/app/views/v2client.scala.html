@@ -15,28 +15,28 @@
 		<link rel="stylesheet" type="text/css" id="theme" href="/public/gentelella/build/css/custom.css"/>
 		<link rel="stylesheet" type="text/css" id="theme" href="/public/css/vinyldns.css"/>
 		<link rel="stylesheet" type="text/css" id="theme" href="/public/css/theme-overrides.css"/>
+	</head>
+	<body onload="ReactApp.main('root')">
+		<div id="root"></div>
 
-		<!-- choose full opt if it exists, fastopt otherwise -->
+		<!-- choose full opt if it exists, fast opt otherwise -->
 		@{
 			def toAsset(name: String) = routes.Assets.versioned(name).toString
 			def exists(name: String) = getClass.getResource(s"/public/$name") != null
 			Seq(s"client-opt-library.js", s"client-fastopt-library.js").find(exists).map { name =>
-				val src = toAsset(name)
-				val loader = toAsset("lib/loadScalaJsLibrary.js")
-				<div>
+			val src = toAsset(name)
+			val loader = toAsset("lib/loadScalaJsLibrary.js")
+			<div>
+				<script src={s"$src"} type="text/javascript"></script>
+				<script src={s"$loader"} type="text/javascript"></script>
+				{
+					Seq(s"client-opt.js", s"client-fastopt.js").find(exists).map { name =>
+					val src = toAsset(name)
 					<script src={s"$src"} type="text/javascript"></script>
-					<script src={s"$loader"} type="text/javascript"></script>
-					{
-						Seq(s"client-opt.js", s"client-fastopt.js").find(exists).map { name =>
-							val src = toAsset(name)
-							<script src={s"$src"} type="text/javascript"></script>
 					}.get
 				}
-				</div>
+			</div>
 			}
 		}
-	</head>
-	<body onload="ReactApp.main('root')">
-		<div id="root"></div>
 	</body>
 </html>

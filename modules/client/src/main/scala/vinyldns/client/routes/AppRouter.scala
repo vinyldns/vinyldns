@@ -22,7 +22,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
 import vinyldns.client.components.{AlertBox, Breadcrumb, LeftNav, TopNav}
 import vinyldns.client.pages.extras.NotFoundPage
-import vinyldns.client.pages.group.GroupViewPage
+import vinyldns.client.pages.groupview.GroupViewPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}

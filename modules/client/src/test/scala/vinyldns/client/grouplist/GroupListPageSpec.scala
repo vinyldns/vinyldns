@@ -19,6 +19,7 @@ package vinyldns.client.grouplist
 import org.scalatest._
 import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
+import vinyldns.client.SharedTestData
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.routes.AppRouter.{Page, ToGroupListPage}

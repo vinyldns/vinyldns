@@ -26,7 +26,7 @@ object ValidatedForm {
   case class Props(
       className: String,
       inputFieldProps: List[ValidatedInputField.Props],
-      onSubmit: () => Callback)
+      onSubmit: Unit => Callback)
 
   case class State(
       refsToInputFields: List[WithScalaComponent[ // scalastyle:ignore
@@ -63,7 +63,7 @@ object ValidatedForm {
         r.map(mounted => mounted.state.isValid).get.asCallback.runNow()
       }
 
-      if (!validated.contains(false)) e.preventDefaultCB >> P.onSubmit()
+      if (!validated.contains(false)) e.preventDefaultCB >> P.onSubmit(())
       else e.preventDefaultCB >> Callback.empty
     }
   }

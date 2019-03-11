@@ -21,10 +21,10 @@ import upickle.default._
 
 case class User(
     userName: String,
-    firstName: Option[String],
-    lastName: Option[String],
-    email: Option[String],
     id: String,
+    firstName: Option[String] = None,
+    lastName: Option[String] = None,
+    email: Option[String] = None,
     isSuper: Boolean = false,
     lockStatus: String = "Unlocked")
 

@@ -24,7 +24,7 @@ import vinyldns.client.http.{Http, PostGroupRoute}
 import vinyldns.client.models.membership.{Group, GroupCreateInfo}
 import vinyldns.client.pages.grouplist.components.CreateGroupModal
 import upickle.default.write
-import vinyldns.client.grouplist.SharedTestData
+import vinyldns.client.SharedTestData
 import vinyldns.client.models.Id
 
 import scala.language.existentials

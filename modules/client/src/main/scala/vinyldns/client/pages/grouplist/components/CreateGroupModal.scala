@@ -52,7 +52,7 @@ object CreateGroupModal {
             ValidatedForm.Props(
               "form form-horizontal form-label-left test-create-group-form",
               generateInputFieldProps(S),
-              () => createGroup(P, S)),
+              _ => createGroup(P, S)),
             <.div(
               <.div(^.className := "ln_solid"),
               <.div(
@@ -78,7 +78,7 @@ object CreateGroupModal {
       List(
         ValidatedInputField.Props(
           changeName,
-          inputClass = "form-control test-name",
+          inputClass = Some("test-name"),
           label = Some("Name"),
           helpText = Some("Group name. Cannot contain spaces"),
           initialValue = Some(S.group.name),
@@ -88,7 +88,7 @@ object CreateGroupModal {
         ValidatedInputField.Props(
           changeEmail,
           label = Some("Email"),
-          inputClass = "form-control test-email",
+          inputClass = Some("test-email"),
           helpText = Some("Group contact email. Preferably a multi user distribution"),
           initialValue = Some(S.group.email),
           typ = InputFieldType.Email,

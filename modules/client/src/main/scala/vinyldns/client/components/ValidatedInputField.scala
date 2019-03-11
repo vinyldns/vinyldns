@@ -37,11 +37,11 @@ object InputFieldType extends Enumeration {
 object ValidatedInputField {
   case class Props(
       parentOnChange: String => Callback,
-      labelClass: String = "control-label",
       labelSize: String = "col-md-3 col-sm-3 col-xs-12",
-      inputClass: String = "form-control",
       inputSize: String = "col-md-6 col-sm-6 col-xs-12",
       label: Option[String] = None,
+      labelClass: Option[String] = None,
+      inputClass: Option[String] = None,
       placeholder: Option[String] = None,
       helpText: Option[String] = None,
       initialValue: Option[String] = None,
@@ -71,14 +71,14 @@ object ValidatedInputField {
         ^.className := "form-group",
         P.label.map { l =>
           <.label(
-            ^.className := s"${P.labelClass} ${P.labelSize}",
+            ^.className := s"control-label ${P.labelClass.getOrElse("")} ${P.labelSize}",
             l
           )
         },
         <.div(
           ^.className := P.inputSize,
           <.input(
-            ^.className := generateInputClass(P, S),
+            ^.className := s"form-control ${generateInputClass(P, S)}",
             ^.`type` := toInputType(P),
             ^.value := S.value.getOrElse(""),
             ^.placeholder := P.placeholder.getOrElse(""),
@@ -154,8 +154,8 @@ object ValidatedInputField {
       else ().asRight
 
     def generateInputClass(P: Props, S: State): String =
-      if (S.isValid) P.inputClass
-      else s"${P.inputClass} parsley-error"
+      if (S.isValid) P.inputClass.getOrElse("")
+      else s"${P.inputClass.getOrElse("")} parsley-error"
 
     def errors(S: State): VdomNode =
       if (S.isValid) <.span

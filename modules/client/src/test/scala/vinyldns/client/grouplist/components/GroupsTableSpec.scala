@@ -21,7 +21,7 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import org.scalatest._
 import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
-import vinyldns.client.grouplist.SharedTestData
+import vinyldns.client.SharedTestData
 import vinyldns.client.http.{DeleteGroupRoute, Http}
 import vinyldns.client.pages.grouplist.components.GroupsTable
 import vinyldns.client.models.Notification
