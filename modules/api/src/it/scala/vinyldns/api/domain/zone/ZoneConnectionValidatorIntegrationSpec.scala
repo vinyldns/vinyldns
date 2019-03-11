@@ -33,7 +33,7 @@ class ZoneConnectionValidatorIntegrationSpec extends WordSpec with Matchers with
     "respond with a failure if health check fails" in {
       val connections = VinylDNSConfig.configuredDnsConnections
       val badConn = connections.defaultZoneConnection.copy(primaryServer = "localhost:1234")
-      val toTest = new ConfiguredDnsConnections(badConn, badConn, List())
+      val toTest = ConfiguredDnsConnections(badConn, badConn, List())
       val result =
         new ZoneConnectionValidator(toTest)
           .healthCheck(10000)

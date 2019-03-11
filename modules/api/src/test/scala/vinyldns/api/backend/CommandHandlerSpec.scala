@@ -65,7 +65,7 @@ class CommandHandlerSpec
   private val mockZoneSyncProcessor = mock[ZoneChange => IO[ZoneChange]]
   private val defaultConn =
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
-  private val connections = new ConfiguredDnsConnections(defaultConn, defaultConn, List())
+  private val connections = ConfiguredDnsConnections(defaultConn, defaultConn, List())
   private val processor =
     CommandHandler.processChangeRequests(
       mockZoneChangeProcessor,
@@ -203,7 +203,7 @@ class CommandHandlerSpec
           mockZoneChangeProcessor,
           mockRecordChangeProcessor,
           mockZoneSyncProcessor,
-          new ConfiguredDnsConnections(default, default, List())
+          ConfiguredDnsConnections(default, default, List())
         )
       val change = TestCommandMessage(noConnChange, "foo")
       doReturn(IO.pure(change))

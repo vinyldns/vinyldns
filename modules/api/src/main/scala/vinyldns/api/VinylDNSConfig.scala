@@ -115,7 +115,7 @@ object VinylDNSConfig {
       } else List.empty
     }
 
-    new ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
+    ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
   }
 
   lazy val healthCheckTimeout: IO[Int] =

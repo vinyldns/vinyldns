@@ -45,8 +45,8 @@ object ZoneConnectionValidator {
       .flatMap(getBackend(_, configuredDnsConnections))
       .map(_.zoneConnection)
 
-    backendConnection
-      .orElse(zone.connection)
+    zone.connection
+      .orElse(backendConnection)
       .getOrElse(configuredDnsConnections.defaultZoneConnection)
   }
 

@@ -156,7 +156,6 @@ final case class DnsBackend(
   )
 }
 
-class ConfiguredDnsConnections(
-    val defaultZoneConnection: ZoneConnection,
-    val defaultTransferConnection: ZoneConnection,
-    val dnsBackends: List[DnsBackend])
+final case class ConfiguredDnsConnections(defaultZoneConnection: ZoneConnection,
+                                          defaultTransferConnection: ZoneConnection,
+                                          dnsBackends: List[DnsBackend])

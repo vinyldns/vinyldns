@@ -67,7 +67,7 @@ class ZoneConnectionValidatorSpec
     ZoneConnection("name", "key-name", "key", "localhost:19001")
 
   private def testConfiguredConnections: ConfiguredDnsConnections =
-    new ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List())
+    ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List())
 
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(
