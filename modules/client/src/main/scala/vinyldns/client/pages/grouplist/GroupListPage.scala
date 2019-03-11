@@ -87,7 +87,7 @@ object GroupListPage extends PropsFromAppRouter {
                 <.div(
                   ^.className := "panel-body",
                   GroupsTable(GroupsTable
-                    .Props(P.http, S.groupsList, setNotification, () => listGroups(P), P.router)))
+                    .Props(P.http, S.groupsList, setNotification, _ => listGroups(P), P.router)))
               )
             )
           )

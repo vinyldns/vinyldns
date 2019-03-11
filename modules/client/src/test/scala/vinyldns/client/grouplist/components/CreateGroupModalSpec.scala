@@ -22,17 +22,14 @@ import japgolly.scalajs.react._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.http.{Http, PostGroupRoute}
 import vinyldns.client.models.membership.{Group, GroupCreateInfo}
-import vinyldns.client.models.user.User
 import vinyldns.client.pages.grouplist.components.CreateGroupModal
 import upickle.default.write
+import vinyldns.client.grouplist.SharedTestData
 import vinyldns.client.models.Id
 
 import scala.language.existentials
 
-class CreateGroupModalSpec extends WordSpec with Matchers with MockFactory {
-  val testUser: User =
-    User("testUser", Some("test"), Some("user"), Some("test@email.com"), "testId")
-
+class CreateGroupModalSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   "CreateGroupModal" should {
     "not call withConfirmation if submitted without required fields" in {
       val mockHttp = mock[Http]
@@ -73,7 +70,7 @@ class CreateGroupModalSpec extends WordSpec with Matchers with MockFactory {
       }
     }
 
-    "post group if submitting with required fields and confirming" in {
+    "call http.post if submitting with required fields and confirming" in {
       val mockHttp = mock[Http]
       val mockClose = mock[() => Callback]
       val mockRefresh = mock[() => Callback]

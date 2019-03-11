@@ -20,28 +20,20 @@ import org.scalatest._
 import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
-import vinyldns.client.models.Id
-import vinyldns.client.models.membership.{Group, GroupList}
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.routes.AppRouter.{Page, ToGroupListPage}
 import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.grouplist.components.CreateGroupModal
 
 import scala.language.existentials
 
-class GroupListPageSpec extends WordSpec with Matchers with MockFactory {
-  def generateGroups(numGroups: Int): Seq[Group] =
-    for {
-      i <- 0 until numGroups
-      members = Seq(Id("id-i"))
-    } yield Group(s"name-$i", s"email-$i@test.com", s"id-$i", s"created-$i", members, members)
-
-  var mockHttp: Http = _
+class GroupListPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
+  val initialGroupList = GroupList(generateGroups(1).toList, Some(100))
   val mockRouter = MockRouterCtl[Page]()
 
-  val initialGroupList = GroupList(generateGroups(1).toList, Some(100))
+  trait Fixture {
+    val mockHttp = mock[Http]
 
-  def beforeMount(): Unit = {
-    mockHttp = mock[Http]
     (mockHttp.get[GroupList] _)
       .expects(ListGroupsRoute, *, *)
       .once()
@@ -51,8 +43,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory {
   }
 
   "GroupListPage" should {
-    "get groups when mounting" in {
-      beforeMount()
+    "get groups when mounting" in new Fixture {
 
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>
@@ -60,8 +51,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory {
       }
     }
 
-    "update groups when hitting refresh button" in {
-      beforeMount()
+    "update groups when hitting refresh button" in new Fixture {
       val updatedGroupsList = GroupList(generateGroups(2).toList, Some(100))
 
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
@@ -83,8 +73,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory {
       }
     }
 
-    "show create group modal when clicking create group button" in {
-      beforeMount()
+    "show create group modal when clicking create group button" in new Fixture {
 
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>
@@ -100,8 +89,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory {
       }
     }
 
-    "close create group modal after clicking close button" in {
-      beforeMount()
+    "close create group modal after clicking close button" in new Fixture {
 
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>

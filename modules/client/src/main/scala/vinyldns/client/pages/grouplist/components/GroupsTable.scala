@@ -30,7 +30,7 @@ object GroupsTable {
       http: Http,
       groupsList: Option[GroupList],
       setNotification: Option[Notification] => Callback,
-      refresh: () => Callback,
+      refresh: Unit => Callback,
       router: RouterCtl[Page])
 
   val component = ScalaComponent
@@ -60,7 +60,7 @@ object GroupsTable {
               )
             )
           case Some(gl) if gl.groups.isEmpty => <.p("You don't have any groups yet")
-          case None => TagMod.empty
+          case None => <.p("Loading your groups...")
         }
       )
 
@@ -73,14 +73,14 @@ object GroupsTable {
           <.div(
             ^.className := "table-form-group",
             <.a(
-              ^.className := "btn btn-info btn-rounded",
+              ^.className := "btn btn-info btn-rounded test-view",
               P.router.setOnClick(ToGroupViewPage(group.id)),
               ^.title := s"View group ${group.name}",
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-eye")
             ),
             <.button(
-              ^.className := "btn btn-danger btn-rounded",
+              ^.className := "btn btn-danger btn-rounded test-delete",
               ^.`type` := "button",
               ^.onClick --> deleteGroup(P, group),
               ^.title := s"Delete group ${group.name}",
@@ -99,7 +99,7 @@ object GroupsTable {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
               P.setNotification(
                 P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
-                P.refresh()
+                P.refresh(())
             }
             val onFailure = { httpResponse: HttpResponse =>
               P.setNotification(
