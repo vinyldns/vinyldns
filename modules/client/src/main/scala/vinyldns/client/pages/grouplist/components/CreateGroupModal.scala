@@ -82,8 +82,8 @@ object CreateGroupModal {
           label = Some("Name"),
           helpText = Some("Group name. Cannot contain spaces"),
           initialValue = Some(S.group.name),
-          validations = Some(
-            InputFieldValidations(required = true, maxSize = Some(255), canContainSpaces = false))
+          validations =
+            Some(InputFieldValidations(required = true, maxSize = Some(255), noSpaces = true))
         ),
         ValidatedInputField.Props(
           changeEmail,

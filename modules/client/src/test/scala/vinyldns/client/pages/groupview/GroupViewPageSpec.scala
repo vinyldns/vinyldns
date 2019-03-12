@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.groupview
+package vinyldns.client.pages.groupview
 
 import org.scalatest._
 import japgolly.scalajs.react.test._
@@ -23,7 +23,6 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http.{GetGroupMembersRoute, GetGroupRoute, Http, HttpResponse}
 import vinyldns.client.models.membership.{Group, MemberList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
-import vinyldns.client.pages.groupview.GroupViewPage
 import vinyldns.client.pages.groupview.components.{MembersTable, NewMemberForm}
 
 class GroupViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {

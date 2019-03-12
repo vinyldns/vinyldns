@@ -62,6 +62,7 @@ object NewMemberForm {
               ^.className := "check",
               <.input(
                 GlobalStyle.styleSheet.cursorPointer,
+                ^.className := "test-new-member-manager",
                 ^.`type` := "checkbox",
                 ^.checked := S.isManager,
                 ^.onChange --> bs.modState(_.copy(isManager = !S.isManager))
@@ -99,7 +100,7 @@ object NewMemberForm {
           validations = Some(
             InputFieldValidations(
               required = true,
-              canContainSpaces = false
+              noSpaces = false
             ))
         )
       )

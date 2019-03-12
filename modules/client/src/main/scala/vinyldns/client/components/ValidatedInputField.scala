@@ -26,7 +26,7 @@ import scala.util.Try
 
 case class InputFieldValidations(
     maxSize: Option[Int] = None,
-    canContainSpaces: Boolean = true,
+    noSpaces: Boolean = false,
     required: Boolean = false)
 
 object InputFieldType extends Enumeration {
@@ -66,6 +66,8 @@ object ValidatedInputField {
   def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
 
   class Backend(bs: BackendScope[Props, State]) {
+    import Backend._
+
     def render(P: Props, S: State): VdomElement =
       <.div(
         ^.className := "form-group",
@@ -99,7 +101,7 @@ object ValidatedInputField {
       }
 
     def onChange(value: String, P: Props): Callback = {
-      val validatedValue = validate(value, P)
+      val validatedValue = validate(value, P.validations)
       val localOnChange = validatedValue match {
         case Right(_) =>
           bs.modState { S =>
@@ -113,8 +115,31 @@ object ValidatedInputField {
       localOnChange >> P.parentOnChange(value)
     }
 
-    def validate(value: String, P: Props): Either[String, Unit] =
-      P.validations match {
+    def generateInputClass(P: Props, S: State): String =
+      if (S.isValid) P.inputClass.getOrElse("")
+      else s"${P.inputClass.getOrElse("")} parsley-error"
+
+    def errors(S: State): VdomNode =
+      if (S.isValid) <.span
+      else
+        <.ul(
+          ^.className := "parsley-errors-list filled",
+          <.li(
+            ^.className := "parley-required",
+            S.errorMessage.getOrElse[String]("Invalid")
+          )
+        )
+
+    def helpText(text: Option[String]): VdomNode =
+      text match {
+        case Some(t) => <.div(^.className := "help-block", t)
+        case None => <.div
+      }
+  }
+
+  object Backend {
+    def validate(value: String, validations: Option[InputFieldValidations]): Either[String, Unit] =
+      validations match {
         case Some(checks) =>
           for {
             _ <- validateRequired(value, checks)
@@ -137,7 +162,7 @@ object ValidatedInputField {
       checks.maxSize match {
         case Some(max) =>
           Either.cond(
-            value.length < max,
+            value.length <= max,
             (),
             s"Must be less than $max characters"
           )
@@ -145,33 +170,12 @@ object ValidatedInputField {
       }
 
     def validateNoSpaces(value: String, checks: InputFieldValidations): Either[String, Unit] =
-      if (!checks.canContainSpaces)
+      if (checks.noSpaces)
         Either.cond(
           !value.contains(" "),
           (),
           "Cannot contain spaces"
         )
       else ().asRight
-
-    def generateInputClass(P: Props, S: State): String =
-      if (S.isValid) P.inputClass.getOrElse("")
-      else s"${P.inputClass.getOrElse("")} parsley-error"
-
-    def errors(S: State): VdomNode =
-      if (S.isValid) <.span
-      else
-        <.ul(
-          ^.className := "parsley-errors-list filled",
-          <.li(
-            ^.className := "parley-required",
-            S.errorMessage.getOrElse[String]("Invalid")
-          )
-        )
-
-    def helpText(text: Option[String]): VdomNode =
-      text match {
-        case Some(t) => <.div(^.className := "help-block", t)
-        case None => <.div
-      }
   }
 }

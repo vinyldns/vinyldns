@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.grouplist
+package vinyldns.client.pages.grouplist
 
 import org.scalatest._
 import japgolly.scalajs.react.test._
@@ -23,7 +23,6 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.routes.AppRouter.{Page, ToGroupListPage}
-import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.grouplist.components.CreateGroupModal
 
 import scala.language.existentials

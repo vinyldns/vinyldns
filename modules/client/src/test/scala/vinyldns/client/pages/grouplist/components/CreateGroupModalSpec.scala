@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.grouplist.components
+package vinyldns.client.pages.grouplist.components
 
 import org.scalatest._
 import japgolly.scalajs.react.test._
@@ -22,7 +22,6 @@ import japgolly.scalajs.react._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.http.{Http, PostGroupRoute}
 import vinyldns.client.models.membership.{Group, GroupCreateInfo}
-import vinyldns.client.pages.grouplist.components.CreateGroupModal
 import upickle.default.write
 import vinyldns.client.SharedTestData
 import vinyldns.client.models.Id

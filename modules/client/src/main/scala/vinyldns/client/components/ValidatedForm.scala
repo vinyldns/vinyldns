@@ -45,7 +45,7 @@ object ValidatedForm {
     component(props)(children)
 
   class Backend {
-    def render(P: Props, S: State, propsChildren: PropsChildren): VdomElement =
+    def render(P: Props, S: State, children: PropsChildren): VdomElement =
       <.form(
         ^.className := P.className,
         ^.onSubmit ==> (e => validateForm(e, P, S)),
@@ -55,7 +55,7 @@ object ValidatedForm {
             z._2.component(z._1)
           }
           .toTagMod,
-        propsChildren
+        children
       )
 
     def validateForm(e: ReactEventFromInput, P: Props, S: State): Callback = {

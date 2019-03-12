@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.grouplist.components
+package vinyldns.client.pages.grouplist.components
 
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.RouterCtl
@@ -23,7 +23,6 @@ import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{DeleteGroupRoute, Http}
-import vinyldns.client.pages.grouplist.components.GroupsTable
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.Page

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.groupview.components
+package vinyldns.client.pages.groupview.components
 
 import japgolly.scalajs.react.Callback
 import org.scalatest._
@@ -25,7 +25,6 @@ import vinyldns.client.http.{GetGroupMembersRoute, Http, HttpResponse, UpdateGro
 import vinyldns.client.models.Id
 import vinyldns.client.models.membership.{Group, MemberList}
 import vinyldns.client.routes.AppRouter.Page
-import vinyldns.client.pages.groupview.components.MembersTable
 import upickle.default.write
 
 import scala.language.existentials

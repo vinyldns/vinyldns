@@ -1,2 +1,5 @@
 var exports = window;
-exports.require = window["ScalaJSBundlerLibrary"].require;
+var lib = window["ScalaJSBundlerLibrary"];
+if (lib) {
+    exports.require = lib.require;
+}
