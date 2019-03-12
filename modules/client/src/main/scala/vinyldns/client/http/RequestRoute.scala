@@ -20,11 +20,21 @@ import upickle.default.read
 import vinyldns.client.models.membership.{Group, GroupList, MemberList}
 import vinyldns.client.models.user.User
 
+import scala.scalajs.js.URIUtils
 import scala.util.Try
 
 sealed trait RequestRoute[T] {
   def path: String
+
   def parse(httpResponse: HttpResponse): Option[T]
+
+  def toQueryString(map: Map[String, String]): String =
+    if (map.isEmpty) ""
+    else
+      map.foldLeft("") {
+        case (a, (name, value)) if a.isEmpty => s"?$name=${URIUtils.encodeURIComponent(value)}"
+        case (a, (name, value)) => s"$a&$name=${URIUtils.encodeURIComponent(value)}"
+      }
 }
 
 object CurrentUserRoute extends RequestRoute[User] {
@@ -33,8 +43,13 @@ object CurrentUserRoute extends RequestRoute[User] {
     Try(Option(read[User](httpResponse.responseText))).getOrElse(None)
 }
 
-object ListGroupsRoute extends RequestRoute[GroupList] {
-  def path: String = "/api/groups"
+final case class ListGroupsRoute(nameFilter: Option[String] = None)
+    extends RequestRoute[GroupList] {
+  val queryStrings =
+    Map.empty[String, String] ++
+      nameFilter.map(f => "groupNameFilter" -> f)
+
+  def path: String = s"/api/groups${toQueryString(queryStrings)}"
   def parse(httpResponse: HttpResponse): Option[GroupList] =
     Try(Option(read[GroupList](httpResponse.responseText))).getOrElse(None)
 }

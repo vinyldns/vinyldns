@@ -24,7 +24,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import vinyldns.client.css.GlobalStyle
 
 object Modal {
-  case class Props(title: String, close: () => Callback)
+  case class Props(title: String, close: Unit => Callback)
 
   private val component = ScalaComponent
     .builder[Props]("Modal")
@@ -47,7 +47,7 @@ object Modal {
                 <.button(
                   ^.className := "close",
                   ^.`type` := "button",
-                  ^.onClick --> props.close(),
+                  ^.onClick --> props.close(()),
                   <.span("x")
                 ),
                 <.h4(

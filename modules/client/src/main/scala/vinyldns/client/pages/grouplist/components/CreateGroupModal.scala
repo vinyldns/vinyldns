@@ -28,7 +28,7 @@ import vinyldns.client.components.AlertBox.setNotification
 
 object CreateGroupModal {
   case class State(group: GroupCreateInfo)
-  case class Props(http: Http, close: () => Callback, refreshGroups: () => Callback)
+  case class Props(http: Http, close: Unit => Callback, refreshGroups: Unit => Callback)
 
   val component = ScalaComponent
     .builder[Props]("CreateGroupForm")
@@ -65,7 +65,7 @@ object CreateGroupModal {
                 <.button(
                   ^.`type` := "button",
                   ^.className := "btn btn-default pull-right test-close-create-group",
-                  ^.onClick --> P.close(),
+                  ^.onClick --> P.close(()),
                   "Close"
                 )
               )
@@ -113,8 +113,8 @@ object CreateGroupModal {
           }
           val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
             setNotification(P.http.toNotification("creating group", httpResponse)) >>
-              P.close() >>
-              P.refreshGroups()
+              P.close(()) >>
+              P.refreshGroups(())
           }
           P.http.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
         }

@@ -35,7 +35,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
     val mockHttp = mock[Http]
 
     (mockHttp.get[GroupList] _)
-      .expects(ListGroupsRoute, *, *)
+      .expects(ListGroupsRoute(), *, *)
       .once()
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
@@ -43,36 +43,6 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
   }
 
   "GroupListPage" should {
-    "get groups when mounting" in new Fixture {
-
-      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
-        c =>
-          c.state.groupsList shouldBe Some(initialGroupList)
-      }
-    }
-
-    "update groups when hitting refresh button" in new Fixture {
-      val updatedGroupsList = GroupList(generateGroups(2).toList, Some(100))
-
-      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
-        c =>
-          c.state.groupsList shouldBe Some(initialGroupList)
-
-          (mockHttp.get[GroupList] _)
-            .expects(ListGroupsRoute, *, *)
-            .once()
-            .onCall { (_, onSuccess, _) =>
-              onSuccess.apply(mock[HttpResponse], Some(updatedGroupsList))
-            }
-
-          val refreshButton =
-            ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-groups")
-          Simulate.click(refreshButton)
-
-          c.state.groupsList shouldBe Some(updatedGroupsList)
-      }
-    }
-
     "show create group modal when clicking create group button" in new Fixture {
 
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {

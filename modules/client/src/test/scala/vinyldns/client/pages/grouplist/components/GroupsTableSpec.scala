@@ -22,7 +22,7 @@ import org.scalatest._
 import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
-import vinyldns.client.http.{DeleteGroupRoute, Http}
+import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.Page
@@ -30,36 +30,123 @@ import vinyldns.client.routes.AppRouter.Page
 import scala.language.existentials
 
 class GroupsTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
+  val mockRouter = mock[RouterCtl[Page]]
+  val initialGroupList = GroupList(generateGroups(10).toList, Some(100))
+
   trait Fixture {
     val mockHttp = mock[Http]
-    val mockRouter = mock[RouterCtl[Page]]
+
+    (mockHttp.get[GroupList] _)
+      .expects(ListGroupsRoute(), *, *)
+      .once()
+      .onCall { (_, onSuccess, _) =>
+        onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
+      }
   }
 
   "GroupsTable" should {
-    "display loading message when group list is none" in new Fixture {
-      val groupsList = None
+    "get groups when mounting" in new Fixture {
       val props =
-        GroupsTable.Props(
-          mockHttp,
-          groupsList,
-          generateNoOpHandler[Option[Notification]],
-          generateNoOpHandler[Unit],
-          mockRouter)
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
+        c.state.groupsList shouldBe Some(initialGroupList)
+      }
+    }
+
+    "update groups when hitting refresh button" in new Fixture {
+      val updatedGroupsList = GroupList(generateGroups(2).toList, Some(100))
+      val props =
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
+        c.state.groupsList shouldBe Some(initialGroupList)
+
+        (mockHttp.get[GroupList] _)
+          .expects(ListGroupsRoute(), *, *)
+          .once()
+          .onCall { (_, onSuccess, _) =>
+            onSuccess.apply(mock[HttpResponse], Some(updatedGroupsList))
+          }
+
+        val refreshButton =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-groups")
+        Simulate.click(refreshButton)
+
+        c.state.groupsList shouldBe Some(updatedGroupsList)
+      }
+    }
+
+    "add groupNameFilter when someone uses search button" in new Fixture {
+      val props =
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(Some("filter")), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
+        val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupNameFilter")
+        Simulate.change(input, SimEvent.Change("filter"))
+
+        c.state.groupNameFilter shouldBe Some("filter")
+
+        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-search-form")
+        Simulate.submit(form)
+      }
+    }
+
+    "add groupNameFilter when someone uses refresh button" in new Fixture {
+      val props =
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(Some("filter")), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
+        val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupNameFilter")
+        Simulate.change(input, SimEvent.Change("filter"))
+
+        c.state.groupNameFilter shouldBe Some("filter")
+
+        val refresh = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-groups")
+        Simulate.click(refresh)
+      }
+    }
+
+    "display loading message when group list is none" in {
+      val mockHttp = mock[Http]
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
+      val props =
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.outerHtmlScrubbed() shouldBe "<div><p>Loading your groups...</p></div>"
       }
     }
 
-    "display no groups message if groups list is empty" in new Fixture {
-      val groupsList = Some(GroupList(List(), Some(100)))
+    "display no groups message if groups list is empty" in {
+      val mockHttp = mock[Http]
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(GroupList(List(), Some(100))))
+        }
+
       val props =
-        GroupsTable.Props(
-          mockHttp,
-          groupsList,
-          generateNoOpHandler[Option[Notification]],
-          generateNoOpHandler[Unit],
-          mockRouter)
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.outerHtmlScrubbed() shouldBe "<div><p>You don't have any groups yet</p></div>"
@@ -67,21 +154,13 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
     }
 
     "display groups in table" in new Fixture {
-      val groups = generateGroups(10).toList
-      val groupsList = Some(GroupList(groups, Some(100)))
-
       val props =
-        GroupsTable.Props(
-          mockHttp,
-          groupsList,
-          generateNoOpHandler[Option[Notification]],
-          generateNoOpHandler[Unit],
-          mockRouter)
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         val table = ReactTestUtils.findRenderedDOMComponentWithTag(c, "table")
         val html = table.outerHtmlScrubbed()
-        groups.map { group =>
+        initialGroupList.groups.map { group =>
           html should include(s"<td>${group.name}</td>")
           html should include(s"<td>${group.email}</td>")
           html should include(s"<td>${group.description.getOrElse("")}</td>")
@@ -90,41 +169,25 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
     }
 
     "call withConfirmation when clicking delete button" in new Fixture {
-      val groups = generateGroups(1).toList
-      val groupsList = Some(GroupList(groups, Some(100)))
-
       val props =
-        GroupsTable.Props(
-          mockHttp,
-          groupsList,
-          generateNoOpHandler[Option[Notification]],
-          generateNoOpHandler[Unit],
-          mockRouter)
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
 
       (mockHttp.withConfirmation _).expects(*, *).once().returns(Callback.empty)
       (mockHttp.delete[Group] _).expects(*, *, *).never()
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
-        val deleteButton = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-delete")
+        val deleteButton = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-delete")(0)
         Simulate.click(deleteButton)
       }
     }
 
     "call http.delete when clicking delete button and confirming" in new Fixture {
-      val groups = generateGroups(10).toList
-      val groupsList = Some(GroupList(groups, Some(100)))
-
       val props =
-        GroupsTable.Props(
-          mockHttp,
-          groupsList,
-          generateNoOpHandler[Option[Notification]],
-          generateNoOpHandler[Unit],
-          mockRouter)
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
 
       (mockHttp.withConfirmation _).expects(*, *).repeat(10 to 10).onCall((_, cb) => cb)
 
-      groups.map { g =>
+      initialGroupList.groups.map { g =>
         (mockHttp.delete[Group] _)
           .expects(DeleteGroupRoute(g.id), *, *)
           .once()

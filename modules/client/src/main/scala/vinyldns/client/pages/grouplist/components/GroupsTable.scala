@@ -20,7 +20,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse}
+import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
@@ -28,35 +29,81 @@ import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 object GroupsTable {
   case class Props(
       http: Http,
-      groupsList: Option[GroupList],
       setNotification: Option[Notification] => Callback,
-      refresh: Unit => Callback,
       router: RouterCtl[Page])
+
+  case class State(groupsList: Option[GroupList] = None, groupNameFilter: Option[String] = None)
 
   val component = ScalaComponent
     .builder[Props](displayName = "ListGroupsTable")
+    .initialState(State())
     .renderBackend[Backend]
+    .componentWillMount(e => e.backend.listGroups(e.props, e.state))
     .build
 
-  def apply(props: Props): Unmounted[Props, Unit, Backend] = component(props)
+  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
 
-  class Backend {
-    def render(P: Props): VdomElement =
+  class Backend(bs: BackendScope[Props, State]) {
+    def render(P: Props, S: State): VdomElement =
       <.div(
-        P.groupsList match {
+        S.groupsList match {
           case Some(gl) if gl.groups.nonEmpty =>
-            <.table(
-              ^.className := "table",
-              <.thead(
-                <.tr(
-                  <.th("Name"),
-                  <.th("Email"),
-                  <.th("Description"),
-                  <.th("Actions")
-                )
+            <.div(
+              <.div(
+                ^.className := "panel-heading",
+                <.div(
+                  ^.className := "btn-group",
+                  <.button(
+                    ^.className := "btn btn-default test-refresh-groups",
+                    ^.onClick --> listGroups(P, S),
+                    ^.`type` := "button",
+                    <.span(^.className := "fa fa-refresh"),
+                    "  Refresh")
+                ),
+                <.form(
+                  ^.className := "pull-right input-group test-search-form",
+                  ^.onSubmit ==> { e: ReactEventFromInput =>
+                    e.preventDefaultCB >> listGroups(P, S)
+                  },
+                  <.div(
+                    ^.className := "input-group",
+                    <.span(
+                      ^.className := "input-group-btn",
+                      <.button(
+                        ^.className := "btn btn-primary btn-left-round",
+                        ^.`type` := "submit",
+                        <.span(
+                          ^.className := "fa fa-search"
+                        )
+                      )
+                    ),
+                    <.input(
+                      ^.className := "form-control test-groupNameFilter",
+                      ^.placeholder := "Group Name",
+                      ^.onChange ==> { e: ReactEventFromInput =>
+                        updateGroupNameFilter(e.target.value)
+                      }
+                    ),
+                  )
+                ),
               ),
-              <.tbody(
-                gl.groups.map(toTableRow(P, _)).toTagMod
+              <.div(^.className := "clearfix"),
+              <.div(
+                ^.className := "panel-body",
+                <.table(
+                  ^.className := "table",
+                  <.thead(
+                    <.tr(
+                      <.th("Name"),
+                      <.th("Email"),
+                      <.th("Description"),
+                      <.th("Actions")
+                    )
+                  ),
+                  <.tbody(
+                    gl.groups.map(toTableRow(P, S, _)).toTagMod
+                  )
+                )
               )
             )
           case Some(gl) if gl.groups.isEmpty => <.p("You don't have any groups yet")
@@ -64,7 +111,17 @@ object GroupsTable {
         }
       )
 
-    def toTableRow(P: Props, group: Group): TagMod =
+    def listGroups(P: Props, S: State): Callback = {
+      val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
+        bs.modState(_.copy(groupsList = parsed))
+      }
+      val onFailure = { httpResponse: HttpResponse =>
+        setNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
+      }
+      P.http.get(ListGroupsRoute(S.groupNameFilter), onSuccess, onFailure)
+    }
+
+    def toTableRow(P: Props, S: State, group: Group): TagMod =
       <.tr(
         <.td(group.name),
         <.td(group.email),
@@ -77,21 +134,23 @@ object GroupsTable {
               P.router.setOnClick(ToGroupViewPage(group.id)),
               ^.title := s"View group ${group.name}",
               VdomAttr("data-toggle") := "tooltip",
-              <.span(^.className := "fa fa-eye")
+              <.span(^.className := "fa fa-eye"),
+              " View"
             ),
             <.button(
               ^.className := "btn btn-danger btn-rounded test-delete",
               ^.`type` := "button",
-              ^.onClick --> deleteGroup(P, group),
+              ^.onClick --> deleteGroup(P, S, group),
               ^.title := s"Delete group ${group.name}",
               VdomAttr("data-toggle") := "tooltip",
-              <.span(^.className := "fa fa-trash")
+              <.span(^.className := "fa fa-trash"),
+              " Delete"
             )
           )
         )
       )
 
-    def deleteGroup(P: Props, group: Group): Callback =
+    def deleteGroup(P: Props, S: State, group: Group): Callback =
       P.http.withConfirmation(
         s"Are you sure you want to delete group ${group.name}?",
         Callback
@@ -99,7 +158,7 @@ object GroupsTable {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
               P.setNotification(
                 P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
-                P.refresh(())
+                listGroups(P, S)
             }
             val onFailure = { httpResponse: HttpResponse =>
               P.setNotification(
@@ -108,5 +167,9 @@ object GroupsTable {
             P.http.delete(DeleteGroupRoute(group.id), onSuccess, onFailure)
           }
       )
+
+    def updateGroupNameFilter(value: String): Callback =
+      if (value.isEmpty) bs.modState(_.copy(groupNameFilter = None))
+      else bs.modState(_.copy(groupNameFilter = Some(value)))
   }
 }

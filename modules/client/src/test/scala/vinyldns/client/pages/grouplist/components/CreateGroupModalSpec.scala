@@ -32,13 +32,12 @@ class CreateGroupModalSpec extends WordSpec with Matchers with MockFactory with 
   "CreateGroupModal" should {
     "not call withConfirmation if submitted without required fields" in {
       val mockHttp = mock[Http]
-      val mockClose = mock[() => Callback]
-      val mockRefresh = mock[() => Callback]
 
       (mockHttp.withConfirmation _).expects(*, *).never()
       (mockHttp.post _).expects(*, *, *, *).never()
 
-      val props = CreateGroupModal.Props(mockHttp, mockClose, mockRefresh)
+      val props =
+        CreateGroupModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit])
       ReactTestUtils.withRenderedIntoDocument(CreateGroupModal(props)) { c =>
         val form =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-create-group-form")
@@ -48,13 +47,12 @@ class CreateGroupModalSpec extends WordSpec with Matchers with MockFactory with 
 
     "call withConfirmation if submitting with required fields" in {
       val mockHttp = mock[Http]
-      val mockClose = mock[() => Callback]
-      val mockRefresh = mock[() => Callback]
 
       (mockHttp.withConfirmation _).expects(*, *).once().returns(Callback.empty)
       (mockHttp.post _).expects(*, *, *, *).never()
 
-      val props = CreateGroupModal.Props(mockHttp, mockClose, mockRefresh)
+      val props =
+        CreateGroupModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit])
       ReactTestUtils.withRenderedIntoDocument(CreateGroupModal(props)) { c =>
         val nameField =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
@@ -71,8 +69,6 @@ class CreateGroupModalSpec extends WordSpec with Matchers with MockFactory with 
 
     "call http.post if submitting with required fields and confirming" in {
       val mockHttp = mock[Http]
-      val mockClose = mock[() => Callback]
-      val mockRefresh = mock[() => Callback]
 
       val testGroup =
         GroupCreateInfo("test-name", "test@email.com", Seq(Id(testUser.id)), Seq(Id(testUser.id)))
@@ -84,7 +80,8 @@ class CreateGroupModalSpec extends WordSpec with Matchers with MockFactory with 
         .once()
         .returns(Callback.empty)
 
-      val props = CreateGroupModal.Props(mockHttp, mockClose, mockRefresh)
+      val props =
+        CreateGroupModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit])
       ReactTestUtils.withRenderedIntoDocument(CreateGroupModal(props)) { c =>
         val nameField =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
