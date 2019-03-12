@@ -855,7 +855,6 @@ def test_update_connection_info_success(shared_zone_test_context):
     """
     Test user can update zone to backendId instead of connection info
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.system_test_zone
 
@@ -885,15 +884,13 @@ def test_update_connection_info_invalid_backendid(shared_zone_test_context):
     """
     Test user can update zone to bad backendId fails
     """
-
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.system_test_zone
 
-    # validating current zone state
     to_update = client.get_zone(zone['id'])['zone']
-
     to_update.pop('connection')
     to_update.pop('transferConnection')
     to_update['backendId'] = 'bad-backend-id'
+
     result = client.update_zone(to_update, status=400)
     assert_that(result, contains_string("Invalid backendId"))

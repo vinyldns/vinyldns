@@ -68,20 +68,7 @@ object VinylDNSConfig {
 
   lazy val sharedApprovedTypes: Set[RecordType.Value] =
     vinyldnsConfig.as[Option[Set[RecordType.Value]]]("shared-approved-types").getOrElse(Set())
-
-  lazy val dnsBackends: List[DnsBackend] = {
-    if (vinyldnsConfig.hasPath("backends")) {
-      vinyldnsConfig
-        .getConfigList("backends")
-        .asScala
-        .map {
-          pureconfig.loadConfigOrThrow[DnsBackend]
-        }
-        .toList
-        .map(_.encrypted(Crypto.instance))
-    } else List.empty
-  }
-
+  
   lazy val configuredDnsConnections: ConfiguredDnsConnections = {
 
     val defaultZoneConnection = {
