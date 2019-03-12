@@ -20,6 +20,7 @@ import java.net.{InetSocketAddress, Socket}
 
 import cats.effect._
 import cats.syntax.all._
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
@@ -38,11 +39,20 @@ trait ZoneConnectionValidatorAlgebra {
 
 object ZoneConnectionValidator {
 
+  val logger: Logger = LoggerFactory.getLogger(classOf[ZoneConnectionValidator])
+
   def getZoneConnection(
       zone: Zone,
       configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection = {
     val backendConnection = zone.backendId
-      .flatMap(getBackend(_, configuredDnsConnections))
+      .flatMap { bid =>
+        val backend = getBackend(bid, configuredDnsConnections)
+        if (backend.isEmpty) {
+          logger.error(
+            s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config")
+        }
+        backend
+      }
       .map(_.zoneConnection)
 
     zone.connection
@@ -54,7 +64,14 @@ object ZoneConnectionValidator {
       zone: Zone,
       configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection = {
     val backendConnection = zone.backendId
-      .flatMap(getBackend(_, configuredDnsConnections))
+      .flatMap { bid =>
+        val backend = getBackend(bid, configuredDnsConnections)
+        if (backend.isEmpty) {
+          logger.error(
+            s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config")
+        }
+        backend
+      }
       .map(_.transferConnection)
 
     backendConnection

@@ -49,18 +49,7 @@ def test_create_zone_success(shared_zone_test_context):
             'name': zone_name,
             'email': 'test@test.com',
             'adminGroupId': shared_zone_test_context.ok_group['id'],
-            'connection': {
-                'name': 'vinyldns.',
-                'keyName': VinylDNSTestContext.dns_key_name,
-                'key': VinylDNSTestContext.dns_key,
-                'primaryServer': VinylDNSTestContext.dns_ip
-            },
-            'transferConnection': {
-                'name': 'vinyldns.',
-                'keyName': VinylDNSTestContext.dns_key_name,
-                'key': VinylDNSTestContext.dns_key,
-                'primaryServer': VinylDNSTestContext.dns_ip
-            }
+            'backendId': 'func-test-backend'
         }
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
@@ -480,3 +469,16 @@ def test_normal_user_cannot_create_shared_zone(shared_zone_test_context):
     super_zone['shared'] = True
 
     shared_zone_test_context.ok_vinyldns_client.create_zone(super_zone, status=403)
+
+def test_create_zone_bad_backend_id(shared_zone_test_context):
+    """
+    Test that a user cannot create a zone with a backendId that is not in config
+    """
+    zone = {
+        'name': "test-create-zone-bad-backend-id",
+        'email': 'test@test.com',
+        'adminGroupId': shared_zone_test_context.ok_group['id'],
+        'backendId': "does-not-exist-id"
+    }
+    result = shared_zone_test_context.ok_vinyldns_client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Invalid backendId"))

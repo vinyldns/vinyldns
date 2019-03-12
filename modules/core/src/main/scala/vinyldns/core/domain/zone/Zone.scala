@@ -156,6 +156,7 @@ final case class DnsBackend(
   )
 }
 
-final case class ConfiguredDnsConnections(defaultZoneConnection: ZoneConnection,
-                                          defaultTransferConnection: ZoneConnection,
-                                          dnsBackends: List[DnsBackend])
+final case class ConfiguredDnsConnections(
+    defaultZoneConnection: ZoneConnection,
+    defaultTransferConnection: ZoneConnection,
+    dnsBackends: List[DnsBackend])

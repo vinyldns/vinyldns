@@ -242,5 +242,10 @@ class ZoneConnectionValidatorSpec
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("Transfer connection invalid")
     }
+    "getZoneConnection" should {
+    }
+    "getTransferConnection" should {
+
+    }
   }
 }
