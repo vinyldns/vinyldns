@@ -51,7 +51,7 @@ object GroupsTable {
     def render(P: Props, S: State): VdomElement =
       <.div(
         S.groupsList match {
-          case Some(gl) if gl.groups.nonEmpty =>
+          case Some(gl) if gl.groups.nonEmpty || S.groupNameFilter.isDefined =>
             <.div(
               <.div(
                 ^.className := "panel-heading",
