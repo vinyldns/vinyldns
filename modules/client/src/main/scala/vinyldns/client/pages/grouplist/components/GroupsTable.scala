@@ -22,15 +22,11 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components.AlertBox.setNotification
 import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
-import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 
 object GroupsTable {
-  case class Props(
-      http: Http,
-      setNotification: Option[Notification] => Callback,
-      router: RouterCtl[Page])
+  case class Props(http: Http, router: RouterCtl[Page])
 
   case class State(
       groupsList: Option[GroupList] = None,
@@ -188,13 +184,11 @@ object GroupsTable {
         Callback
           .lazily {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-              P.setNotification(
-                P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
+              setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
                 listGroups(P, S)
             }
             val onFailure = { httpResponse: HttpResponse =>
-              P.setNotification(
-                P.http.toNotification(s"deleting group ${group.name}", httpResponse))
+              setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse))
             }
             P.http.delete(DeleteGroupRoute(group.id), onSuccess, onFailure)
           }

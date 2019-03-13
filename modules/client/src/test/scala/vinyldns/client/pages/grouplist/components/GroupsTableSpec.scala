@@ -23,7 +23,6 @@ import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
-import vinyldns.client.models.Notification
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.Page
 
@@ -47,7 +46,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
   "GroupsTable" should {
     "get groups when mounting" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.state.groupsList shouldBe Some(initialGroupList)
@@ -57,7 +56,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
     "update groups when hitting refresh button" in new Fixture {
       val updatedGroupsList = GroupList(generateGroups(2).toList, Some(100))
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.state.groupsList shouldBe Some(initialGroupList)
@@ -79,7 +78,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
 
     "call http.get with groupNameFilter when someone uses search button" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       (mockHttp.get[GroupList] _)
         .expects(ListGroupsRoute(Some("filter")), *, *)
@@ -99,7 +98,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
 
     "call http.get with groupNameFilter when someone uses refresh button" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       (mockHttp.get[GroupList] _)
         .expects(ListGroupsRoute(Some("filter")), *, *)
@@ -128,7 +127,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
         }
 
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.outerHtmlScrubbed() shouldBe "<div><p>Loading your groups...</p></div>"
@@ -146,7 +145,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
         }
 
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.outerHtmlScrubbed() shouldBe "<div><p>You don't have any groups yet</p></div>"
@@ -155,7 +154,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
 
     "display groups in table" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         val table = ReactTestUtils.findRenderedDOMComponentWithTag(c, "table")
@@ -170,7 +169,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
 
     "call withConfirmation when clicking delete button" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       (mockHttp.withConfirmation _).expects(*, *).once().returns(Callback.empty)
       (mockHttp.delete[Group] _).expects(*, *, *).never()
@@ -183,7 +182,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
 
     "call http.delete when clicking delete button and confirming" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       (mockHttp.withConfirmation _).expects(*, *).repeat(10 to 10).onCall((_, cb) => cb)
 
@@ -203,7 +202,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
 
     "show update group modal when clicking update group button" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.state.showUpdateGroup shouldBe false
@@ -220,7 +219,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
 
     "close update group modal after clicking close button" in new Fixture {
       val props =
-        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+        GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
         c.state.showUpdateGroup shouldBe false

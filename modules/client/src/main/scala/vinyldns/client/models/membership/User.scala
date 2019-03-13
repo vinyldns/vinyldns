@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.user
+package vinyldns.client.models.membership
 
-import upickle.default.{macroRW, ReadWriter => RW}
-import upickle.default._
+import upickle.default.{ReadWriter, Reader, Writer, macroRW}
 
 case class User(
     userName: String,
@@ -29,7 +28,7 @@ case class User(
     lockStatus: String = "Unlocked")
 
 object User {
-  implicit val rw: RW[User] = macroRW
+  implicit val rw: ReadWriter[User] = macroRW
 
   // uPickle by default treats empty options as empty arrays, this has it use None
   implicit def OptionWriter[T: Writer]: Writer[Option[T]] =

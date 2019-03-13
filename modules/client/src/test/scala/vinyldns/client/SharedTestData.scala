@@ -33,9 +33,7 @@ package vinyldns.client
  */
 
 import japgolly.scalajs.react.Callback
-import vinyldns.client.models.Id
-import vinyldns.client.models.membership.Group
-import vinyldns.client.models.user.User
+import vinyldns.client.models.membership.{Group, Id, User}
 
 trait SharedTestData {
   val testUser: User =

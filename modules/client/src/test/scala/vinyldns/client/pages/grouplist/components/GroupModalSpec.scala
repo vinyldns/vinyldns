@@ -21,10 +21,9 @@ import japgolly.scalajs.react.test._
 import japgolly.scalajs.react._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.http.{Http, PostGroupRoute, UpdateGroupRoute}
-import vinyldns.client.models.membership.{Group, GroupCreateInfo}
+import vinyldns.client.models.membership.{Group, GroupCreateInfo, Id}
 import upickle.default.write
 import vinyldns.client.SharedTestData
-import vinyldns.client.models.Id
 
 import scala.language.existentials
 
@@ -35,8 +34,8 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
       val props =
         GroupModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit])
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
-        c.state.updateId shouldBe ""
         c.state.isUpdate shouldBe false
         c.outerHtmlScrubbed() should include("Create Group")
         c.outerHtmlScrubbed() shouldNot include("Update Group")
@@ -51,6 +50,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
       val props =
         GroupModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit])
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
         val form =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-create-group-form")
@@ -66,6 +66,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
       val props =
         GroupModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit])
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
         val nameField =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
@@ -95,6 +96,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
       val props =
         GroupModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit])
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
         val nameField =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
@@ -121,8 +123,8 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
           generateNoOpHandler[Unit],
           generateNoOpHandler[Unit],
           Some(existing))
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
-        c.state.updateId shouldBe existing.id
         c.state.isUpdate shouldBe true
         c.outerHtmlScrubbed() shouldNot include("Create Group")
         c.outerHtmlScrubbed() should include(s"Update Group ${existing.id}")
@@ -142,6 +144,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
           generateNoOpHandler[Unit],
           generateNoOpHandler[Unit],
           Some(existing))
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
         // clear fields since its an update
         val nameField =
@@ -174,6 +177,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
           generateNoOpHandler[Unit],
           generateNoOpHandler[Unit],
           Some(existing))
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
         val form =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-create-group-form")
@@ -188,7 +192,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.put[Group] _)
-        .expects(UpdateGroupRoute(existing.id), write(existing.copy(created = None)), *, *)
+        .expects(UpdateGroupRoute(existing.id), write(existing), *, *)
         .once()
         .returns(Callback.empty)
 
@@ -198,10 +202,50 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
           generateNoOpHandler[Unit],
           generateNoOpHandler[Unit],
           Some(existing))
+
       ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
         val form =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-create-group-form")
 
+        Simulate.submit(form)
+      }
+    }
+
+    "submit properly updated group" in {
+      val mockHttp = mock[Http]
+      val existing = generateGroups(1).head
+      val updated = existing.copy(
+        name = "new-name",
+        email = "new-email@test.com",
+        description = Some("new desc"))
+
+      (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
+      (mockHttp.put[Group] _)
+        .expects(UpdateGroupRoute(updated.id), write(updated), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      val props =
+        GroupModal.Props(
+          mockHttp,
+          generateNoOpHandler[Unit],
+          generateNoOpHandler[Unit],
+          Some(existing))
+
+      ReactTestUtils.withRenderedIntoDocument(GroupModal(props)) { c =>
+        val form =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-create-group-form")
+
+        val nameField =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
+        val emailField =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-email")
+        val descriptionField =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-description")
+
+        Simulate.change(nameField, SimEvent.Change(updated.name))
+        Simulate.change(emailField, SimEvent.Change(updated.email))
+        Simulate.change(descriptionField, SimEvent.Change(updated.description.get))
         Simulate.submit(form)
       }
     }

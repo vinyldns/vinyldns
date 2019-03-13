@@ -22,8 +22,8 @@ import org.scalajs.dom.document
 import org.scalajs.dom.ext.Ajax
 import vinyldns.client.http.{CurrentUserRoute, HttpResponse}
 import vinyldns.client.css.AppCSS
+import vinyldns.client.models.membership.User
 import vinyldns.client.routes.AppRouter
-import vinyldns.client.models.user.User
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}

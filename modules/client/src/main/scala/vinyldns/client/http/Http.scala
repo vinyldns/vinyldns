@@ -18,7 +18,7 @@ package vinyldns.client.http
 
 import japgolly.scalajs.react.Callback
 import vinyldns.client.models.Notification
-import vinyldns.client.models.user.User
+import vinyldns.client.models.membership.User
 
 trait Http {
   val csrf: String

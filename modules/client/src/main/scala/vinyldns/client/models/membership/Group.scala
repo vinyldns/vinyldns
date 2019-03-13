@@ -16,8 +16,16 @@
 
 package vinyldns.client.models.membership
 
-import upickle.default.{macroRW, ReadWriter => RW}
-import vinyldns.client.models.{Id, OptionRW}
+import upickle.default.{ReadWriter, macroRW}
+import vinyldns.client.models.OptionRW
+
+trait BasicGroupInfo {
+  def name: String
+  def email: String
+  def members: Seq[Id]
+  def admins: Seq[Id]
+  def description: Option[String]
+}
 
 case class GroupCreateInfo(
     name: String = "",
@@ -25,9 +33,10 @@ case class GroupCreateInfo(
     members: Seq[Id] = Seq(),
     admins: Seq[Id] = Seq(),
     description: Option[String] = None)
+    extends BasicGroupInfo
 
 object GroupCreateInfo extends OptionRW {
-  implicit val rw: RW[GroupCreateInfo] = macroRW
+  implicit val rw: ReadWriter[GroupCreateInfo] = macroRW
 }
 
 case class Group(
@@ -38,16 +47,8 @@ case class Group(
     admins: Seq[Id],
     description: Option[String] = None,
     created: Option[String] = None)
+    extends BasicGroupInfo
 
 object Group extends OptionRW {
-  def apply(groupCreateInfo: GroupCreateInfo, id: String): Group =
-    Group(
-      groupCreateInfo.name,
-      groupCreateInfo.email,
-      id,
-      groupCreateInfo.members,
-      groupCreateInfo.admins,
-      groupCreateInfo.description)
-
-  implicit val rw: RW[Group] = macroRW
+  implicit val rw: ReadWriter[Group] = macroRW
 }

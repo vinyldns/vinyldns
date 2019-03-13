@@ -27,9 +27,7 @@ import upickle.default.write
 import vinyldns.client.http.{Http, HttpResponse, LookupUserRoute, UpdateGroupRoute}
 import vinyldns.client.components.{InputFieldValidations, ValidatedForm, ValidatedInputField}
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.models.Id
-import vinyldns.client.models.membership.Group
-import vinyldns.client.models.user.User
+import vinyldns.client.models.membership.{Group, Id, User}
 import vinyldns.client.components.AlertBox.setNotification
 
 object NewMemberForm {

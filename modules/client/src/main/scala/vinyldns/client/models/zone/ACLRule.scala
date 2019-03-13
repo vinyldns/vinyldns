@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.membership
+package vinyldns.client.models.zone
 
 import upickle.default.{ReadWriter, macroRW}
 import vinyldns.client.models.OptionRW
 
-case class MemberList(
-    members: List[User],
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
-    maxItems: Int
-)
+case class ACLRule(
+    accessLevel: String,
+    recordTypes: Seq[String],
+    description: Option[String] = None,
+    userId: Option[String] = None,
+    groupId: Option[String] = None,
+    recordMask: Option[String] = None)
 
-object MemberList extends OptionRW {
-  implicit val rw: ReadWriter[MemberList] = macroRW
+object ACLRule extends OptionRW {
+  implicit val rw: ReadWriter[ACLRule] = macroRW
 }

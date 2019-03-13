@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models
+package vinyldns.client.models.membership
 
-import upickle.default.{macroRW, ReadWriter => RW}
+import upickle.default.{ReadWriter, macroRW}
 
 // this is because sometimes requests want a {id: String} json object
 case class Id(id: String)
 
 object Id {
-  implicit val rw: RW[Id] = macroRW
+  implicit val rw: ReadWriter[Id] = macroRW
 }

@@ -22,10 +22,8 @@ import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.http.{Http, HttpResponse, LookupUserRoute, UpdateGroupRoute}
 import vinyldns.client.SharedTestData
-import vinyldns.client.models.user.User
-import vinyldns.client.models.membership.Group
+import vinyldns.client.models.membership.{Group, Id, User}
 import upickle.default.write
-import vinyldns.client.models.Id
 
 import scala.language.existentials
 

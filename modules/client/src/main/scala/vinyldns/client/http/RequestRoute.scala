@@ -17,8 +17,7 @@
 package vinyldns.client.http
 
 import upickle.default.read
-import vinyldns.client.models.membership.{Group, GroupList, MemberList}
-import vinyldns.client.models.user.User
+import vinyldns.client.models.membership.{Group, GroupList, MemberList, User}
 
 import scala.scalajs.js.URIUtils
 import scala.util.Try

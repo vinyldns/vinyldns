@@ -22,12 +22,11 @@ import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
 import vinyldns.client.http.{Http, HttpResponse, PostGroupRoute, UpdateGroupRoute}
 import vinyldns.client.components._
-import vinyldns.client.models.Id
-import vinyldns.client.models.membership.{Group, GroupCreateInfo}
+import vinyldns.client.models.membership.{BasicGroupInfo, Group, GroupCreateInfo, Id}
 import vinyldns.client.components.AlertBox.setNotification
 
 object GroupModal {
-  case class State(group: GroupCreateInfo, updateId: String = "", isUpdate: Boolean = false)
+  case class State(group: BasicGroupInfo, isUpdate: Boolean = false)
   case class Props(
       http: Http,
       close: Unit => Callback,
@@ -35,14 +34,11 @@ object GroupModal {
       existing: Option[Group] = None)
 
   val component = ScalaComponent
-    .builder[Props]("CreateGroupForm")
+    .builder[Props]("GroupForm")
     .initialStateFromProps { p =>
       p.existing match {
         case Some(g) =>
-          State(
-            GroupCreateInfo(g.name, g.email, g.members, g.admins, g.description),
-            g.id,
-            isUpdate = true)
+          State(g, isUpdate = true)
         case None => State(GroupCreateInfo())
       }
     }
@@ -88,7 +84,7 @@ object GroupModal {
       )
 
     def toTitle(S: State): String =
-      if (S.isUpdate) s"Update Group ${S.updateId}"
+      if (S.isUpdate) s"Update Group ${S.group.asInstanceOf[Group].id}"
       else "Create Group"
 
     def generateInputFieldProps(S: State): List[ValidatedInputField.Props] =
@@ -126,6 +122,7 @@ object GroupModal {
           val user = P.http.getLoggedInUser()
           val groupWithUserId =
             S.group
+              .asInstanceOf[GroupCreateInfo]
               .copy(members = Seq(Id(user.id)), admins = Seq(Id(user.id)))
           val onFailure = { httpResponse: HttpResponse =>
             setNotification(P.http.toNotification("creating group", httpResponse))
@@ -141,9 +138,9 @@ object GroupModal {
 
     def updateGroup(P: Props, S: State): Callback =
       P.http.withConfirmation(
-        s"Are you sure you want to update group ${S.updateId}?",
+        s"Are you sure you want to update group ${S.group.asInstanceOf[Group].id}?",
         Callback.lazily {
-          val updated = Group(S.group, S.updateId)
+          val updated = S.group.asInstanceOf[Group]
           val onFailure = { httpResponse: HttpResponse =>
             setNotification(P.http.toNotification("updating group", httpResponse))
           }
@@ -152,29 +149,68 @@ object GroupModal {
               P.close(()) >>
               P.refreshGroups(())
           }
-          P.http.put(UpdateGroupRoute(S.updateId), write(updated), onSuccess, onFailure)
+          P.http
+            .put(
+              UpdateGroupRoute(S.group.asInstanceOf[Group].id),
+              write(updated),
+              onSuccess,
+              onFailure)
         }
       )
 
     def changeName(value: String): Callback =
-      bs.modState { s =>
-        val g = s.group.copy(name = value)
-        s.copy(group = g)
+      bs.state >>= { S =>
+        if (S.isUpdate) {
+          val group = S.group.asInstanceOf[Group]
+          bs.modState { s =>
+            val modified = group.copy(name = value)
+            s.copy(group = modified)
+          }
+        } else {
+          val group = S.group.asInstanceOf[GroupCreateInfo]
+          bs.modState { s =>
+            val modified = group.copy(name = value)
+            s.copy(group = modified)
+          }
+        }
       }
 
     def changeEmail(value: String): Callback =
-      bs.modState { s =>
-        val g = s.group.copy(email = value)
-        s.copy(group = g)
+      bs.state >>= { S =>
+        if (S.isUpdate) {
+          val group = S.group.asInstanceOf[Group]
+          bs.modState { s =>
+            val modified = group.copy(email = value)
+            s.copy(group = modified)
+          }
+        } else {
+          val group = S.group.asInstanceOf[GroupCreateInfo]
+          bs.modState { s =>
+            val modified = group.copy(email = value)
+            s.copy(group = modified)
+          }
+        }
       }
 
     def changeDescription(value: String): Callback =
-      if (!value.isEmpty) bs.modState { s =>
-        val g = s.group.copy(description = Some(value))
-        s.copy(group = g)
-      } else bs.modState { s =>
-        val g = s.group.copy(description = None)
-        s.copy(group = g)
+      bs.state >>= { S =>
+        val d =
+          if (value.isEmpty) None
+          else Some(value)
+
+        if (S.isUpdate) {
+          val group = S.group.asInstanceOf[Group]
+          bs.modState { s =>
+            val modified = group.copy(description = d)
+            s.copy(group = modified)
+          }
+        } else {
+          val group = S.group.asInstanceOf[GroupCreateInfo]
+          bs.modState { s =>
+            val modified = group.copy(description = d)
+            s.copy(group = modified)
+          }
+        }
       }
 
     private val header =

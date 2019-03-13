@@ -16,7 +16,7 @@
 
 package vinyldns.client.models.membership
 
-import upickle.default.{macroRW, ReadWriter => RW}
+import upickle.default.{ReadWriter, macroRW}
 import vinyldns.client.models.OptionRW
 
 case class GroupList(
@@ -27,5 +27,5 @@ case class GroupList(
     groupNameFilter: Option[String] = None)
 
 object GroupList extends OptionRW {
-  implicit val rw: RW[GroupList] = macroRW
+  implicit val rw: ReadWriter[GroupList] = macroRW
 }

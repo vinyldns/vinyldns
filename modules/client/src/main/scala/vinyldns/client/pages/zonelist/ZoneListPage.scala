@@ -14,34 +14,29 @@
  * limitations under the License.
  */
 
-package vinyldns.client.pages.grouplist
+package vinyldns.client.pages.zonelist
 
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.http.Http
-import vinyldns.client.pages.grouplist.components.{GroupModal, GroupsTable}
 import vinyldns.client.css.GlobalStyle
+import vinyldns.client.http.Http
 import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter}
 
-object GroupListPage extends PropsFromAppRouter {
-  case class State(showCreateGroup: Boolean = false)
-
-  private val component = ScalaComponent
-    .builder[Props]("GroupListPage")
-    .initialState(State())
+object ZoneListPage extends PropsFromAppRouter {
+  val component = ScalaComponent
+    .builder[Props]("ZoneListPage")
     .renderBackend[Backend]
     .build
 
-  def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, State, Backend] =
+  def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, Unit, Backend] =
     component(Props(page, router, http))
 
-  class Backend(bs: BackendScope[Props, State]) {
-    val refToTable = Ref.toScalaComponent(GroupsTable.component)
+  class Backend {
 
-    def render(P: Props, S: State): VdomElement =
+    def render(): VdomElement =
       <.div(
         GlobalStyle.styleSheet.height100,
         ^.className := "right_col",
@@ -50,7 +45,7 @@ object GroupListPage extends PropsFromAppRouter {
           ^.className := "page-title",
           <.div(
             ^.className := "title_left",
-            <.h3(<.span(^.className := "fa fa-users"), "  Groups"))),
+            <.h3(<.span(^.className := "fa fa-table"), "  Zones"))),
         <.div(^.className := "clearfix"),
         <.div(
           ^.className := "page-content-wrap",
@@ -67,39 +62,15 @@ object GroupListPage extends PropsFromAppRouter {
                     <.button(
                       ^.className := "btn btn-default test-create-group",
                       ^.`type` := "button",
-                      ^.onClick --> makeCreateFormVisible,
                       <.span(^.className := "fa fa-plus-square"),
-                      "  Create Group"
+                      "  Connect to Zone"
                     )
                   )
-                ),
-                refToTable.component(GroupsTable.Props(P.http, P.router))
+                )
               )
             )
           )
-        ),
-        createGroupModal(P, S.showCreateGroup)
+        )
       )
-
-    def refreshGroupsTable(): Callback =
-      refToTable.get
-        .map { mounted =>
-          mounted.backend.listGroups(mounted.props, mounted.state)
-        }
-        .getOrElse(Callback.empty)
-        .runNow()
-
-    def createGroupModal(P: Props, isVisible: Boolean): TagMod =
-      if (isVisible)
-        GroupModal(
-          GroupModal
-            .Props(P.http, _ => makeCreateFormInvisible, _ => refreshGroupsTable()))
-      else TagMod.empty
-
-    def makeCreateFormVisible: Callback =
-      bs.modState(_.copy(showCreateGroup = true))
-
-    def makeCreateFormInvisible: Callback =
-      bs.modState(_.copy(showCreateGroup = false))
   }
 }

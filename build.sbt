@@ -401,7 +401,7 @@ lazy val client = (project in file("modules/client"))
     npmDependencies in Compile ++= clientNpmDependencies,
     coverageEnabled := false,
     webpackBundlingMode := BundlingMode.LibraryOnly()
-    // if we ever need to depend on core we need to add this setting
+    // needed if depending on core
     // unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
   )
 

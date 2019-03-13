@@ -24,9 +24,7 @@ import upickle.default.write
 import vinyldns.client.components.AlertBox.setNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetGroupMembersRoute, Http, HttpResponse, UpdateGroupRoute}
-import vinyldns.client.models.Id
-import vinyldns.client.models.membership.{Group, MemberList}
-import vinyldns.client.models.user.User
+import vinyldns.client.models.membership.{Group, Id, MemberList, User}
 
 object MembersTable {
 
