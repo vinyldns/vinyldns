@@ -11,7 +11,6 @@ for _most_ of the data that is stored in our instance of VinylDNS. However, all 
 
 * [RecordSet](#recordset-table) - holds record data
 * [RecordSetChange](#recordsetchange-table) - audit history of all changes made to records
-* [User](#user-table) - holds user information, including access keys and secrets
 * [Group](#group-table) - group information, including name, email and description
 * [Membership](#membership-table) - connects users to groups
 * [GroupChange](#groupchange-table) - holds audit history for groups

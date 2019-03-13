@@ -37,7 +37,7 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
           .find(_.className == "vinyldns.mysql.repository.MySqlDataStoreProvider")
           .get
 
-      mysqlConfig.repositories.keys should contain theSameElementsAs Set(zone, batchChange)
+      mysqlConfig.repositories.keys should contain theSameElementsAs Set(zone, batchChange, user)
     }
     "assign the correct dynamodb repositories" in {
       val dynamodbConfig =
@@ -46,7 +46,7 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
           .get
 
       dynamodbConfig.repositories.keys should contain theSameElementsAs
-        Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange)
+        Set(group, membership, groupChange, recordSet, recordChange, zoneChange)
     }
 
     "load string list for key that exists" in {

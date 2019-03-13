@@ -45,9 +45,14 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
 
   def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
-  def runZoneChecks(zoneView: ZoneView): Result[ZoneView] =
-    validateDnsZone(VinylDNSConfig.approvedNameServers, zoneView.recordSetsMap.values.toList)
-      .map(_ => zoneView)
+  def hasApexNS(zoneView: ZoneView): Result[Unit] = {
+    val apexRecord = zoneView.recordSetsMap.get(zoneView.zone.name, RecordType.NS) match {
+      case Some(ns) => containsApprovedNameServers(VinylDNSConfig.approvedNameServers, ns)
+      case None => "Missing apex NS record".invalidNel
+    }
+
+    apexRecord
+      .map(_ => ())
       .leftMap(
         nel =>
           ZoneValidationFailed(
@@ -56,6 +61,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
             "Zone could not be loaded due to validation errors."))
       .toEither
       .toResult
+  }
 
   def getDnsConnection(zone: Zone): Result[DnsConnection] =
     Either.catchNonFatal(dnsConnection(zone.connection.getOrElse(defaultConnection))).toResult
@@ -80,7 +86,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
         connection <- getDnsConnection(zone)
         resp <- connection.resolve(zone.name, zone.name, RecordType.SOA)
         view <- loadZone(zone)
-        _ <- runZoneChecks(view)
+        _ <- hasApexNS(view)
         _ <- hasSOA(resp, zone)
       } yield ()
 

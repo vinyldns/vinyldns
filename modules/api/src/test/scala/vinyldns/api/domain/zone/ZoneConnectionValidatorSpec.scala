@@ -119,12 +119,22 @@ class ZoneConnectionValidatorSpec
     None,
     List(NSData("some.test.ns."), NSData("not.approved.")))
 
+  private val delegatedNS = RecordSet(
+    testZone.id,
+    s"sub.${testZone.name}",
+    RecordType.NS,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NSData("sub.some.test.ns.")))
+
   private val mockRecordSet = mock[RecordSet]
 
   "ConnectionValidator" should {
     "respond with a success if the connection is resolved" in {
       doReturn(testZone).when(mockZoneView).zone
-      doReturn(generateZoneView(testZone, successSoa, successNS).recordSetsMap)
+      doReturn(generateZoneView(testZone, successSoa, successNS, delegatedNS).recordSetsMap)
         .when(mockZoneView)
         .recordSetsMap
       doReturn(List(successSoa).toResult)
@@ -137,7 +147,7 @@ class ZoneConnectionValidatorSpec
 
     "respond with a failure if NS records are not in the approved server list" in {
       doReturn(testZone).when(mockZoneView).zone
-      doReturn(generateZoneView(testZone, successSoa, failureNs).recordSetsMap)
+      doReturn(generateZoneView(testZone, successSoa, failureNs, delegatedNS).recordSetsMap)
         .when(mockZoneView)
         .recordSetsMap
       doReturn(List(successSoa).toResult)
@@ -145,7 +155,10 @@ class ZoneConnectionValidatorSpec
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
       val result = leftResultOf(underTest.validateZoneConnections(testZone).value)
-      result shouldBe a[ZoneValidationFailed]
+      result shouldBe ZoneValidationFailed(
+        testZone,
+        List(s"Name Server not.approved. is not an approved name server."),
+        "Zone could not be loaded due to validation errors.")
     }
 
     "respond with a failure if no records are returned from the backend" in {
@@ -156,7 +169,11 @@ class ZoneConnectionValidatorSpec
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
       val result = leftResultOf(underTest.validateZoneConnections(testZone).value)
-      result shouldBe a[ConnectionFailed]
+      result shouldBe a[ZoneValidationFailed]
+      result shouldBe ZoneValidationFailed(
+        testZone,
+        List("Missing apex NS record"),
+        "Zone could not be loaded due to validation errors.")
     }
 
     "respond with a failure if any failure is returned from the backend" in {
@@ -165,7 +182,7 @@ class ZoneConnectionValidatorSpec
         .resolve(testZone.name, testZone.name, RecordType.SOA)
 
       val error = leftResultOf(underTest.validateZoneConnections(testZone).value)
-      error shouldBe a[ConnectionFailed]
+      error shouldBe ConnectionFailed(testZone, s"Unable to connect to zone: fail")
     }
 
     "respond with a failure if connection cant be made" in {
