@@ -43,46 +43,30 @@ object ZoneConnectionValidator {
 
   def getZoneConnection(
       zone: Zone,
-      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection = {
-    val backendConnection = zone.backendId
-      .flatMap { bid =>
-        val backend = getBackend(bid, configuredDnsConnections)
-        if (backend.isEmpty) {
-          logger.error(
-            s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config")
-        }
-        backend
-      }
-      .map(_.zoneConnection)
-
+      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection =
     zone.connection
-      .orElse(backendConnection)
+      .orElse(getDnsBackend(zone, configuredDnsConnections).map(_.zoneConnection))
       .getOrElse(configuredDnsConnections.defaultZoneConnection)
-  }
 
   def getTransferConnection(
       zone: Zone,
-      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection = {
-    val backendConnection = zone.backendId
+      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection =
+    zone.transferConnection
+      .orElse(getDnsBackend(zone, configuredDnsConnections).map(_.transferConnection))
+      .getOrElse(configuredDnsConnections.defaultTransferConnection)
+
+  def getDnsBackend(
+      zone: Zone,
+      configuredDnsConnections: ConfiguredDnsConnections): Option[DnsBackend] =
+    zone.backendId
       .flatMap { bid =>
-        val backend = getBackend(bid, configuredDnsConnections)
+        val backend = configuredDnsConnections.dnsBackends.find(_.id == bid)
         if (backend.isEmpty) {
           logger.error(
             s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config")
         }
         backend
       }
-      .map(_.transferConnection)
-
-    backendConnection
-      .orElse(zone.transferConnection)
-      .getOrElse(configuredDnsConnections.defaultTransferConnection)
-  }
-
-  def getBackend(
-      id: String,
-      configuredDnsConnections: ConfiguredDnsConnections): Option[DnsBackend] =
-    configuredDnsConnections.dnsBackends.find(_.id == id)
 }
 
 class ZoneConnectionValidator(connections: ConfiguredDnsConnections)

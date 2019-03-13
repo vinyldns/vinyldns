@@ -68,7 +68,7 @@ object VinylDNSConfig {
 
   lazy val sharedApprovedTypes: Set[RecordType.Value] =
     vinyldnsConfig.as[Option[Set[RecordType.Value]]]("shared-approved-types").getOrElse(Set())
-  
+
   lazy val configuredDnsConnections: ConfiguredDnsConnections = {
 
     val defaultZoneConnection = {
