@@ -113,6 +113,7 @@ object GroupModal {
         ),
         ValidatedInputField.Props(
           changeDescription,
+          initialValue = S.group.description,
           inputClass = Some("test-description"),
           label = Some("Description")
         )
@@ -171,7 +172,10 @@ object GroupModal {
       if (!value.isEmpty) bs.modState { s =>
         val g = s.group.copy(description = Some(value))
         s.copy(group = g)
-      } else Callback.empty
+      } else bs.modState { s =>
+        val g = s.group.copy(description = None)
+        s.copy(group = g)
+      }
 
     private val header =
       """
