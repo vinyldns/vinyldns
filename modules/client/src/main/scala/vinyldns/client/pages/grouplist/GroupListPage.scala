@@ -23,7 +23,7 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.http.Http
 import vinyldns.client.models.Notification
-import vinyldns.client.pages.grouplist.components.{CreateGroupModal, GroupsTable}
+import vinyldns.client.pages.grouplist.components.{GroupModal, GroupsTable}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter}
 import vinyldns.client.components.AlertBox.setNotification
@@ -93,8 +93,8 @@ object GroupListPage extends PropsFromAppRouter {
 
     def createGroupModal(P: Props, isVisible: Boolean): TagMod =
       if (isVisible)
-        CreateGroupModal(
-          CreateGroupModal
+        GroupModal(
+          GroupModal
             .Props(P.http, _ => makeCreateFormInvisible, _ => refreshGroupsTable()))
       else TagMod.empty
 

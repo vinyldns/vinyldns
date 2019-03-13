@@ -23,7 +23,7 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.routes.AppRouter.{Page, ToGroupListPage}
-import vinyldns.client.pages.grouplist.components.CreateGroupModal
+import vinyldns.client.pages.grouplist.components.GroupModal
 
 import scala.language.existentials
 
@@ -44,34 +44,37 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
 
   "GroupListPage" should {
     "show create group modal when clicking create group button" in new Fixture {
-
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>
           c.state.showCreateGroup shouldBe false
-          ReactTestUtils.scryRenderedComponentsWithType(c, CreateGroupModal.component) shouldBe empty
+          ReactTestUtils.scryRenderedComponentsWithType(c, GroupModal.component) shouldBe empty
 
           val createButton =
             ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-create-group")
           Simulate.click(createButton)
 
           c.state.showCreateGroup shouldBe true
-          ReactTestUtils.findRenderedComponentWithType(c, CreateGroupModal.component)
+          ReactTestUtils.findRenderedComponentWithType(c, GroupModal.component)
       }
     }
 
     "close create group modal after clicking close button" in new Fixture {
-
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>
-          c.modState(_.copy(showCreateGroup = true))
-          val modal = ReactTestUtils.findRenderedComponentWithType(c, CreateGroupModal.component)
+          c.state.showCreateGroup shouldBe false
+          val createButton =
+            ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-create-group")
+          Simulate.click(createButton)
+          c.state.showCreateGroup shouldBe true
+
+          val modal = ReactTestUtils.findRenderedComponentWithType(c, GroupModal.component)
 
           val closeButton =
             ReactTestUtils.findRenderedDOMComponentWithClass(modal, "test-close-create-group")
           Simulate.click(closeButton)
 
           c.state.showCreateGroup shouldBe false
-          ReactTestUtils.scryRenderedComponentsWithType(c, CreateGroupModal.component) shouldBe empty
+          ReactTestUtils.scryRenderedComponentsWithType(c, GroupModal.component) shouldBe empty
       }
     }
   }

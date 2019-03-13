@@ -77,7 +77,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
       }
     }
 
-    "add groupNameFilter when someone uses search button" in new Fixture {
+    "call http.get with groupNameFilter when someone uses search button" in new Fixture {
       val props =
         GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
 
@@ -97,7 +97,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
       }
     }
 
-    "add groupNameFilter when someone uses refresh button" in new Fixture {
+    "call http.get with groupNameFilter when someone uses refresh button" in new Fixture {
       val props =
         GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
 
@@ -161,9 +161,9 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
         val table = ReactTestUtils.findRenderedDOMComponentWithTag(c, "table")
         val html = table.outerHtmlScrubbed()
         initialGroupList.groups.map { group =>
-          html should include(s"<td>${group.name}</td>")
-          html should include(s"<td>${group.email}</td>")
-          html should include(s"<td>${group.description.getOrElse("")}</td>")
+          html should include(s"""<td class="col-md-3">${group.name}</td>""")
+          html should include(s"""<td class="col-md-3">${group.email}</td>""")
+          html should include(s"""<td class="col-md-3">${group.description.getOrElse("")}</td>""")
         }
       }
     }
@@ -198,6 +198,45 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
         val deleteButtons = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-delete")
         (deleteButtons should have).length(10)
         deleteButtons.foreach(Simulate.click(_))
+      }
+    }
+
+    "show update group modal when clicking update group button" in new Fixture {
+      val props =
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
+        c.state.showUpdateGroup shouldBe false
+        ReactTestUtils.scryRenderedComponentsWithType(c, GroupModal.component) shouldBe empty
+
+        val editButton =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-edit")(0)
+        Simulate.click(editButton)
+
+        c.state.showUpdateGroup shouldBe true
+        ReactTestUtils.findRenderedComponentWithType(c, GroupModal.component)
+      }
+    }
+
+    "close update group modal after clicking close button" in new Fixture {
+      val props =
+        GroupsTable.Props(mockHttp, generateNoOpHandler[Option[Notification]], mockRouter)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
+        c.state.showUpdateGroup shouldBe false
+        val editButton =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-edit")(0)
+        Simulate.click(editButton)
+        c.state.showUpdateGroup shouldBe true
+
+        val modal = ReactTestUtils.findRenderedComponentWithType(c, GroupModal.component)
+
+        val closeButton =
+          ReactTestUtils.findRenderedDOMComponentWithClass(modal, "test-close-create-group")
+        Simulate.click(closeButton)
+
+        c.state.showUpdateGroup shouldBe false
+        ReactTestUtils.scryRenderedComponentsWithType(c, GroupModal.component) shouldBe empty
       }
     }
   }

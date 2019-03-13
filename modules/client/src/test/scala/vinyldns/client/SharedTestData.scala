@@ -52,7 +52,15 @@ trait SharedTestData {
 
     for {
       i <- 0 until numGroups
-    } yield Group(s"name-$i", s"email-$i@test.com", s"id-$i", s"created-$i", memberIds, adminIds)
+    } yield
+      Group(
+        s"name-$i",
+        s"email-$i@test.com",
+        s"id-$i",
+        memberIds,
+        adminIds,
+        None,
+        Some(s"created-$i"))
   }
 
   // a lot of times components use anonymous functions like refreshGroups, setNotification, etc

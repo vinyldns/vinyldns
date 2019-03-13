@@ -32,7 +32,11 @@ object GroupsTable {
       setNotification: Option[Notification] => Callback,
       router: RouterCtl[Page])
 
-  case class State(groupsList: Option[GroupList] = None, groupNameFilter: Option[String] = None)
+  case class State(
+      groupsList: Option[GroupList] = None,
+      groupNameFilter: Option[String] = None,
+      showUpdateGroup: Boolean = false,
+      toBeUpdated: Option[Group] = None)
 
   val component = ScalaComponent
     .builder[Props](displayName = "ListGroupsTable")
@@ -104,12 +108,30 @@ object GroupsTable {
                     gl.groups.map(toTableRow(P, S, _)).toTagMod
                   )
                 )
-              )
+              ),
+              updateGroupModal(P, S)
             )
           case Some(gl) if gl.groups.isEmpty => <.p("You don't have any groups yet")
           case None => <.p("Loading your groups...")
         }
       )
+
+    def updateGroupModal(P: Props, S: State): TagMod =
+      if (S.showUpdateGroup)
+        GroupModal(
+          GroupModal
+            .Props(
+              P.http,
+              _ => makeUpdateFormInvisible,
+              _ => listGroups(P, S),
+              existing = S.toBeUpdated))
+      else TagMod.empty
+
+    def makeUpdateFormVisible(toBeUpdated: Group): Callback =
+      bs.modState(_.copy(toBeUpdated = Some(toBeUpdated), showUpdateGroup = true))
+
+    def makeUpdateFormInvisible: Callback =
+      bs.modState(_.copy(showUpdateGroup = false))
 
     def listGroups(P: Props, S: State): Callback = {
       val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
@@ -123,12 +145,13 @@ object GroupsTable {
 
     def toTableRow(P: Props, S: State, group: Group): TagMod =
       <.tr(
-        <.td(group.name),
-        <.td(group.email),
-        <.td(group.description),
+        <.td(^.className := "col-md-3", group.name),
+        <.td(^.className := "col-md-3", group.email),
+        <.td(^.className := "col-md-3", group.description),
         <.td(
+          ^.className := "col-md-3",
           <.div(
-            ^.className := "table-form-group",
+            ^.className := "btn-group",
             <.a(
               ^.className := "btn btn-info btn-rounded test-view",
               P.router.setOnClick(ToGroupViewPage(group.id)),
@@ -136,6 +159,15 @@ object GroupsTable {
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-eye"),
               " View"
+            ),
+            <.button(
+              ^.className := "btn btn-warning btn-rounded test-edit",
+              ^.`type` := "button",
+              ^.onClick --> makeUpdateFormVisible(group),
+              ^.title := s"Edit group ${group.name}",
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-edit"),
+              " Edit"
             ),
             <.button(
               ^.className := "btn btn-danger btn-rounded test-delete",

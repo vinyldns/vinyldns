@@ -34,11 +34,20 @@ case class Group(
     name: String,
     email: String,
     id: String,
-    created: String,
     members: Seq[Id],
     admins: Seq[Id],
-    description: Option[String] = None)
+    description: Option[String] = None,
+    created: Option[String] = None)
 
 object Group extends OptionRW {
+  def apply(groupCreateInfo: GroupCreateInfo, id: String): Group =
+    Group(
+      groupCreateInfo.name,
+      groupCreateInfo.email,
+      id,
+      groupCreateInfo.members,
+      groupCreateInfo.admins,
+      groupCreateInfo.description)
+
   implicit val rw: RW[Group] = macroRW
 }

@@ -20,19 +20,32 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
-import vinyldns.client.http.{Http, HttpResponse, PostGroupRoute}
+import vinyldns.client.http.{Http, HttpResponse, PostGroupRoute, UpdateGroupRoute}
 import vinyldns.client.components._
 import vinyldns.client.models.Id
 import vinyldns.client.models.membership.{Group, GroupCreateInfo}
 import vinyldns.client.components.AlertBox.setNotification
 
-object CreateGroupModal {
-  case class State(group: GroupCreateInfo)
-  case class Props(http: Http, close: Unit => Callback, refreshGroups: Unit => Callback)
+object GroupModal {
+  case class State(group: GroupCreateInfo, updateId: String = "", isUpdate: Boolean = false)
+  case class Props(
+      http: Http,
+      close: Unit => Callback,
+      refreshGroups: Unit => Callback,
+      existing: Option[Group] = None)
 
   val component = ScalaComponent
     .builder[Props]("CreateGroupForm")
-    .initialState(State(GroupCreateInfo()))
+    .initialStateFromProps { p =>
+      p.existing match {
+        case Some(g) =>
+          State(
+            GroupCreateInfo(g.name, g.email, g.members, g.admins, g.description),
+            g.id,
+            isUpdate = true)
+        case None => State(GroupCreateInfo())
+      }
+    }
     .renderBackend[Backend]
     .build
 
@@ -41,7 +54,7 @@ object CreateGroupModal {
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
       Modal(
-        Modal.Props("Create Group", P.close),
+        Modal.Props(toTitle(S), P.close),
         <.div(
           ^.className := "modal-body",
           <.div(
@@ -52,7 +65,7 @@ object CreateGroupModal {
             ValidatedForm.Props(
               "form form-horizontal form-label-left test-create-group-form",
               generateInputFieldProps(S),
-              _ => createGroup(P, S)),
+              _ => if (S.isUpdate) updateGroup(P, S) else createGroup(P, S)),
             <.div(
               <.div(^.className := "ln_solid"),
               <.div(
@@ -73,6 +86,10 @@ object CreateGroupModal {
           )
         )
       )
+
+    def toTitle(S: State): String =
+      if (S.isUpdate) s"Update Group ${S.updateId}"
+      else "Create Group"
 
     def generateInputFieldProps(S: State): List[ValidatedInputField.Props] =
       List(
@@ -96,6 +113,7 @@ object CreateGroupModal {
         ),
         ValidatedInputField.Props(
           changeDescription,
+          inputClass = Some("test-description"),
           label = Some("Description")
         )
       )
@@ -117,6 +135,23 @@ object CreateGroupModal {
               P.refreshGroups(())
           }
           P.http.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
+        }
+      )
+
+    def updateGroup(P: Props, S: State): Callback =
+      P.http.withConfirmation(
+        s"Are you sure you want to update group ${S.updateId}?",
+        Callback.lazily {
+          val updated = Group(S.group, S.updateId)
+          val onFailure = { httpResponse: HttpResponse =>
+            setNotification(P.http.toNotification("updating group", httpResponse))
+          }
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
+            setNotification(P.http.toNotification("updating group", httpResponse)) >>
+              P.close(()) >>
+              P.refreshGroups(())
+          }
+          P.http.put(UpdateGroupRoute(S.updateId), write(updated), onSuccess, onFailure)
         }
       )
 
