@@ -159,31 +159,4 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
         "Name Server test-foo-ns. is not an approved name server.")
     }
   }
-
-  "Valid name server" should {
-    "return failure if the name server is not in the approved list" in {
-      val test = ns.copy(name = "this-is-ok", records = List(NSData("un-approved.server.")))
-      validNameServer(approvedNameServers, test) should haveInvalid(
-        s"Name Server un-approved.server. is not an approved name server.")
-    }
-  }
-
-  "Validate Dns Zone" should {
-    "return success if all records are valid" in {
-      val test = List(
-        ns.copy(name = "this-is-valid"),
-        aaaa.copy(name = "this-is-valid-too")
-      )
-      validateDnsZone(approvedNameServers, test) should beValid(test)
-    }
-
-    "allow dotted hosts" in {
-      val test = List(
-        ns.copy(name = "this.is.valid"),
-        aaaa.copy(name = "this.is.valid.too")
-      )
-
-      validateDnsZone(approvedNameServers, test) should beValid(test)
-    }
-  }
 }

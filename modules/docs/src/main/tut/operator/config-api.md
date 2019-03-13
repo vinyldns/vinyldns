@@ -239,6 +239,8 @@ vinyldns {
         # no additional settings for repositories enabled in mysql
       },
       batch-change {
+      },
+      user {
       }
     }
   }
@@ -280,11 +282,6 @@ vinyldns {
       }
       zone-change {
         table-name = "zoneChangesTest"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
-      user {
-        table-name = "usersTest"
         provisioned-reads = 30
         provisioned-writes = 20
       }
@@ -508,11 +505,6 @@ vinyldns {
         provisioned-reads = 30
         provisioned-writes = 20
       }
-      user {
-        table-name = "users"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
       group {
         table-name = "groups"
         provisioned-reads = 30
@@ -560,6 +552,8 @@ vinyldns {
       zone {
       },
       batch-change {
+      },
+      user {
       }
     }
   }
