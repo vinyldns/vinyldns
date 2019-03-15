@@ -95,6 +95,11 @@ class FrontendController @Inject()(
     Unauthorized(views.html.noAccess())
   }
 
+  def loginError(id: String): Action[AnyContent] = Action { implicit request =>
+    logger.error(s"User login failed for $id")
+    InternalServerError(views.html.loginError())
+  }
+
   def index(): Action[AnyContent] = userAction.async { implicit request =>
     Future(Ok(views.html.zones.zones(request.user.userName)))
   }

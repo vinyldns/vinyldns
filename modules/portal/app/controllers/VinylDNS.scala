@@ -153,7 +153,7 @@ class VinylDNS @Inject()(
           Redirect("/index").withSession(ID_TOKEN -> token.toString)
         case Left(err) =>
           Logger.error(s"LoginId [$loginId] complete with error: $err")
-          Status(err.code)(err.message)
+          Redirect(s"/login-error/$loginId").withNewSession
       }
       .unsafeToFuture()
   }
