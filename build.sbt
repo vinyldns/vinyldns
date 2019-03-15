@@ -471,7 +471,6 @@ lazy val sonatypePublishStage = Seq[ReleaseStep](
 lazy val finalReleaseStage = Seq[ReleaseStep] (
   releaseStepCommand("project root"), // use version.sbt file from root
   commitReleaseVersion,
-  tagRelease,
   setNextVersion,
   commitNextVersion
 )
