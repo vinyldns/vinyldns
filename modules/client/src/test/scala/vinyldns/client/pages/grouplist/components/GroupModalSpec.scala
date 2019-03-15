@@ -20,7 +20,7 @@ import org.scalatest._
 import japgolly.scalajs.react.test._
 import japgolly.scalajs.react._
 import org.scalamock.scalatest.MockFactory
-import vinyldns.client.http.{Http, PostGroupRoute, UpdateGroupRoute}
+import vinyldns.client.http.{CreateGroupRoute, Http, UpdateGroupRoute}
 import vinyldns.client.models.membership.{Group, GroupCreateInfo, Id}
 import upickle.default.write
 import vinyldns.client.SharedTestData
@@ -90,7 +90,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
       (mockHttp.getLoggedInUser _).expects().once().returns(testUser)
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.post[Group] _)
-        .expects(PostGroupRoute, write(testGroup), *, *)
+        .expects(CreateGroupRoute, write(testGroup), *, *)
         .once()
         .returns(Callback.empty)
 

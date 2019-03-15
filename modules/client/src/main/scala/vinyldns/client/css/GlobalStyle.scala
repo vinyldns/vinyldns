@@ -38,8 +38,12 @@ object GlobalStyle {
       cursor.auto,
       position.absolute,
       wordWrap.breakWord,
-      zIndex :=! "2000"
+      zIndex :=! "10000"
     )
     val notifyInner = style(minHeight :=! "16px")
+    val positionAbsolute = style(position.absolute)
+    val positionFixed = style(position.fixed)
+    val overflow = style(overflowY.scroll)
+    val noop = style()
   }
 }

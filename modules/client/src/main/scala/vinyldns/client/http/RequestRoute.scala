@@ -18,6 +18,7 @@ package vinyldns.client.http
 
 import upickle.default.read
 import vinyldns.client.models.membership.{Group, GroupList, MemberList, User}
+import vinyldns.client.models.zone.Zone
 
 import scala.scalajs.js.URIUtils
 import scala.util.Try
@@ -53,7 +54,7 @@ final case class ListGroupsRoute(nameFilter: Option[String] = None)
     Try(Option(read[GroupList](httpResponse.responseText))).getOrElse(None)
 }
 
-object PostGroupRoute extends RequestRoute[Group] {
+object CreateGroupRoute extends RequestRoute[Group] {
   def path: String = "/api/groups"
   def parse(httpResponse: HttpResponse): Option[Group] =
     Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
@@ -87,4 +88,16 @@ final case class LookupUserRoute(username: String) extends RequestRoute[User] {
   def path: String = s"/api/users/lookupuser/$username"
   def parse(httpResponse: HttpResponse): Option[User] =
     Try(Option(read[User](httpResponse.responseText))).getOrElse(None)
+}
+
+object CreateZoneRoute extends RequestRoute[Zone] {
+  def path: String = "/api/zones"
+  def parse(httpResponse: HttpResponse): Option[Zone] =
+    Try(Option(read[Zone](httpResponse.responseText))).getOrElse(None)
+}
+
+final case class UpdateZoneRoute(id: String) extends RequestRoute[Zone] {
+  def path: String = s"/api/zones/$id"
+  def parse(httpResponse: HttpResponse): Option[Zone] =
+    Try(Option(read[Zone](httpResponse.responseText))).getOrElse(None)
 }

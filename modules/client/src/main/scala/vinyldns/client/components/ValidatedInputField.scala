@@ -16,25 +16,34 @@
 
 package vinyldns.client.components
 
+import java.util.UUID
+
+import scalacss.ScalaCssReact._
 import cats.implicits._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.components.InputFieldType.InputFieldType
+import vinyldns.client.components.InputType.InputFieldType
+import vinyldns.client.css.GlobalStyle
 
 import scala.util.Try
 
 case class InputFieldValidations(
     maxSize: Option[Int] = None,
     noSpaces: Boolean = false,
-    required: Boolean = false)
+    required: Boolean = false,
+    matchDatalist: Boolean = false)
 
-object InputFieldType extends Enumeration {
+object InputType extends Enumeration {
   type InputFieldType = Value
-  val Text, Email, Number = Value
+  val Text, Email, Number, Password = Value
 }
 
 object ValidatedInputField {
+  type DatalistValue = String
+  type DatalistDisplay = String
+  type DatalistOptions = Map[DatalistValue, DatalistDisplay]
+
   case class Props(
       parentOnChange: String => Callback,
       labelSize: String = "col-md-3 col-sm-3 col-xs-12",
@@ -45,7 +54,9 @@ object ValidatedInputField {
       placeholder: Option[String] = None,
       helpText: Option[String] = None,
       initialValue: Option[String] = None,
-      typ: InputFieldType = InputFieldType.Text,
+      typ: InputFieldType = InputType.Text,
+      datalist: DatalistOptions = Map.empty[DatalistValue, DatalistDisplay],
+      disabled: Boolean = false,
       validations: Option[InputFieldValidations] = None)
   case class State(
       value: Option[String],
@@ -68,7 +79,8 @@ object ValidatedInputField {
   class Backend(bs: BackendScope[Props, State]) {
     import Backend._
 
-    def render(P: Props, S: State): VdomElement =
+    def render(P: Props, S: State): VdomElement = {
+      val datalistBinding = UUID.randomUUID().toString
       <.div(
         ^.className := "form-group",
         P.label.map { l =>
@@ -78,30 +90,50 @@ object ValidatedInputField {
           )
         },
         <.div(
-          ^.className := P.inputSize,
+          ^.className := s"form-group ${P.inputSize}",
           <.input(
             ^.className := s"form-control ${generateInputClass(P, S)}",
             ^.`type` := toInputType(P),
             ^.value := S.value.getOrElse(""),
             ^.placeholder := P.placeholder.getOrElse(""),
             ^.onChange ==> ((e: ReactEventFromInput) => onChange(e.target.value, P)),
-            ^.required := Try(P.validations.get.required).getOrElse(false)
+            ^.required := Try(P.validations.get.required).getOrElse(false),
+            ^.list := datalistBinding,
+            ^.disabled := P.disabled,
+            if (P.datalist.nonEmpty) GlobalStyle.styleSheet.cursorPointer
+            else GlobalStyle.styleSheet.noop
           ),
+          toDatalist(P, datalistBinding),
           helpText(P.helpText),
           errors(S)
         )
       )
+    }
+
+    // see html5 datalist, basically a combo of <select> and <input> fields
+    // this is supported in all major browsers at the time of writing this, but considering
+    // adding a polyfill for cases such someone not updating Mac OS and is on an old Safari
+    def toDatalist(P: Props, datalistBinding: String): TagMod =
+      if (P.datalist.isEmpty) TagMod.empty
+      else
+        <.datalist(
+          ^.id := datalistBinding,
+          P.datalist.map {
+            case (value, display) => <.option(^.key := display, ^.value := value, display)
+          }.toTagMod
+        )
 
     // make use of simple html5 validations
     def toInputType(P: Props): String =
       P.typ match {
-        case InputFieldType.Text => "text"
-        case InputFieldType.Number => "number"
-        case InputFieldType.Email => "email"
+        case InputType.Text => "text"
+        case InputType.Number => "number"
+        case InputType.Email => "email"
+        case InputType.Password => "password"
       }
 
     def onChange(value: String, P: Props): Callback = {
-      val validatedValue = validate(value, P.validations)
+      val validatedValue = validate(value, P.validations, P.datalist)
       val localOnChange = validatedValue match {
         case Right(_) =>
           bs.modState { S =>
@@ -138,13 +170,17 @@ object ValidatedInputField {
   }
 
   object Backend {
-    def validate(value: String, validations: Option[InputFieldValidations]): Either[String, Unit] =
+    def validate(
+        value: String,
+        validations: Option[InputFieldValidations],
+        datalist: DatalistOptions): Either[String, Unit] =
       validations match {
         case Some(checks) =>
           for {
             _ <- validateRequired(value, checks)
             _ <- validateMaxSize(value, checks)
             _ <- validateNoSpaces(value, checks)
+            _ <- validateDatalist(value, checks, datalist)
           } yield ()
         case None => ().asRight
       }
@@ -175,6 +211,18 @@ object ValidatedInputField {
           !value.contains(" "),
           (),
           "Cannot contain spaces"
+        )
+      else ().asRight
+
+    def validateDatalist(
+        value: String,
+        checks: InputFieldValidations,
+        datalist: DatalistOptions): Either[String, Unit] =
+      if (checks.matchDatalist)
+        Either.cond(
+          datalist.contains(value),
+          (),
+          "Must match an option in list"
         )
       else ().asRight
   }

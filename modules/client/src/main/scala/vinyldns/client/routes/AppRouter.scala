@@ -27,6 +27,7 @@ import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
 import vinyldns.client.pages.grouplist.GroupListPage
+import vinyldns.client.pages.zonelist.ZoneListPage
 
 object AppRouter {
   trait PropsFromAppRouter {
@@ -34,10 +35,11 @@ object AppRouter {
   }
 
   sealed trait Page
-  final case object ToHomePage extends Page
-  final case object ToNotFound extends Page
-  final case object ToGroupListPage extends Page
+  final object ToHomePage extends Page
+  final object ToNotFound extends Page
+  final object ToGroupListPage extends Page
   final case class ToGroupViewPage(id: String) extends Page
+  final object ToZoneListPage extends Page
 
   private val config = RouterConfigDsl[Page].buildConfig { dsl =>
     import dsl._
@@ -56,12 +58,16 @@ object AppRouter {
         |
           dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
             (p => renderR(ctl => GroupViewPage(p, ctl, HttpHelper)))
+        |
+          staticRoute("zones", ToZoneListPage) ~>
+            renderR(ctl => ZoneListPage(ToZoneListPage, ctl, HttpHelper))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }
 
   private val menu = List(
     LeftNav.NavItem("Home", "fa fa-home", ToHomePage),
+    LeftNav.NavItem("Zones", "fa fa-table", ToZoneListPage),
     LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage)
   )
 
@@ -98,7 +104,7 @@ object AppRouter {
       )
     )
 
-  private val baseUrl = BaseUrl.fromWindowOrigin / "v2/"
+  val baseUrl = BaseUrl.fromWindowOrigin / "v2/"
 
   val router = Router(baseUrl, config)
 }

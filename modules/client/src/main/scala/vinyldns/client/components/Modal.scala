@@ -36,6 +36,8 @@ object Modal {
         ),
         <.div(
           GlobalStyle.styleSheet.overrideDisplay,
+          GlobalStyle.styleSheet.overflow,
+          GlobalStyle.styleSheet.positionFixed,
           ^.className := "modal fade in",
           ^.role := "dialog",
           <.div(

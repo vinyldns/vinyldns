@@ -19,31 +19,89 @@ package vinyldns.client.models.zone
 import vinyldns.client.models.OptionRW
 import upickle.default.{ReadWriter, macroRW}
 
+trait BasicZoneInfo {
+  def name: String
+  def email: String
+  def adminGroupId: String
+  def connection: Option[ZoneConnection]
+  def transferConnection: Option[ZoneConnection]
+}
+
 case class Zone(
+    id: String,
     name: String,
     email: String,
     adminGroupId: String,
     adminGroupName: String,
-    connection: Option[ZoneConnection] = None,
-    transferConnection: Option[ZoneConnection] = None,
     status: String,
     created: String,
     account: String,
     shared: Boolean,
     acl: List[ACLRule],
-)
+    connection: Option[ZoneConnection] = None,
+    transferConnection: Option[ZoneConnection] = None
+) extends BasicZoneInfo
 
 object Zone extends OptionRW {
   implicit val rw: ReadWriter[Zone] = macroRW
 }
 
 case class ZoneCreateInfo(
-    name: String,
-    email: String,
-    adminGroupId: String,
+    name: String = "",
+    email: String = "",
+    adminGroupId: String = "",
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None
-)
+) extends BasicZoneInfo {
+
+  def withNewConnectionKeyName(value: String): ZoneCreateInfo = {
+    val connection = this.connection match {
+      case Some(c) => c.copy(keyName = value, name = value)
+      case None => ZoneConnection(keyName = value, name = value)
+    }
+    this.copy(connection = Some(connection))
+  }
+
+  def withNewConnectionKey(value: String): ZoneCreateInfo = {
+    val connection = this.connection match {
+      case Some(c) => c.copy(key = value)
+      case None => ZoneConnection(key = value)
+    }
+    this.copy(connection = Some(connection))
+  }
+
+  def withNewConnectionServer(value: String): ZoneCreateInfo = {
+    val connection = this.connection match {
+      case Some(c) => c.copy(primaryServer = value)
+      case None => ZoneConnection(primaryServer = value)
+    }
+    this.copy(connection = Some(connection))
+  }
+
+  def withNewTransferKeyName(value: String): ZoneCreateInfo = {
+    val connection = this.transferConnection match {
+      case Some(c) => c.copy(keyName = value, name = value)
+      case None => ZoneConnection(keyName = value, name = value)
+    }
+    this.copy(transferConnection = Some(connection))
+  }
+
+  def withNewTransferKey(value: String): ZoneCreateInfo = {
+    val connection = this.transferConnection match {
+      case Some(c) => c.copy(key = value)
+      case None => ZoneConnection(key = value)
+    }
+    this.copy(transferConnection = Some(connection))
+  }
+
+  def withNewTransferServer(value: String): ZoneCreateInfo = {
+    val connection = this.transferConnection match {
+      case Some(c) => c.copy(primaryServer = value)
+      case None => ZoneConnection(primaryServer = value)
+    }
+    this.copy(transferConnection = Some(connection))
+  }
+}
 
 object ZoneCreateInfo extends OptionRW {
 
@@ -51,10 +109,10 @@ object ZoneCreateInfo extends OptionRW {
 }
 
 case class ZoneConnection(
-    primaryServer: String,
-    keyName: String,
-    name: String,
-    key: String
+    name: String = "",
+    primaryServer: String = "",
+    keyName: String = "",
+    key: String = ""
 )
 
 object ZoneConnection {

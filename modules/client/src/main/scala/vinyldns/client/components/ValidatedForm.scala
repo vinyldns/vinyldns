@@ -37,14 +37,16 @@ object ValidatedForm {
 
   val component = ScalaComponent
     .builder[Props]("ValidatedForm")
-    .initialStateFromProps(initialState)
+    .initialState(State(List()))
     .renderBackendWithChildren[Backend]
+    .componentWillMount(e => e.backend.toState(e.props))
+    .componentWillReceiveProps(e => e.backend.toState(e.nextProps))
     .build
 
   def apply(props: Props, children: ChildArg): Unmounted[Props, State, Backend] =
     component(props)(children)
 
-  class Backend {
+  class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State, children: PropsChildren): VdomElement =
       <.form(
         ^.className := P.className,
@@ -66,13 +68,13 @@ object ValidatedForm {
       if (!validated.contains(false)) e.preventDefaultCB >> P.onSubmit(())
       else e.preventDefaultCB >> Callback.empty
     }
-  }
 
-  def initialState(P: Props): State = {
-    val refs = for {
-      _ <- P.inputFieldProps
-    } yield Ref.toScalaComponent(ValidatedInputField.component)
+    def toState(P: Props): Callback = {
+      val refs = for {
+        _ <- P.inputFieldProps
+      } yield Ref.toScalaComponent(ValidatedInputField.component)
 
-    State(refs)
+      bs.modState(_.copy(refsToInputFields = refs))
+    }
   }
 }

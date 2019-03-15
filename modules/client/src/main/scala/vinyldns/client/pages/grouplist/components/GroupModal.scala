@@ -20,7 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
-import vinyldns.client.http.{Http, HttpResponse, PostGroupRoute, UpdateGroupRoute}
+import vinyldns.client.http.{CreateGroupRoute, Http, HttpResponse, UpdateGroupRoute}
 import vinyldns.client.components._
 import vinyldns.client.models.membership.{BasicGroupInfo, Group, GroupCreateInfo, Id}
 import vinyldns.client.components.AlertBox.setNotification
@@ -34,7 +34,7 @@ object GroupModal {
       existing: Option[Group] = None)
 
   val component = ScalaComponent
-    .builder[Props]("GroupForm")
+    .builder[Props]("GroupModal")
     .initialStateFromProps { p =>
       p.existing match {
         case Some(g) =>
@@ -92,8 +92,8 @@ object GroupModal {
         ValidatedInputField.Props(
           changeName,
           inputClass = Some("test-name"),
-          label = Some("Name"),
-          helpText = Some("Group name. Cannot contain spaces"),
+          label = Some("Group Name"),
+          helpText = Some("Group name"),
           initialValue = Some(S.group.name),
           validations =
             Some(InputFieldValidations(required = true, maxSize = Some(255), noSpaces = true))
@@ -104,7 +104,7 @@ object GroupModal {
           inputClass = Some("test-email"),
           helpText = Some("Group contact email. Preferably a multi user distribution"),
           initialValue = Some(S.group.email),
-          typ = InputFieldType.Email,
+          typ = InputType.Email,
           validations = Some(InputFieldValidations(required = true))
         ),
         ValidatedInputField.Props(
@@ -132,7 +132,7 @@ object GroupModal {
               P.close(()) >>
               P.refreshGroups(())
           }
-          P.http.post(PostGroupRoute, write(groupWithUserId), onSuccess, onFailure)
+          P.http.post(CreateGroupRoute, write(groupWithUserId), onSuccess, onFailure)
         }
       )
 
@@ -159,57 +159,45 @@ object GroupModal {
       )
 
     def changeName(value: String): Callback =
-      bs.state >>= { S =>
-        if (S.isUpdate) {
-          val group = S.group.asInstanceOf[Group]
-          bs.modState { s =>
-            val modified = group.copy(name = value)
-            s.copy(group = modified)
-          }
+      bs.modState { s =>
+        if (s.isUpdate) {
+          val group = s.group.asInstanceOf[Group]
+          val modified = group.copy(name = value)
+          s.copy(group = modified)
         } else {
-          val group = S.group.asInstanceOf[GroupCreateInfo]
-          bs.modState { s =>
-            val modified = group.copy(name = value)
-            s.copy(group = modified)
-          }
+          val group = s.group.asInstanceOf[GroupCreateInfo]
+          val modified = group.copy(name = value)
+          s.copy(group = modified)
         }
       }
 
     def changeEmail(value: String): Callback =
-      bs.state >>= { S =>
-        if (S.isUpdate) {
-          val group = S.group.asInstanceOf[Group]
-          bs.modState { s =>
-            val modified = group.copy(email = value)
-            s.copy(group = modified)
-          }
+      bs.modState { s =>
+        if (s.isUpdate) {
+          val group = s.group.asInstanceOf[Group]
+          val modified = group.copy(email = value)
+          s.copy(group = modified)
         } else {
-          val group = S.group.asInstanceOf[GroupCreateInfo]
-          bs.modState { s =>
-            val modified = group.copy(email = value)
-            s.copy(group = modified)
-          }
+          val group = s.group.asInstanceOf[GroupCreateInfo]
+          val modified = group.copy(email = value)
+          s.copy(group = modified)
         }
       }
 
     def changeDescription(value: String): Callback =
-      bs.state >>= { S =>
+      bs.modState { s =>
         val d =
           if (value.isEmpty) None
           else Some(value)
 
-        if (S.isUpdate) {
-          val group = S.group.asInstanceOf[Group]
-          bs.modState { s =>
-            val modified = group.copy(description = d)
-            s.copy(group = modified)
-          }
+        if (s.isUpdate) {
+          val group = s.group.asInstanceOf[Group]
+          val modified = group.copy(description = d)
+          s.copy(group = modified)
         } else {
-          val group = S.group.asInstanceOf[GroupCreateInfo]
-          bs.modState { s =>
-            val modified = group.copy(description = d)
-            s.copy(group = modified)
-          }
+          val group = s.group.asInstanceOf[GroupCreateInfo]
+          val modified = group.copy(description = d)
+          s.copy(group = modified)
         }
       }
 
