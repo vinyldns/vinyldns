@@ -10,7 +10,7 @@
 ## Developer Requirements
 - Scala 2.12
 - sbt 1+
-- Java 8
+- Java 8 (at least u162)
 - Python 2.7
 - virtualenv
 - Docker
@@ -135,6 +135,29 @@ To run the portal locally, you _first_ have to start up the VinylDNS API Server 
 that is done, in the same `sbt` session or a different one, go to `project portal` and then execute `;preparePortal; run`.
 
 See the [Portal Configuration Guide](https://www.vinyldns.io/operator/config-portal) for information regarding portal configuration.
+
+### Loading in a test zone
+
+Normally the portal can be used for all VinylDNS requests. Test users are locked down to only have access to test zones, 
+which the portal connection modal has not been updated to incorporate. To connect to a zone with testuser, you will need to use an alternative 
+client and set `isTest=true` on the zone being connected to.
+
+An example using the vinyldns-js client (Note, you need Node installed):
+
+``` 
+git clone https://github.com/vinyldns/vinyldns-js.git
+cd vinyldns-js
+npm install
+export VINYLDNS_API_SERVER=http://localhost:9000
+export VINYLDNS_ACCESS_KEY_ID=testUserAccessKey
+export VINYLDNS_SECRET_ACCESS_KEY=testUserSecretKey
+npm run repl
+> var groupId;
+> vinyl.createGroup({"name": "test-group", "email":"test@test.com", members: [{id: "testuser"}], admins: [{id: "testuser"}]}).then(res => {groupId = res.id}).catch(err => {console.log(err)});
+> vinyl.createZone ({name: "ok.", isTest: true, adminGroupId: groupId, email: "test@test.com"}).then(res => { console.log(res) }).catch(err => { console.log(err) })
+
+You should now be able to see the zone in the portal at localhost:9001
+```
 
 ## Testing
 ### Unit Tests
