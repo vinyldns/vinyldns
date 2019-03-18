@@ -11,7 +11,7 @@ MYSQL_PORT=${MYSQL_PORT:-3306}
 echo "Waiting for MYSQL to be ready on ${MYSQL_ADDRESS}:${MYSQL_PORT}"
 DATA=""
 RETRY=30
-while [ $RETRY -gt 0 ]
+while [ "$RETRY" -gt 0 ]
 do
     DATA=$(nc -vzw1 "$MYSQL_ADDRESS" "$MYSQL_PORT")
     if [ $? -eq 0 ]
