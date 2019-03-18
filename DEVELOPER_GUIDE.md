@@ -156,7 +156,7 @@ npm run repl
 > vinyl.createGroup({"name": "test-group", "email":"test@test.com", members: [{id: "testuser"}], admins: [{id: "testuser"}]}).then(res => {groupId = res.id}).catch(err => {console.log(err)});
 > vinyl.createZone ({name: "ok.", isTest: true, adminGroupId: groupId, email: "test@test.com"}).then(res => { console.log(res) }).catch(err => { console.log(err) })
 
-You should now be able to see the zone in the portal at localhost:9001
+You should now be able to see the zone in the portal at localhost:9001 when logged in as username=testuser password=testpassword
 ```
 
 ## Testing
