@@ -29,6 +29,8 @@ import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 
+import scala.util.matching.Regex
+
 object RecordSetValidations {
 
   def validRecordTypes(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
@@ -145,6 +147,9 @@ object RecordSetValidations {
         "CNAME RecordSet cannot have name '@' because it points to zone origin")
       _ <- noRecordWithName
       _ <- isNotDotted(newRecordSet, zone)
+//      _ <- isValidHostName(newRecordSet.name)
+      // Stuck on this one, not sure if CNAMEs should end with a trailing dot or not.
+      // In domainValidations, CNAMEs do require a trailing dot, but here we ensure that it doesn't.
     } yield ()
 
   }
@@ -204,9 +209,17 @@ object RecordSetValidations {
     // TODO kept consistency with old validation. in theory if SOA always == zone name, no special case is needed here
     if (!zone.isReverse) isNotDotted(newRecordSet, zone) else ().asRight
 
-  def ptrValidations(newRecordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
+  def ptrValidations(newRecordSet: RecordSet, zone: Zone): Either[Throwable, Unit] = {
     // TODO we don't check for PTR as dotted...not sure why
-    ReverseZoneHelpers.ptrIsInZone(zone, newRecordSet.name, newRecordSet.typ).map(_ => ())
+    val ptrIsInZone =
+      ReverseZoneHelpers.ptrIsInZone(zone, newRecordSet.name, newRecordSet.typ).map(_ => ())
+    val isNotDottedHost = if (!zone.isReverse) isNotDotted(newRecordSet, zone) else ().asRight
+    for {
+      _ <- ptrIsInZone
+      _ <- isNotDottedHost
+      _ <- isValidHostName(newRecordSet.name)
+    } yield ()
+  }
 
   private def isNotOrigin(recordSet: RecordSet, zone: Zone, err: String): Either[Throwable, Unit] =
     ensuring(InvalidRequest(err))(
@@ -236,6 +249,20 @@ object RecordSetValidations {
     result.toEither
       .map(_ => ())
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
+  }
+
+  def isValidHostName(name: String): Either[Throwable, Unit] = {
+
+    val validFQDNRegex: Regex =
+      """^(?:([0-9a-zA-Z]{1,63}|[0-9a-zA-Z]{1}[0-9a-zA-Z\-\/]{0,61}[0-9a-zA-Z]{1})\.)*$""".r
+
+    validFQDNRegex.findFirstIn(name) match {
+      case Some(_) => ().asRight
+      case None =>
+        InvalidRequest(
+          s"""Invalid domain name: "$name", valid domain names must be letters, numbers, and hyphens, """ +
+            "joined by dots, and terminated with a dot.").asLeft
+    }
   }
 
   def canUseOwnerGroup(
