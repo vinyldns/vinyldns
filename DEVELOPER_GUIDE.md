@@ -141,7 +141,7 @@ Normally the portal can be used for all VinylDNS requests. Test users are locked
 which the portal connection modal has not been updated to incorporate. To connect to a zone with testuser, you will need to use an alternative 
 client and set `isTest=true` on the zone being connected to.
 
-An example using the vinyldns-js client (Note, you need Node installed):
+Use the vinyldns-js client (Note, you need Node installed):
 
 ``` 
 git clone https://github.com/vinyldns/vinyldns-js.git
