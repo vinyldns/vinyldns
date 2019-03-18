@@ -136,8 +136,7 @@ that is done, in the same `sbt` session or a different one, go to `project porta
 
 See the [Portal Configuration Guide](https://www.vinyldns.io/operator/config-portal) for information regarding portal configuration.
 
-### Loading in a test zone
-
+### Loading test data
 Normally the portal can be used for all VinylDNS requests. Test users are locked down to only have access to test zones, 
 which the portal connection modal has not been updated to incorporate. To connect to a zone with testuser, you will need to use an alternative 
 client and set `isTest=true` on the zone being connected to.

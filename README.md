@@ -50,10 +50,8 @@ To start up a local instance of VinylDNS on your machine with docker:
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
 1. Run `.bin/docker-up-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001`
+1. See [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for how to load a test DNS zone
 1. To stop the local setup, run `./bin/remove-vinyl-containers.sh`.
-
-There is a preloaded testuser with the username "testuser", and password "testpassword". If you view the portal in a web browser at 
-<http://localhost:9001>, you can use those credentials to login.
 
 There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the endpoint `http://localhost:9000`
 
@@ -62,7 +60,7 @@ There exist several clients at <https://github.com/vinyldns> that can be used to
 1. Login with the credentials ***testuser*** and ***testpassword***
 1. Navigate to the `groups` tab: <http://localhost:9001/groups>
 1. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the group
-1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones> (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-in-a-test-zone) for creating a zone)
+1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones> (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
 1. You will see that some records are preloaded in the zoned already, this is because these records are preloaded in the local docker DNS server 
 and VinylDNS automatically syncs records with the backend DNS server upon zone connection
 1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
