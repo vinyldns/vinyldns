@@ -60,7 +60,10 @@ class ZoneServiceSpec
         ().toResult
       }
 
-    def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit] = Right(())
+    def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit] = backendId match {
+      case Some("badId") => InvalidRequest("bad id").asLeft[Unit]
+      case _ => Right(())
+    }
   }
 
   private val underTest = new ZoneService(
@@ -168,6 +171,13 @@ class ZoneServiceSpec
       val error = leftResultOf(underTest.connectToZone(newZone, okAuth).value)
       error shouldBe a[NotAuthorizedError]
     }
+
+    "return a InvalidRequest if zone has a specified backend ID that is invalid" in {
+      val newZone = createZoneAuthorized.copy(backendId = Some("badId"))
+
+      val error = leftResultOf(underTest.connectToZone(newZone, okAuth).value)
+      error shouldBe an[InvalidRequest]
+    }
   }
 
   "Updating Zones" should {
@@ -269,6 +279,12 @@ class ZoneServiceSpec
 
       val result = rightResultOf(underTest.updateZone(newZone, okAuth).value)
       result shouldBe a[ZoneChange]
+    }
+    "return a InvalidRequest if zone has a specified backend ID that is invalid" in {
+      val newZone = updateZoneAuthorized.copy(backendId = Some("badId"))
+
+      val error = leftResultOf(underTest.updateZone(newZone, okAuth).value)
+      error shouldBe an[InvalidRequest]
     }
   }
 

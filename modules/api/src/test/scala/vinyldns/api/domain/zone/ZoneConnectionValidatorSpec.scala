@@ -250,8 +250,23 @@ class ZoneConnectionValidatorSpec
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("Transfer connection invalid")
     }
-    "getZoneConnection" should {
+    "hasExistingBackendId" should {
+      val backend = DnsBackend("some-test-backend", testDefaultConnection, testDefaultConnection)
+      val underTest =
+        new ZoneConnectionValidator(
+          ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List(backend)))
 
+      "return success if the backendId exists" in {
+        underTest.hasExistingBackendId(Some("some-test-backend")) shouldBe right
+      }
+      "return success on None" in {
+        underTest.hasExistingBackendId(None) shouldBe right
+      }
+      "return failure if the backendId does not exist" in {
+        underTest.hasExistingBackendId(Some("bad")) shouldBe left
+      }
+    }
+    "getZoneConnection" should {
       "get the specified zone connection if provided" in {
         // both backendId and connection info specified; prefer connection info
         val zone = testZone.copy(backendId = Some("some-backend-id"))
