@@ -35,6 +35,7 @@ shared        | boolean     | An indicator that the zone is shared with anyone. 
 acl           | ZoneACL     | The access control rules governing the zone.  See the [Zone ACL Rule Attributes](#zone-acl-rule-attr) for more information
 id            | string      | The unique identifier for this zone
 latestSync    | date-time   | The last date and time the zone was synced
+isTest        | boolean     | Defaults to false. Needs to be set to **true** if the access and secret key belong to a user who also has **isTest** set to true
 
 #### ZONE EXAMPLE <a id="zone-example"></a>
 
