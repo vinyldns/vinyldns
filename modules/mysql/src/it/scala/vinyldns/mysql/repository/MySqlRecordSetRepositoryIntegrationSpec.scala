@@ -272,6 +272,40 @@ class MySqlRecordSetRepositoryIntegrationSpec
       repo.getRecordSet(okZone.id, inserts(1).recordSet.id).unsafeRunSync().map(_.name) shouldBe
         Some(inserts(1).recordSet.name)
     }
+    "works when inserting owner-group-id" in {
+
+      val testRecord = makeTestAddChange(ds, okZone).recordSet
+      val addChange = makeTestAddChange(testRecord.copy(ownerGroupId = Some("someOwner")))
+
+      val dbCalls = for {
+        _ <- repo.apply(ChangeSet(addChange))
+        get <- repo.getRecordSet(testRecord.zoneId, testRecord.id)
+      } yield get
+
+      val get = dbCalls.unsafeRunSync()
+      get shouldBe Some(addChange.recordSet)
+    }
+
+    "works when updating owner-group-id" in {
+
+      val existing = makeTestAddChange(ds, okZone).recordSet
+      val addChange = makeTestAddChange(existing)
+
+      val updateChange = makePendingTestUpdateChange(addChange.recordSet,
+        addChange.recordSet.copy(name = "updated-name", ownerGroupId = Some("someOwner")))
+
+      val dbCalls = for {
+        _ <- repo.apply(ChangeSet(addChange))
+        get <- repo.getRecordSet(addChange.zoneId, addChange.id)
+        _ <- repo.apply(ChangeSet(updateChange))
+        finalGet <- repo.getRecordSet(addChange.zoneId, addChange.id)
+      } yield (get, finalGet)
+
+      val (get, finalGet) = dbCalls.unsafeRunSync()
+      get shouldBe Some(addChange.recordSet)
+      finalGet shouldBe Some(updateChange.recordSet)
+
+    }
   }
 
   "list record sets" should {
