@@ -21,6 +21,7 @@ name          | string        | yes         | the name of the recordset being up
 type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
 records       | array of record data | yes  | record data for recordset, see [RecordSet Model](../api/recordset-model) |
+ownerGroupId  | string        | no          | Record ownership assignment, applicable if the recordset is in a [shared zone](../api/zone-model#shared-zones) |
 
 #### EXAMPLE HTTP REQUEST
 ```
@@ -33,7 +34,8 @@ records       | array of record data | yes  | record data for recordset, see [Re
       "address": "10.10.10.10"
     }
   ],
-  "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c"
+  "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c",
+  "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
 }
 ```
 
@@ -58,7 +60,7 @@ recordSet     | map           | contains the recordset model |
 userId        | string        | the user id that initiated the change |
 changeType    | string        | type of change requested (Create, Update, Delete); in this case Create |
 created       | string        | the time (GMT) the change was initiated |
-id            | string        |  the id of the change.  This is not the id of the recordset |
+id            | string        | the id of the change.  This is not the id of the recordset |
 
 #### EXAMPLE RESPONSE
 
@@ -92,7 +94,9 @@ id            | string        |  the id of the change.  This is not the id of th
       }
     ],
     "id": "9a41b99c-8e67-445f-bcf3-f9c7cd1f2357",
-    "account": "0215d410-9b7e-4636-89fd-b6b948a06347"
+    "account": "0215d410-9b7e-4636-89fd-b6b948a06347",
+    "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
+    "ownerGroupName": "Shared Group"
   },
   "userId": "0215d410-9b7e-4636-89fd-b6b948a06347",
   "changeType": "Create",
