@@ -43,30 +43,25 @@ Integration is simple with first-class language support including:
 - [Credits](#credits)
 
 ## Quickstart
-Docker images for VinylDNS live on Docker Hub at https://hub.docker.com/u/vinyldns/.
+Docker images for VinylDNS live on Docker Hub at <https://hub.docker.com/u/vinyldns/>.
 To start up a local instance of VinylDNS on your machine with docker:
 
 1. Ensure that you have [docker](https://docs.docker.com/install/) and [docker-compose](https://docs.docker.com/compose/install/)
 1. Clone the repo: `git clone https://github.com/vinyldns/vinyldns.git`
 1. Navigate to repo: `cd vinyldns`
-1. Run `bin/docker-up-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001` along with their 
-dependencies, ping the API on `http://localhost:9000/ping` and the portal on `http://localhost:9001`, and notify you if either failed to start.
-1. To stop the local setup, run `./bin/remove-vinyl-containers.sh` from the project root.
+1. Run `.bin/docker-up-vinyldns.sh`. This will start up the api at `localhost:9000` and the portal at `localhost:9001`
+1. See [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for how to load a test DNS zone
+1. To stop the local setup, run `./bin/remove-vinyl-containers.sh`.
 
-Things to try after VinylDNS is running:
+There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the endpoint `http://localhost:9000`
 
+## Things to try in the portal
 1. View the portal at <http://localhost:9001> in a web browser
 1. Login with the credentials ***testuser*** and ***testpassword***
 1. Navigate to the `groups` tab: <http://localhost:9001/groups>
-1. Click on the **New Group** button and create a new group
-1. Navigate to the `zones` tab: <http://localhost:9001/zones>
-1. Click on the **Connect** button to connect to zone, the `bin/docker-up-vinyldns.sh` started up a local bind9 DNS server 
-with a few test zones preloaded, 
-connect to `Zone Name = dummy.`, `Email = sometest@vinyldns.com`, `Admin Group = the group you just created`. The DNS
-Server and Zone Transfer Server can be left blank as the test zones use the defaults 
-1. This is async, so refresh the zones page to view the newly created zone
-1. Click the **View** button under the **Actions** column for the `dummy.` zone
-1. You will see that some records are preloaded already, this is because these records existed in the bind9 server 
+1. Click on the **New Group** button and create a new group, the group id is the uuid in the url after you view the group
+1. View zones you connected to in the `zones` tab: <http://localhost:9001/zones> (Note, see [Developer Guide](DEVELOPER_GUIDE.md#loading-test-data) for creating a zone)
+1. You will see that some records are preloaded in the zoned already, this is because these records are preloaded in the local docker DNS server 
 and VinylDNS automatically syncs records with the backend DNS server upon zone connection
 1. From here, you can create DNS record sets in the **Manage Records** tab, and manage zone settings and ***ACL rules***
 in the **Manage Zone** tab
@@ -74,15 +69,12 @@ in the **Manage Zone** tab
 TTL = 300, IP Addressess = 1.1.1.1`
 1. Click on the **Refresh** button under Records, you should see your new record created
 
-Things to note: 
-
+## Other things to note
 1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
 1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
 1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
-1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the bin/.env file before execution.
-1. A similar docker/.env can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
-
-For details regarding setup and configuration of the dev environment, see the [Developer Guide](DEVELOPER_GUIDE.md).
+1. If you wish to modify the url used in the creation process from `http://localhost:9000`, to say `http://vinyldns.yourdomain.com:9000`, you can modify the `bin/.env` file before execution.
+1. A similar `docker/.env` can be modified to change the default ports for the Portal and API. You must also modify their config files with the new port: https://www.vinyldns.io/operator/config-portal & https://www.vinyldns.io/operator/config-api
 
 ## Code of Conduct
 This project and everyone participating in it are governed by the [VinylDNS Code Of Conduct](CODE_OF_CONDUCT.md).  By
