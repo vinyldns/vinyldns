@@ -43,7 +43,6 @@ Integration is simple with first-class language support including:
 - [Credits](#credits)
 
 ## Quickstart
-
 Docker images for VinylDNS live on Docker Hub at <https://hub.docker.com/u/vinyldns/>.
 To start up a local instance of VinylDNS on your machine with docker:
 
@@ -59,7 +58,6 @@ There is a preloaded testuser with the username "testuser", and password "testpa
 There exist several clients at <https://github.com/vinyldns> that can be used to make API requests, using the endpoint `http://localhost:9000`
 
 ## Things to try in the portal
-
 1. View the portal at <http://localhost:9001> in a web browser
 1. Login with the credentials ***testuser*** and ***testpassword***
 1. Navigate to the `groups` tab: <http://localhost:9001/groups>
@@ -74,7 +72,6 @@ TTL = 300, IP Addressess = 1.1.1.1`
 1. Click on the **Refresh** button under Records, you should see your new record created
 
 ## Other things to note
-
 1. Upon connecting to a zone for the first time, a zone sync is ran to provide VinylDNS a copy of the records in the zone
 1. Changes made via VinylDNS are made against the DNS backend, you do not need to sync the zone further to push those changes out
 1. If changes to the zone are made outside of VinylDNS, then the zone will have to be re-synced to give VinylDNS a copy of those records
