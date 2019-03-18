@@ -88,7 +88,8 @@ Since by-change accumulated errors are collected at different stages, errors at 
 13. [User Is Not Authorized](#UserIsNotAuthorized)
 14. [Record Name Not Unique In Batch Change](#RecordNameNotUniqueInBatchChange)
 15. [Invalid Record Type In Reverse Zone](#InvalidRecordTypeInReverseZone)
-
+16. [Missing Owner Group Id](#MissingOwnerGroupId)
+17. [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
 
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
@@ -336,6 +337,32 @@ Invalid Record Type In Reverse Zone: record with name "<name>" and type "<type>"
 ##### Details:
 
 Not all record types are allowed in a DNS reverse zone. The given type is not supported.
+
+
+#### 16. Missing Owner Group Id <a id="MissingOwnerGroupId"></a>
+
+##### Error Message:
+
+```
+Zone "<zone name>" is a shared zone, so owner group ID must be specified for record "<record name>".
+```
+
+##### Details:
+
+You are trying to create a new record or update an existing unowned record in a shared zone. This requires a record owner group ID in the batch change.  
+
+
+#### 17. Not a Member of Owner Group <a id="NotAMemberOfOwnerGroup"></a>
+
+##### Error Message:
+
+```
+User "<user name>" must be a member of group "<group ID>" to apply this group to batch changes.
+```
+
+##### Details:
+
+You must be a member of the group you are assigning for record ownership in the batch change. 
 
 
 ### FULL-REQUEST ERRORS <a id="full-request-errors" />
