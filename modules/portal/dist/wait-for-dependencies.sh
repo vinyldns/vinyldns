@@ -23,7 +23,7 @@ do
         let RETRY-=1
         sleep .5
 
-        if [ $RETRY -eq 0 ]
+        if [ "$RETRY" -eq 0 ]
         then
           echo "Exceeded retries waiting for MYSQL to be ready on ${MYSQL_ADDRESS}:${MYSQL_PORT}, failing"
           return 1
