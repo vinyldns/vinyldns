@@ -157,6 +157,16 @@ lazy val portalDockerSettings = Seq(
 
   // this is the default version, can be overridden
   bashScriptExtraDefines += s"""addJava "-Dvinyldns.base-version=${(version in ThisBuild).value}"""",
+
+  // wait for mysql
+  bashScriptExtraDefines += "(cd /opt/docker/ && ./wait-for-dependencies.sh && cd -)",
+  dockerCommands ++= Seq(
+    Cmd("USER", "root"), // switch to root so we can install netcat
+    ExecCmd("RUN", "apt-get", "update"),
+    ExecCmd("RUN", "apt-get", "install", "-y", "netcat-openbsd"),
+    Cmd("USER", "daemon") // switch back to the daemon user
+  ),
+
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
 )
 
@@ -471,7 +481,6 @@ lazy val sonatypePublishStage = Seq[ReleaseStep](
 lazy val finalReleaseStage = Seq[ReleaseStep] (
   releaseStepCommand("project root"), // use version.sbt file from root
   commitReleaseVersion,
-  tagRelease,
   setNextVersion,
   commitNextVersion
 )
