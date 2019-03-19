@@ -95,7 +95,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
 
         recordSetChanges.flatMap { allChanges =>
           val changesWithUserIds = allChanges.map(_.withUserId(zoneChange.userId))
-          // not accepting unknown record types or dotted hosts
+          // not accepting unknown record types
           val (changes, dropped) = changesWithUserIds.partition { rs =>
             rs.recordSet.typ != RecordType.UNKNOWN
           }
@@ -115,6 +115,15 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced))
           } else {
+            val dottedRecords = changes.filter { chg =>
+              chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") && chg.recordSet.typ != RecordType.SRV
+            }.map(_.recordSet.name)
+             .mkString(", ")
+            if (dottedRecords.nonEmpty) {
+              logger.info(
+                s"Zone sync for '${zone.name}' (id: ${zone.id}) " +
+                  s"includes the following dotted host records: [$dottedRecords]")
+            }
             logger.info(
               s"Zone sync for change $zoneChange found ${changes.size} changes to be saved")
             val changeSet = ChangeSet(changes).copy(status = ChangeSetStatus.Applied)
