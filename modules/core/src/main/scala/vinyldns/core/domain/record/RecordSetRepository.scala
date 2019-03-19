@@ -39,4 +39,6 @@ trait RecordSetRepository extends Repository {
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]]
 
   def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]]
+
+  def getRecordSetByOwnerGroupId(ownerGroupId: String): IO[List[RecordSet]]
 }
