@@ -833,6 +833,22 @@ class MembershipServiceSpec
       }
     }
 
+    "isOwnerGroup" should {
+      "return true when a group for deletion is not the admin of a zone" in {
+        doReturn(IO.pure(true)).when(mockRecordSetRepo).isNotAOwnerGroupId(okGroup.id)
+
+        val result = awaitResultOf(underTest.isOwnerGroup(okGroup).value)
+        result should be(right)
+      }
+
+      "return an InvalidGroupRequestError when a group for deletion is admin of a zone" in {
+        doReturn(IO.pure(false)).when(mockRecordSetRepo).isNotAOwnerGroupId(okGroup.id)
+
+        val error = leftResultOf(underTest.isOwnerGroup(okGroup).value)
+        error shouldBe a[InvalidGroupRequestError]
+      }
+    }
+
     "updateUserLockStatus" should {
       "save the update and lock the user account" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
