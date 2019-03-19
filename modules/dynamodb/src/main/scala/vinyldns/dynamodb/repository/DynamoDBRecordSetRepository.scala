@@ -243,4 +243,13 @@ class DynamoDBRecordSetRepository private[repository] (
         )
       )
     }
+
+  override def getRecordSetByOwnerGroupId(ownerGroupId: String): IO[List[RecordSet]] =
+    monitor("repo.RecordSet.getRecordSetByOwnerGroupId") {
+      IO.raiseError(
+        UnsupportedDynamoDBRepoFunction(
+          "getRecordSetByOwnerGroupId is not supported by VinylDNS DynamoDB RecordSetRepository"
+        )
+      )
+    }
 }

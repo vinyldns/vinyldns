@@ -780,7 +780,7 @@ class MembershipServiceSpec
       "return true when a group for deletion is not the admin of a zone" in {
         doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(okGroup.id)
 
-        val result = awaitResultOf(underTest.groupCanBeDeleted(okGroup).value)
+        val result = awaitResultOf(underTest.isAZoneAdmin(okGroup).value)
         result should be(right)
       }
 
@@ -789,7 +789,7 @@ class MembershipServiceSpec
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(okGroup.id)
 
-        val error = leftResultOf(underTest.groupCanBeDeleted(okGroup).value)
+        val error = leftResultOf(underTest.isAZoneAdmin(okGroup).value)
         error shouldBe a[InvalidGroupRequestError]
       }
     }
