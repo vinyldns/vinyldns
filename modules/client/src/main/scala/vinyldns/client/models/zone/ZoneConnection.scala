@@ -16,24 +16,15 @@
 
 package vinyldns.client.models.zone
 
-import vinyldns.client.models.OptionRW
 import upickle.default.{ReadWriter, macroRW}
 
-case class Zone(
-    id: String,
-    name: String,
-    email: String,
-    adminGroupId: String,
-    adminGroupName: String,
-    status: String,
-    created: String,
-    account: String,
-    shared: Boolean,
-    acl: List[ACLRule],
-    connection: Option[ZoneConnection] = None,
-    transferConnection: Option[ZoneConnection] = None
+case class ZoneConnection(
+    name: String = "",
+    keyName: String = "",
+    key: String = "",
+    primaryServer: String = ""
 )
 
-object Zone extends OptionRW {
-  implicit val rw: ReadWriter[Zone] = macroRW
+object ZoneConnection {
+  implicit val rw: ReadWriter[ZoneConnection] = macroRW
 }

@@ -62,7 +62,7 @@ object ZoneModal {
           // form
           ValidatedForm(
             ValidatedForm.Props(
-              "form form-horizontal form-label-left test-zone-modal",
+              "form form-horizontal form-label-left test-zone-form",
               generateInputFieldProps(P, S),
               _ => createZone(P, S)
             ),
@@ -116,7 +116,7 @@ object ZoneModal {
                 ),
                 <.button(
                   ^.`type` := "button",
-                  ^.className := "btn btn-default pull-right test-close-create-group",
+                  ^.className := "btn btn-default pull-right test-close-create-zone",
                   ^.onClick --> P.close(()),
                   "Close"
                 )
@@ -148,7 +148,7 @@ object ZoneModal {
         ValidatedInputField.Props(
           changeAdminGroupId,
           inputClass = Some("test-group-admin"),
-          label = Some("Admin Group"),
+          label = Some("Admin Group Id"),
           helpText = Some(s"""
                |The Vinyl Group that will be given admin rights to the zone.
                | All users in the admin group will have the ability to manage
@@ -160,7 +160,7 @@ object ZoneModal {
           placeholder =
             if (P.groupList.groups.isEmpty)
               Some("Please make a Vinyl group or get added to one first")
-            else None,
+            else Some("Search for a group you are in by name or id"),
           disabled = P.groupList.groups.isEmpty
         )
       )

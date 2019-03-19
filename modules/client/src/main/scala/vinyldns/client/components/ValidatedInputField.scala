@@ -222,7 +222,7 @@ object ValidatedInputField {
         Either.cond(
           datalist.contains(value),
           (),
-          "Must match an option in list"
+          "Must choose an option in list"
         )
       else ().asRight
   }

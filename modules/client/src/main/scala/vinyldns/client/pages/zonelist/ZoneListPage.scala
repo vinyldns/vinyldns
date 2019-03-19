@@ -69,7 +69,7 @@ object ZoneListPage extends PropsFromAppRouter {
                       <.div(
                         ^.className := "btn-group",
                         <.button(
-                          ^.className := "btn btn-default test-create-group",
+                          ^.className := "btn btn-default test-create-zone",
                           ^.`type` := "button",
                           ^.onClick --> makeCreateFormVisible,
                           <.span(^.className := "fa fa-plus-square"),
