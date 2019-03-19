@@ -170,7 +170,7 @@ You should now be able to see the zone in the portal at localhost:9001 when logg
 Integration tests are used to test integration with _real_ dependent services.  We use Docker to spin up those
 backend services for integration test development.
 
-1. Integration tests are currently only in the `api`, `dynamo`, and `mysql` modules.  Go to the target module in sbt, example: `project api`
+1. Integration tests are currently in the `api`, `dynamo`, `mysql`, and `sqs` modules.  Go to the target module in sbt, example: `project api`
 1. Type `dockerComposeUp` to start up dependent background services
 1. Run all integration tests by typing `it:test`.
 1. Run an individual integration test by typing `it:testOnly *MyIntegrationSpec`
