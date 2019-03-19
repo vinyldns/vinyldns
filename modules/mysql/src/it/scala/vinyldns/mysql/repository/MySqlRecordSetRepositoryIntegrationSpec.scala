@@ -272,39 +272,49 @@ class MySqlRecordSetRepositoryIntegrationSpec
       repo.getRecordSet(okZone.id, inserts(1).recordSet.id).unsafeRunSync().map(_.name) shouldBe
         Some(inserts(1).recordSet.name)
     }
-    "works when inserting owner-group-id" in {
+    "works when inserting ownerGroupId" in {
 
-      val testRecord = makeTestAddChange(ds, okZone).recordSet
-      val addChange = makeTestAddChange(testRecord.copy(ownerGroupId = Some("someOwner")))
-
+      val addChange = makeTestAddChange(ds.copy(ownerGroupId = Some("someOwner")), okZone)
+      val testRecord = addChange.recordSet
       val dbCalls = for {
         _ <- repo.apply(ChangeSet(addChange))
         get <- repo.getRecordSet(testRecord.zoneId, testRecord.id)
       } yield get
 
       val get = dbCalls.unsafeRunSync()
-      get shouldBe Some(addChange.recordSet)
+      get shouldBe Some(testRecord)
     }
 
-    "works when updating owner-group-id" in {
+    "works when updating ownerGroupId" in {
 
-      val existing = makeTestAddChange(ds, okZone).recordSet
-      val addChange = makeTestAddChange(existing)
+      val addChange = makeTestAddChange(ds, okZone)
+      val testRecord = addChange.recordSet
 
-      val updateChange = makePendingTestUpdateChange(addChange.recordSet,
-        addChange.recordSet.copy(name = "updated-name", ownerGroupId = Some("someOwner")))
+      val updatedRecordSet = testRecord.copy(name = "updated-name", ownerGroupId = Some("someOwner"))
+      val updateChange = makeCompleteTestUpdateChange(testRecord,updatedRecordSet, okZone)
 
       val dbCalls = for {
         _ <- repo.apply(ChangeSet(addChange))
-        get <- repo.getRecordSet(addChange.zoneId, addChange.id)
+        get <- repo.getRecordSet(testRecord.zoneId, testRecord.id)
         _ <- repo.apply(ChangeSet(updateChange))
-        finalGet <- repo.getRecordSet(addChange.zoneId, addChange.id)
+        finalGet <- repo.getRecordSet(testRecord.zoneId, testRecord.id)
       } yield (get, finalGet)
 
       val (get, finalGet) = dbCalls.unsafeRunSync()
-      get shouldBe Some(addChange.recordSet)
-      finalGet shouldBe Some(updateChange.recordSet)
+      get shouldBe Some(testRecord)
+      finalGet.flatMap(_.ownerGroupId) shouldBe Some("someOwner")
 
+      //Update the owner-group-id to None to check if its null in the db
+      val updateChangeNone = makeCompleteTestUpdateChange(updatedRecordSet,
+        updatedRecordSet.copy(ownerGroupId = None), okZone)
+
+      val updateToNone = for {
+        _ <- repo.apply(ChangeSet(updateChangeNone))
+        finalGet <- repo.getRecordSet(updateChangeNone.zoneId, updateChangeNone.id)
+      } yield finalGet
+
+      val finalUpdated = updateToNone.unsafeRunSync()
+      finalUpdated.flatMap(_.ownerGroupId) shouldBe None
     }
   }
 
