@@ -74,9 +74,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val GET_RECORDSET_BY_OWNERID =
     sql"""
-      |SELECT data
+      |SELECT id
       |FROM recordset
       |WHERE owner_group_id = {ownerGroupId}
+      |LIMIT 1
     """.stripMargin
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
@@ -283,7 +284,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
-  def getRecordSetByOwnerGroupId(ownerGroupId: String): IO[List[RecordSet]] =
+  def isNotAOwnerGroupId(ownerGroupId: String): IO[Boolean] =
     monitor("repo.RecordSet.getRecordSetByOwnerGroupId") {
       IO {
         DB.readOnly { implicit s =>
@@ -292,6 +293,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .map(toRecordSet)
             .list()
             .apply()
+            .isEmpty
         }
       }
     }
