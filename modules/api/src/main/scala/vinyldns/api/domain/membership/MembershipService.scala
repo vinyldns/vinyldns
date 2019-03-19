@@ -85,24 +85,12 @@ class MembershipService(
       _ <- membershipRepo.removeMembers(existingGroup.id, removedMembers).toResult[Set[String]]
     } yield newGroup
 
-  /**
-    * On delete, check that the group is
-    *
-    * not a zone admin (already in place)
-    * not the ownerGroupId for any records (done - no tests yet)
-    * not in any ACL rules
-    * if all those pass, it can be deleted. otherwise return error
-    *
-    * @param groupId id
-    * @param authPrincipal rules
-    * @return Result[Group]
-    */
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
-      _ <- isAZoneAdmin(existingGroup) //checks if the group id is not a Zone admin
-      _ <- isAOwnerGroupId(existingGroup) //checks if group is the owner of a record
+      _ <- isAZoneAdmin(existingGroup)
+      _ <- isOwnerGroup(existingGroup)
       _ <- groupChangeRepo
         .save(GroupChange.forDelete(existingGroup, authPrincipal))
         .toResult[GroupChange]
@@ -259,13 +247,13 @@ class MembershipService(
       }
       .toResult
 
-  def isAOwnerGroupId(group: Group): Result[Unit] =
+  def isOwnerGroup(group: Group): Result[Unit] =
     recordSetRepo
-      .getRecordSetByOwnerGroupId(group.id)
+      .isNotAOwnerGroupId(group.id)
       .map { rs =>
         ensuring(
           InvalidGroupRequestError(s"${group.name} is the owner for a record. Cannot delete.")) {
-          rs.isEmpty
+          rs
         }
       }
       .toResult
