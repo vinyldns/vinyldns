@@ -34,7 +34,7 @@ transferConnection | ZoneConnection | The connection that is used to sync the zo
 shared        | boolean     | An indicator that the zone is shared with anyone. At this time only VinylDNS administrators can set this to true.|
 acl           | ZoneACL     | The access control rules governing the zone.  See the [Zone ACL Rule Attributes](#zone-acl-rule-attr) for more information
 id            | string      | The unique identifier for this zone
-latestSync    | date-time   | The last time the zone was synced
+latestSync    | date-time   | The last date and time the zone was synced
 
 #### ZONE EXAMPLE <a id="zone-example"></a>
 
