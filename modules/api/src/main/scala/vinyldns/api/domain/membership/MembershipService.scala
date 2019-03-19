@@ -85,18 +85,6 @@ class MembershipService(
       _ <- membershipRepo.removeMembers(existingGroup.id, removedMembers).toResult[Set[String]]
     } yield newGroup
 
-  /**
-    * On delete, check that the group is
-    *
-    * not a zone admin (already in place)
-    * not the ownerGroupId for any records (done - no tests yet)
-    * not in any ACL rules
-    * if all those pass, it can be deleted. otherwise return error
-    *
-    * @param groupId id
-    * @param authPrincipal rules
-    * @return Result[Group]
-    */
   def deleteGroup(groupId: String, authPrincipal: AuthPrincipal): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)

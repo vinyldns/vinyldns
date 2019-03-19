@@ -500,7 +500,6 @@ class MembershipServiceSpec
 
         error shouldBe an[InvalidGroupRequestError]
       }
-
     }
 
     "get a group" should {
@@ -861,6 +860,7 @@ class MembershipServiceSpec
         error shouldBe an[InvalidGroupRequestError]
       }
     }
+
 
     "updateUserLockStatus" should {
       "save the update and lock the user account" in {
