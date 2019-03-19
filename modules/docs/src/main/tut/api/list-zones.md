@@ -53,7 +53,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
       "acl": {
         "rules": []
       },
-      "id": "31a3d8a9-bea0-458f-9c24-3d39d4b929d6"
+      "id": "31a3d8a9-bea0-458f-9c24-3d39d4b929d6",
+      "latestSync": "2016-12-16T15:27:26Z"
     },
     {
       "status": "Active",
@@ -66,7 +67,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
       "acl": {
         "rules": []
       },
-      "id": "f1a376b2-2d8f-41f3-b8c8-9c9fba308f5d"
+      "id": "f1a376b2-2d8f-41f3-b8c8-9c9fba308f5d",
+      "latestSync": "2016-12-16T15:27:26Z"
     },
     {
       "status": "Active",
@@ -79,7 +81,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
       "acl": {
         "rules": []
       },
-      "id": "568de57d-cb34-4f05-a9b5-35f9187490af"
+      "id": "568de57d-cb34-4f05-a9b5-35f9187490af",
+      "latestSync": "2016-12-16T15:27:26Z"
     },
     {
       "status": "Active",
@@ -92,7 +95,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
       "acl": {
         "rules": []
       },
-      "id": "98dac90c-236e-4171-8729-c977ad38717e"
+      "id": "98dac90c-236e-4171-8729-c977ad38717e",
+      "latestSync": "2016-12-16T15:27:26Z"
     },
     {
       "status": "Active",
@@ -105,7 +109,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
       "acl": {
         "rules": []
       },
-      "id": "e4942020-b85a-421f-a8e2-124d8ba79422"
+      "id": "e4942020-b85a-421f-a8e2-124d8ba79422",
+      "latestSync": "2016-12-16T15:27:26Z"
     }
   ],
   "maxItems": 100
