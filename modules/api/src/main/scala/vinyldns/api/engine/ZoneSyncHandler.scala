@@ -117,7 +117,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
           } else {
             val dottedRecords = changes
               .filter { chg =>
-                chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") && chg.recordSet.typ != RecordType.SRV
+                chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") &&
+                  chg.recordSet.typ != RecordType.SRV
               }
               .map(_.recordSet.name)
               .mkString(", ")
