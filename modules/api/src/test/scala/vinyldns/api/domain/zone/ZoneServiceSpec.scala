@@ -60,7 +60,7 @@ class ZoneServiceSpec
         ().toResult
       }
 
-    def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit] = backendId match {
+    def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] = backendId match {
       case Some("badId") => InvalidRequest("bad id").asLeft[Unit]
       case _ => Right(())
     }
