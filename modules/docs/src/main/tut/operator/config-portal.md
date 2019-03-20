@@ -100,8 +100,6 @@ vinyldns {
       user {
       # no additional settings for repositories enabled in mysql
       }
-      record-set {
-      }
     }
   }
   
@@ -290,8 +288,6 @@ mysql {
   
   repositories {
     user {
-    }
-    record-set {
     }
   }
 }

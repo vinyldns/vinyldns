@@ -270,8 +270,11 @@ vinyldns {
     repositories {
       # all repositories with config sections here will be enabled in dynamodb
       record-change {
+        # Name of the table where recordsets are saved
         table-name = "recordChangeTest"
+        # Provisioned throughput for reads
         provisioned-reads = 30
+        # Provisioned throughput for writes
         provisioned-writes = 20
       }
       zone-change {

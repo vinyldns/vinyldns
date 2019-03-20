@@ -115,10 +115,13 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced))
           } else {
-            val dottedRecords = changes.filter { chg =>
-              chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") && chg.recordSet.typ != RecordType.SRV
-            }.map(_.recordSet.name)
-             .mkString(", ")
+            val dottedRecords = changes
+              .filter { chg =>
+                chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") &&
+                  chg.recordSet.typ != RecordType.SRV
+              }
+              .map(_.recordSet.name)
+              .mkString(", ")
             if (dottedRecords.nonEmpty) {
               logger.info(
                 s"Zone sync for '${zone.name}' (id: ${zone.id}) " +

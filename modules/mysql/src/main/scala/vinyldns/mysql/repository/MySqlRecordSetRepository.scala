@@ -129,7 +129,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
             u.recordSet.ownerGroupId,
-            u.recordSet.id)
+            u.recordSet.id
+          )
         }
 
       val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))

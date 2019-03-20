@@ -16,6 +16,8 @@ for _most_ of the data that is stored in our instance of VinylDNS. However, all 
 * [UserChange](#userchange-table) - holds audit history for all users (only used in the portal currently)
 * [ZoneChange](#zonechange-table) - audit history for changes to zones (not record related)
 
+###### Note: the DynamoDB RecordSet repository is only partially implemented. For use you would need to provide implementations of those methods
+
 AWS DynamoDB connection information is configured one time, and the same connection is used across all tables.  Therefore,
 you must ensure that all tables live inside the _same_ AWS region accessible by the _same_ credentials.
 
@@ -39,6 +41,41 @@ DynamoDB endpoint (region) that you will be using.  Follow the [API Database Con
 to complete the setup for the API.
 
 You also need to configure DynamoDB for the portal [Portal Database Configuration](config-portal#database-configuration)
+
+### RecordSet Table
+
+Each row in the RecordSet table is a `RRSet`, which means it comprises one or more "Records" inside of it.
+
+**Usage**
+This table (and recordSetChange) require the highest throughput.  If you have large zones, the first time
+you load a zone, all records will be loaded into the `recordSet` table.  If the settings are too low, it can take a long time
+for the records to be loaded, and worst case scenario the operation will fail.
+
+**Attributes**
+
+| name | type | description |
+| `zone_id` | String(UUID) | the id of the zone the record set belongs to |
+| `record_set_id` | String(UUID) |  the unique id for this record set |
+| `record_set_name` |  String |  the record set name |
+| `record_set_type` |  String |  the RRType of record set, for example A, AAAA, CNAME |
+| `record_set_sort` |  String |  the case in-sensitive name for the record set, used for sort purposes |
+| `record_set_blob` |  Binary |  hold a binary array representing the record set.  Currently protocol buffer byte array |
+
+**Table Keys**
+
+| type | attribute name |
+| HASH | `record_set_id` |
+| SORT |  `<none>` |
+
+**Indexes**
+* `zone_id_record_set_name_index` - Global Secondary Index
+    * HASH = `zone_id`
+    * SORT = `record_set_name`
+    * Projection Type = `ALL`
+* `zone_id_record_set_sort_index` - Global Secondary Index
+    * HASH = `zone_id`
+    * SORT = `record_set_sort`
+    * Projection Type = `ALL`
 
 ### RecordSetChange Table
 Each record set change could potentially live inside a `ChangeSet`.  A `ChangeSet` contains one or more individual
