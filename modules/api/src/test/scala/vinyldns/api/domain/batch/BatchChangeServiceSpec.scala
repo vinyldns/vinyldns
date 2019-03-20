@@ -130,6 +130,8 @@ class BatchChangeServiceSpec
     makeRS(nonApexAddForVal.zone.name, nonApexAddForVal.recordName, TXT)
 
   object TestRecordSetRepo extends EmptyRecordSetRepo {
+    val dbRecordSets: Set[(RecordSet, String)] =
+      Set((existingApex, "apex.test.com."), (existingNonApex, "non-apex.test.com."))
 
     override def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
       IO.pure {
@@ -139,6 +141,13 @@ class BatchChangeServiceSpec
           case (_, _) => List()
         }
       }
+
+    override def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]] =
+      IO.pure(
+        dbRecordSets
+          .filter(rn => names.contains(rn._2))
+          .map(r => r._1)
+          .toList)
   }
 
   object AlwaysExistsZoneRepo extends EmptyZoneRepo {
