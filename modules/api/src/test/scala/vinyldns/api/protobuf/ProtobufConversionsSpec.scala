@@ -447,6 +447,14 @@ class ProtobufConversionsSpec
       pb.getLatestSync shouldBe z.latestSync.get.getMillis
       fromPB(pb).latestSync shouldBe defined
     }
+
+    "convert to protobuf for a Zone with a backendId" in {
+      val z = zone.copy(backendId = Some("test-backend-id"))
+      val pb = toPB(z)
+
+      pb.getBackendId shouldBe "test-backend-id"
+      fromPB(pb).backendId shouldBe defined
+    }
   }
 
   "Recordset conversion" should {

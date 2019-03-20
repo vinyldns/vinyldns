@@ -65,12 +65,13 @@ class CommandHandlerSpec
   private val mockZoneSyncProcessor = mock[ZoneChange => IO[ZoneChange]]
   private val defaultConn =
     ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "10.1.1.1")
+  private val connections = ConfiguredDnsConnections(defaultConn, defaultConn, List())
   private val processor =
     CommandHandler.processChangeRequests(
       mockZoneChangeProcessor,
       mockRecordChangeProcessor,
       mockZoneSyncProcessor,
-      defaultConn
+      connections
     )
 
   override protected def beforeEach(): Unit =
@@ -202,7 +203,7 @@ class CommandHandlerSpec
           mockZoneChangeProcessor,
           mockRecordChangeProcessor,
           mockZoneSyncProcessor,
-          default
+          ConfiguredDnsConnections(default, default, List())
         )
       val change = TestCommandMessage(noConnChange, "foo")
       doReturn(IO.pure(change))
@@ -272,7 +273,7 @@ class CommandHandlerSpec
             count,
             100.millis,
             stop,
-            defaultConn
+            connections
           )
           .take(1)
 
@@ -313,7 +314,7 @@ class CommandHandlerSpec
             count,
             100.millis,
             stop,
-            defaultConn
+            connections
           )
           .take(1)
 
@@ -370,7 +371,7 @@ class CommandHandlerSpec
             recordSetRepo,
             recordChangeRepo,
             batchChangeRepo,
-            defaultConn
+            connections
           )
 
       // kick off processing of messages

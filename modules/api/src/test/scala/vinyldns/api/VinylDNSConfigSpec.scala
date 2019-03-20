@@ -17,6 +17,8 @@
 package vinyldns.api
 
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.api.crypto.Crypto
+import vinyldns.core.domain.zone.ZoneConnection
 import vinyldns.core.repository.RepositoryName._
 
 class VinylDNSConfigSpec extends WordSpec with Matchers {
@@ -28,7 +30,6 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
     }
 
     "properly load the datastore configs" in {
-
       VinylDNSConfig.dataStoreConfigs.unsafeRunSync.length shouldBe 2
     }
     "assign the correct mysql repositories" in {
@@ -55,6 +56,29 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
 
     "load empty string list that does not exist" in {
       VinylDNSConfig.getOptionalStringList("no-existo").length shouldBe 0
+    }
+
+    "load default keys" in {
+      val defaultConn =
+        ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")
+
+      VinylDNSConfig.configuredDnsConnections.defaultZoneConnection
+        .decrypted(Crypto.instance) shouldBe
+        defaultConn
+      VinylDNSConfig.configuredDnsConnections.defaultTransferConnection
+        .decrypted(Crypto.instance) shouldBe
+        defaultConn
+    }
+    "load specified backends" in {
+      val zc = ZoneConnection("zoneconn.", "vinyldns.", "test-key", "127.0.0.1:19001")
+      val tc = zc.copy(name = "transferconn.")
+
+      val backends = VinylDNSConfig.configuredDnsConnections.dnsBackends
+      backends.length shouldBe 1
+
+      backends.head.id shouldBe "test"
+      backends.head.zoneConnection.decrypted(Crypto.instance) shouldBe zc
+      backends.head.transferConnection.decrypted(Crypto.instance) shouldBe tc
     }
   }
 }

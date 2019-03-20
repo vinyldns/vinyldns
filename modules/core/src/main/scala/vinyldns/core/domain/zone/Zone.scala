@@ -42,7 +42,8 @@ final case class Zone(
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String = "system",
     latestSync: Option[DateTime] = None,
-    isTest: Boolean = false) {
+    isTest: Boolean = false,
+    backendId: Option[String] = None) {
   val isIPv4: Boolean = name.endsWith("in-addr.arpa.")
   val isIPv6: Boolean = name.endsWith("ip6.arpa.")
   val isReverse: Boolean = isIPv4 || isIPv6
@@ -86,7 +87,9 @@ object Zone {
       shared = shared,
       acl = acl,
       adminGroupId = adminGroupId,
-      isTest = isTest)
+      isTest = isTest,
+      backendId = backendId
+    )
   }
 
   def apply(updateZoneInput: UpdateZoneInput, currentZone: Zone): Zone = {
@@ -99,7 +102,8 @@ object Zone {
       transferConnection = transferConnection,
       shared = shared,
       acl = acl,
-      adminGroupId = adminGroupId)
+      adminGroupId = adminGroupId,
+      backendId = backendId)
   }
 }
 
@@ -111,7 +115,8 @@ final case class CreateZoneInput(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
-    isTest: Boolean = false)
+    isTest: Boolean = false,
+    backendId: Option[String] = None)
 
 final case class UpdateZoneInput(
     id: String,
@@ -121,7 +126,8 @@ final case class UpdateZoneInput(
     transferConnection: Option[ZoneConnection] = None,
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
-    adminGroupId: String)
+    adminGroupId: String,
+    backendId: Option[String] = None)
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
@@ -138,3 +144,19 @@ case class ZoneConnection(name: String, keyName: String, key: String, primarySer
   def decrypted(crypto: CryptoAlgebra): ZoneConnection =
     copy(key = crypto.decrypt(key))
 }
+
+final case class DnsBackend(
+    id: String,
+    zoneConnection: ZoneConnection,
+    transferConnection: ZoneConnection) {
+
+  def encrypted(crypto: CryptoAlgebra): DnsBackend = copy(
+    zoneConnection = zoneConnection.encrypted(crypto),
+    transferConnection = transferConnection.encrypted(crypto)
+  )
+}
+
+final case class ConfiguredDnsConnections(
+    defaultZoneConnection: ZoneConnection,
+    defaultTransferConnection: ZoneConnection,
+    dnsBackends: List[DnsBackend])

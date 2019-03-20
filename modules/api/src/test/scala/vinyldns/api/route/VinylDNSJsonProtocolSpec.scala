@@ -133,6 +133,21 @@ class VinylDNSJsonProtocolSpec
       actual.shared shouldBe true
     }
 
+    "parse a create zone input with a backendId" in {
+      val createZoneInput: JValue =
+        ("name" -> "testZone.") ~~
+          ("email" -> "test@test.com") ~~
+          ("adminGroupId" -> "admin-group-id") ~~
+          ("backendId" -> "test-backend-id")
+
+      val expected = completeCreateZoneInput.copy(
+        connection = None,
+        transferConnection = None,
+        backendId = Some("test-backend-id"))
+      val actual = createZoneInput.extract[CreateZoneInput]
+      actual shouldBe expected
+    }
+
     "throw an error if zone name is missing" in {
       val createZoneInput: JValue =
         ("email" -> "test@test.com") ~~
@@ -217,6 +232,22 @@ class VinylDNSJsonProtocolSpec
           ("adminGroupId" -> "updated-admin-group-id")
 
       val expected = completeUpdateZoneInput.copy(shared = true)
+      val actual = updateZoneInput.extract[UpdateZoneInput]
+      actual shouldBe expected
+    }
+
+    "parse an update zone input with a backendId" in {
+      val updateZoneInput: JValue =
+        ("id" -> "updated-zone-id") ~~
+          ("name" -> "updated-zone-name.") ~~
+          ("email" -> "updated@email.com") ~~
+          ("adminGroupId" -> "updated-admin-group-id") ~~
+          ("backendId" -> "test-backend-id")
+
+      val expected = completeUpdateZoneInput.copy(
+        connection = None,
+        transferConnection = None,
+        backendId = Some("test-backend-id"))
       val actual = updateZoneInput.extract[UpdateZoneInput]
       actual shouldBe expected
     }
