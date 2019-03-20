@@ -237,10 +237,12 @@ vinyldns {
       # all repositories with config sections here will be enabled in mysql
       zone {
         # no additional settings for repositories enabled in mysql
-      },
+      }
       batch-change {
-      },
+      }
       user {
+      }
+      record-set {
       }
     }
   }
@@ -267,14 +269,6 @@ vinyldns {
     
     repositories {
       # all repositories with config sections here will be enabled in dynamodb
-      record-set {
-        # Name of the table where recordsets are saved
-        table-name = "recordSetTest"
-        # Provisioned throughput for reads
-        provisioned-reads = 30
-        # Provisioned throughput for writes
-        provisioned-writes = 20
-      }
       record-change {
         table-name = "recordChangeTest"
         provisioned-reads = 30
@@ -490,11 +484,6 @@ vinyldns {
     }
     
     repositories {
-      record-set {
-        table-name = "recordSet"
-        provisioned-reads = 30
-        provisioned-writes = 20
-      }
       record-change {
         table-name = "recordChange"
         provisioned-reads = 30
@@ -550,10 +539,12 @@ vinyldns {
     
     repositories {
       zone {
-      },
+      }
       batch-change {
-      },
+      }
       user {
+      }
+      record-set{
       }
     }
   }

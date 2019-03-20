@@ -16,6 +16,7 @@ our instance:
 * `batch_change` - holds batch changes (multiple changes across zones in a single batch)
 * `single_change` - holds individual changes within a `batch_change`
 * `user` - holds user information, including access keys and secrets
+*  `record-set` - holds record data
 
 ## Setting up the database
 VinylDNS uses [Flyway](https://flywaydb.org/) to manage SQL migrations.  This means that any database changes, including

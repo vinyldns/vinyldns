@@ -100,6 +100,8 @@ vinyldns {
       user {
       # no additional settings for repositories enabled in mysql
       }
+      record-set {
+      }
     }
   }
   
@@ -126,7 +128,7 @@ vinyldns {
     repositories {
       # all repositories with config sections here will be enabled in dynamodb
       user-change {
-        # Name of the table where recordsets are saved
+        # Name of the table where user changes are saved
         table-name = "userChangeTest"
         # Provisioned throughput for reads
         provisioned-reads = 30
@@ -288,6 +290,8 @@ mysql {
   
   repositories {
     user {
+    }
+    record-set {
     }
   }
 }
