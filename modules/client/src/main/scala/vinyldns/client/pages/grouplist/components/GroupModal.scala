@@ -24,6 +24,7 @@ import vinyldns.client.http.{CreateGroupRoute, Http, HttpResponse, UpdateGroupRo
 import vinyldns.client.components._
 import vinyldns.client.models.membership.{BasicGroupInfo, Group, GroupCreateInfo, Id}
 import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.JsNative._
 
 object GroupModal {
   case class State(group: BasicGroupInfo, isUpdate: Boolean = false)
@@ -130,7 +131,7 @@ object GroupModal {
           val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
             setNotification(P.http.toNotification("creating group", httpResponse)) >>
               P.close(()) >>
-              P.refreshGroups(())
+              withDelay(ONE_SECOND_IN_MILLIS, P.refreshGroups(()))
           }
           P.http.post(CreateGroupRoute, write(groupWithUserId), onSuccess, onFailure)
         }
@@ -147,7 +148,7 @@ object GroupModal {
           val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
             setNotification(P.http.toNotification("updating group", httpResponse)) >>
               P.close(()) >>
-              P.refreshGroups(())
+              withDelay(ONE_SECOND_IN_MILLIS, P.refreshGroups(()))
           }
           P.http
             .put(

@@ -20,12 +20,10 @@ import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.vdom.VdomElement
-import vinyldns.client.ReactApp.SUCCESS_ALERT_TIMEOUT_MILLIS
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.Notification
 import vinyldns.client.routes.AppRouter
-
-import scala.scalajs.js.timers.setTimeout
+import vinyldns.client.components.JsNative._
 
 object AlertBox {
   case class State(notification: Option[Notification] = None)
@@ -86,7 +84,7 @@ object AlertBox {
       notification match {
         case Some(n) if !n.isError =>
           bs.modState(_.copy(notification = notification)) >>
-            Callback(setTimeout(SUCCESS_ALERT_TIMEOUT_MILLIS)(clearNotification.runNow()))
+            withDelay(FIVE_SECONDS_IN_MILLIS, clearNotification)
         case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
         case None => Callback.empty
       }

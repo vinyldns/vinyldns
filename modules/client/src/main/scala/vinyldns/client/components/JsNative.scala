@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.zone
+package vinyldns.client.components
 
-import upickle.default.{ReadWriter, macroRW}
-import vinyldns.client.models.OptionRW
+import japgolly.scalajs.react.Callback
+import scala.scalajs.js.timers.setTimeout
 
-case class Rules(rules: List[ACLRule])
+object JsNative {
+  final val ONE_SECOND_IN_MILLIS = 1000.0
+  final val FIVE_SECONDS_IN_MILLIS = 5 * ONE_SECOND_IN_MILLIS
 
-object Rules {
-  implicit val rw: ReadWriter[Rules] = macroRW
-}
-
-case class ACLRule(
-    accessLevel: String,
-    recordTypes: Seq[String],
-    description: Option[String] = None,
-    userId: Option[String] = None,
-    groupId: Option[String] = None,
-    recordMask: Option[String] = None)
-
-object ACLRule extends OptionRW {
-  implicit val rw: ReadWriter[ACLRule] = macroRW
+  // hook to javascript timeout function
+  def withDelay(millis: Double, cb: Callback): Callback =
+    Callback(setTimeout(millis)(cb.runNow()))
 }

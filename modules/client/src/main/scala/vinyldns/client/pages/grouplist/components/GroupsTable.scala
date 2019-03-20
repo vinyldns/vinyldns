@@ -24,6 +24,7 @@ import vinyldns.client.components.AlertBox.setNotification
 import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
+import vinyldns.client.components.JsNative._
 
 object GroupsTable {
   case class Props(http: Http, router: RouterCtl[Page])
@@ -35,7 +36,7 @@ object GroupsTable {
       toBeUpdated: Option[Group] = None)
 
   val component = ScalaComponent
-    .builder[Props](displayName = "ListGroupsTable")
+    .builder[Props]("ListGroupsTable")
     .initialState(State())
     .renderBackend[Backend]
     .componentWillMount(e => e.backend.listGroups(e.props, e.state))
@@ -47,19 +48,11 @@ object GroupsTable {
     def render(P: Props, S: State): VdomElement =
       <.div(
         S.groupsList match {
-          case Some(gl) if gl.groups.nonEmpty || S.groupNameFilter.isDefined =>
+          case Some(gl) if gl.groups.nonEmpty || gl.groupNameFilter.isDefined =>
             <.div(
               <.div(
                 ^.className := "panel-heading",
-                <.div(
-                  ^.className := "btn-group",
-                  <.button(
-                    ^.className := "btn btn-default test-refresh-groups",
-                    ^.onClick --> listGroups(P, S),
-                    ^.`type` := "button",
-                    <.span(^.className := "fa fa-refresh"),
-                    "  Refresh")
-                ),
+                // search bar
                 <.form(
                   ^.className := "pull-right input-group test-search-form",
                   ^.onSubmit ==> { e: ReactEventFromInput =>
@@ -83,9 +76,9 @@ object GroupsTable {
                       ^.onChange ==> { e: ReactEventFromInput =>
                         updateGroupNameFilter(e.target.value)
                       }
-                    ),
+                    )
                   )
-                ),
+                )
               ),
               <.div(^.className := "clearfix"),
               <.div(
@@ -185,7 +178,7 @@ object GroupsTable {
           .lazily {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
               setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
-                listGroups(P, S)
+                withDelay(ONE_SECOND_IN_MILLIS, listGroups(P, S))
             }
             val onFailure = { httpResponse: HttpResponse =>
               setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse))

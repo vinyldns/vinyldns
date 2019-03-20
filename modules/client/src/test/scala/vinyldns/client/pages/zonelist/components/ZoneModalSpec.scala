@@ -32,7 +32,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
   trait Fixture {
     val mockHttp = mock[Http]
-    val groupList = GroupList(generateGroups(2).toList, Some(100))
+    val groupList = GroupList(generateGroups(2).toList, 100)
     val props =
       ZoneModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit], groupList)
   }

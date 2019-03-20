@@ -64,15 +64,24 @@ object GroupListPage extends PropsFromAppRouter {
                   ^.className := "panel-heading",
                   <.div(
                     ^.className := "btn-group",
+                    // create button
                     <.button(
                       ^.className := "btn btn-default test-create-group",
                       ^.`type` := "button",
                       ^.onClick --> makeCreateFormVisible,
                       <.span(^.className := "fa fa-plus-square"),
                       "  Create Group"
-                    )
+                    ),
+                    // refresh button
+                    <.button(
+                      ^.className := "btn btn-default test-refresh-groups",
+                      ^.onClick --> refreshGroupsTable,
+                      ^.`type` := "button",
+                      <.span(^.className := "fa fa-refresh"),
+                      "  Refresh")
                   )
                 ),
+                // table
                 refToTable.component(GroupsTable.Props(P.http, P.router))
               )
             )

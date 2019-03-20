@@ -19,20 +19,13 @@ package vinyldns.client.models.zone
 import upickle.default.{ReadWriter, macroRW}
 import vinyldns.client.models.OptionRW
 
-case class Rules(rules: List[ACLRule])
+case class ZoneList(
+    zones: List[Zone],
+    maxItems: Int = 100,
+    nameFilter: Option[String] = None,
+    startFrom: Option[Int] = None,
+    nextId: Option[Int] = None)
 
-object Rules {
-  implicit val rw: ReadWriter[Rules] = macroRW
-}
-
-case class ACLRule(
-    accessLevel: String,
-    recordTypes: Seq[String],
-    description: Option[String] = None,
-    userId: Option[String] = None,
-    groupId: Option[String] = None,
-    recordMask: Option[String] = None)
-
-object ACLRule extends OptionRW {
-  implicit val rw: ReadWriter[ACLRule] = macroRW
+object ZoneList extends OptionRW {
+  implicit val rw: ReadWriter[ZoneList] = macroRW
 }

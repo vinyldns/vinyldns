@@ -31,7 +31,6 @@ import scala.util.Try
 
 @JSExportTopLevel("ReactApp")
 object ReactApp {
-  final val SUCCESS_ALERT_TIMEOUT_MILLIS = 5000.0
   final val csrf: Option[String] =
     Try(Option[String](document.getElementById("csrf").getAttribute("content")))
       .getOrElse(None)

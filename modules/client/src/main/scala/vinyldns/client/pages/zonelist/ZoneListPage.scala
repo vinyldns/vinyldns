@@ -25,7 +25,7 @@ import vinyldns.client.components.AlertBox.setNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupList
-import vinyldns.client.pages.zonelist.components.ZoneModal
+import vinyldns.client.pages.zonelist.components.{ZoneModal, ZonesTable}
 import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter}
 
 object ZoneListPage extends PropsFromAppRouter {
@@ -42,6 +42,7 @@ object ZoneListPage extends PropsFromAppRouter {
     component(Props(page, router, http))
 
   class Backend(bs: BackendScope[Props, State]) {
+    val refToTable = Ref.toScalaComponent(ZonesTable.component)
 
     def render(P: Props, S: State): VdomElement =
       S.groupList match {
@@ -66,6 +67,7 @@ object ZoneListPage extends PropsFromAppRouter {
                     ^.className := "panel panel-default",
                     <.div(
                       ^.className := "panel-heading",
+                      // connect to zone button
                       <.div(
                         ^.className := "btn-group",
                         <.button(
@@ -74,24 +76,70 @@ object ZoneListPage extends PropsFromAppRouter {
                           ^.onClick --> makeCreateFormVisible,
                           <.span(^.className := "fa fa-plus-square"),
                           "  Connect to Zone"
+                        ),
+                        // refresh button
+                        <.button(
+                          ^.className := "btn btn-default test-refresh-zones",
+                          ^.onClick --> refreshZonesTable,
+                          ^.`type` := "button",
+                          <.span(^.className := "fa fa-refresh"),
+                          "  Refresh"
                         )
                       )
-                    )
+                    ),
+                    // table
+                    refToTable.component(ZonesTable.Props(P.http, P.router))
                   )
                 )
               )
             ),
             createZoneModal(P, S, groupList: GroupList)
           )
-        case None => <.p("Loading...")
+        case None =>
+          // show loading message
+          <.div(
+            GlobalStyle.styleSheet.height100,
+            ^.className := "right_col",
+            ^.role := "main",
+            <.div(
+              ^.className := "page-title",
+              <.div(
+                ^.className := "title_left",
+                <.h3(<.span(^.className := "fa fa-table"), "  Zones"))),
+            <.div(^.className := "clearfix"),
+            <.div(
+              ^.className := "page-content-wrap",
+              <.div(
+                ^.className := "row",
+                <.div(
+                  ^.className := "col-md-12 col-sm-12 col-xs-12",
+                  <.div(
+                    ^.className := "panel panel-default",
+                    <.div(
+                      ^.className := "panel-heading",
+                      "Loading..."
+                    )
+                  )
+                )
+              )
+            )
+          )
       }
 
     def createZoneModal(P: Props, S: State, groupList: GroupList): TagMod =
       if (S.showCreateZone)
         ZoneModal(
           ZoneModal
-            .Props(P.http, _ => makeCreateFormInvisible, _ => Callback.empty, groupList))
+            .Props(P.http, _ => makeCreateFormInvisible, _ => refreshZonesTable, groupList))
       else TagMod.empty
+
+    def refreshZonesTable: Callback =
+      refToTable.get
+        .map { mounted =>
+          mounted.backend.listZones(mounted.props, mounted.state)
+        }
+        .getOrElse(Callback.empty)
+        .runNow()
 
     def makeCreateFormVisible: Callback =
       bs.modState(_.copy(showCreateZone = true))

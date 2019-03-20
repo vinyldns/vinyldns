@@ -28,6 +28,7 @@ import vinyldns.client.models.membership.GroupList
 import vinyldns.client.components.AlertBox.setNotification
 import upickle.default.write
 import vinyldns.client.css.GlobalStyle
+import vinyldns.client.components.JsNative._
 
 object ZoneModal {
   case class State(
@@ -250,10 +251,10 @@ object ZoneModal {
 
     def toggleCustomServer(): Callback =
       bs.modState { s =>
-        s.customTransfer match {
+        s.customServer match {
           case turningOn if false =>
             val zone = s.zone.copy(connection = Some(ZoneConnection()))
-            s.copy(zone = zone, customTransfer = !turningOn)
+            s.copy(zone = zone, customServer = !turningOn)
           case turningOff if true =>
             val zone = s.zone.copy(connection = None)
             s.copy(zone = zone, customServer = !turningOff)
@@ -285,7 +286,7 @@ object ZoneModal {
               setNotification(
                 P.http.toNotification(s"connecting to zone ${S.zone.name}", httpResponse)) >>
                 P.close(()) >>
-                P.refreshZones(())
+                withDelay(ONE_SECOND_IN_MILLIS, P.refreshZones(()))
             }
             P.http.post(CreateZoneRoute, write(S.zone), onSuccess, onFailure)
           }

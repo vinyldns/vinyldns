@@ -28,7 +28,7 @@ import vinyldns.client.pages.grouplist.components.GroupModal
 import scala.language.existentials
 
 class GroupListPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
-  val initialGroupList = GroupList(generateGroups(1).toList, Some(100))
+  val initialGroupList = GroupList(generateGroups(1).toList, 100)
   val mockRouter = MockRouterCtl[Page]()
 
   trait Fixture {

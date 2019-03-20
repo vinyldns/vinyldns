@@ -20,8 +20,9 @@ import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.client.SharedTestData
-import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
+import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute, ListZonesRoute}
 import vinyldns.client.models.membership.GroupList
+import vinyldns.client.models.zone.ZoneList
 import vinyldns.client.pages.zonelist.components.ZoneModal
 import vinyldns.client.routes.AppRouter.{Page, ToZoneListPage}
 
@@ -32,13 +33,21 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
 
   trait Fixture {
     val mockHttp = mock[Http]
-    val groupList = GroupList(List(), Some(100))
+    val groupList = GroupList(List(), 100)
+    val zoneList = ZoneList(List(), 100)
 
     (mockHttp.get[GroupList] _)
       .expects(ListGroupsRoute(), *, *)
       .once()
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(groupList))
+      }
+
+    (mockHttp.get[ZoneList] _)
+      .expects(ListZonesRoute(), *, *)
+      .once()
+      .onCall { (_, onSuccess, _) =>
+        onSuccess.apply(mock[HttpResponse], Some(zoneList))
       }
   }
 

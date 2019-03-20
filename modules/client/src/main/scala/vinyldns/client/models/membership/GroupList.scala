@@ -21,7 +21,7 @@ import vinyldns.client.models.OptionRW
 
 case class GroupList(
     groups: List[Group],
-    maxItems: Option[Int],
+    maxItems: Int,
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     groupNameFilter: Option[String] = None)

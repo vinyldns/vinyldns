@@ -18,7 +18,7 @@ package vinyldns.client.http
 
 import upickle.default.read
 import vinyldns.client.models.membership.{Group, GroupList, MemberList, User}
-import vinyldns.client.models.zone.Zone
+import vinyldns.client.models.zone.{Zone, ZoneList}
 
 import scala.scalajs.js.URIUtils
 import scala.util.Try
@@ -97,6 +97,22 @@ object CreateZoneRoute extends RequestRoute[Zone] {
 }
 
 final case class UpdateZoneRoute(id: String) extends RequestRoute[Zone] {
+  def path: String = s"/api/zones/$id"
+  def parse(httpResponse: HttpResponse): Option[Zone] =
+    Try(Option(read[Zone](httpResponse.responseText))).getOrElse(None)
+}
+
+final case class ListZonesRoute(nameFilter: Option[String] = None) extends RequestRoute[ZoneList] {
+  val queryStrings =
+    Map.empty[String, String] ++
+      nameFilter.map(f => "nameFilter" -> f)
+
+  def path: String = s"/api/zones${toQueryString(queryStrings)}"
+  def parse(httpResponse: HttpResponse): Option[ZoneList] =
+    Try(Option(read[ZoneList](httpResponse.responseText))).getOrElse(None)
+}
+
+final case class DeleteZoneRoute(id: String) extends RequestRoute[Zone] {
   def path: String = s"/api/zones/$id"
   def parse(httpResponse: HttpResponse): Option[Zone] =
     Try(Option(read[Zone](httpResponse.responseText))).getOrElse(None)

@@ -29,7 +29,8 @@ case class Zone(
     created: String,
     account: String,
     shared: Boolean,
-    acl: List[ACLRule],
+    acl: Rules,
+    latestSync: String,
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None
 )
