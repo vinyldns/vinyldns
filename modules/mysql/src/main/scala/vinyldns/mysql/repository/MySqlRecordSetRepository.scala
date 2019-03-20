@@ -57,10 +57,10 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     """.stripMargin
 
   private val INSERT_RECORDSET =
-    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn) VALUES (?, ?, ?, ?, ?, ?)"
+    sql"INSERT IGNORE INTO recordset(id, zone_id, name, type, data, fqdn, owner_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
 
   private val UPDATE_RECORDSET =
-    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ? WHERE id = ?"
+    sql"UPDATE recordset SET zone_id = ?, name = ?, type = ?, data = ?, fqdn = ?, owner_group_id = ? WHERE id = ?"
 
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
@@ -92,6 +92,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             fromRecordType(oldRs.typ),
             toPB(oldRs).toByteArray,
             toFQDN(change.zone.name, oldRs.name),
+            oldRs.ownerGroupId,
             oldRs.id)
         }
       }
@@ -114,7 +115,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             i.recordSet.name,
             fromRecordType(i.recordSet.typ),
             toPB(i.recordSet).toByteArray,
-            toFQDN(i.zone.name, i.recordSet.name)
+            toFQDN(i.zone.name, i.recordSet.name),
+            i.recordSet.ownerGroupId
           )
         }
 
@@ -126,6 +128,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             fromRecordType(u.recordSet.typ),
             toPB(u.recordSet).toByteArray,
             toFQDN(u.zone.name, u.recordSet.name),
+            u.recordSet.ownerGroupId,
             u.recordSet.id)
         }
 
