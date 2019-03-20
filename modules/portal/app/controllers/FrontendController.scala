@@ -92,12 +92,11 @@ class FrontendController @Inject()(
 
   def noAccess(): Action[AnyContent] = Action { implicit request =>
     logger.info(s"User account for '${getLoggedInUser(request)}' is locked.")
-    Unauthorized(views.html.noAccess())
-  }
-
-  def loginError(id: String): Action[AnyContent] = Action { implicit request =>
-    logger.error(s"User login failed for $id")
-    InternalServerError(views.html.loginError())
+    Unauthorized(
+      views.html.systemMessage(
+        """
+        |Account locked. Please contact your VinylDNS administrators for more information.
+      """.stripMargin))
   }
 
   def index(): Action[AnyContent] = userAction.async { implicit request =>

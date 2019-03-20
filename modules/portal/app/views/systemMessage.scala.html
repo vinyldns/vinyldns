@@ -1,4 +1,4 @@
-@(alertMessage: Option[String] = None)(implicit requestHeader: RequestHeader, customLinks: models.CustomLinks, meta: models.Meta)
+@(message: String)(implicit requestHeader: RequestHeader, customLinks: models.CustomLinks, meta: models.Meta)
 <!DOCTYPE html>
 <html lang="en" class="body-full-height">
 <head>
@@ -24,9 +24,7 @@
             <div><img src="/assets/images/vinyldns-logo.png"/></div>
             <h2 class="vinyldns-login-title">VinylDNS</h2>
             <h4 class="vinyldns-login-title">
-                There was an issue when logging in.
-                <a href="/index">Please try again by clicking this link.</a>
-                If the issue persists, contact your VinylDNS Administrators
+                @Html(message)
             </h4>
         </div>
         <div class="vinyldns-login-footer">

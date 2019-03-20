@@ -21,7 +21,7 @@ import java.util
 import actions.{ApiAction, FrontendAction}
 import controllers.OidcAuthenticator.ErrorResponse
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
-import models.{SignableVinylDNSRequest, VinylDNSRequest}
+import models.{CustomLinks, Meta, SignableVinylDNSRequest, VinylDNSRequest}
 import play.api.{Logger, _}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -127,6 +127,8 @@ class VinylDNS @Inject()(
 
   implicit val userInfoReads: Reads[VinylDNS.UserInfo] = Json.reads[VinylDNS.UserInfo]
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
+  implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
+  implicit lazy val meta: Meta = Meta(configuration)
 
   def oidcCallback(loginId: String): Action[AnyContent] = Action.async { implicit request =>
     Logger.info(s"Received callback for LoginId [$loginId]")
@@ -152,8 +154,13 @@ class VinylDNS @Inject()(
             s"LoginId [$loginId] complete: --LOGIN-- user [${user.userName}] logged in with id ${user.id}")
           Redirect("/index").withSession(ID_TOKEN -> token.toString)
         case Left(err) =>
-          Logger.error(s"LoginId [$loginId] complete with error: $err")
-          Redirect(s"/login-error/$loginId").withNewSession
+          Logger.error(s"LoginId [$loginId] failed with error: $err")
+          InternalServerError(
+            views.html.systemMessage("""
+              |There was an issue when logging in.
+              |<a href="/index">Please try again by clicking this link.</a>
+              |If the issue persists, contact your VinylDNS Administrators
+            """.stripMargin))
       }
       .unsafeToFuture()
   }
