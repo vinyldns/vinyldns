@@ -33,7 +33,7 @@ import scala.concurrent.duration._
 trait ZoneConnectionValidatorAlgebra {
 
   def validateZoneConnections(zone: Zone): Result[Unit]
-  def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit]
+  def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit]
 
 }
 
@@ -142,7 +142,7 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
       .attempt
       .asHealthCheck
 
-  def hasExistingBackendId(backendId: Option[String]): Either[Throwable, Unit] =
+  def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
     ensuring(InvalidRequest(s"Invalid backendId: [$backendId]; please check system configuration")) {
       backendId.forall(id => connections.dnsBackends.exists(_.id == id))
     }
