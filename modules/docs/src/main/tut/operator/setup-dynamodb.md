@@ -9,13 +9,14 @@ section: "operator_menu"
 for _most_ of the data that is stored in our instance of VinylDNS. However, all table implementations are available in MySQL
  (see [Setup MySQL Guide](setup-mysql) for more information). The following tables are present in DynamoDB in our instance of VinylDNS:
 
-* [RecordSet](#recordset-table) - holds record data
 * [RecordSetChange](#recordsetchange-table) - audit history of all changes made to records
 * [Group](#group-table) - group information, including name, email and description
 * [Membership](#membership-table) - connects users to groups
 * [GroupChange](#groupchange-table) - holds audit history for groups
 * [UserChange](#userchange-table) - holds audit history for all users (only used in the portal currently)
 * [ZoneChange](#zonechange-table) - audit history for changes to zones (not record related)
+
+###### Note: the DynamoDB RecordSet repository is only partially implemented. For use you would need to provide implementations of those methods
 
 AWS DynamoDB connection information is configured one time, and the same connection is used across all tables.  Therefore,
 you must ensure that all tables live inside the _same_ AWS region accessible by the _same_ credentials.
@@ -42,6 +43,7 @@ to complete the setup for the API.
 You also need to configure DynamoDB for the portal [Portal Database Configuration](config-portal#database-configuration)
 
 ### RecordSet Table
+
 Each row in the RecordSet table is a `RRSet`, which means it comprises one or more "Records" inside of it.
 
 **Usage**
