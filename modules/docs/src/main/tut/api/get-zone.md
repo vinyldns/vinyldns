@@ -54,7 +54,8 @@ zone          | map          | refer to [zone model](../api/zone-model) |
     "acl": {
       "rules": []
     },
-    "id": "0f2fcece-b4ee-4982-b671-e5946f7db81d"
+    "id": "0f2fcece-b4ee-4982-b671-e5946f7db81d",
+    "latestSync": "2016-12-16T15:27:26Z"
   }
 }
 ```
