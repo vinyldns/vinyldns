@@ -20,28 +20,65 @@ import java.net.{InetSocketAddress, Socket}
 
 import cats.effect._
 import cats.syntax.all._
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.{RecordSet, RecordType}
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
 import vinyldns.core.health.HealthCheck._
 
 import scala.concurrent.duration._
 
 trait ZoneConnectionValidatorAlgebra {
+
   def validateZoneConnections(zone: Zone): Result[Unit]
+  def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit]
+
 }
 
-class ZoneConnectionValidator(defaultConnection: ZoneConnection)
+object ZoneConnectionValidator {
+
+  val logger: Logger = LoggerFactory.getLogger(classOf[ZoneConnectionValidator])
+
+  def getZoneConnection(
+      zone: Zone,
+      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection =
+    zone.connection
+      .orElse(getDnsBackend(zone, configuredDnsConnections).map(_.zoneConnection))
+      .getOrElse(configuredDnsConnections.defaultZoneConnection)
+
+  def getTransferConnection(
+      zone: Zone,
+      configuredDnsConnections: ConfiguredDnsConnections): ZoneConnection =
+    zone.transferConnection
+      .orElse(getDnsBackend(zone, configuredDnsConnections).map(_.transferConnection))
+      .getOrElse(configuredDnsConnections.defaultTransferConnection)
+
+  def getDnsBackend(
+      zone: Zone,
+      configuredDnsConnections: ConfiguredDnsConnections): Option[DnsBackend] =
+    zone.backendId
+      .flatMap { bid =>
+        val backend = configuredDnsConnections.dnsBackends.find(_.id == bid)
+        if (backend.isEmpty) {
+          logger.error(
+            s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config")
+        }
+        backend
+      }
+}
+
+class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
     extends ZoneConnectionValidatorAlgebra {
 
+  import ZoneConnectionValidator._
   import ZoneRecordValidations._
 
   val opTimeout: FiniteDuration = 6.seconds
 
   val (healthCheckAddress, healthCheckPort) =
-    DnsConnection.parseHostAndPort(defaultConnection.primaryServer)
+    DnsConnection.parseHostAndPort(connections.defaultZoneConnection.primaryServer)
 
   def loadDns(zone: Zone): IO[ZoneView] = DnsZoneViewLoader(zone).load()
 
@@ -64,7 +101,7 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
   }
 
   def getDnsConnection(zone: Zone): Result[DnsConnection] =
-    Either.catchNonFatal(dnsConnection(zone.connection.getOrElse(defaultConnection))).toResult
+    Either.catchNonFatal(dnsConnection(getZoneConnection(zone, connections))).toResult
 
   def loadZone(zone: Zone): Result[ZoneView] =
     withTimeout(
@@ -104,6 +141,11 @@ class ZoneConnectionValidator(defaultConnection: ZoneConnection)
         IO(socket.connect(new InetSocketAddress(healthCheckAddress, healthCheckPort), timeout)))
       .attempt
       .asHealthCheck
+
+  def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
+    ensuring(InvalidRequest(s"Invalid backendId: [$backendId]; please check system configuration")) {
+      backendId.forall(id => connections.dnsBackends.exists(_.id == id))
+    }
 
   private[domain] def dnsConnection(conn: ZoneConnection): DnsConnection = DnsConnection(conn)
 }

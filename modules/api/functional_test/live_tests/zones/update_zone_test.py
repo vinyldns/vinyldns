@@ -849,3 +849,56 @@ def test_toggle_test_flag(shared_zone_test_context):
     client.wait_until_zone_change_status_synced(change)
 
     assert_that(change['zone']['isTest'], is_(False))
+
+
+def test_update_connection_info_success(shared_zone_test_context):
+    """
+    Test user can update zone to backendId instead of connection info
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.system_test_zone
+
+    # validating current zone state
+    to_update = client.get_zone(zone['id'])['zone']
+    assert_that(to_update, has_key('connection'))
+    assert_that(to_update, has_key('transferConnection'))
+
+    to_update.pop('connection')
+    to_update.pop('transferConnection')
+    to_update['backendId'] = 'func-test-backend'
+    test_rs = None
+    try:
+        change = client.update_zone(to_update, status=202)
+        client.wait_until_zone_change_status_synced(change)
+        new_zone = change['zone']
+
+        assert_that(new_zone, is_not(has_key('connection')))
+        assert_that(new_zone, is_not(has_key('transferConnection')))
+        assert_that(new_zone['backendId'], is_('func-test-backend'))
+
+        # test adding a recordset - validates the key
+        new_rs = get_recordset_json(new_zone, 'test-update-connection-info-success', 'CNAME', [{'cname': 'test-cname.'}])
+        create_rs = client.create_recordset(new_rs, status=202)
+        test_rs = client.wait_until_recordset_change_status(create_rs, 'Complete')['recordSet']
+    finally:
+        revert = client.update_zone(zone, status=202)
+        client.wait_until_zone_change_status_synced(revert)
+        if test_rs:
+            delete_result = client.delete_recordset(test_rs['zoneId'], test_rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_connection_info_invalid_backendid(shared_zone_test_context):
+    """
+    Test user can update zone to bad backendId fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.system_test_zone
+
+    to_update = client.get_zone(zone['id'])['zone']
+    to_update.pop('connection')
+    to_update.pop('transferConnection')
+    to_update['backendId'] = 'bad-backend-id'
+
+    result = client.update_zone(to_update, status=400)
+    assert_that(result, contains_string("Invalid backendId"))

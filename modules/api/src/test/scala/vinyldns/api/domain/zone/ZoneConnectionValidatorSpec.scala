@@ -27,7 +27,7 @@ import vinyldns.api.domain.dns.DnsProtocol.TypeNotFound
 import vinyldns.core.domain.record._
 import vinyldns.api.ResultHelpers
 import cats.effect._
-import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
 
 import scala.concurrent.duration._
 
@@ -66,16 +66,21 @@ class ZoneConnectionValidatorSpec
   private def testDefaultConnection: ZoneConnection =
     ZoneConnection("name", "key-name", "key", "localhost:19001")
 
+  private def testConfiguredConnections: ConfiguredDnsConnections =
+    ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List())
+
   private def generateZoneView(zone: Zone, recordSets: RecordSet*): ZoneView =
     ZoneView(
       zone = zone,
       recordSets = recordSets.toList
     )
 
-  class TestConnectionValidator() extends ZoneConnectionValidator(testDefaultConnection) {
+  class TestConnectionValidator() extends ZoneConnectionValidator(testConfiguredConnections) {
     override val opTimeout: FiniteDuration = 10.milliseconds
     override def dnsConnection(conn: ZoneConnection): DnsConnection = testDnsConnection(conn)
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
+    override def isValidBackendId(backendId: Option[String]): Either[Throwable, Unit] =
+      Right(())
   }
 
   private val underTest = new TestConnectionValidator()
@@ -130,6 +135,14 @@ class ZoneConnectionValidatorSpec
     List(NSData("sub.some.test.ns.")))
 
   private val mockRecordSet = mock[RecordSet]
+
+  val zc = ZoneConnection("zc.", "zc.", "zc", "10.1.1.1")
+  val transfer = ZoneConnection("transfer.", "transfer.", "transfer", "10.1.1.1")
+  val backend = DnsBackend(
+    "some-backend-id",
+    zc.copy(name = "backend-conn"),
+    transfer.copy(name = "backend-transfer"))
+  val connections = ConfiguredDnsConnections(zc, transfer, List(backend))
 
   "ConnectionValidator" should {
     "respond with a success if the connection is resolved" in {
@@ -236,6 +249,60 @@ class ZoneConnectionValidatorSpec
       val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
       result shouldBe a[ConnectionFailed]
       result.getMessage should include("Transfer connection invalid")
+    }
+    "isValidBackendId" should {
+      val backend = DnsBackend("some-test-backend", testDefaultConnection, testDefaultConnection)
+      val underTest =
+        new ZoneConnectionValidator(
+          ConfiguredDnsConnections(testDefaultConnection, testDefaultConnection, List(backend)))
+
+      "return success if the backendId exists" in {
+        underTest.isValidBackendId(Some("some-test-backend")) shouldBe right
+      }
+      "return success on None" in {
+        underTest.isValidBackendId(None) shouldBe right
+      }
+      "return failure if the backendId does not exist" in {
+        underTest.isValidBackendId(Some("bad")) shouldBe left
+      }
+    }
+    "getZoneConnection" should {
+      "get the specified zone connection if provided" in {
+        // both backendId and connection info specified; prefer connection info
+        val zone = testZone.copy(backendId = Some("some-backend-id"))
+        ZoneConnectionValidator.getZoneConnection(zone, connections) shouldBe zone.connection.get
+      }
+      "get a zone connection by backendID" in {
+        val zone = Zone("name.", "email", backendId = Some("some-backend-id"))
+        ZoneConnectionValidator.getZoneConnection(zone, connections) shouldBe backend.zoneConnection
+      }
+      "fall to default without connection info" in {
+        val zone = Zone("name.", "email")
+        ZoneConnectionValidator.getZoneConnection(zone, connections) shouldBe zc
+      }
+      "fall to default with an invalid backendId" in {
+        val zone = Zone("name.", "email", backendId = Some("bad-id"))
+        ZoneConnectionValidator.getZoneConnection(zone, connections) shouldBe zc
+      }
+    }
+    "getTransferConnection" should {
+      "get the specified transfer connection if provided" in {
+        // both backendId and connection info specified; prefer connection info
+        val zone = testZone.copy(backendId = Some("some-backend-id"))
+        ZoneConnectionValidator.getTransferConnection(zone, connections) shouldBe zone.transferConnection.get
+      }
+      "get a transfer connection by backendID" in {
+        val zone = Zone("name.", "email", backendId = Some("some-backend-id"))
+        ZoneConnectionValidator.getTransferConnection(zone, connections) shouldBe backend.transferConnection
+      }
+      "fall to default without connection info" in {
+        val zone = Zone("name.", "email")
+        ZoneConnectionValidator.getTransferConnection(zone, connections) shouldBe transfer
+      }
+      "fall to default with an invalid backendId" in {
+        val zone = Zone("name.", "email", backendId = Some("bad-id"))
+        ZoneConnectionValidator.getTransferConnection(zone, connections) shouldBe transfer
+      }
     }
   }
 }

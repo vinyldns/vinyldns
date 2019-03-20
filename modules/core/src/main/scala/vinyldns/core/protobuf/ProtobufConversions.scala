@@ -111,7 +111,8 @@ trait ProtobufConversions {
       acl = if (zn.hasAcl) fromPB(zn.getAcl) else ZoneACL(),
       adminGroupId = zn.getAdminGroupId,
       latestSync = if (zn.hasLatestSync) Some(new DateTime(zn.getLatestSync)) else None,
-      isTest = zn.getIsTest
+      isTest = zn.getIsTest,
+      backendId = if (zn.hasBackendId) Some(zn.getBackendId) else None
     )
   }
 
@@ -351,6 +352,7 @@ trait ProtobufConversions {
     zone.connection.foreach(cn => builder.setConnection(toPB(cn)))
     zone.transferConnection.foreach(cn => builder.setTransferConnection(toPB(cn)))
     zone.latestSync.foreach(dt => builder.setLatestSync(dt.getMillis))
+    zone.backendId.foreach(bid => builder.setBackendId(bid))
     builder.build()
   }
 

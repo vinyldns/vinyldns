@@ -64,6 +64,7 @@ class ZoneService(
       auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       _ <- isValidZoneAcl(createZoneInput.acl).toResult
+      _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
       _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
       _ <- zoneDoesNotExist(createZoneInput.name)
       _ <- adminGroupExists(createZoneInput.adminGroupId)
@@ -77,6 +78,7 @@ class ZoneService(
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       _ <- isValidZoneAcl(updateZoneInput.acl).toResult
+      _ <- connectionValidator.isValidBackendId(updateZoneInput.backendId).toResult
       existingZone <- getZoneOrFail(updateZoneInput.id)
       _ <- validateSharedZoneAuthorized(
         existingZone.shared,
