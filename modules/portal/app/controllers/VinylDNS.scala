@@ -160,7 +160,7 @@ class VinylDNS @Inject()(
               |There was an issue when logging in.
               |<a href="/index">Please try again by clicking this link.</a>
               |If the issue persists, contact your VinylDNS Administrators
-            """.stripMargin))
+            """.stripMargin)).withNewSession
       }
       .unsafeToFuture()
   }
