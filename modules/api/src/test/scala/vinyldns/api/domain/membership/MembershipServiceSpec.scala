@@ -485,7 +485,11 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
         doReturn(IO.pure(Some("somerecordsetid")))
           .when(mockRecordSetRepo)
+<<<<<<< HEAD
           .getFirstOwnedRecordByGroup(anyString())
+=======
+          .isRecordOwnerGroup(anyString())
+>>>>>>> renaming
         val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
 
         error shouldBe an[InvalidGroupRequestError]
