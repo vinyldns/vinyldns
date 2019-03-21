@@ -89,8 +89,8 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
-      _ <- isAZoneAdmin(existingGroup)
-      _ <- isOwnerGroup(existingGroup)
+      _ <- isZoneAdmin(existingGroup)
+      _ <- isRecordOwnerGroup(existingGroup)
       _ <- groupChangeRepo
         .save(GroupChange.forDelete(existingGroup, authPrincipal))
         .toResult[GroupChange]
@@ -237,7 +237,7 @@ class MembershipService(
       }
       .toResult
 
-  def isAZoneAdmin(group: Group): Result[Unit] =
+  def isZoneAdmin(group: Group): Result[Unit] =
     zoneRepo
       .getZonesByAdminGroupId(group.id)
       .map { zones =>
@@ -247,13 +247,13 @@ class MembershipService(
       }
       .toResult
 
-  def isOwnerGroup(group: Group): Result[Unit] =
+  def isRecordOwnerGroup(group: Group): Result[Unit] =
     recordSetRepo
-      .isNotAOwnerGroupId(group.id)
+      .isRecordOwnerGroup(group.id)
       .map { rs =>
         ensuring(
           InvalidGroupRequestError(s"${group.name} is the owner for a record. Cannot delete.")) {
-          rs
+          !rs
         }
       }
       .toResult

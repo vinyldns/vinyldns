@@ -395,4 +395,13 @@ class DynamoDBRecordSetRepositorySpec
         .unsafeRunSync()
     }
   }
+
+  "DynamoDBRecordSetRepository.isRecordOwnerGroup" should {
+    "return an error if used" in {
+      val store = new TestDynamoRecordSetRepo
+      a[UnsupportedDynamoDBRepoFunction] should be thrownBy store
+        .isRecordOwnerGroup("someId")
+        .unsafeRunSync()
+    }
+  }
 }

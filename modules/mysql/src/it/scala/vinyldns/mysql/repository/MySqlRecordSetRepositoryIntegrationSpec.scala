@@ -478,4 +478,25 @@ class MySqlRecordSetRepositoryIntegrationSpec
       result2 should contain theSameElementsAs List(change1.recordSet, change2.recordSet)
     }
   }
+
+  "isRecordOwnerGroup" should {
+    "return true when id is ownerGroupId for a record set" in {
+      val addChange = makeTestAddChange(ds.copy(ownerGroupId = Some("someOwner")), okZone)
+      val testRecord = addChange.recordSet
+      val dbCalls = for {
+        _ <- repo.apply(ChangeSet(addChange))
+        get <- repo.getRecordSet(testRecord.zoneId, testRecord.id)
+      } yield get
+
+      dbCalls.unsafeRunSync()
+
+      val result = repo.isRecordOwnerGroup("someOwner").unsafeRunSync()
+      result shouldBe true
+    }
+
+    "return false when no record set has the id as ownerGroupId" in {
+      val result = repo.isRecordOwnerGroup("notFound").unsafeRunSync()
+      result shouldBe false
+    }
+  }
 }
