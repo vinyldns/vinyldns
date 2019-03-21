@@ -155,9 +155,9 @@ class BatchChangeService(
   def getExistingRecordSets(
       changes: ValidatedBatch[ChangeForValidation]): IO[ExistingRecordSets] = {
     val uniqueGets = changes.getValid.map(change => change.inputChange.inputName).toSet
-    val allSeq = recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
+    val allRecordSets = recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
 
-    allSeq.map(lst => ExistingRecordSets(lst))
+    allRecordSets.map(lst => ExistingRecordSets(lst))
   }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
