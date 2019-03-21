@@ -84,8 +84,28 @@ object ZonesTable {
                     <.tr(
                       <.th("Name"),
                       <.th("Email"),
-                      <.th("Admin Group"),
-                      <.th("Type"),
+                      <.th(
+                        "Admin Group  ",
+                        <.span(
+                          GlobalStyle.styleSheet.cursorPointer,
+                          ^.className := "fa fa-info-circle",
+                          VdomAttr("data-toggle") := "tooltip",
+                          ^.title := "All members of the group have full admin access of the Zone and its DNS records"
+                        )
+                      ),
+                      <.th(
+                        "Type  ",
+                        <.span(
+                          GlobalStyle.styleSheet.cursorPointer,
+                          ^.className := "fa fa-info-circle",
+                          VdomAttr("data-toggle") := "tooltip",
+                          ^.title :=
+                            """
+                              |Private Zones are restricted to the Admin Group and ACL Rules.
+                              | Shared Zones allow other Vinyl users to manage DNS records
+                            """.stripMargin
+                        )
+                      ),
                       <.th("Actions")
                     )
                   ),
