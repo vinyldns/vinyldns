@@ -195,8 +195,9 @@ object RecordSetChangeHandler {
 
       case done: Completed =>
         logger.info(
-          s"COMPLETED for change ${done.change.id}:${done.change.recordSet.name} change type " +
-            s"${done.change.changeType} with result ${done.change.status}")
+          s"COMPLETED for change [${done.change.id}:${done.change.recordSet.name}], " +
+            s"zone name = [${done.change.zone.name}], isTestZone = [${done.change.zone.isTest}]," +
+            s"change type = [${done.change.changeType}], result [${done.change.status}]")
         IO.pure(done)
     }
   }
