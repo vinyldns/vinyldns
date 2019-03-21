@@ -244,11 +244,11 @@ class DynamoDBRecordSetRepository private[repository] (
       )
     }
 
-  def isNotAOwnerGroupId(ownerGroupId: String): IO[Boolean] =
+  def isNotOwnerGroupId(ownerGroupId: String): IO[Boolean] =
     monitor("repo.RecordSet.isNotAOwnerGroupId") {
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(
-          "isNotAOwnerGroupId is not supported by VinylDNS DynamoDB RecordSetRepository"
+          s"isNotOwnerGroupId is not supported by VinylDNS DynamoDB RecordSetRepository id=${ownerGroupId}"
         )
       )
     }
