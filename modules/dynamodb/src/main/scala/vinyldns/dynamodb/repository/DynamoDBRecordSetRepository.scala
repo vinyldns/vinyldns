@@ -253,7 +253,11 @@ class DynamoDBRecordSetRepository private[repository] (
 >>>>>>> Review
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(
+<<<<<<< HEAD
           s"getFirstOwnedRecordByGroup is not supported by VinylDNS DynamoDB RecordSetRepository id=$ownerGroupId"
+=======
+          s"isRecordOwnerGroup is not supported by VinylDNS DynamoDB RecordSetRepository"
+>>>>>>> Delete Group - Checking if id is present in Zone ACL
         )
       )
     }

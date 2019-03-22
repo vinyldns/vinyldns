@@ -77,7 +77,11 @@ trait EmptyZoneRepo extends ZoneRepository {
 
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = IO.pure(Set())
 
+<<<<<<< HEAD
   def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]] = IO.pure(None)
+=======
+  def isAclGroupId(groupId: String): IO[Boolean] = IO.pure(false)
+>>>>>>> Delete Group - Checking if id is present in Zone ACL
 
 }
 
