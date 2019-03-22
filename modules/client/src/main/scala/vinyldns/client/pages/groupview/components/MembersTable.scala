@@ -21,7 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import upickle.default.write
-import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetGroupMembersRoute, Http, HttpResponse, UpdateGroupRoute}
 import vinyldns.client.models.membership.{Group, Id, MemberList, User}
@@ -129,7 +129,7 @@ object MembersTable {
     def getMembers(P: Props): Callback = {
       val groupId = P.group.id
       val onError = { httpResponse: HttpResponse =>
-        setNotification(
+        addNotification(
           P.http
             .toNotification(
               s"getting group members for group id $groupId",
@@ -153,11 +153,11 @@ object MembersTable {
             val updatedGroup = P.group.copy(members = newMembers, admins = newAdmins)
 
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-              setNotification(P.http.toNotification(s"deleting member ${user.id}", httpResponse)) >>
+              addNotification(P.http.toNotification(s"deleting member ${user.id}", httpResponse)) >>
                 P.refreshGroup(())
             }
             val onFailure = { httpResponse: HttpResponse =>
-              setNotification(P.http.toNotification(s"deleting member ${user.id}", httpResponse))
+              addNotification(P.http.toNotification(s"deleting member ${user.id}", httpResponse))
             }
             P.http
               .put(UpdateGroupRoute(P.group.id), write(updatedGroup), onSuccess, onFailure)
@@ -173,11 +173,11 @@ object MembersTable {
             val updatedGroup = P.group.copy(admins = newAdmins)
 
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-              setNotification(P.http.toNotification(s"removing manager ${user.id}", httpResponse)) >>
+              addNotification(P.http.toNotification(s"removing manager ${user.id}", httpResponse)) >>
                 P.refreshGroup(())
             }
             val onFailure = { httpResponse: HttpResponse =>
-              setNotification(P.http.toNotification(s"removing manager ${user.id}", httpResponse))
+              addNotification(P.http.toNotification(s"removing manager ${user.id}", httpResponse))
             }
 
             P.http
@@ -193,11 +193,11 @@ object MembersTable {
           val updatedGroup = P.group.copy(admins = newAdmins)
 
           val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-            setNotification(P.http.toNotification(s"adding manager ${user.id}", httpResponse)) >>
+            addNotification(P.http.toNotification(s"adding manager ${user.id}", httpResponse)) >>
               P.refreshGroup(())
           }
           val onFailure = { httpResponse: HttpResponse =>
-            setNotification(P.http.toNotification(s"adding manager ${user.id}", httpResponse))
+            addNotification(P.http.toNotification(s"adding manager ${user.id}", httpResponse))
           }
 
           P.http.put(UpdateGroupRoute(P.group.id), write(updatedGroup), onSuccess, onFailure)

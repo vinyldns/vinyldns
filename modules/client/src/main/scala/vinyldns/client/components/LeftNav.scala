@@ -99,7 +99,7 @@ object LeftNav {
     (P.selectedPage, parent) match {
       case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
         <.ul(
-          GlobalStyle.styleSheet.overrideDisplay,
+          GlobalStyle.styleSheet.displayBlock,
           ^.className := "nav child_menu",
           <.li(
             ^.className := "active",

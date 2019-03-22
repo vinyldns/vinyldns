@@ -28,7 +28,7 @@ import vinyldns.client.http.{Http, HttpResponse, LookupUserRoute, UpdateGroupRou
 import vinyldns.client.components.{InputFieldValidations, ValidatedForm, ValidatedInputField}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.membership.{Group, Id, User}
-import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.AlertBox.addNotification
 
 object NewMemberForm {
   case class State(
@@ -115,13 +115,13 @@ object NewMemberForm {
                 val updatedGroup = P.group.copy(members = newMembers, admins = newAdmins)
 
                 val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-                  setNotification(
+                  addNotification(
                     P.http.toNotification(s"adding member ${S.username}", httpResponse)) >>
                     P.refreshGroup(())
                 }
 
                 val onError = { httpResponse: HttpResponse =>
-                  setNotification(
+                  addNotification(
                     P.http.toNotification(s"adding member ${S.username}", httpResponse))
                 }
 
@@ -137,7 +137,7 @@ object NewMemberForm {
         addMember(P, S, response)
       }
       val onFailure = { httpResponse: HttpResponse =>
-        setNotification(
+        addNotification(
           P.http
             .toNotification(s"getting user ${S.username}", httpResponse, onlyOnError = true))
       }

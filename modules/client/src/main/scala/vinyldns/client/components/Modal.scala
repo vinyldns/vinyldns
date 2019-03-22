@@ -32,10 +32,10 @@ object Modal {
       <.div(
         <.div(
           ^.className := "modal fade in modal-backdrop",
-          GlobalStyle.styleSheet.overrideDisplay
+          GlobalStyle.styleSheet.displayBlock
         ),
         <.div(
-          GlobalStyle.styleSheet.overrideDisplay,
+          GlobalStyle.styleSheet.displayBlock,
           GlobalStyle.styleSheet.overflow,
           GlobalStyle.styleSheet.positionFixed,
           ^.className := "modal fade in",

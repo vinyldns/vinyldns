@@ -25,7 +25,7 @@ import vinyldns.client.components.ValidatedInputField.DatalistOptions
 import vinyldns.client.components._
 import vinyldns.client.http.{CreateZoneRoute, Http, HttpResponse}
 import vinyldns.client.models.membership.GroupList
-import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.AlertBox.addNotification
 import upickle.default.write
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.components.JsNative._
@@ -279,11 +279,11 @@ object ZoneModal {
         Callback
           .lazily {
             val onFailure = { httpResponse: HttpResponse =>
-              setNotification(
+              addNotification(
                 P.http.toNotification(s"connecting to zone ${S.zone.name}", httpResponse))
             }
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Zone]) =>
-              setNotification(
+              addNotification(
                 P.http.toNotification(s"connecting to zone ${S.zone.name}", httpResponse)) >>
                 P.close(()) >>
                 withDelay(HALF_SECOND_IN_MILLIS, P.refreshZones(()))

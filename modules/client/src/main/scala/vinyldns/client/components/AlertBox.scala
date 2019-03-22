@@ -16,6 +16,8 @@
 
 package vinyldns.client.components
 
+import java.util.UUID
+
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -31,7 +33,7 @@ object AlertBox {
       isError: Boolean = false
   )
 
-  case class State(notification: Option[Notification] = None)
+  case class State(notifications: Map[String, Notification] = Map.empty)
 
   val component = ScalaComponent
     .builder[Unit]("AlertBox")
@@ -41,37 +43,40 @@ object AlertBox {
 
   class Backend(bs: BackendScope[Unit, State]) {
     def render(S: State): VdomElement =
-      S.notification match {
-        case Some(n) =>
-          <.div(
-            ^.className := "ui-pnotify ui-pnotify-fade-normal ui-pnotify-in ui-pnotify-fade-in ui-pnotify-move",
-            GlobalStyle.styleSheet.notifyOuter,
+      <.div(
+        GlobalStyle.styleSheet.alertBox,
+        S.notifications.map {
+          case (key, n) =>
             <.div(
-              ^.className := notificationClass(n.isError),
-              ^.role := "alert",
-              GlobalStyle.styleSheet.notifyInner,
+              ^.className := "ui-pnotify ui-pnotify-fade-normal ui-pnotify-in ui-pnotify-fade-in ui-pnotify-move",
+              GlobalStyle.styleSheet.notifyOuter,
               <.div(
-                ^.className := "ui-pnotify-closer pull-right",
-                GlobalStyle.styleSheet.cursorPointer,
-                ^.onClick --> bs.modState(_.copy(notification = None)),
-                <.span(^.className := "fa fa-remove"),
-                "  close"
-              ),
-              <.h4(
-                ^.className := "ui-pnotifiy-title",
-                title(n.isError)
-              ),
-              <.div(
-                ^.className := "ui-pnotify-text",
-                n.customMessage.getOrElse[String](""),
-                <.br,
-                n.ajaxResponseMessage.getOrElse[String]("")
+                ^.className := notificationClass(n.isError),
+                ^.role := "alert",
+                GlobalStyle.styleSheet.notifyInner,
+                <.div(
+                  ^.className := "ui-pnotify-closer pull-right",
+                  GlobalStyle.styleSheet.cursorPointer,
+                  ^.onClick --> bs.modState { s =>
+                    s.copy(notifications = s.notifications - key)
+                  },
+                  <.span(^.className := "fa fa-remove"),
+                  "  close"
+                ),
+                <.h4(
+                  ^.className := "ui-pnotifiy-title",
+                  title(n.isError)
+                ),
+                <.div(
+                  ^.className := "ui-pnotify-text",
+                  n.customMessage.getOrElse[String](""),
+                  <.br,
+                  n.ajaxResponseMessage.getOrElse[String]("")
+                )
               )
             )
-          )
-        case None =>
-          <.div
-      }
+        }.toTagMod
+      )
 
     def notificationClass(isError: Boolean): String = {
       val errorOrSuccess = if (isError) "alert-error" else "alert-success"
@@ -82,28 +87,30 @@ object AlertBox {
       if (isError) "Error"
       else "Success"
 
-    def clearNotification: Callback =
-      bs.modState(_.copy(notification = None))
+    def removeNotification(key: String): Callback =
+      bs.modState(s => s.copy(notifications = s.notifications - key))
 
-    def setNotification(notification: Option[Notification]): Callback =
+    def addNotification(notification: Option[Notification]): Callback =
       notification match {
         case Some(n) if !n.isError =>
-          bs.modState(_.copy(notification = notification)) >>
-            withDelay(FIVE_SECONDS_IN_MILLIS, clearNotification)
-        case Some(n) if n.isError => bs.modState(_.copy(notification = notification))
+          val key = UUID.randomUUID().toString
+          val entry = Map(key -> n)
+          bs.modState(s => s.copy(notifications = s.notifications ++ entry)) >>
+            withDelay(FIVE_SECONDS_IN_MILLIS, removeNotification(key))
+
+        case Some(n) if n.isError =>
+          val key = UUID.randomUUID().toString
+          val entry = Map(key -> n)
+          bs.modState(s => s.copy(notifications = s.notifications ++ entry))
+
         case None => Callback.empty
       }
+
   }
 
-  def setNotification(notification: Option[Notification]): Callback =
+  def addNotification(notification: Option[Notification]): Callback =
     AppRouter.alertBoxRef.get
-      .map(mounted => mounted.backend.setNotification(notification))
-      .getOrElse[Callback](Callback.empty)
-      .runNow()
-
-  def clearNotification(): Callback =
-    AppRouter.alertBoxRef.get
-      .map(mounted => mounted.backend.clearNotification)
+      .map(mounted => mounted.backend.addNotification(notification))
       .getOrElse[Callback](Callback.empty)
       .runNow()
 }

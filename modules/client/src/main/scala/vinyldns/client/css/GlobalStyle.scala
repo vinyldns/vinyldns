@@ -26,24 +26,27 @@ object GlobalStyle {
 
     val height100 = style(height :=! "100%")
     val width100 = style(width :=! "100%")
-    val overrideDisplay = style(display.block.important)
+
+    val displayBlock = style(display.block.important)
     val cursorPointer = style(cursor.pointer)
-    val maxHeight100 = style(maxHeight :=! "100%")
-    val maxWidth100 = style(maxWidth :=! "100%")
-    val backgroundWhite = style(backgroundColor :=! "white")
+
+    val alertBox = style(
+      right :=! "36px",
+      position.absolute
+    )
     val notifyOuter = style(
       width :=! "300px",
-      right :=! "36px",
-      top :=! "36px",
       cursor.auto,
-      position.absolute,
       wordWrap.breakWord,
+      position.relative,
       zIndex :=! "10000"
     )
     val notifyInner = style(minHeight :=! "16px")
-    val positionAbsolute = style(position.absolute)
+
     val positionFixed = style(position.fixed)
+
     val overflow = style(overflowY.scroll)
+
     val noop = style()
   }
 }

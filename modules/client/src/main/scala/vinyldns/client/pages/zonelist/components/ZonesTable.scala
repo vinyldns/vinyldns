@@ -21,7 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute}
 import vinyldns.client.models.zone.{Zone, ZoneList}
@@ -131,7 +131,7 @@ object ZonesTable {
         bs.modState(_.copy(zonesList = parsed))
       }
       val onFailure = { httpResponse: HttpResponse =>
-        setNotification(P.http.toNotification("list zones", httpResponse, onlyOnError = true))
+        addNotification(P.http.toNotification("list zones", httpResponse, onlyOnError = true))
       }
       P.http.get(
         ListZonesRoute(nameFilter = S.nameFilter, startFrom = startFrom),
@@ -181,11 +181,11 @@ object ZonesTable {
         Callback
           .lazily {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Zone]) =>
-              setNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse)) >>
+              addNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse)) >>
                 withDelay(HALF_SECOND_IN_MILLIS, listZones(P, S))
             }
             val onFailure = { httpResponse: HttpResponse =>
-              setNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse))
+              addNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse))
             }
             P.http.delete(DeleteZoneRoute(zone.id), onSuccess, onFailure)
           }

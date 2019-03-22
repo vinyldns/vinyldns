@@ -20,7 +20,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
@@ -128,7 +128,7 @@ object GroupsTable {
         bs.modState(_.copy(groupsList = parsed))
       }
       val onFailure = { httpResponse: HttpResponse =>
-        setNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
+        addNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
       }
       P.http.get(
         ListGroupsRoute(nameFilter = S.groupNameFilter, startFrom = startFrom),
@@ -181,11 +181,11 @@ object GroupsTable {
         Callback
           .lazily {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
-              setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
+              addNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
                 withDelay(HALF_SECOND_IN_MILLIS, listGroups(P, S))
             }
             val onFailure = { httpResponse: HttpResponse =>
-              setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse))
+              addNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse))
             }
             P.http.delete(DeleteGroupRoute(group.id), onSuccess, onFailure)
           }

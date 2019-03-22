@@ -21,7 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupList
@@ -193,7 +193,7 @@ object ZoneListPage extends PropsFromAppRouter {
         bs.modState(_.copy(groupList = parsed))
       }
       val onFailure = { httpResponse: HttpResponse =>
-        setNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
+        addNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
       }
       P.http.get(ListGroupsRoute(), onSuccess, onFailure)
     }

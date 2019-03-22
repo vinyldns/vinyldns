@@ -67,7 +67,7 @@ object TopNav {
     def dropdown(state: State): VdomNode =
       if (state.dropdownOpen)
         <.ul(
-          GlobalStyle.styleSheet.overrideDisplay,
+          GlobalStyle.styleSheet.displayBlock,
           ^.className := "dropdown-menu dropdown-usermenu pull-right",
           <.li(
             <.a(

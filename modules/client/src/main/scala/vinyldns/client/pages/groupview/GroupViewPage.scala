@@ -23,7 +23,7 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.http._
 import vinyldns.client.models.membership.Group
-import vinyldns.client.components.AlertBox.setNotification
+import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.pages.groupview.components.{MembersTable, NewMemberForm}
 import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter, ToGroupViewPage}
@@ -97,7 +97,7 @@ object GroupViewPage extends PropsFromAppRouter {
     def getGroup(P: Props): Callback = {
       val groupId = P.page.asInstanceOf[ToGroupViewPage].id
       val onFailure = { httpResponse: HttpResponse =>
-        setNotification(P.http.toNotification("getting group", httpResponse, onlyOnError = true))
+        addNotification(P.http.toNotification("getting group", httpResponse, onlyOnError = true))
       }
       val onSuccess = { (_: HttpResponse, parsed: Option[Group]) =>
         bs.modState(_.copy(group = parsed))
