@@ -28,6 +28,7 @@ import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
 import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.zonelist.ZoneListPage
+import vinyldns.client.pages.zoneview.ZoneViewPage
 
 object AppRouter {
   trait PropsFromAppRouter {
@@ -40,6 +41,7 @@ object AppRouter {
   final object ToGroupListPage extends Page
   final case class ToGroupViewPage(id: String) extends Page
   final object ToZoneListPage extends Page
+  final case class ToZoneViewPage(id: String) extends Page
 
   private val config = RouterConfigDsl[Page].buildConfig { dsl =>
     import dsl._
@@ -61,6 +63,9 @@ object AppRouter {
         |
           staticRoute("zones", ToZoneListPage) ~>
             renderR(ctl => ZoneListPage(ToZoneListPage, ctl, HttpHelper))
+        |
+          dynamicRouteCT[ToZoneViewPage]("zones" / string("[^ ]+").caseClass[ToZoneViewPage]) ~>
+            (p => renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }

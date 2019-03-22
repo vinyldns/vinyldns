@@ -22,7 +22,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.routes.AppRouter.{Page, ToGroupListPage, ToGroupViewPage}
+import vinyldns.client.routes.AppRouter._
 
 object LeftNav {
   case class NavItem(name: String, faClassName: String, page: Page)
@@ -95,28 +95,35 @@ object LeftNav {
     if (isActive) "active"
     else ""
 
-  def toSubMenu(P: Props, parent: Page): TagMod =
-    (P.selectedPage, parent) match {
-      case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
-        <.ul(
-          GlobalStyle.styleSheet.displayBlock,
-          ^.className := "nav child_menu",
-          <.li(
-            ^.className := "active",
-            <.a(
-              <.i(^.className := "fa fa-eye"),
-              groupView.id,
-              P.router.setOnClick(P.selectedPage)
-            )
+  def toSubMenu(P: Props, parent: Page): TagMod = {
+    def fromSubTitle(title: String): TagMod =
+      <.ul(
+        GlobalStyle.styleSheet.displayBlock,
+        ^.className := "nav child_menu",
+        <.li(
+          ^.className := "active",
+          <.a(
+            <.i(^.className := "fa fa-eye"),
+            title,
+            P.router.setOnClick(P.selectedPage)
           )
         )
+      )
+
+    (P.selectedPage, parent) match {
+      case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
+        fromSubTitle(groupView.id)
+      case (zoneView: ToZoneViewPage, _: ToZoneListPage.type) =>
+        fromSubTitle(zoneView.id)
       case _ => TagMod.empty
     }
+  }
 
   def isActive(P: Props, target: Page): Boolean =
     (P.selectedPage, target) match {
       case _ if target.getClass == P.selectedPage.getClass => true
       case (_: ToGroupViewPage, _: ToGroupListPage.type) => true
+      case (_: ToZoneViewPage, _: ToZoneListPage.type) => true
       case _ => false
     }
 

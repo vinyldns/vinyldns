@@ -52,6 +52,8 @@ object Breadcrumb {
         List(home(P), groups(P), viewGroupActive).toTagMod
       case _: ToZoneListPage.type =>
         List(home(P), zonesActive).toTagMod
+      case _: ToZoneViewPage =>
+        List(home(P), zones(P), viewZoneActive).toTagMod
       case _ => TagMod.empty
     }
 
@@ -66,4 +68,8 @@ object Breadcrumb {
   val viewGroupActive = <.li(^.key := "viewGroup", cursorPointer, ^.className := "active", "View")
 
   val zonesActive = <.li(^.key := "zones", cursorPointer, ^.className := "active", "Zones")
+  def zones(P: Props): TagMod =
+    <.li(^.key := "zones", cursorPointer, <.a("Zones", P.router.setOnClick(ToZoneListPage)))
+
+  val viewZoneActive = <.li(^.key := "viewZone", cursorPointer, ^.className := "active", "View")
 }

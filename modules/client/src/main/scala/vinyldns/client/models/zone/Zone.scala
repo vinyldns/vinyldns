@@ -38,3 +38,9 @@ case class Zone(
 object Zone extends OptionRW {
   implicit val rw: ReadWriter[Zone] = macroRW
 }
+
+case class GetZone(zone: Zone)
+
+object GetZone {
+  implicit val rw: ReadWriter[GetZone] = macroRW
+}
