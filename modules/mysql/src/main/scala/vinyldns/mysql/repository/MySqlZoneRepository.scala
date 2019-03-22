@@ -115,6 +115,14 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       |  FROM zone
        """.stripMargin
 
+  private final val GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID =
+    sql"""
+         |SELECT DISTINCT accessor_id
+         |  FROM zone_access z
+         | WHERE z.zone_access = (?)
+         | LIMIT 1
+        """.stripMargin
+
   /**
     * When we save a zone, if it is deleted we actually delete it from the repo.  This will force a cascade
     * delete on all linked records in the zone_access table.
@@ -223,6 +231,21 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       IO {
         DB.readOnly { implicit s =>
           GET_ZONES_BY_ADMIN_GROUP_ID.bind(adminGroupId).map(extractZone(2)).list().apply()
+        }
+      }
+    }
+
+  def isAclGroupId(groupId: String): IO[Boolean] =
+    monitor("repo.ZoneJDBC.isAclGroupId") {
+      IO {
+        DB.readOnly { implicit s =>
+          GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID
+            .bind(groupId)
+            .map(_.string(1))
+            .single
+            .list()
+            .apply()
+            .nonEmpty
         }
       }
     }

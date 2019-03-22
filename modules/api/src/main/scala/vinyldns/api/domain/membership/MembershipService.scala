@@ -91,6 +91,7 @@ class MembershipService(
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
       _ <- isNotZoneAdmin(existingGroup)
       _ <- isNotRecordOwnerGroup(existingGroup)
+      _ <- isZoneAclGroupId(existingGroup)
       _ <- groupChangeRepo
         .save(GroupChange.forDelete(existingGroup, authPrincipal))
         .toResult[GroupChange]
@@ -241,9 +242,8 @@ class MembershipService(
     zoneRepo
       .getZonesByAdminGroupId(group.id)
       .map { zones =>
-        ensuring(InvalidGroupRequestError(s"${group.name} is the admin of a zone. Cannot delete.")) {
-          zones.isEmpty
-        }
+        ensuring(InvalidGroupRequestError(s"${group.name} is the admin of a zone. Cannot delete."))(
+          zones.isEmpty)
       }
       .toResult
 
@@ -256,6 +256,15 @@ class MembershipService(
             s"${group.name} is the owner for record set $rsId. Cannot delete.")) {
           rsId.isEmpty
         }
+      }
+      .toResult
+
+  def isZoneAclGroupId(group: Group): Result[Unit] =
+    zoneRepo
+      .isAclGroupId(group.id)
+      .map { z =>
+        ensuring(
+          InvalidGroupRequestError(s"${group.name} has an ACL rule for a zone. Cannot delete."))(!z)
       }
       .toResult
 
