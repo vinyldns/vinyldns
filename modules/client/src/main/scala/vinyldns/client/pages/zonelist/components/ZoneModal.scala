@@ -156,7 +156,7 @@ object ZoneModal {
                | all records in the zone, as well as change zone level information
                | and access rules. You can create a new group from the Groups page.
               """.stripMargin),
-          validations = Some(InputFieldValidations(required = true)),
+          validations = Some(InputFieldValidations(required = true, uuid = true)),
           datalist = toAdminGroupDatalist(P.groupList),
           placeholder =
             if (P.groupList.groups.isEmpty)

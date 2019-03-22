@@ -62,7 +62,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(groupList.groups.head.id))
+        Simulate.change(adminField, SimEvent.Change(testUUID))
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
         Simulate.submit(form)
@@ -70,7 +70,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
     }
 
     "call http.post if submitting with required fields and confirming" in new Fixture {
-      val expectedZone = ZoneCreateInfo("test-zone.", "test@email.com", groupList.groups.head.id)
+      val expectedZone = ZoneCreateInfo("test-zone.", "test@email.com", testUUID)
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.post[Zone] _)
@@ -89,14 +89,14 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(groupList.groups.head.id))
+        Simulate.change(adminField, SimEvent.Change(testUUID))
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
         Simulate.submit(form)
       }
     }
 
-    "not allow user to submit unless picking a valid groupId" in new Fixture {
+    "not allow user to submit unless adminGroupId is uuid" in new Fixture {
       (mockHttp.withConfirmation _).expects(*, *).never()
       (mockHttp.post _).expects(*, *, *, *).never()
 
@@ -110,7 +110,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change("no-existo"))
+        Simulate.change(adminField, SimEvent.Change("not-uuid"))
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
         Simulate.submit(form)
@@ -122,7 +122,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         ZoneCreateInfo(
           "test-zone.",
           "test@email.com",
-          groupList.groups.head.id,
+          testUUID,
           Some(ZoneConnection("name", "name", "key", "1.1.1.1")))
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
@@ -151,7 +151,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(groupList.groups.head.id))
+        Simulate.change(adminField, SimEvent.Change(testUUID))
         Simulate.change(customKeyName, SimEvent.Change("name"))
         Simulate.change(customKey, SimEvent.Change("key"))
         Simulate.change(customServer, SimEvent.Change("1.1.1.1"))
@@ -166,7 +166,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         ZoneCreateInfo(
           "test-zone.",
           "test@email.com",
-          groupList.groups.head.id,
+          testUUID,
           transferConnection = Some(ZoneConnection("name", "name", "key", "1.1.1.1")))
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
@@ -195,7 +195,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(groupList.groups.head.id))
+        Simulate.change(adminField, SimEvent.Change(testUUID))
         Simulate.change(customKeyName, SimEvent.Change("name"))
         Simulate.change(customKey, SimEvent.Change("key"))
         Simulate.change(customServer, SimEvent.Change("1.1.1.1"))

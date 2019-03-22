@@ -23,11 +23,10 @@ import vinyldns.client.components.ValidatedInputField.Backend
 
 class ValidatedInputFieldSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val defaultValidations = InputFieldValidations()
-  val required = InputFieldValidations(required = true)
-  val noSpaces = InputFieldValidations(noSpaces = true)
-  val maxSize = InputFieldValidations(maxSize = Some(5))
 
   "ValidatedInputField.Backend.validateRequired" should {
+    val required = InputFieldValidations(required = true)
+
     "fail if input is empty" in {
       Backend.validateRequired("", required).isLeft shouldBe true
     }
@@ -43,6 +42,8 @@ class ValidatedInputFieldSpec extends WordSpec with Matchers with MockFactory wi
   }
 
   "ValidatedInputField.Backend.validateNoSpaces" should {
+    val noSpaces = InputFieldValidations(noSpaces = true)
+
     "fail if input has spaces" in {
       Backend.validateNoSpaces("val ue", noSpaces).isLeft shouldBe true
       Backend.validateNoSpaces(" value", noSpaces).isLeft shouldBe true
@@ -62,6 +63,8 @@ class ValidatedInputFieldSpec extends WordSpec with Matchers with MockFactory wi
   }
 
   "ValidatedInputField.Backend.validateMaxSize" should {
+    val maxSize = InputFieldValidations(maxSize = Some(5))
+
     "fail if input length is greater than max size" in {
       Backend.validateMaxSize("123456", maxSize).isLeft shouldBe true
     }
@@ -75,6 +78,44 @@ class ValidatedInputFieldSpec extends WordSpec with Matchers with MockFactory wi
       Backend.validateMaxSize("", defaultValidations).isRight shouldBe true
       Backend.validateMaxSize("value", defaultValidations).isRight shouldBe true
       Backend.validateMaxSize("1234567890", defaultValidations).isRight shouldBe true
+    }
+  }
+
+  "ValidatedInputField.Backend.validateDatalist" should {
+    val matchDatalist = InputFieldValidations(matchDatalist = true)
+    val datalist = List("value1" -> "display1", "value2" -> "display2").toMap
+
+    "fail if input is not in datalist" in {
+      Backend.validateDatalist("no-existo", matchDatalist, datalist).isLeft shouldBe true
+    }
+
+    "pass if input is a DataListValue in datalist" in {
+      Backend.validateDatalist("value1", matchDatalist, datalist).isRight shouldBe true
+      Backend.validateDatalist("value2", matchDatalist, datalist).isRight shouldBe true
+    }
+
+    "pass if validation is not set" in {
+      Backend.validateDatalist("", defaultValidations, datalist).isRight shouldBe true
+      Backend.validateDatalist("value", defaultValidations, datalist).isRight shouldBe true
+      Backend.validateDatalist("1234567890", defaultValidations, datalist).isRight shouldBe true
+    }
+  }
+
+  "ValidatedInputField.Backend.validateUUID" should {
+    val uuid = InputFieldValidations(uuid = true)
+
+    "fail if input is not a uuid" in {
+      Backend.validateUUID("not-uuid", uuid).isLeft shouldBe true
+    }
+
+    "pass if input is a uuid" in {
+      Backend.validateUUID(testUUID, uuid).isRight shouldBe true
+    }
+
+    "pass if validation is not set" in {
+      Backend.validateUUID("", defaultValidations).isRight shouldBe true
+      Backend.validateUUID("value", defaultValidations).isRight shouldBe true
+      Backend.validateUUID("1234567890", defaultValidations).isRight shouldBe true
     }
   }
 }

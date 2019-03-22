@@ -42,6 +42,8 @@ trait SharedTestData {
   val dummyUser: User =
     User("dummyUser", "dummyId", Some("dummy"), Some("user"), Some("dummyuser@email.com"))
 
+  val testUUID = "99701afe-9794-431c-9986-41ce074c9387"
+
   def generateGroups(
       numGroups: Int,
       members: List[User] = List(testUser),

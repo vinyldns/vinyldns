@@ -32,7 +32,8 @@ case class InputFieldValidations(
     maxSize: Option[Int] = None,
     noSpaces: Boolean = false,
     required: Boolean = false,
-    matchDatalist: Boolean = false)
+    matchDatalist: Boolean = false,
+    uuid: Boolean = false)
 
 object InputType extends Enumeration {
   type InputFieldType = Value
@@ -181,6 +182,7 @@ object ValidatedInputField {
             _ <- validateMaxSize(value, checks)
             _ <- validateNoSpaces(value, checks)
             _ <- validateDatalist(value, checks, datalist)
+            _ <- validateUUID(value, checks)
           } yield ()
         case None => ().asRight
       }
@@ -223,6 +225,16 @@ object ValidatedInputField {
           datalist.contains(value),
           (),
           "Must choose an option in list"
+        )
+      else ().asRight
+
+    def validateUUID(value: String, checks: InputFieldValidations): Either[String, Unit] =
+      if (checks.uuid)
+        Either.cond(
+          value.matches(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
+          (),
+          "Must be a valid Group ID (not name)"
         )
       else ().asRight
   }

@@ -18,7 +18,6 @@ package vinyldns.client.models
 
 case class Pagination[KeyType](
     startFroms: List[Option[KeyType]] = List(),
-    previousPageStartFrom: Option[KeyType] = None,
     pageNumber: Int = 1,
     popped: Option[KeyType] = None) {
 
@@ -29,8 +28,18 @@ case class Pagination[KeyType](
   }
 
   def previous(): Pagination[KeyType] = {
-    val popped :: rest = this.startFroms
-    val newPageNumber = this.pageNumber - 1
-    this.copy(startFroms = rest, pageNumber = newPageNumber, popped = popped)
+    val newPageNumber = math.max(1, this.pageNumber - 1)
+
+    this.startFroms match {
+      case atLeastTwo if atLeastTwo.length >= 2 =>
+        val popped :: rest = this.startFroms
+        this.copy(startFroms = rest, pageNumber = newPageNumber, popped = popped)
+      case one if one.length == 1 =>
+        val popped = one.head
+        val rest = List()
+        this.copy(startFroms = rest, pageNumber = newPageNumber, popped = popped)
+      case _ =>
+        this.copy(startFroms = List(), pageNumber = newPageNumber, popped = None)
+    }
   }
 }
