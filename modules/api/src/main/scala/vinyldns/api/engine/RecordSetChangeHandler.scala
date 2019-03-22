@@ -171,33 +171,24 @@ object RecordSetChangeHandler {
 
     state match {
       case Pending(change) =>
-        logger.info(
-          s"PENDING for change ${change.id}:${change.recordSet.name} change type ${change.changeType}")
-
+        logger.info(s"CHANGE PENDING; ${getChangeLog(change)}")
         bypassValidation(Validated(change))(orElse = validate(change, conn))
 
       case Validated(change) =>
-        logger.info(
-          s"VALIDATED for change ${change.id}:${change.recordSet.name} change type ${change.changeType}")
+        logger.info(s"CHANGE VALIDATED; ${getChangeLog(change)}")
         apply(change, conn).flatMap(fsm(_, conn, wildcardExists))
 
       case Applied(change) =>
-        logger.info(
-          s"APPLIED for change ${change.id}:${change.recordSet.name} change type ${change.changeType}")
-
+        logger.info(s"CHANGE APPLIED; ${getChangeLog(change)}")
         bypassValidation(Verified(change.successful))(orElse = verify(change, conn))
 
       case Verified(change) =>
-        logger.info(
-          s"VERIFIED for change ${change.id}:${change.recordSet.name} change type ${change.changeType}")
+        logger.info(s"CHANGE VERIFIED; ${getChangeLog(change)}")
         // if we got here, we are good.  Note: Complete could still mean that the change failed
         IO.pure(Completed(change))
 
       case done: Completed =>
-        logger.info(
-          s"COMPLETED for change [${done.change.id}:${done.change.recordSet.name}], " +
-            s"zone name = [${done.change.zone.name}], isTestZone = [${done.change.zone.isTest}]," +
-            s"change type = [${done.change.changeType}], result [${done.change.status}]")
+        logger.info(s"CHANGE COMPLETED; ${getChangeLog(done.change)}")
         IO.pure(done)
     }
   }
@@ -238,6 +229,18 @@ object RecordSetChangeHandler {
       }
 
     loop()
+  }
+
+  private def getChangeLog(change: RecordSetChange): String = {
+    val sb = new StringBuilder
+    sb.append("changeId='").append(change.id).append("'")
+    sb.append(" changeType='").append(change.changeType).append("'")
+    sb.append(" recordSetName='").append(change.recordSet.name).append("'")
+    sb.append(" recordSetId='").append(change.recordSet.id).append("'")
+    sb.append(" zoneName='").append(change.zone.name).append("'")
+    sb.append(" zoneId='").append(change.zone.id).append("'")
+    sb.append(" isTestZone='").append(change.zone.isTest).append("'")
+    sb.toString
   }
 
   private def wildCardExistsForRecord(
