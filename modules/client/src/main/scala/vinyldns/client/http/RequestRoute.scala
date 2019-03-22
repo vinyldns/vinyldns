@@ -50,7 +50,7 @@ final case class ListGroupsRoute(
   val queryStrings =
     Map.empty[String, String] ++
       Map("maxItems" -> maxItems.toString) ++
-      nameFilter.map(f => "nameFilter" -> f) ++
+      nameFilter.map(f => "groupNameFilter" -> f) ++
       startFrom.map(s => "startFrom" -> s)
 
   def path: String = s"/api/groups${toQueryString(queryStrings)}"

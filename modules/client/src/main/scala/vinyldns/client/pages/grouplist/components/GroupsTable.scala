@@ -16,6 +16,7 @@
 
 package vinyldns.client.pages.grouplist.components
 
+import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
@@ -25,7 +26,10 @@ import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRou
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 import vinyldns.client.components.JsNative._
+import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.Pagination
+
+import scala.util.Try
 
 object GroupsTable {
   case class Props(http: Http, router: RouterCtl[Page])
@@ -35,7 +39,8 @@ object GroupsTable {
       groupNameFilter: Option[String] = None,
       showUpdateGroup: Boolean = false,
       toBeUpdated: Option[Group] = None,
-      pagination: Pagination[String] = Pagination())
+      pagination: Pagination[String] = Pagination(),
+      maxItems: Int = 100)
 
   val component = ScalaComponent
     .builder[Props]("ListGroupsTable")
@@ -55,8 +60,29 @@ object GroupsTable {
             <.div(
               <.div(
                 ^.className := "panel-heading",
-                // paginate
+                // items per page
                 <.span(
+                  <.label(
+                    GlobalStyle.styleSheet.keepWhitespace,
+                    ^.className := "control-label",
+                    "Items per page:  "),
+                  <.select(
+                    ^.onChange ==> { e: ReactEventFromInput =>
+                      val maxItems = Try(e.target.value.toInt).getOrElse(100)
+                      bs.modState(
+                        _.copy(maxItems = maxItems),
+                        resetPageInfo >>
+                          bs.state >>= { s =>
+                          listGroups(P, s)
+                        })
+                    },
+                    List(100, 50, 25, 5, 1).map { o =>
+                      <.option(^.key := o, ^.selected := S.maxItems == o, o)
+                    }.toTagMod,
+                  )
+                ),
+                <.span(
+                  // paginate
                   ^.className := "btn-group pull-right",
                   <.button(
                     ^.className := "btn btn-round btn-default test-previous-page",
@@ -130,10 +156,7 @@ object GroupsTable {
       val onFailure = { httpResponse: HttpResponse =>
         addNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
       }
-      P.http.get(
-        ListGroupsRoute(nameFilter = S.groupNameFilter, startFrom = startFrom),
-        onSuccess,
-        onFailure)
+      P.http.get(ListGroupsRoute(S.maxItems, S.groupNameFilter, startFrom), onSuccess, onFailure)
     }
 
     def toTableRow(P: Props, S: State, group: Group): TagMod =

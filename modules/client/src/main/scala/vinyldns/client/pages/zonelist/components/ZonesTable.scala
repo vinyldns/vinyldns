@@ -29,12 +29,15 @@ import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage, ToZoneViewPage}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.models.Pagination
 
+import scala.util.Try
+
 object ZonesTable {
   case class Props(http: Http, router: RouterCtl[Page])
   case class State(
       zonesList: Option[ZoneList] = None,
       nameFilter: Option[String] = None,
-      pagination: Pagination[Int] = Pagination())
+      pagination: Pagination[Int] = Pagination(),
+      maxItems: Int = 100)
 
   val component = ScalaComponent
     .builder[Props]("ListZonesTable")
@@ -54,28 +57,51 @@ object ZonesTable {
             <.div(
               <.div(
                 ^.className := "panel-heading",
-                // paginate
                 <.span(
-                  ^.className := "btn-group pull-right",
-                  <.button(
-                    ^.className := "btn btn-round btn-default",
-                    ^.onClick --> previousPage(P),
-                    ^.`type` := "button",
-                    ^.disabled := S.pagination.pageNumber <= 1,
-                    <.span(
-                      ^.className := "fa fa-arrow-left"
-                    ),
-                    if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
-                    else TagMod.empty
+                  // items per page
+                  <.span(
+                    <.label(
+                      GlobalStyle.styleSheet.keepWhitespace,
+                      ^.className := "control-label",
+                      "Items per page:  "),
+                    <.select(
+                      ^.onChange ==> { e: ReactEventFromInput =>
+                        val maxItems = Try(e.target.value.toInt).getOrElse(100)
+                        bs.modState(
+                          _.copy(maxItems = maxItems),
+                          resetPageInfo >>
+                            bs.state >>= { s =>
+                            listZones(P, s)
+                          })
+                      },
+                      List(100, 50, 25, 5, 1).map { o =>
+                        <.option(^.key := o, ^.selected := S.maxItems == o, o)
+                      }.toTagMod,
+                    )
                   ),
-                  <.button(
-                    ^.className := "btn btn-round btn-default",
-                    ^.onClick --> nextPage(P, S),
-                    ^.`type` := "button",
-                    ^.disabled := zl.nextId.isEmpty,
-                    s"Page ${S.pagination.pageNumber + 1}  ",
-                    <.span(
-                      ^.className := "fa fa-arrow-right"
+                  <.span(
+                    ^.className := "btn-group pull-right",
+                    // paginate
+                    <.button(
+                      ^.className := "btn btn-round btn-default",
+                      ^.onClick --> previousPage(P),
+                      ^.`type` := "button",
+                      ^.disabled := S.pagination.pageNumber <= 1,
+                      <.span(
+                        ^.className := "fa fa-arrow-left"
+                      ),
+                      if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
+                      else TagMod.empty
+                    ),
+                    <.button(
+                      ^.className := "btn btn-round btn-default",
+                      ^.onClick --> nextPage(P, S),
+                      ^.`type` := "button",
+                      ^.disabled := zl.nextId.isEmpty,
+                      s"Page ${S.pagination.pageNumber + 1}  ",
+                      <.span(
+                        ^.className := "fa fa-arrow-right"
+                      )
                     )
                   )
                 )
@@ -133,10 +159,7 @@ object ZonesTable {
       val onFailure = { httpResponse: HttpResponse =>
         addNotification(P.http.toNotification("list zones", httpResponse, onlyOnError = true))
       }
-      P.http.get(
-        ListZonesRoute(nameFilter = S.nameFilter, startFrom = startFrom),
-        onSuccess,
-        onFailure)
+      P.http.get(ListZonesRoute(S.maxItems, S.nameFilter, startFrom), onSuccess, onFailure)
     }
 
     def toTableRow(P: Props, S: State, zone: Zone): TagMod =

@@ -47,6 +47,8 @@ object GlobalStyle {
 
     val overflow = style(overflowY.scroll)
 
+    val keepWhitespace = style(whiteSpace.pre)
+
     val noop = style()
   }
 }
