@@ -43,7 +43,7 @@ object GroupListPage extends PropsFromAppRouter {
 
     def render(P: Props, S: State): VdomElement =
       <.div(
-        GlobalStyle.styleSheet.height100,
+        GlobalStyle.Styles.height100,
         ^.className := "right_col",
         ^.role := "main",
         <.div(

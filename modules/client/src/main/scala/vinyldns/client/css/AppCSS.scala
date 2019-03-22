@@ -24,7 +24,7 @@ object AppCSS {
   import CssSettings._
 
   def load: Any = {
-    GlobalRegistry.register(GlobalStyle.styleSheet)
+    GlobalRegistry.register(GlobalStyle.Styles)
     GlobalRegistry.onRegistration(_.addToDocument())
   }
 }

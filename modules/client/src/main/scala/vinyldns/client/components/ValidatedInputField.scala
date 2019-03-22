@@ -101,8 +101,8 @@ object ValidatedInputField {
             ^.required := Try(P.validations.get.required).getOrElse(false),
             ^.list := datalistBinding,
             ^.disabled := P.disabled,
-            if (P.datalist.nonEmpty) GlobalStyle.styleSheet.cursorPointer
-            else GlobalStyle.styleSheet.noop
+            if (P.datalist.nonEmpty) GlobalStyle.Styles.cursorPointer
+            else GlobalStyle.Styles.noop
           ),
           toDatalist(P, datalistBinding),
           helpText(P.helpText),
@@ -111,9 +111,7 @@ object ValidatedInputField {
       )
     }
 
-    // see html5 datalist, basically a combo of <select> and <input> fields
-    // this is supported in all major browsers at the time of writing this, but considering
-    // adding a polyfill for cases such someone not updating Mac OS and is on an old Safari
+    // most browser support the HTML5 datalist, we also load a pollyfill in the play view file
     def toDatalist(P: Props, datalistBinding: String): TagMod =
       if (P.datalist.isEmpty) TagMod.empty
       else

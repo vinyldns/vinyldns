@@ -21,7 +21,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.css.GlobalStyle.styleSheet.cursorPointer
+import vinyldns.client.css.GlobalStyle.Styles.cursorPointer
 import vinyldns.client.routes.AppRouter._
 
 object Breadcrumb {

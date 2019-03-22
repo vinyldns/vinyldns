@@ -60,7 +60,7 @@ object MembersTable {
                 <.th(
                   "Group Manager  ",
                   <.span(
-                    GlobalStyle.styleSheet.cursorPointer,
+                    GlobalStyle.Styles.cursorPointer,
                     ^.className := "fa fa-info-circle",
                     VdomAttr("data-toggle") := "tooltip",
                     ^.title := "Managers can add new members, and edit or delete the Group"
@@ -115,7 +115,7 @@ object MembersTable {
         else addGroupAdmin(P, user)
 
       <.input(
-        GlobalStyle.styleSheet.cursorPointer,
+        GlobalStyle.Styles.cursorPointer,
         ^.className := s"test-manager-widget-${user.userName}",
         ^.`type` := "checkbox",
         ^.checked := isManagerAlready,

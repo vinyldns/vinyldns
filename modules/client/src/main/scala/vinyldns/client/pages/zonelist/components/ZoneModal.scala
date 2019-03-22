@@ -75,7 +75,7 @@ object ZoneModal {
                   ^.className := "check col-md-3 col-sm-3 col-xs-12 control-label",
                   "Custom DNS Server  ",
                   <.input(
-                    GlobalStyle.styleSheet.cursorPointer,
+                    GlobalStyle.Styles.cursorPointer,
                     ^.className := "test-custom-server",
                     ^.`type` := "checkbox",
                     ^.checked := S.customServer,
@@ -94,7 +94,7 @@ object ZoneModal {
                   ^.className := "check col-md-3 col-sm-3 col-xs-12 control-label",
                   "Custom DNS Transfer Server  ",
                   <.input(
-                    GlobalStyle.styleSheet.cursorPointer,
+                    GlobalStyle.Styles.cursorPointer,
                     ^.className := "test-custom-transfer",
                     ^.`type` := "checkbox",
                     ^.checked := S.customTransfer,

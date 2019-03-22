@@ -43,7 +43,7 @@ object ZoneViewPage extends PropsFromAppRouter {
   class Backend(bs: BackendScope[Props, State]) {
     def render(S: State): VdomNode =
       <.div(
-        GlobalStyle.styleSheet.height100,
+        GlobalStyle.Styles.height100,
         ^.className := "right_col",
         ^.role := "main",
         S.zone match {

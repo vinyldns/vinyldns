@@ -29,7 +29,7 @@ object NotFoundPage {
       .builder[Unit]("NotFound")
       .render { _ =>
         <.div(
-          GlobalStyle.styleSheet.height100,
+          GlobalStyle.Styles.height100,
           ^.className := "right_col",
           ^.role := "main",
           <.div(^.className := "clearfix"),

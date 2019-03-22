@@ -50,7 +50,7 @@ object TopNav {
                 ^.onMouseEnter ==> mouseEnter,
                 ^.onMouseLeave ==> mouseExit,
                 <.a(
-                  GlobalStyle.styleSheet.cursorPointer,
+                  GlobalStyle.Styles.cursorPointer,
                   ^.className := "user-profile dropdown-toggle",
                   ^.onClick --> bs.modState(_.copy(dropdownOpen = !S.dropdownOpen)),
                   <.span(^.className := "fa fa-user"),
@@ -67,7 +67,7 @@ object TopNav {
     def dropdown(state: State): VdomNode =
       if (state.dropdownOpen)
         <.ul(
-          GlobalStyle.styleSheet.displayBlock,
+          GlobalStyle.Styles.displayBlock,
           ^.className := "dropdown-menu dropdown-usermenu pull-right",
           <.li(
             <.a(

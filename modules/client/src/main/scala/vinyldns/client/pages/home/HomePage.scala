@@ -31,7 +31,7 @@ object HomePage extends PropsFromAppRouter {
       .builder[Props]("HomePage")
       .render_P { _ =>
         <.div(
-          GlobalStyle.styleSheet.height100,
+          GlobalStyle.Styles.height100,
           ^.className := "right_col",
           ^.role := "main",
           <.div(

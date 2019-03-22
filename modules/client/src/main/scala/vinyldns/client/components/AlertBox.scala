@@ -44,19 +44,19 @@ object AlertBox {
   class Backend(bs: BackendScope[Unit, State]) {
     def render(S: State): VdomElement =
       <.div(
-        GlobalStyle.styleSheet.alertBox,
+        GlobalStyle.Styles.alertBox,
         S.notifications.map {
           case (key, n) =>
             <.div(
               ^.className := "ui-pnotify ui-pnotify-fade-normal ui-pnotify-in ui-pnotify-fade-in ui-pnotify-move",
-              GlobalStyle.styleSheet.notifyOuter,
+              GlobalStyle.Styles.notifyOuter,
               <.div(
                 ^.className := notificationClass(n.isError),
                 ^.role := "alert",
-                GlobalStyle.styleSheet.notifyInner,
+                GlobalStyle.Styles.notifyInner,
                 <.div(
                   ^.className := "ui-pnotify-closer pull-right",
-                  GlobalStyle.styleSheet.cursorPointer,
+                  GlobalStyle.Styles.cursorPointer,
                   ^.onClick --> bs.modState { s =>
                     s.copy(notifications = s.notifications - key)
                   },

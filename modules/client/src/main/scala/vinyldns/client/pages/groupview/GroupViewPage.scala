@@ -44,7 +44,7 @@ object GroupViewPage extends PropsFromAppRouter {
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomNode =
       <.div(
-        GlobalStyle.styleSheet.height100,
+        GlobalStyle.Styles.height100,
         ^.className := "right_col",
         ^.role := "main",
         S.group match {

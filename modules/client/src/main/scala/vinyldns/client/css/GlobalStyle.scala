@@ -21,8 +21,10 @@ object GlobalStyle {
   val CssSettings = scalacss.devOrProdDefaults
   import CssSettings._
 
-  object styleSheet extends StyleSheet.Inline {
+  object Styles extends StyleSheet.Inline {
     import dsl._
+    // These are additive, and you can plop them in any html tag to inherit the class,
+    // as long as the file has "import scalacss.ScalaCssReact._"
 
     val height100 = style(height :=! "100%")
     val width100 = style(width :=! "100%")

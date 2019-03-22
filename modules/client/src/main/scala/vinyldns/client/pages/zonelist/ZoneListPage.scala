@@ -48,7 +48,7 @@ object ZoneListPage extends PropsFromAppRouter {
       S.groupList match {
         case Some(groupList) =>
           <.div(
-            GlobalStyle.styleSheet.height100,
+            GlobalStyle.Styles.height100,
             ^.className := "right_col",
             ^.role := "main",
             <.div(
@@ -123,7 +123,7 @@ object ZoneListPage extends PropsFromAppRouter {
         case None =>
           // show loading message
           <.div(
-            GlobalStyle.styleSheet.height100,
+            GlobalStyle.Styles.height100,
             ^.className := "right_col",
             ^.role := "main",
             <.div(

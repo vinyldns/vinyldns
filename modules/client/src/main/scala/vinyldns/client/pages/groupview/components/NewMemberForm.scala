@@ -59,7 +59,7 @@ object NewMemberForm {
             <.label(
               ^.className := "check",
               <.input(
-                GlobalStyle.styleSheet.cursorPointer,
+                GlobalStyle.Styles.cursorPointer,
                 ^.className := "test-new-member-manager",
                 ^.`type` := "checkbox",
                 ^.checked := S.isManager,
@@ -67,7 +67,7 @@ object NewMemberForm {
               ),
               " Group Manager ",
               <.span(
-                GlobalStyle.styleSheet.cursorPointer,
+                GlobalStyle.Styles.cursorPointer,
                 ^.className := "fa fa-info-circle",
                 VdomAttr("data-toggle") := "tooltip",
                 ^.title := "Managers can add new members, and edit or delete the Group"

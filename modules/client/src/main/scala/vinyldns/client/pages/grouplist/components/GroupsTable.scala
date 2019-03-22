@@ -63,7 +63,7 @@ object GroupsTable {
                 // items per page
                 <.span(
                   <.label(
-                    GlobalStyle.styleSheet.keepWhitespace,
+                    GlobalStyle.Styles.keepWhitespace,
                     ^.className := "control-label",
                     "Items per page:  "),
                   <.select(

@@ -61,7 +61,7 @@ object ZonesTable {
                   // items per page
                   <.span(
                     <.label(
-                      GlobalStyle.styleSheet.keepWhitespace,
+                      GlobalStyle.Styles.keepWhitespace,
                       ^.className := "control-label",
                       "Items per page:  "),
                     <.select(
@@ -118,7 +118,7 @@ object ZonesTable {
                       <.th(
                         "Admin Group  ",
                         <.span(
-                          GlobalStyle.styleSheet.cursorPointer,
+                          GlobalStyle.Styles.cursorPointer,
                           ^.className := "fa fa-info-circle",
                           VdomAttr("data-toggle") := "tooltip",
                           ^.title := "All members of the group have full admin access of the Zone and its DNS records"
@@ -127,7 +127,7 @@ object ZonesTable {
                       <.th(
                         "Type  ",
                         <.span(
-                          GlobalStyle.styleSheet.cursorPointer,
+                          GlobalStyle.Styles.cursorPointer,
                           ^.className := "fa fa-info-circle",
                           VdomAttr("data-toggle") := "tooltip",
                           ^.title :=
@@ -168,7 +168,7 @@ object ZonesTable {
         <.td(zone.email),
         <.td(
           <.a(
-            GlobalStyle.styleSheet.cursorPointer,
+            GlobalStyle.Styles.cursorPointer,
             zone.adminGroupName,
             P.router.setOnClick(ToGroupViewPage(zone.adminGroupId))
           )

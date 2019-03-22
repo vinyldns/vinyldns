@@ -37,7 +37,7 @@ object LeftNav {
         ^.className := "col-md-3 col-sm-3 col-xs-3 left_col",
         <.div(
           ^.className := "left_col scroll-view",
-          GlobalStyle.styleSheet.width100,
+          GlobalStyle.Styles.width100,
           <.div(
             ^.className := "navbar nav_title vinyldns-nav-title",
             <.a(
@@ -98,7 +98,7 @@ object LeftNav {
   def toSubMenu(P: Props, parent: Page): TagMod = {
     def fromSubTitle(title: String): TagMod =
       <.ul(
-        GlobalStyle.styleSheet.displayBlock,
+        GlobalStyle.Styles.displayBlock,
         ^.className := "nav child_menu",
         <.li(
           ^.className := "active",

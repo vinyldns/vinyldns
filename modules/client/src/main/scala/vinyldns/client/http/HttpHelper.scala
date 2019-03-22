@@ -23,7 +23,6 @@ import org.scalajs.dom
 import vinyldns.client.components.AlertBox.Notification
 import vinyldns.client.models.membership.User
 
-// we do this so tests can use a mocked version of Request
 object HttpHelper extends Http {
   val csrf: String = ReactApp.csrf.getOrElse("")
   val loggedInUser: User = ReactApp.loggedInUser
