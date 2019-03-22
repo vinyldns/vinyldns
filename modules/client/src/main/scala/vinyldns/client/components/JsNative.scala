@@ -21,7 +21,9 @@ import scala.scalajs.js.timers.setTimeout
 
 object JsNative {
   final val ONE_SECOND_IN_MILLIS = 1000.0
-  final val FIVE_SECONDS_IN_MILLIS = 5 * ONE_SECOND_IN_MILLIS
+
+  final val HALF_SECOND_IN_MILLIS = ONE_SECOND_IN_MILLIS / 2
+  final val FIVE_SECONDS_IN_MILLIS = ONE_SECOND_IN_MILLIS * 5
 
   // hook to javascript timeout function
   def withDelay(millis: Double, cb: Callback): Callback =

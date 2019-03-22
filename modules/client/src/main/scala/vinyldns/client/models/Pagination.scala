@@ -16,8 +16,21 @@
 
 package vinyldns.client.models
 
-case class Notification(
-    customMessage: Option[String] = None,
-    ajaxResponseMessage: Option[String] = None,
-    isError: Boolean = false
-)
+case class Pagination[KeyType](
+    startFroms: List[Option[KeyType]] = List(),
+    previousPageStartFrom: Option[KeyType] = None,
+    pageNumber: Int = 1,
+    popped: Option[KeyType] = None) {
+
+  def next(currentStartFrom: Option[KeyType]): Pagination[KeyType] = {
+    val newStartFroms = currentStartFrom :: this.startFroms
+    val newPageNumber = this.pageNumber + 1
+    this.copy(startFroms = newStartFroms, pageNumber = newPageNumber)
+  }
+
+  def previous(): Pagination[KeyType] = {
+    val popped :: rest = this.startFroms
+    val newPageNumber = this.pageNumber - 1
+    this.copy(startFroms = rest, pageNumber = newPageNumber, popped = popped)
+  }
+}

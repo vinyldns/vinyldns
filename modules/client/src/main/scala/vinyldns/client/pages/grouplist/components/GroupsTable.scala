@@ -25,6 +25,7 @@ import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRou
 import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 import vinyldns.client.components.JsNative._
+import vinyldns.client.models.Pagination
 
 object GroupsTable {
   case class Props(http: Http, router: RouterCtl[Page])
@@ -33,7 +34,8 @@ object GroupsTable {
       groupsList: Option[GroupList] = None,
       groupNameFilter: Option[String] = None,
       showUpdateGroup: Boolean = false,
-      toBeUpdated: Option[Group] = None)
+      toBeUpdated: Option[Group] = None,
+      pagination: Pagination[String] = Pagination())
 
   val component = ScalaComponent
     .builder[Props]("ListGroupsTable")
@@ -48,34 +50,33 @@ object GroupsTable {
     def render(P: Props, S: State): VdomElement =
       <.div(
         S.groupsList match {
-          case Some(gl) if gl.groups.nonEmpty || gl.groupNameFilter.isDefined =>
+          case Some(gl)
+              if gl.groups.nonEmpty || gl.groupNameFilter.isDefined || S.pagination.pageNumber != 1 =>
             <.div(
               <.div(
                 ^.className := "panel-heading",
-                // search bar
-                <.form(
-                  ^.className := "pull-right input-group test-search-form",
-                  ^.onSubmit ==> { e: ReactEventFromInput =>
-                    e.preventDefaultCB >> listGroups(P, S)
-                  },
-                  <.div(
-                    ^.className := "input-group",
+                // paginate
+                <.span(
+                  ^.className := "btn-group pull-right",
+                  <.button(
+                    ^.className := "btn btn-round btn-default test-previous-page",
+                    ^.onClick --> previousPage(P),
+                    ^.`type` := "button",
+                    ^.disabled := S.pagination.pageNumber <= 1,
                     <.span(
-                      ^.className := "input-group-btn",
-                      <.button(
-                        ^.className := "btn btn-primary btn-left-round",
-                        ^.`type` := "submit",
-                        <.span(
-                          ^.className := "fa fa-search"
-                        )
-                      )
+                      ^.className := "fa fa-arrow-left"
                     ),
-                    <.input(
-                      ^.className := "form-control test-groupNameFilter",
-                      ^.placeholder := "Group Name",
-                      ^.onChange ==> { e: ReactEventFromInput =>
-                        updateGroupNameFilter(e.target.value)
-                      }
+                    if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
+                    else TagMod.empty
+                  ),
+                  <.button(
+                    ^.className := "btn btn-round btn-default test-next-page",
+                    ^.onClick --> nextPage(P, S),
+                    ^.`type` := "button",
+                    ^.disabled := gl.nextId.isEmpty,
+                    s"Page ${S.pagination.pageNumber + 1}  ",
+                    <.span(
+                      ^.className := "fa fa-arrow-right"
                     )
                   )
                 )
@@ -122,14 +123,17 @@ object GroupsTable {
     def makeUpdateFormInvisible: Callback =
       bs.modState(_.copy(showUpdateGroup = false))
 
-    def listGroups(P: Props, S: State): Callback = {
+    def listGroups(P: Props, S: State, startFrom: Option[String] = None): Callback = {
       val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
         bs.modState(_.copy(groupsList = parsed))
       }
       val onFailure = { httpResponse: HttpResponse =>
         setNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
       }
-      P.http.get(ListGroupsRoute(S.groupNameFilter), onSuccess, onFailure)
+      P.http.get(
+        ListGroupsRoute(nameFilter = S.groupNameFilter, startFrom = startFrom),
+        onSuccess,
+        onFailure)
     }
 
     def toTableRow(P: Props, S: State, group: Group): TagMod =
@@ -178,7 +182,7 @@ object GroupsTable {
           .lazily {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
               setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse)) >>
-                withDelay(ONE_SECOND_IN_MILLIS, listGroups(P, S))
+                withDelay(HALF_SECOND_IN_MILLIS, listGroups(P, S))
             }
             val onFailure = { httpResponse: HttpResponse =>
               setNotification(P.http.toNotification(s"deleting group ${group.name}", httpResponse))
@@ -190,5 +194,29 @@ object GroupsTable {
     def updateGroupNameFilter(value: String): Callback =
       if (value.isEmpty) bs.modState(_.copy(groupNameFilter = None))
       else bs.modState(_.copy(groupNameFilter = Some(value)))
+
+    def resetPageInfo: Callback =
+      bs.modState(s => s.copy(pagination = Pagination()))
+
+    def nextPage(P: Props, S: State): Callback =
+      S.groupsList
+        .map { gl =>
+          bs.modState({ s =>
+            s.copy(pagination = s.pagination.next(gl.startFrom))
+          }, bs.state >>= { s =>
+            listGroups(P, s, gl.nextId)
+          })
+        }
+        .getOrElse(Callback.empty)
+
+    def previousPage(P: Props): Callback =
+      bs.modState(
+        { s =>
+          s.copy(pagination = s.pagination.previous())
+        },
+        bs.state >>= { s =>
+          listGroups(P, s, s.pagination.popped)
+        }
+      )
   }
 }

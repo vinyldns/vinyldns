@@ -27,10 +27,14 @@ import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute
 import vinyldns.client.models.zone.{Zone, ZoneList}
 import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 import vinyldns.client.components.JsNative._
+import vinyldns.client.models.Pagination
 
 object ZonesTable {
   case class Props(http: Http, router: RouterCtl[Page])
-  case class State(zonesList: Option[ZoneList] = None, nameFilter: Option[String] = None)
+  case class State(
+      zonesList: Option[ZoneList] = None,
+      nameFilter: Option[String] = None,
+      pagination: Pagination[Int] = Pagination())
 
   val component = ScalaComponent
     .builder[Props]("ListZonesTable")
@@ -45,32 +49,33 @@ object ZonesTable {
     def render(P: Props, S: State): VdomElement =
       <.div(
         S.zonesList match {
-          case Some(zl) if zl.zones.nonEmpty || zl.nameFilter.isDefined =>
+          case Some(zl)
+              if zl.zones.nonEmpty || zl.nameFilter.isDefined || S.pagination.pageNumber != 1 =>
             <.div(
               <.div(
                 ^.className := "panel-heading",
-                // search bar
-                <.form(
-                  ^.className := "pull-right input-group test-search-form",
-                  ^.onSubmit ==> { e: ReactEventFromInput =>
-                    e.preventDefaultCB >> listZones(P, S)
-                  },
-                  <.div(
-                    ^.className := "input-group",
+                // paginate
+                <.span(
+                  ^.className := "btn-group pull-right",
+                  <.button(
+                    ^.className := "btn btn-round btn-default",
+                    ^.onClick --> previousPage(P),
+                    ^.`type` := "button",
+                    ^.disabled := S.pagination.pageNumber <= 1,
                     <.span(
-                      ^.className := "input-group-btn",
-                      <.button(
-                        ^.className := "btn btn-primary btn-left-round",
-                        ^.`type` := "submit",
-                        <.span(^.className := "fa fa-search")
-                      )
+                      ^.className := "fa fa-arrow-left"
                     ),
-                    <.input(
-                      ^.className := "form-control test-nameFilter",
-                      ^.placeholder := "Zone Name",
-                      ^.onChange ==> { e: ReactEventFromInput =>
-                        updateNameFilter(e.target.value)
-                      }
+                    if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
+                    else TagMod.empty
+                  ),
+                  <.button(
+                    ^.className := "btn btn-round btn-default",
+                    ^.onClick --> nextPage(P, S),
+                    ^.`type` := "button",
+                    ^.disabled := zl.nextId.isEmpty,
+                    s"Page ${S.pagination.pageNumber + 1}  ",
+                    <.span(
+                      ^.className := "fa fa-arrow-right"
                     )
                   )
                 )
@@ -121,14 +126,17 @@ object ZonesTable {
         }
       )
 
-    def listZones(P: Props, S: State): Callback = {
+    def listZones(P: Props, S: State, startFrom: Option[Int] = None): Callback = {
       val onSuccess = { (_: HttpResponse, parsed: Option[ZoneList]) =>
         bs.modState(_.copy(zonesList = parsed))
       }
       val onFailure = { httpResponse: HttpResponse =>
         setNotification(P.http.toNotification("list zones", httpResponse, onlyOnError = true))
       }
-      P.http.get(ListZonesRoute(S.nameFilter), onSuccess, onFailure)
+      P.http.get(
+        ListZonesRoute(nameFilter = S.nameFilter, startFrom = startFrom),
+        onSuccess,
+        onFailure)
     }
 
     def toTableRow(P: Props, S: State, zone: Zone): TagMod =
@@ -174,7 +182,7 @@ object ZonesTable {
           .lazily {
             val onSuccess = { (httpResponse: HttpResponse, _: Option[Zone]) =>
               setNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse)) >>
-                withDelay(ONE_SECOND_IN_MILLIS, listZones(P, S))
+                withDelay(HALF_SECOND_IN_MILLIS, listZones(P, S))
             }
             val onFailure = { httpResponse: HttpResponse =>
               setNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse))
@@ -186,5 +194,29 @@ object ZonesTable {
     def updateNameFilter(value: String): Callback =
       if (value.isEmpty) bs.modState(_.copy(nameFilter = None))
       else bs.modState(_.copy(nameFilter = Some(value)))
+
+    def resetPageInfo: Callback =
+      bs.modState(s => s.copy(pagination = Pagination()))
+
+    def nextPage(P: Props, S: State): Callback =
+      S.zonesList
+        .map { zl =>
+          bs.modState({ s =>
+            s.copy(pagination = s.pagination.next(zl.startFrom))
+          }, bs.state >>= { s =>
+            listZones(P, s, zl.nextId)
+          })
+        }
+        .getOrElse(Callback.empty)
+
+    def previousPage(P: Props): Callback =
+      bs.modState(
+        { s =>
+          s.copy(pagination = s.pagination.previous())
+        },
+        bs.state >>= { s =>
+          listZones(P, s, s.pagination.popped)
+        }
+      )
   }
 }

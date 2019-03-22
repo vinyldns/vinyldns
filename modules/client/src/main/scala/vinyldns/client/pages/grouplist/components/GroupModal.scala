@@ -131,7 +131,7 @@ object GroupModal {
           val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
             setNotification(P.http.toNotification("creating group", httpResponse)) >>
               P.close(()) >>
-              withDelay(ONE_SECOND_IN_MILLIS, P.refreshGroups(()))
+              withDelay(HALF_SECOND_IN_MILLIS, P.refreshGroups(()))
           }
           P.http.post(CreateGroupRoute, write(groupWithUserId), onSuccess, onFailure)
         }
@@ -148,7 +148,7 @@ object GroupModal {
           val onSuccess = { (httpResponse: HttpResponse, _: Option[Group]) =>
             setNotification(P.http.toNotification("updating group", httpResponse)) >>
               P.close(()) >>
-              withDelay(ONE_SECOND_IN_MILLIS, P.refreshGroups(()))
+              withDelay(HALF_SECOND_IN_MILLIS, P.refreshGroups(()))
           }
           P.http
             .put(

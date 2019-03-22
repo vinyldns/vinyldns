@@ -16,6 +16,7 @@
 
 package vinyldns.client.pages.grouplist
 
+import japgolly.scalajs.react.Callback
 import org.scalatest._
 import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
@@ -75,6 +76,119 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
 
           c.state.showCreateGroup shouldBe false
           ReactTestUtils.scryRenderedComponentsWithType(c, GroupModal.component) shouldBe empty
+      }
+    }
+
+    "call http.get with groupNameFilter when someone uses search button" in new Fixture {
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(nameFilter = Some("filter")), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
+        c =>
+          val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupNameFilter")
+          Simulate.change(input, SimEvent.Change("filter"))
+
+          val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-search-form")
+          Simulate.submit(form)
+      }
+    }
+
+    "reset page info when using search button" in {
+      val mockHttp = mock[Http]
+      val groupListWithNext = initialGroupList.copy(nextId = Some("next"))
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
+        }
+
+      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
+        c =>
+          (mockHttp.get[GroupList] _)
+            .expects(ListGroupsRoute(startFrom = Some("next")), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
+            }
+
+          val next = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-next-page")
+          next.outerHtmlScrubbed() should include("Page 2")
+          Simulate.click(next)
+
+          next.outerHtmlScrubbed() should include("Page 3")
+
+          (mockHttp.get[GroupList] _)
+            .expects(ListGroupsRoute(), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
+            }
+
+          val search = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-search-form")
+          Simulate.submit(search)
+
+          next.outerHtmlScrubbed() should include("Page 2")
+      }
+    }
+
+    "call http.get with groupNameFilter when someone uses refresh button" in new Fixture {
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(nameFilter = Some("filter")), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
+        c =>
+          val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupNameFilter")
+          Simulate.change(input, SimEvent.Change("filter"))
+
+          val refreshButton =
+            ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-groups")
+          Simulate.click(refreshButton)
+      }
+    }
+
+    "reset page info when using refresh button" in {
+      val mockHttp = mock[Http]
+      val groupListWithNext = initialGroupList.copy(nextId = Some("next"))
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
+        }
+
+      ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
+        c =>
+          (mockHttp.get[GroupList] _)
+            .expects(ListGroupsRoute(startFrom = Some("next")), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
+            }
+
+          val next = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-next-page")
+          next.outerHtmlScrubbed() should include("Page 2")
+          Simulate.click(next)
+
+          next.outerHtmlScrubbed() should include("Page 3")
+
+          (mockHttp.get[GroupList] _)
+            .expects(ListGroupsRoute(), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
+            }
+
+          val refresh = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-groups")
+          Simulate.click(refresh)
+
+          next.outerHtmlScrubbed() should include("Page 2")
       }
     }
   }

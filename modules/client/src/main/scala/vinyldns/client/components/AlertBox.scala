@@ -21,11 +21,16 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.vdom.VdomElement
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.models.Notification
 import vinyldns.client.routes.AppRouter
 import vinyldns.client.components.JsNative._
 
 object AlertBox {
+  case class Notification(
+      customMessage: Option[String] = None,
+      ajaxResponseMessage: Option[String] = None,
+      isError: Boolean = false
+  )
+
   case class State(notification: Option[Notification] = None)
 
   val component = ScalaComponent

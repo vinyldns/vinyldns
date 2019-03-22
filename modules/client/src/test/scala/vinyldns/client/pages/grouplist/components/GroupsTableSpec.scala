@@ -53,44 +53,6 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
       }
     }
 
-    "call http.get with groupNameFilter when someone uses search button" in new Fixture {
-      val props =
-        GroupsTable.Props(mockHttp, mockRouter)
-
-      (mockHttp.get[GroupList] _)
-        .expects(ListGroupsRoute(Some("filter")), *, *)
-        .once()
-        .returns(Callback.empty)
-
-      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
-        val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupNameFilter")
-        Simulate.change(input, SimEvent.Change("filter"))
-
-        c.state.groupNameFilter shouldBe Some("filter")
-
-        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-search-form")
-        Simulate.submit(form)
-      }
-    }
-
-    "call http.get with groupNameFilter when someone uses refresh button" in new Fixture {
-      val props =
-        GroupsTable.Props(mockHttp, mockRouter)
-
-      (mockHttp.get[GroupList] _)
-        .expects(ListGroupsRoute(Some("filter")), *, *)
-        .once()
-        .returns(Callback.empty)
-
-      ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
-        val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupNameFilter")
-        Simulate.change(input, SimEvent.Change("filter"))
-
-        c.state.groupNameFilter shouldBe Some("filter")
-        c.backend.listGroups(c.props, c.state)
-      }
-    }
-
     "display loading message when group list is none" in {
       val mockHttp = mock[Http]
 

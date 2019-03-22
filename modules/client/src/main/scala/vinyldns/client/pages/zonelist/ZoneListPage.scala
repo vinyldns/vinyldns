@@ -80,10 +80,35 @@ object ZoneListPage extends PropsFromAppRouter {
                         // refresh button
                         <.button(
                           ^.className := "btn btn-default test-refresh-zones",
-                          ^.onClick --> refreshZonesTable,
+                          ^.onClick --> { resetPageInfo >> refreshZonesTable },
                           ^.`type` := "button",
                           <.span(^.className := "fa fa-refresh"),
                           "  Refresh"
+                        )
+                      ),
+                      // search bar
+                      <.form(
+                        ^.className := "pull-right input-group test-search-form",
+                        ^.onSubmit ==> { e: ReactEventFromInput =>
+                          e.preventDefaultCB >> resetPageInfo >> refreshZonesTable
+                        },
+                        <.div(
+                          ^.className := "input-group",
+                          <.span(
+                            ^.className := "input-group-btn",
+                            <.button(
+                              ^.className := "btn btn-primary btn-left-round",
+                              ^.`type` := "submit",
+                              <.span(^.className := "fa fa-search")
+                            )
+                          ),
+                          <.input(
+                            ^.className := "form-control test-nameFilter",
+                            ^.placeholder := "Zone Name",
+                            ^.onChange ==> { e: ReactEventFromInput =>
+                              updateNameFilter(e.target.value)
+                            }
+                          )
                         )
                       )
                     ),
@@ -137,6 +162,22 @@ object ZoneListPage extends PropsFromAppRouter {
       refToTable.get
         .map { mounted =>
           mounted.backend.listZones(mounted.props, mounted.state)
+        }
+        .getOrElse(Callback.empty)
+        .runNow()
+
+    def resetPageInfo: Callback =
+      refToTable.get
+        .map { mounted =>
+          mounted.backend.resetPageInfo
+        }
+        .getOrElse(Callback.empty)
+        .runNow()
+
+    def updateNameFilter(value: String): Callback =
+      refToTable.get
+        .map { mounted =>
+          mounted.backend.updateNameFilter(value)
         }
         .getOrElse(Callback.empty)
         .runNow()

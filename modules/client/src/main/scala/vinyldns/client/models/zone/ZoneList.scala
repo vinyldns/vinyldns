@@ -21,7 +21,7 @@ import vinyldns.client.models.OptionRW
 
 case class ZoneList(
     zones: List[Zone],
-    maxItems: Int = 100,
+    maxItems: Int,
     nameFilter: Option[String] = None,
     startFrom: Option[Int] = None,
     nextId: Option[Int] = None)

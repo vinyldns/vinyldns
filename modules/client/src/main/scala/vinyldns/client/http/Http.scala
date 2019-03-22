@@ -17,7 +17,7 @@
 package vinyldns.client.http
 
 import japgolly.scalajs.react.Callback
-import vinyldns.client.models.Notification
+import vinyldns.client.components.AlertBox.Notification
 import vinyldns.client.models.membership.User
 
 trait Http {

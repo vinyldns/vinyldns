@@ -156,7 +156,7 @@ object ZoneModal {
                | all records in the zone, as well as change zone level information
                | and access rules. You can create a new group from the Groups page.
               """.stripMargin),
-          validations = Some(InputFieldValidations(required = true, matchDatalist = true)),
+          validations = Some(InputFieldValidations(required = true)),
           datalist = toAdminGroupDatalist(P.groupList),
           placeholder =
             if (P.groupList.groups.isEmpty)
@@ -286,7 +286,7 @@ object ZoneModal {
               setNotification(
                 P.http.toNotification(s"connecting to zone ${S.zone.name}", httpResponse)) >>
                 P.close(()) >>
-                withDelay(ONE_SECOND_IN_MILLIS, P.refreshZones(()))
+                withDelay(HALF_SECOND_IN_MILLIS, P.refreshZones(()))
             }
             P.http.post(CreateZoneRoute, write(S.zone), onSuccess, onFailure)
           }

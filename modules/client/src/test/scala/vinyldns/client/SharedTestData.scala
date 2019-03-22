@@ -34,6 +34,7 @@ package vinyldns.client
 
 import japgolly.scalajs.react.Callback
 import vinyldns.client.models.membership.{Group, Id, User}
+import vinyldns.client.models.zone.{Rules, Zone}
 
 trait SharedTestData {
   val testUser: User =
@@ -60,6 +61,24 @@ trait SharedTestData {
         None,
         Some(s"created-$i"))
   }
+
+  def generateZones(numZones: Int): Seq[Zone] =
+    for {
+      i <- 0 until numZones
+    } yield
+      Zone(
+        s"id-$i",
+        s"name-$i.",
+        s"email-$i@test.com",
+        s"adminGroupId-$i",
+        s"adminGroupName-$i",
+        s"Active",
+        s"$i",
+        "systen",
+        false,
+        Rules(List()),
+        s"latestSync-$i"
+      )
 
   // a lot of times components use anonymous functions like refreshGroups, setNotification, etc
   def generateNoOpHandler[T]: T => Callback = _ => Callback.empty

@@ -19,8 +19,8 @@ package vinyldns.client.http
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.extra.Ajax
 import vinyldns.client.ReactApp
-import vinyldns.client.models.Notification
 import org.scalajs.dom
+import vinyldns.client.components.AlertBox.Notification
 import vinyldns.client.models.membership.User
 
 // we do this so tests can use a mocked version of Request
