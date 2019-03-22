@@ -25,6 +25,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Charles Bitter
 - Annelise Box
 - Maulon Byron
+- Shirlette Chambers
 - Peter Cline
 - Kemar Cockburn
 - Luke Cori
