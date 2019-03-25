@@ -42,10 +42,14 @@ trait ZoneRepository extends Repository {
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]]
 =======
   def isAclGroupId(groupId: String): IO[Boolean]
 >>>>>>> Delete Group - Checking if id is present in Zone ACL
+=======
+  def getZoneAclGroupId(groupId: String): IO[String]
+>>>>>>> some tests
 }
 
 object ZoneRepository {

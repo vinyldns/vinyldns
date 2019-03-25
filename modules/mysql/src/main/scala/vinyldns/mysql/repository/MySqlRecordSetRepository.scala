@@ -289,8 +289,12 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     monitor("repo.RecordSet.getFirstOwnedRecordByGroup") {
 =======
   def getRecordSetOwnerGroup(ownerGroupId: String): IO[String] =
+<<<<<<< HEAD
     monitor("repo.RecordSet.isRecordOwnerGroup") {
 >>>>>>> Review
+=======
+    monitor("repo.RecordSet.getRecordSetOwnerGroup") {
+>>>>>>> some tests
       IO {
         DB.readOnly { implicit s =>
           GET_RECORDSET_BY_OWNERID
