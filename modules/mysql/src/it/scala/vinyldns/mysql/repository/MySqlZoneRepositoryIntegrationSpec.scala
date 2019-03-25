@@ -510,7 +510,7 @@ class MySqlZoneRepositoryIntegrationSpec
           zones <- repo.isAclGroupId(testZoneAdminGroupId)
         } yield zones
 
-      f.unsafeRunSync() should be true
+      f.unsafeRunSync() shouldBe true
     }
 
     "return false when group id is not in any ACL rule" in {
@@ -529,7 +529,7 @@ class MySqlZoneRepositoryIntegrationSpec
           zones <- repo.isAclGroupId(UUID.randomUUID().toString + "dummy")
         } yield zones
 
-      f.unsafeRunSync() should be false
+      f.unsafeRunSync() shouldBe false
     }
   }
 }
