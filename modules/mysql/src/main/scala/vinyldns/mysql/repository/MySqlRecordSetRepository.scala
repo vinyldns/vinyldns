@@ -293,7 +293,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .map(_.string(1))
             .single
             .apply()
-            .getOrElse("")
         }
       }
     }

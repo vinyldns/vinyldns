@@ -192,6 +192,7 @@ def test_list_batch_change_summaries_with_record_owner_group_passes(shared_zone_
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
+
 def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shared_zone_test_context):
     """
     Test that getting a batch change summary with an record owner group that was deleted passes and return None
