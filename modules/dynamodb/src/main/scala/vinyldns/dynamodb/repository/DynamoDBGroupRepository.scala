@@ -101,7 +101,9 @@ class DynamoDBGroupRepository private[repository] (
   def delete(group: Group): IO[Group] =
     monitor("repo.Group.delete") {
       log.info(s"Deleting group ${group.id} ${group.name}.")
-      val request = new DeleteItemRequest().withTableName(groupTableName)
+      val key = new HashMap[String, AttributeValue]()
+      key.put(GROUP_ID, new AttributeValue(group.id))
+      val request = new DeleteItemRequest().withTableName(groupTableName).withKey(key)
       dynamoDBHelper.deleteItem(request).map(_ => group)
     }
 

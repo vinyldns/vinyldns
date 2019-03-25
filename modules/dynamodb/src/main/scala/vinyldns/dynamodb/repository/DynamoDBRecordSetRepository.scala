@@ -244,27 +244,11 @@ class DynamoDBRecordSetRepository private[repository] (
       )
     }
 
-<<<<<<< HEAD
   def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]] =
     monitor("repo.RecordSet.getFirstOwnedRecordByGroup") {
-=======
-  def getRecordSetOwnerGroup(ownerGroupId: String): IO[String] =
-<<<<<<< HEAD
-    monitor("repo.RecordSet.isNotAOwnerGroupId") {
->>>>>>> Review
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(
-<<<<<<< HEAD
           s"getFirstOwnedRecordByGroup is not supported by VinylDNS DynamoDB RecordSetRepository id=$ownerGroupId"
-=======
-          s"isRecordOwnerGroup is not supported by VinylDNS DynamoDB RecordSetRepository"
->>>>>>> Delete Group - Checking if id is present in Zone ACL
-=======
-    monitor("repo.RecordSet.getRecordSetOwnerGroup") {
-      IO.raiseError(
-        UnsupportedDynamoDBRepoFunction(
-          s"getRecordSetOwnerGroup is not supported by VinylDNS DynamoDB RecordSetRepository"
->>>>>>> some tests
         )
       )
     }

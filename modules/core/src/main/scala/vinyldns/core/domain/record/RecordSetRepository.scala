@@ -40,9 +40,5 @@ trait RecordSetRepository extends Repository {
 
   def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]]
 
-<<<<<<< HEAD
   def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]]
-=======
-  def getRecordSetOwnerGroup(ownerGroupId: String): IO[String]
->>>>>>> Review
 }

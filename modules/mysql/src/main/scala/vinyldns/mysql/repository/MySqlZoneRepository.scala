@@ -117,21 +117,9 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
   private final val GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID =
     sql"""
-<<<<<<< HEAD
-<<<<<<< HEAD
          |SELECT DISTINCT zone_id
          |  FROM zone_access z
          | WHERE z.accessor_id = (?)
-=======
-         |SELECT DISTINCT accessor_id
-         |  FROM zone_access z
-         | WHERE z.zone_access = (?)
->>>>>>> Delete Group - Checking if id is present in Zone ACL
-=======
-         |SELECT DISTINCT zone_id
-         |  FROM zone_access z
-         | WHERE z.accessor_id = (?)
->>>>>>> some tests
          | LIMIT 1
         """.stripMargin
 
@@ -247,36 +235,15 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]] =
     monitor("repo.ZoneJDBC.getZoneAclGroupId") {
-=======
-  def isAclGroupId(groupId: String): IO[Boolean] =
-    monitor("repo.ZoneJDBC.isAclGroupId") {
->>>>>>> Delete Group - Checking if id is present in Zone ACL
-=======
-  def getZoneAclGroupId(groupId: String): IO[String] =
-    monitor("repo.ZoneJDBC.getZoneAclGroupId") {
->>>>>>> some tests
       IO {
         DB.readOnly { implicit s =>
           GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID
             .bind(groupId)
             .map(_.string(1))
             .single
-<<<<<<< HEAD
-<<<<<<< HEAD
             .apply()
-=======
-            .list()
-            .apply()
-            .nonEmpty
->>>>>>> Delete Group - Checking if id is present in Zone ACL
-=======
-            .apply()
-            .getOrElse("")
->>>>>>> some tests
         }
       }
     }

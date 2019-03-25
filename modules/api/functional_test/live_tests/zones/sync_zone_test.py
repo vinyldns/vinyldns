@@ -197,11 +197,6 @@ def test_sync_zone_success(shared_zone_test_context):
         check_rs = client.get_recordset(zone['id'], updated_rs_id)['recordSet']
         assert_that(check_rs['ownerGroupId'], is_(shared_zone_test_context.ok_group['id']))
 
-        #reset the ownerGroupId for foo record
-        check_rs['ownerGroupId'] = None
-        update_response = client.update_recordset(check_rs, status=202)
-        client.wait_until_recordset_change_status(update_response, 'Complete')
-
         for rs in recordsets:
             # confirm that we cannot update the dotted host if the name is the same
             if rs['name'] == 'dott.ed':

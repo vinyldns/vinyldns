@@ -165,5 +165,29 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
       test.unsafeRunSync().get.description shouldBe None
     }
+
+    "delete a group" in {
+      val deleted = deletedGroup.copy(
+        id = "test-deleted-group-get-groups",
+        memberIds = Set("foo"),
+        adminUserIds = Set("foo"))
+      val f =
+        for {
+          _ <- repo.save(deleted)
+          retrieved <- repo.delete(deleted)
+        } yield retrieved
+
+      f.unsafeRunSync().id shouldBe deleted.id
+
+      val getAfterDeleted =
+        for {
+          get <- repo.getGroup("test-deleted-group-get-groups")
+          getAll <- repo.getAllGroups()
+        } yield (get, getAll)
+
+      val (get, getAll) = getAfterDeleted.unsafeRunSync()
+      get shouldBe None
+      !getAll.exists(_.id == "test-deleted-group-get-groups")
+    }
   }
 }

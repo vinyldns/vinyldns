@@ -495,28 +495,12 @@ class MySqlZoneRepositoryIntegrationSpec
 
     "check if an id has an ACL rule for at least one of the zones" in {
 
-<<<<<<< HEAD
-<<<<<<< HEAD
       val zoneId = UUID.randomUUID().toString
 
       val testZones = (1 until 3).map { num =>
           okZone.copy(
             name = num.toString + ".",
             id = zoneId,
-=======
-      val testZones = (1 until 3).map { num =>
-          okZone.copy(
-            name = num.toString + ".",
-            id = UUID.randomUUID().toString,
->>>>>>> some tests
-=======
-      val zoneId = UUID.randomUUID().toString
-
-      val testZones = (1 until 3).map { num =>
-          okZone.copy(
-            name = num.toString + ".",
-            id = zoneId,
->>>>>>> some tests
             adminGroupId = testZoneAdminGroupId,
             acl = testZoneAcl
           )
@@ -525,8 +509,6 @@ class MySqlZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-<<<<<<< HEAD
-<<<<<<< HEAD
           zones <- repo.getFirstOwnedZoneAclGroupId(testZoneAdminGroupId)
         } yield zones
 
@@ -534,22 +516,6 @@ class MySqlZoneRepositoryIntegrationSpec
     }
 
     "return None when group id is not in any ACL rule" in {
-=======
-          zones <- repo.isAclGroupId(testZoneAdminGroupId)
-=======
-          zones <- repo.getZoneAclGroupId(testZoneAdminGroupId)
->>>>>>> some tests
-        } yield zones
-
-      f.unsafeRunSync() shouldNot be ("")
-    }
-
-<<<<<<< HEAD
-    "return false when group id is not in any ACL rule" in {
->>>>>>> some tests
-=======
-    "return empty string when group id is not in any ACL rule" in {
->>>>>>> some tests
       val testZones = (1 until 3).map { num =>
         okZone.copy(
           name = num.toString + ".",
@@ -562,28 +528,10 @@ class MySqlZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-<<<<<<< HEAD
-<<<<<<< HEAD
           zones <- repo.getFirstOwnedZoneAclGroupId(UUID.randomUUID().toString + "dummy")
         } yield zones
 
       f.unsafeRunSync() shouldBe None
-=======
-          zones <- repo.isAclGroupId(UUID.randomUUID().toString + "dummy")
-        } yield zones
-
-<<<<<<< HEAD
-      f.unsafeRunSync() should be false
->>>>>>> some tests
-=======
-      f.unsafeRunSync() shouldBe false
->>>>>>> some tests
-=======
-          zones <- repo.getZoneAclGroupId(UUID.randomUUID().toString + "dummy")
-        } yield zones
-
-      f.unsafeRunSync() shouldBe ""
->>>>>>> some tests
     }
   }
 }
