@@ -439,7 +439,13 @@ class MembershipServiceSpec
         doReturn(IO.pure(""))
           .when(mockRecordSetRepo)
           .getRecordSetOwnerGroup(anyString)
+<<<<<<< HEAD
 >>>>>>> Review
+=======
+        doReturn(IO.pure(false))
+          .when(mockZoneRepo)
+          .isAclGroupId(anyString())
+>>>>>>> some tests
 
         val result: Group = rightResultOf(underTest.deleteGroup("ok", okAuth).value)
         result shouldBe okGroup.copy(status = GroupStatus.Deleted)
@@ -507,6 +513,7 @@ class MembershipServiceSpec
 
       "return an error if the group has an ACL rule on a zone" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+<<<<<<< HEAD
         doReturn(IO.pure(Some("someId")))
           .when(mockZoneRepo)
           .getFirstOwnedZoneAclGroupId(anyString())
@@ -514,6 +521,16 @@ class MembershipServiceSpec
 
         error shouldBe an[InvalidGroupRequestError]
       }
+=======
+        doReturn(IO.pure(false))
+          .when(mockZoneRepo)
+          .isAclGroupId(anyString())
+        val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
+
+        error shouldBe a[InvalidGroupRequestError]
+      }
+
+>>>>>>> some tests
     }
 
     "get a group" should {
@@ -890,6 +907,24 @@ class MembershipServiceSpec
       }
     }
 
+<<<<<<< HEAD
+=======
+    "isZoneAclGroupId" should {
+      "return false when a group has an ACL rule in a zone" in {
+        doReturn(IO.pure(false)).when(mockZoneRepo).isAclGroupId(okGroup.id)
+
+        val result = awaitResultOf(underTest.isZoneAclGroupId(okGroup).value)
+        result should be(right)
+      }
+
+      "return an InvalidGroupRequestError when a group has an ACL rule in a zone" in {
+        doReturn(IO.pure(true)).when(mockZoneRepo).isAclGroupId(okGroup.id)
+
+        val error = leftResultOf(underTest.isZoneAclGroupId(okGroup).value)
+        error shouldBe a[InvalidGroupRequestError]
+      }
+    }
+>>>>>>> some tests
 
     "updateUserLockStatus" should {
       "save the update and lock the user account" in {
