@@ -64,7 +64,7 @@ def test_get_batch_change_with_record_owner_group_success(shared_zone_test_conte
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_test_context):
+def test_get_batch_change_with_deleted_record_owner_group_failed(shared_zone_test_context):
     """
     Test that if the owner group no longer exists that getting a batch change will still succeed,
     with the ownerGroupName attribute set to None
@@ -80,9 +80,7 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
 
     record_to_delete = []
     try:
-
         group_to_delete = client.create_group(temp_group, status=200)
-
         batch_change_input = {
             "comments": "this is optional",
             "changes": [
@@ -110,9 +108,9 @@ def test_get_batch_change_with_deleted_record_owner_group_success(shared_zone_te
 
         #the batch should not be updated with deleted group data
         result = client.get_batch_change(batch_change['id'], status=200)
-        assert_that(result, is_(completed_batch))
+        assert_that(result, is_not(completed_batch))
         assert_that(result['ownerGroupId'], is_(group_to_delete['id']))
-        assert_that(result, is_not(has_key('ownerGroupName')))
+        assert_that(result, is_(has_key('ownerGroupName')))
 
     finally:
         for result_rs in record_to_delete:

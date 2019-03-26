@@ -505,7 +505,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
       result shouldBe None
 =======
       val result = repo.getRecordSetOwnerGroup("someOwner").unsafeRunSync()
-      result shouldBe ds.id
+      result shouldBe testRecord.id
     }
 
     "return empty string when no record set has the id as ownerGroupId" in {
