@@ -274,7 +274,8 @@ class MembershipService(
       .getRecordSetOwnerGroup(group.id)
       .map { rs =>
         ensuring(
-          InvalidGroupRequestError(s"${group.name} is the owner for a record set $rs. Cannot delete.")){
+          InvalidGroupRequestError(
+            s"${group.name} is the owner for a record set $rs. Cannot delete.")) {
           rs.isEmpty
         }
 >>>>>>> Review
