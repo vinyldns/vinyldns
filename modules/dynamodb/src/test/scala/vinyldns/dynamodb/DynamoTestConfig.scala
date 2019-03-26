@@ -31,9 +31,6 @@ object DynamoTestConfig {
   lazy val zoneChangeStoreConfig: DynamoDBRepositorySettings =
     pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.zoneChange.get)
 
-  lazy val recordSetStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.recordSet.get)
-
   lazy val recordChangeStoreConfig: DynamoDBRepositorySettings =
     pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.recordChange.get)
 
