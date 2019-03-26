@@ -284,8 +284,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
+<<<<<<< HEAD
   def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]] =
     monitor("repo.RecordSet.getFirstOwnedRecordByGroup") {
+=======
+  def getRecordSetOwnerGroup(ownerGroupId: String): IO[String] =
+    monitor("repo.RecordSet.isRecordOwnerGroup") {
+>>>>>>> Review
       IO {
         DB.readOnly { implicit s =>
           GET_RECORDSET_BY_OWNERID
@@ -293,7 +298,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .map(_.string(1))
             .single
             .apply()
-            .nonEmpty
+            .getOrElse("")
         }
       }
     }

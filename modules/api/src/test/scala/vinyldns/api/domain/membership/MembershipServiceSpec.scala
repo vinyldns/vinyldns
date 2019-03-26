@@ -428,12 +428,18 @@ class MembershipServiceSpec
         doReturn(IO.pure(Set[String]()))
           .when(mockMembershipRepo)
           .removeMembers(anyString, any[Set[String]])
+<<<<<<< HEAD
         doReturn(IO.pure(None))
           .when(mockRecordSetRepo)
           .getFirstOwnedRecordByGroup(anyString)
         doReturn(IO.pure(None))
           .when(mockZoneRepo)
           .getFirstOwnedZoneAclGroupId(anyString())
+=======
+        doReturn(IO.pure(""))
+          .when(mockRecordSetRepo)
+          .getRecordSetOwnerGroup(anyString)
+>>>>>>> Review
 
         val result: Group = rightResultOf(underTest.deleteGroup("ok", okAuth).value)
         result shouldBe okGroup.copy(status = GroupStatus.Deleted)
@@ -486,10 +492,14 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some("somerecordsetid")))
           .when(mockRecordSetRepo)
 <<<<<<< HEAD
+<<<<<<< HEAD
           .getFirstOwnedRecordByGroup(anyString())
 =======
           .isRecordOwnerGroup(anyString())
 >>>>>>> renaming
+=======
+          .getRecordSetOwnerGroup(anyString())
+>>>>>>> Review
         val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
 
         error shouldBe an[InvalidGroupRequestError]
@@ -829,23 +839,38 @@ class MembershipServiceSpec
           .getZonesByAdminGroupId(okGroup.id)
 
         val error = leftResultOf(underTest.isNotZoneAdmin(okGroup).value)
+<<<<<<< HEAD
         error shouldBe an[InvalidGroupRequestError]
+=======
+        error shouldBe a[InvalidGroupRequestError]
+>>>>>>> Review
       }
     }
 
     "isNotRecordOwnerGroup" should {
       "return true when a group for deletion is not the admin of a zone" in {
+<<<<<<< HEAD
         doReturn(IO.pure(None)).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
+=======
+        doReturn(IO.pure("")).when(mockRecordSetRepo).getRecordSetOwnerGroup(okGroup.id)
+>>>>>>> Review
 
         val result = awaitResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
         result should be(right)
       }
 
       "return an InvalidGroupRequestError when a group for deletion is admin of a zone" in {
+<<<<<<< HEAD
         doReturn(IO.pure(Some("somerecordsetid"))).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
 
         val error = leftResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
         error shouldBe an[InvalidGroupRequestError]
+=======
+        doReturn(IO.pure("someId")).when(mockRecordSetRepo).getRecordSetOwnerGroup(okGroup.id)
+
+        val error = leftResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
+        error shouldBe a[InvalidGroupRequestError]
+>>>>>>> Review
       }
     }
 
