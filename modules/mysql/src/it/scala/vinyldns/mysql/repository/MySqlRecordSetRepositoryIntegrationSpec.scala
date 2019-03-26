@@ -480,7 +480,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
   }
 
   "isRecordOwnerGroup" should {
-    "return true when id is ownerGroupId for a record set" in {
+    "return recordset id when groupid is ownerGroupId for the record set" in {
       val addChange = makeTestAddChange(ds.copy(ownerGroupId = Some("someOwner")), okZone)
       val testRecord = addChange.recordSet
       val dbCalls = for {
@@ -490,13 +490,13 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
       dbCalls.unsafeRunSync()
 
-      val result = repo.isRecordOwnerGroup("someOwner").unsafeRunSync()
-      result shouldBe true
+      val result = repo.getRecordSetOwnerGroup("someOwner").unsafeRunSync()
+      result shouldBe ds.id
     }
 
-    "return false when no record set has the id as ownerGroupId" in {
-      val result = repo.isRecordOwnerGroup("notFound").unsafeRunSync()
-      result shouldBe false
+    "return empty string when no record set has the id as ownerGroupId" in {
+      val result = repo.getRecordSetOwnerGroup("notFound").unsafeRunSync()
+      result shouldBe ""
     }
   }
 }

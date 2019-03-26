@@ -244,7 +244,7 @@ class DynamoDBRecordSetRepository private[repository] (
       )
     }
 
-  def isRecordOwnerGroup(ownerGroupId: String): IO[Boolean] =
+  def getRecordSetOwnerGroup(ownerGroupId: String): IO[String] =
     monitor("repo.RecordSet.isNotAOwnerGroupId") {
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(

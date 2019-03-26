@@ -74,7 +74,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
   private val GET_RECORDSET_BY_OWNERID =
     sql"""
-      |SELECT data
+      |SELECT id
       |  FROM recordset
       |WHERE owner_group_id = {ownerGroupId}
       |LIMIT 1
@@ -284,16 +284,16 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
-  def isRecordOwnerGroup(ownerGroupId: String): IO[Boolean] =
+  def getRecordSetOwnerGroup(ownerGroupId: String): IO[String] =
     monitor("repo.RecordSet.isRecordOwnerGroup") {
       IO {
         DB.readOnly { implicit s =>
           GET_RECORDSET_BY_OWNERID
             .bindByName('ownerGroupId -> ownerGroupId)
-            .map(toRecordSet)
-            .list()
+            .map(_.string(1))
+            .single
             .apply()
-            .nonEmpty
+            .getOrElse("")
         }
       }
     }

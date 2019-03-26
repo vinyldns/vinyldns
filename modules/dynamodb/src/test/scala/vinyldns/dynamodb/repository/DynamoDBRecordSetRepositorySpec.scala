@@ -390,17 +390,17 @@ class DynamoDBRecordSetRepositorySpec
   "DynamoDBRecordSetRepository.getRecordSetsByFQDNs" should {
     "return an error if used" in {
       val store = new TestDynamoRecordSetRepo
-      a[UnsupportedDynamoDBRepoFunction] should be thrownBy store
+      an[UnsupportedDynamoDBRepoFunction] should be thrownBy store
         .getRecordSetsByFQDNs(Set("test"))
         .unsafeRunSync()
     }
   }
 
-  "DynamoDBRecordSetRepository.isRecordOwnerGroup" should {
+  "DynamoDBRecordSetRepository.getRecordSetOwnerGroup" should {
     "return an error if used" in {
       val store = new TestDynamoRecordSetRepo
-      a[UnsupportedDynamoDBRepoFunction] should be thrownBy store
-        .isRecordOwnerGroup("someId")
+      an[UnsupportedDynamoDBRepoFunction] should be thrownBy store
+        .getRecordSetOwnerGroup("someId")
         .unsafeRunSync()
     }
   }
