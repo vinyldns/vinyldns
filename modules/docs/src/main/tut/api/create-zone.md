@@ -70,7 +70,6 @@ id            | string        |  the id of the change.  This is not the id of th
   "created": "2016-12-28T18:00:32Z",
   "changeType": "Create",
   "userId": "vinyl",
-  "id": "dd449c27-bed5-4cd5-95e6-4c54fb20d930",
-  "ia
+  "id": "dd449c27-bed5-4cd5-95e6-4c54fb20d930"
 }
 ```
