@@ -255,4 +255,4 @@ Shared zones allow for a more open management of records in VinylDNS. Zone admin
 
 Zones have a boolean attribute `isTest` that is used so [Test Users](../api/membership-model.md#test-users) can
 update the Zone and its DNS records. `isTest` only impacts test users and access for normal users, groups, acl rules, etc
-are unchanged. This attribute can be set on Zone create
+is unchanged. This attribute can be set on Zone create
