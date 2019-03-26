@@ -396,11 +396,11 @@ class DynamoDBRecordSetRepositorySpec
     }
   }
 
-  "DynamoDBRecordSetRepository.getRecordSetOwnerGroup" should {
+  "DynamoDBRecordSetRepository.getRecordSetIdOwnerGroup" should {
     "return an error if used" in {
       val store = new TestDynamoRecordSetRepo
       an[UnsupportedDynamoDBRepoFunction] should be thrownBy store
-        .getRecordSetOwnerGroup("someId")
+        .getFirstOwnedRecordByGroup("someId")
         .unsafeRunSync()
     }
   }

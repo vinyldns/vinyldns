@@ -428,9 +428,9 @@ class MembershipServiceSpec
         doReturn(IO.pure(Set[String]()))
           .when(mockMembershipRepo)
           .removeMembers(anyString, any[Set[String]])
-        doReturn(IO.pure(""))
+        doReturn(IO.pure(None))
           .when(mockRecordSetRepo)
-          .getRecordSetOwnerGroup(anyString)
+          .getFirstOwnedRecordByGroup(anyString)
 
         val result: Group = rightResultOf(underTest.deleteGroup("ok", okAuth).value)
         result shouldBe okGroup.copy(status = GroupStatus.Deleted)
@@ -475,17 +475,17 @@ class MembershipServiceSpec
 
         val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
 
-        error shouldBe a[InvalidGroupRequestError]
+        error shouldBe an[InvalidGroupRequestError]
       }
 
       "return an error if the group is an owner for a record set" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
-        doReturn(IO.pure(false))
+        doReturn(IO.pure(Some("somerecordsetid")))
           .when(mockRecordSetRepo)
-          .getRecordSetOwnerGroup(anyString())
+          .getFirstOwnedRecordByGroup(anyString())
         val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
 
-        error shouldBe a[InvalidGroupRequestError]
+        error shouldBe an[InvalidGroupRequestError]
       }
 
     }
@@ -819,14 +819,14 @@ class MembershipServiceSpec
 
     "isNotRecordOwnerGroup" should {
       "return true when a group for deletion is not the admin of a zone" in {
-        doReturn(IO.pure("")).when(mockRecordSetRepo).getRecordSetOwnerGroup(okGroup.id)
+        doReturn(IO.pure(None)).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
 
         val result = awaitResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
         result should be(right)
       }
 
       "return an InvalidGroupRequestError when a group for deletion is admin of a zone" in {
-        doReturn(IO.pure("someId")).when(mockRecordSetRepo).getRecordSetOwnerGroup(okGroup.id)
+        doReturn(IO.pure(Some("somerecordsetid"))).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
 
         val error = leftResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
         error shouldBe a[InvalidGroupRequestError]

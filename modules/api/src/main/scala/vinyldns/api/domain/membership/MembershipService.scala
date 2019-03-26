@@ -249,11 +249,12 @@ class MembershipService(
 
   def isNotRecordOwnerGroup(group: Group): Result[Unit] =
     recordSetRepo
-      .getRecordSetOwnerGroup(group.id)
-      .map { rs =>
+      .getFirstOwnedRecordByGroup(group.id)
+      .map { rsId =>
         ensuring(
-          InvalidGroupRequestError(s"${group.name} is the owner for a record set $rs. Cannot delete.")){
-          rs.isEmpty
+          InvalidGroupRequestError(
+            s"${group.name} is the owner for record set $rsId. Cannot delete.")) {
+          rsId.isEmpty
         }
       }
       .toResult

@@ -244,11 +244,11 @@ class DynamoDBRecordSetRepository private[repository] (
       )
     }
 
-  def getRecordSetOwnerGroup(ownerGroupId: String): IO[String] =
-    monitor("repo.RecordSet.isNotAOwnerGroupId") {
+  def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]] =
+    monitor("repo.RecordSet.getFirstOwnedRecordByGroup") {
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(
-          s"isRecordOwnerGroup is not supported by VinylDNS DynamoDB RecordSetRepository id=${ownerGroupId}"
+          s"getFirstOwnedRecordByGroup is not supported by VinylDNS DynamoDB RecordSetRepository id=$ownerGroupId"
         )
       )
     }
