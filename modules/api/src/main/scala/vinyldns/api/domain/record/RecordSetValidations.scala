@@ -21,11 +21,11 @@ import vinyldns.api.Interfaces._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain._
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.DomainHelpers.omitTrailingDot
-import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
+import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 
@@ -147,9 +147,7 @@ object RecordSetValidations {
         "CNAME RecordSet cannot have name '@' because it points to zone origin")
       _ <- noRecordWithName
       _ <- isNotDotted(newRecordSet, zone)
-//      _ <- isValidHostName(newRecordSet.name)
-      // Stuck on this one, not sure if CNAMEs should end with a trailing dot or not.
-      // In domainValidations, CNAMEs do require a trailing dot, but here we ensure that it doesn't.
+      _ <- isValidLabelRegex(newRecordSet.name)
     } yield ()
 
   }
@@ -217,7 +215,7 @@ object RecordSetValidations {
     for {
       _ <- ptrIsInZone
       _ <- isNotDottedHost
-      _ <- isValidHostName(newRecordSet.name)
+      _ <- isValidLabelRegex(newRecordSet.name)
     } yield ()
   }
 
@@ -251,18 +249,31 @@ object RecordSetValidations {
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
   }
 
-  def isValidHostName(name: String): Either[Throwable, Unit] = {
+  def validateLabel(name: String): Either[Throwable, Unit] = {
+    val validLabelRegex: Regex =
+      """^([0-9a-zA-Z]{1}[0-9a-zA-Z\-\/]{0,61}[0-9a-zA-Z]{1}|[0-9a-zA-Z]{1})$""".r
 
-    val validFQDNRegex: Regex =
-      """^(?:([0-9a-zA-Z]{1,63}|[0-9a-zA-Z]{1}[0-9a-zA-Z\-\/]{0,61}[0-9a-zA-Z]{1})\.)*$""".r
-
-    validFQDNRegex.findFirstIn(name) match {
+    validLabelRegex.findFirstIn(name) match {
       case Some(_) => ().asRight
       case None =>
         InvalidRequest(
-          s"""Invalid domain name: "$name", valid domain names must be letters, numbers, and hyphens, """ +
-            "joined by dots, and terminated with a dot.").asLeft
+          s"""Invalid record name: "$name", valid record name labels must be between 1-63 characters OR """ +
+            "begin and end in a letter/digit, with hyphens and slashes being the other allowed characters.").asLeft
     }
+  }
+
+  def isValidLabelRegex(name: String): Either[Throwable, Unit] = {
+    val labels = name.split(".")
+    val result = for {
+      label <- labels
+      res = validateLabel(label)
+    } yield res
+
+    val leftResult = InvalidRequest(
+      s"""Invalid record name: "$name", valid record name labels must be between 1-63 characters OR """ +
+        "begin and end in a letter/digit, with hyphens and slashes being the other allowed characters.").asLeft
+
+    if (result.contains(leftResult)) leftResult else ().asRight
   }
 
   def canUseOwnerGroup(
