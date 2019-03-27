@@ -45,8 +45,8 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
           |    }
           |
           |    repositories {
-          |      record-set {
-          |        table-name = "recordSetTest"
+          |      record-change {
+          |        table-name = "test"
           |        provisioned-reads = 30
           |        provisioned-writes = 30
           |      }

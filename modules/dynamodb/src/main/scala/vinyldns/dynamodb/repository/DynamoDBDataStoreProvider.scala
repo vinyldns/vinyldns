@@ -33,7 +33,7 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger(classOf[DynamoDBDataStoreProvider])
   private val implementedRepositories =
-    Set(user, group, membership, groupChange, recordSet, recordChange, zoneChange, userChange)
+    Set(user, group, membership, groupChange, recordChange, zoneChange, userChange)
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 

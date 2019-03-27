@@ -65,13 +65,13 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
       dataStore.get[GroupRepository](group) shouldBe defined
       dataStore.get[MembershipRepository](membership) shouldBe defined
       dataStore.get[GroupChangeRepository](groupChange) shouldBe defined
-      dataStore.get[RecordSetRepository](recordSet) shouldBe defined
       dataStore.get[RecordChangeRepository](recordChange) shouldBe defined
       dataStore.get[ZoneChangeRepository](zoneChange) shouldBe defined
     }
     "not load configured off repos" in {
       dataStore.get[ZoneRepository](zone) shouldBe empty
       dataStore.get[BatchChangeRepository](batchChange) shouldBe empty
+      dataStore.get[RecordSetRepository](recordSet) shouldBe empty
     }
     "validate a loaded repo works" in {
       val testUser = User(
