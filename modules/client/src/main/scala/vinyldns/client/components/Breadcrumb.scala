@@ -22,7 +22,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle.Styles.cursorPointer
-import vinyldns.client.routes.AppRouter._
+import vinyldns.client.routes._
 
 object Breadcrumb {
   case class Props(selectedPage: Page, router: RouterCtl[Page])
@@ -52,7 +52,7 @@ object Breadcrumb {
         List(home(P), groups(P), viewGroupActive).toTagMod
       case _: ToZoneListPage.type =>
         List(home(P), zonesActive).toTagMod
-      case _: ToZoneViewPage =>
+      case _: ToZoneViewRecordsPage =>
         List(home(P), zones(P), viewZoneActive).toTagMod
       case _ => TagMod.empty
     }

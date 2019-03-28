@@ -35,13 +35,8 @@ object AppRouter {
     case class Props(page: Page, router: RouterCtl[Page], http: Http)
   }
 
-  sealed trait Page
-  final object ToHomePage extends Page
-  final object ToNotFound extends Page
-  final object ToGroupListPage extends Page
-  final case class ToGroupViewPage(id: String) extends Page
-  final object ToZoneListPage extends Page
-  final case class ToZoneViewPage(id: String) extends Page
+  val uuidRegex =
+    "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 
   private val config = RouterConfigDsl[Page].buildConfig { dsl =>
     import dsl._
@@ -58,14 +53,15 @@ object AppRouter {
           staticRoute("groups", ToGroupListPage) ~>
             renderR(ctl => GroupListPage(ToGroupListPage, ctl, HttpHelper))
         |
-          dynamicRouteCT[ToGroupViewPage]("groups" / string("[^ ]+").caseClass[ToGroupViewPage]) ~>
+          dynamicRouteCT[ToGroupViewPage]("groups" / string(uuidRegex).caseClass[ToGroupViewPage]) ~>
             (p => renderR(ctl => GroupViewPage(p, ctl, HttpHelper)))
         |
           staticRoute("zones", ToZoneListPage) ~>
             renderR(ctl => ZoneListPage(ToZoneListPage, ctl, HttpHelper))
         |
-          dynamicRouteCT[ToZoneViewPage]("zones" / string("[^ ]+").caseClass[ToZoneViewPage]) ~>
-            (p => renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
+          dynamicRouteCT[ToZoneViewRecordsPage](("zones" / string(uuidRegex) / "records")
+            .caseClass[ToZoneViewRecordsPage]) ~> (p =>
+            renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }
@@ -76,6 +72,7 @@ object AppRouter {
     LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage)
   )
 
+  // used so the alert box addNotification can be static across the app
   val alertBoxRef =
     Ref.toScalaComponent(AlertBox.component)
 

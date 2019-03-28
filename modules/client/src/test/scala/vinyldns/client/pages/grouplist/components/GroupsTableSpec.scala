@@ -24,7 +24,7 @@ import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.{Group, GroupList}
-import vinyldns.client.routes.AppRouter.Page
+import vinyldns.client.routes.Page
 
 import scala.language.existentials
 

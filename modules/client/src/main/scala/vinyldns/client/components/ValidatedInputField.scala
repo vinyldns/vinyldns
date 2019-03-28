@@ -25,6 +25,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components.InputType.InputFieldType
 import vinyldns.client.css.GlobalStyle
+import vinyldns.client.routes.AppRouter
 
 import scala.util.Try
 
@@ -229,8 +230,7 @@ object ValidatedInputField {
     def validateUUID(value: String, checks: InputFieldValidations): Either[String, Unit] =
       if (checks.uuid)
         Either.cond(
-          value.matches(
-            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
+          value.matches(AppRouter.uuidRegex),
           (),
           "Must be a valid Group ID (not name)"
         )

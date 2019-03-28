@@ -26,7 +26,8 @@ import vinyldns.client.models.membership.Group
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.pages.groupview.components.{MembersTable, NewMemberForm}
-import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter, ToGroupViewPage}
+import vinyldns.client.routes.AppRouter.PropsFromAppRouter
+import vinyldns.client.routes.{Page, ToGroupViewPage}
 
 object GroupViewPage extends PropsFromAppRouter {
   case class State(group: Option[Group] = None)

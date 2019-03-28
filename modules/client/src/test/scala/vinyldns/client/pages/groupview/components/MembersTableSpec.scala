@@ -23,8 +23,8 @@ import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{GetGroupMembersRoute, Http, HttpResponse, UpdateGroupRoute}
 import vinyldns.client.models.membership.{Group, Id, MemberList}
-import vinyldns.client.routes.AppRouter.Page
 import upickle.default.write
+import vinyldns.client.routes.Page
 
 import scala.language.existentials
 

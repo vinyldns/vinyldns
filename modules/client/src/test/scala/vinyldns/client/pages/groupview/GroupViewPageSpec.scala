@@ -22,8 +22,8 @@ import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{GetGroupMembersRoute, GetGroupRoute, Http, HttpResponse}
 import vinyldns.client.models.membership.{Group, MemberList}
-import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 import vinyldns.client.pages.groupview.components.{MembersTable, NewMemberForm}
+import vinyldns.client.routes.{Page, ToGroupViewPage}
 
 class GroupViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val initialGroup = generateGroups(1).head

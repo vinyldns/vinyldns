@@ -18,7 +18,7 @@ package vinyldns.client.pages.zoneview
 
 import scalacss.ScalaCssReact._
 import vinyldns.client.models.zone.Zone
-import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter, ToZoneViewPage}
+import vinyldns.client.routes.AppRouter.PropsFromAppRouter
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
@@ -26,6 +26,7 @@ import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse}
 import vinyldns.client.components.AlertBox.addNotification
+import vinyldns.client.routes.{Page, ToZoneViewRecordsPage}
 
 object ZoneViewPage extends PropsFromAppRouter {
   case class State(zone: Option[Zone] = None)
@@ -81,7 +82,7 @@ object ZoneViewPage extends PropsFromAppRouter {
       )
 
     def getZone(P: Props): Callback = {
-      val zoneId = P.page.asInstanceOf[ToZoneViewPage].id
+      val zoneId = P.page.asInstanceOf[ToZoneViewRecordsPage].id
       val onFailure = { httpResponse: HttpResponse =>
         addNotification(P.http.toNotification("getting zone", httpResponse, onlyOnError = true))
       }

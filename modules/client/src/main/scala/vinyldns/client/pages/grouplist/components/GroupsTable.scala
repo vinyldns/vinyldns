@@ -24,10 +24,10 @@ import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.http.{DeleteGroupRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.{Group, GroupList}
-import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.Pagination
+import vinyldns.client.routes.{Page, ToGroupViewPage}
 
 import scala.util.Try
 

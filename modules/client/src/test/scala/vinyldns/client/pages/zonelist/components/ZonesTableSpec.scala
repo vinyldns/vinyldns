@@ -24,7 +24,7 @@ import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute}
 import vinyldns.client.models.zone.{Zone, ZoneList}
-import vinyldns.client.routes.AppRouter.Page
+import vinyldns.client.routes.Page
 
 import scala.language.existentials
 

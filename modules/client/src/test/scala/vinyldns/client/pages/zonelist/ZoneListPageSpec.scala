@@ -24,7 +24,7 @@ import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute, ListZonesRoute
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.zone.ZoneList
 import vinyldns.client.pages.zonelist.components.ZoneModal
-import vinyldns.client.routes.AppRouter.{Page, ToZoneListPage}
+import vinyldns.client.routes.{Page, ToZoneListPage}
 
 import scala.language.existentials
 

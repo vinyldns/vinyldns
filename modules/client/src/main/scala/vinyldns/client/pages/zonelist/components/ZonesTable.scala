@@ -25,9 +25,9 @@ import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute}
 import vinyldns.client.models.zone.{Zone, ZoneList}
-import vinyldns.client.routes.AppRouter.{Page, ToGroupViewPage, ToZoneViewPage}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.models.Pagination
+import vinyldns.client.routes.{Page, ToGroupViewPage, ToZoneViewRecordsPage}
 
 import scala.util.Try
 
@@ -179,7 +179,7 @@ object ZonesTable {
             ^.className := "btn-group",
             <.a(
               ^.className := "btn btn-info btn-rounded test-view",
-              P.router.setOnClick(ToZoneViewPage(zone.id)),
+              P.router.setOnClick(ToZoneViewRecordsPage(zone.id)),
               ^.title := s"View zone ${zone.name}",
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-eye"),

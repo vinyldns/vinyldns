@@ -22,7 +22,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.routes.AppRouter._
+import vinyldns.client.routes._
 
 object LeftNav {
   case class NavItem(name: String, faClassName: String, page: Page)
@@ -113,7 +113,7 @@ object LeftNav {
     (P.selectedPage, parent) match {
       case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
         fromSubTitle(groupView.id)
-      case (zoneView: ToZoneViewPage, _: ToZoneListPage.type) =>
+      case (zoneView: ToZoneViewRecordsPage, _: ToZoneListPage.type) =>
         fromSubTitle(zoneView.id)
       case _ => TagMod.empty
     }

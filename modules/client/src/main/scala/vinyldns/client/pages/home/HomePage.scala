@@ -23,7 +23,8 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.http.Http
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.routes.AppRouter.{Page, PropsFromAppRouter}
+import vinyldns.client.routes.AppRouter.PropsFromAppRouter
+import vinyldns.client.routes.Page
 
 object HomePage extends PropsFromAppRouter {
   private val component =
