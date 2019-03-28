@@ -76,6 +76,7 @@ class BatchChangeServiceSpec
     CNAMEData("testing.cname.com."))
   private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, 100, PTRData("ptr"))
   private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, 100, PTRData("ptr"))
+  private val ptrDelegatedAdd = AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("ptr"))
 
   private val authGrp = okGroup
   private val auth = okAuth
@@ -91,6 +92,9 @@ class BatchChangeServiceSpec
 
   private val apexAddForVal = AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
   private val nonApexAddForVal = AddChangeForValidation(baseZone, "non-apex", nonApexAddA)
+  private val ptrAddForVal = AddChangeForValidation(ptrZone, "11", ptrAdd)
+  private val ptrDelegatedAddForVal =
+    AddChangeForValidation(delegatedPTRZone, "193", ptrDelegatedAdd)
 
   private val pendingChange = SingleAddChange(
     "zoneid",
@@ -128,10 +132,19 @@ class BatchChangeServiceSpec
     makeRS(apexAddForVal.zone.name, apexAddForVal.recordName, SOA)
   private val existingNonApex: RecordSet =
     makeRS(nonApexAddForVal.zone.name, nonApexAddForVal.recordName, TXT)
+  private val existingPtr: RecordSet =
+    makeRS(ptrAddForVal.zone.name, ptrAddForVal.recordName, PTR)
+  private val existingPtrDelegated: RecordSet =
+    makeRS(ptrDelegatedAddForVal.zone.name, ptrDelegatedAddForVal.recordName, PTR)
 
   object TestRecordSetRepo extends EmptyRecordSetRepo {
     val dbRecordSets: Set[(RecordSet, String)] =
-      Set((existingApex, "apex.test.com."), (existingNonApex, "non-apex.test.com."))
+      Set(
+        (existingApex, "apex.test.com."),
+        (existingNonApex, "non-apex.test.com."),
+        (existingPtr, "11.55.144.10.in-addr.arpa."),
+        (existingPtrDelegated, "193.64/25.55.144.10.in-addr.arpa.")
+      )
 
     override def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
       IO.pure {
@@ -331,10 +344,15 @@ class BatchChangeServiceSpec
     val error = InvalidTTL(0).invalidNel
 
     "combine gets for each valid record" in {
-      val in = List(apexAddForVal.validNel, nonApexAddForVal.validNel, error)
+      val in = List(
+        apexAddForVal.validNel,
+        nonApexAddForVal.validNel,
+        ptrAddForVal.validNel,
+        ptrDelegatedAddForVal.validNel,
+        error)
       val result = await(underTest.getExistingRecordSets(in))
 
-      val expected = List(existingApex, existingNonApex)
+      val expected = List(existingApex, existingNonApex, existingPtr, existingPtrDelegated)
       result.recordSets should contain theSameElementsAs expected
     }
     "not fail if gets all lefts" in {
