@@ -249,31 +249,19 @@ object RecordSetValidations {
       .leftMap(errors => InvalidRequest(errors.toList.map(_.message).mkString(", ")))
   }
 
-  def validateLabel(name: String): Either[Throwable, Unit] = {
+  def isValidLabelRegex(name: String): Either[Throwable, Unit] = {
+    val label = if (name.contains(".")) name.substring(0, name.indexOf(".")) else name
+
     val validLabelRegex: Regex =
       """^([0-9a-zA-Z]{1}[0-9a-zA-Z\-\/]{0,61}[0-9a-zA-Z]{1}|[0-9a-zA-Z]{1})$""".r
 
-    validLabelRegex.findFirstIn(name) match {
+    validLabelRegex.findFirstIn(label) match {
       case Some(_) => ().asRight
       case None =>
         InvalidRequest(
           s"""Invalid record name: "$name", valid record name labels must be between 1-63 characters OR """ +
             "begin and end in a letter/digit, with hyphens and slashes being the other allowed characters.").asLeft
     }
-  }
-
-  def isValidLabelRegex(name: String): Either[Throwable, Unit] = {
-    val labels = name.split(".")
-    val result = for {
-      label <- labels
-      res = validateLabel(label)
-    } yield res
-
-    val leftResult = InvalidRequest(
-      s"""Invalid record name: "$name", valid record name labels must be between 1-63 characters OR """ +
-        "begin and end in a letter/digit, with hyphens and slashes being the other allowed characters.").asLeft
-
-    if (result.contains(leftResult)) leftResult else ().asRight
   }
 
   def canUseOwnerGroup(
