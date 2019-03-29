@@ -166,7 +166,7 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
       test.unsafeRunSync().get.description shouldBe None
     }
 
-    "delete a group" in {
+    "add and delete a group should return successfully" in {
       val deleted = deletedGroup.copy(
         id = "test-deleted-group-get-groups",
         memberIds = Set("foo"),
@@ -187,7 +187,8 @@ class DynamoDBGroupRepositoryIntegrationSpec extends DynamoDBIntegrationSpec {
 
       val (get, getAll) = getAfterDeleted.unsafeRunSync()
       get shouldBe None
-      !getAll.exists(_.id == "test-deleted-group-get-groups")
+      getAll.filter(_.id == "test-deleted-group-get-groups") shouldBe Set.empty
+      getAll.filter(_.id == activeGroups.head.id) shouldBe Set(activeGroups.head)
     }
   }
 }
