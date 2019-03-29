@@ -31,6 +31,7 @@ import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.membership._
+import vinyldns.core.domain.record.RecordSetRepository
 
 class MembershipServiceSpec
     extends WordSpec
@@ -45,13 +46,15 @@ class MembershipServiceSpec
   private val mockMembershipRepo = mock[MembershipRepository]
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
+  private val mockRecordSetRepo = mock[RecordSetRepository]
 
   private val backingService = new MembershipService(
     mockGroupRepo,
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
-    mockGroupChangeRepo)
+    mockGroupChangeRepo,
+    mockRecordSetRepo)
   private val underTest = spy(backingService)
 
   private val okUserInfo: UserInfo = UserInfo(okUser)
@@ -92,7 +95,13 @@ class MembershipServiceSpec
   )
 
   override protected def beforeEach(): Unit =
-    reset(mockGroupRepo, mockUserRepo, mockMembershipRepo, mockGroupChangeRepo, underTest)
+    reset(
+      mockGroupRepo,
+      mockUserRepo,
+      mockMembershipRepo,
+      mockGroupChangeRepo,
+      mockRecordSetRepo,
+      underTest)
 
   "MembershipService" should {
     "create a new group" should {
@@ -419,6 +428,9 @@ class MembershipServiceSpec
         doReturn(IO.pure(Set[String]()))
           .when(mockMembershipRepo)
           .removeMembers(anyString, any[Set[String]])
+        doReturn(IO.pure(None))
+          .when(mockRecordSetRepo)
+          .getFirstOwnedRecordByGroup(anyString)
 
         val result: Group = rightResultOf(underTest.deleteGroup("ok", okAuth).value)
         result shouldBe okGroup.copy(status = GroupStatus.Deleted)
@@ -463,8 +475,19 @@ class MembershipServiceSpec
 
         val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
 
-        error shouldBe a[InvalidGroupRequestError]
+        error shouldBe an[InvalidGroupRequestError]
       }
+
+      "return an error if the group is an owner for a record set" in {
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some("somerecordsetid")))
+          .when(mockRecordSetRepo)
+          .getFirstOwnedRecordByGroup(anyString())
+        val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
+
+        error shouldBe an[InvalidGroupRequestError]
+      }
+
     }
 
     "get a group" should {
@@ -776,11 +799,11 @@ class MembershipServiceSpec
       }
     }
 
-    "groupCanBeDeleted" should {
+    "isNotZoneAdmin" should {
       "return true when a group for deletion is not the admin of a zone" in {
         doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(okGroup.id)
 
-        val result = awaitResultOf(underTest.groupCanBeDeleted(okGroup).value)
+        val result = awaitResultOf(underTest.isNotZoneAdmin(okGroup).value)
         result should be(right)
       }
 
@@ -789,7 +812,23 @@ class MembershipServiceSpec
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(okGroup.id)
 
-        val error = leftResultOf(underTest.groupCanBeDeleted(okGroup).value)
+        val error = leftResultOf(underTest.isNotZoneAdmin(okGroup).value)
+        error shouldBe a[InvalidGroupRequestError]
+      }
+    }
+
+    "isNotRecordOwnerGroup" should {
+      "return true when a group for deletion is not the admin of a zone" in {
+        doReturn(IO.pure(None)).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
+
+        val result = awaitResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
+        result should be(right)
+      }
+
+      "return an InvalidGroupRequestError when a group for deletion is admin of a zone" in {
+        doReturn(IO.pure(Some("somerecordsetid"))).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
+
+        val error = leftResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
         error shouldBe a[InvalidGroupRequestError]
       }
     }

@@ -159,7 +159,6 @@ class ZoneHistoryContext(object):
         result =  self.client.delete_recordset(self.zone['id'], rs['id'], status=202)
         return result, result['recordSet']
 
-
     def confirm_member_in_group(self, client, group):
         retries = 2
         success = group in client.list_all_my_groups(status=200)

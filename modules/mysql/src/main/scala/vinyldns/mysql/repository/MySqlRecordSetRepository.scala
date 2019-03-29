@@ -72,6 +72,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       | WHERE fqdn
     """.stripMargin
 
+  private val GET_RECORDSET_BY_OWNERID =
+    sql"""
+      |SELECT id
+      |  FROM recordset
+      |WHERE owner_group_id = {ownerGroupId}
+      |LIMIT 1
+    """.stripMargin
+
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
 
@@ -272,6 +280,19 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
               .list()
               .apply()
           }
+        }
+      }
+    }
+
+  def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]] =
+    monitor("repo.RecordSet.getFirstOwnedRecordByGroup") {
+      IO {
+        DB.readOnly { implicit s =>
+          GET_RECORDSET_BY_OWNERID
+            .bindByName('ownerGroupId -> ownerGroupId)
+            .map(_.string(1))
+            .single
+            .apply()
         }
       }
     }

@@ -49,6 +49,8 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def getRecordSetCount(zoneId: String): IO[Int] = IO.pure(0)
 
   def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]] = IO.pure(List())
+
+  def getFirstOwnedRecordByGroup(ownerGroupId: String): IO[Option[String]] = IO.pure(None)
 }
 
 trait EmptyZoneRepo extends ZoneRepository {

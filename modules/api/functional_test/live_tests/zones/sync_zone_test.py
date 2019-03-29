@@ -95,6 +95,7 @@ def test_sync_zone_success(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone_name = 'sync-test'
     updated_rs_id = None
+    check_rs = None
 
     zone = {
         'name': zone_name,
@@ -216,6 +217,11 @@ def test_sync_zone_success(shared_zone_test_context):
                 client.wait_until_recordset_change_status(change, 'Complete')
 
     finally:
+        # reset the ownerGroupId for foo record
+        if check_rs:
+            check_rs['ownerGroupId'] = None
+            update_response = client.update_recordset(check_rs, status=202)
+            client.wait_until_recordset_change_status(update_response, 'Complete')
         if 'id' in zone:
             dns_update(zone, 'foo', 38400, 'A', '2.2.2.2')
             dns_delete(zone, 'newrs', 'A')

@@ -23,6 +23,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
+import vinyldns.core.domain.record.RecordSetRepository
 
 object MembershipService {
   def apply(dataAccessor: ApiDataAccessor): MembershipService =
@@ -31,7 +32,8 @@ object MembershipService {
       dataAccessor.userRepository,
       dataAccessor.membershipRepository,
       dataAccessor.zoneRepository,
-      dataAccessor.groupChangeRepository
+      dataAccessor.groupChangeRepository,
+      dataAccessor.recordSetRepository
     )
 }
 
@@ -40,7 +42,8 @@ class MembershipService(
     userRepo: UserRepository,
     membershipRepo: MembershipRepository,
     zoneRepo: ZoneRepository,
-    groupChangeRepo: GroupChangeRepository)
+    groupChangeRepo: GroupChangeRepository,
+    recordSetRepo: RecordSetRepository)
     extends MembershipServiceAlgebra {
 
   import MembershipValidations._
@@ -86,7 +89,8 @@ class MembershipService(
     for {
       existingGroup <- getExistingGroup(groupId)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
-      _ <- groupCanBeDeleted(existingGroup)
+      _ <- isNotZoneAdmin(existingGroup)
+      _ <- isNotRecordOwnerGroup(existingGroup)
       _ <- groupChangeRepo
         .save(GroupChange.forDelete(existingGroup, authPrincipal))
         .toResult[GroupChange]
@@ -233,12 +237,24 @@ class MembershipService(
       }
       .toResult
 
-  def groupCanBeDeleted(group: Group): Result[Unit] =
+  def isNotZoneAdmin(group: Group): Result[Unit] =
     zoneRepo
       .getZonesByAdminGroupId(group.id)
       .map { zones =>
         ensuring(InvalidGroupRequestError(s"${group.name} is the admin of a zone. Cannot delete.")) {
           zones.isEmpty
+        }
+      }
+      .toResult
+
+  def isNotRecordOwnerGroup(group: Group): Result[Unit] =
+    recordSetRepo
+      .getFirstOwnedRecordByGroup(group.id)
+      .map { rsId =>
+        ensuring(
+          InvalidGroupRequestError(
+            s"${group.name} is the owner for record set $rsId. Cannot delete.")) {
+          rsId.isEmpty
         }
       }
       .toResult
