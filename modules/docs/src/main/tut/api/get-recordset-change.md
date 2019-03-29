@@ -71,6 +71,7 @@ id            | string        | the id of the change.  This is not the id of the
   "changeType": "Create",
   "status": "Pending",
   "created": "2017-02-23T14:58:54Z",
-  "id": "fef81f0b-f439-462d-88df-c773d3686c9b"
+  "id": "fef81f0b-f439-462d-88df-c773d3686c9b",
+  "singleBatchChangeIds": []
 }
 ```

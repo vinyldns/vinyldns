@@ -97,7 +97,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
           "type": "CNAME",
           "id": "f62235df-5372-443c-9ba4-bdd3fca452f4"
         },
-        "id": "68fd6dbe-0da8-4280-bcf3-37f54528dc41"
+        "id": "68fd6dbe-0da8-4280-bcf3-37f54528dc41",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -156,7 +157,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
           "type": "AAAA",
           "id": "9559103d-4cb4-4d34-9d3f-eab3fe2e8aed"
         },
-        "id": "dabf1e57-49e7-4d2d-8a00-814d88546b0c"
+        "id": "dabf1e57-49e7-4d2d-8a00-814d88546b0c",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -215,7 +217,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
           "type": "A",
           "id": "f1fd620e-5ff3-4ee9-839f-bc747a9867d9"
         },
-        "id": "23ae1487-bc7f-481b-a544-10ceb7a87540"
+        "id": "23ae1487-bc7f-481b-a544-10ceb7a87540",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -268,7 +271,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
           "type": "CNAME",
           "id": "f62235df-5372-443c-9ba4-bdd3fca452f4"
         },
-        "id": "5c722555-c7be-4620-a1fd-8ca53a5b8683"
+        "id": "5c722555-c7be-4620-a1fd-8ca53a5b8683",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -327,7 +331,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
           "type": "AAAA",
           "id": "9559103d-4cb4-4d34-9d3f-eab3fe2e8aed"
         },
-        "id": "480fff34-61d3-4a1d-9696-f5007842b38a"
+        "id": "480fff34-61d3-4a1d-9696-f5007842b38a",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -386,7 +391,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
           "type": "A",
           "id": "f1fd620e-5ff3-4ee9-839f-bc747a9867d9"
         },
-        "id": "999d8674-e59b-478e-95c0-9d4eb964f2be"
+        "id": "999d8674-e59b-478e-95c0-9d4eb964f2be",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -435,7 +441,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
         },
         "changeType": "Create",
         "userId": "history-id",
-        "id": "b05f0837-84bd-47aa-8a95-7bde91046268"
+        "id": "b05f0837-84bd-47aa-8a95-7bde91046268",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -475,7 +482,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
         },
         "changeType": "Create",
         "userId": "history-id",
-        "id": "e7e6b7f9-5253-4947-9580-3f0b81a48717"
+        "id": "e7e6b7f9-5253-4947-9580-3f0b81a48717",
+        "singleBatchChangeIds": []
       },
       {
         "status": "Complete",
@@ -515,7 +523,8 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
         },
         "changeType": "Create",
         "userId": "history-id",
-        "id": "6743d428-7748-4348-a6c9-ae59e9eeaf97"
+        "id": "6743d428-7748-4348-a6c9-ae59e9eeaf97",
+        "singleBatchChangeIds": []
       }
     ],
   "maxItems": 100

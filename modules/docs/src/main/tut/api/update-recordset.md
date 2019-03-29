@@ -125,6 +125,7 @@ id            | string        | the id of the change.  This is not the id of the
     "account": "9b22b686-54bc-47fb-a8f8-cdc48e6d04ae",
     "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   },
-  "id": "df69bc45-2942-4fb7-813c-4dd21cfad7fa"
+  "id": "df69bc45-2942-4fb7-813c-4dd21cfad7fa",
+  "singleBatchChangeIds": []
 }
 ```
