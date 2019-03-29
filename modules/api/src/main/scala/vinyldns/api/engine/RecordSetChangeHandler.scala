@@ -59,8 +59,8 @@ object RecordSetChangeHandler {
       wildCardExists <- wildCardExistsForRecord(recordSetChange.recordSet, recordSetRepository)
       completedState <- fsm(Pending(recordSetChange), conn, wildCardExists)
       changeSet = ChangeSet(completedState.change).complete(completedState.change)
-      _ <- recordChangeRepository.save(changeSet)
       _ <- recordSetRepository.apply(changeSet)
+      _ <- recordChangeRepository.save(changeSet)
       singleBatchChanges <- batchChangeRepository.getSingleChanges(
         recordSetChange.singleBatchChangeIds)
       singleChangeStatusUpdates = updateBatchStatuses(singleBatchChanges, completedState.change)
