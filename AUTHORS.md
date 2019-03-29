@@ -1,7 +1,7 @@
 # Authors
 
 This project would not be possible without the generous contributions of many people.
-Thank you! If you have contributed in any way, but do not see your name here, please open a PR to add yourself!
+Thank you! If you have contributed in any way, but do not see your name here, please open a PR to add yourself (in alphabetical order by last name)!
 
 ## Maintainers
 - Paul Cleary
@@ -31,6 +31,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Luke Cori
 - Jearvon Dharrie
 - Andrew Dunn
+- Alejandro Guirao
 - Daniel Jin
 - Krista Khare
 - Patrick Lee
@@ -45,7 +46,6 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Jess Stodola
 - Jim Wakemen
 - Fei Wan
-- Peter Willis
 - Andrew Wang
+- Peter Willis
 - Anastasia Vishnyakova
-- Alejandro Guirao
