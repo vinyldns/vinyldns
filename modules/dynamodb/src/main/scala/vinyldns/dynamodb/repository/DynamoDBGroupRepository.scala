@@ -99,7 +99,13 @@ class DynamoDBGroupRepository private[repository] (
     }
 
   def delete(group: Group): IO[Group] =
-    save(group.copy(status = GroupStatus.Deleted))
+    monitor("repo.Group.delete") {
+      log.info(s"Deleting group ${group.id} ${group.name}.")
+      val key = new HashMap[String, AttributeValue]()
+      key.put(GROUP_ID, new AttributeValue(group.id))
+      val request = new DeleteItemRequest().withTableName(groupTableName).withKey(key)
+      dynamoDBHelper.deleteItem(request).map(_ => group)
+    }
 
   /*Looks up a group.  If the group is not found, or if the group's status is Deleted, will return None */
   def getGroup(groupId: String): IO[Option[Group]] =
