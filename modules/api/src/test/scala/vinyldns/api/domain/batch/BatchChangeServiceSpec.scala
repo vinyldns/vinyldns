@@ -156,12 +156,18 @@ class BatchChangeServiceSpec
       }
 
     override def getRecordSetsByFQDNs(names: Set[String]): IO[List[RecordSet]] =
-      IO.pure(
+      IO.pure {
         dbRecordSets
-          .filter(rn => names.contains(rn._2))
-          .map(r => r._1)
-          .toList)
-  }
+          .filter {
+            case (_, fqdn) =>
+              names.contains(fqdn)
+          }
+          .map {
+            case (rs, _) => rs
+          }
+          .toList
+      }
+}
 
   object AlwaysExistsZoneRepo extends EmptyZoneRepo {
     override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] = {
