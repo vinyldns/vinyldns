@@ -73,6 +73,8 @@ trait EmptyZoneRepo extends ZoneRepository {
 
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = IO.pure(Set())
 
+  def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]] = IO.pure(None)
+
 }
 
 trait EmptyGroupRepo extends GroupRepository {

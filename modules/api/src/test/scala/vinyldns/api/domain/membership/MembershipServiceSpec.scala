@@ -431,6 +431,9 @@ class MembershipServiceSpec
         doReturn(IO.pure(None))
           .when(mockRecordSetRepo)
           .getFirstOwnedRecordByGroup(anyString)
+        doReturn(IO.pure(None))
+          .when(mockZoneRepo)
+          .getFirstOwnedZoneAclGroupId(anyString())
 
         val result: Group = rightResultOf(underTest.deleteGroup("ok", okAuth).value)
         result shouldBe okGroup.copy(status = GroupStatus.Deleted)
@@ -483,6 +486,16 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some("somerecordsetid")))
           .when(mockRecordSetRepo)
           .getFirstOwnedRecordByGroup(anyString())
+        val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
+
+        error shouldBe an[InvalidGroupRequestError]
+      }
+
+      "return an error if the group has an ACL rule on a zone" in {
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(Some("someId")))
+          .when(mockZoneRepo)
+          .getFirstOwnedZoneAclGroupId(anyString())
         val error = leftResultOf(underTest.deleteGroup("ok", okAuth).value)
 
         error shouldBe an[InvalidGroupRequestError]
@@ -813,7 +826,7 @@ class MembershipServiceSpec
           .getZonesByAdminGroupId(okGroup.id)
 
         val error = leftResultOf(underTest.isNotZoneAdmin(okGroup).value)
-        error shouldBe a[InvalidGroupRequestError]
+        error shouldBe an[InvalidGroupRequestError]
       }
     }
 
@@ -829,7 +842,23 @@ class MembershipServiceSpec
         doReturn(IO.pure(Some("somerecordsetid"))).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
 
         val error = leftResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
-        error shouldBe a[InvalidGroupRequestError]
+        error shouldBe an[InvalidGroupRequestError]
+      }
+    }
+
+    "isNotZoneAclGroupId" should {
+      "return successfully when a groupId is not in any zone ACL" in {
+        doReturn(IO.pure(None)).when(mockZoneRepo).getFirstOwnedZoneAclGroupId(okGroup.id)
+
+        val result = awaitResultOf(underTest.isNotInZoneAclRule(okGroup).value)
+        result should be(right)
+      }
+
+      "return an InvalidGroupRequestError when a group has an ACL rule in a zone" in {
+        doReturn(IO.pure(Some("someZoneId"))).when(mockZoneRepo).getFirstOwnedZoneAclGroupId(okGroup.id)
+
+        val error = leftResultOf(underTest.isNotInZoneAclRule(okGroup).value)
+        error shouldBe an[InvalidGroupRequestError]
       }
     }
 
