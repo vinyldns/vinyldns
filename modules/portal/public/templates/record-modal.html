@@ -153,14 +153,17 @@
 
             <modal-element ng-if="currentRecord.type == 'TXT'"
                            label="Record Text"
-                           invalid-when="addRecordForm.$submitted && addRecordForm.textArea.$invalid">
-                <input name="textArea"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.textRecordData.$invalid">
+                <textarea name="textRecordData"
                        class="form-control"
+                       rows="5"
+                       ng-list="&#10;"
+                       ng-trim="false"
                        ng-model="currentRecord.textRecordData"
                        ng-class="recordModal.details.class"
                        ng-readonly="recordModal.details.readOnly"
                        required>
-                </input>
+                </textarea>
                 <modal-invalid>
                     Record text is required
                 </modal-invalid>
