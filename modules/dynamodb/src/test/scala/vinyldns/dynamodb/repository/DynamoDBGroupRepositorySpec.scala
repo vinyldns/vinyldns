@@ -268,4 +268,17 @@ class DynamoDBGroupRepositorySpec
       a[ResourceNotFoundException] shouldBe thrownBy(result.unsafeRunSync())
     }
   }
+
+  "DynamoDBGroupRepository.delete" should {
+    "return a deleted group on delete" in {
+      val mockDeleteItemRequest = mock[DeleteItemResult]
+
+      doReturn(IO.pure(mockDeleteItemRequest))
+        .when(dynamoDBHelper)
+        .deleteItem(any[DeleteItemRequest])
+
+      val response = underTest.delete(okGroup).unsafeRunSync()
+      response shouldBe okGroup
+    }
+  }
 }
