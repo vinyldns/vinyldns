@@ -77,6 +77,8 @@ class BatchChangeServiceSpec
   private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, 100, PTRData("ptr"))
   private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, 100, PTRData("ptr"))
   private val ptrDelegatedAdd = AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("ptr"))
+  private val ptrV6Add =
+    AddChangeInput("2001:0000:0000:0000:0000:ff00:0042:8329", RecordType.PTR, 100, PTRData("ptr"))
 
   private val authGrp = okGroup
   private val auth = okAuth
@@ -89,12 +91,17 @@ class BatchChangeServiceSpec
   private val ptrZone = Zone("55.144.10.in-addr.arpa.", "email", id = "nonDelegatedPTR")
   private val delegatedPTRZone = Zone("64/25.55.144.10.in-addr.arpa.", "email", id = "delegatedPTR")
   private val otherPTRZone = Zone("56.144.10.in-addr.arpa.", "email", id = "otherPTR")
+  private val ipv6PTRZone = Zone("0.1.0.0.2.ip6.arpa.", "email", id = "ipv6PTR")
 
   private val apexAddForVal = AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
   private val nonApexAddForVal = AddChangeForValidation(baseZone, "non-apex", nonApexAddA)
   private val ptrAddForVal = AddChangeForValidation(ptrZone, "11", ptrAdd)
   private val ptrDelegatedAddForVal =
     AddChangeForValidation(delegatedPTRZone, "193", ptrDelegatedAdd)
+  private val ptrV6AddForVal = AddChangeForValidation(
+    ipv6PTRZone,
+    "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
+    ptrV6Add)
 
   private val pendingChange = SingleAddChange(
     "zoneid",
@@ -136,6 +143,8 @@ class BatchChangeServiceSpec
     makeRS(ptrAddForVal.zone.name, ptrAddForVal.recordName, PTR)
   private val existingPtrDelegated: RecordSet =
     makeRS(ptrDelegatedAddForVal.zone.name, ptrDelegatedAddForVal.recordName, PTR)
+  private val existingPtrV6: RecordSet =
+    makeRS(ptrV6AddForVal.zone.name, ptrV6AddForVal.recordName, PTR)
 
   object TestRecordSetRepo extends EmptyRecordSetRepo {
     val dbRecordSets: Set[(RecordSet, String)] =
@@ -143,7 +152,8 @@ class BatchChangeServiceSpec
         (existingApex, "apex.test.com."),
         (existingNonApex, "non-apex.test.com."),
         (existingPtr, "11.55.144.10.in-addr.arpa."),
-        (existingPtrDelegated, "193.64/25.55.144.10.in-addr.arpa.")
+        (existingPtrDelegated, "193.64/25.55.144.10.in-addr.arpa."),
+        (existingPtrV6, "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa.")
       )
 
     override def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
@@ -167,7 +177,7 @@ class BatchChangeServiceSpec
           }
           .toList
       }
-}
+  }
 
   object AlwaysExistsZoneRepo extends EmptyZoneRepo {
     override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] = {
@@ -355,10 +365,12 @@ class BatchChangeServiceSpec
         nonApexAddForVal.validNel,
         ptrAddForVal.validNel,
         ptrDelegatedAddForVal.validNel,
+        ptrV6AddForVal.validNel,
         error)
       val result = await(underTest.getExistingRecordSets(in))
 
-      val expected = List(existingApex, existingNonApex, existingPtr, existingPtrDelegated)
+      val expected =
+        List(existingApex, existingNonApex, existingPtr, existingPtrDelegated, existingPtrV6)
       result.recordSets should contain theSameElementsAs expected
     }
     "not fail if gets all lefts" in {

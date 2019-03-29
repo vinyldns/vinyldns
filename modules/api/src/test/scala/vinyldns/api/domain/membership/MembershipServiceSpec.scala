@@ -839,7 +839,9 @@ class MembershipServiceSpec
       }
 
       "return an InvalidGroupRequestError when a group for deletion is admin of a zone" in {
-        doReturn(IO.pure(Some("somerecordsetid"))).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(okGroup.id)
+        doReturn(IO.pure(Some("somerecordsetid")))
+          .when(mockRecordSetRepo)
+          .getFirstOwnedRecordByGroup(okGroup.id)
 
         val error = leftResultOf(underTest.isNotRecordOwnerGroup(okGroup).value)
         error shouldBe an[InvalidGroupRequestError]
@@ -855,7 +857,9 @@ class MembershipServiceSpec
       }
 
       "return an InvalidGroupRequestError when a group has an ACL rule in a zone" in {
-        doReturn(IO.pure(Some("someZoneId"))).when(mockZoneRepo).getFirstOwnedZoneAclGroupId(okGroup.id)
+        doReturn(IO.pure(Some("someZoneId")))
+          .when(mockZoneRepo)
+          .getFirstOwnedZoneAclGroupId(okGroup.id)
 
         val error = leftResultOf(underTest.isNotInZoneAclRule(okGroup).value)
         error shouldBe an[InvalidGroupRequestError]
