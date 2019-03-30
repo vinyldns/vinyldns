@@ -158,7 +158,7 @@ You must have all of the following required API repositories configured in exact
 | Group  |        X         |       X       |
 | GroupChange  |        X         |       X       |
 | Membership  |        X         |       X       |
-| RecordSet |        X         |       X       |
+| RecordSet |                 |       X       |
 | RecordSetChange  |        X         |       X       |
 | User  |        X         |       X       |
 | UserChange  |        X         |       X       |

@@ -26,6 +26,7 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Annelise Box
 - Maulon Byron
 - Shirlette Chambers
+- Varsha Chandrashekar
 - Peter Cline
 - Kemar Cockburn
 - Luke Cori
