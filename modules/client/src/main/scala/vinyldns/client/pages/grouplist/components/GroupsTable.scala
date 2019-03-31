@@ -67,6 +67,7 @@ object GroupsTable {
                     ^.className := "control-label",
                     "Items per page:  "),
                   <.select(
+                    ^.value := S.maxItems,
                     ^.onChange ==> { e: ReactEventFromInput =>
                       val maxItems = Try(e.target.value.toInt).getOrElse(100)
                       bs.modState(
@@ -77,7 +78,7 @@ object GroupsTable {
                         })
                     },
                     List(100, 50, 25, 5, 1).map { o =>
-                      <.option(^.key := o, ^.selected := S.maxItems == o, o)
+                      <.option(^.key := o, o)
                     }.toTagMod,
                   )
                 ),

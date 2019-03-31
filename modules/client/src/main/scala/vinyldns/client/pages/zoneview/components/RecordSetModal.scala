@@ -40,21 +40,6 @@ object RecordSetModal {
       refreshRecords: Unit => Callback,
       existing: Option[RecordSet] = None)
 
-  val recordTypes: List[(String, String)] =
-    List(
-      "A" -> "A",
-      "AAAA" -> "AAAA",
-      "CNAME" -> "CNAME",
-      "DS" -> "DS",
-      "PTR" -> "PTR",
-      "MX" -> "MX",
-      "NS" -> "NS",
-      "SRV" -> "SRV",
-      "TXT" -> "TXT",
-      "SSHFP" -> "SSHFP",
-      "SPF" -> "SPF"
-    )
-
   val component = ScalaComponent
     .builder[Props]("RecordModal")
     .initialStateFromProps { p =>
@@ -113,7 +98,19 @@ object RecordSetModal {
           changeType,
           inputClass = Some("test-type"),
           label = Some("Type"),
-          options = recordTypes,
+          options = List(
+            "A" -> "A",
+            "AAAA" -> "AAAA",
+            "CNAME" -> "CNAME",
+            "DS" -> "DS",
+            "PTR" -> "PTR",
+            "MX" -> "MX",
+            "NS" -> "NS",
+            "SRV" -> "SRV",
+            "TXT" -> "TXT",
+            "SSHFP" -> "SSHFP",
+            "SPF" -> "SPF"
+          ),
           inputType = InputType.Select,
           value = Some(S.recordSet.`type`),
           validations = Some(Validations(required = true))
@@ -207,6 +204,7 @@ object RecordSetModal {
       }
 
     def generateCustomRecordDataInput(S: State): TagMod =
+      // for more complex inputs that can't just use a simple text field
       S.recordSet.`type` match {
         case mx if mx == "MX" => MxInput.toTagMod(S, bs)
         case srv if srv == "SRV" => SrvInput.toTagMod(S, bs)

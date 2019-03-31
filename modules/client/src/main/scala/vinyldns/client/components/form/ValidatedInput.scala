@@ -41,6 +41,7 @@ object InputType extends Enumeration {
 object ValidatedInput {
   case class Props(
       parentOnChange: String => Callback,
+      value: Option[String],
       labelSize: String = "col-md-3 col-sm-3 col-xs-12",
       inputSize: String = "col-md-6 col-sm-6 col-xs-12",
       label: Option[String] = None,
@@ -48,7 +49,6 @@ object ValidatedInput {
       inputClass: Option[String] = None,
       placeholder: Option[String] = None,
       helpText: Option[String] = None,
-      value: Option[String] = None,
       encoding: Encoding = Encoding.Text,
       inputType: InputType = InputType.Input,
       options: List[(String, String)] = List(),

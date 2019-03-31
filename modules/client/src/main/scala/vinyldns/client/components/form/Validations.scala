@@ -78,7 +78,7 @@ object Validations {
       options: List[(String, String)]): Either[String, Unit] =
     if (checks.matchOptions)
       Either.cond(
-        options.contains(value),
+        options.exists { case (v, _) => v == value },
         (),
         "Must choose an option in list"
       )
@@ -89,7 +89,7 @@ object Validations {
       Either.cond(
         value.matches(AppRouter.uuidRegex),
         (),
-        "Must be a valid Group ID (not name)"
+        "Must be a valid ID (not name)"
       )
     else ().asRight
 }

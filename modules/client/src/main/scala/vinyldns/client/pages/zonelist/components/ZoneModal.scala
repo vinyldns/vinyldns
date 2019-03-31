@@ -148,6 +148,7 @@ object ZoneModal {
         ),
         ValidatedInput.Props(
           changeAdminGroupId,
+          value = Some(S.zone.adminGroupId),
           inputClass = Some("test-group-admin"),
           label = Some("Admin Group Id"),
           helpText = Some(s"""
@@ -167,110 +168,73 @@ object ZoneModal {
         )
       )
 
-      baseProps ::: generateCustomConnectionFields(S) ::: generateCustomTransferFields(S)
+      baseProps :::
+        generateCustomConnectionFields(S) :::
+        generateCustomConnectionFields(S, isTransfer = true)
     }
 
-    def generateCustomConnectionFields(S: State): List[ValidatedInput.Props] =
-      if (S.customServer)
+    def generateCustomConnectionFields(
+        S: State,
+        isTransfer: Boolean = false): List[ValidatedInput.Props] =
+      if ((S.customServer && !isTransfer) || (S.customTransfer && isTransfer)) {
+        val connection = if (isTransfer) S.zone.transferConnection else S.zone.connection
         List(
           ValidatedInput.Props(
-            changeConnectionKeyName,
+            if (isTransfer) changeTransferKeyName else changeConnectionKeyName,
             inputClass = Some("test-connection-key-name"),
-            label = Some("Connection Key Name"),
+            label = Some(s"${if (isTransfer) "Transfer "}Connection Key Name"),
             helpText = Some("""
-                            |The name of the key used to sign requests to the DNS server.
-                            | This is set when the zone is setup in the DNS server, and is used to
-                            | connect to the DNS server when performing updates and transfers.
-                          """.stripMargin),
-            value = S.zone.connection.map(_.keyName),
+                |The name of the key used to sign requests to the DNS server.
+                | This is set when the zone is setup in the DNS server, and is used to
+                | connect to the DNS server when performing updates and transfers.
+              """.stripMargin),
+            value = connection.map(_.keyName),
             validations = Some(Validations(required = true))
           ),
           ValidatedInput.Props(
-            changeConnectionKey,
+            if (isTransfer) changeTransferKey else changeConnectionKey,
             inputClass = Some("test-connection-key"),
-            label = Some("Connection Key"),
+            label = Some(s"${if (isTransfer) "Transfer "}Connection Key"),
             helpText = Some("The secret key used to sign requests sent to the DNS server."),
-            value = S.zone.connection.map(_.key),
+            value = connection.map(_.key),
             encoding = Encoding.Password,
             validations = Some(Validations(required = true))
           ),
           ValidatedInput.Props(
-            changeConnectionServer,
+            if (isTransfer) changeTransferServer else changeConnectionServer,
             inputClass = Some("test-connection-server"),
-            label = Some("Connection Server"),
-            helpText = Some(
-              """
-              | The IP Address or host name of the backing DNS server for zone transfers.
-              | This host will be the target for syncing zones with Vinyl. If the port is not specified,
-              | port 53 is assumed.
-            """.stripMargin),
-            value = S.zone.connection.map(_.keyName),
-            validations = Some(Validations(required = true))
-          )
-        )
-      else List()
-
-    def generateCustomTransferFields(S: State): List[ValidatedInput.Props] =
-      if (S.customTransfer)
-        List(
-          ValidatedInput.Props(
-            changeTransferKeyName,
-            inputClass = Some("test-transfer-key-name"),
-            label = Some("Transfer Connection Key Name"),
-            helpText = Some("""
-                              |The name of the key used to sign requests to the DNS server.
-                              | This is set when the zone is setup in the DNS server, and is used to
-                              | connect to the DNS server when performing updates and transfers.
-                            """.stripMargin),
-            value = S.zone.transferConnection.map(_.keyName),
-            validations = Some(Validations(required = true))
-          ),
-          ValidatedInput.Props(
-            changeTransferKey,
-            inputClass = Some("test-transfer-key"),
-            label = Some("Transfer Connection Key"),
-            helpText = Some("The secret key used to sign requests sent to the DNS server."),
-            value = S.zone.transferConnection.map(_.key),
-            encoding = Encoding.Password,
-            validations = Some(Validations(required = true))
-          ),
-          ValidatedInput.Props(
-            changeTransferServer,
-            inputClass = Some("test-transfer-server"),
-            label = Some("Transfer Connection Server"),
+            label = Some(s"${if (isTransfer) "Transfer "}Connection Server"),
             helpText = Some(
               """
                 | The IP Address or host name of the backing DNS server for zone transfers.
                 | This host will be the target for syncing zones with Vinyl. If the port is not specified,
                 | port 53 is assumed.
               """.stripMargin),
-            value = S.zone.transferConnection.map(_.keyName),
+            value = connection.map(_.keyName),
             validations = Some(Validations(required = true))
           )
         )
-      else List()
+      } else List()
 
     def toggleCustomServer(): Callback =
       bs.modState { s =>
-        s.customServer match {
-          case turningOn if false =>
-            val zone = s.zone.copy(connection = Some(ZoneConnection()))
-            s.copy(zone = zone, customServer = !turningOn)
-          case turningOff if true =>
-            val zone = s.zone.copy(connection = None)
-            s.copy(zone = zone, customServer = !turningOff)
+        if (s.customServer) { // turning off
+          val zone = s.zone.copy(connection = None)
+          s.copy(zone = zone, customServer = false)
+        } else {
+          val zone = s.zone.copy(connection = Some(ZoneConnection()))
+          s.copy(zone = zone, customServer = true)
         }
       }
 
     def toggleCustomTransfer(): Callback =
       bs.modState { s =>
-        s.customTransfer match {
-          case turningOn if false =>
-            val zone = s.zone.copy(transferConnection = Some(ZoneConnection()))
-            s.copy(zone = zone, customTransfer = !turningOn)
-          case turningOff if true =>
-            val zone = s.zone.copy(transferConnection = None)
-            s.copy(zone = zone, customTransfer = !turningOff)
+        if (s.customTransfer) { // turning off
+          val zone = s.zone.copy(transferConnection = None)
+          s.copy(zone = zone, customTransfer = false)
+        } else {
+          val zone = s.zone.copy(transferConnection = Some(ZoneConnection()))
+          s.copy(zone = zone, customTransfer = true)
         }
       }
 

@@ -188,10 +188,10 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         val adminField =
           ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-group-admin")
         val customKeyName =
-          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-transfer-key-name")
-        val customKey = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-transfer-key")
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-connection-key-name")
+        val customKey = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-connection-key")
         val customServer =
-          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-transfer-server")
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-connection-server")
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
@@ -199,6 +199,70 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         Simulate.change(customKeyName, SimEvent.Change("name"))
         Simulate.change(customKey, SimEvent.Change("key"))
         Simulate.change(customServer, SimEvent.Change("1.1.1.1"))
+
+        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
+        Simulate.submit(form)
+      }
+    }
+
+    "make request with customConnection and customTransfer toggled on" in new Fixture {
+      val expectedZone =
+        ZoneCreateInfo(
+          "test-zone.",
+          "test@email.com",
+          testUUID,
+          connection = Some(ZoneConnection("name", "name", "key", "server")),
+          transferConnection = Some(ZoneConnection("tname", "tname", "tkey", "tserver"))
+        )
+
+      (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
+      (mockHttp.post[Zone] _)
+        .expects(CreateZoneRoute, write(expectedZone), *, *)
+        .never()
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(ZoneModal(props)) { c =>
+        val customServerToggle =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-custom-server")
+        Simulate.change(customServerToggle, SimEvent.Change())
+
+        val customTransferServerToggle =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-custom-transfer")
+        Simulate.change(customTransferServerToggle, SimEvent.Change())
+
+        val nameField =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
+        val emailField =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-email")
+        val adminField =
+          ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-group-admin")
+
+        val customKeyName =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-connection-key-name")(0)
+        val customKey =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-connection-key")(0)
+        val customServer =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-connection-server")(0)
+
+        val customTransferKeyName =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-connection-key-name")(1)
+        val customTransferKey =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-connection-key")(1)
+        val customTransferServer =
+          ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-connection-server")(1)
+
+        Simulate.change(nameField, SimEvent.Change("test-zone."))
+        Simulate.change(emailField, SimEvent.Change("test@email.com"))
+        Simulate.change(adminField, SimEvent.Change(testUUID))
+
+        Simulate.change(customKeyName, SimEvent.Change("name"))
+        Simulate.change(customKey, SimEvent.Change("key"))
+        Simulate.change(customServer, SimEvent.Change("server"))
+
+        Simulate.change(customTransferKeyName, SimEvent.Change("tname"))
+        Simulate.change(customTransferKey, SimEvent.Change("tkey"))
+        Simulate.change(customTransferServer, SimEvent.Change("tserver"))
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
         Simulate.submit(form)
