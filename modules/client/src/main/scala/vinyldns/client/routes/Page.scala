@@ -36,5 +36,7 @@ final case class ToGroupViewPage(id: String) extends Page
 object ToZoneListPage extends Page
 
 // zone view
-sealed class ToZoneViewPage extends Page
-final case class ToZoneViewRecordsPage(id: String) extends ToZoneViewPage
+sealed trait ToZoneViewPage extends Page { def id: String }
+final case class ToZoneViewRecordsTab(id: String) extends ToZoneViewPage
+final case class ToZoneViewZoneTab(id: String) extends ToZoneViewPage
+final case class ToZoneViewChangesTab(id: String) extends ToZoneViewPage

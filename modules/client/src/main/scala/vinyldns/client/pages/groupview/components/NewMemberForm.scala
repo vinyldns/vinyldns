@@ -25,10 +25,10 @@ import japgolly.scalajs.react.component.Scala.BackendScope
 import japgolly.scalajs.react.vdom.VdomElement
 import upickle.default.write
 import vinyldns.client.http.{Http, HttpResponse, LookupUserRoute, UpdateGroupRoute}
-import vinyldns.client.components.{InputFieldValidations, ValidatedForm, ValidatedInputField}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.membership.{Group, Id, User}
 import vinyldns.client.components.AlertBox.addNotification
+import vinyldns.client.components.form.{ValidatedForm, ValidatedInput, Validations}
 
 object NewMemberForm {
   case class State(
@@ -86,17 +86,17 @@ object NewMemberForm {
         )
       )
 
-    def generateInputFieldProps(S: State): List[ValidatedInputField.Props] =
+    def generateInputFieldProps(S: State): List[ValidatedInput.Props] =
       List(
-        ValidatedInputField.Props(
+        ValidatedInput.Props(
           (value: String) => bs.modState(_.copy(username = value)),
           labelSize = "",
           inputSize = "col-md-3",
           inputClass = Some("test-new-member-username"),
           placeholder = Some("username"),
-          initialValue = Some(S.username),
+          value = Some(S.username),
           validations = Some(
-            InputFieldValidations(
+            Validations(
               required = true,
               noSpaces = false
             ))

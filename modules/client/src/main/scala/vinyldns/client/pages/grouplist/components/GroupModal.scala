@@ -25,6 +25,7 @@ import vinyldns.client.components._
 import vinyldns.client.models.membership.{BasicGroupInfo, Group, GroupCreateInfo, Id}
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.components.JsNative._
+import vinyldns.client.components.form.{Encoding, ValidatedForm, ValidatedInput, Validations}
 
 object GroupModal {
   case class State(group: BasicGroupInfo, isUpdate: Boolean = false)
@@ -88,29 +89,27 @@ object GroupModal {
       if (S.isUpdate) s"Update Group ${S.group.asInstanceOf[Group].id}"
       else "Create Group"
 
-    def generateInputFieldProps(S: State): List[ValidatedInputField.Props] =
+    def generateInputFieldProps(S: State): List[ValidatedInput.Props] =
       List(
-        ValidatedInputField.Props(
+        ValidatedInput.Props(
           changeName,
           inputClass = Some("test-name"),
           label = Some("Group Name"),
-          helpText = Some("Group name"),
-          initialValue = Some(S.group.name),
-          validations =
-            Some(InputFieldValidations(required = true, maxSize = Some(255), noSpaces = true))
+          value = Some(S.group.name),
+          validations = Some(Validations(required = true, maxSize = Some(255), noSpaces = true))
         ),
-        ValidatedInputField.Props(
+        ValidatedInput.Props(
           changeEmail,
           label = Some("Email"),
           inputClass = Some("test-email"),
           helpText = Some("Group contact email. Preferably a multi user distribution"),
-          initialValue = Some(S.group.email),
-          typ = InputType.Email,
-          validations = Some(InputFieldValidations(required = true))
+          value = Some(S.group.email),
+          encoding = Encoding.Email,
+          validations = Some(Validations(required = true))
         ),
-        ValidatedInputField.Props(
+        ValidatedInput.Props(
           changeDescription,
-          initialValue = S.group.description,
+          value = S.group.description,
           inputClass = Some("test-description"),
           label = Some("Description")
         )

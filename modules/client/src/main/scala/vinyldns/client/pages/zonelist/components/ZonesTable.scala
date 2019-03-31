@@ -27,7 +27,7 @@ import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute
 import vinyldns.client.models.zone.{Zone, ZoneList}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.models.Pagination
-import vinyldns.client.routes.{Page, ToGroupViewPage, ToZoneViewRecordsPage}
+import vinyldns.client.routes.{Page, ToGroupViewPage, ToZoneViewRecordsTab}
 
 import scala.util.Try
 
@@ -179,7 +179,7 @@ object ZonesTable {
             ^.className := "btn-group",
             <.a(
               ^.className := "btn btn-info btn-rounded test-view",
-              P.router.setOnClick(ToZoneViewRecordsPage(zone.id)),
+              P.router.setOnClick(ToZoneViewRecordsTab(zone.id)),
               ^.title := s"View zone ${zone.name}",
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-eye"),
@@ -201,13 +201,9 @@ object ZonesTable {
     def deleteZone(P: Props, S: State, zone: Zone): Callback =
       P.http.withConfirmation(
         s"""
-             |Are you sure you want to abandon zone ${zone.name}?
+             |Are you sure you want to abandon zone ${zone.name}? You can re-connect to the zone at a later date.
              |
-             |Abandoning a zone removes it from being managed by VinylDNS but the zone will
-             |still exist in DNS with all its records.
-             |
-             |To delete the DNS records, you must first view the zone and
-             |delete DNS records you no longer want to exist first.
+             |Abandoning a zone does not delete any of its DNS records, the zone will still exist in DNS.
            """.stripMargin,
         Callback
           .lazily {

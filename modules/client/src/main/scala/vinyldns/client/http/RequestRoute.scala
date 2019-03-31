@@ -18,6 +18,7 @@ package vinyldns.client.http
 
 import upickle.default.read
 import vinyldns.client.models.membership.{Group, GroupList, MemberList, User}
+import vinyldns.client.models.record.{RecordSet, RecordSetList}
 import vinyldns.client.models.zone.{GetZone, Zone, ZoneList}
 
 import scala.scalajs.js.URIUtils
@@ -132,4 +133,27 @@ final case class GetZoneRoute(id: String) extends RequestRoute[Zone] {
   def path: String = s"/api/zones/$id"
   def parse(httpResponse: HttpResponse): Option[Zone] =
     Try(Option(read[GetZone](httpResponse.responseText).zone)).getOrElse(None)
+}
+
+final case class ListRecordSetsRoute(
+    zoneId: String,
+    maxItems: Int = 100,
+    nameFilter: Option[String] = None,
+    startFrom: Option[String] = None)
+    extends RequestRoute[RecordSetList] {
+  val queryStrings =
+    Map.empty[String, String] ++
+      Map("maxItems" -> maxItems.toString) ++
+      nameFilter.map(f => "recordNameFilter" -> f) ++
+      startFrom.map(s => "startFrom" -> s)
+
+  def path: String = s"/api/zones/$zoneId/recordsets${toQueryString(queryStrings)}"
+  def parse(httpResponse: HttpResponse): Option[RecordSetList] =
+    Try(Option(read[RecordSetList](httpResponse.responseText))).getOrElse(None)
+}
+
+final case class CreateRecordSetRoute(zoneId: String) extends RequestRoute[RecordSet] {
+  def path: String = s"/api/zones/$zoneId/recordsets"
+  def parse(httpResponse: HttpResponse): Option[RecordSet] =
+    Try(Option(read[RecordSet](httpResponse.responseText))).getOrElse(None)
 }

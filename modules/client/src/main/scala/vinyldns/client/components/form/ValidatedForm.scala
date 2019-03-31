@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.components
+package vinyldns.client.components.form
 
 import japgolly.scalajs.react.CtorType.ChildArg
 import japgolly.scalajs.react.Ref.WithScalaComponent
@@ -25,37 +25,39 @@ import japgolly.scalajs.react.vdom.html_<^._
 object ValidatedForm {
   case class Props(
       className: String,
-      inputFieldProps: List[ValidatedInputField.Props],
+      inputFieldProps: List[ValidatedInput.Props],
       onSubmit: Unit => Callback)
 
   case class State(
       refsToInputFields: List[WithScalaComponent[ // scalastyle:ignore
-        ValidatedInputField.Props,
-        ValidatedInputField.State,
+        ValidatedInput.Props,
+        ValidatedInput.State,
         _,
-        ValidatedInputField.component.ctor.This]])
+        ValidatedInput.component.ctor.This]])
 
   val component = ScalaComponent
     .builder[Props]("ValidatedForm")
     .initialState(State(List()))
     .renderBackendWithChildren[Backend]
-    .componentWillMount(e => e.backend.toState(e.props))
-    .componentWillReceiveProps(e => e.backend.toState(e.nextProps))
+    .getDerivedStateFromProps { (p, s) =>
+      val refs = for {
+        _ <- p.inputFieldProps
+      } yield Ref.toScalaComponent(ValidatedInput.component)
+      Some(s.copy(refsToInputFields = refs))
+    }
     .build
 
   def apply(props: Props, children: ChildArg): Unmounted[Props, State, Backend] =
     component(props)(children)
 
-  class Backend(bs: BackendScope[Props, State]) {
+  class Backend {
     def render(P: Props, S: State, children: PropsChildren): VdomElement =
       <.form(
         ^.className := P.className,
         ^.onSubmit ==> (e => validateForm(e, P, S)),
         P.inputFieldProps
           .zip(S.refsToInputFields)
-          .map { z =>
-            z._2.component(z._1)
-          }
+          .map { case (props, ref) => ref.component(props) }
           .toTagMod,
         children
       )
@@ -67,14 +69,6 @@ object ValidatedForm {
 
       if (!validated.contains(false)) e.preventDefaultCB >> P.onSubmit(())
       else e.preventDefaultCB >> Callback.empty
-    }
-
-    def toState(P: Props): Callback = {
-      val refs = for {
-        _ <- P.inputFieldProps
-      } yield Ref.toScalaComponent(ValidatedInputField.component)
-
-      bs.modState(_.copy(refsToInputFields = refs))
     }
   }
 }

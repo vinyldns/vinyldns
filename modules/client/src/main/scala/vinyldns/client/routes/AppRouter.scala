@@ -43,24 +43,32 @@ object AppRouter {
     (
       staticRoute("", ToHomePage) ~>
         renderR(ctl => HomePage(ToHomePage, ctl, HttpHelper))
-        |
+        | // home
           staticRoute("home", ToHomePage) ~>
             renderR(ctl => HomePage(ToHomePage, ctl, HttpHelper))
-        |
+        | // 404
           staticRoute("404", ToNotFound) ~>
             render(NotFoundPage())
-        |
+        | // group list
           staticRoute("groups", ToGroupListPage) ~>
             renderR(ctl => GroupListPage(ToGroupListPage, ctl, HttpHelper))
-        |
+        | // group view
           dynamicRouteCT[ToGroupViewPage]("groups" / string(uuidRegex).caseClass[ToGroupViewPage]) ~>
             (p => renderR(ctl => GroupViewPage(p, ctl, HttpHelper)))
-        |
+        | // zone list
           staticRoute("zones", ToZoneListPage) ~>
             renderR(ctl => ZoneListPage(ToZoneListPage, ctl, HttpHelper))
-        |
-          dynamicRouteCT[ToZoneViewRecordsPage](("zones" / string(uuidRegex) / "records")
-            .caseClass[ToZoneViewRecordsPage]) ~> (p =>
+        | // zone: manage records tab
+          dynamicRouteCT[ToZoneViewRecordsTab](("zones" / string(uuidRegex) / "records")
+            .caseClass[ToZoneViewRecordsTab]) ~> (p =>
+            renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
+        | // zone: manage zone tab
+          dynamicRouteCT[ToZoneViewZoneTab](("zones" / string(uuidRegex) / "zone")
+            .caseClass[ToZoneViewZoneTab]) ~> (p =>
+            renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
+        | // zone: change history tab
+          dynamicRouteCT[ToZoneViewChangesTab](("zones" / string(uuidRegex) / "changes")
+            .caseClass[ToZoneViewChangesTab]) ~> (p =>
             renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)

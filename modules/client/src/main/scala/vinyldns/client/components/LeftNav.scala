@@ -113,7 +113,7 @@ object LeftNav {
     (P.selectedPage, parent) match {
       case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
         fromSubTitle(groupView.id)
-      case (zoneView: ToZoneViewRecordsPage, _: ToZoneListPage.type) =>
+      case (zoneView: ToZoneViewPage, _: ToZoneListPage.type) =>
         fromSubTitle(zoneView.id)
       case _ => TagMod.empty
     }

@@ -26,7 +26,8 @@ import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse}
 import vinyldns.client.components.AlertBox.addNotification
-import vinyldns.client.routes.{Page, ToZoneViewRecordsPage}
+import vinyldns.client.pages.zoneview.components.RecordsTab
+import vinyldns.client.routes._
 
 object ZoneViewPage extends PropsFromAppRouter {
   case class State(zone: Option[Zone] = None)
@@ -42,7 +43,7 @@ object ZoneViewPage extends PropsFromAppRouter {
     component(Props(page, router, http))
 
   class Backend(bs: BackendScope[Props, State]) {
-    def render(S: State): VdomNode =
+    def render(P: Props, S: State): VdomNode =
       <.div(
         GlobalStyle.Styles.height100,
         ^.className := "right_col",
@@ -55,20 +56,25 @@ object ZoneViewPage extends PropsFromAppRouter {
                 <.div(
                   ^.className := "title_left",
                   <.h3(<.span(^.className := "fa fa-table"), s"""  Zone ${zone.name}"""),
-                  getIdHeader(zone),
-                  getEmailHeader(zone)
+                  <.h5(s"Id: ${zone.id}")
                 )
               ),
               <.div(^.className := "clearfix"),
               <.div(
                 ^.className := "page-content-wrap",
                 <.div(
-                  ^.className := "row",
+                  ^.className := "panel panel-default panel-tabs",
+                  navTabs(P),
                   <.div(
-                    ^.className := "col-md-12 col-sm-12 col-xs-12"
+                    ^.className := "panel-body tab-content",
+                    <.div(
+                      ^.className := "tab-pane active",
+                      tabContent(P, zone)
+                    )
                   )
                 )
-              )
+              ),
+              <.div(^.className := "clearfix")
             )
           case None =>
             <.div(
@@ -81,8 +87,61 @@ object ZoneViewPage extends PropsFromAppRouter {
         }
       )
 
+    def navTabs(P: Props): VdomElement = {
+      val zoneId = P.page.asInstanceOf[ToZoneViewPage].id
+
+      val recordsActive = <.li(^.className := "active", <.a("Manage Records"))
+      val zoneActive = <.li(^.className := "active", <.a("Manage Zone"))
+      val changesActive = <.li(^.className := "active", <.a("Change History"))
+
+      val records = <.li(
+        GlobalStyle.Styles.cursorPointer,
+        <.a("Manage Records"),
+        P.router.setOnClick(ToZoneViewRecordsTab(zoneId)))
+      val zone =
+        <.li(
+          GlobalStyle.Styles.cursorPointer,
+          <.a("Manage Zone", P.router.setOnClick(ToZoneViewZoneTab(zoneId))))
+      val changes = <.li(
+        GlobalStyle.Styles.cursorPointer,
+        <.a("Change History"),
+        P.router.setOnClick(ToZoneViewChangesTab(zoneId)))
+
+      P.page match {
+        case _: ToZoneViewRecordsTab =>
+          <.ul(
+            ^.className := "nav nav-tabs bar_tabs",
+            recordsActive,
+            zone,
+            changes
+          )
+        case _: ToZoneViewZoneTab =>
+          <.ul(
+            ^.className := "nav nav-tabs bar_tabs",
+            records,
+            zoneActive,
+            changes
+          )
+        case _ =>
+          <.ul(
+            ^.className := "nav nav-tabs bar_tabs",
+            records,
+            zone,
+            changesActive
+          )
+      }
+    }
+
+    def tabContent(P: Props, zone: Zone): VdomElement =
+      P.page match {
+        case _: ToZoneViewRecordsTab =>
+          RecordsTab(RecordsTab.Props(zone, P.http, P.router))
+        case _ =>
+          <.div("not implemented")
+      }
+
     def getZone(P: Props): Callback = {
-      val zoneId = P.page.asInstanceOf[ToZoneViewRecordsPage].id
+      val zoneId = P.page.asInstanceOf[ToZoneViewPage].id
       val onFailure = { httpResponse: HttpResponse =>
         addNotification(P.http.toNotification("getting zone", httpResponse, onlyOnError = true))
       }
@@ -92,8 +151,5 @@ object ZoneViewPage extends PropsFromAppRouter {
 
       P.http.get(GetZoneRoute(zoneId), onSuccess, onFailure)
     }
-
-    def getIdHeader(zone: Zone): TagMod = <.h5(s"Id: ${zone.id}")
-    def getEmailHeader(zone: Zone): TagMod = <.h5(s"Email: ${zone.email}")
   }
 }

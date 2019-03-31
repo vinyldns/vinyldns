@@ -52,7 +52,7 @@ object Breadcrumb {
         List(home(P), groups(P), viewGroupActive).toTagMod
       case _: ToZoneListPage.type =>
         List(home(P), zonesActive).toTagMod
-      case _: ToZoneViewRecordsPage =>
+      case _: ToZoneViewPage =>
         List(home(P), zones(P), viewZoneActive).toTagMod
       case _ => TagMod.empty
     }
