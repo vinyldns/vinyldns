@@ -19,14 +19,15 @@ package vinyldns.client.components
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
-import japgolly.scalajs.react.extra.router.BaseUrl
+import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.http.Http
 import vinyldns.client.css.GlobalStyle
+import vinyldns.client.router.{Page, ToApiCredentialsPage}
 
 object TopNav {
   case class State(dropdownOpen: Boolean = false)
-  case class Props(http: Http)
+  case class Props(http: Http, routerCtl: RouterCtl[Page])
 
   private val component = ScalaComponent
     .builder[Props]("TopNav")
@@ -34,8 +35,8 @@ object TopNav {
     .renderBackend[Backend]
     .build
 
-  def apply(http: Http): Unmounted[Props, State, Backend] =
-    component(Props(http))
+  def apply(http: Http, routerCtl: RouterCtl[Page]): Unmounted[Props, State, Backend] =
+    component(Props(http, routerCtl))
 
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
@@ -47,42 +48,58 @@ object TopNav {
             <.ul(
               ^.className := "nav navbar-nav navbar-right",
               <.li(
-                ^.onMouseEnter ==> mouseEnter,
-                ^.onMouseLeave ==> mouseExit,
+                ^.onMouseEnter ==> mouseEnterDropdown,
+                ^.onMouseLeave ==> mouseLeaveDropDown,
                 <.a(
                   GlobalStyle.Styles.cursorPointer,
                   ^.className := "user-profile dropdown-toggle",
-                  ^.onClick --> bs.modState(_.copy(dropdownOpen = !S.dropdownOpen)),
                   <.span(^.className := "fa fa-user"),
                   s"  ${P.http.getLoggedInUser().userName}  ",
                   <.span(^.className := "fa fa-angle-down"),
                 ),
-                dropdown(S)
+                dropdown(P, S)
               )
             )
           )
         )
       )
 
-    def dropdown(state: State): VdomNode =
-      if (state.dropdownOpen)
+    def dropdown(P: Props, S: State): VdomNode =
+      if (S.dropdownOpen)
         <.ul(
           GlobalStyle.Styles.displayBlock,
           ^.className := "dropdown-menu dropdown-usermenu pull-right",
           <.li(
+            ^.onMouseEnter ==> mouseEnterItem,
+            ^.onMouseLeave ==> mouseLeaveItem,
             <.a(
               ^.className := "mb-control",
               ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
               "Logout"
             )
+          ),
+          <.li(
+            ^.onMouseEnter ==> mouseEnterItem,
+            ^.onMouseLeave ==> mouseLeaveItem,
+            <.a(
+              ^.className := "mb-control",
+              P.routerCtl.setOnClick(ToApiCredentialsPage),
+              "API Credentials"
+            )
           )
         )
       else <.div()
 
-    def mouseEnter(e: ReactEventFromInput): Callback =
+    def mouseEnterDropdown(e: ReactEventFromInput): Callback =
+      Callback(e.currentTarget.className = "active") >> bs.modState(_.copy(dropdownOpen = true))
+
+    def mouseLeaveDropDown(e: ReactEventFromInput): Callback =
+      Callback(e.currentTarget.className = "") >> bs.modState(_.copy(dropdownOpen = false))
+
+    def mouseEnterItem(e: ReactEventFromInput): Callback =
       Callback(e.currentTarget.className = "active")
 
-    def mouseExit(e: ReactEventFromInput): Callback =
+    def mouseLeaveItem(e: ReactEventFromInput): Callback =
       Callback(e.currentTarget.className = "")
   }
 }

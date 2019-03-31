@@ -27,7 +27,7 @@ import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.Pagination
-import vinyldns.client.routes.{Page, ToGroupViewPage}
+import vinyldns.client.router.{Page, ToGroupViewPage}
 
 import scala.util.Try
 

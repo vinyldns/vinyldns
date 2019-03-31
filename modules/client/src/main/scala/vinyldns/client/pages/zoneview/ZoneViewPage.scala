@@ -18,7 +18,7 @@ package vinyldns.client.pages.zoneview
 
 import scalacss.ScalaCssReact._
 import vinyldns.client.models.zone.Zone
-import vinyldns.client.routes.AppRouter.PropsFromAppRouter
+import vinyldns.client.router.AppRouter.PropsFromAppRouter
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
@@ -27,7 +27,7 @@ import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse}
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.pages.zoneview.components.RecordsTab
-import vinyldns.client.routes._
+import vinyldns.client.router._
 
 object ZoneViewPage extends PropsFromAppRouter {
   case class State(zone: Option[Zone] = None)

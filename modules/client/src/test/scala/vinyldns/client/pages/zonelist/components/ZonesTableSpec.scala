@@ -24,7 +24,7 @@ import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute}
 import vinyldns.client.models.zone.{Zone, ZoneList}
-import vinyldns.client.routes.Page
+import vinyldns.client.router.Page
 
 import scala.language.existentials
 
@@ -114,7 +114,7 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
       }
     }
 
-    "call http.delete when clicking delete button and confirming" in new Fixture {
+    "call http.delete when clicking abandon button and confirming" in new Fixture {
       val props = ZonesTable.Props(mockHttp, mockRouter)
 
       (mockHttp.withConfirmation _).expects(*, *).repeat(10 to 10).onCall((_, cb) => cb)

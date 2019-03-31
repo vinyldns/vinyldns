@@ -26,7 +26,7 @@ import vinyldns.client.http.{Http, HttpResponse, ListRecordSetsRoute}
 import vinyldns.client.models.Pagination
 import vinyldns.client.models.record.{RecordSet, RecordSetList}
 import vinyldns.client.models.zone.Zone
-import vinyldns.client.routes.Page
+import vinyldns.client.router.Page
 import vinyldns.client.components.AlertBox.addNotification
 
 import scala.util.Try

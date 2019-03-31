@@ -23,7 +23,7 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http.{GetGroupMembersRoute, GetGroupRoute, Http, HttpResponse}
 import vinyldns.client.models.membership.{Group, MemberList}
 import vinyldns.client.pages.groupview.components.{MembersTable, NewMemberForm}
-import vinyldns.client.routes.{Page, ToGroupViewPage}
+import vinyldns.client.router.{Page, ToGroupViewPage}
 
 class GroupViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val initialGroup = generateGroups(1).head

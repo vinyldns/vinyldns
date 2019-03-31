@@ -22,7 +22,7 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.http.Http
 import vinyldns.client.models.zone.Zone
-import vinyldns.client.routes.Page
+import vinyldns.client.router.Page
 
 object RecordsTab {
   case class Props(zone: Zone, http: Http, routerCtl: RouterCtl[Page])

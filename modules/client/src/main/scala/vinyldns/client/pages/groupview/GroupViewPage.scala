@@ -26,13 +26,13 @@ import vinyldns.client.models.membership.Group
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.pages.groupview.components.{MembersTable, NewMemberForm}
-import vinyldns.client.routes.AppRouter.PropsFromAppRouter
-import vinyldns.client.routes.{Page, ToGroupViewPage}
+import vinyldns.client.router.AppRouter.PropsFromAppRouter
+import vinyldns.client.router.{Page, ToGroupViewPage}
 
 object GroupViewPage extends PropsFromAppRouter {
   case class State(group: Option[Group] = None)
 
-  private val component = ScalaComponent
+  val component = ScalaComponent
     .builder[Props]("ViewGroup")
     .initialState(State())
     .renderBackend[Backend]

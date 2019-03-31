@@ -26,8 +26,8 @@ import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.pages.zonelist.components.{ZoneModal, ZonesTable}
-import vinyldns.client.routes.AppRouter.PropsFromAppRouter
-import vinyldns.client.routes.Page
+import vinyldns.client.router.AppRouter.PropsFromAppRouter
+import vinyldns.client.router.Page
 
 object ZoneListPage extends PropsFromAppRouter {
   case class State(groupList: Option[GroupList] = None, showCreateZone: Boolean = false)

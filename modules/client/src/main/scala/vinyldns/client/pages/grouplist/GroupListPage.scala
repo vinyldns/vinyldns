@@ -24,8 +24,8 @@ import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.http.Http
 import vinyldns.client.pages.grouplist.components.{GroupModal, GroupsTable}
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.routes.AppRouter.PropsFromAppRouter
-import vinyldns.client.routes.Page
+import vinyldns.client.router.AppRouter.PropsFromAppRouter
+import vinyldns.client.router.Page
 
 object GroupListPage extends PropsFromAppRouter {
   case class State(showCreateGroup: Boolean = false)

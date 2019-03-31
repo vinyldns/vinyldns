@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.routes
+package vinyldns.client.router
 
 // The AppRouter must route to a Page from this file
 // Routes are dynamic, and can pull things like ints and strings from the route to build a case class
@@ -22,6 +22,9 @@ sealed trait Page
 
 // home
 object ToHomePage extends Page
+
+// api credentials
+object ToApiCredentialsPage extends Page
 
 // 404
 object ToNotFound extends Page

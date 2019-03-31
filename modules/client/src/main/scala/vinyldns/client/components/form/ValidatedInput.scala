@@ -16,8 +16,6 @@
 
 package vinyldns.client.components.form
 
-import java.util.UUID
-
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
@@ -98,7 +96,7 @@ object ValidatedInput {
             ^.disabled := P.disabled
           )
         case InputType.Datalist =>
-          val dataListBinding = UUID.randomUUID().toString
+          val dataListBinding = P.label.getOrElse("datalist")
           List(
             <.input(
               ^.className := s"form-control ${generateInputClass(P, S)}",

@@ -24,7 +24,7 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http.{GetGroupMembersRoute, Http, HttpResponse, UpdateGroupRoute}
 import vinyldns.client.models.membership.{Group, Id, MemberList}
 import upickle.default.write
-import vinyldns.client.routes.Page
+import vinyldns.client.router.Page
 
 import scala.language.existentials
 

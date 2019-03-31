@@ -24,7 +24,7 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.pages.grouplist.components.GroupModal
-import vinyldns.client.routes.{Page, ToGroupListPage}
+import vinyldns.client.router.{Page, ToGroupListPage}
 
 import scala.language.existentials
 

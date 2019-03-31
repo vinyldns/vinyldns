@@ -22,7 +22,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle.Styles.cursorPointer
-import vinyldns.client.routes._
+import vinyldns.client.router._
 
 object Breadcrumb {
   case class Props(selectedPage: Page, router: RouterCtl[Page])
@@ -46,6 +46,8 @@ object Breadcrumb {
   def toBreadcrumb(P: Props): TagMod =
     P.selectedPage match {
       case _: ToHomePage.type => homeActive
+      case _: ToApiCredentialsPage.type =>
+        List(home(P), credentialsActive).toTagMod
       case _: ToGroupListPage.type =>
         List(home(P), groupsActive).toTagMod
       case _: ToGroupViewPage =>
@@ -72,4 +74,7 @@ object Breadcrumb {
     <.li(^.key := "zones", cursorPointer, <.a("Zones", P.router.setOnClick(ToZoneListPage)))
 
   val viewZoneActive = <.li(^.key := "viewZone", cursorPointer, ^.className := "active", "View")
+
+  val credentialsActive =
+    <.li(^.key := "credentials", cursorPointer, ^.className := "active", "API Credentials")
 }

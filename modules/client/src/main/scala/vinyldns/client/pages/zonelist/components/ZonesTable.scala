@@ -27,7 +27,7 @@ import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute
 import vinyldns.client.models.zone.{Zone, ZoneList}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.models.Pagination
-import vinyldns.client.routes.{Page, ToGroupViewPage, ToZoneViewRecordsTab}
+import vinyldns.client.router.{Page, ToGroupViewPage, ToZoneViewRecordsTab}
 
 import scala.util.Try
 

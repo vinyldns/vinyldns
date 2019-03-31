@@ -17,7 +17,7 @@
 package vinyldns.client.components.form
 
 import cats.implicits._
-import vinyldns.client.routes.AppRouter
+import vinyldns.client.router.AppRouter
 
 case class Validations(
     maxSize: Option[Int] = None,

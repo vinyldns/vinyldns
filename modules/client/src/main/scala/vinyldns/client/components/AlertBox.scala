@@ -23,7 +23,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.vdom.VdomElement
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.routes.AppRouter
+import vinyldns.client.router.AppRouter
 import vinyldns.client.components.JsNative._
 
 object AlertBox {

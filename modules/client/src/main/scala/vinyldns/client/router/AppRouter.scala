@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.client.routes
+package vinyldns.client.router
 
 import japgolly.scalajs.react.Ref
 import japgolly.scalajs.react.extra.router.{Resolution, RouterConfigDsl, RouterCtl, _}
@@ -26,6 +26,7 @@ import vinyldns.client.pages.groupview.GroupViewPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
+import vinyldns.client.pages.credentials.ApiCredentialsPage
 import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.zonelist.ZoneListPage
 import vinyldns.client.pages.zoneview.ZoneViewPage
@@ -49,6 +50,9 @@ object AppRouter {
         | // 404
           staticRoute("404", ToNotFound) ~>
             render(NotFoundPage())
+        | // api credentials
+          staticRoute("credentials", ToApiCredentialsPage) ~>
+            renderR(ctl => ApiCredentialsPage(ToApiCredentialsPage, ctl, HttpHelper))
         | // group list
           staticRoute("groups", ToGroupListPage) ~>
             renderR(ctl => GroupListPage(ToGroupListPage, ctl, HttpHelper))
@@ -77,25 +81,26 @@ object AppRouter {
   private val menu = List(
     LeftNav.NavItem("Home", "fa fa-home", ToHomePage),
     LeftNav.NavItem("Zones", "fa fa-table", ToZoneListPage),
-    LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage)
+    LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage),
+    LeftNav.NavItem("API Credentials", "fa fa-key", ToApiCredentialsPage),
   )
 
   // used so the alert box addNotification can be static across the app
   val alertBoxRef =
     Ref.toScalaComponent(AlertBox.component)
 
-  private def layout(router: RouterCtl[Page], resolution: Resolution[Page]): VdomTagOf[Div] =
+  private def layout(router: RouterCtl[Page], target: Resolution[Page]): VdomTagOf[Div] =
     <.div(
       ^.className := "nav-md",
       <.div(
         ^.className := "container body",
         <.div(
           ^.className := "main_container",
-          TopNav(HttpHelper),
-          LeftNav(LeftNav.Props(menu, resolution.page, router)),
+          TopNav(HttpHelper, router),
+          LeftNav(LeftNav.Props(menu, target.page, router)),
           alertBoxRef.component(),
-          Breadcrumb(Breadcrumb.Props(resolution.page, router)),
-          resolution.render()
+          Breadcrumb(Breadcrumb.Props(target.page, router)),
+          target.render()
         ),
         <.footer(
           <.p(

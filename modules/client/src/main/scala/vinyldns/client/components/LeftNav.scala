@@ -22,7 +22,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.routes._
+import vinyldns.client.router._
 
 object LeftNav {
   case class NavItem(name: String, faClassName: String, page: Page)

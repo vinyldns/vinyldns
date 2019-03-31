@@ -43,6 +43,11 @@ object CurrentUserRoute extends RequestRoute[User] {
     Try(Option(read[User](httpResponse.responseText))).getOrElse(None)
 }
 
+object RegenerateCredentialsRoute extends RequestRoute[Unit] {
+  def path: String = "/regenerate-creds"
+  def parse(httpResponse: HttpResponse): Option[Unit] = Some(())
+}
+
 final case class ListGroupsRoute(
     maxItems: Int = 100,
     nameFilter: Option[String] = None,
