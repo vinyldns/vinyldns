@@ -84,7 +84,7 @@ object ZonesTable {
                     ^.className := "btn-group pull-right",
                     // paginate
                     <.button(
-                      ^.className := "btn btn-round btn-default",
+                      ^.className := "btn btn-round btn-default test-previous-page",
                       ^.onClick --> previousPage(P),
                       ^.`type` := "button",
                       ^.disabled := S.pagination.pageNumber <= 1,
@@ -95,7 +95,7 @@ object ZonesTable {
                       else TagMod.empty
                     ),
                     <.button(
-                      ^.className := "btn btn-round btn-default",
+                      ^.className := "btn btn-round btn-default test-next-page",
                       ^.onClick --> nextPage(P, S),
                       ^.`type` := "button",
                       ^.disabled := zl.nextId.isEmpty,

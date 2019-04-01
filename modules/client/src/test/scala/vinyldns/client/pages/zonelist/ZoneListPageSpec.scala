@@ -16,6 +16,7 @@
 
 package vinyldns.client.pages.zonelist
 
+import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
@@ -82,6 +83,138 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
           Simulate.click(closeButton)
           c.state.showCreateZone shouldBe false
           ReactTestUtils.scryRenderedComponentsWithType(c, ZoneModal.component) shouldBe empty
+      }
+    }
+
+    "call http.get with nameFilter when someone uses search bar" in new Fixture {
+      (mockHttp.get[ZoneList] _)
+        .expects(ListZonesRoute(nameFilter = Some("filter")), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
+        c =>
+          val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-nameFilter")
+          Simulate.change(input, SimEvent.Change("filter"))
+
+          val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-search-form")
+          Simulate.submit(form)
+      }
+    }
+
+    "reset pagination info when using search button" in {
+      val mockHttp = mock[Http]
+      val groupList = GroupList(List(), 100)
+      val zoneList = ZoneList(generateZones(1).toList, 100)
+      val zoneListWithNext = zoneList.copy(nextId = Some(999))
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(groupList))
+        }
+
+      (mockHttp.get[ZoneList] _)
+        .expects(ListZonesRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
+        }
+
+      ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
+        c =>
+          (mockHttp.get[ZoneList] _)
+            .expects(ListZonesRoute(startFrom = Some(999)), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
+            }
+
+          val next = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-next-page")
+          next.outerHtmlScrubbed() should include("Page 2")
+          Simulate.click(next)
+
+          next.outerHtmlScrubbed() should include("Page 3")
+
+          (mockHttp.get[ZoneList] _)
+            .expects(ListZonesRoute(), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
+            }
+
+          val search = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-search-form")
+          Simulate.submit(search)
+
+          next.outerHtmlScrubbed() should include("Page 2")
+      }
+    }
+
+    "call http.get with nameFilter when someone uses refresh button" in new Fixture {
+      (mockHttp.get[ZoneList] _)
+        .expects(ListZonesRoute(nameFilter = Some("filter")), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
+        c =>
+          val input = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-nameFilter")
+          Simulate.change(input, SimEvent.Change("filter"))
+
+          val refreshButton =
+            ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-zones")
+          Simulate.click(refreshButton)
+      }
+    }
+
+    "reset pagination info when using refresh button" in {
+      val mockHttp = mock[Http]
+      val groupList = GroupList(List(), 100)
+      val zoneList = ZoneList(generateZones(1).toList, 100)
+      val zoneListWithNext = zoneList.copy(nextId = Some(999))
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(groupList))
+        }
+
+      (mockHttp.get[ZoneList] _)
+        .expects(ListZonesRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
+        }
+
+      ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
+        c =>
+          (mockHttp.get[ZoneList] _)
+            .expects(ListZonesRoute(startFrom = Some(999)), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
+            }
+
+          val next = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-next-page")
+          next.outerHtmlScrubbed() should include("Page 2")
+          Simulate.click(next)
+
+          next.outerHtmlScrubbed() should include("Page 3")
+
+          (mockHttp.get[ZoneList] _)
+            .expects(ListZonesRoute(), *, *)
+            .once()
+            .onCall { (_, onSuccess, _) =>
+              onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
+            }
+
+          val refreshButton =
+            ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-zones")
+          Simulate.click(refreshButton)
+
+          next.outerHtmlScrubbed() should include("Page 2")
       }
     }
   }

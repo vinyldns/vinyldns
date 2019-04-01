@@ -24,7 +24,7 @@ import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.components.JsNative._
 import vinyldns.client.components.Modal
 import vinyldns.client.components.form._
-import vinyldns.client.http.{CreateRecordSetRoute, Http, HttpResponse}
+import vinyldns.client.http.{CreateRecordSetRoute, Http, HttpResponse, UpdateRecordSetRoute}
 import vinyldns.client.models.record._
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.recordmodal.recordinput._
@@ -68,7 +68,7 @@ object RecordSetModal {
             ValidatedForm.Props(
               "form form-horizontal form-label-left test-record-form",
               generateInputFieldProps(S),
-              _ => createRecordSet(P, S)
+              _ => if (S.isUpdate) updateRecordSet(P, S) else createRecordSet(P, S)
             ),
             <.div(
               generateCustomRecordDataInput(S),
@@ -82,7 +82,7 @@ object RecordSetModal {
                 ),
                 <.button(
                   ^.`type` := "button",
-                  ^.className := "btn btn-default pull-right test-close-create-group",
+                  ^.className := "btn btn-default pull-right test-close-recordset",
                   ^.onClick --> P.close(()),
                   "Close"
                 )
@@ -273,6 +273,28 @@ object RecordSetModal {
             onFailure)
         }
       )
+
+    def updateRecordSet(P: Props, S: State): Callback = {
+      val record = S.recordSet.asInstanceOf[RecordSet]
+      P.http.withConfirmation(
+        s"Are you sure you want to update record set ${record.id}",
+        Callback.lazily {
+          val onFailure = { httpResponse: HttpResponse =>
+            addNotification(P.http.toNotification(s"updating record ${record.id}", httpResponse))
+          }
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSet]) =>
+            addNotification(P.http.toNotification(s"updating record ${record.id}", httpResponse)) >>
+              P.close(()) >>
+              withDelay(HALF_SECOND_IN_MILLIS, P.refreshRecords(()))
+          }
+          P.http.put(
+            UpdateRecordSetRoute(P.zone.id, record.id),
+            write[RecordSet](record),
+            onSuccess,
+            onFailure)
+        }
+      )
+    }
 
     def toTitle(S: State): String =
       if (S.isUpdate) s"Update Record Set ${S.recordSet.asInstanceOf[RecordSet].id}"

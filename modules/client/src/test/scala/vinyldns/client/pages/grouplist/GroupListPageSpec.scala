@@ -79,7 +79,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       }
     }
 
-    "call http.get with groupNameFilter when someone uses search button" in new Fixture {
+    "call http.get with groupNameFilter when someone uses search bar" in new Fixture {
       (mockHttp.get[GroupList] _)
         .expects(ListGroupsRoute(nameFilter = Some("filter")), *, *)
         .once()
@@ -95,7 +95,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       }
     }
 
-    "reset page info when using search button" in {
+    "reset pagination info when using search button" in {
       val mockHttp = mock[Http]
       val groupListWithNext = initialGroupList.copy(nextId = Some("next"))
 
@@ -152,7 +152,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       }
     }
 
-    "reset page info when using refresh button" in {
+    "reset pagination info when using refresh button" in {
       val mockHttp = mock[Http]
       val groupListWithNext = initialGroupList.copy(nextId = Some("next"))
 

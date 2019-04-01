@@ -22,13 +22,14 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.http.{Http, HttpResponse, ListRecordSetsRoute}
+import vinyldns.client.http.{DeleteRecordSetRoute, Http, HttpResponse, ListRecordSetsRoute}
 import vinyldns.client.models.Pagination
 import vinyldns.client.models.record.{RecordSet, RecordSetList}
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.router.Page
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.pages.zoneview.components.recordmodal.RecordSetModal
+import vinyldns.client.components.JsNative._
 
 import scala.util.Try
 
@@ -39,7 +40,9 @@ object RecordSetTable {
       nameFilter: Option[String] = None,
       pagination: Pagination[String] = Pagination(),
       maxItems: Int = 100,
-      showRecordModal: Boolean = false)
+      showCreateRecordModal: Boolean = false,
+      showUpdateRecordModal: Boolean = false,
+      toBeUpdated: Option[RecordSet] = None)
 
   val component = ScalaComponent
     .builder[Props]("RecordSetTable")
@@ -65,11 +68,10 @@ object RecordSetTable {
               <.button(
                 ^.className := "btn btn-default test-create-recordset",
                 ^.`type` := "button",
-                ^.onClick --> makeRecordModalVisible,
+                ^.onClick --> makeCreateRecordModalVisible,
                 <.span(^.className := "fa fa-plus-square"),
                 "  Create Record Set"
               ),
-              createRecordSetModal(P, S),
               // refresh button
               <.button(
                 ^.className := "btn btn-default test-refresh-recordsets",
@@ -138,7 +140,7 @@ object RecordSetTable {
                       ^.className := "btn-group pull-right",
                       // paginate
                       <.button(
-                        ^.className := "btn btn-round btn-default",
+                        ^.className := "btn btn-round btn-default test-previous-page",
                         ^.onClick --> previousPage(P),
                         ^.`type` := "button",
                         ^.disabled := S.pagination.pageNumber <= 1,
@@ -149,7 +151,7 @@ object RecordSetTable {
                         else TagMod.empty
                       ),
                       <.button(
-                        ^.className := "btn btn-round btn-default",
+                        ^.className := "btn btn-round btn-default test-next-page",
                         ^.`type` := "button",
                         ^.onClick --> nextPage(P, S),
                         ^.disabled := rl.nextId.isEmpty,
@@ -172,26 +174,52 @@ object RecordSetTable {
                       )
                     ),
                     <.tbody(
-                      rl.recordSets.map(toTableRow(_)).toTagMod
+                      rl.recordSets.map(toTableRow(P, S, _)).toTagMod
                     )
                   )
                 )
               case Some(rl) if rl.recordSets.isEmpty =>
-                <.p("No dns records found")
+                <.p("No DNS records found")
               case None =>
                 <.p("Loading records...")
             }
           )
         ),
+        createRecordSetModal(P, S),
+        updateRecordSetModal(P, S)
       )
 
-    def toTableRow(recordSet: RecordSet): TagMod =
+    def toTableRow(P: Props, S: State, recordSet: RecordSet): TagMod =
       <.tr(
         <.td(recordSet.name),
         <.td(recordSet.`type`),
         <.td(recordSet.ttl),
         <.td(recordSet.recordDataDisplay),
-        <.td("actions")
+        <.td(
+          <.div(
+            ^.className := "btn-group",
+            <.button(
+              ^.className := "btn btn-info btn-rounded test-edit",
+              ^.`type` := "button",
+              ^.onClick --> makeUpdateRecordModalVisible(recordSet),
+              ^.title := s"Update record set (name: ${recordSet.name}, id: ${recordSet.id})",
+              ^.disabled := !(recordSet.accessLevel == "Update" || recordSet.accessLevel == "Delete"),
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-edit"),
+              " Update"
+            ),
+            <.button(
+              ^.className := "btn btn-danger btn-rounded test-delete",
+              ^.`type` := "button",
+              ^.onClick --> deleteRecordSet(P, S, recordSet),
+              ^.title := s"Delete record set (name: ${recordSet.name}, id: ${recordSet.id})",
+              ^.disabled := recordSet.accessLevel != "Delete",
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-trash"),
+              " Delete"
+            )
+          )
+        )
       )
 
     def listRecordSets(P: Props, S: State, startFrom: Option[String] = None): Callback = {
@@ -199,13 +227,30 @@ object RecordSetTable {
         bs.modState(_.copy(recordSetList = parsed))
       }
       val onFailure = { httpResponse: HttpResponse =>
-        addNotification(P.http.toNotification("list dns records", httpResponse, onlyOnError = true))
+        addNotification(
+          P.http.toNotification("listing dns records", httpResponse, onlyOnError = true))
       }
       P.http.get(
         ListRecordSetsRoute(P.zone.id, S.maxItems, S.nameFilter, startFrom),
         onSuccess,
         onFailure)
     }
+
+    def deleteRecordSet(P: Props, S: State, recordSet: RecordSet): Callback =
+      P.http.withConfirmation(
+        s"Are you sure you want to delete record set with name ${recordSet.name} and id ${recordSet.id}",
+        Callback.lazily {
+          val alertMessage = s"deleting record set (name: ${recordSet.name}, id: ${recordSet.id})"
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSet]) =>
+            addNotification(P.http.toNotification(alertMessage, httpResponse)) >>
+              withDelay(HALF_SECOND_IN_MILLIS, resetPageInfo >> listRecordSets(P, S))
+          }
+          val onFailure = { httpResponse: HttpResponse =>
+            addNotification(P.http.toNotification(alertMessage, httpResponse))
+          }
+          P.http.delete(DeleteRecordSetRoute(P.zone.id, recordSet.id), onSuccess, onFailure)
+        }
+      )
 
     def updateNameFilter(value: String): Callback =
       if (value.isEmpty) bs.modState(_.copy(nameFilter = None))
@@ -236,16 +281,34 @@ object RecordSetTable {
       )
 
     def createRecordSetModal(P: Props, S: State): TagMod =
-      if (S.showRecordModal)
+      if (S.showCreateRecordModal)
         RecordSetModal(
           RecordSetModal
-            .Props(P.http, P.zone, _ => makeRecordModalInvisible, _ => listRecordSets(P, S)))
+            .Props(P.http, P.zone, _ => makeCreateRecordModalInvisible, _ => listRecordSets(P, S)))
       else TagMod.empty
 
-    def makeRecordModalVisible: Callback =
-      bs.modState(_.copy(showRecordModal = true))
+    def makeCreateRecordModalVisible: Callback =
+      bs.modState(_.copy(showCreateRecordModal = true))
 
-    def makeRecordModalInvisible: Callback =
-      bs.modState(_.copy(showRecordModal = false))
+    def makeCreateRecordModalInvisible: Callback =
+      bs.modState(_.copy(showCreateRecordModal = false))
+
+    def updateRecordSetModal(P: Props, S: State): TagMod =
+      if (S.showUpdateRecordModal)
+        RecordSetModal(
+          RecordSetModal
+            .Props(
+              P.http,
+              P.zone,
+              _ => makeUpdateRecordModalInvisible,
+              _ => listRecordSets(P, S),
+              existing = S.toBeUpdated))
+      else TagMod.empty
+
+    def makeUpdateRecordModalVisible(toBeUpdated: RecordSet): Callback =
+      bs.modState(_.copy(toBeUpdated = Some(toBeUpdated), showUpdateRecordModal = true))
+
+    def makeUpdateRecordModalInvisible: Callback =
+      bs.modState(_.copy(showUpdateRecordModal = false))
   }
 }

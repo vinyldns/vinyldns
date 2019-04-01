@@ -22,7 +22,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest._
 import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
-import vinyldns.client.http.{CreateRecordSetRoute, Http}
+import vinyldns.client.http.{CreateRecordSetRoute, Http, UpdateRecordSetRoute}
 import vinyldns.client.models.record.{RecordData, RecordSet, RecordSetCreateInfo}
 import vinyldns.client.router.Page
 import upickle.default._
@@ -32,19 +32,22 @@ import scala.language.existentials
 class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
   val zone = generateZones(1).head
+  val existing = generateRecordSets(1, zone.id).head
 
-  class Fixture(existing: Option[RecordSet] = None) {
+  class Fixture(isUpdate: Boolean = false) {
     val mockHttp = mock[Http]
+    val record = if (isUpdate) Some(existing) else None
+
     val props = RecordSetModal.Props(
       mockHttp,
       zone,
       generateNoOpHandler[Unit],
       generateNoOpHandler[Unit],
-      existing
+      record
     )
   }
 
-  "RecordSetModal" should {
+  "RecordSetModal Create" should {
     "not allow submission without required fields" in new Fixture {
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -86,7 +89,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create A record" in new Fixture {
+    "properly http.post a create A record" in new Fixture {
       val expectedData =
         List(RecordData(address = Some("1.1.1.1")), RecordData(address = Some("2.2.2.2")))
       val expectedRecord = RecordSetCreateInfo(zone.id, "A", "foo", 500, expectedData)
@@ -119,7 +122,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create AAAA record" in new Fixture {
+    "properly http.post a create AAAA record" in new Fixture {
       val expectedData =
         List(RecordData(address = Some("1::1")), RecordData(address = Some("2::2")))
       val expectedRecord = RecordSetCreateInfo(zone.id, "AAAA", "foo", 500, expectedData)
@@ -152,7 +155,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create CNAME record" in new Fixture {
+    "properly http.post a create CNAME record" in new Fixture {
       val expectedData =
         List(RecordData(cname = Some("foo.bar.")))
       val expectedRecord = RecordSetCreateInfo(zone.id, "CNAME", "foo", 500, expectedData)
@@ -185,7 +188,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create PTR record" in new Fixture {
+    "properly http.post a create PTR record" in new Fixture {
       val expectedData =
         List(RecordData(ptrdname = Some("ptr.one.")), RecordData(ptrdname = Some("ptr.two.")))
       val expectedRecord = RecordSetCreateInfo(zone.id, "PTR", "foo", 500, expectedData)
@@ -218,7 +221,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create NS record" in new Fixture {
+    "properly http.post a create NS record" in new Fixture {
       val expectedData =
         List(RecordData(nsdname = Some("ns.one.")), RecordData(nsdname = Some("ns.two.")))
       val expectedRecord = RecordSetCreateInfo(zone.id, "NS", "foo", 500, expectedData)
@@ -251,7 +254,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create SPF record" in new Fixture {
+    "properly http.post a create SPF record" in new Fixture {
       val expectedData =
         List(RecordData(text = Some("spf.one.")), RecordData(text = Some("spf.two.")))
       val expectedRecord = RecordSetCreateInfo(zone.id, "SPF", "foo", 500, expectedData)
@@ -284,7 +287,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create TXT record" in new Fixture {
+    "properly http.post a create TXT record" in new Fixture {
       val expectedData =
         List(RecordData(text = Some("txt.one.")), RecordData(text = Some("txt.two.")))
       val expectedRecord = RecordSetCreateInfo(zone.id, "TXT", "foo", 500, expectedData)
@@ -317,7 +320,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create MX record" in new Fixture {
+    "properly http.post a create MX record" in new Fixture {
       val expectedData =
         List(
           RecordData(preference = Some(1), exchange = Some("exchange.one.")),
@@ -362,7 +365,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create SRV record" in new Fixture {
+    "properly http.post a create SRV record" in new Fixture {
       val expectedData =
         List(
           RecordData(priority = Some(1), weight = Some(2), port = Some(3), target = Some("t1.")),
@@ -414,7 +417,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create SSHFP record" in new Fixture {
+    "properly http.post a create SSHFP record" in new Fixture {
       val expectedData =
         List(
           RecordData(algorithm = Some(1), `type` = Some(1), fingerprint = Some("f1")),
@@ -462,7 +465,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
-    "properly post a create DS record" in new Fixture {
+    "properly http.post a create DS record" in new Fixture {
       val expectedData =
         List(
           RecordData(
@@ -518,6 +521,69 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
         Simulate.change(digestTypes(1), SimEvent.Change("2"))
         Simulate.change(digests(1), SimEvent.Change("ds2"))
 
+        Simulate.submit(form)
+      }
+    }
+  }
+
+  "RecordSetModal Update" should {
+    "not allow submission without required fields" in new Fixture(isUpdate = true) {
+      (mockHttp.withConfirmation _)
+        .expects(*, *)
+        .never()
+
+      (mockHttp.post[RecordSet] _)
+        .expects(*, *, *, *)
+        .never()
+
+      ReactTestUtils.withRenderedIntoDocument(RecordSetModal(props)) { c =>
+        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-record-form")
+        val name = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
+        Simulate.change(name, SimEvent.Change(""))
+
+        Simulate.submit(form)
+      }
+    }
+
+    "call with confirmation when submitting" in new Fixture(isUpdate = true) {
+      (mockHttp.withConfirmation _)
+        .expects(*, *)
+        .once()
+        .returns(Callback.empty)
+
+      (mockHttp.put[RecordSet] _)
+        .expects(*, *, *, *)
+        .never()
+
+      ReactTestUtils.withRenderedIntoDocument(RecordSetModal(props)) { c =>
+        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-record-form")
+        Simulate.submit(form)
+      }
+    }
+
+    "properly http.put an updated record" in new Fixture(isUpdate = true) {
+      val expectedData =
+        List(RecordData(cname = Some("cname.")))
+      val expectedRecord = existing.copy(`type` = "CNAME", records = expectedData)
+
+      (mockHttp.withConfirmation _)
+        .expects(*, *)
+        .once()
+        .onCall((_, cb) => cb)
+
+      (mockHttp.put[RecordSet] _)
+        .expects(UpdateRecordSetRoute(zone.id, existing.id), write(expectedRecord), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(RecordSetModal(props)) { c =>
+        val typ = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-type")
+        Simulate.change(typ, SimEvent.Change(expectedRecord.`type`))
+
+        val recordData = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-cname")
+        Simulate.change(recordData, SimEvent.Change("cname."))
+
+        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-record-form")
         Simulate.submit(form)
       }
     }

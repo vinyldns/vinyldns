@@ -157,8 +157,25 @@ final case class ListRecordSetsRoute(
     Try(Option(read[RecordSetList](httpResponse.responseText))).getOrElse(None)
 }
 
+// TODO: This returns a record set change
 final case class CreateRecordSetRoute(zoneId: String) extends RequestRoute[RecordSet] {
   def path: String = s"/api/zones/$zoneId/recordsets"
+  def parse(httpResponse: HttpResponse): Option[RecordSet] =
+    Try(Option(read[RecordSet](httpResponse.responseText))).getOrElse(None)
+}
+
+// TODO: This returns a record set change
+final case class DeleteRecordSetRoute(zoneId: String, recordId: String)
+    extends RequestRoute[RecordSet] {
+  def path: String = s"/api/zones/$zoneId/recordsets/$recordId"
+  def parse(httpResponse: HttpResponse): Option[RecordSet] =
+    Try(Option(read[RecordSet](httpResponse.responseText))).getOrElse(None)
+}
+
+// TODO: This returns a record set change
+final case class UpdateRecordSetRoute(zoneId: String, recordId: String)
+    extends RequestRoute[RecordSet] {
+  def path: String = s"/api/zones/$zoneId/recordsets/$recordId"
   def parse(httpResponse: HttpResponse): Option[RecordSet] =
     Try(Option(read[RecordSet](httpResponse.responseText))).getOrElse(None)
 }
