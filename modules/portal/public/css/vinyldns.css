@@ -383,3 +383,11 @@ label.switch {
 .main-footer-text {
     color: #73879C;
 }
+
+.sortorder:after {
+  content: '\25b2';   // BLACK UP-POINTING TRIANGLE
+}
+
+.sortorder.reverse:after {
+  content: '\25bc';   // BLACK DOWN-POINTING TRIANGLE
+}

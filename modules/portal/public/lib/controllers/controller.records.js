@@ -528,6 +528,14 @@ angular.module('controller.records', [])
             });
     };
 
+    $scope.propertyName = 'name';
+    $scope.reverse = false;
+
+    $scope.sortBy = function(propertyName) {
+        $scope.reverse = ($scope.propertyName === propertyName) ? !$scope.reverse : false;
+        $scope.propertyName = propertyName;
+    };
+
     loadZonesPromise = $timeout($scope.refreshZone, 0);
     loadRecordsPromise = $timeout($scope.refreshRecords, 0);
     $timeout($scope.refreshRecordChangesPreview, 0);
