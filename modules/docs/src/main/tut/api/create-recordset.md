@@ -61,6 +61,8 @@ userId        | string        | the user id that initiated the change |
 changeType    | string        | type of change requested (Create, Update, Delete); in this case Create |
 created       | string        | the time (GMT) the change was initiated |
 id            | string        | the id of the change.  This is not the id of the recordset |
+status        | string        | the status of the change (Pending, Complete, Failed) |
+singleBatchChangeIds |  array of IDs  | if the recordset change was part of a batch change, the IDs of the single changes that comprise the recordset change
 
 #### EXAMPLE RESPONSE
 
