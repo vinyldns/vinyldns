@@ -19,6 +19,8 @@ package vinyldns.client.models.record
 import upickle.default._
 import vinyldns.client.models.OptionRW
 
+import scala.util.Try
+
 case class RecordData(
     address: Option[String] = None,
     cname: Option[String] = None,
@@ -44,7 +46,32 @@ case class RecordData(
     keytag: Option[Int] = None,
     digesttype: Option[Int] = None,
     digest: Option[String] = None
-)
+) {
+  def addressToString: String = this.address.getOrElse("")
+  def cnameToString: String = this.cname.getOrElse("")
+  def preferenceToString: String = Try(this.preference.get.toString).getOrElse("")
+  def exchangeToString: String = this.exchange.getOrElse("")
+  def nsdnameToString: String = this.nsdname.getOrElse("")
+  def ptrdnameToString: String = this.ptrdname.getOrElse("")
+  def mnameToString: String = this.mname.getOrElse("")
+  def rnameToString: String = this.rname.getOrElse("")
+  def serialToString: String = Try(this.serial.get.toString).getOrElse("")
+  def refreshToString: String = Try(this.refresh.get.toString).getOrElse("")
+  def retryToString: String = Try(this.retry.get.toString).getOrElse("")
+  def expireToString: String = Try(this.expire.get.toString).getOrElse("")
+  def minimumToString: String = Try(this.minimum.get.toString).getOrElse("")
+  def textToString: String = this.text.getOrElse("")
+  def priorityToString: String = Try(this.priority.get.toString).getOrElse("")
+  def weightToString: String = Try(this.weight.get.toString).getOrElse("")
+  def portToString: String = Try(this.port.get.toString).getOrElse("")
+  def targetToString: String = this.target.getOrElse("")
+  def algorithmToString: String = Try(this.algorithm.get.toString).getOrElse("")
+  def typeToString: String = Try(this.`type`.get.toString).getOrElse("")
+  def fingerprintToString: String = this.fingerprint.getOrElse("")
+  def keytagToString: String = Try(this.keytag.get.toString).getOrElse("")
+  def digesttypeToString: String = Try(this.digesttype.get.toString).getOrElse("")
+  def digestToString: String = this.digest.getOrElse("")
+}
 
 object RecordData extends OptionRW {
   implicit val rw: ReadWriter[RecordData] = macroRW

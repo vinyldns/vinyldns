@@ -24,12 +24,12 @@ import vinyldns.client.http.Http
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.router.Page
 
-object RecordsTab {
+object ManageRecordSetsTab {
   case class Props(zone: Zone, http: Http, routerCtl: RouterCtl[Page])
   case class State()
 
   val component = ScalaComponent
-    .builder[Props]("RecordsTab")
+    .builder[Props]("ManageRecordSetsTab")
     .initialState(State())
     .renderBackend[Backend]
     .build

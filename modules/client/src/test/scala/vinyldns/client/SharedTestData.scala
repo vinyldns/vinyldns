@@ -34,6 +34,7 @@ package vinyldns.client
 
 import japgolly.scalajs.react.Callback
 import vinyldns.client.models.membership.{Group, Id, User}
+import vinyldns.client.models.record.{RecordData, RecordSet}
 import vinyldns.client.models.zone.{Rules, Zone}
 
 trait SharedTestData {
@@ -80,6 +81,23 @@ trait SharedTestData {
         false,
         Rules(List()),
         s"latestSync-$i"
+      )
+
+  def generateRecordSets(numRecords: Int, zoneId: String): Seq[RecordSet] =
+    for {
+      i <- 0 until numRecords
+    } yield
+      RecordSet(
+        s"id-$i",
+        s"A",
+        zoneId,
+        s"name-$i",
+        300,
+        "Active",
+        List(RecordData(address = Some("1.1.1.1"))),
+        "account",
+        "Delete",
+        s"created-$i"
       )
 
   // a lot of times components use anonymous functions like refreshGroups, setNotification, etc

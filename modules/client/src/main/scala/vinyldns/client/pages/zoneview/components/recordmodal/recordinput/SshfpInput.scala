@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package vinyldns.client.pages.zoneview.components.RecordDataInput
+package vinyldns.client.pages.zoneview.components.recordmodal.recordinput
 
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{BackendScope, Callback, ReactEventFromInput}
 import vinyldns.client.models.record.{RecordSet, RecordSetCreateInfo}
-import vinyldns.client.pages.zoneview.components.RecordDataInput.SshfpInput.SshfpField.SshfpField
-import vinyldns.client.pages.zoneview.components.RecordSetModal
+import vinyldns.client.pages.zoneview.components.recordmodal.recordinput.SshfpInput.SshfpField.SshfpField
+import vinyldns.client.pages.zoneview.components.recordmodal._
 
 import scala.util.Try
 
@@ -53,8 +53,8 @@ object SshfpInput extends RecordDataInput {
                   ^.key := index,
                   <.td(
                     <.select(
-                      ^.className := s"form-control test-algorithm-$index",
-                      ^.value := Try(rd.algorithm.get.toString).getOrElse(""),
+                      ^.className := s"form-control test-algorithm",
+                      ^.value := rd.algorithmToString,
                       ^.onChange ==> { e: ReactEventFromInput =>
                         changeSshfpField(bs, e.target.value, index, SshfpField.Algorithm)
                       },
@@ -66,8 +66,8 @@ object SshfpInput extends RecordDataInput {
                   ),
                   <.td(
                     <.select(
-                      ^.className := s"form-control test-type-$index",
-                      ^.value := Try(rd.`type`.get.toString).getOrElse(""),
+                      ^.className := s"form-control test-rd-type",
+                      ^.value := rd.typeToString,
                       ^.onChange ==> { e: ReactEventFromInput =>
                         changeSshfpField(bs, e.target.value, index, SshfpField.Type)
                       },
@@ -79,8 +79,8 @@ object SshfpInput extends RecordDataInput {
                   ),
                   <.td(
                     <.input(
-                      ^.className := s"form-control test-fingerprint-$index",
-                      ^.value := rd.fingerprint.getOrElse(""),
+                      ^.className := s"form-control test-fingerprint",
+                      ^.value := rd.fingerprintToString,
                       ^.onChange ==> { e: ReactEventFromInput =>
                         changeSshfpField(bs, e.target.value, index, SshfpField.Fingerprint)
                       },
@@ -102,7 +102,7 @@ object SshfpInput extends RecordDataInput {
               <.td,
               <.td(
                 <.button(
-                  ^.className := "btn btn-sm btn-info fa fa-plus",
+                  ^.className := "btn btn-sm btn-info fa fa-plus test-add",
                   ^.`type` := "button",
                   ^.onClick --> addRow(bs)
                 )

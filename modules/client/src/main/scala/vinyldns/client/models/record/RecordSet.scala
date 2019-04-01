@@ -17,10 +17,11 @@
 package vinyldns.client.models.record
 
 import scalacss.ScalaCssReact._
-import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import upickle.default._
 import vinyldns.client.css.GlobalStyle
+
+import scala.util.Try
 
 trait BasicRecordSetInfo {
   def name: String
@@ -58,80 +59,97 @@ case class RecordSet(
     created: String)
     extends BasicRecordSetInfo {
 
-  def recordDataDisplay: TagMod = // scalastyle:ignore
+  def recordDataDisplay: VdomElement = // scalastyle:ignore
     this.records match {
       case aList if this.`type` == "A" || this.`type` == "AAAA" =>
         <.ul(
           ^.className := "table-cell-list",
           aList.map { rd =>
-            <.li(rd.address)
+            <.li(s"${rd.addressToString}")
           }.toTagMod
         )
-      case cname if this.`type` == "CNAME" => cname.head.cname
+      case cname if this.`type` == "CNAME" => <.p(s"${Try(cname.head.cnameToString).getOrElse("")}")
       case dsList if this.`type` == "DS" =>
         <.ul(
           ^.className := "table-cell-list",
           dsList.map { rd =>
-            s"KeyTag: ${rd.keytag} | Algorithm: ${rd.algorithm} | DigestType: ${rd.digesttype} | Digest: ${rd.digest}"
+            <.li(
+              s"""
+                 |KeyTag: ${rd.keytagToString} |
+                 | Algorithm: ${rd.algorithmToString} |
+                 | DigestType: ${rd.digesttypeToString} |
+                 | Digest: ${rd.digestToString}""".stripMargin.replaceAll("\n", "")
+            )
           }.toTagMod
         )
       case mxList if this.`type` == "MX" =>
         <.ul(
           ^.className := "table-cell-list",
           mxList.map { rd =>
-            s"Preference: ${rd.preference} | Exhange: ${rd.exchange}"
+            <.li(
+              s"""
+                 |Preference: ${rd.preferenceToString} |
+                 | Exchange: ${rd.exchangeToString}""".stripMargin.replaceAll("\n", "")
+            )
           }.toTagMod
         )
       case nsList if this.`type` == "NS" =>
         <.ul(
           ^.className := "table-cell-list",
           nsList.map { rd =>
-            <.li(rd.nsdname)
+            <.li(s"${rd.nsdnameToString}")
           }.toTagMod
         )
       case ptrList if this.`type` == "PTR" =>
         <.ul(
           ^.className := "table-cell-list",
           ptrList.map { rd =>
-            <.li(rd.ptrdname)
+            <.li(s"${rd.ptrdnameToString}")
           }.toTagMod
         )
       case soa if this.`type` == "SOA" =>
         <.table(
           <.tbody(
-            <.tr(<.td("Mname:"), <.td(soa.head.mname)),
-            <.tr(<.td("Rname:"), <.td(soa.head.rname)),
-            <.tr(<.td("Serial:"), <.td(soa.head.serial)),
-            <.tr(<.td("Refresh:"), <.td(soa.head.refresh)),
-            <.tr(<.td("Retry:"), <.td(soa.head.retry)),
-            <.tr(<.td("Expire:"), <.td(soa.head.expire)),
-            <.tr(<.td(GlobalStyle.Styles.keepWhitespace, "Minimum:   "), <.td(soa.head.minimum))
+            <.tr(<.td("Mname:"), <.td(s"${Try(soa.head.mnameToString).getOrElse("")}")),
+            <.tr(<.td("Rname:"), <.td(s"${Try(soa.head.rnameToString).getOrElse("")}")),
+            <.tr(<.td("Serial:"), <.td(s"${Try(soa.head.serialToString).getOrElse("")}")),
+            <.tr(<.td("Refresh:"), <.td(s"${Try(soa.head.refreshToString).getOrElse("")}")),
+            <.tr(<.td("Retry:"), <.td(s"${Try(soa.head.retryToString).getOrElse("")}")),
+            <.tr(<.td("Expire:"), <.td(s"${Try(soa.head.expireToString).getOrElse("")}")),
+            <.tr(
+              <.td(GlobalStyle.Styles.keepWhitespace, "Minimum:   "),
+              <.td(s"${Try(soa.head.minimumToString).getOrElse("")}"))
           )
         )
-      case spfList if this.`type` == "SPF" =>
+      case spfOrTxtList if this.`type` == "SPF" || this.`type` == "TXT" =>
         <.ul(
           ^.className := "table-cell-list",
-          spfList.map { rd =>
-            <.li(rd.text)
+          spfOrTxtList.map { rd =>
+            <.li(s"${rd.textToString}")
           }.toTagMod
         )
       case srvList if this.`type` == "SRV" =>
         <.ul(
           ^.className := "table-cell-list",
           srvList.map { rd =>
-            <.li(
-              s"Priority: ${rd.priority} | Weight: ${rd.weight} | Port: ${rd.port} | Target: ${rd.target}")
+            <.li(s"""
+                 |Priority: ${rd.priorityToString} |
+                 | Weight: ${rd.weightToString} |
+                 | Port: ${rd.portToString} |
+                 | Target: ${rd.targetToString}""".stripMargin.replaceAll("\n", ""))
           }.toTagMod
         )
       case sshfpList if this.`type` == "SSHFP" =>
         <.ul(
           ^.className := "table-cell-list",
           sshfpList.map { rd =>
-            <.li(
-              s"Algorithm: ${rd.algorithm} | Type: ${rd.`type`} | Fingerprint: ${rd.fingerprint}")
+            <.li(s"""
+                 |Algorithm: ${rd.algorithmToString} |
+                 | Type: ${rd.typeToString} |
+                 | Fingerprint: ${rd.fingerprintToString}""".stripMargin.replaceAll("\n", ""))
           }.toTagMod
         )
-      case _ => ""
+      case _ => <.p
     }
 }
 

@@ -26,7 +26,7 @@ import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse}
 import vinyldns.client.components.AlertBox.addNotification
-import vinyldns.client.pages.zoneview.components.RecordsTab
+import vinyldns.client.pages.zoneview.components.ManageRecordSetsTab
 import vinyldns.client.router._
 
 object ZoneViewPage extends PropsFromAppRouter {
@@ -135,7 +135,7 @@ object ZoneViewPage extends PropsFromAppRouter {
     def tabContent(P: Props, zone: Zone): VdomElement =
       P.page match {
         case _: ToZoneViewRecordsTab =>
-          RecordsTab(RecordsTab.Props(zone, P.http, P.router))
+          ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, P.http, P.router))
         case _ =>
           <.div("not implemented")
       }

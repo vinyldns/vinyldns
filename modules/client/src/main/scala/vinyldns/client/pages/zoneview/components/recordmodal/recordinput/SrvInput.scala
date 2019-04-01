@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package vinyldns.client.pages.zoneview.components.RecordDataInput
+package vinyldns.client.pages.zoneview.components.recordmodal.recordinput
 
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{BackendScope, Callback, ReactEventFromInput}
 import vinyldns.client.models.record.{RecordSet, RecordSetCreateInfo}
-import vinyldns.client.pages.zoneview.components.RecordDataInput.DSInput.DsField.DsField
-import vinyldns.client.pages.zoneview.components.RecordSetModal
+import vinyldns.client.pages.zoneview.components.recordmodal.recordinput.SrvInput.SrvField.SrvField
+import vinyldns.client.pages.zoneview.components.recordmodal._
 
 import scala.util.Try
 
-object DSInput extends RecordDataInput {
+object SrvInput extends RecordDataInput {
   def toTagMod(
       S: RecordSetModal.State,
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State]): TagMod =
@@ -40,10 +40,10 @@ object DSInput extends RecordDataInput {
           ^.className := "table table-condensed",
           <.thead(
             <.tr(
-              <.th("Key Tag"),
-              <.th("Algorithm"),
-              <.th("Digest Type"),
-              <.th("Digest"),
+              <.th(^.className := "table-col-20", "Priority"),
+              <.th(^.className := "table-col-20", "Weight"),
+              <.th(^.className := "table-col-20", "Port"),
+              <.th("Target"),
               <.th
             )
           ),
@@ -54,68 +54,43 @@ object DSInput extends RecordDataInput {
                   ^.key := index,
                   <.td(
                     <.input(
-                      ^.className := s"form-control test-keytag-$index",
+                      ^.className := s"form-control test-priority",
                       ^.`type` := "number",
-                      ^.value := Try(rd.keytag.get.toString).getOrElse(""),
+                      ^.value := rd.priorityToString,
                       ^.onChange ==> { e: ReactEventFromInput =>
-                        changeDsField(bs, e.target.value, index, DsField.KeyTag)
+                        changeSrvField(bs, e.target.value, index, SrvField.Priority)
                       },
-                      ^.required := true
-                    )
-                  ),
-                  <.td(
-                    <.select(
-                      ^.className := s"form-control test-algorithm-$index",
-                      ^.value := Try(rd.algorithm.get.toString).getOrElse(""),
-                      ^.onChange ==> { e: ReactEventFromInput =>
-                        changeDsField(bs, e.target.value, index, DsField.Algorithm)
-                      },
-                      List(
-                        "" -> "",
-                        "3" -> "DSA",
-                        "5" -> "RSASHA1",
-                        "6" -> "DSA NSEC3 SHA1",
-                        "7" -> "RSASHA1 NSEC3 SHA1",
-                        "8" -> "RSASHA256",
-                        "10" -> "RSASHA512",
-                        "12" -> "ECC GOST",
-                        "13" -> "ECDSAP256SHA256",
-                        "14" -> "ECDSAP384SHA384",
-                        "15" -> "ED25519",
-                        "16" -> "ED448",
-                        "253" -> "PRIVATEDNS",
-                        "254" -> "PRIVATEOID"
-                      ).map {
-                        case (value, display) => <.option(^.value := value, s"($value) $display")
-                      }.toTagMod,
-                      ^.required := true
-                    )
-                  ),
-                  <.td(
-                    <.select(
-                      ^.className := s"form-control test-digesttype-$index",
-                      ^.value := Try(rd.digesttype.get.toString).getOrElse(""),
-                      ^.onChange ==> { e: ReactEventFromInput =>
-                        changeDsField(bs, e.target.value, index, DsField.DigestType)
-                      },
-                      List(
-                        "" -> "",
-                        "1" -> "SHA1",
-                        "2" -> "SHA256",
-                        "3" -> "GOSTR341194",
-                        "4" -> "SHA384"
-                      ).map {
-                        case (value, display) => <.option(^.value := value, s"($value) $display")
-                      }.toTagMod,
                       ^.required := true
                     )
                   ),
                   <.td(
                     <.input(
-                      ^.className := s"form-control test-digest-$index",
-                      ^.value := rd.digest.getOrElse(""),
+                      ^.className := s"form-control test-weight",
+                      ^.`type` := "number",
+                      ^.value := rd.weightToString,
                       ^.onChange ==> { e: ReactEventFromInput =>
-                        changeDsField(bs, e.target.value, index, DsField.Digest)
+                        changeSrvField(bs, e.target.value, index, SrvField.Weight)
+                      },
+                      ^.required := true
+                    )
+                  ),
+                  <.td(
+                    <.input(
+                      ^.className := s"form-control test-port",
+                      ^.`type` := "number",
+                      ^.value := rd.portToString,
+                      ^.onChange ==> { e: ReactEventFromInput =>
+                        changeSrvField(bs, e.target.value, index, SrvField.Port)
+                      },
+                      ^.required := true
+                    )
+                  ),
+                  <.td(
+                    <.input(
+                      ^.className := s"form-control test-target",
+                      ^.value := rd.targetToString,
+                      ^.onChange ==> { e: ReactEventFromInput =>
+                        changeSrvField(bs, e.target.value, index, SrvField.Target)
                       },
                       ^.required := true
                     )
@@ -136,7 +111,7 @@ object DSInput extends RecordDataInput {
               <.td,
               <.td(
                 <.button(
-                  ^.className := "btn btn-sm btn-info fa fa-plus",
+                  ^.className := "btn btn-sm btn-info fa fa-plus test-add",
                   ^.`type` := "button",
                   ^.onClick --> addRow(bs)
                 )
@@ -147,24 +122,23 @@ object DSInput extends RecordDataInput {
       )
     )
 
-  object DsField extends Enumeration {
-    type DsField = Value
-    val KeyTag, Algorithm, DigestType, Digest = Value
+  object SrvField extends Enumeration {
+    type SrvField = Value
+    val Priority, Weight, Port, Target = Value
   }
 
-  def changeDsField(
+  def changeSrvField(
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State],
       value: String,
       index: Int,
-      field: DsField): Callback =
+      field: SrvField): Callback =
     bs.modState { s =>
       val newRow = field match {
-        case DsField.KeyTag => s.recordSet.records(index).copy(keytag = Try(value.toInt).toOption)
-        case DsField.Algorithm =>
-          s.recordSet.records(index).copy(algorithm = Try(value.toInt).toOption)
-        case DsField.DigestType =>
-          s.recordSet.records(index).copy(digesttype = Try(value.toInt).toOption)
-        case DsField.Digest => s.recordSet.records(index).copy(digest = Some(value))
+        case SrvField.Priority =>
+          s.recordSet.records(index).copy(priority = Try(value.toInt).toOption)
+        case SrvField.Weight => s.recordSet.records(index).copy(weight = Try(value.toInt).toOption)
+        case SrvField.Port => s.recordSet.records(index).copy(port = Try(value.toInt).toOption)
+        case SrvField.Target => s.recordSet.records(index).copy(target = Some(value))
       }
       val newRecordData = s.recordSet.records.updated(index, newRow)
 

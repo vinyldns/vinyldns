@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package vinyldns.client.pages.zoneview.components.RecordDataInput
+package vinyldns.client.pages.zoneview.components.recordmodal.recordinput
 
-import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.{BackendScope, Callback, ReactEventFromInput}
+import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.models.record.{RecordSet, RecordSetCreateInfo}
-import vinyldns.client.pages.zoneview.components.RecordDataInput.SrvInput.SrvField.SrvField
-import vinyldns.client.pages.zoneview.components.RecordSetModal
+import vinyldns.client.pages.zoneview.components.recordmodal.recordinput.MxInput.MxField.MxField
+import vinyldns.client.pages.zoneview.components.recordmodal._
 
 import scala.util.Try
 
-object SrvInput extends RecordDataInput {
+object MxInput extends RecordDataInput {
   def toTagMod(
       S: RecordSetModal.State,
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State]): TagMod =
@@ -40,10 +40,8 @@ object SrvInput extends RecordDataInput {
           ^.className := "table table-condensed",
           <.thead(
             <.tr(
-              <.th(^.className := "table-col-20", "Priority"),
-              <.th(^.className := "table-col-20", "Weight"),
-              <.th(^.className := "table-col-20", "Port"),
-              <.th("Target"),
+              <.th(^.className := "table-col-20", "Preference"),
+              <.th("Exchange"),
               <.th
             )
           ),
@@ -54,43 +52,21 @@ object SrvInput extends RecordDataInput {
                   ^.key := index,
                   <.td(
                     <.input(
-                      ^.className := s"form-control test-priority-$index",
+                      ^.className := s"form-control test-preference",
                       ^.`type` := "number",
-                      ^.value := Try(rd.priority.get.toString).getOrElse(""),
+                      ^.value := rd.preferenceToString,
                       ^.onChange ==> { e: ReactEventFromInput =>
-                        changeSrvField(bs, e.target.value, index, SrvField.Priority)
+                        changeMxField(bs, e.target.value, index, MxField.Preference)
                       },
                       ^.required := true
                     )
                   ),
                   <.td(
                     <.input(
-                      ^.className := s"form-control test-weight-$index",
-                      ^.`type` := "number",
-                      ^.value := Try(rd.weight.get.toString).getOrElse(""),
+                      ^.className := s"form-control test-exchange",
+                      ^.value := rd.exchangeToString,
                       ^.onChange ==> { e: ReactEventFromInput =>
-                        changeSrvField(bs, e.target.value, index, SrvField.Weight)
-                      },
-                      ^.required := true
-                    )
-                  ),
-                  <.td(
-                    <.input(
-                      ^.className := s"form-control test-port-$index",
-                      ^.`type` := "number",
-                      ^.value := Try(rd.port.get.toString).getOrElse(""),
-                      ^.onChange ==> { e: ReactEventFromInput =>
-                        changeSrvField(bs, e.target.value, index, SrvField.Port)
-                      },
-                      ^.required := true
-                    )
-                  ),
-                  <.td(
-                    <.input(
-                      ^.className := s"form-control test-target-$index",
-                      ^.value := rd.target.getOrElse(""),
-                      ^.onChange ==> { e: ReactEventFromInput =>
-                        changeSrvField(bs, e.target.value, index, SrvField.Target)
+                        changeMxField(bs, e.target.value, index, MxField.Exchange)
                       },
                       ^.required := true
                     )
@@ -107,11 +83,9 @@ object SrvInput extends RecordDataInput {
             <.tr(
               <.td,
               <.td,
-              <.td,
-              <.td,
               <.td(
                 <.button(
-                  ^.className := "btn btn-sm btn-info fa fa-plus",
+                  ^.className := "btn btn-sm btn-info fa fa-plus test-add",
                   ^.`type` := "button",
                   ^.onClick --> addRow(bs)
                 )
@@ -122,23 +96,21 @@ object SrvInput extends RecordDataInput {
       )
     )
 
-  object SrvField extends Enumeration {
-    type SrvField = Value
-    val Priority, Weight, Port, Target = Value
+  object MxField extends Enumeration {
+    type MxField = Value
+    val Preference, Exchange = Value
   }
 
-  def changeSrvField(
+  def changeMxField(
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State],
       value: String,
       index: Int,
-      field: SrvField): Callback =
+      field: MxField): Callback =
     bs.modState { s =>
       val newRow = field match {
-        case SrvField.Priority =>
-          s.recordSet.records(index).copy(priority = Try(value.toInt).toOption)
-        case SrvField.Weight => s.recordSet.records(index).copy(weight = Try(value.toInt).toOption)
-        case SrvField.Port => s.recordSet.records(index).copy(port = Try(value.toInt).toOption)
-        case SrvField.Target => s.recordSet.records(index).copy(target = Some(value))
+        case MxField.Preference =>
+          s.recordSet.records(index).copy(preference = Try(value.toInt).toOption)
+        case MxField.Exchange => s.recordSet.records(index).copy(exchange = Some(value))
       }
       val newRecordData = s.recordSet.records.updated(index, newRow)
 

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package vinyldns.client.pages.zoneview.components.RecordDataInput
+package vinyldns.client.pages.zoneview.components.recordmodal.recordinput
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.TagMod
 import vinyldns.client.models.record.{RecordData, RecordSet, RecordSetCreateInfo}
-import vinyldns.client.pages.zoneview.components.RecordSetModal
+import vinyldns.client.pages.zoneview.components.recordmodal._
 
 trait RecordDataInput {
   def toTagMod(

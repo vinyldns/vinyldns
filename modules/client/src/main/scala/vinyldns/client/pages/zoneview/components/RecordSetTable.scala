@@ -28,6 +28,7 @@ import vinyldns.client.models.record.{RecordSet, RecordSetList}
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.router.Page
 import vinyldns.client.components.AlertBox.addNotification
+import vinyldns.client.pages.zoneview.components.recordmodal.RecordSetModal
 
 import scala.util.Try
 
@@ -66,7 +67,7 @@ object RecordSetTable {
                 ^.`type` := "button",
                 ^.onClick --> makeRecordModalVisible,
                 <.span(^.className := "fa fa-plus-square"),
-                "  Create Record"
+                "  Create Record Set"
               ),
               createRecordSetModal(P, S),
               // refresh button

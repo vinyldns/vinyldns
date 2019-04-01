@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package vinyldns.client.pages.zoneview.components
+package vinyldns.client.pages.zoneview.components.recordmodal
 
-import vinyldns.client.http.{CreateRecordSetRoute, Http, HttpResponse}
-import vinyldns.client.models.record._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
+import japgolly.scalajs.react.vdom.html_<^._
 import upickle.default.write
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.components.JsNative._
-import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components.Modal
-import vinyldns.client.models.zone.Zone
 import vinyldns.client.components.form._
-import vinyldns.client.pages.zoneview.components.RecordDataInput._
+import vinyldns.client.http.{CreateRecordSetRoute, Http, HttpResponse}
+import vinyldns.client.models.record._
+import vinyldns.client.models.zone.Zone
+import vinyldns.client.pages.zoneview.components.recordmodal.recordinput._
 
 import scala.util.Try
 
@@ -138,7 +138,7 @@ object RecordSetModal {
         case aOrAaaa if aOrAaaa == "A" || aOrAaaa == "AAAA" =>
           List(
             ValidatedInput.Props(
-              (value: String) => RecordDataInput.RecordDataInput.changeAddress(bs, value),
+              (value: String) => recordinput.RecordDataInput.changeAddress(bs, value),
               inputClass = Some("test-address"),
               label = Some("IP addresses"),
               helpText = Some("one per line"),
@@ -149,7 +149,7 @@ object RecordSetModal {
         case cname if cname == "CNAME" =>
           List(
             ValidatedInput.Props(
-              (value: String) => RecordDataInput.RecordDataInput.changeCname(bs, value),
+              (value: String) => recordinput.RecordDataInput.changeCname(bs, value),
               inputClass = Some("test-cname"),
               label = Some("CNAME Target"),
               value = Try(S.recordSet.records.head.cname).getOrElse(None),
@@ -159,7 +159,7 @@ object RecordSetModal {
         case ptr if ptr == "PTR" =>
           List(
             ValidatedInput.Props(
-              (value: String) => RecordDataInput.RecordDataInput.changePtrDName(bs, value),
+              (value: String) => recordinput.RecordDataInput.changePtrDName(bs, value),
               inputClass = Some("test-ptr"),
               label = Some("Fully Qualified Domain Names"),
               helpText = Some("one per line"),
@@ -170,7 +170,7 @@ object RecordSetModal {
         case ns if ns == "NS" =>
           List(
             ValidatedInput.Props(
-              (value: String) => RecordDataInput.RecordDataInput.changeNsDName(bs, value),
+              (value: String) => recordinput.RecordDataInput.changeNsDName(bs, value),
               inputClass = Some("test-ns"),
               label = Some("Fully Qualified Domain Names"),
               helpText = Some("one per line"),
@@ -181,7 +181,7 @@ object RecordSetModal {
         case spf if spf == "SPF" =>
           List(
             ValidatedInput.Props(
-              (value: String) => RecordDataInput.RecordDataInput.changeText(bs, value),
+              (value: String) => recordinput.RecordDataInput.changeText(bs, value),
               inputClass = Some("test-spf"),
               label = Some("Host Names/IP Addresses"),
               helpText = Some("one per line"),
@@ -192,7 +192,7 @@ object RecordSetModal {
         case txt if txt == "TXT" =>
           List(
             ValidatedInput.Props(
-              (value: String) => RecordDataInput.RecordDataInput.changeText(bs, value),
+              (value: String) => recordinput.RecordDataInput.changeText(bs, value),
               inputClass = Some("test-txt"),
               label = Some("Text Records"),
               helpText = Some("one per line"),
@@ -209,7 +209,7 @@ object RecordSetModal {
         case mx if mx == "MX" => MxInput.toTagMod(S, bs)
         case srv if srv == "SRV" => SrvInput.toTagMod(S, bs)
         case sshfp if sshfp == "SSHFP" => SshfpInput.toTagMod(S, bs)
-        case ds if ds == "DS" => DSInput.toTagMod(S, bs)
+        case ds if ds == "DS" => DsInput.toTagMod(S, bs)
         case _ => TagMod.empty
       }
 
@@ -275,8 +275,8 @@ object RecordSetModal {
       )
 
     def toTitle(S: State): String =
-      if (S.isUpdate) s"Update Group ${S.recordSet.asInstanceOf[RecordSet].id}"
-      else "Create RecordSet"
+      if (S.isUpdate) s"Update Record Set ${S.recordSet.asInstanceOf[RecordSet].id}"
+      else "Create Record Set"
 
     private val header: String =
       s"""
