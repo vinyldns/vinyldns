@@ -83,7 +83,8 @@ object MembersTable {
                     ^.disabled := !isAdminOrSuper(P),
                     ^.title := s"Remove ${m.userName} from group",
                     VdomAttr("data-toggle") := "tooltip",
-                    <.span(^.className := "fa fa-trash")
+                    <.span(^.className := "fa fa-trash"),
+                    "  Remove"
                   )
                 )
               )

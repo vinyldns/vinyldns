@@ -24,9 +24,12 @@ case class Validations(
     noSpaces: Boolean = false,
     required: Boolean = false,
     matchOptions: Boolean = false,
-    uuid: Boolean = false)
+    uuid: Boolean = false,
+    noEmptyLines: Boolean = false)
 
 object Validations {
+  private val emptyLineRegex = """(?m)^(\s*)$""".r
+
   def validate(
       value: String,
       validations: Option[Validations],
@@ -39,6 +42,7 @@ object Validations {
           _ <- validateNoSpaces(value, checks)
           _ <- validateIsOption(value, checks, options)
           _ <- validateUUID(value, checks)
+          _ <- validateNoEmptyLines(value, checks)
         } yield ()
       case None => ().asRight
     }
@@ -90,6 +94,15 @@ object Validations {
         value.matches(AppRouter.uuidRegex),
         (),
         "Must be a valid ID (not name)"
+      )
+    else ().asRight
+
+  def validateNoEmptyLines(value: String, checks: Validations): Either[String, Unit] =
+    if (checks.noEmptyLines)
+      Either.cond(
+        emptyLineRegex.findFirstIn(value).isEmpty,
+        (),
+        "Cannot contain empty lines"
       )
     else ().asRight
 }

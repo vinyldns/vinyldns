@@ -75,4 +75,61 @@ case class RecordData(
 
 object RecordData extends OptionRW {
   implicit val rw: ReadWriter[RecordData] = macroRW
+
+  def inputToAddresses(input: String): List[RecordData] = {
+    val recordData = input
+      .split("\\r?\\n")
+      .map(l => RecordData(address = Some(l)))
+      .toList
+    val withNewLine =
+      if (input.endsWith("\n")) recordData :+ RecordData(address = Some("")) else recordData
+    withNewLine
+  }
+
+  def addressesToInput(records: List[RecordData]): Option[String] =
+    Some(records.map(_.addressToString).mkString("\n"))
+
+  def inputToCname(input: String): List[RecordData] = List(RecordData(cname = Some(input)))
+
+  def cnameToInput(records: List[RecordData]): Option[String] =
+    Try(records.head.cnameToString).toOption
+
+  def inputToPtrdnames(input: String): List[RecordData] = {
+    val recordData = input
+      .split("\\r?\\n")
+      .map(l => RecordData(ptrdname = Some(l)))
+      .toList
+    val withNewLine =
+      if (input.endsWith("\n")) recordData :+ RecordData(ptrdname = Some("")) else recordData
+    withNewLine
+  }
+
+  def ptrdnamesToInput(records: List[RecordData]): Option[String] =
+    Some(records.map(_.ptrdnameToString).mkString("\n"))
+
+  def inputToNsdnames(input: String): List[RecordData] = {
+    val recordData = input
+      .split("\\r?\\n")
+      .map(l => RecordData(nsdname = Some(l)))
+      .toList
+    val withNewLine =
+      if (input.endsWith("\n")) recordData :+ RecordData(nsdname = Some("")) else recordData
+    withNewLine
+  }
+
+  def nsdnamesToInput(records: List[RecordData]): Option[String] =
+    Some(records.map(_.nsdnameToString).mkString("\n"))
+
+  def inputToTexts(input: String): List[RecordData] = {
+    val recordData = input
+      .split("\\r?\\n")
+      .map(l => RecordData(text = Some(l)))
+      .toList
+    val withNewLine =
+      if (input.endsWith("\n")) recordData :+ RecordData(text = Some("")) else recordData
+    withNewLine
+  }
+
+  def textsToInput(records: List[RecordData]): Option[String] =
+    Some(records.map(_.textToString).mkString("\n"))
 }

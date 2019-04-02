@@ -64,16 +64,14 @@ object RecordDataInput {
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State],
       value: String): Callback =
     bs.modState { s =>
-      val recordData = value.split("\\r?\\n").map(l => RecordData(address = Some(l))).toList
-      val withNewLine =
-        if (value.endsWith("\n")) recordData :+ RecordData(address = Some("")) else recordData
+      val updatedRecords = RecordData.inputToAddresses(value)
       if (s.isUpdate) {
         val record = s.recordSet.asInstanceOf[RecordSet]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = updatedRecords)
         s.copy(recordSet = modified)
       } else {
         val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = updatedRecords)
         s.copy(recordSet = modified)
       }
     }
@@ -82,7 +80,7 @@ object RecordDataInput {
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State],
       value: String): Callback =
     bs.modState { s =>
-      val recordData = List(RecordData(cname = Some(value)))
+      val recordData = RecordData.inputToCname(value)
       if (s.isUpdate) {
         val record = s.recordSet.asInstanceOf[RecordSet]
         val modified = record.copy(records = recordData)
@@ -98,16 +96,14 @@ object RecordDataInput {
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State],
       value: String): Callback =
     bs.modState { s =>
-      val recordData = value.split("\\r?\\n").map(l => RecordData(ptrdname = Some(l))).toList
-      val withNewLine =
-        if (value.endsWith("\n")) recordData :+ RecordData(ptrdname = Some("")) else recordData
+      val recordData = RecordData.inputToPtrdnames(value)
       if (s.isUpdate) {
         val record = s.recordSet.asInstanceOf[RecordSet]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = recordData)
         s.copy(recordSet = modified)
       } else {
         val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = recordData)
         s.copy(recordSet = modified)
       }
     }
@@ -116,16 +112,14 @@ object RecordDataInput {
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State],
       value: String): Callback =
     bs.modState { s =>
-      val recordData = value.split("\\r?\\n").map(l => RecordData(nsdname = Some(l))).toList
-      val withNewLine =
-        if (value.endsWith("\n")) recordData :+ RecordData(nsdname = Some("")) else recordData
+      val recordData = RecordData.inputToNsdnames(value)
       if (s.isUpdate) {
         val record = s.recordSet.asInstanceOf[RecordSet]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = recordData)
         s.copy(recordSet = modified)
       } else {
         val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = recordData)
         s.copy(recordSet = modified)
       }
     }
@@ -134,16 +128,14 @@ object RecordDataInput {
       bs: BackendScope[RecordSetModal.Props, RecordSetModal.State],
       value: String): Callback =
     bs.modState { s =>
-      val recordData = value.split("\\r?\\n").map(l => RecordData(text = Some(l))).toList
-      val withNewLine =
-        if (value.endsWith("\n")) recordData :+ RecordData(text = Some("")) else recordData
+      val recordData = RecordData.inputToTexts(value)
       if (s.isUpdate) {
         val record = s.recordSet.asInstanceOf[RecordSet]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = recordData)
         s.copy(recordSet = modified)
       } else {
         val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
-        val modified = record.copy(records = withNewLine)
+        val modified = record.copy(records = recordData)
         s.copy(recordSet = modified)
       }
     }

@@ -29,8 +29,6 @@ import vinyldns.client.models.record._
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.recordmodal.recordinput._
 
-import scala.util.Try
-
 object RecordSetModal {
   case class State(recordSet: BasicRecordSetInfo, isUpdate: Boolean = false)
   case class Props(
@@ -143,8 +141,8 @@ object RecordSetModal {
               label = Some("IP addresses"),
               helpText = Some("one per line"),
               inputType = InputType.TextArea,
-              value = Some(S.recordSet.records.flatMap(_.address).mkString("\n")),
-              validations = Some(Validations(required = true))
+              value = RecordData.addressesToInput(S.recordSet.records),
+              validations = Some(Validations(required = true, noEmptyLines = true))
             ))
         case cname if cname == "CNAME" =>
           List(
@@ -152,7 +150,7 @@ object RecordSetModal {
               (value: String) => recordinput.RecordDataInput.changeCname(bs, value),
               inputClass = Some("test-cname"),
               label = Some("CNAME Target"),
-              value = Try(S.recordSet.records.head.cname).getOrElse(None),
+              value = RecordData.cnameToInput(S.recordSet.records),
               helpText = Some("Fully Qualified Domain Name"),
               validations = Some(Validations(required = true))
             ))
@@ -164,8 +162,8 @@ object RecordSetModal {
               label = Some("Fully Qualified Domain Names"),
               helpText = Some("one per line"),
               inputType = InputType.TextArea,
-              value = Some(S.recordSet.records.flatMap(_.ptrdname).mkString("\n")),
-              validations = Some(Validations(required = true))
+              value = RecordData.ptrdnamesToInput(S.recordSet.records),
+              validations = Some(Validations(required = true, noEmptyLines = true))
             ))
         case ns if ns == "NS" =>
           List(
@@ -175,8 +173,8 @@ object RecordSetModal {
               label = Some("Fully Qualified Domain Names"),
               helpText = Some("one per line"),
               inputType = InputType.TextArea,
-              value = Some(S.recordSet.records.flatMap(_.nsdname).mkString("\n")),
-              validations = Some(Validations(required = true))
+              value = RecordData.nsdnamesToInput(S.recordSet.records),
+              validations = Some(Validations(required = true, noEmptyLines = true))
             ))
         case spf if spf == "SPF" =>
           List(
@@ -186,8 +184,8 @@ object RecordSetModal {
               label = Some("Host Names/IP Addresses"),
               helpText = Some("one per line"),
               inputType = InputType.TextArea,
-              value = Some(S.recordSet.records.flatMap(_.text).mkString("\n")),
-              validations = Some(Validations(required = true))
+              value = RecordData.textsToInput(S.recordSet.records),
+              validations = Some(Validations(required = true, noEmptyLines = true))
             ))
         case txt if txt == "TXT" =>
           List(
@@ -197,8 +195,8 @@ object RecordSetModal {
               label = Some("Text Records"),
               helpText = Some("one per line"),
               inputType = InputType.TextArea,
-              value = Some(S.recordSet.records.flatMap(_.text).mkString("\n")),
-              validations = Some(Validations(required = true))
+              value = RecordData.textsToInput(S.recordSet.records),
+              validations = Some(Validations(required = true, noEmptyLines = true))
             ))
         case _ => List()
       }

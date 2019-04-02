@@ -69,7 +69,8 @@ object ApiCredentialsPage extends PropsFromAppRouter {
                     ^.className := "panel-body",
                     <.p(
                       """
-                        |API Credentials can be used to make requests directly to the VinylDNS API.
+                        |API Credentials can be used to make requests directly to the VinylDNS API
+                        | on behalf of your user. Keep these credentials somewhere safe!
                       """.stripMargin
                     ),
                     <.button(

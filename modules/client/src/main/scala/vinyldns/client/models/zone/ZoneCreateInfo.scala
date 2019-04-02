@@ -76,6 +76,5 @@ case class ZoneCreateInfo(
 }
 
 object ZoneCreateInfo extends OptionRW {
-
   implicit val rw: ReadWriter[ZoneCreateInfo] = macroRW
 }

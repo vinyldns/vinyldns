@@ -59,6 +59,16 @@ case class RecordSet(
     created: String)
     extends BasicRecordSetInfo {
 
+  def canUpdate(zoneName: String): Boolean =
+    (this.accessLevel == "Update" || this.accessLevel == "Delete") &&
+      this.`type` != "SOA" &&
+      !(this.`type` == "NS" && this.name == zoneName)
+
+  def canDelete(zoneName: String): Boolean =
+    this.accessLevel == "Delete" &&
+      this.`type` != "SOA" &&
+      !(this.`type` == "NS" && this.name == zoneName)
+
   def recordDataDisplay: VdomElement = // scalastyle:ignore
     this.records match {
       case aList if this.`type` == "A" || this.`type` == "AAAA" =>
@@ -68,7 +78,8 @@ case class RecordSet(
             <.li(s"${rd.addressToString}")
           }.toTagMod
         )
-      case cname if this.`type` == "CNAME" => <.p(s"${Try(cname.head.cnameToString).getOrElse("")}")
+      case cname if this.`type` == "CNAME" =>
+        <.p(s"${Try(cname.head.cnameToString).getOrElse("")}")
       case dsList if this.`type` == "DS" =>
         <.ul(
           ^.className := "table-cell-list",

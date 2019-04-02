@@ -117,4 +117,30 @@ class ValidationsSpec extends WordSpec with Matchers with MockFactory with Share
       Validations.validateUUID("1234567890", defaultValidations).isRight shouldBe true
     }
   }
+
+  "Validations.validateNoEmptyLines" should {
+    val noEmptyLines = Validations(noEmptyLines = true)
+
+    "fail if input has empty lines" in {
+      Validations.validateNoEmptyLines("", noEmptyLines).isLeft shouldBe true
+      Validations.validateNoEmptyLines("  ", noEmptyLines).isLeft shouldBe true
+      Validations.validateNoEmptyLines("\n", noEmptyLines).isLeft shouldBe true
+      Validations.validateNoEmptyLines("\ntest", noEmptyLines).isLeft shouldBe true
+      Validations.validateNoEmptyLines("test\n", noEmptyLines).isLeft shouldBe true
+      Validations.validateNoEmptyLines("test\n  ", noEmptyLines).isLeft shouldBe true
+      Validations.validateNoEmptyLines("test\n\ntest", noEmptyLines).isLeft shouldBe true
+      Validations.validateNoEmptyLines("test\n  \ntest", noEmptyLines).isLeft shouldBe true
+    }
+
+    "pass if input has no empty lines" in {
+      Validations.validateNoEmptyLines("test", noEmptyLines).isRight shouldBe true
+      Validations.validateNoEmptyLines("test1\ntest2", noEmptyLines).isRight shouldBe true
+    }
+
+    "pass if validation is not set" in {
+      Validations.validateNoEmptyLines("", defaultValidations).isRight shouldBe true
+      Validations.validateNoEmptyLines("test\n  ", defaultValidations).isRight shouldBe true
+      Validations.validateNoEmptyLines("test1\ntest2", defaultValidations).isRight shouldBe true
+    }
+  }
 }
