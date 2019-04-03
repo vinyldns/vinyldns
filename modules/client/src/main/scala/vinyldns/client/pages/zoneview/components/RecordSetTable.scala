@@ -34,7 +34,11 @@ import vinyldns.client.components.JsNative._
 import scala.util.Try
 
 object RecordSetTable {
-  case class Props(zone: Zone, http: Http, routerCtl: RouterCtl[Page])
+  case class Props(
+      zone: Zone,
+      http: Http,
+      routerCtl: RouterCtl[Page],
+      refreshChanges: Unit => Callback)
   case class State(
       recordSetList: Option[RecordSetList] = None,
       nameFilter: Option[String] = None,
@@ -245,7 +249,9 @@ object RecordSetTable {
           val alertMessage = s"deleting record set (name: ${recordSet.name}, id: ${recordSet.id})"
           val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSetChange]) =>
             addNotification(P.http.toNotification(alertMessage, httpResponse)) >>
-              withDelay(HALF_SECOND_IN_MILLIS, resetPageInfo >> listRecordSets(P, S))
+              withDelay(
+                HALF_SECOND_IN_MILLIS,
+                resetPageInfo >> listRecordSets(P, S) >> P.refreshChanges(()))
           }
           val onFailure = { httpResponse: HttpResponse =>
             addNotification(P.http.toNotification(alertMessage, httpResponse))
@@ -286,7 +292,12 @@ object RecordSetTable {
       if (S.showCreateRecordModal)
         RecordSetModal(
           RecordSetModal
-            .Props(P.http, P.zone, _ => makeCreateRecordModalInvisible, _ => listRecordSets(P, S)))
+            .Props(
+              P.http,
+              P.zone,
+              _ => makeCreateRecordModalInvisible,
+              _ => listRecordSets(P, S),
+              _ => P.refreshChanges(())))
       else TagMod.empty
 
     def makeCreateRecordModalVisible: Callback =
@@ -304,6 +315,7 @@ object RecordSetTable {
               P.zone,
               _ => makeUpdateRecordModalInvisible,
               _ => listRecordSets(P, S),
+              _ => P.refreshChanges(()),
               existing = S.toBeUpdated))
       else TagMod.empty
 

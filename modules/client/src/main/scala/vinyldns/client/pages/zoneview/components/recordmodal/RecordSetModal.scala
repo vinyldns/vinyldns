@@ -30,6 +30,8 @@ import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.recordmodal.recordinput._
 import vinyldns.core.domain.record.RecordType
 
+import scala.util.Try
+
 object RecordSetModal {
   case class State(recordSet: BasicRecordSetInfo, isUpdate: Boolean = false)
   case class Props(
@@ -37,7 +39,9 @@ object RecordSetModal {
       zone: Zone,
       close: Unit => Callback,
       refreshRecords: Unit => Callback,
-      existing: Option[RecordSet] = None)
+      refreshChanges: Unit => Callback,
+      existing: Option[RecordSet] = None,
+      readOnly: Boolean = false)
 
   val component = ScalaComponent
     .builder[Props]("RecordModal")
@@ -56,7 +60,7 @@ object RecordSetModal {
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
       Modal(
-        Modal.Props(toTitle(S), P.close),
+        Modal.Props(toTitle(P, S), P.close),
         <.div(
           ^.className := "modal-body",
           <.div(
@@ -67,18 +71,25 @@ object RecordSetModal {
             ValidatedForm.Props(
               "form form-horizontal form-label-left test-record-form",
               generateInputFieldProps(S),
-              _ => if (S.isUpdate) updateRecordSet(P, S) else createRecordSet(P, S)
+              _ => if (S.isUpdate) updateRecordSet(P, S) else createRecordSet(P, S),
+              readOnly = P.readOnly
             ),
             <.div(
-              generateCustomRecordDataInput(S),
+              <.fieldset(
+                ^.disabled := P.readOnly,
+                generateCustomRecordDataInput(S)
+              ),
               <.div(^.className := "ln_solid"),
               <.div(
                 ^.className := "form-group",
-                <.button(
-                  ^.`type` := "submit",
-                  ^.className := "btn btn-success pull-right",
-                  "Submit"
-                ),
+                if (P.readOnly) <.span
+                else
+                  <.button(
+                    ^.`type` := "submit",
+                    ^.className := "btn btn-success pull-right",
+                    ^.disabled := isSubmitDisabled(P, S),
+                    "Submit"
+                  ),
                 <.button(
                   ^.`type` := "button",
                   ^.className := "btn btn-default pull-right test-close-recordset",
@@ -265,7 +276,7 @@ object RecordSetModal {
           val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSetChange]) =>
             addNotification(P.http.toNotification("creating record", httpResponse)) >>
               P.close(()) >>
-              withDelay(HALF_SECOND_IN_MILLIS, P.refreshRecords(()))
+              withDelay(HALF_SECOND_IN_MILLIS, P.refreshRecords(()) >> P.refreshChanges(()))
           }
           P.http.post(
             CreateRecordSetRoute(P.zone.id),
@@ -286,7 +297,7 @@ object RecordSetModal {
           val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSetChange]) =>
             addNotification(P.http.toNotification(s"updating record ${record.id}", httpResponse)) >>
               P.close(()) >>
-              withDelay(HALF_SECOND_IN_MILLIS, P.refreshRecords(()))
+              withDelay(HALF_SECOND_IN_MILLIS, P.refreshRecords(()) >> P.refreshChanges(()))
           }
           P.http.put(
             UpdateRecordSetRoute(P.zone.id, record.id),
@@ -297,8 +308,17 @@ object RecordSetModal {
       )
     }
 
-    def toTitle(S: State): String =
-      if (S.isUpdate) s"Update Record Set ${S.recordSet.asInstanceOf[RecordSet].id}"
+    def isSubmitDisabled(P: Props, S: State): Boolean =
+      P.existing match {
+        case Some(e) => e == S.recordSet.asInstanceOf[RecordSet]
+        case None => false
+      }
+
+    def toTitle(P: Props, S: State): String =
+      if (P.readOnly)
+        s"""View Record Set ${Try(S.recordSet.asInstanceOf[RecordSet].id).getOrElse("")}"""
+      else if (S.isUpdate)
+        s"""Update Record Set ${Try(S.recordSet.asInstanceOf[RecordSet].id).getOrElse("")}"""
       else "Create Record Set"
 
     private val header: String =

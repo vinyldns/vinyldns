@@ -26,7 +26,8 @@ object ValidatedForm {
   case class Props(
       className: String,
       inputFieldProps: List[ValidatedInput.Props],
-      onSubmit: Unit => Callback)
+      onSubmit: Unit => Callback,
+      readOnly: Boolean = false)
 
   case class State(
       refsToInputFields: List[WithScalaComponent[ // scalastyle:ignore
@@ -55,10 +56,13 @@ object ValidatedForm {
       <.form(
         ^.className := P.className,
         ^.onSubmit ==> (e => validateForm(e, P, S)),
-        P.inputFieldProps
-          .zip(S.refsToInputFields)
-          .map { case (props, ref) => ref.component(props) }
-          .toTagMod,
+        <.fieldset(
+          ^.disabled := P.readOnly,
+          P.inputFieldProps
+            .zip(S.refsToInputFields)
+            .map { case (props, ref) => ref.component(props) }
+            .toTagMod
+        ),
         children
       )
 

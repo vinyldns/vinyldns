@@ -17,19 +17,17 @@
 package vinyldns.client.pages.zoneview.components
 
 import japgolly.scalajs.react.extra.router.RouterCtl
+import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest._
-import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
-import vinyldns.client.models.record.{RecordSetChangeList, RecordSetList}
+import vinyldns.client.models.record.RecordSetChangeList
 import vinyldns.client.router.Page
 
-class ManageRecordSetsTabSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
+class ChangeHistoryTabSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
   val initialZone = generateZones(1).head
-  val initialRecordSets = generateRecordSets(10, initialZone.id)
-  val initialRecordSetList = RecordSetList(initialRecordSets.toList, 100)
   val initialRecordSetChanges = generateRecordSetChanges(10, initialZone)
   val initialRecordSetChangeList =
     RecordSetChangeList(initialZone.id, initialRecordSetChanges.toList, 100)
@@ -38,32 +36,18 @@ class ManageRecordSetsTabSpec extends WordSpec with Matchers with MockFactory wi
     val mockHttp = mock[Http]
 
     (mockHttp.get[RecordSetChangeList] _)
-      .expects(ListRecordSetChangesRoute(initialZone.id, 5), *, *)
+      .expects(ListRecordSetChangesRoute(initialZone.id), *, *)
       .once()
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialRecordSetChangeList))
       }
-
-    (mockHttp.get[RecordSetList] _)
-      .expects(ListRecordSetsRoute(initialZone.id), *, *)
-      .once()
-      .onCall { (_, onSuccess, _) =>
-        onSuccess.apply(mock[HttpResponse], Some(initialRecordSetList))
-      }
   }
 
-  "ManageRecordSetsTab" should {
-    "render the recent changes table" in new Fixture {
-      val props = ManageRecordSetsTab.Props(initialZone, mockHttp, mockRouter)
-      ReactTestUtils.withRenderedIntoDocument(ManageRecordSetsTab(props)) { c =>
-        ReactTestUtils.findRenderedComponentWithType(c, RecordSetTable.component)
+  "ChangeHistoryTab" should {
+    "render the record set change table" in new Fixture {
+      val props = ChangeHistoryTab.Props(initialZone, mockHttp, mockRouter)
+      ReactTestUtils.withRenderedIntoDocument(ChangeHistoryTab(props)) { c =>
         ReactTestUtils.findRenderedComponentWithType(c, RecordSetChangeTable.component)
-      }
-    }
-    "render the record set table" in new Fixture {
-      val props = ManageRecordSetsTab.Props(initialZone, mockHttp, mockRouter)
-      ReactTestUtils.withRenderedIntoDocument(ManageRecordSetsTab(props)) { c =>
-        ReactTestUtils.findRenderedComponentWithType(c, RecordSetTable.component)
       }
     }
   }

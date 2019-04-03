@@ -37,9 +37,20 @@ object ManageRecordSetsTab {
   def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
 
   class Backend {
+    val refToRecentChanges = Ref.toScalaComponent(RecordSetChangeTable.component)
     def render(P: Props): VdomElement =
       <.div(
-        RecordSetTable(RecordSetTable.Props(P.zone, P.http, P.routerCtl))
+        refToRecentChanges.component(
+          RecordSetChangeTable.Props(P.zone, P.http, P.routerCtl, recentOnly = true)),
+        RecordSetTable(RecordSetTable.Props(P.zone, P.http, P.routerCtl, _ => refreshChanges()))
       )
+
+    def refreshChanges(): Callback =
+      refToRecentChanges.get
+        .map { mounted =>
+          mounted.backend.listRecordSetChanges(mounted.props, mounted.state)
+        }
+        .getOrElse(Callback.empty)
+        .runNow()
   }
 }

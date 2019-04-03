@@ -37,7 +37,7 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
 
   class Fixture(withNext: Boolean = false) {
     val mockHttp = mock[Http]
-    val props = RecordSetTable.Props(zone, mockHttp, mockRouter)
+    val props = RecordSetTable.Props(zone, mockHttp, mockRouter, generateNoOpHandler[Unit])
     val initialRecordSetList =
       if (withNext)
         RecordSetList(initialRecordSets.toList, 100, nextId = Some("next"))
@@ -61,7 +61,7 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
 
     "display loading message when record set list is none" in {
       val mockHttp = mock[Http]
-      val props = RecordSetTable.Props(zone, mockHttp, mockRouter)
+      val props = RecordSetTable.Props(zone, mockHttp, mockRouter, generateNoOpHandler[Unit])
 
       (mockHttp.get[RecordSetList] _)
         .expects(ListRecordSetsRoute(zone.id), *, *)
@@ -80,7 +80,7 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
 
     "display no records message when record set list is empty" in {
       val mockHttp = mock[Http]
-      val props = RecordSetTable.Props(zone, mockHttp, mockRouter)
+      val props = RecordSetTable.Props(zone, mockHttp, mockRouter, generateNoOpHandler[Unit])
 
       (mockHttp.get[RecordSetList] _)
         .expects(ListRecordSetsRoute(zone.id), *, *)

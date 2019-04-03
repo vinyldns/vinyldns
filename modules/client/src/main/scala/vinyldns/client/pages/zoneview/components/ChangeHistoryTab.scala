@@ -26,15 +26,13 @@ import vinyldns.client.router.Page
 
 object ChangeHistoryTab {
   case class Props(zone: Zone, http: Http, routerCtl: RouterCtl[Page])
-  case class State()
 
   val component = ScalaComponent
     .builder[Props]("ChangeHistoryTab")
-    .initialState(State())
     .renderBackend[Backend]
     .build
 
-  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
+  def apply(props: Props): Unmounted[Props, Unit, Backend] = component(props)
 
   class Backend {
     def render(P: Props): VdomElement =

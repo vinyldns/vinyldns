@@ -24,7 +24,7 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http._
 import vinyldns.client.models.record.{RecordSetChangeList, RecordSetList}
 import vinyldns.client.models.zone.Zone
-import vinyldns.client.pages.zoneview.components.ManageRecordSetsTab
+import vinyldns.client.pages.zoneview.components.{ChangeHistoryTab, ManageRecordSetsTab}
 import vinyldns.client.router._
 
 class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
@@ -46,6 +46,13 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
 
   "ZoneViewPage" should {
     "get zone when mounting records tab" in new Fixture {
+      (mockHttp.get[RecordSetChangeList] _)
+        .expects(ListRecordSetChangesRoute(initialZone.id, 5), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
       (mockHttp.get[RecordSetList] _)
         .expects(ListRecordSetsRoute(initialZone.id), *, *)
         .once()
@@ -109,7 +116,14 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
       }
     }
 
-    "show manage record sets tab when on records tab" in new Fixture {
+    "show correctly load manage records tab" in new Fixture {
+      (mockHttp.get[RecordSetChangeList] _)
+        .expects(ListRecordSetChangesRoute(initialZone.id, 5), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
       (mockHttp.get[RecordSetList] _)
         .expects(ListRecordSetsRoute(initialZone.id), *, *)
         .once()
@@ -121,6 +135,21 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         ZoneViewPage(ToZoneViewRecordsTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         ReactTestUtils.findRenderedComponentWithType(c, ManageRecordSetsTab.component)
+      }
+    }
+
+    "show correctly load change history tab" in new Fixture {
+      (mockHttp.get[RecordSetChangeList] _)
+        .expects(ListRecordSetChangesRoute(initialZone.id), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
+      ReactTestUtils.withRenderedIntoDocument(
+        ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
+      ) { c =>
+        ReactTestUtils.findRenderedComponentWithType(c, ChangeHistoryTab.component)
       }
     }
   }

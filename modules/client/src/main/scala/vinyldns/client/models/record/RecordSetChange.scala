@@ -32,19 +32,7 @@ case class RecordSetChange(
     changeType: RecordSetChangeType.RecordSetChangeType,
     status: RecordSetChangeStatus.RecordSetChangeStatus,
     systemMessage: Option[String] = None,
-    update: Option[RecordSet] = None) {
-  def recordSetName(): String =
-    update match {
-      case Some(u) => u.name
-      case None => recordSet.name
-    }
-
-  def recordSetType(): String =
-    update match {
-      case Some(u) => u.`type`.toString
-      case None => recordSet.`type`.toString
-    }
-}
+    updates: Option[RecordSet] = None) {}
 
 object RecordSetChange extends OptionRW {
   implicit val recordSetChangeTypeRW: ReadWriter[RecordSetChangeType.RecordSetChangeType] =

@@ -44,6 +44,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       zone,
       generateNoOpHandler[Unit],
       generateNoOpHandler[Unit],
+      generateNoOpHandler[Unit],
       record
     )
   }

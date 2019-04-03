@@ -71,6 +71,7 @@ object GroupModal {
                 <.button(
                   ^.`type` := "submit",
                   ^.className := "btn btn-success pull-right",
+                  ^.disabled := submitDisabled(P, S),
                   "Submit"
                 ),
                 <.button(
@@ -201,11 +202,16 @@ object GroupModal {
         }
       }
 
+    def submitDisabled(P: Props, S: State): Boolean =
+      P.existing match {
+        case Some(e) => e == S.group.asInstanceOf[Group]
+        case None => false
+      }
+
     private val header =
       """
         |Groups simplify setup and access to resources in Vinyl.
-        | A Group consists of one or more members,
-        | who are registered users of Vinyl.
+        | A Group consists of one or more members, who are registered users of Vinyl.
         | Any member in the group can be designated as a Group Admin, which
         | allows that member full administrative access to the group, including deleting the group.
       """.stripMargin

@@ -34,9 +34,9 @@ package vinyldns.client
 
 import japgolly.scalajs.react.Callback
 import vinyldns.client.models.membership.{Group, Id, User}
-import vinyldns.client.models.record.{RecordData, RecordSet}
+import vinyldns.client.models.record.{RecordData, RecordSet, RecordSetChange}
 import vinyldns.client.models.zone.{Rules, Zone}
-import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.{RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.ZoneStatus
 
 trait SharedTestData {
@@ -100,6 +100,23 @@ trait SharedTestData {
         s"created-$i",
         Some("Delete") // note the records table update and delete buttons are conditional
       )
+
+  def generateRecordSetChanges(numChanges: Int, zone: Zone): Seq[RecordSetChange] = {
+    val records = generateRecordSets(numChanges, zone.id)
+    for {
+      i <- 0 until numChanges
+    } yield
+      RecordSetChange(
+        zone,
+        records(i),
+        testUser.id,
+        s"created-$i",
+        s"id-$i",
+        testUser.userName,
+        RecordSetChangeType.Create,
+        RecordSetChangeStatus.Complete
+      )
+  }
 
   // a lot of times components use anonymous functions like refreshGroups, setNotification, etc
   def generateNoOpHandler[T]: T => Callback = _ => Callback.empty
