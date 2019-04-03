@@ -12,3 +12,5 @@ to use classes that utilize non Scala.js compatible types, or else there will be
 
 Other than that, uPickle is pretty nifty, makes it very easy to read and write and json, and many examples can
 be seen throughout the codebase
+
+Note: When the model contains options you MUST extend OptionRW on the companion object

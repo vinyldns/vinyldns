@@ -16,16 +16,17 @@
 
 package vinyldns.client.models.zone
 
-import upickle.default.{ReadWriter, macroRW}
-import vinyldns.client.models.OptionRW
+import upickle.default._
+import vinyldns.client.models.Pagination.PagingKey
+import vinyldns.client.models.{OptionRW, PagingKeyRW}
 
 case class ZoneList(
     zones: List[Zone],
     maxItems: Int,
     nameFilter: Option[String] = None,
-    startFrom: Option[Int] = None,
-    nextId: Option[Int] = None)
+    startFrom: PagingKey = None,
+    nextId: PagingKey = None)
 
-object ZoneList extends OptionRW {
+object ZoneList extends OptionRW with PagingKeyRW {
   implicit val rw: ReadWriter[ZoneList] = macroRW
 }

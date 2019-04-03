@@ -34,14 +34,15 @@ object GlobalStyle {
 
     val alertBox = style(
       right :=! "36px",
-      position.absolute
+      position.fixed,
+      zIndex :=! "999999",
+      top :=! "3px"
     )
     val notifyOuter = style(
       width :=! "300px",
       cursor.auto,
       wordWrap.breakWord,
-      position.relative,
-      zIndex :=! "10000"
+      position.relative
     )
     val notifyInner = style(minHeight :=! "16px")
 

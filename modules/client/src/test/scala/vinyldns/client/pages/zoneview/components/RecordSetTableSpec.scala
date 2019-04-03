@@ -24,7 +24,7 @@ import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
 import vinyldns.client.models.Pagination
-import vinyldns.client.models.record.{RecordSet, RecordSetList}
+import vinyldns.client.models.record.{RecordSet, RecordSetChange, RecordSetList}
 import vinyldns.client.pages.zoneview.components.recordmodal.RecordSetModal
 import vinyldns.client.router.Page
 
@@ -205,17 +205,17 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
         }
 
       ReactTestUtils.withRenderedIntoDocument(RecordSetTable(props)) { c =>
-        c.state.pagination shouldBe Pagination[String]()
+        c.state.pagination shouldBe Pagination()
 
         val nextButton = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-next-page")
         Simulate.click(nextButton)
 
-        c.state.pagination shouldBe Pagination[String](List(None), 2)
+        c.state.pagination shouldBe Pagination(List(None), 2)
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-search-form")
         Simulate.submit(form)
 
-        c.state.pagination shouldBe Pagination[String]()
+        c.state.pagination shouldBe Pagination()
       }
     }
 
@@ -235,17 +235,17 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
         }
 
       ReactTestUtils.withRenderedIntoDocument(RecordSetTable(props)) { c =>
-        c.state.pagination shouldBe Pagination[String]()
+        c.state.pagination shouldBe Pagination()
 
         val nextButton = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-next-page")
         Simulate.click(nextButton)
 
-        c.state.pagination shouldBe Pagination[String](List(None), 2)
+        c.state.pagination shouldBe Pagination(List(None), 2)
 
         val refresh = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-refresh-recordsets")
         Simulate.click(refresh)
 
-        c.state.pagination shouldBe Pagination[String]()
+        c.state.pagination shouldBe Pagination()
       }
     }
 
@@ -256,7 +256,7 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
         initialRecordSetList.recordSets.map { r =>
           html should include(r.name)
           html should include(r.ttl.toString)
-          html should include(r.`type`)
+          html should include(r.`type`.toString)
           val recordData =
             ReactTestUtils.renderIntoDocument(r.recordDataDisplay).outerHtmlScrubbed()
           html should include(recordData)
@@ -278,7 +278,7 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
       (mockHttp.withConfirmation _).expects(*, *).repeat(10 to 10).onCall((_, cb) => cb)
 
       initialRecordSetList.recordSets.map { r =>
-        (mockHttp.delete[RecordSet] _)
+        (mockHttp.delete[RecordSetChange] _)
           .expects(DeleteRecordSetRoute(zone.id, r.id), *, *)
           .once()
           .returns(Callback.empty)

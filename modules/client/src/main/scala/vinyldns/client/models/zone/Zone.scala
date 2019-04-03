@@ -17,28 +17,42 @@
 package vinyldns.client.models.zone
 
 import vinyldns.client.models.OptionRW
-import upickle.default.{ReadWriter, macroRW}
+import upickle.default._
+import vinyldns.core.domain.zone.ZoneStatus
 
 case class Zone(
     id: String,
     name: String,
     email: String,
     adminGroupId: String,
-    adminGroupName: String,
-    status: String,
+    status: ZoneStatus.ZoneStatus,
     created: String,
     account: String,
     shared: Boolean,
     acl: Rules,
-    latestSync: String,
+    latestSync: Option[String] = None,
+    adminGroupName: Option[String] = None,
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None
 )
 
 object Zone extends OptionRW {
+  implicit val recordSetChangeTypeRW: ReadWriter[ZoneStatus.ZoneStatus] =
+    readwriter[ujson.Value]
+      .bimap[ZoneStatus.ZoneStatus](
+        fromStatus => ujson.Value.JsonableString(fromStatus.toString),
+        toStatus => {
+          val raw = toStatus.toString().replaceAll("^\"|\"$", "")
+          ZoneStatus.withName(raw)
+        }
+      )
+
   implicit val rw: ReadWriter[Zone] = macroRW
 }
 
+/*
+  The GET zone route, at least through the portal, returns a {zone: ...}
+ */
 case class GetZone(zone: Zone)
 
 object GetZone {

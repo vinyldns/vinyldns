@@ -26,8 +26,9 @@ import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse}
 import vinyldns.client.components.AlertBox.addNotification
-import vinyldns.client.pages.zoneview.components.ManageRecordSetsTab
+import vinyldns.client.pages.zoneview.components.{ChangeHistoryTab, ManageRecordSetsTab}
 import vinyldns.client.router._
+import vinyldns.core.domain.zone.ZoneStatus
 
 object ZoneViewPage extends PropsFromAppRouter {
   case class State(zone: Option[Zone] = None)
@@ -55,7 +56,11 @@ object ZoneViewPage extends PropsFromAppRouter {
                 ^.className := "page-title",
                 <.div(
                   ^.className := "title_left",
-                  <.h3(<.span(^.className := "fa fa-table"), s"""  Zone ${zone.name}"""),
+                  <.h3(
+                    <.span(^.className := "fa fa-table"),
+                    s"""  Zone ${zone.name}"""
+                  ),
+                  <.h5(GlobalStyle.Styles.keepWhitespace, "Status: ", toStatus(zone.status)),
                   <.h5(s"Id: ${zone.id}")
                 )
               ),
@@ -91,17 +96,21 @@ object ZoneViewPage extends PropsFromAppRouter {
       val zoneId = P.page.asInstanceOf[ToZoneViewPage].id
 
       val recordsActive = <.li(^.className := "active", <.a("Manage Records"))
-      val zoneActive = <.li(^.className := "active", <.a("Manage Zone"))
+      val accessActive = <.li(^.className := "active", <.a("Manage Access"))
+      val zoneActive = <.li(^.className := "active", <.a("Edit Zone"))
       val changesActive = <.li(^.className := "active", <.a("Change History"))
 
       val records = <.li(
         GlobalStyle.Styles.cursorPointer,
         <.a("Manage Records"),
         P.router.setOnClick(ToZoneViewRecordsTab(zoneId)))
-      val zone =
-        <.li(
-          GlobalStyle.Styles.cursorPointer,
-          <.a("Manage Zone", P.router.setOnClick(ToZoneViewZoneTab(zoneId))))
+      val access = <.li(
+        GlobalStyle.Styles.cursorPointer,
+        <.a("Manage Access"),
+        P.router.setOnClick(ToZoneViewAccessTab(zoneId)))
+      val zone = <.li(
+        GlobalStyle.Styles.cursorPointer,
+        <.a("Edit Zone", P.router.setOnClick(ToZoneViewZoneTab(zoneId))))
       val changes = <.li(
         GlobalStyle.Styles.cursorPointer,
         <.a("Change History"),
@@ -112,6 +121,15 @@ object ZoneViewPage extends PropsFromAppRouter {
           <.ul(
             ^.className := "nav nav-tabs bar_tabs",
             recordsActive,
+            access,
+            zone,
+            changes
+          )
+        case _: ToZoneViewAccessTab =>
+          <.ul(
+            ^.className := "nav nav-tabs bar_tabs",
+            records,
+            accessActive,
             zone,
             changes
           )
@@ -119,6 +137,7 @@ object ZoneViewPage extends PropsFromAppRouter {
           <.ul(
             ^.className := "nav nav-tabs bar_tabs",
             records,
+            access,
             zoneActive,
             changes
           )
@@ -126,6 +145,7 @@ object ZoneViewPage extends PropsFromAppRouter {
           <.ul(
             ^.className := "nav nav-tabs bar_tabs",
             records,
+            access,
             zone,
             changesActive
           )
@@ -136,6 +156,8 @@ object ZoneViewPage extends PropsFromAppRouter {
       P.page match {
         case _: ToZoneViewRecordsTab =>
           ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, P.http, P.router))
+        case _: ToZoneViewChangesTab =>
+          ChangeHistoryTab(ChangeHistoryTab.Props(zone, P.http, P.router))
         case _ =>
           <.div("not implemented")
       }
@@ -151,5 +173,16 @@ object ZoneViewPage extends PropsFromAppRouter {
 
       P.http.get(GetZoneRoute(zoneId), onSuccess, onFailure)
     }
+
+    def toStatus(status: ZoneStatus.ZoneStatus): TagMod =
+      status match {
+        case ZoneStatus.Active =>
+          <.span(^.className := "label label-success", "Active")
+        case ZoneStatus.Syncing =>
+          <.span(^.className := "label label-warning", "Syncing")
+        case ZoneStatus.Deleted =>
+          <.span(^.className := "label label-danger", "Deleted")
+        case _ => <.span
+      }
   }
 }

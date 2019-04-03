@@ -16,18 +16,23 @@
 
 package vinyldns.client.models
 
-case class Pagination[KeyType](
-    startFroms: List[Option[KeyType]] = List(),
-    pageNumber: Int = 1,
-    popped: Option[KeyType] = None) {
+import upickle.default._
+import vinyldns.client.models.Pagination.PagingKey
 
-  def next(currentStartFrom: Option[KeyType]): Pagination[KeyType] = {
+import scala.util.Try
+
+case class Pagination(
+    startFroms: List[PagingKey] = List(),
+    pageNumber: Int = 1,
+    popped: PagingKey = None) {
+
+  def next(currentStartFrom: PagingKey): Pagination = {
     val newStartFroms = currentStartFrom :: this.startFroms
     val newPageNumber = this.pageNumber + 1
     this.copy(startFroms = newStartFroms, pageNumber = newPageNumber)
   }
 
-  def previous(): Pagination[KeyType] = {
+  def previous(): Pagination = {
     val newPageNumber = math.max(1, this.pageNumber - 1)
 
     this.startFroms match {
@@ -42,4 +47,21 @@ case class Pagination[KeyType](
         this.copy(startFroms = List(), pageNumber = newPageNumber, popped = None)
     }
   }
+}
+
+object Pagination {
+  type PagingKey = Option[String]
+}
+
+trait PagingKeyRW {
+  /*
+  This was brought about because the API paging startFroms can be any type
+
+  This client will just assume the paging key is a String, the API converts to Ints
+  in the Route handlers anyway when needed
+   */
+  implicit val pagingKeyReader: Reader[PagingKey] =
+    reader[ujson.Value].map[Option[String]] { j =>
+      Try(j.toString().replaceAll("^\"|\"$", "")).toOption
+    }
 }

@@ -96,7 +96,7 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
         initialZoneList.zones.map { zone =>
           html should include(s"""<td>${zone.name}</td>""")
           html should include(s"""<td>${zone.email}</td>""")
-          html should include(s"""${zone.adminGroupName}""")
+          html should include(s"""${zone.adminGroupName.get}""")
           html should include("<td>Private</td>")
         }
       }

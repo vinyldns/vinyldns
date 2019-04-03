@@ -106,7 +106,7 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
       val mockHttp = mock[Http]
       val groupList = GroupList(List(), 100)
       val zoneList = ZoneList(generateZones(1).toList, 100)
-      val zoneListWithNext = zoneList.copy(nextId = Some(999))
+      val zoneListWithNext = zoneList.copy(nextId = Some("next"))
 
       (mockHttp.get[GroupList] _)
         .expects(ListGroupsRoute(), *, *)
@@ -125,7 +125,7 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
       ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
         c =>
           (mockHttp.get[ZoneList] _)
-            .expects(ListZonesRoute(startFrom = Some(999)), *, *)
+            .expects(ListZonesRoute(startFrom = Some("next")), *, *)
             .once()
             .onCall { (_, onSuccess, _) =>
               onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
@@ -172,7 +172,7 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
       val mockHttp = mock[Http]
       val groupList = GroupList(List(), 100)
       val zoneList = ZoneList(generateZones(1).toList, 100)
-      val zoneListWithNext = zoneList.copy(nextId = Some(999))
+      val zoneListWithNext = zoneList.copy(nextId = Some("next"))
 
       (mockHttp.get[GroupList] _)
         .expects(ListGroupsRoute(), *, *)
@@ -191,7 +191,7 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
       ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
         c =>
           (mockHttp.get[ZoneList] _)
-            .expects(ListZonesRoute(startFrom = Some(999)), *, *)
+            .expects(ListZonesRoute(startFrom = Some("next")), *, *)
             .once()
             .onCall { (_, onSuccess, _) =>
               onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))

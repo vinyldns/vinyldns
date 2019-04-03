@@ -17,15 +17,16 @@
 package vinyldns.client.models.membership
 
 import upickle.default.{ReadWriter, macroRW}
-import vinyldns.client.models.OptionRW
+import vinyldns.client.models.Pagination.PagingKey
+import vinyldns.client.models.{OptionRW, PagingKeyRW}
 
 case class GroupList(
     groups: List[Group],
     maxItems: Int,
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None,
+    startFrom: PagingKey = None,
+    nextId: PagingKey = None,
     groupNameFilter: Option[String] = None)
 
-object GroupList extends OptionRW {
+object GroupList extends OptionRW with PagingKeyRW {
   implicit val rw: ReadWriter[GroupList] = macroRW
 }

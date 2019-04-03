@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models
+package vinyldns.client.models.record
 
 import upickle.default._
+import vinyldns.client.models.Pagination.PagingKey
+import vinyldns.client.models.{OptionRW, PagingKeyRW}
 
-trait OptionRW {
-  // uPickle by default treats empty options as empty json arrays, this has it use None and js.null
-  implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
-    implicitly[Writer[T]].comap[Option[T]] {
-      case None => null.asInstanceOf[T] // scalastyle:ignore
-      case Some(x) => x
-    }
+case class RecordSetChangeList(
+    zoneId: String,
+    recordSetChanges: List[RecordSetChange],
+    maxItems: Int,
+    startFrom: PagingKey = None,
+    nextId: PagingKey = None)
 
-  implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    implicitly[Reader[T]].mapNulls {
-      case null => None // scalastyle:ignore
-      case x => Some(x)
-    }
+object RecordSetChangeList extends OptionRW with PagingKeyRW {
+  implicit val rw: ReadWriter[RecordSetChangeList] = macroRW
 }

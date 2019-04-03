@@ -22,10 +22,10 @@ import org.scalatest._
 import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
-import vinyldns.client.models.record.RecordSetList
+import vinyldns.client.models.record.{RecordSetChangeList, RecordSetList}
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.ManageRecordSetsTab
-import vinyldns.client.router.{Page, ToZoneViewChangesTab, ToZoneViewRecordsTab, ToZoneViewZoneTab}
+import vinyldns.client.router._
 
 class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
@@ -60,7 +60,15 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
       }
     }
 
-    "get zone when mounting zone tab" in new Fixture {
+    "get zone when mounting access tab" in new Fixture {
+      ReactTestUtils.withRenderedIntoDocument(
+        ZoneViewPage(ToZoneViewAccessTab(initialZone.id), mockRouter, mockHttp)
+      ) { c =>
+        c.state.zone shouldBe Some(initialZone)
+      }
+    }
+
+    "get zone when mounting zone edit tab" in new Fixture {
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewZoneTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
@@ -69,6 +77,13 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
     }
 
     "get zone when mounting changes tab" in new Fixture {
+      (mockHttp.get[RecordSetChangeList] _)
+        .expects(ListRecordSetChangesRoute(initialZone.id), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>

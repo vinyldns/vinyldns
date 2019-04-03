@@ -19,6 +19,7 @@ package vinyldns.client.models.record
 import org.scalatest._
 import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
+import vinyldns.core.domain.record.RecordType
 
 class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
   val baseRecord = generateRecordSets(1, "zoneId").head
@@ -57,7 +58,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
     "display a CNAME record" in {
       val record = List(RecordData(cname = Some("cname.")))
 
-      val withRecords = baseRecord.copy(`type` = "CNAME", records = record)
+      val withRecords = baseRecord.copy(`type` = RecordType.CNAME, records = record)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -79,7 +80,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
           digest = Some("ds2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = "DS", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.DS, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -107,7 +108,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(preference = Some(2), exchange = Some("e2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = "MX", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.MX, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -131,7 +132,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(nsdname = Some("ns2."))
       )
 
-      val withRecords = baseRecord.copy(`type` = "NS", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.NS, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -145,7 +146,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(ptrdname = Some("ptr2."))
       )
 
-      val withRecords = baseRecord.copy(`type` = "PTR", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.PTR, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -165,7 +166,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
           minimum = Some(5))
       )
 
-      val withRecords = baseRecord.copy(`type` = "SOA", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.SOA, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -188,7 +189,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(text = Some("spf2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = "SPF", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.SPF, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -202,7 +203,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(text = Some("txt2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = "TXT", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.TXT, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -216,7 +217,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(priority = Some(4), weight = Some(5), port = Some(6), target = Some("t2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = "SRV", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.SRV, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)
@@ -244,7 +245,7 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(algorithm = Some(2), `type` = Some(2), fingerprint = Some("f2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = "SSHFP", records = records)
+      val withRecords = baseRecord.copy(`type` = RecordType.SSHFP, records = records)
 
       ReactTestUtils
         .renderIntoDocument(withRecords.recordDataDisplay)

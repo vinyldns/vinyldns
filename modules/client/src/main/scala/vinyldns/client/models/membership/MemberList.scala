@@ -17,15 +17,15 @@
 package vinyldns.client.models.membership
 
 import upickle.default.{ReadWriter, macroRW}
-import vinyldns.client.models.OptionRW
+import vinyldns.client.models.Pagination.PagingKey
+import vinyldns.client.models.{OptionRW, PagingKeyRW}
 
 case class MemberList(
     members: List[User],
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
-    maxItems: Int
-)
+    nextId: PagingKey = None,
+    startFrom: PagingKey = None,
+    maxItems: Int)
 
-object MemberList extends OptionRW {
+object MemberList extends OptionRW with PagingKeyRW {
   implicit val rw: ReadWriter[MemberList] = macroRW
 }

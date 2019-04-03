@@ -24,7 +24,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{DeleteRecordSetRoute, Http, HttpResponse, ListRecordSetsRoute}
 import vinyldns.client.models.Pagination
-import vinyldns.client.models.record.{RecordSet, RecordSetList}
+import vinyldns.client.models.record.{RecordSet, RecordSetChange, RecordSetList}
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.router.Page
 import vinyldns.client.components.AlertBox.addNotification
@@ -38,7 +38,7 @@ object RecordSetTable {
   case class State(
       recordSetList: Option[RecordSetList] = None,
       nameFilter: Option[String] = None,
-      pagination: Pagination[String] = Pagination(),
+      pagination: Pagination = Pagination(),
       maxItems: Int = 100,
       showCreateRecordModal: Boolean = false,
       showUpdateRecordModal: Boolean = false,
@@ -60,7 +60,7 @@ object RecordSetTable {
           ^.className := "panel panel-default",
           <.div(
             ^.className := "panel-heading",
-            <.h3(^.className := "panel-title", "DNS Records"),
+            <.h3(^.className := "panel-title", "DNS Record Sets"),
             <.br,
             // create recordset button
             <.div(
@@ -192,7 +192,7 @@ object RecordSetTable {
     def toTableRow(P: Props, S: State, recordSet: RecordSet): TagMod =
       <.tr(
         <.td(recordSet.name),
-        <.td(recordSet.`type`),
+        <.td(recordSet.`type`.toString),
         <.td(recordSet.ttl),
         <.td(recordSet.recordDataDisplay),
         <.td(
@@ -243,7 +243,7 @@ object RecordSetTable {
         s"Are you sure you want to delete record set with name ${recordSet.name} and id ${recordSet.id}",
         Callback.lazily {
           val alertMessage = s"deleting record set (name: ${recordSet.name}, id: ${recordSet.id})"
-          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSet]) =>
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSetChange]) =>
             addNotification(P.http.toNotification(alertMessage, httpResponse)) >>
               withDelay(HALF_SECOND_IN_MILLIS, resetPageInfo >> listRecordSets(P, S))
           }

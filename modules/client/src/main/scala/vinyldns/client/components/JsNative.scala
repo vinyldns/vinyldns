@@ -17,7 +17,10 @@
 package vinyldns.client.components
 
 import japgolly.scalajs.react.Callback
+
 import scala.scalajs.js.timers.setTimeout
+import scala.scalajs.js.Dynamic.global
+import scala.util.Try
 
 object JsNative {
   final val ONE_SECOND_IN_MILLIS = 1000.0
@@ -28,4 +31,10 @@ object JsNative {
   // hook to javascript timeout function
   def withDelay(millis: Double, cb: Callback): Callback =
     Callback(setTimeout(millis)(cb.runNow()))
+
+  def logError(message: String): Unit = {
+    Try(global.console.error(message))
+    ()
+  }
+
 }

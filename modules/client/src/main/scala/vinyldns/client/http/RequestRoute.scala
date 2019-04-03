@@ -16,17 +16,31 @@
 
 package vinyldns.client.http
 
+import upickle.default
 import upickle.default.read
 import vinyldns.client.models.membership.{Group, GroupList, MemberList, User}
-import vinyldns.client.models.record.{RecordSet, RecordSetList}
+import vinyldns.client.models.record.{RecordSetChange, RecordSetChangeList, RecordSetList}
 import vinyldns.client.models.zone.{GetZone, Zone, ZoneList}
+import vinyldns.client.components.JsNative.logError
+import upickle.default.ReadWriter
 
 import scala.scalajs.js.URIUtils
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 sealed trait RequestRoute[T] {
+  implicit val rw: ReadWriter[T]
+
   def path: String
-  def parse(httpResponse: HttpResponse): Option[T]
+
+  def parse(httpResponse: HttpResponse): Option[T] =
+    Try {
+      read[T](httpResponse.responseText)
+    } match {
+      case Success(p) => Some(p)
+      case Failure(e) =>
+        logError(e.getMessage)
+        None
+    }
 
   def toQueryString(map: Map[String, String]): String =
     if (map.isEmpty) ""
@@ -38,14 +52,15 @@ sealed trait RequestRoute[T] {
 }
 
 object CurrentUserRoute extends RequestRoute[User] {
+  implicit val rw: default.ReadWriter[User] = User.rw
   def path: String = "/api/users/currentuser"
-  def parse(httpResponse: HttpResponse): Option[User] =
-    Try(Option(read[User](httpResponse.responseText))).getOrElse(None)
 }
 
 object RegenerateCredentialsRoute extends RequestRoute[Unit] {
+  implicit val rw: default.ReadWriter[Unit] =
+    ReadWriter.join(default.UnitReader, default.UnitWriter)
+
   def path: String = "/regenerate-creds"
-  def parse(httpResponse: HttpResponse): Option[Unit] = Some(())
 }
 
 final case class ListGroupsRoute(
@@ -53,91 +68,100 @@ final case class ListGroupsRoute(
     nameFilter: Option[String] = None,
     startFrom: Option[String] = None)
     extends RequestRoute[GroupList] {
-  val queryStrings =
+  implicit val rw: default.ReadWriter[GroupList] = GroupList.rw
+
+  val queryStrings: Map[String, String] =
     Map.empty[String, String] ++
       Map("maxItems" -> maxItems.toString) ++
       nameFilter.map(f => "groupNameFilter" -> f) ++
       startFrom.map(s => "startFrom" -> s)
 
   def path: String = s"/api/groups${toQueryString(queryStrings)}"
-  def parse(httpResponse: HttpResponse): Option[GroupList] =
-    Try(Option(read[GroupList](httpResponse.responseText))).getOrElse(None)
 }
 
 object CreateGroupRoute extends RequestRoute[Group] {
+  implicit val rw: default.ReadWriter[Group] = Group.rw
+
   def path: String = "/api/groups"
-  def parse(httpResponse: HttpResponse): Option[Group] =
-    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class GetGroupRoute(id: String) extends RequestRoute[Group] {
+  implicit val rw: default.ReadWriter[Group] = Group.rw
+
   def path: String = s"/api/groups/$id"
-  def parse(httpResponse: HttpResponse): Option[Group] =
-    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class DeleteGroupRoute(id: String) extends RequestRoute[Group] {
+  implicit val rw: default.ReadWriter[Group] = Group.rw
+
   def path: String = s"/api/groups/$id"
-  def parse(httpResponse: HttpResponse): Option[Group] =
-    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class UpdateGroupRoute(id: String) extends RequestRoute[Group] {
+  implicit val rw: default.ReadWriter[Group] = Group.rw
+
   def path: String = s"/api/groups/$id"
-  def parse(httpResponse: HttpResponse): Option[Group] =
-    Try(Option(read[Group](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class GetGroupMembersRoute(id: String) extends RequestRoute[MemberList] {
+  implicit val rw: default.ReadWriter[MemberList] = MemberList.rw
+
   def path: String = s"/api/groups/$id/members"
-  def parse(httpResponse: HttpResponse): Option[MemberList] =
-    Try(Option(read[MemberList](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class LookupUserRoute(username: String) extends RequestRoute[User] {
+  implicit val rw: default.ReadWriter[User] = User.rw
+
   def path: String = s"/api/users/lookupuser/$username"
-  def parse(httpResponse: HttpResponse): Option[User] =
-    Try(Option(read[User](httpResponse.responseText))).getOrElse(None)
 }
 
 object CreateZoneRoute extends RequestRoute[Zone] {
+  implicit val rw: default.ReadWriter[Zone] = Zone.rw
+
   def path: String = "/api/zones"
-  def parse(httpResponse: HttpResponse): Option[Zone] =
-    Try(Option(read[Zone](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class UpdateZoneRoute(id: String) extends RequestRoute[Zone] {
+  implicit val rw: default.ReadWriter[Zone] = Zone.rw
+
   def path: String = s"/api/zones/$id"
-  def parse(httpResponse: HttpResponse): Option[Zone] =
-    Try(Option(read[Zone](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class ListZonesRoute(
     maxItems: Int = 100,
     nameFilter: Option[String] = None,
-    startFrom: Option[Int] = None)
+    startFrom: Option[String] = None)
     extends RequestRoute[ZoneList] {
-  val queryStrings =
+  implicit val rw: default.ReadWriter[ZoneList] = ZoneList.rw
+
+  val queryStrings: Map[String, String] =
     Map.empty[String, String] ++
       Map("maxItems" -> maxItems.toString) ++
       nameFilter.map(f => "nameFilter" -> f) ++
       startFrom.map(s => "startFrom" -> s.toString)
 
   def path: String = s"/api/zones${toQueryString(queryStrings)}"
-  def parse(httpResponse: HttpResponse): Option[ZoneList] =
-    Try(Option(read[ZoneList](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class DeleteZoneRoute(id: String) extends RequestRoute[Zone] {
+  implicit val rw: default.ReadWriter[Zone] = Zone.rw
+
   def path: String = s"/api/zones/$id"
-  def parse(httpResponse: HttpResponse): Option[Zone] =
-    Try(Option(read[Zone](httpResponse.responseText))).getOrElse(None)
 }
 
 final case class GetZoneRoute(id: String) extends RequestRoute[Zone] {
+  implicit val rw: default.ReadWriter[Zone] = Zone.rw
+
   def path: String = s"/api/zones/$id"
-  def parse(httpResponse: HttpResponse): Option[Zone] =
-    Try(Option(read[GetZone](httpResponse.responseText).zone)).getOrElse(None)
+
+  // route returns an object {zone: ...}
+  override def parse(httpResponse: HttpResponse): Option[Zone] =
+    Try(read[GetZone](httpResponse.responseText)) match {
+      case Success(p) => Some(p.zone)
+      case Failure(e) =>
+        logError(e.getMessage)
+        None
+    }
 }
 
 final case class ListRecordSetsRoute(
@@ -146,36 +170,47 @@ final case class ListRecordSetsRoute(
     nameFilter: Option[String] = None,
     startFrom: Option[String] = None)
     extends RequestRoute[RecordSetList] {
-  val queryStrings =
+  implicit val rw: default.ReadWriter[RecordSetList] = RecordSetList.rw
+
+  val queryStrings: Map[String, String] =
     Map.empty[String, String] ++
       Map("maxItems" -> maxItems.toString) ++
       nameFilter.map(f => "recordNameFilter" -> f) ++
       startFrom.map(s => "startFrom" -> s)
 
   def path: String = s"/api/zones/$zoneId/recordsets${toQueryString(queryStrings)}"
-  def parse(httpResponse: HttpResponse): Option[RecordSetList] =
-    Try(Option(read[RecordSetList](httpResponse.responseText))).getOrElse(None)
 }
 
-// TODO: This returns a record set change
-final case class CreateRecordSetRoute(zoneId: String) extends RequestRoute[RecordSet] {
+final case class CreateRecordSetRoute(zoneId: String) extends RequestRoute[RecordSetChange] {
+  implicit val rw: default.ReadWriter[RecordSetChange] = RecordSetChange.rw
+
   def path: String = s"/api/zones/$zoneId/recordsets"
-  def parse(httpResponse: HttpResponse): Option[RecordSet] =
-    Try(Option(read[RecordSet](httpResponse.responseText))).getOrElse(None)
 }
 
-// TODO: This returns a record set change
 final case class DeleteRecordSetRoute(zoneId: String, recordId: String)
-    extends RequestRoute[RecordSet] {
+    extends RequestRoute[RecordSetChange] {
+  implicit val rw: default.ReadWriter[RecordSetChange] = RecordSetChange.rw
+
   def path: String = s"/api/zones/$zoneId/recordsets/$recordId"
-  def parse(httpResponse: HttpResponse): Option[RecordSet] =
-    Try(Option(read[RecordSet](httpResponse.responseText))).getOrElse(None)
 }
 
-// TODO: This returns a record set change
 final case class UpdateRecordSetRoute(zoneId: String, recordId: String)
-    extends RequestRoute[RecordSet] {
+    extends RequestRoute[RecordSetChange] {
+  implicit val rw: default.ReadWriter[RecordSetChange] = RecordSetChange.rw
+
   def path: String = s"/api/zones/$zoneId/recordsets/$recordId"
-  def parse(httpResponse: HttpResponse): Option[RecordSet] =
-    Try(Option(read[RecordSet](httpResponse.responseText))).getOrElse(None)
+}
+
+final case class ListRecordSetChangesRoute(
+    zoneId: String,
+    maxItems: Int = 100,
+    startFrom: Option[String] = None)
+    extends RequestRoute[RecordSetChangeList] {
+  implicit val rw: default.ReadWriter[RecordSetChangeList] = RecordSetChangeList.rw
+
+  val queryStrings: Map[String, String] = Map.empty[String, String] ++
+    Map("maxItems" -> maxItems.toString) ++
+    startFrom.map(s => "startFrom" -> s)
+
+  def path: String = s"/api/zones/$zoneId/recordsetchanges${toQueryString(queryStrings)}"
 }

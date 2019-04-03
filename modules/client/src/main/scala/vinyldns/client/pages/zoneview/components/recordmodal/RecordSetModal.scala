@@ -28,6 +28,7 @@ import vinyldns.client.http.{CreateRecordSetRoute, Http, HttpResponse, UpdateRec
 import vinyldns.client.models.record._
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.recordmodal.recordinput._
+import vinyldns.core.domain.record.RecordType
 
 object RecordSetModal {
   case class State(recordSet: BasicRecordSetInfo, isUpdate: Boolean = false)
@@ -97,20 +98,20 @@ object RecordSetModal {
           inputClass = Some("test-type"),
           label = Some("Type"),
           options = List(
-            "A" -> "A",
-            "AAAA" -> "AAAA",
-            "CNAME" -> "CNAME",
-            "DS" -> "DS",
-            "PTR" -> "PTR",
-            "MX" -> "MX",
-            "NS" -> "NS",
-            "SRV" -> "SRV",
-            "TXT" -> "TXT",
-            "SSHFP" -> "SSHFP",
-            "SPF" -> "SPF"
+            RecordType.A.toString -> RecordType.A.toString,
+            RecordType.AAAA.toString -> RecordType.AAAA.toString,
+            RecordType.CNAME.toString -> RecordType.CNAME.toString,
+            RecordType.DS.toString -> RecordType.DS.toString,
+            RecordType.PTR.toString -> RecordType.PTR.toString,
+            RecordType.MX.toString -> RecordType.MX.toString,
+            RecordType.NS.toString -> RecordType.NS.toString,
+            RecordType.SRV.toString -> RecordType.SRV.toString,
+            RecordType.TXT.toString -> RecordType.TXT.toString,
+            RecordType.SSHFP.toString -> RecordType.SSHFP.toString,
+            RecordType.SPF.toString -> RecordType.SPF.toString
           ),
           inputType = InputType.Select,
-          value = Some(S.recordSet.`type`),
+          value = Some(S.recordSet.`type`.toString),
           validations = Some(Validations(required = true))
         ),
         ValidatedInput.Props(
@@ -133,7 +134,7 @@ object RecordSetModal {
     def generateRecordDataInputFieldProps(S: State): List[ValidatedInput.Props] =
       // used when record inputs are just a normal field and not complex like mx or sshfp with multiple parts
       S.recordSet.`type` match {
-        case aOrAaaa if aOrAaaa == "A" || aOrAaaa == "AAAA" =>
+        case RecordType.A | RecordType.AAAA =>
           List(
             ValidatedInput.Props(
               (value: String) => recordinput.RecordDataInput.changeAddress(bs, value),
@@ -144,7 +145,7 @@ object RecordSetModal {
               value = RecordData.addressesToInput(S.recordSet.records),
               validations = Some(Validations(required = true, noEmptyLines = true))
             ))
-        case cname if cname == "CNAME" =>
+        case RecordType.CNAME =>
           List(
             ValidatedInput.Props(
               (value: String) => recordinput.RecordDataInput.changeCname(bs, value),
@@ -154,7 +155,7 @@ object RecordSetModal {
               helpText = Some("Fully Qualified Domain Name"),
               validations = Some(Validations(required = true))
             ))
-        case ptr if ptr == "PTR" =>
+        case RecordType.PTR =>
           List(
             ValidatedInput.Props(
               (value: String) => recordinput.RecordDataInput.changePtrDName(bs, value),
@@ -165,7 +166,7 @@ object RecordSetModal {
               value = RecordData.ptrdnamesToInput(S.recordSet.records),
               validations = Some(Validations(required = true, noEmptyLines = true))
             ))
-        case ns if ns == "NS" =>
+        case RecordType.NS =>
           List(
             ValidatedInput.Props(
               (value: String) => recordinput.RecordDataInput.changeNsDName(bs, value),
@@ -176,7 +177,7 @@ object RecordSetModal {
               value = RecordData.nsdnamesToInput(S.recordSet.records),
               validations = Some(Validations(required = true, noEmptyLines = true))
             ))
-        case spf if spf == "SPF" =>
+        case RecordType.SPF =>
           List(
             ValidatedInput.Props(
               (value: String) => recordinput.RecordDataInput.changeText(bs, value),
@@ -187,7 +188,7 @@ object RecordSetModal {
               value = RecordData.textsToInput(S.recordSet.records),
               validations = Some(Validations(required = true, noEmptyLines = true))
             ))
-        case txt if txt == "TXT" =>
+        case RecordType.TXT =>
           List(
             ValidatedInput.Props(
               (value: String) => recordinput.RecordDataInput.changeText(bs, value),
@@ -204,10 +205,10 @@ object RecordSetModal {
     def generateCustomRecordDataInput(S: State): TagMod =
       // for more complex inputs that can't just use a simple text field
       S.recordSet.`type` match {
-        case mx if mx == "MX" => MxInput.toTagMod(S, bs)
-        case srv if srv == "SRV" => SrvInput.toTagMod(S, bs)
-        case sshfp if sshfp == "SSHFP" => SshfpInput.toTagMod(S, bs)
-        case ds if ds == "DS" => DsInput.toTagMod(S, bs)
+        case RecordType.MX => MxInput.toTagMod(S, bs)
+        case RecordType.SRV => SrvInput.toTagMod(S, bs)
+        case RecordType.SSHFP => SshfpInput.toTagMod(S, bs)
+        case RecordType.DS => DsInput.toTagMod(S, bs)
         case _ => TagMod.empty
       }
 
@@ -215,11 +216,13 @@ object RecordSetModal {
       bs.modState { s =>
         if (s.isUpdate) {
           val record = s.recordSet.asInstanceOf[RecordSet]
-          val modified = record.copy(`type` = value, records = List(RecordData()))
+          val modified =
+            record.copy(`type` = RecordType.withName(value), records = List(RecordData()))
           s.copy(recordSet = modified)
         } else {
           val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
-          val modified = record.copy(`type` = value, records = List(RecordData()))
+          val modified =
+            record.copy(`type` = RecordType.withName(value), records = List(RecordData()))
           s.copy(recordSet = modified)
         }
       }
@@ -259,7 +262,7 @@ object RecordSetModal {
           val onFailure = { httpResponse: HttpResponse =>
             addNotification(P.http.toNotification("creating record", httpResponse))
           }
-          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSet]) =>
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSetChange]) =>
             addNotification(P.http.toNotification("creating record", httpResponse)) >>
               P.close(()) >>
               withDelay(HALF_SECOND_IN_MILLIS, P.refreshRecords(()))
@@ -280,7 +283,7 @@ object RecordSetModal {
           val onFailure = { httpResponse: HttpResponse =>
             addNotification(P.http.toNotification(s"updating record ${record.id}", httpResponse))
           }
-          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSet]) =>
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[RecordSetChange]) =>
             addNotification(P.http.toNotification(s"updating record ${record.id}", httpResponse)) >>
               P.close(()) >>
               withDelay(HALF_SECOND_IN_MILLIS, P.refreshRecords(()))

@@ -36,7 +36,7 @@ object ZonesTable {
   case class State(
       zonesList: Option[ZoneList] = None,
       nameFilter: Option[String] = None,
-      pagination: Pagination[Int] = Pagination(),
+      pagination: Pagination = Pagination(),
       maxItems: Int = 100)
 
   val component = ScalaComponent
@@ -153,7 +153,7 @@ object ZonesTable {
         }
       )
 
-    def listZones(P: Props, S: State, startFrom: Option[Int] = None): Callback = {
+    def listZones(P: Props, S: State, startFrom: Option[String] = None): Callback = {
       val onSuccess = { (_: HttpResponse, parsed: Option[ZoneList]) =>
         bs.modState(_.copy(zonesList = parsed))
       }

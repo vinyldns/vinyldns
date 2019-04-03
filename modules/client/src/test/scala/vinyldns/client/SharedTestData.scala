@@ -36,6 +36,8 @@ import japgolly.scalajs.react.Callback
 import vinyldns.client.models.membership.{Group, Id, User}
 import vinyldns.client.models.record.{RecordData, RecordSet}
 import vinyldns.client.models.zone.{Rules, Zone}
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.zone.ZoneStatus
 
 trait SharedTestData {
   val testUser: User =
@@ -74,13 +76,12 @@ trait SharedTestData {
         s"name-$i.",
         s"email-$i@test.com",
         s"adminGroupId-$i",
-        s"adminGroupName-$i",
-        s"Active",
-        s"$i",
-        "systen",
+        ZoneStatus.Active,
+        s"created-$i",
+        "system",
         false,
         Rules(List()),
-        s"latestSync-$i"
+        adminGroupName = Some(s"adminGroupName-$i")
       )
 
   def generateRecordSets(numRecords: Int, zoneId: String): Seq[RecordSet] =
@@ -89,15 +90,15 @@ trait SharedTestData {
     } yield
       RecordSet(
         s"id-$i",
-        s"A",
+        RecordType.A,
         zoneId,
         s"name-$i",
         300,
         "Active",
         List(RecordData(address = Some("1.1.1.1"))),
         "account",
-        "Delete",
-        s"created-$i"
+        s"created-$i",
+        Some("Delete") // note the records table update and delete buttons are conditional
       )
 
   // a lot of times components use anonymous functions like refreshGroups, setNotification, etc

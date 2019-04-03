@@ -45,8 +45,7 @@ case class RecordData(
     fingerprint: Option[String] = None,
     keytag: Option[Int] = None,
     digesttype: Option[Int] = None,
-    digest: Option[String] = None
-) {
+    digest: Option[String] = None) {
   def addressToString: String = this.address.getOrElse("")
   def cnameToString: String = this.cname.getOrElse("")
   def preferenceToString: String = Try(this.preference.get.toString).getOrElse("")

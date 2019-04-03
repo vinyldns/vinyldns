@@ -400,10 +400,11 @@ lazy val client = (project in file("modules/client"))
     requireJsDomEnv in Test := true,
     npmDependencies in Compile ++= clientNpmDependencies,
     coverageEnabled := false,
-    webpackBundlingMode := BundlingMode.LibraryOnly()
-    // needed if depending on core
-    // unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
+    webpackBundlingMode := BundlingMode.LibraryOnly(),
+    //needed if depending on core
+    unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
   )
+  .dependsOn(core)
 
 lazy val docSettings = Seq(
   git.remoteRepo := "https://github.com/vinyldns/vinyldns",

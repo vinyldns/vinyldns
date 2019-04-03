@@ -39,7 +39,7 @@ object GroupsTable {
       groupNameFilter: Option[String] = None,
       showUpdateGroup: Boolean = false,
       toBeUpdated: Option[Group] = None,
-      pagination: Pagination[String] = Pagination(),
+      pagination: Pagination = Pagination(),
       maxItems: Int = 100)
 
   val component = ScalaComponent

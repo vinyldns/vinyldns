@@ -66,8 +66,12 @@ object AppRouter {
           dynamicRouteCT[ToZoneViewRecordsTab](("zones" / string(uuidRegex) / "records")
             .caseClass[ToZoneViewRecordsTab]) ~> (p =>
             renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
-        | // zone: manage zone tab
-          dynamicRouteCT[ToZoneViewZoneTab](("zones" / string(uuidRegex) / "zone")
+        | // zone: edit access tab
+          dynamicRouteCT[ToZoneViewAccessTab](("zones" / string(uuidRegex) / "access")
+            .caseClass[ToZoneViewAccessTab]) ~> (p =>
+            renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
+        | // zone: edit zone tab
+          dynamicRouteCT[ToZoneViewZoneTab](("zones" / string(uuidRegex) / "edit")
             .caseClass[ToZoneViewZoneTab]) ~> (p =>
             renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
         | // zone: change history tab
