@@ -151,6 +151,15 @@ class DnsConversionsSpec
     DateTime.now,
     None,
     List(TXTData("text")))
+  private val tooLongTXT = RecordSet(
+    testZone.id,
+    "txt-record",
+    RecordType.TXT,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(TXTData("a" * 64764)))
   private val testAt = RecordSet(
     testZone.id,
     "vinyldns.",
@@ -335,6 +344,11 @@ class DnsConversionsSpec
     "convert TXT record set" in {
       val result = rightValue(toDnsRRset(testTXT, testZoneName))
       verifyMatch(result, testTXT)
+    }
+
+    "fail to convert a bad TXT record set" in {
+      val result = leftValue(toDnsRRset(tooLongTXT, testZoneName))
+      result shouldBe a[java.lang.IllegalArgumentException]
     }
   }
 
