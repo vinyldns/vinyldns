@@ -22,6 +22,7 @@ import org.scalatest._
 import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record.{RecordSetChangeList, RecordSetList}
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.{ChangeHistoryTab, ManageRecordSetsTab}
@@ -68,6 +69,13 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
     }
 
     "get zone when mounting access tab" in new Fixture {
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewAccessTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>

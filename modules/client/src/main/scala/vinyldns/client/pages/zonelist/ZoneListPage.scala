@@ -194,7 +194,7 @@ object ZoneListPage extends PropsFromAppRouter {
         bs.modState(_.copy(groupList = parsed))
       }
       val onFailure = { httpResponse: HttpResponse =>
-        addNotification(P.http.toNotification("list groups", httpResponse, onlyOnError = true))
+        addNotification(P.http.toNotification("listing groups", httpResponse, onlyOnError = true))
       }
       P.http.get(ListGroupsRoute(), onSuccess, onFailure)
     }

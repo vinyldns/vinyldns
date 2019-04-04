@@ -35,9 +35,9 @@ package vinyldns.client
 import japgolly.scalajs.react.Callback
 import vinyldns.client.models.membership.{Group, Id, User}
 import vinyldns.client.models.record.{RecordData, RecordSet, RecordSetChange}
-import vinyldns.client.models.zone.{Rules, Zone}
+import vinyldns.client.models.zone.{ACLRule, Rules, Zone}
 import vinyldns.core.domain.record.{RecordSetChangeStatus, RecordSetChangeType, RecordType}
-import vinyldns.core.domain.zone.ZoneStatus
+import vinyldns.core.domain.zone.{AccessLevel, ZoneStatus}
 
 trait SharedTestData {
   val testUser: User =
@@ -46,6 +46,28 @@ trait SharedTestData {
     User("dummyUser", "dummyId", Some("dummy"), Some("user"), Some("dummyuser@email.com"))
 
   val testUUID = "99701afe-9794-431c-9986-41ce074c9387"
+
+  val userAclRule = ACLRule(
+    AccessLevel.Write,
+    List(RecordType.A, RecordType.CNAME),
+    Some("desc"),
+    Some(testUser.id),
+    Some(testUser.userName),
+    None,
+    Some("mask*"),
+    Some(testUser.userName)
+  )
+
+  val groupAclRule = ACLRule(
+    AccessLevel.Delete,
+    List(RecordType.NS, RecordType.AAAA),
+    Some("desc"),
+    None,
+    None,
+    Some(generateGroups(1).head.id),
+    Some("mask*"),
+    Some(generateGroups(1).head.name)
+  )
 
   def generateGroups(
       numGroups: Int,

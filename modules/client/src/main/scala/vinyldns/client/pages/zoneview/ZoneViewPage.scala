@@ -26,7 +26,11 @@ import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse}
 import vinyldns.client.components.AlertBox.addNotification
-import vinyldns.client.pages.zoneview.components.{ChangeHistoryTab, ManageRecordSetsTab}
+import vinyldns.client.pages.zoneview.components.{
+  ChangeHistoryTab,
+  ManageAccessTab,
+  ManageRecordSetsTab
+}
 import vinyldns.client.router._
 import vinyldns.core.domain.zone.ZoneStatus
 
@@ -61,7 +65,15 @@ object ZoneViewPage extends PropsFromAppRouter {
                     s"""  Zone ${zone.name}"""
                   ),
                   <.h5(GlobalStyle.Styles.keepWhitespace, "Status: ", toStatus(zone.status)),
-                  <.h5(s"Id: ${zone.id}")
+                  <.h5(s"Id: ${zone.id}"),
+                  <.h5(
+                    "Admin Group:",
+                    <.a(
+                      GlobalStyle.Styles.cursorPointer,
+                      s""" ${zone.adminGroupName.getOrElse("")}""",
+                      P.router.setOnClick(ToGroupViewPage(zone.adminGroupId))
+                    )
+                  )
                 )
               ),
               <.div(^.className := "clearfix"),
@@ -156,6 +168,8 @@ object ZoneViewPage extends PropsFromAppRouter {
       P.page match {
         case _: ToZoneViewRecordsTab =>
           ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, P.http, P.router))
+        case _: ToZoneViewAccessTab =>
+          ManageAccessTab(ManageAccessTab.Props(zone, P.http, P.router, _ => getZone(P)))
         case _: ToZoneViewChangesTab =>
           ChangeHistoryTab(ChangeHistoryTab.Props(zone, P.http, P.router))
         case _ =>

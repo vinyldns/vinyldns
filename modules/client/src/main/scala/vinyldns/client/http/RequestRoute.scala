@@ -119,12 +119,30 @@ object CreateZoneRoute extends RequestRoute[Zone] {
   implicit val rw: default.ReadWriter[Zone] = Zone.rw
 
   def path: String = "/api/zones"
+
+  // route returns an object {zone: ...}
+  override def parse(httpResponse: HttpResponse): Option[Zone] =
+    Try(read[GetZone](httpResponse.responseText)) match {
+      case Success(p) => Some(p.zone)
+      case Failure(e) =>
+        logError(e.getMessage)
+        None
+    }
 }
 
 final case class UpdateZoneRoute(id: String) extends RequestRoute[Zone] {
   implicit val rw: default.ReadWriter[Zone] = Zone.rw
 
   def path: String = s"/api/zones/$id"
+
+  // route returns an object {zone: ...}
+  override def parse(httpResponse: HttpResponse): Option[Zone] =
+    Try(read[GetZone](httpResponse.responseText)) match {
+      case Success(p) => Some(p.zone)
+      case Failure(e) =>
+        logError(e.getMessage)
+        None
+    }
 }
 
 final case class ListZonesRoute(

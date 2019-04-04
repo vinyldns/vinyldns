@@ -27,7 +27,7 @@ import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute
 import vinyldns.client.models.zone.{Zone, ZoneList}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.models.Pagination
-import vinyldns.client.router.{Page, ToGroupViewPage, ToZoneViewRecordsTab}
+import vinyldns.client.router.{Page, ToGroupViewPage, ToZoneViewRecordsTab, ToZoneViewZoneTab}
 
 import scala.util.Try
 
@@ -185,6 +185,14 @@ object ZonesTable {
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-eye"),
               " View"
+            ),
+            <.button(
+              ^.className := "btn btn-warning btn-rounded test-edit",
+              P.router.setOnClick(ToZoneViewZoneTab(zone.id)),
+              ^.title := s"Edit zone ${zone.name}",
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-edit"),
+              " Edit"
             ),
             <.button(
               ^.className := "btn btn-danger btn-rounded test-abandon",

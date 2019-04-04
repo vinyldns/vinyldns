@@ -37,7 +37,7 @@ case class Zone(
 )
 
 object Zone extends OptionRW {
-  implicit val recordSetChangeTypeRW: ReadWriter[ZoneStatus.ZoneStatus] =
+  implicit val zoneStatusRW: ReadWriter[ZoneStatus.ZoneStatus] =
     readwriter[ujson.Value]
       .bimap[ZoneStatus.ZoneStatus](
         fromStatus => ujson.Value.JsonableString(fromStatus.toString),

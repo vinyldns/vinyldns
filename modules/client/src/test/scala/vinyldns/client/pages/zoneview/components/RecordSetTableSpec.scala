@@ -275,7 +275,10 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
     }
 
     "call http.delete after confirming delete" in new Fixture {
-      (mockHttp.withConfirmation _).expects(*, *).repeat(10 to 10).onCall((_, cb) => cb)
+      (mockHttp.withConfirmation _)
+        .expects(*, *)
+        .repeat(initialRecordSets.size to initialRecordSets.size)
+        .onCall((_, cb) => cb)
 
       initialRecordSetList.recordSets.map { r =>
         (mockHttp.delete[RecordSetChange] _)
@@ -286,7 +289,7 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
 
       ReactTestUtils.withRenderedIntoDocument(RecordSetTable(props)) { c =>
         val deleteButtons = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-delete")
-        (deleteButtons should have).length(10)
+        (deleteButtons should have).length(initialRecordSets.size)
         deleteButtons.foreach(Simulate.click(_))
       }
     }

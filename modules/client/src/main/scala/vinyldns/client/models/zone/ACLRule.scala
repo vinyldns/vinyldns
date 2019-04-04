@@ -16,8 +16,12 @@
 
 package vinyldns.client.models.zone
 
-import upickle.default.{ReadWriter, macroRW}
+import upickle.default._
 import vinyldns.client.models.OptionRW
+import vinyldns.client.models.record.RecordSetTypeRW
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.zone.AccessLevel
+import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 
 case class Rules(rules: List[ACLRule])
 
@@ -26,13 +30,39 @@ object Rules {
 }
 
 case class ACLRule(
-    accessLevel: String,
-    recordTypes: Seq[String],
+    accessLevel: AccessLevel.AccessLevel,
+    recordTypes: Seq[RecordType.RecordType],
     description: Option[String] = None,
     userId: Option[String] = None,
+    userName: Option[String] = None,
     groupId: Option[String] = None,
-    recordMask: Option[String] = None)
+    recordMask: Option[String] = None,
+    displayName: Option[String] = None)
 
-object ACLRule extends OptionRW {
+object ACLRule extends OptionRW with RecordSetTypeRW {
+  object AclType extends Enumeration {
+    type AclType = Value
+    val User, Group = Value
+  }
+
+  def apply(): ACLRule = ACLRule(AccessLevel.Read, Seq())
+
+  def toAccessLevelDisplay(accessLevel: AccessLevel): String =
+    accessLevel match {
+      case AccessLevel.NoAccess => "No Access"
+      case AccessLevel.Read => "Read"
+      case AccessLevel.Write => "Read + Write"
+      case AccessLevel.Delete => "Read + Write + Delete"
+    }
+
+  implicit val accessLevelRW: ReadWriter[AccessLevel.AccessLevel] =
+    readwriter[ujson.Value]
+      .bimap[AccessLevel.AccessLevel](
+        fromStatus => ujson.Value.JsonableString(fromStatus.toString),
+        toStatus => {
+          val raw = toStatus.toString().replaceAll("^\"|\"$", "")
+          AccessLevel.withName(raw)
+        }
+      )
   implicit val rw: ReadWriter[ACLRule] = macroRW
 }

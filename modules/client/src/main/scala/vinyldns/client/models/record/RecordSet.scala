@@ -34,7 +34,7 @@ trait BasicRecordSetInfo {
 }
 
 trait RecordSetTypeRW {
-  implicit val recordSetChangeTypeRW: ReadWriter[RecordType.RecordType] =
+  implicit val recordTypeRW: ReadWriter[RecordType.RecordType] =
     readwriter[ujson.Value]
       .bimap[RecordType.RecordType](
         fromType => ujson.Value.JsonableString(fromType.toString),
