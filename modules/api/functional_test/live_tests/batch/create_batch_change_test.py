@@ -542,16 +542,18 @@ def test_create_batch_change_failed(shared_zone_test_context):
         "comments": "this is optional",
         "changes": [
             get_change_A_AAAA_json("backend-foo.ok.", address="4.5.6.7"),
-            get_change_A_AAAA_json("backend-already-exists.ok.", address="4.5.6.7")
+            get_change_A_AAAA_json("backend-already-exists.ok.", address="4.5.6.7"),
+            get_change_PTR_json("fd69:27cc:fe91::1234"),
+            get_change_PTR_json("192.0.2.196")
         ]
     }
 
     try:
-        # both of these records already exist in the backend, but are not synced in zone
+        # these records already exist in the backend, but are not synced in zone
         dns_add(shared_zone_test_context.ok_zone, "backend-foo", 200, "A", "1.2.3.4")
         dns_add(shared_zone_test_context.ok_zone, "backend-already-exists", 200, "A", "1.2.3.4")
-        dns_add(shared_zone_test_context.ip6_reverse_zone, "fd69:27cc:fe91::1234", 200, "PTR", "test.com.")
-        dns_add(shared_zone_test_context.classless_zone_delegation_zone, "194", 200, "PTR", "another-test.com.")
+        dns_add(shared_zone_test_context.ip6_reverse_zone, "4.3.2.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", 200, "PTR", "test.com.")
+        dns_add(shared_zone_test_context.classless_zone_delegation_zone, "196", 200, "PTR", "test.com")
         result = client.create_batch_change(batch_change_input, status=202)
         completed_batch = client.wait_until_batch_change_completed(result)
 
@@ -560,9 +562,8 @@ def test_create_batch_change_failed(shared_zone_test_context):
     finally:
         dns_delete(shared_zone_test_context.ok_zone, "backend-foo", "A")
         dns_delete(shared_zone_test_context.ok_zone, "backend-already-exists", "A")
-        dns_delete(shared_zone_test_context.ok_zone, "fd69:27cc:fe91::1234", "PTR")
-        dns_delete(shared_zone_test_context.ok_zone, "194", "PTR")
-
+        dns_delete(shared_zone_test_context.classless_zone_delegation_zone, "196", "PTR")
+        dns_delete(shared_zone_test_context.ip6_reverse_zone, "4.3.2.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR")
 
 def test_empty_batch_fails(shared_zone_test_context):
     """
