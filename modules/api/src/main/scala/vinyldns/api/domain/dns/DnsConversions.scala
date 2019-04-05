@@ -274,7 +274,7 @@ trait DnsConversions {
 
   def fromTXTRecord(r: DNS.TXTRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(TXTData(data.getStrings.asScala.mkString("")))
+      List(TXTData(data.getStrings.asScala.mkString))
     }
 
   def toDnsRecords(recordSet: RecordSet, zoneName: String): Either[Throwable, List[DNS.Record]] =
