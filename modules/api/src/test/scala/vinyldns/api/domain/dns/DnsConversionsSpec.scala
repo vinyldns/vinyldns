@@ -126,7 +126,7 @@ class DnsConversionsSpec
     List(SPFData("spf")))
   private val testLongSPF = RecordSet(
     testZone.id,
-    "spf-record",
+    "long-spf-record",
     RecordType.SPF,
     200,
     RecordSetStatus.Active,
@@ -160,6 +160,15 @@ class DnsConversionsSpec
     DateTime.now,
     None,
     List(TXTData("text")))
+  private val testLongTXT = RecordSet(
+    testZone.id,
+    "long-txt-record",
+    RecordType.TXT,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(TXTData("a" * 64763)))
   private val testAt = RecordSet(
     testZone.id,
     "vinyldns.",
@@ -346,6 +355,11 @@ class DnsConversionsSpec
       verifyMatch(result, testTXT)
     }
 
+    "convert long TXT record set" in {
+      val result = rightValue(toDnsRRset(testLongTXT, testZoneName))
+      verifyMatch(result, testLongTXT)
+    }
+
     "fail to convert a bad SPF record set" in {
       val result = leftValue(toDnsRRset(testLongSPF, testZoneName))
       result shouldBe a[java.lang.IllegalArgumentException]
@@ -455,6 +469,9 @@ class DnsConversionsSpec
     }
     "convert to/from RecordType TXT" in {
       verifyMatch(testTXT, roundTrip(testTXT))
+    }
+    "convert to/from RecordType TXT long TXT record data" in {
+      verifyMatch(testLongTXT, roundTrip(testLongTXT))
     }
   }
 

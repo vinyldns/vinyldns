@@ -353,8 +353,8 @@ trait DnsConversions {
 
   def toDnsRRset(recordSet: RecordSet, zoneName: String): Either[Throwable, DNS.RRset] = {
     val dnsRecordSet = new DNS.RRset()
-    toDnsRecords(recordSet, zoneName).map { thing =>
-      thing.foreach(dnsRecordSet.addRR)
+    toDnsRecords(recordSet, zoneName).map { record =>
+      record.foreach(dnsRecordSet.addRR)
       dnsRecordSet
     }
   }
