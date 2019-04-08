@@ -552,8 +552,8 @@ def test_create_batch_change_failed(shared_zone_test_context):
         # these records already exist in the backend, but are not synced in zone
         dns_add(shared_zone_test_context.ok_zone, "backend-foo", 200, "A", "1.2.3.4")
         dns_add(shared_zone_test_context.ok_zone, "backend-already-exists", 200, "A", "1.2.3.4")
-        dns_add(shared_zone_test_context.ip6_reverse_zone, "4.3.2.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", 200, "PTR", "test.com.")
-        dns_add(shared_zone_test_context.classless_zone_delegation_zone, "193", 200, "PTR", "test.com")
+        dns_add(shared_zone_test_context.ip6_reverse_zone, "4.3.2.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", 200, "PTR", "another-test.com")
+        dns_add(shared_zone_test_context.classless_zone_delegation_zone, "193", 200, "PTR", "another-test.com")
         result = client.create_batch_change(batch_change_input, status=202)
         completed_batch = client.wait_until_batch_change_completed(result)
 
