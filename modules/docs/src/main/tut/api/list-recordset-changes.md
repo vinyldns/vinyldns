@@ -40,6 +40,7 @@ recordSetChanges   | array of recordset changes | array of recordset changes sor
 startFrom     | *any*         | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
 nextId        | *any*         | (optional) The identifier to be passed in as the *startFrom* parameter to retrieve the next page of results.  If there are no results left, this field will not be present |
 maxItems      | int           | The maxItems parameter that was sent in on the HTTP request.  This will be 100 if not sent |
+status        | string        | The status of the change (Pending, Complete, Failed) |
 
 #### EXAMPLE RESPONSE
 

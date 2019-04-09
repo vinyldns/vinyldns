@@ -67,6 +67,8 @@ userId        | string        | the user id that initiated the change |
 changeType    | string        | type of change requested (Create, Update, Delete); in this case Update |
 created       | string        | the time (GMT) the change was initiated |
 id            | string        | the id of the change.  This is not the id of the recordset |
+status        | RecordSetChangeStatus        | the status of the change (Pending, Complete, or Failed) |
+singleBatchChangeIds |  array of SingleBatchChange Id objects  | if the recordset change was part of a batch change, the IDs of the single changes that comprise the recordset change
 
 #### EXAMPLE RESPONSE
 
@@ -125,6 +127,7 @@ id            | string        | the id of the change.  This is not the id of the
     "account": "9b22b686-54bc-47fb-a8f8-cdc48e6d04ae",
     "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   },
-  "id": "df69bc45-2942-4fb7-813c-4dd21cfad7fa"
+  "id": "df69bc45-2942-4fb7-813c-4dd21cfad7fa",
+  "singleBatchChangeIds": []
 }
 ```
