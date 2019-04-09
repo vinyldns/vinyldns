@@ -53,7 +53,7 @@ class BatchChangeRoutingSpec
   object TestData {
     import vinyldns.api.domain.batch.ChangeInputType._
 
-    val batchChangeLimit = 20
+    val batchChangeLimit = 1000
 
     /* Builds BatchChange response */
     def createBatchChangeResponse(
