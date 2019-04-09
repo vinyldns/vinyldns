@@ -127,24 +127,24 @@
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.aRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.aRecordData.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.aRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
                         <span ng-if="record.type == 'AAAA'">
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.aaaaRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.aaaaRecordData.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.aaaaRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
                         <span ng-if="record.type == 'CNAME'">{{ record.cnameRecordData }}</span>
@@ -174,36 +174,36 @@
                                     ng-if="!record.onlyFour || $index <= 3">
                                     Preference: {{ item.preference }} | Exchange: {{ item.exchange }}
                                 </li>
-                                <li ng-if="record.onlyFour && record.mxItems.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.mxItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
                         <span ng-if="record.type == 'NS'">
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.nsRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.nsRecordData.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.nsRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
                         <span ng-if="record.type == 'PTR'">
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.ptrRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.ptrRecordData.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.ptrRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
                         <span ng-if="record.type == 'SOA'">
@@ -242,12 +242,12 @@
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.spfRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
-                                <li ng-if="record.onlyFour && record.spfRecordData.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.spfRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
                         <span ng-if="record.type == 'SRV'">
@@ -257,12 +257,12 @@
                                     Priority: {{ item.priority }} | Weight: {{ item.weight }} | Port: {{ item.port }}
                                     | Target: {{ item.target }}
                                 </li>
-                                <li ng-if="record.onlyFour && record.srvItems.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.srvItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
                         <span ng-if="record.type == 'SSHFP'">
@@ -273,15 +273,26 @@
                                     | Type: {{ sshfpTypes[item.type-1].name }}
                                     | Fingerprint: {{ item.fingerprint }}
                                 </li>
-                                <li ng-if="record.onlyFour && record.sshfpItems.length > 4">
-                                    <a href ng-click="record.onlyFour=false">more...</a>
-                                </li>
-                                <li ng-if="!record.onlyFour">
-                                    <a href ng-click="record.onlyFour=true">less...</a>
-                                </li>
+                                <span ng-if="record.onlyFour && record.sshfpItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
                             </ul>
                         </span>
-                        <span ng-if="record.type == 'TXT'">{{ record.textRecordData }}</span>
+                        <span ng-if="record.type == 'TXT'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.textRecordData track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
+                                <span ng-if="record.onlyFour && record.textRecordData.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
+                        </span>
                         </span>
                     </td>
                     @if(meta.sharedDisplayEnabled) {

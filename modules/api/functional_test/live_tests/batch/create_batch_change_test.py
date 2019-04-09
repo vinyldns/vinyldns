@@ -2113,16 +2113,14 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="good-record.ok.", record_type="TXT", record_data="test")
+        assert_successful_change_in_error_response(response[2], input_name="summed-fail.ok.", record_type="TXT", record_data="test")
+        assert_successful_change_in_error_response(response[3], input_name="summed-fail.ok.", record_type="TXT", record_data="test2")
 
         # ttl, domain name, record data
         assert_failed_change_in_error_response(response[1], input_name="bad-ttl-and-invalid-name$.ok.", ttl=29, record_type="TXT", record_data="test",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "bad-ttl-and-invalid-name$.ok.", '
                                                                'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[2], input_name="summed-fail.ok.", record_type="TXT", record_data="test",
-                                               error_messages=['Record Name "summed-fail.ok." Not Unique In Batch Change: cannot have multiple "TXT" records with the same name.'])
-        assert_failed_change_in_error_response(response[3], input_name="summed-fail.ok.", record_type="TXT", record_data="test2",
-                                               error_messages=['Record Name "summed-fail.ok." Not Unique In Batch Change: cannot have multiple "TXT" records with the same name.'])
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[4], input_name="no.subzone.ok.", record_type="TXT", record_data="test",

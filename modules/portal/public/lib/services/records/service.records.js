@@ -171,7 +171,11 @@ angular.module('service.records', [])
                     newRecord.onlyFour = true;
                     break;
                 case 'TXT':
-                    newRecord.textRecordData = record.records[0].text;
+                    newRecord.textRecordData = [];
+                    angular.forEach(record.records, function(textRecord) {
+                        newRecord.textRecordData.push(textRecord.text);
+                    });
+                    newRecord.onlyFour = true;
                     break;
                 default:
                     newRecord.canBeEdited = false;
@@ -243,7 +247,10 @@ angular.module('service.records', [])
                     });
                     break;
                 case 'TXT':
-                    newRecord.records = [{"text": record.textRecordData}];
+                    newRecord.records = [];
+                    angular.forEach(record.textRecordData, function(txt) {
+                        newRecord.records.push({"text": txt});
+                    });
                     break;
                 default:
             }
