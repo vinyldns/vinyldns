@@ -102,7 +102,7 @@ Code          | description |
 202           | **Accepted** - The batch change is queued and is returned in the response body. |
 400           | **Bad Request** - Error in the batch change. See [Batch Change Errors](../api/batchchange-errors) page. |
 403           | **Forbidden** - The user does not have the access required to perform the action. |
-413           | **Request Entity Too Large** - Cannot request more than 20 changes in a single batch change request. |
+413           | **Request Entity Too Large** - Cannot request more than <limit> changes in a single batch change request. |
 422           | **Unprocessable Entity** - the batch does not contain any changes, thus cannot be processed. |
 
 A batch change goes through numerous validations before it is processed. This results in corresponding BadRequest or error responses. View the full list of batch change errors [here](../api/batchchange-errors).
