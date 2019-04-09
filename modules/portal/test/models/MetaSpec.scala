@@ -37,9 +37,9 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("batch-change-limit" -> 21)
       Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(21)
     }
-    "default to 20 if batch-change-limit is not found" in {
+    "default to 1000 if batch-change-limit is not found" in {
       val config = Map("vinyldns.version" -> "foo-bar")
-      Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(20)
+      Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(1000)
     }
   }
 }
