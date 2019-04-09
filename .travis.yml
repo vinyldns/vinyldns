@@ -1,7 +1,6 @@
 language: scala
 
 scala:
-  - 2.12.7
   - 2.12.8
 
 python:
