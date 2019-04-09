@@ -123,8 +123,10 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     val typedChecks = change.typ match {
       case A | AAAA | MX =>
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
-      case CNAME | TXT =>
+      case CNAME =>
         validateHostName(change.inputName).asUnit
+      case TXT =>
+        validateTxtTextLength(change.inputName).asUnit
       case PTR =>
         validatePtrIp(change.inputName)
       case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]

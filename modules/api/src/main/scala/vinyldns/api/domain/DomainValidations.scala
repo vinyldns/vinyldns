@@ -25,7 +25,7 @@ import scala.util.matching.Regex
  */
 object DomainValidations {
   val validFQDNRegex: Regex =
-    """^(?:([0-9a-zA-Z]{1,63}|[0-9a-zA-Z]{1}[0-9a-zA-Z\-\/]{0,61}[0-9a-zA-Z]{1})\.)*$""".r
+    """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z]{1})\.)*$""".r
   val validIpv4Regex: Regex =
     """^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$""".r
   val validIpv6Regex: Regex =
@@ -45,6 +45,8 @@ object DomainValidations {
       #([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]
       #|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])
       #)$""".stripMargin('#').replaceAll("\n", "").r
+  val LABEL_MIN_LENGTH: Int = 1
+  val LABEL_MAX_LENGTH: Int = 63
   val HOST_MIN_LENGTH: Int = 2
   val HOST_MAX_LENGTH: Int = 255
   val TTL_MAX_LENGTH: Int = 2147483647
@@ -63,7 +65,7 @@ object DomainValidations {
       All possible labels permutations:
         - A single letter/digit: [0-9a-zA-Z]{1}
         - A combination of 1-63 letters/digits: [0-9a-zA-Z]{1,63}
-        - A single letter/digit followed by up to 61 letters, digits, hyphens or slashes
+        - A single letter/digit followed by up to 61 letters, digits, hyphens, slashes and underscores
         and ending with a letter/digit:[0-9a-zA-Z]{1}[0-9a-zA-Z\-]{0,61}[0-9a-zA-Z]{1}
       A valid domain name is a series of one or more <label>s,
       joined by dots/slashes and terminating on a zero-length <label> (ie. dot)

@@ -262,10 +262,8 @@ class MembershipService(
     zoneRepo
       .getFirstOwnedZoneAclGroupId(group.id)
       .map { zId =>
-        ensuring(
-          InvalidGroupRequestError(
-            s"${group.name} has an ACL rule for a zone including $zId. Cannot delete."))(
-          zId.isEmpty)
+        ensuring(InvalidGroupRequestError(
+          s"${group.name} has an ACL rule for a zone including $zId. Cannot delete."))(zId.isEmpty)
       }
       .toResult
 
