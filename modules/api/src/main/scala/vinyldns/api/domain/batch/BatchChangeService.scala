@@ -31,7 +31,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository
 
 object BatchChangeService {
@@ -154,15 +154,14 @@ class BatchChangeService(
 
   def getExistingRecordSets(
       changes: ValidatedBatch[ChangeForValidation]): IO[ExistingRecordSets] = {
-    val uniqueGets = changes.getValid.map { change =>
-      change.inputChange.typ match {
-        case PTR => s"${change.recordName}.${change.zone.name}"
-        case _ => change.inputChange.inputName
-      }
-    }.toSet
-    val allRecordSets = recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
+    val uniqueGets = changes.getValid.map(change => (change.zone.id, change.recordName)).toSet
+    val allIO = uniqueGets.map {
+      case (zoneId, rsName) =>
+        recordSetRepository.getRecordSetsByName(zoneId, rsName)
+    }
+    val allSeq: IO[List[List[RecordSet]]] = allIO.toList.sequence
 
-    allRecordSets.map(ExistingRecordSets)
+    allSeq.map(lst => ExistingRecordSets(lst.flatten))
   }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
