@@ -161,6 +161,10 @@ class BatchChangeServiceSpec
         (zoneId, name) match {
           case ("apex", "apex.test.com.") => List(existingApex)
           case ("base", "non-apex") => List(existingNonApex)
+          case ("nonDelegatedPTR", "11") => List(existingPtr)
+          case ("delegatedPTR", "193") => List(existingPtrDelegated)
+          case ("ipv6PTR", "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0") =>
+            List(existingPtrV6)
           case (_, _) => List()
         }
       }
