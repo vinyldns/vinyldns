@@ -196,7 +196,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     // Updates require checking against other batch changes since multiple adds
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
-      case CNAME | TXT => recordIsUniqueInBatch(change, changeGroups)
+      case CNAME => recordIsUniqueInBatch(change, changeGroups)
       case _ => ().validNel
     }
 
@@ -257,8 +257,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
           change.recordName,
           change.inputChange.inputName,
           existingRecords,
-          changeGroups) |+|
-          recordIsUniqueInBatch(change, changeGroups)
+          changeGroups)
       case other => InvalidBatchRecordType(other.toString).invalidNel
     }
 

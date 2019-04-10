@@ -68,10 +68,8 @@ object CommandHandler {
     // concurrently run 4 message batches, so we can have 40 messages max running concurrently
     def flow(): Stream[IO, Unit] =
       messageSource
+        .map(_.observe(increaseTimeoutWhenSyncing).through(changeRequestProcessor).to(updateQueue))
         .parJoin(4)
-        .observe(increaseTimeoutWhenSyncing)
-        .through(changeRequestProcessor)
-        .to(updateQueue)
         .handleErrorWith { error =>
           logger.error("Encountered unexpected error in main flow", error)
 
