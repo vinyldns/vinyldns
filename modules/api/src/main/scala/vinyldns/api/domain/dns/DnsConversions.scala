@@ -274,7 +274,7 @@ trait DnsConversions {
 
   def fromTXTRecord(r: DNS.TXTRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
-      List(TXTData(data.getStrings.asScala.mkString(",")))
+      List(TXTData(data.getStrings.asScala.mkString))
     }
 
   def toDnsRecords(recordSet: RecordSet, zoneName: String): Either[Throwable, List[DNS.Record]] =
@@ -346,17 +346,18 @@ trait DnsConversions {
           new DNS.SPFRecord(recordName, DNS.DClass.IN, ttl, text)
 
         case TXTData(text) =>
-          new DNS.TXTRecord(recordName, DNS.DClass.IN, ttl, text)
+          val texts = text.grouped(255).toList
+          new DNS.TXTRecord(recordName, DNS.DClass.IN, ttl, texts.asJava)
       }
     }
 
-  def toDnsRRset(recordSet: RecordSet, zoneName: String): Either[Throwable, DNS.RRset] =
-    Either.catchNonFatal {
-      val dnsRecordSet = new DNS.RRset()
-      toDnsRecords(recordSet, zoneName).map(_.foreach(dnsRecordSet.addRR))
-
+  def toDnsRRset(recordSet: RecordSet, zoneName: String): Either[Throwable, DNS.RRset] = {
+    val dnsRecordSet = new DNS.RRset()
+    toDnsRecords(recordSet, zoneName).map { record =>
+      record.foreach(dnsRecordSet.addRR)
       dnsRecordSet
     }
+  }
 
   def toDnsRecordType(typ: RecordType): Integer = typ match {
     case RecordType.A => DNS.Type.A
