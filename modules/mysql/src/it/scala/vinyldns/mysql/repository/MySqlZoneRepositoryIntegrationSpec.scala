@@ -197,7 +197,7 @@ class MySqlZoneRepositoryIntegrationSpec
       )
 
       f.unsafeRunSync()
-      repo.listZones(okUserAuth).unsafeRunSync() should contain theSameElementsAs testZones
+      repo.listZones(okUserAuth).unsafeRunSync() should contain allElementsOf testZones
 
       // dummy user only has access to one zone
       repo.listZones(dummyAuth).unsafeRunSync() should contain only testZones.head
@@ -299,7 +299,7 @@ class MySqlZoneRepositoryIntegrationSpec
       )
       addACL.unsafeRunSync()
 
-      repo.listZones(okUserAuth).unsafeRunSync() should contain theSameElementsAs zones
+      repo.listZones(okUserAuth).unsafeRunSync() should contain allElementsOf zones
 
       // dummy user only has access to first zone
       repo.listZones(dummyAuth).unsafeRunSync() should contain only zones.head
@@ -309,7 +309,7 @@ class MySqlZoneRepositoryIntegrationSpec
       repo.save(revoked).unsafeRunSync()
 
       // ok user can still access zones
-      repo.listZones(okUserAuth).unsafeRunSync() should contain theSameElementsAs Seq(revoked, zones(1))
+      repo.listZones(okUserAuth).unsafeRunSync() should contain allElementsOf Seq(revoked, zones(1))
 
       // dummy user can not access the revoked zone
       repo.listZones(dummyAuth).unsafeRunSync() shouldBe empty
