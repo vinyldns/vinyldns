@@ -68,9 +68,9 @@ zone "system-test-history" {
 	allow-update { key "vinyldns."; };
 	};
 
-zone "30.172.in-addr.arpa" {
+zone "10.10.in-addr.arpa" {
 	type master;
-	file "/var/bind/30.172.in-addr.arpa";
+	file "/var/bind/10.10.in-addr.arpa";
 	allow-update { key "vinyldns."; };
 	};
 

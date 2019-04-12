@@ -1090,7 +1090,7 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
 
             # input validation failures
             get_change_A_AAAA_json("bad-ttl-and-invalid-name$.parent.com.", ttl=29, address="1.2.3.4"),
-            get_change_A_AAAA_json("reverse-zone.30.172.in-addr.arpa.", address="1.2.3.4"),
+            get_change_A_AAAA_json("reverse-zone.10.10.in-addr.arpa.", address="1.2.3.4"),
 
             # zone discovery failures
             get_change_A_AAAA_json("no.subzone.parent.com.", address="1.2.3.4"),
@@ -1124,8 +1124,8 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
                                             error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                             'Invalid domain name: "bad-ttl-and-invalid-name$.parent.com.", '
                                                             'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[4], input_name="reverse-zone.30.172.in-addr.arpa.", record_data="1.2.3.4",
-                                            error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.30.172.in-addr.arpa.\" and type \"A\" is not allowed in a reverse zone."])
+        assert_failed_change_in_error_response(response[4], input_name="reverse-zone.10.10.in-addr.arpa.", record_data="1.2.3.4",
+                                            error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.10.10.in-addr.arpa.\" and type \"A\" is not allowed in a reverse zone."])
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[5], input_name="no.subzone.parent.com.", record_data="1.2.3.4",
@@ -1444,7 +1444,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
         "changes": [
             # valid change
             get_change_CNAME_json("forward-zone.parent.com."),
-            get_change_CNAME_json("reverse-zone.30.172.in-addr.arpa."),
+            get_change_CNAME_json("reverse-zone.10.10.in-addr.arpa."),
 
             # valid changes - delete and add of same record name but different type
             get_change_A_AAAA_json("a-to-cname.ok", change_type="DeleteRecordSet"),
@@ -1484,7 +1484,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="forward-zone.parent.com.", record_type="CNAME", record_data="test.com.")
-        assert_successful_change_in_error_response(response[1], input_name="reverse-zone.30.172.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
+        assert_successful_change_in_error_response(response[1], input_name="reverse-zone.10.10.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
 
         # successful changes - delete and add of same record name but different type
         assert_successful_change_in_error_response(response[2], input_name="a-to-cname.ok.", change_type="DeleteRecordSet")
