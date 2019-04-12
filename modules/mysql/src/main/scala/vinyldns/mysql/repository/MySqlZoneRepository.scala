@@ -98,14 +98,14 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
   private final val GET_ZONES_BY_ADMIN_GROUP_ID =
     sql"""
-       |SELECT DISTINCT id, data
+       |SELECT data
        |  FROM zone z
        | WHERE z.admin_group_id = (?)
         """.stripMargin
 
   private final val BASE_ZONE_SEARCH_SQL =
     """
-      |SELECT DISTINCT z.id, z.data, z.name
+      |SELECT z.data
       |  FROM zone z
        """.stripMargin
 
@@ -117,7 +117,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
   private final val GET_ZONE_ACCESS_BY_ADMIN_GROUP_ID =
     sql"""
-         |SELECT DISTINCT zone_id
+         |SELECT zone_id
          |  FROM zone_access z
          | WHERE z.accessor_id = (?)
          | LIMIT 1
@@ -219,7 +219,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             zoneNameFilter,
             offset,
             pageSize)
-            .map(extractZone(2))
+            .map(extractZone(1))
             .list()
             .apply()
         }
@@ -230,7 +230,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     monitor("repo.ZoneJDBC.getZonesByAdminGroupId") {
       IO {
         DB.readOnly { implicit s =>
-          GET_ZONES_BY_ADMIN_GROUP_ID.bind(adminGroupId).map(extractZone(2)).list().apply()
+          GET_ZONES_BY_ADMIN_GROUP_ID.bind(adminGroupId).map(extractZone(1)).list().apply()
         }
       }
     }
