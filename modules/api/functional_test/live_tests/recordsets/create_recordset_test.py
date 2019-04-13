@@ -1507,6 +1507,24 @@ def test_create_record_with_existing_cname_wildcard_succeed(shared_zone_test_con
                 pass
 
 
+def test_create_long_txt_record_succeeds(shared_zone_test_context):
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone = shared_zone_test_context.system_test_zone
+    record_data = 'a' * 64763
+    long_txt_rs = get_recordset_json(zone, 'long-txt-record', 'TXT', [{'text': record_data}])
+
+    try:
+        rs_create = client.create_recordset(long_txt_rs, status=202)
+        rs = client.wait_until_recordset_change_status(rs_create, 'Complete')['recordSet']
+        assert_that(rs['records'][0]['text'], is_(record_data))
+    finally:
+        try:
+            delete_result = client.delete_recordset(rs['zoneId'], rs['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+        except:
+            pass
+
 def test_dotted_host_create_fails(shared_zone_test_context):
     """
     Tests that a dotted host recordset create fails
