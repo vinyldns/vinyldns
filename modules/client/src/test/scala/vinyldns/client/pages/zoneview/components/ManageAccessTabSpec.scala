@@ -35,48 +35,14 @@ class ManageAccessTabSpec extends WordSpec with Matchers with MockFactory with S
     val mockHttp = mock[Http]
     val props = ManageAccessTab.Props(
       initialZone,
+      initialGroupList,
       mockHttp,
       mockRouter,
       generateNoOpHandler[Unit]
     )
-
-    (mockHttp.get[GroupList] _)
-      .expects(ListGroupsRoute(), *, *)
-      .once()
-      .onCall { (_, onSuccess, _) =>
-        onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
-      }
   }
 
   "ManageAccessTab" should {
-    "get groups when mounting" in new Fixture {
-      ReactTestUtils.withRenderedIntoDocument(ManageAccessTab(props)) { c =>
-        c.state.groupList shouldBe Some(initialGroupList)
-      }
-    }
-
-    "show loading message when groups list is None" in {
-      val mockHttp = mock[Http]
-      val props = ManageAccessTab.Props(
-        initialZone,
-        mockHttp,
-        mockRouter,
-        generateNoOpHandler[Unit]
-      )
-
-      (mockHttp.get[GroupList] _)
-        .expects(ListGroupsRoute(), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], None)
-        }
-
-      ReactTestUtils.withRenderedIntoDocument(ManageAccessTab(props)) { c =>
-        c.state.groupList shouldBe None
-        c.outerHtmlScrubbed() shouldBe "<div><p>Loading...</p></div>"
-      }
-    }
-
     "should not show SHARED message if zone is not shared" in new Fixture {
       ReactTestUtils.withRenderedIntoDocument(ManageAccessTab(props)) { c =>
         c.props.zone.shared shouldBe false

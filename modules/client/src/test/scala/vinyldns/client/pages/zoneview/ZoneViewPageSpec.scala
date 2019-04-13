@@ -38,6 +38,8 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
   val initialZone = generateZones(1).head
   val initialRecordSets = generateRecordSets(10, initialZone.id)
   val initialRecordSetList = RecordSetList(initialRecordSets.toList, 100)
+  val initialGroups = generateGroups(10)
+  val initialGroupList = GroupList(initialGroups.toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]
@@ -51,7 +53,7 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
   }
 
   "ZoneViewPage" should {
-    "get zone, record set changes, and records when mounting records tab" in new Fixture {
+    "get zone, record set changes, records, and groups when mounting records tab" in new Fixture {
       (mockHttp.get[RecordSetChangeList] _)
         .expects(ListRecordSetChangesRoute(initialZone.id, 5), *, *)
         .once()
@@ -64,6 +66,13 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(initialRecordSetList))
+        }
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
         }
 
       ReactTestUtils.withRenderedIntoDocument(
@@ -79,7 +88,7 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         .expects(ListGroupsRoute(), *, *)
         .once()
         .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], None)
+          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
         }
 
       ReactTestUtils.withRenderedIntoDocument(
@@ -95,7 +104,7 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         .expects(ListGroupsRoute(), *, *)
         .once()
         .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], None)
+          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
         }
 
       ReactTestUtils.withRenderedIntoDocument(
@@ -106,12 +115,19 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
       }
     }
 
-    "get zone and record set changes when mounting changes tab" in new Fixture {
+    "get zone, record set changes, and groups when mounting changes tab" in new Fixture {
       (mockHttp.get[RecordSetChangeList] _)
         .expects(ListRecordSetChangesRoute(initialZone.id), *, *)
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], None)
+        }
+
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
         }
 
       ReactTestUtils.withRenderedIntoDocument(
@@ -132,11 +148,34 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
           onSuccess.apply(mock[HttpResponse], None)
         }
 
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
+        }
+
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe None
-        c.outerHtmlScrubbed() should include("Loading zone...")
+        c.outerHtmlScrubbed() should include("Loading...")
+      }
+    }
+
+    "show loading message if zone is none" in new Fixture {
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
+      ReactTestUtils.withRenderedIntoDocument(
+        ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
+      ) { c =>
+        c.state.zone shouldBe None
+        c.outerHtmlScrubbed() should include("Loading...")
       }
     }
   }

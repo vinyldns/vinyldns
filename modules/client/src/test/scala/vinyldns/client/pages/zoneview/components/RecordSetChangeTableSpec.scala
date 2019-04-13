@@ -22,6 +22,7 @@ import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record.RecordSetChangeList
 import vinyldns.client.router.Page
 
@@ -31,10 +32,12 @@ class RecordSetChangeTableSpec extends WordSpec with Matchers with MockFactory w
   val mockRouter = mock[RouterCtl[Page]]
   val zone = generateZones(1).head
   val initialRecordSetChanges = generateRecordSetChanges(10, zone)
+  val initialGroups = generateGroups(1)
+  val initialGroupList = GroupList(initialGroups.toList, 100)
 
   class Fixture(withNext: Boolean = false) {
     val mockHttp = mock[Http]
-    val props = RecordSetChangeTable.Props(zone, mockHttp, mockRouter)
+    val props = RecordSetChangeTable.Props(zone, initialGroupList, mockHttp, mockRouter)
     val initialRecordSetChangeList =
       if (withNext)
         RecordSetChangeList(zone.id, initialRecordSetChanges.toList, 100, nextId = Some("next"))
@@ -58,7 +61,7 @@ class RecordSetChangeTableSpec extends WordSpec with Matchers with MockFactory w
 
     "display loading message when record set change list is none" in {
       val mockHttp = mock[Http]
-      val props = RecordSetChangeTable.Props(zone, mockHttp, mockRouter)
+      val props = RecordSetChangeTable.Props(zone, initialGroupList, mockHttp, mockRouter)
 
       (mockHttp.get[RecordSetChangeList] _)
         .expects(ListRecordSetChangesRoute(zone.id), *, *)
@@ -77,7 +80,7 @@ class RecordSetChangeTableSpec extends WordSpec with Matchers with MockFactory w
 
     "display no changes message when record set change list is empty" in {
       val mockHttp = mock[Http]
-      val props = RecordSetChangeTable.Props(zone, mockHttp, mockRouter)
+      val props = RecordSetChangeTable.Props(zone, initialGroupList, mockHttp, mockRouter)
 
       (mockHttp.get[RecordSetChangeList] _)
         .expects(ListRecordSetChangesRoute(zone.id), *, *)

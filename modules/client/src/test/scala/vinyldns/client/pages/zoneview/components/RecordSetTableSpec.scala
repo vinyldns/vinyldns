@@ -24,6 +24,7 @@ import org.scalamock.scalatest.MockFactory
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
 import vinyldns.client.models.Pagination
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record.{RecordSet, RecordSetChange, RecordSetList}
 import vinyldns.client.pages.zoneview.components.recordmodal.RecordSetModal
 import vinyldns.client.router.Page
@@ -34,10 +35,13 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
   val mockRouter = mock[RouterCtl[Page]]
   val zone = generateZones(1).head
   val initialRecordSets = generateRecordSets(10, zone.id)
+  val initialGroups = generateGroups(1)
+  val initialGroupList = GroupList(initialGroups.toList, 100)
 
   class Fixture(withNext: Boolean = false) {
     val mockHttp = mock[Http]
-    val props = RecordSetTable.Props(zone, mockHttp, mockRouter, generateNoOpHandler[Unit])
+    val props =
+      RecordSetTable.Props(zone, initialGroupList, mockHttp, mockRouter, generateNoOpHandler[Unit])
     val initialRecordSetList =
       if (withNext)
         RecordSetList(initialRecordSets.toList, 100, nextId = Some("next"))
@@ -61,7 +65,12 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
 
     "display loading message when record set list is none" in {
       val mockHttp = mock[Http]
-      val props = RecordSetTable.Props(zone, mockHttp, mockRouter, generateNoOpHandler[Unit])
+      val props = RecordSetTable.Props(
+        zone,
+        initialGroupList,
+        mockHttp,
+        mockRouter,
+        generateNoOpHandler[Unit])
 
       (mockHttp.get[RecordSetList] _)
         .expects(ListRecordSetsRoute(zone.id), *, *)
@@ -80,7 +89,12 @@ class RecordSetTableSpec extends WordSpec with Matchers with MockFactory with Sh
 
     "display no records message when record set list is empty" in {
       val mockHttp = mock[Http]
-      val props = RecordSetTable.Props(zone, mockHttp, mockRouter, generateNoOpHandler[Unit])
+      val props = RecordSetTable.Props(
+        zone,
+        initialGroupList,
+        mockHttp,
+        mockRouter,
+        generateNoOpHandler[Unit])
 
       (mockHttp.get[RecordSetList] _)
         .expects(ListRecordSetsRoute(zone.id), *, *)

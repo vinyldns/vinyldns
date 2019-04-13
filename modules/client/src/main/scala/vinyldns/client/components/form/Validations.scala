@@ -91,7 +91,7 @@ object Validations {
   def validateUUID(value: String, checks: Validations): Either[String, Unit] =
     if (checks.uuid)
       Either.cond(
-        value.matches(AppRouter.uuidRegex),
+        value.matches(AppRouter.uuidRegex) || value.isEmpty,
         (),
         "Must be a valid ID (not name)"
       )
@@ -100,7 +100,7 @@ object Validations {
   def validateNoEmptyLines(value: String, checks: Validations): Either[String, Unit] =
     if (checks.noEmptyLines)
       Either.cond(
-        emptyLineRegex.findFirstIn(value).isEmpty,
+        emptyLineRegex.findFirstIn(value).isEmpty || value.isEmpty,
         (),
         "Cannot contain empty lines"
       )

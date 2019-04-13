@@ -26,6 +26,7 @@ import vinyldns.client.http.{CreateRecordSetRoute, Http, UpdateRecordSetRoute}
 import vinyldns.client.models.record.{RecordData, RecordSetChange, RecordSetCreateInfo}
 import vinyldns.client.router.Page
 import upickle.default._
+import vinyldns.client.models.membership.GroupList
 import vinyldns.core.domain.record.RecordType
 
 import scala.language.existentials
@@ -34,6 +35,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
   val mockRouter = mock[RouterCtl[Page]]
   val zone = generateZones(1).head
   val existing = generateRecordSets(1, zone.id).head
+  val initialGroups = generateGroups(1)
+  val initialGroupList = GroupList(initialGroups.toList, 100)
 
   class Fixture(isUpdate: Boolean = false) {
     val mockHttp = mock[Http]
@@ -42,6 +45,7 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
     val props = RecordSetModal.Props(
       mockHttp,
       zone,
+      initialGroupList,
       generateNoOpHandler[Unit],
       generateNoOpHandler[Unit],
       generateNoOpHandler[Unit],
@@ -91,10 +95,47 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
       }
     }
 
+    "properly http.post a record with an owner group id" in new Fixture {
+      val expectedData =
+        List(RecordData(address = Some("1.1.1.1")), RecordData(address = Some("2.2.2.2")))
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.A, "foo", 500, expectedData, Some(testUUID))
+
+      (mockHttp.withConfirmation _)
+        .expects(*, *)
+        .once()
+        .onCall((_, cb) => cb)
+
+      (mockHttp.post[RecordSetChange] _)
+        .expects(CreateRecordSetRoute(zone.id), write(expectedRecord), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(RecordSetModal(props)) { c =>
+        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-record-form")
+
+        val typ = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-type")
+        Simulate.change(typ, SimEvent.Change(expectedRecord.`type`.toString))
+
+        val name = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
+        val ttl = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-ttl")
+        val recordData = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-address")
+        val ownerGroup = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-owner-group")
+
+        Simulate.change(name, SimEvent.Change(expectedRecord.name))
+        Simulate.change(ttl, SimEvent.Change(expectedRecord.ttl.toString))
+        Simulate.change(recordData, SimEvent.Change("1.1.1.1\n2.2.2.2"))
+        Simulate.change(ownerGroup, SimEvent.Change(testUUID))
+
+        Simulate.submit(form)
+      }
+    }
+
     "properly http.post a create A record" in new Fixture {
       val expectedData =
         List(RecordData(address = Some("1.1.1.1")), RecordData(address = Some("2.2.2.2")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.A, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.A, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -127,7 +168,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
     "properly http.post a create AAAA record" in new Fixture {
       val expectedData =
         List(RecordData(address = Some("1::1")), RecordData(address = Some("2::2")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.AAAA, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.AAAA, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -160,7 +202,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
     "properly http.post a create CNAME record" in new Fixture {
       val expectedData =
         List(RecordData(cname = Some("foo.bar.")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.CNAME, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.CNAME, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -193,7 +236,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
     "properly http.post a create PTR record" in new Fixture {
       val expectedData =
         List(RecordData(ptrdname = Some("ptr.one.")), RecordData(ptrdname = Some("ptr.two.")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.PTR, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.PTR, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -226,7 +270,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
     "properly http.post a create NS record" in new Fixture {
       val expectedData =
         List(RecordData(nsdname = Some("ns.one.")), RecordData(nsdname = Some("ns.two.")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.NS, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.NS, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -259,7 +304,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
     "properly http.post a create SPF record" in new Fixture {
       val expectedData =
         List(RecordData(text = Some("spf.one.")), RecordData(text = Some("spf.two.")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.SPF, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.SPF, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -292,7 +338,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
     "properly http.post a create TXT record" in new Fixture {
       val expectedData =
         List(RecordData(text = Some("txt.one.")), RecordData(text = Some("txt.two.")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.TXT, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.TXT, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -327,7 +374,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
         List(
           RecordData(preference = Some(1), exchange = Some("exchange.one.")),
           RecordData(preference = Some(2), exchange = Some("exchange.two.")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.MX, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.MX, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -373,7 +421,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
           RecordData(priority = Some(1), weight = Some(2), port = Some(3), target = Some("t1.")),
           RecordData(priority = Some(4), weight = Some(5), port = Some(6), target = Some("t2."))
         )
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.SRV, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.SRV, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -424,7 +473,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
         List(
           RecordData(algorithm = Some(1), `type` = Some(1), fingerprint = Some("f1")),
           RecordData(algorithm = Some(3), `type` = Some(2), fingerprint = Some("f2")))
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.SSHFP, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.SSHFP, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)
@@ -481,7 +531,8 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
             digesttype = Some(2),
             digest = Some("ds2"))
         )
-      val expectedRecord = RecordSetCreateInfo(zone.id, RecordType.DS, "foo", 500, expectedData)
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.DS, "foo", 500, expectedData, None)
 
       (mockHttp.withConfirmation _)
         .expects(*, *)

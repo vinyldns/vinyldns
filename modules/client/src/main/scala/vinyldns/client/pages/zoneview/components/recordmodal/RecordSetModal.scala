@@ -25,6 +25,7 @@ import vinyldns.client.components.JsNative._
 import vinyldns.client.components.Modal
 import vinyldns.client.components.form._
 import vinyldns.client.http.{CreateRecordSetRoute, Http, HttpResponse, UpdateRecordSetRoute}
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record._
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.recordmodal.recordinput._
@@ -37,6 +38,7 @@ object RecordSetModal {
   case class Props(
       http: Http,
       zone: Zone,
+      groupList: GroupList,
       close: Unit => Callback,
       refreshRecords: Unit => Callback,
       refreshChanges: Unit => Callback,
@@ -70,7 +72,7 @@ object RecordSetModal {
           ValidatedForm(
             ValidatedForm.Props(
               "form form-horizontal form-label-left test-record-form",
-              generateInputFieldProps(S),
+              generateInputFieldProps(P, S),
               _ => if (S.isUpdate) updateRecordSet(P, S) else createRecordSet(P, S),
               readOnly = P.readOnly
             ),
@@ -102,7 +104,7 @@ object RecordSetModal {
         )
       )
 
-    def generateInputFieldProps(S: State): List[ValidatedInput.Props] =
+    def generateInputFieldProps(P: Props, S: State): List[ValidatedInput.Props] =
       List(
         ValidatedInput.Props(
           changeType,
@@ -139,6 +141,21 @@ object RecordSetModal {
           value = Some(S.recordSet.ttl.toString),
           encoding = Encoding.Number,
           validations = Some(Validations(required = true))
+        ),
+        ValidatedInput.Props(
+          changeOwnerGroupId,
+          value = S.recordSet.ownerGroupId,
+          inputClass = Some("test-owner-group"),
+          label = Some("Record Owner Group Id"),
+          helpText = Some(s"""
+                             |If set and the Zone is SHARED, then this group will own the Record and other
+                             | creates/updates must be made by a member of the Group. The Zone Admin Group will
+                             | always have full access, and Zone Access Rules will still apply as normal.
+              """.stripMargin),
+          validations = Some(Validations(uuid = true)),
+          options = P.groupList.groups.map(g => g.id -> s"${g.name} (${g.id})"),
+          placeholder = Some("Search for a Group you are in by name or id"),
+          inputType = InputType.Datalist
         )
       ) ::: generateRecordDataInputFieldProps(S)
 
@@ -253,7 +270,7 @@ object RecordSetModal {
 
     def changeTTL(value: String): Callback =
       bs.modState { s =>
-        val ttl = if (value.isEmpty) 0 else value.toInt
+        val ttl = if (value.isEmpty) 0 else Try(value.toInt).getOrElse(0)
         if (s.isUpdate) {
           val record = s.recordSet.asInstanceOf[RecordSet]
           val modified = record.copy(ttl = ttl)
@@ -261,6 +278,22 @@ object RecordSetModal {
         } else {
           val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
           val modified = record.copy(ttl = ttl)
+          s.copy(recordSet = modified)
+        }
+      }
+
+    def changeOwnerGroupId(value: String): Callback =
+      bs.modState { s =>
+        val id =
+          if (value.isEmpty) None
+          else Some(value)
+        if (s.isUpdate) {
+          val record = s.recordSet.asInstanceOf[RecordSet]
+          val modified = record.copy(ownerGroupId = id)
+          s.copy(recordSet = modified)
+        } else {
+          val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
+          val modified = record.copy(ownerGroupId = id)
           s.copy(recordSet = modified)
         }
       }

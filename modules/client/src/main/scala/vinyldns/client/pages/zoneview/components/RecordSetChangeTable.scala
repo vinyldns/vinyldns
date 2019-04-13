@@ -25,6 +25,7 @@ import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{Http, HttpResponse, ListRecordSetChangesRoute}
 import vinyldns.client.models.Pagination
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record.{RecordSet, RecordSetChange, RecordSetChangeList}
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.pages.zoneview.components.recordmodal.RecordSetModal
@@ -34,7 +35,12 @@ import vinyldns.core.domain.record.{RecordSetChangeStatus, RecordSetChangeType}
 import scala.util.Try
 
 object RecordSetChangeTable {
-  case class Props(zone: Zone, http: Http, routerCtl: RouterCtl[Page], recentOnly: Boolean = false)
+  case class Props(
+      zone: Zone,
+      groupList: GroupList,
+      http: Http,
+      routerCtl: RouterCtl[Page],
+      recentOnly: Boolean = false)
   case class State(
       recordSetChangeList: Option[RecordSetChangeList] = None,
       pagination: Pagination = Pagination(),
@@ -263,6 +269,7 @@ object RecordSetChangeTable {
             .Props(
               P.http,
               P.zone,
+              P.groupList,
               _ => makeViewRecordModalInvisible,
               _ => Callback.empty,
               _ => Callback.empty,

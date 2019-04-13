@@ -24,8 +24,9 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse}
+import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.components.AlertBox.addNotification
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.pages.zoneview.components.{
   ChangeHistoryTab,
   ManageAccessTab,
@@ -36,13 +37,13 @@ import vinyldns.client.router._
 import vinyldns.core.domain.zone.ZoneStatus
 
 object ZoneViewPage extends PropsFromAppRouter {
-  case class State(zone: Option[Zone] = None)
+  case class State(zone: Option[Zone] = None, groupList: Option[GroupList] = None)
 
   private val component = ScalaComponent
     .builder[Props]("ViewZone")
     .initialState(State())
     .renderBackend[Backend]
-    .componentWillMount(e => e.backend.getZone(e.props))
+    .componentWillMount(e => e.backend.getZone(e.props) >> e.backend.getGroups(e.props))
     .build
 
   def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, State, Backend] =
@@ -54,8 +55,8 @@ object ZoneViewPage extends PropsFromAppRouter {
         GlobalStyle.Styles.height100,
         ^.className := "right_col",
         ^.role := "main",
-        S.zone match {
-          case Some(zone) =>
+        (S.zone, S.groupList) match {
+          case (Some(zone), Some(groupList)) =>
             <.div(
               <.div(
                 ^.className := "page-title",
@@ -87,19 +88,19 @@ object ZoneViewPage extends PropsFromAppRouter {
                     ^.className := "panel-body tab-content",
                     <.div(
                       ^.className := "tab-pane active",
-                      tabContent(P, zone)
+                      tabContent(P, zone, groupList)
                     )
                   )
                 )
               ),
               <.div(^.className := "clearfix")
             )
-          case None =>
+          case _ =>
             <.div(
               ^.className := "page-content-wrap",
               <.div(
                 ^.className := "row",
-                <.p("Loading zone...")
+                <.p("Loading...")
               )
             )
         }
@@ -165,16 +166,16 @@ object ZoneViewPage extends PropsFromAppRouter {
       }
     }
 
-    def tabContent(P: Props, zone: Zone): VdomElement =
+    def tabContent(P: Props, zone: Zone, groupList: GroupList): VdomElement =
       P.page match {
         case _: ToZoneViewRecordsTab =>
-          ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, P.http, P.router))
+          ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, groupList, P.http, P.router))
         case _: ToZoneViewAccessTab =>
-          ManageAccessTab(ManageAccessTab.Props(zone, P.http, P.router, _ => getZone(P)))
+          ManageAccessTab(ManageAccessTab.Props(zone, groupList, P.http, P.router, _ => getZone(P)))
         case _: ToZoneViewZoneTab =>
-          ManageZoneTab(ManageZoneTab.Props(zone, P.http, P.router, _ => getZone(P)))
+          ManageZoneTab(ManageZoneTab.Props(zone, groupList, P.http, P.router, _ => getZone(P)))
         case _: ToZoneViewChangesTab =>
-          ChangeHistoryTab(ChangeHistoryTab.Props(zone, P.http, P.router))
+          ChangeHistoryTab(ChangeHistoryTab.Props(zone, groupList, P.http, P.router))
         case _ =>
           <.div("not implemented")
       }
@@ -189,6 +190,17 @@ object ZoneViewPage extends PropsFromAppRouter {
       }
 
       P.http.get(GetZoneRoute(zoneId), onSuccess, onFailure)
+    }
+
+    def getGroups(P: Props): Callback = {
+      val onFailure = { httpResponse: HttpResponse =>
+        addNotification(P.http.toNotification("getting groups", httpResponse, onlyOnError = true))
+      }
+      val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
+        bs.modState(_.copy(groupList = parsed))
+      }
+
+      P.http.get(ListGroupsRoute(100), onSuccess, onFailure)
     }
 
     def toStatus(status: ZoneStatus.ZoneStatus): TagMod =

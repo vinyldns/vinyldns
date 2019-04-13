@@ -22,6 +22,7 @@ import org.scalatest._
 import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record.{RecordSetChangeList, RecordSetList}
 import vinyldns.client.router.Page
 
@@ -33,6 +34,8 @@ class ManageRecordSetsTabSpec extends WordSpec with Matchers with MockFactory wi
   val initialRecordSetChanges = generateRecordSetChanges(10, initialZone)
   val initialRecordSetChangeList =
     RecordSetChangeList(initialZone.id, initialRecordSetChanges.toList, 100)
+  val initialGroups = generateGroups(10)
+  val initialGroupList = GroupList(initialGroups.toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]
@@ -54,14 +57,14 @@ class ManageRecordSetsTabSpec extends WordSpec with Matchers with MockFactory wi
 
   "ManageRecordSetsTab" should {
     "render the recent changes table" in new Fixture {
-      val props = ManageRecordSetsTab.Props(initialZone, mockHttp, mockRouter)
+      val props = ManageRecordSetsTab.Props(initialZone, initialGroupList, mockHttp, mockRouter)
       ReactTestUtils.withRenderedIntoDocument(ManageRecordSetsTab(props)) { c =>
         ReactTestUtils.findRenderedComponentWithType(c, RecordSetTable.component)
         ReactTestUtils.findRenderedComponentWithType(c, RecordSetChangeTable.component)
       }
     }
     "render the record set table" in new Fixture {
-      val props = ManageRecordSetsTab.Props(initialZone, mockHttp, mockRouter)
+      val props = ManageRecordSetsTab.Props(initialZone, initialGroupList, mockHttp, mockRouter)
       ReactTestUtils.withRenderedIntoDocument(ManageRecordSetsTab(props)) { c =>
         ReactTestUtils.findRenderedComponentWithType(c, RecordSetTable.component)
       }

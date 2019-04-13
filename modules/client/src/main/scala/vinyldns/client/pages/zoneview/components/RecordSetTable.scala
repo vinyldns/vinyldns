@@ -26,16 +26,18 @@ import vinyldns.client.http.{DeleteRecordSetRoute, Http, HttpResponse, ListRecor
 import vinyldns.client.models.Pagination
 import vinyldns.client.models.record.{RecordSet, RecordSetChange, RecordSetList}
 import vinyldns.client.models.zone.Zone
-import vinyldns.client.router.Page
+import vinyldns.client.router.{Page, ToGroupViewPage}
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.pages.zoneview.components.recordmodal.RecordSetModal
 import vinyldns.client.components.JsNative._
+import vinyldns.client.models.membership.GroupList
 
 import scala.util.Try
 
 object RecordSetTable {
   case class Props(
       zone: Zone,
+      groupList: GroupList,
       http: Http,
       routerCtl: RouterCtl[Page],
       refreshChanges: Unit => Callback)
@@ -174,6 +176,21 @@ object RecordSetTable {
                         <.th("Type"),
                         <.th("Time To Live (s)"),
                         <.th("Record Data"),
+                        <.th(
+                          "Record Owner Group  ",
+                          <.span(
+                            GlobalStyle.Styles.cursorPointer,
+                            ^.className := "fa fa-info-circle",
+                            VdomAttr("data-toggle") := "tooltip",
+                            ^.title :=
+                              """
+                                | When a Zone is set to SHARED, then any Group can create/update records and set
+                                | an Owner Group to manage it. Zone Admins will always have full access, and Zone
+                                | Access Rules will apply as normal. If the Zone is PRIVATE, then this field has no
+                                | effect.
+                              """.stripMargin
+                          )
+                        ),
                         <.th("Actions")
                       )
                     ),
@@ -199,6 +216,17 @@ object RecordSetTable {
         <.td(recordSet.`type`.toString),
         <.td(recordSet.ttl),
         <.td(recordSet.recordDataDisplay),
+        <.td(
+          (recordSet.ownerGroupId, recordSet.ownerGroupName) match {
+            case (Some(id), Some(name)) =>
+              <.a(
+                GlobalStyle.Styles.cursorPointer,
+                name,
+                P.routerCtl.setOnClick(ToGroupViewPage(id))
+              )
+            case _ => TagMod.empty
+          }
+        ),
         <.td(
           <.div(
             ^.className := "btn-group",
@@ -295,6 +323,7 @@ object RecordSetTable {
             .Props(
               P.http,
               P.zone,
+              P.groupList,
               _ => makeCreateRecordModalInvisible,
               _ => listRecordSets(P, S),
               _ => P.refreshChanges(())))
@@ -313,6 +342,7 @@ object RecordSetTable {
             .Props(
               P.http,
               P.zone,
+              P.groupList,
               _ => makeUpdateRecordModalInvisible,
               _ => listRecordSets(P, S),
               _ => P.refreshChanges(()),

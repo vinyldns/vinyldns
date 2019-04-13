@@ -22,6 +22,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http._
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record.RecordSetChangeList
 import vinyldns.client.router.Page
 
@@ -31,6 +32,8 @@ class ChangeHistoryTabSpec extends WordSpec with Matchers with MockFactory with 
   val initialRecordSetChanges = generateRecordSetChanges(10, initialZone)
   val initialRecordSetChangeList =
     RecordSetChangeList(initialZone.id, initialRecordSetChanges.toList, 100)
+  val initialGroups = generateGroups(10)
+  val initialGroupList = GroupList(initialGroups.toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]
@@ -45,7 +48,7 @@ class ChangeHistoryTabSpec extends WordSpec with Matchers with MockFactory with 
 
   "ChangeHistoryTab" should {
     "render the record set change table" in new Fixture {
-      val props = ChangeHistoryTab.Props(initialZone, mockHttp, mockRouter)
+      val props = ChangeHistoryTab.Props(initialZone, initialGroupList, mockHttp, mockRouter)
       ReactTestUtils.withRenderedIntoDocument(ChangeHistoryTab(props)) { c =>
         ReactTestUtils.findRenderedComponentWithType(c, RecordSetChangeTable.component)
       }

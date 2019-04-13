@@ -38,48 +38,14 @@ class ManageZoneTabSpec extends WordSpec with Matchers with MockFactory with Sha
     val mockHttp = mock[Http]
     val props = ManageZoneTab.Props(
       initialZone,
+      initialGroupList,
       mockHttp,
       mockRouter,
       generateNoOpHandler[Unit]
     )
-
-    (mockHttp.get[GroupList] _)
-      .expects(ListGroupsRoute(), *, *)
-      .once()
-      .onCall { (_, onSuccess, _) =>
-        onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
-      }
   }
 
   "ManageZoneTab" should {
-    "get groups when mounting" in new Fixture {
-      ReactTestUtils.withRenderedIntoDocument(ManageZoneTab(props)) { c =>
-        c.state.groupList shouldBe Some(initialGroupList)
-      }
-    }
-
-    "show loading message when groups list is None" in {
-      val mockHttp = mock[Http]
-      val props = ManageZoneTab.Props(
-        initialZone,
-        mockHttp,
-        mockRouter,
-        generateNoOpHandler[Unit]
-      )
-
-      (mockHttp.get[GroupList] _)
-        .expects(ListGroupsRoute(), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], None)
-        }
-
-      ReactTestUtils.withRenderedIntoDocument(ManageZoneTab(props)) { c =>
-        c.state.groupList shouldBe None
-        c.outerHtmlScrubbed() shouldBe "<p>Loading...</p>"
-      }
-    }
-
     "should render Zone details" in new Fixture {
       ReactTestUtils.withRenderedIntoDocument(ManageZoneTab(props)) { c =>
         val html = c.outerHtmlScrubbed()

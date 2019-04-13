@@ -21,11 +21,12 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.http.Http
+import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.router.Page
 
 object ManageRecordSetsTab {
-  case class Props(zone: Zone, http: Http, routerCtl: RouterCtl[Page])
+  case class Props(zone: Zone, groupList: GroupList, http: Http, routerCtl: RouterCtl[Page])
   case class State()
 
   val component = ScalaComponent
@@ -41,8 +42,9 @@ object ManageRecordSetsTab {
     def render(P: Props): VdomElement =
       <.div(
         refToRecentChanges.component(
-          RecordSetChangeTable.Props(P.zone, P.http, P.routerCtl, recentOnly = true)),
-        RecordSetTable(RecordSetTable.Props(P.zone, P.http, P.routerCtl, _ => refreshChanges()))
+          RecordSetChangeTable.Props(P.zone, P.groupList, P.http, P.routerCtl, recentOnly = true)),
+        RecordSetTable(
+          RecordSetTable.Props(P.zone, P.groupList, P.http, P.routerCtl, _ => refreshChanges()))
       )
 
     def refreshChanges(): Callback =

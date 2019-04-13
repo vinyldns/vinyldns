@@ -31,6 +31,7 @@ trait BasicRecordSetInfo {
   def `type`: RecordType.RecordType
   def ttl: Int
   def records: List[RecordData]
+  def ownerGroupId: Option[String]
 }
 
 trait RecordSetTypeRW {
@@ -50,14 +51,15 @@ case class RecordSetCreateInfo(
     `type`: RecordType.RecordType,
     name: String,
     ttl: Int,
-    records: List[RecordData])
+    records: List[RecordData],
+    ownerGroupId: Option[String])
     extends BasicRecordSetInfo
 
-object RecordSetCreateInfo extends RecordSetTypeRW {
+object RecordSetCreateInfo extends RecordSetTypeRW with OptionRW {
   implicit val rw: ReadWriter[RecordSetCreateInfo] = macroRW
 
   def apply(zoneId: String): RecordSetCreateInfo =
-    new RecordSetCreateInfo(zoneId, RecordType.A, "", 300, List(RecordData()))
+    new RecordSetCreateInfo(zoneId, RecordType.A, "", 300, List(RecordData()), None)
 }
 
 case class RecordSet(
@@ -70,7 +72,9 @@ case class RecordSet(
     records: List[RecordData],
     account: String,
     created: String,
-    accessLevel: Option[String] = None)
+    accessLevel: Option[String] = None,
+    ownerGroupId: Option[String] = None,
+    ownerGroupName: Option[String] = None)
     extends BasicRecordSetInfo {
 
   def canUpdate(zoneName: String): Boolean =

@@ -20,53 +20,41 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.components.AlertBox.addNotification
-import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
+import vinyldns.client.http.Http
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.zone.Zone
 import vinyldns.client.router.Page
 
-import scala.util.Try
-
 object ManageAccessTab {
   case class Props(
       zone: Zone,
+      groupList: GroupList,
       http: Http,
       routerCtl: RouterCtl[Page],
       refreshZone: Unit => Callback)
-  case class State(groupList: Option[GroupList] = None)
 
   val component = ScalaComponent
     .builder[Props]("ManageAccessTab")
-    .initialState(State())
     .renderBackend[Backend]
-    .componentWillMount(e => e.backend.listGroups(e.props))
     .build
 
-  def apply(props: Props): Unmounted[Props, State, Backend] = component(props)
+  def apply(props: Props): Unmounted[Props, Unit, Backend] = component(props)
 
-  class Backend(bs: BackendScope[Props, State]) {
-    def render(P: Props, S: State): VdomElement =
+  class Backend {
+    def render(P: Props): VdomElement =
       <.div(
-        S.groupList match {
-          case None => <.p("Loading...")
-          case _ =>
-            <.div(
-              <.p("Any user in the Admin Group has full access to update the Zone."),
-              <.p(
-                "Access Rules are additional fine grained permissions for other users and groups."),
-              getSharedInfoMessage(P),
-              AclTable(
-                AclTable.Props(
-                  P.zone,
-                  Try(S.groupList.get.groups).getOrElse(List()),
-                  P.http,
-                  P.routerCtl,
-                  _ => P.refreshZone(())
-                )
-              )
-            )
-        }
+        <.p("Any user in the Admin Group has full access to update the Zone."),
+        <.p("Access Rules are additional fine grained permissions for other users and groups."),
+        getSharedInfoMessage(P),
+        AclTable(
+          AclTable.Props(
+            P.zone,
+            P.groupList.groups,
+            P.http,
+            P.routerCtl,
+            _ => P.refreshZone(())
+          )
+        )
       )
 
     def getSharedInfoMessage(P: Props): TagMod =
@@ -83,15 +71,5 @@ object ManageAccessTab {
           """.stripMargin
         )
       else TagMod.empty
-
-    def listGroups(P: Props): Callback = {
-      val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
-        bs.modState(_.copy(groupList = parsed))
-      }
-      val onFailure = { httpResponse: HttpResponse =>
-        addNotification(P.http.toNotification("listing groups", httpResponse, onlyOnError = true))
-      }
-      P.http.get(ListGroupsRoute(), onSuccess, onFailure)
-    }
   }
 }
