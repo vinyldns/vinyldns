@@ -29,7 +29,8 @@ import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.pages.zoneview.components.{
   ChangeHistoryTab,
   ManageAccessTab,
-  ManageRecordSetsTab
+  ManageRecordSetsTab,
+  ManageZoneTab
 }
 import vinyldns.client.router._
 import vinyldns.core.domain.zone.ZoneStatus
@@ -109,7 +110,7 @@ object ZoneViewPage extends PropsFromAppRouter {
 
       val recordsActive = <.li(^.className := "active", <.a("Manage Records"))
       val accessActive = <.li(^.className := "active", <.a("Manage Access"))
-      val zoneActive = <.li(^.className := "active", <.a("Edit Zone"))
+      val zoneActive = <.li(^.className := "active", <.a("Manage Zone"))
       val changesActive = <.li(^.className := "active", <.a("Change History"))
 
       val records = <.li(
@@ -122,7 +123,7 @@ object ZoneViewPage extends PropsFromAppRouter {
         P.router.setOnClick(ToZoneViewAccessTab(zoneId)))
       val zone = <.li(
         GlobalStyle.Styles.cursorPointer,
-        <.a("Edit Zone", P.router.setOnClick(ToZoneViewZoneTab(zoneId))))
+        <.a("Manage Zone", P.router.setOnClick(ToZoneViewZoneTab(zoneId))))
       val changes = <.li(
         GlobalStyle.Styles.cursorPointer,
         <.a("Change History"),
@@ -170,6 +171,8 @@ object ZoneViewPage extends PropsFromAppRouter {
           ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, P.http, P.router))
         case _: ToZoneViewAccessTab =>
           ManageAccessTab(ManageAccessTab.Props(zone, P.http, P.router, _ => getZone(P)))
+        case _: ToZoneViewZoneTab =>
+          ManageZoneTab(ManageZoneTab.Props(zone, P.http, P.router, _ => getZone(P)))
         case _: ToZoneViewChangesTab =>
           ChangeHistoryTab(ChangeHistoryTab.Props(zone, P.http, P.router))
         case _ =>

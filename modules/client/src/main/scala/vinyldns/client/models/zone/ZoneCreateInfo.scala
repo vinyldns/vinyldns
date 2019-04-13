@@ -20,60 +20,13 @@ import vinyldns.client.models.OptionRW
 import upickle.default.{ReadWriter, macroRW}
 
 case class ZoneCreateInfo(
-    name: String = "",
-    email: String = "",
-    adminGroupId: String = "",
-    connection: Option[ZoneConnection] = None,
-    transferConnection: Option[ZoneConnection] = None) {
-
-  def withNewConnectionKeyName(value: String): ZoneCreateInfo = {
-    val connection = this.connection match {
-      case Some(c) => c.copy(keyName = value, name = value)
-      case None => ZoneConnection(keyName = value, name = value)
-    }
-    this.copy(connection = Some(connection))
-  }
-
-  def withNewConnectionKey(value: String): ZoneCreateInfo = {
-    val connection = this.connection match {
-      case Some(c) => c.copy(key = value)
-      case None => ZoneConnection(key = value)
-    }
-    this.copy(connection = Some(connection))
-  }
-
-  def withNewConnectionServer(value: String): ZoneCreateInfo = {
-    val connection = this.connection match {
-      case Some(c) => c.copy(primaryServer = value)
-      case None => ZoneConnection(primaryServer = value)
-    }
-    this.copy(connection = Some(connection))
-  }
-
-  def withNewTransferKeyName(value: String): ZoneCreateInfo = {
-    val connection = this.transferConnection match {
-      case Some(c) => c.copy(keyName = value, name = value)
-      case None => ZoneConnection(keyName = value, name = value)
-    }
-    this.copy(transferConnection = Some(connection))
-  }
-
-  def withNewTransferKey(value: String): ZoneCreateInfo = {
-    val connection = this.transferConnection match {
-      case Some(c) => c.copy(key = value)
-      case None => ZoneConnection(key = value)
-    }
-    this.copy(transferConnection = Some(connection))
-  }
-
-  def withNewTransferServer(value: String): ZoneCreateInfo = {
-    val connection = this.transferConnection match {
-      case Some(c) => c.copy(primaryServer = value)
-      case None => ZoneConnection(primaryServer = value)
-    }
-    this.copy(transferConnection = Some(connection))
-  }
-}
+    name: String,
+    email: String,
+    adminGroupId: String,
+    shared: Boolean,
+    connection: Option[ZoneConnection],
+    transferConnection: Option[ZoneConnection])
+    extends BasicZoneInfo
 
 object ZoneCreateInfo extends OptionRW {
   implicit val rw: ReadWriter[ZoneCreateInfo] = macroRW

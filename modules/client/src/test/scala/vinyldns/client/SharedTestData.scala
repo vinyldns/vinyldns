@@ -32,6 +32,8 @@ package vinyldns.client
  * limitations under the License.
  */
 
+import java.util.UUID
+
 import japgolly.scalajs.react.Callback
 import vinyldns.client.models.membership.{Group, Id, User}
 import vinyldns.client.models.record.{RecordData, RecordSet, RecordSetChange}
@@ -94,15 +96,17 @@ trait SharedTestData {
       i <- 0 until numZones
     } yield
       Zone(
-        s"id-$i",
+        UUID.randomUUID().toString,
         s"name-$i.",
         s"email-$i@test.com",
-        s"adminGroupId-$i",
+        UUID.randomUUID().toString,
         ZoneStatus.Active,
         s"created-$i",
         "system",
         false,
         Rules(List()),
+        latestSync = Some(s"sync-$i"),
+        updated = Some(s"updated-$i"),
         adminGroupName = Some(s"adminGroupName-$i")
       )
 

@@ -31,10 +31,11 @@ case class Zone(
     shared: Boolean,
     acl: Rules,
     latestSync: Option[String] = None,
+    updated: Option[String] = None,
     adminGroupName: Option[String] = None,
     connection: Option[ZoneConnection] = None,
     transferConnection: Option[ZoneConnection] = None
-)
+) extends BasicZoneInfo
 
 object Zone extends OptionRW {
   implicit val zoneStatusRW: ReadWriter[ZoneStatus.ZoneStatus] =

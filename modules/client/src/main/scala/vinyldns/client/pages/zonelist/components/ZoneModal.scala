@@ -17,12 +17,12 @@
 package vinyldns.client.pages.zonelist.components
 
 import scalacss.ScalaCssReact._
-import vinyldns.client.models.zone.{Zone, ZoneConnection, ZoneCreateInfo}
+import vinyldns.client.models.zone.{BasicZoneInfo, Zone, ZoneConnection, ZoneCreateInfo}
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components._
-import vinyldns.client.http.{CreateZoneRoute, Http, HttpResponse}
+import vinyldns.client.http.{CreateZoneRoute, Http, HttpResponse, UpdateZoneRoute}
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.components.AlertBox.addNotification
 import upickle.default.write
@@ -32,18 +32,26 @@ import vinyldns.client.components.form._
 
 object ZoneModal {
   case class State(
-      zone: ZoneCreateInfo,
+      zone: BasicZoneInfo,
       customServer: Boolean = false,
-      customTransfer: Boolean = false)
+      customTransfer: Boolean = false,
+      isUpdate: Boolean = false)
   case class Props(
       http: Http,
       close: Unit => Callback,
       refreshZones: Unit => Callback,
-      groupList: GroupList)
+      groupList: GroupList,
+      existing: Option[Zone] = None)
 
   val component = ScalaComponent
     .builder[Props]("ZoneModal")
-    .initialState(State(ZoneCreateInfo()))
+    .initialStateFromProps { p =>
+      p.existing match {
+        case Some(e) =>
+          State(e, e.connection.isDefined, e.transferConnection.isDefined, isUpdate = true)
+        case None => State(ZoneCreateInfo("", "", "", shared = false, None, None))
+      }
+    }
     .renderBackend[Backend]
     .build
 
@@ -52,20 +60,20 @@ object ZoneModal {
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
       Modal(
-        Modal.Props("Connect to a DNS Zone", P.close),
+        Modal.Props(toTitle(S), P.close),
         <.div(
           ^.className := "modal-body",
           // header
           <.div(
             ^.className := "panel-header",
-            <.p(header)
+            if (S.isUpdate) <.p else <.p(createHeader)
           ),
           // form
           ValidatedForm(
             ValidatedForm.Props(
               "form form-horizontal form-label-left test-zone-form",
               generateInputFieldProps(P, S),
-              _ => createZone(P, S)
+              _ => if (S.isUpdate) updateZone(P, S) else createZone(P, S)
             ),
             <.div(
               // toggle custom connection
@@ -106,6 +114,30 @@ object ZoneModal {
                   "Check if using a custom DNS Transfer connection (uncommon). Otherwise the default will be used."
                 )
               ),
+              // toggle shared
+              <.div(
+                ^.className := "form-group",
+                <.label(
+                  ^.className := "check col-md-3 col-sm-3 col-xs-12 control-label",
+                  "Shared  ",
+                  <.input(
+                    GlobalStyle.Styles.cursorPointer,
+                    ^.className := "test-shared",
+                    ^.`type` := "checkbox",
+                    ^.checked := S.zone.shared,
+                    ^.onChange --> toggleShared
+                  )
+                ),
+                <.div(
+                  ^.className := "help-block col-md-6 col-sm-6 col-xs-12",
+                  """
+                    |Normally updates to DNS records are restricted to the Zone Admin Group and those given
+                    | permissions via Zone Access Rules. A Shared Zone also allows ANY VinylDNS user to
+                    | create/update DNS records and claim them for another Group.
+                    | The Zone Admins will always be able to update all records.
+                  """.stripMargin
+                )
+              ),
               // submit and close buttons
               <.div(^.className := "ln_solid"),
               <.div(
@@ -113,6 +145,7 @@ object ZoneModal {
                 <.button(
                   ^.`type` := "submit",
                   ^.className := "btn btn-success pull-right",
+                  ^.disabled := isUpdateDisabled(P, S),
                   "Submit"
                 ),
                 <.button(
@@ -135,7 +168,8 @@ object ZoneModal {
           label = Some("Zone Name"),
           helpText = Some("Name of the DNS Zone, for example vinyldns.io."),
           value = Some(S.zone.name),
-          validations = Some(Validations(required = true, noSpaces = true))
+          validations = Some(Validations(required = true, noSpaces = true)),
+          disabled = S.isUpdate
         ),
         ValidatedInput.Props(
           changeEmail,
@@ -182,7 +216,7 @@ object ZoneModal {
           ValidatedInput.Props(
             if (isTransfer) changeTransferKeyName else changeConnectionKeyName,
             inputClass = Some("test-connection-key-name"),
-            label = Some(s"${if (isTransfer) "Transfer "}Connection Key Name"),
+            label = Some(s"${if (isTransfer) "Transfer " else ""}Connection Key Name"),
             helpText = Some("""
                 |The name of the key used to sign requests to the DNS server.
                 | This is set when the zone is setup in the DNS server, and is used to
@@ -194,7 +228,7 @@ object ZoneModal {
           ValidatedInput.Props(
             if (isTransfer) changeTransferKey else changeConnectionKey,
             inputClass = Some("test-connection-key"),
-            label = Some(s"${if (isTransfer) "Transfer "}Connection Key"),
+            label = Some(s"${if (isTransfer) "Transfer " else ""}Connection Key"),
             helpText = Some("The secret key used to sign requests sent to the DNS server."),
             value = connection.map(_.key),
             encoding = Encoding.Password,
@@ -203,14 +237,14 @@ object ZoneModal {
           ValidatedInput.Props(
             if (isTransfer) changeTransferServer else changeConnectionServer,
             inputClass = Some("test-connection-server"),
-            label = Some(s"${if (isTransfer) "Transfer "}Connection Server"),
+            label = Some(s"${if (isTransfer) "Transfer " else ""}Connection Server"),
             helpText = Some(
               """
                 | The IP Address or host name of the backing DNS server for zone transfers.
                 | This host will be the target for syncing zones with Vinyl. If the port is not specified,
                 | port 53 is assumed.
               """.stripMargin),
-            value = connection.map(_.keyName),
+            value = connection.map(_.primaryServer),
             validations = Some(Validations(required = true))
           )
         )
@@ -218,23 +252,42 @@ object ZoneModal {
 
     def toggleCustomServer(): Callback =
       bs.modState { s =>
-        if (s.customServer) { // turning off
-          val zone = s.zone.copy(connection = None)
-          s.copy(zone = zone, customServer = false)
+        val connection =
+          if (s.customServer) None // turning off
+          else Some(ZoneConnection()) // turning on
+
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone].copy(connection = connection)
+          s.copy(zone = zone, customServer = !s.customServer)
         } else {
-          val zone = s.zone.copy(connection = Some(ZoneConnection()))
-          s.copy(zone = zone, customServer = true)
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo].copy(connection = connection)
+          s.copy(zone = zone, customServer = !s.customServer)
         }
       }
 
     def toggleCustomTransfer(): Callback =
       bs.modState { s =>
-        if (s.customTransfer) { // turning off
-          val zone = s.zone.copy(transferConnection = None)
-          s.copy(zone = zone, customTransfer = false)
+        val transfer =
+          if (s.customTransfer) None // turning off
+          else Some(ZoneConnection()) // turning on
+
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone].copy(transferConnection = transfer)
+          s.copy(zone = zone, customTransfer = !s.customTransfer)
         } else {
-          val zone = s.zone.copy(transferConnection = Some(ZoneConnection()))
-          s.copy(zone = zone, customTransfer = true)
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo].copy(transferConnection = transfer)
+          s.copy(zone = zone, customTransfer = !s.customTransfer)
+        }
+      }
+
+    def toggleShared(): Callback =
+      bs.modState { s =>
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone].copy(shared = !s.zone.shared)
+          s.copy(zone = zone)
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo].copy(shared = !s.zone.shared)
+          s.copy(zone = zone)
         }
       }
 
@@ -243,6 +296,7 @@ object ZoneModal {
         s"Are you sure you want to connect to zone ${S.zone.name}?",
         Callback
           .lazily {
+            val zone = S.zone.asInstanceOf[ZoneCreateInfo]
             val onFailure = { httpResponse: HttpResponse =>
               addNotification(
                 P.http.toNotification(s"connecting to zone ${S.zone.name}", httpResponse))
@@ -253,7 +307,25 @@ object ZoneModal {
                 P.close(()) >>
                 withDelay(HALF_SECOND_IN_MILLIS, P.refreshZones(()))
             }
-            P.http.post(CreateZoneRoute, write(S.zone), onSuccess, onFailure)
+            P.http.post(CreateZoneRoute, write(zone), onSuccess, onFailure)
+          }
+      )
+
+    def updateZone(P: Props, S: State): Callback =
+      P.http.withConfirmation(
+        s"Are you sure you want to update zone ${S.zone.name}?",
+        Callback
+          .lazily {
+            val zone = S.zone.asInstanceOf[Zone]
+            val onFailure = { httpResponse: HttpResponse =>
+              addNotification(P.http.toNotification(s"updating zone ${S.zone.name}", httpResponse))
+            }
+            val onSuccess = { (httpResponse: HttpResponse, _: Option[Zone]) =>
+              addNotification(P.http.toNotification(s"updating zone ${S.zone.name}", httpResponse)) >>
+                P.close(()) >>
+                withDelay(HALF_SECOND_IN_MILLIS, P.refreshZones(()))
+            }
+            P.http.put(UpdateZoneRoute(zone.id), write(zone), onSuccess, onFailure)
           }
       )
 
@@ -262,53 +334,117 @@ object ZoneModal {
 
     def changeName(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.copy(name = value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(name = value))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(name = value))
+        }
       }
 
     def changeEmail(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.copy(email = value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(email = value))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(email = value))
+        }
       }
 
     def changeAdminGroupId(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.copy(adminGroupId = value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(adminGroupId = value))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(adminGroupId = value))
+        }
       }
 
     def changeConnectionKeyName(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.withNewConnectionKeyName(value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(connection = zone.newConnectionKeyName(value)))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(connection = zone.newConnectionKeyName(value)))
+        }
       }
 
     def changeConnectionKey(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.withNewConnectionKey(value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(connection = zone.newConnectionKey(value)))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(connection = zone.newConnectionKey(value)))
+        }
       }
 
     def changeConnectionServer(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.withNewConnectionServer(value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(connection = zone.newConnectionServer(value)))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(connection = zone.newConnectionServer(value)))
+        }
       }
 
     def changeTransferKeyName(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.withNewTransferKeyName(value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(transferConnection = zone.newTransferKeyName(value)))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(transferConnection = zone.newTransferKeyName(value)))
+        }
       }
 
     def changeTransferKey(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.withNewTransferKey(value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(transferConnection = zone.newTransferKey(value)))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(transferConnection = zone.newTransferKey(value)))
+        }
       }
 
     def changeTransferServer(value: String): Callback =
       bs.modState { s =>
-        s.copy(zone = s.zone.withNewTransferServer(value))
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[Zone]
+          s.copy(zone = zone.copy(transferConnection = zone.newTransferServer(value)))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(transferConnection = zone.newTransferServer(value)))
+        }
       }
 
-    val header: String =
+    val createHeader: String =
       """
         |Use this form to connect to an already existing DNS zone. If you need a new zone created in DNS,
         | please follow guidelines set by your VinylDNS Administrators.
       """.stripMargin
+
+    def toTitle(S: State): String =
+      if (S.isUpdate) "Update Zone"
+      else "Connect to a DNS Zone"
+
+    def isUpdateDisabled(P: Props, S: State): Boolean =
+      P.existing match {
+        case Some(e) => e == S.zone.asInstanceOf[Zone]
+        case None => false
+      }
   }
 }

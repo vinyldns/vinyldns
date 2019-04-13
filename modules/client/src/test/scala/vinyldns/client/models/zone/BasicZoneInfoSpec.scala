@@ -18,18 +18,18 @@ package vinyldns.client.models.zone
 
 import org.scalatest.{Matchers, WordSpec}
 
-class ZoneCreateInfoSpec extends WordSpec with Matchers {
-  val noConnections = ZoneCreateInfo("name.", "test@email.com", "adminGroupId")
+class BasicZoneInfoSpec extends WordSpec with Matchers {
+  val noConnections = ZoneCreateInfo("name.", "test@email.com", "adminGroupId", false, None, None)
   val connection = ZoneConnection("keyName", "keyName", "key", "1.1.1.1")
   val transfer = ZoneConnection("tKeyName", "tKeyName", "tkey", "2.2.2.2")
   val withConnections = noConnections
     .copy(connection = Some(connection), transferConnection = Some(transfer))
 
-  "ZoneCreateInfo.withNewConnectionKeyName" should {
+  "BasicZoneInfo.newConnectionKeyName" should {
     "work when changing existing key name" in {
       val expected =
         withConnections.copy(connection = Some(connection.copy(name = "new", keyName = "new")))
-      val actual = withConnections.withNewConnectionKeyName("new")
+      val actual = withConnections.copy(connection = withConnections.newConnectionKeyName("new"))
 
       actual shouldBe expected
     }
@@ -37,17 +37,17 @@ class ZoneCreateInfoSpec extends WordSpec with Matchers {
     "work when adding key name" in {
       val expected =
         noConnections.copy(connection = Some(ZoneConnection(name = "new", keyName = "new")))
-      val actual = noConnections.withNewConnectionKeyName("new")
+      val actual = noConnections.copy(connection = noConnections.newConnectionKeyName("new"))
 
       actual shouldBe expected
     }
   }
 
-  "ZoneCreateInfo.withNewConnectionKey" should {
+  "BasicZoneInfo.newConnectionKey" should {
     "work when changing existing key" in {
       val expected =
         withConnections.copy(connection = Some(connection.copy(key = "new")))
-      val actual = withConnections.withNewConnectionKey("new")
+      val actual = withConnections.copy(connection = withConnections.newConnectionKey("new"))
 
       actual shouldBe expected
     }
@@ -55,17 +55,17 @@ class ZoneCreateInfoSpec extends WordSpec with Matchers {
     "work when adding key" in {
       val expected =
         noConnections.copy(connection = Some(ZoneConnection(key = "new")))
-      val actual = noConnections.withNewConnectionKey("new")
+      val actual = noConnections.copy(connection = noConnections.newConnectionKey("new"))
 
       actual shouldBe expected
     }
   }
 
-  "ZoneCreateInfo.withNewConnectionServer" should {
+  "BasicZoneInfo.newConnectionServer" should {
     "work when changing existing server" in {
       val expected =
         withConnections.copy(connection = Some(connection.copy(primaryServer = "new")))
-      val actual = withConnections.withNewConnectionServer("new")
+      val actual = withConnections.copy(connection = withConnections.newConnectionServer("new"))
 
       actual shouldBe expected
     }
@@ -73,18 +73,19 @@ class ZoneCreateInfoSpec extends WordSpec with Matchers {
     "work when adding server" in {
       val expected =
         noConnections.copy(connection = Some(ZoneConnection(primaryServer = "new")))
-      val actual = noConnections.withNewConnectionServer("new")
+      val actual = noConnections.copy(connection = noConnections.newConnectionServer("new"))
 
       actual shouldBe expected
     }
   }
 
-  "ZoneCreateInfo.withNewTransferKeyName" should {
+  "BasicZoneInfo.newTransferKeyName" should {
     "work when changing existing transfer key name" in {
       val expected =
         withConnections.copy(
           transferConnection = Some(transfer.copy(name = "new", keyName = "new")))
-      val actual = withConnections.withNewTransferKeyName("new")
+      val actual =
+        withConnections.copy(transferConnection = withConnections.newTransferKeyName("new"))
 
       actual shouldBe expected
     }
@@ -92,17 +93,17 @@ class ZoneCreateInfoSpec extends WordSpec with Matchers {
     "work when adding transfer key name" in {
       val expected =
         noConnections.copy(transferConnection = Some(ZoneConnection(name = "new", keyName = "new")))
-      val actual = noConnections.withNewTransferKeyName("new")
+      val actual = noConnections.copy(transferConnection = noConnections.newTransferKeyName("new"))
 
       actual shouldBe expected
     }
   }
 
-  "ZoneCreateInfo.withNewTransferKey" should {
+  "BasicZoneInfo.newTransferKey" should {
     "work when changing existing transfer key" in {
       val expected =
         withConnections.copy(transferConnection = Some(transfer.copy(key = "new")))
-      val actual = withConnections.withNewTransferKey("new")
+      val actual = withConnections.copy(transferConnection = withConnections.newTransferKey("new"))
 
       actual shouldBe expected
     }
@@ -110,17 +111,18 @@ class ZoneCreateInfoSpec extends WordSpec with Matchers {
     "work when adding transfer key" in {
       val expected =
         noConnections.copy(transferConnection = Some(ZoneConnection(key = "new")))
-      val actual = noConnections.withNewTransferKey("new")
+      val actual = noConnections.copy(transferConnection = noConnections.newTransferKey("new"))
 
       actual shouldBe expected
     }
   }
 
-  "ZoneCreateInfo.withNewTransferServer" should {
+  "BasicZoneInfo.newTransferServer" should {
     "work when changing existing transfer server" in {
       val expected =
         withConnections.copy(transferConnection = Some(transfer.copy(primaryServer = "new")))
-      val actual = withConnections.withNewTransferServer("new")
+      val actual =
+        withConnections.copy(transferConnection = withConnections.newTransferServer("new"))
 
       actual shouldBe expected
     }
@@ -128,7 +130,7 @@ class ZoneCreateInfoSpec extends WordSpec with Matchers {
     "work when adding transfer server" in {
       val expected =
         noConnections.copy(transferConnection = Some(ZoneConnection(primaryServer = "new")))
-      val actual = noConnections.withNewTransferServer("new")
+      val actual = noConnections.copy(transferConnection = noConnections.newTransferServer("new"))
 
       actual shouldBe expected
     }

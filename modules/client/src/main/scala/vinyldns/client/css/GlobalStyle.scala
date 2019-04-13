@@ -23,8 +23,10 @@ object GlobalStyle {
 
   object Styles extends StyleSheet.Inline {
     import dsl._
-    // These are additive, and you can plop them in any html tag to inherit the class,
-    // as long as the file has "import scalacss.ScalaCssReact._"
+    /*
+     These are additive, and you can plop them in any html tag to inherit the class,
+     as long as the file has "import scalacss.ScalaCssReact._"
+     */
 
     val height100 = style(height :=! "100%")
     val width100 = style(width :=! "100%")
@@ -51,6 +53,8 @@ object GlobalStyle {
     val overflow = style(overflowY.scroll)
 
     val keepWhitespace = style(whiteSpace.pre)
+
+    val noWrap = style(whiteSpace.nowrap)
 
     val noop = style()
   }

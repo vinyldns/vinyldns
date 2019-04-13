@@ -25,7 +25,12 @@ import vinyldns.client.http._
 import vinyldns.client.models.membership.GroupList
 import vinyldns.client.models.record.{RecordSetChangeList, RecordSetList}
 import vinyldns.client.models.zone.Zone
-import vinyldns.client.pages.zoneview.components.{ChangeHistoryTab, ManageRecordSetsTab}
+import vinyldns.client.pages.zoneview.components.{
+  ChangeHistoryTab,
+  ManageAccessTab,
+  ManageRecordSetsTab,
+  ManageZoneTab
+}
 import vinyldns.client.router._
 
 class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
@@ -46,7 +51,7 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
   }
 
   "ZoneViewPage" should {
-    "get zone when mounting records tab" in new Fixture {
+    "get zone, record set changes, and records when mounting records tab" in new Fixture {
       (mockHttp.get[RecordSetChangeList] _)
         .expects(ListRecordSetChangesRoute(initialZone.id, 5), *, *)
         .once()
@@ -65,10 +70,11 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         ZoneViewPage(ToZoneViewRecordsTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        ReactTestUtils.findRenderedComponentWithType(c, ManageRecordSetsTab.component)
       }
     }
 
-    "get zone when mounting access tab" in new Fixture {
+    "get zone and groups when mounting access tab" in new Fixture {
       (mockHttp.get[GroupList] _)
         .expects(ListGroupsRoute(), *, *)
         .once()
@@ -80,18 +86,27 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         ZoneViewPage(ToZoneViewAccessTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        ReactTestUtils.findRenderedComponentWithType(c, ManageAccessTab.component)
       }
     }
 
-    "get zone when mounting zone edit tab" in new Fixture {
+    "get zone and groups when mounting manage zone tab" in new Fixture {
+      (mockHttp.get[GroupList] _)
+        .expects(ListGroupsRoute(), *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], None)
+        }
+
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewZoneTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        ReactTestUtils.findRenderedComponentWithType(c, ManageZoneTab.component)
       }
     }
 
-    "get zone when mounting changes tab" in new Fixture {
+    "get zone and record set changes when mounting changes tab" in new Fixture {
       (mockHttp.get[RecordSetChangeList] _)
         .expects(ListRecordSetChangesRoute(initialZone.id), *, *)
         .once()
@@ -103,6 +118,7 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        ReactTestUtils.findRenderedComponentWithType(c, ChangeHistoryTab.component)
       }
     }
 
@@ -121,43 +137,6 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
       ) { c =>
         c.state.zone shouldBe None
         c.outerHtmlScrubbed() should include("Loading zone...")
-      }
-    }
-
-    "show correctly load manage records tab" in new Fixture {
-      (mockHttp.get[RecordSetChangeList] _)
-        .expects(ListRecordSetChangesRoute(initialZone.id, 5), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], None)
-        }
-
-      (mockHttp.get[RecordSetList] _)
-        .expects(ListRecordSetsRoute(initialZone.id), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], Some(initialRecordSetList))
-        }
-
-      ReactTestUtils.withRenderedIntoDocument(
-        ZoneViewPage(ToZoneViewRecordsTab(initialZone.id), mockRouter, mockHttp)
-      ) { c =>
-        ReactTestUtils.findRenderedComponentWithType(c, ManageRecordSetsTab.component)
-      }
-    }
-
-    "show correctly load change history tab" in new Fixture {
-      (mockHttp.get[RecordSetChangeList] _)
-        .expects(ListRecordSetChangesRoute(initialZone.id), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], None)
-        }
-
-      ReactTestUtils.withRenderedIntoDocument(
-        ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
-      ) { c =>
-        ReactTestUtils.findRenderedComponentWithType(c, ChangeHistoryTab.component)
       }
     }
   }
