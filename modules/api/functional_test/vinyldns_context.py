@@ -1,7 +1,7 @@
 class VinylDNSTestContext:
     dns_ip = 'localhost'
     dns_zone_name = 'vinyldns.'
-    dns_rev_v4_zone_name = '30.172.in-addr.arpa.'
+    dns_rev_v4_zone_name = '10.10.in-addr.arpa.'
     dns_rev_v6_zone_name = '1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.'
     dns_key_name = 'vinyldns.'
     dns_key = 'nzisn+4G2ldMn0q1CV3vsg=='

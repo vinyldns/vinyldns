@@ -1125,7 +1125,7 @@ def test_acl_rule_with_cidr_ip4_success(shared_zone_test_context):
     ip4_zone = shared_zone_test_context.ip4_reverse_zone
     client = shared_zone_test_context.ok_vinyldns_client
     try:
-        acl_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="172.30.0.0/32")
+        acl_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="10.10.0.0/32")
 
         result_rs = seed_ptr_recordset(client, "0.0", ip4_zone)
 
@@ -1243,8 +1243,8 @@ def test_more_restrictive_cidr_ip4_rule_priority(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     result_rs = None
     try:
-        slash16_rule = generate_acl_rule('Read', userId='dummy', recordTypes=['PTR'], recordMask="172.30.0.0/16")
-        slash32_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="172.30.0.0/32")
+        slash16_rule = generate_acl_rule('Read', userId='dummy', recordTypes=['PTR'], recordMask="10.10.0.0/16")
+        slash32_rule = generate_acl_rule('Write', userId='dummy', recordTypes=['PTR'], recordMask="10.10.0.0/32")
 
         result_rs = seed_ptr_recordset(client, "0.0", ip4_zone)
         result_rs['ttl'] = result_rs['ttl'] + 1000
