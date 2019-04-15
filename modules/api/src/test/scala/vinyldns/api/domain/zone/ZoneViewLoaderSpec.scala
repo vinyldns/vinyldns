@@ -21,9 +21,8 @@ import java.net.InetAddress
 import org.joda.time.DateTime
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.concurrent.ScalaFutures.{PatienceConfig, whenReady}
+import org.scalatest.concurrent.ScalaFutures.whenReady
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{Matchers, WordSpec}
 import org.xbill.DNS
 import org.xbill.DNS.{Name, ZoneTransferIn}
@@ -36,9 +35,10 @@ import cats.effect._
 import vinyldns.core.domain.zone.{Zone, ZoneConnection, ZoneStatus}
 
 class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with DnsConversions {
+  val testZoneName = "vinyldns."
 
-  private implicit val defaultPatience: PatienceConfig =
-    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
+  val testZoneConnection: Option[ZoneConnection] = Some(
+    ZoneConnection(testZoneName, testZoneName, "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001"))
 
   private val testZone = Zone("vinyldns.", "test@test.com")
   private val records = List(
@@ -97,19 +97,12 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
 
   "DnsZoneViewLoader" should {
     "load the DNS zones" in {
-      val dnsServer = "127.0.0.1"
-      val dnsPort = "19001"
-      val zoneName = "vinyldns."
-      val dnsKeyName = "vinyldns."
-      val dnsTsig = "nzisn+4G2ldMn0q1CV3vsg=="
-      val dnsServerAddress = s"$dnsServer:$dnsPort"
-
       val testZone = Zone(
-        zoneName,
+        testZoneName,
         "test@test.com",
         ZoneStatus.Active,
-        connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-        transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+        connection = testZoneConnection,
+        transferConnection = testZoneConnection
       )
 
       val mockTransfer = mock[ZoneTransferIn]
@@ -206,20 +199,13 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
         }
       }
     }
-    "return distinct entries" in {
-      val dnsServer = "127.0.0.1"
-      val dnsPort = "19001"
-      val zoneName = "vinyldns."
-      val dnsKeyName = "vinyldns."
-      val dnsTsig = "nzisn+4G2ldMn0q1CV3vsg=="
-      val dnsServerAddress = s"$dnsServer:$dnsPort"
-
+    "return distinct entries and drop unsupported record types" in {
       val testZone = Zone(
-        zoneName,
+        testZoneName,
         "test@test.com",
         ZoneStatus.Active,
-        connection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress)),
-        transferConnection = Some(ZoneConnection(zoneName, dnsKeyName, dnsTsig, dnsServerAddress))
+        connection = testZoneConnection,
+        transferConnection = testZoneConnection
       )
 
       val mockTransfer = mock[ZoneTransferIn]
@@ -301,6 +287,14 @@ class ZoneViewLoaderSpec extends WordSpec with Matchers with MockitoSugar with D
           3600,
           604800,
           38400))
+      dnsRecords.append(
+        new DNS.NULLRecord(
+          new Name("some.unsupported.record.type."),
+          DNS.DClass.IN,
+          38400,
+          "some data".getBytes
+        )
+      )
 
       doReturn(dnsRecords.asJava).when(mockTransfer).getAXFR
 
