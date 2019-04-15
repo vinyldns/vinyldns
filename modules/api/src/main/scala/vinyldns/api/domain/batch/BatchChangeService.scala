@@ -69,7 +69,7 @@ class BatchChangeService(
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
-      recordSets <- getExistingRecordSets(changesWithZones).toBatchResult
+      recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       validatedSingleChanges = validateChangesWithContext(
         changesWithZones,
         recordSets,
@@ -153,16 +153,20 @@ class BatchChangeService(
   }
 
   def getExistingRecordSets(
-      changes: ValidatedBatch[ChangeForValidation]): IO[ExistingRecordSets] = {
-    val uniqueGets = changes.getValid.map{ change =>
+      changes: ValidatedBatch[ChangeForValidation],
+      zoneMap: ExistingZones): IO[ExistingRecordSets] = {
+    val uniqueGets = changes.getValid.map { change =>
       change.inputChange.typ match {
         case PTR => s"${change.recordName}.${change.zone.name}"
         case _ => change.inputChange.inputName
       }
     }.toSet
     val allRecordSets = recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
+    val recordSetsWithExistingZone = allRecordSets.map { lst =>
+      lst.filter(rs => zoneMap.getById(rs.zoneId).nonEmpty)
+    }
 
-    allRecordSets.map(ExistingRecordSets)
+    recordSetsWithExistingZone.map(ExistingRecordSets)
   }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
