@@ -34,7 +34,7 @@ trait ZoneViewLoader {
 }
 
 object DnsZoneViewLoader extends DnsConversions {
-  private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.api.domain.zone.DnsZoneViewLoader")
+  private val logger: Logger = LoggerFactory.getLogger("vinyldns.api.domain.zone.DnsZoneViewLoader")
 
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
     val conn =
