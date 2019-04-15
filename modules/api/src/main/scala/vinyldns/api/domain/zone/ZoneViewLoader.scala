@@ -54,7 +54,10 @@ object DnsZoneViewLoader extends DnsConversions {
     DnsZoneViewLoader(zone, dnsZoneTransfer)
 }
 
-case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
+case class DnsZoneViewLoader(
+    zone: Zone,
+    zoneTransfer: Zone => ZoneTransferIn,
+    maxZoneSize: Int = VinylDNSConfig.maxZoneSize)
     extends ZoneViewLoader
     with DnsConversions
     with Monitored {
@@ -77,7 +80,14 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
 
           val recordSets = supportedRecords.map(toRecordSet(_, dnsZoneName, zone.id))
 
-          ZoneView(zone, recordSets)
+          if (recordSets.length > maxZoneSize)
+            throw ZoneTooLargeError(
+              s"""
+                   |ZoneTooLargeError: Zone '${zone.name}' (id: '${zone.id}') contains ${recordSets.length} records
+                   |which exceeds the max of $maxZoneSize
+                 """.stripMargin.replace("\n", " ")
+            )
+          else ZoneView(zone, recordSets)
         }
     }
 }

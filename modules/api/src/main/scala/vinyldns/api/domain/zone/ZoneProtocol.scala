@@ -240,3 +240,5 @@ case class ConnectionFailed(zone: Zone, message: String) extends Throwable(messa
 
 case class ZoneValidationFailed(zone: Zone, errors: List[String], message: String)
     extends Throwable(message)
+
+case class ZoneTooLargeError(msg: String) extends Throwable(msg)
