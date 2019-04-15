@@ -30,18 +30,7 @@ class ListZonesTestContext(object):
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
                     'isTest': True,
-                    'connection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    },
-                    'transferConnection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    }
+                    'backendId': 'func-test-backend'
                 }, status=202)
             self.search_zone_1 = search_zone_1_change['zone']
 
@@ -52,18 +41,7 @@ class ListZonesTestContext(object):
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
                     'isTest': True,
-                    'connection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    },
-                    'transferConnection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    }
+                    'backendId': 'func-test-backend'
                 }, status=202)
             self.search_zone_2 = search_zone_2_change['zone']
 
@@ -75,18 +53,7 @@ class ListZonesTestContext(object):
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
                     'isTest': True,
-                    'connection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    },
-                    'transferConnection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    }
+                    'backendId': 'func-test-backend'
                 }, status=202)
             self.search_zone_3 = search_zone_3_change['zone']
 
@@ -97,18 +64,7 @@ class ListZonesTestContext(object):
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
                     'isTest': True,
-                    'connection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    },
-                    'transferConnection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    }
+                    'backendId': 'func-test-backend'
                 }, status=202)
             self.non_search_zone_1 = non_search_zone_1_change['zone']
 
@@ -119,18 +75,7 @@ class ListZonesTestContext(object):
                     'shared': False,
                     'adminGroupId': self.list_zones_group['id'],
                     'isTest': True,
-                    'connection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    },
-                    'transferConnection': {
-                        'name': 'vinyldns.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    }
+                    'backendId': 'func-test-backend'
                 }, status=202)
             self.non_search_zone_2 = non_search_zone_2_change['zone']
 
@@ -172,6 +117,7 @@ def test_list_zones_success(list_zones_context):
     assert_that(retrieved, has_length(5))
     assert_that(retrieved, has_item(has_entry('name', 'list-zones-test-searched-1.')))
     assert_that(retrieved, has_item(has_entry('adminGroupName', 'list-zones-group')))
+    assert_that(retrieved, has_item(has_entry('backendId', 'func-test-backend')))
 
 
 def test_list_zones_max_items_100(list_zones_context):

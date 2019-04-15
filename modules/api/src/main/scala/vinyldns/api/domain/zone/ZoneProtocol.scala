@@ -42,7 +42,8 @@ case class ZoneInfo(
     acl: ZoneACLInfo,
     adminGroupId: String,
     adminGroupName: String,
-    latestSync: Option[DateTime])
+    latestSync: Option[DateTime],
+    backendId: Option[String])
 
 object ZoneInfo {
   def apply(zone: Zone, aclInfo: ZoneACLInfo, groupName: String): ZoneInfo =
@@ -60,7 +61,8 @@ object ZoneInfo {
       acl = aclInfo,
       adminGroupId = zone.adminGroupId,
       adminGroupName = groupName,
-      latestSync = zone.latestSync
+      latestSync = zone.latestSync,
+      backendId = zone.backendId
     )
 }
 
@@ -78,7 +80,8 @@ case class ZoneSummaryInfo(
     acl: ZoneACL,
     adminGroupId: String,
     adminGroupName: String,
-    latestSync: Option[DateTime])
+    latestSync: Option[DateTime],
+    backendId: Option[String])
 
 object ZoneSummaryInfo {
   def apply(zone: Zone, groupName: String): ZoneSummaryInfo =
@@ -96,7 +99,8 @@ object ZoneSummaryInfo {
       acl = zone.acl,
       adminGroupId = zone.adminGroupId,
       adminGroupName = groupName,
-      latestSync = zone.latestSync
+      latestSync = zone.latestSync,
+      zone.backendId
     )
 }
 
