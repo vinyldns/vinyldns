@@ -121,7 +121,7 @@ class SharedZoneTestContext(object):
 
             ip4_reverse_zone_change = self.ok_vinyldns_client.create_zone(
                 {
-                    'name': '30.172.in-addr.arpa.',
+                    'name': '10.10.in-addr.arpa.',
                     'email': 'test@test.com',
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
