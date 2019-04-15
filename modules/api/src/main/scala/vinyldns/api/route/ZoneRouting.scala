@@ -170,7 +170,6 @@ trait ZoneRoute extends Directives {
       case Left(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
       case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
       case Left(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
-      case Left(ZoneTooLargeError(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
       case Left(e) => failWith(e)
     }
 }
