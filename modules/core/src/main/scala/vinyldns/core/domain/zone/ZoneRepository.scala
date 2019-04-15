@@ -36,8 +36,8 @@ trait ZoneRepository extends Repository {
   def listZones(
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
-      offset: Option[Int] = None,
-      pageSize: Int = 100): IO[List[Zone]]
+      startFrom: Option[String] = None,
+      maxItems: Int = 100): IO[ListZonesResults]
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 

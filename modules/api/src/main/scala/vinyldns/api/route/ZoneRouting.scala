@@ -50,14 +50,18 @@ trait ZoneRoute extends Directives {
       }
     } ~
       (get & path("zones") & monitor("Endpoint.listZones")) {
-        parameters("nameFilter".?, "startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-          (nameFilter: Option[String], startFrom: Option[Int], maxItems: Int) =>
+        parameters(
+          "nameFilter".?,
+          "startFrom".as[String].?,
+          "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (nameFilter: Option[String], startFrom: Option[String], maxItems: Int) =>
             {
               handleRejections(invalidQueryHandler) {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
                   s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT") {
-                  execute(zoneService.listZones(authPrincipal, nameFilter, startFrom, maxItems)) {
+                  execute(
+                    zoneService.listZones(authPrincipal, nameFilter, startFrom, maxItems)) {
                     result =>
                       complete(StatusCodes.OK, result)
                   }

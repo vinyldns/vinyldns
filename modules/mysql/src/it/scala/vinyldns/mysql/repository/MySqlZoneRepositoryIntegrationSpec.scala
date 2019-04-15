@@ -197,10 +197,10 @@ class MySqlZoneRepositoryIntegrationSpec
       )
 
       f.unsafeRunSync()
-      repo.listZones(okUserAuth).unsafeRunSync() should contain allElementsOf testZones
+      repo.listZones(okUserAuth).unsafeRunSync().zones should contain allElementsOf testZones
 
       // dummy user only has access to one zone
-      repo.listZones(dummyAuth).unsafeRunSync() should contain only testZones.head
+      repo.listZones(dummyAuth).unsafeRunSync().zones should contain only testZones.head
     }
 
     "get zones that are accessible by everyone" in {
@@ -235,7 +235,7 @@ class MySqlZoneRepositoryIntegrationSpec
           everyoneZones <- repo.listZones(dummyAuth)
         } yield everyoneZones
 
-      f.unsafeRunSync()  should contain only allAccess
+      f.unsafeRunSync().zones  should contain only allAccess
     }
 
     "not return deleted zones" in {
@@ -285,7 +285,7 @@ class MySqlZoneRepositoryIntegrationSpec
           zones <- repo.listZones(unauthorized)
         } yield zones
 
-      f.unsafeRunSync() shouldBe empty
+      f.unsafeRunSync().zones shouldBe empty
     }
 
     "not return zones when access is revoked" in {
@@ -299,20 +299,20 @@ class MySqlZoneRepositoryIntegrationSpec
       )
       addACL.unsafeRunSync()
 
-      repo.listZones(okUserAuth).unsafeRunSync() should contain allElementsOf zones
+      repo.listZones(okUserAuth).unsafeRunSync().zones should contain allElementsOf zones
 
       // dummy user only has access to first zone
-      repo.listZones(dummyAuth).unsafeRunSync() should contain only zones.head
+      repo.listZones(dummyAuth).unsafeRunSync().zones should contain only zones.head
 
       // revoke the access for the dummy user
       val revoked = zones(0).deleteACLRule(dummyAclRule)
       repo.save(revoked).unsafeRunSync()
 
       // ok user can still access zones
-      repo.listZones(okUserAuth).unsafeRunSync() should contain allElementsOf Seq(revoked, zones(1))
+      repo.listZones(okUserAuth).unsafeRunSync().zones should contain allElementsOf Seq(revoked, zones(1))
 
       // dummy user can not access the revoked zone
-      repo.listZones(dummyAuth).unsafeRunSync() shouldBe empty
+      repo.listZones(dummyAuth).unsafeRunSync().zones shouldBe empty
     }
 
     "omit zones for groups if the user has more than 30 groups" in {
@@ -354,7 +354,7 @@ class MySqlZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(auth)
         } yield retrieved
 
-      val retrieved = f.unsafeRunSync()
+      val retrieved = f.unsafeRunSync().zones
       retrieved.length shouldBe 29
       retrieved.headOption.map(_.name) shouldBe Some("01.")
       retrieved.lastOption.map(_.name) shouldBe Some("29.")
@@ -368,7 +368,7 @@ class MySqlZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(superUserAuth)
         } yield retrieved
 
-      f.unsafeRunSync() should contain theSameElementsAs testZones
+      f.unsafeRunSync().zones should contain theSameElementsAs testZones
     }
 
     "apply the zone filter as a super user" in {
@@ -387,7 +387,7 @@ class MySqlZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(superUserAuth, zoneNameFilter = Some("system"))
         } yield retrieved
 
-      f.unsafeRunSync() should contain theSameElementsAs expectedZones
+      f.unsafeRunSync().zones should contain theSameElementsAs expectedZones
     }
 
     "apply the zone filter as a normal user" in {
@@ -408,7 +408,7 @@ class MySqlZoneRepositoryIntegrationSpec
           retrieved <- repo.listZones(auth, zoneNameFilter = Some("system"))
         } yield retrieved
 
-      f.unsafeRunSync() should contain theSameElementsInOrderAs expectedZones
+      f.unsafeRunSync().zones should contain theSameElementsInOrderAs expectedZones
     }
 
     "apply paging when searching as a super user" in {
@@ -419,14 +419,15 @@ class MySqlZoneRepositoryIntegrationSpec
       val expectedThirdPage = sorted.slice(8, 12)
 
       saveZones(testZones).unsafeRunSync()
-      repo.listZones(superUserAuth, offset = None, pageSize = 4)
-        .unsafeRunSync() should contain theSameElementsInOrderAs expectedFirstPage
 
-      repo.listZones(superUserAuth, offset = Some(4), pageSize = 4)
-        .unsafeRunSync() should contain theSameElementsInOrderAs expectedSecondPage
+      repo.listZones(superUserAuth,None, None, 4)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedFirstPage
 
-      repo.listZones(superUserAuth, offset = Some(8), pageSize = 4)
-        .unsafeRunSync() should contain theSameElementsInOrderAs expectedThirdPage
+      repo.listZones(superUserAuth, None, Some(sorted(3).name), 4)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedSecondPage
+
+      repo.listZones(superUserAuth, None, Some(sorted(7).name), 4)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedThirdPage
     }
 
     "apply paging when doing an authorized zone search" in {
@@ -456,14 +457,15 @@ class MySqlZoneRepositoryIntegrationSpec
       val auth = AuthPrincipal(dummyUser, Seq(testZoneAdminGroupId))
 
       saveZones(testZones).unsafeRunSync()
-      repo.listZones(auth, offset = None, pageSize = 2)
-        .unsafeRunSync() should contain theSameElementsInOrderAs expectedFirstPage
 
-      repo.listZones(auth, offset = Some(2), pageSize = 2)
-        .unsafeRunSync() should contain theSameElementsInOrderAs expectedSecondPage
+      repo.listZones(auth, None, None, 2)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedFirstPage
 
-      repo.listZones(auth, offset = Some(4), pageSize = 2)
-        .unsafeRunSync() should contain theSameElementsInOrderAs expectedThirdPage
+      repo.listZones(auth, None, Some(filtered(1).name), 2)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedSecondPage
+
+      repo.listZones(auth, None, Some(filtered(3).name), 2)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedThirdPage
     }
 
     "get zones by admin group" in {
