@@ -17,12 +17,13 @@
 package vinyldns.api.domain.zone
 
 import cats.effect._
+import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
@@ -33,6 +34,7 @@ trait ZoneViewLoader {
 }
 
 object DnsZoneViewLoader extends DnsConversions {
+  private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
 
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
     val conn =
@@ -59,6 +61,7 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
     extends ZoneViewLoader
     with DnsConversions
     with Monitored {
+  import DnsZoneViewLoader._
 
   def load: () => IO[ZoneView] =
     () =>
@@ -70,8 +73,29 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
           val rawDnsRecords: List[DNS.Record] =
             xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
 
+          // not accepting unknown record types
+          val (supportedRecords, droppedRecords) = rawDnsRecords.partition { record =>
+            fromDnsRecordType(record.getType) != RecordType.UNKNOWN
+          }
+
           val dnsZoneName = zoneDnsName(zone.name)
-          val recordSets = rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id))
+
+          if (droppedRecords.nonEmpty) {
+            droppedRecords
+              .grouped(1000)
+              .foreach { droppedGroup =>
+                val droppedInfo = droppedGroup
+                  .map(record =>
+                    relativize(record.getName, dnsZoneName) + " " + fromDnsRecordType(
+                      record.getType))
+                  .mkString(", ")
+
+                logger.warn(
+                  s"Zone sync for zone [$dnsZoneName] dropped ${droppedGroup.length} recordsets: $droppedInfo")
+              }
+          }
+
+          val recordSets = supportedRecords.map(toRecordSet(_, dnsZoneName, zone.id))
 
           ZoneView(zone, recordSets)
         }
