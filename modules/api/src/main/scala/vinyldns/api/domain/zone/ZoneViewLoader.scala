@@ -81,18 +81,8 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
           val dnsZoneName = zoneDnsName(zone.name)
 
           if (droppedRecords.nonEmpty) {
-            droppedRecords
-              .grouped(1000)
-              .foreach { droppedGroup =>
-                val droppedInfo = droppedGroup
-                  .map(record =>
-                    relativize(record.getName, dnsZoneName) + " " + fromDnsRecordType(
-                      record.getType))
-                  .mkString(", ")
-
-                logger.warn(
-                  s"Zone sync for zone [$dnsZoneName] dropped ${droppedGroup.length} recordsets: $droppedInfo")
-              }
+            logger.warn(
+              s"Zone sync for zone [$dnsZoneName] dropped ${droppedRecords.length} unsupported record sets")
           }
 
           val recordSets = supportedRecords.map(toRecordSet(_, dnsZoneName, zone.id))
