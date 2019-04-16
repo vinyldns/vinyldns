@@ -207,6 +207,15 @@ class ZoneRoutingSpec
       outcome.toResult
     }
 
+    def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] = {
+      val outcome = zoneName match {
+        case notFound.name => Left(ZoneNotFoundError(s"$zoneName"))
+        case ok.name => Right(okAsZoneInfo)
+        case error.name => Left(new RuntimeException("fail"))
+      }
+      outcome.toResult
+    }
+
     def listZones(
         authPrincipal: AuthPrincipal,
         nameFilter: Option[String],
@@ -762,6 +771,31 @@ class ZoneRoutingSpec
 
     "return 404 if the zone does not exist" in {
       Get(s"/zones/${notFound.id}") ~> zoneRoute(okAuth) ~> check {
+        status shouldBe NotFound
+      }
+    }
+  }
+
+  "GET zone by name " should {
+    "return the zone is retrieved" in {
+      Get(s"/zones/name/${ok.name}") ~> zoneRoute(okAuth) ~> check {
+        status shouldBe OK
+
+        val resultZone = responseAs[GetZoneResponse].zone
+        resultZone.email shouldBe ok.email
+        resultZone.name shouldBe ok.name
+        Option(resultZone.created) shouldBe defined
+        Option(resultZone.status) shouldBe defined
+        resultZone.updated shouldBe None
+        Option(resultZone.id) shouldBe defined
+        resultZone.account shouldBe "system"
+        resultZone.acl shouldBe aclAsInfo
+        resultZone.adminGroupId shouldBe "test"
+      }
+    }
+
+    "return 404 if the zone does not exist" in {
+      Get(s"/zones/name/${notFound.name}") ~> zoneRoute(okAuth) ~> check {
         status shouldBe NotFound
       }
     }

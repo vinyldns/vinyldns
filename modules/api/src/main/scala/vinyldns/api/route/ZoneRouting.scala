@@ -71,6 +71,11 @@ trait ZoneRoute extends Directives {
           complete(StatusCodes.OK, GetZoneResponse(zone))
         }
       } ~
+      (get & path("zones" / "name" / Segment) & monitor("Endpoint.getZoneByName")) { zoneName =>
+        execute(zoneService.getZoneByName(zoneName, authPrincipal)) { zone =>
+          complete(StatusCodes.OK, GetZoneResponse(zone))
+        }
+      } ~
       (delete & path("zones" / Segment) & monitor("Endpoint.deleteZone")) { id =>
         execute(zoneService.deleteZone(id, authPrincipal)) { chg =>
           complete(StatusCodes.Accepted, chg)
