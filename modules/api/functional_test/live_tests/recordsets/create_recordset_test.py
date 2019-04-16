@@ -1525,9 +1525,9 @@ def test_create_long_txt_record_succeeds(shared_zone_test_context):
         except:
             pass
 
-def test_dotted_host_create_fails(shared_zone_test_context):
+def test_txt_dotted_host_create_succeeds(shared_zone_test_context):
     """
-    Tests that a dotted host recordset create fails
+    Tests that a TXT dotted host recordset create succeeds
     """
     client = shared_zone_test_context.ok_vinyldns_client
     new_rs = {
@@ -1537,12 +1537,20 @@ def test_dotted_host_create_fails(shared_zone_test_context):
         'ttl': 100,
         'records': [
             {
-                'text': 'should fail'
+                'text': 'should pass'
             }
         ]
     }
-    error = client.create_recordset(new_rs, status=422)
-    assert_that(error, is_('Record with name record-with.dot is a dotted host which is illegal in this zone ok.'))
+    rs_result = None
+
+    try:
+        rs_create = client.create_recordset(new_rs, status=202)
+        rs_result = client.wait_until_recordset_change_status(rs_create, 'Complete')['recordSet']
+
+    finally:
+        if rs_result:
+            delete_result = client.delete_recordset(rs_result['zoneId'], rs_result['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
 def test_ns_create_for_admin_group_succeeds(shared_zone_test_context):
