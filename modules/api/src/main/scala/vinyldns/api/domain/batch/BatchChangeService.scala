@@ -163,7 +163,7 @@ class BatchChangeService(
     }.toSet
     val allRecordSets = recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
     val recordSetsWithExistingZone = allRecordSets.map { lst =>
-      lst.filter(rs => zoneMap.getById(rs.zoneId).nonEmpty)
+      lst.filter(rs => zoneMap.getById(rs.zoneId))
     }
 
     recordSetsWithExistingZone.map(ExistingRecordSets)

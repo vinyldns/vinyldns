@@ -145,6 +145,8 @@ class BatchChangeServiceSpec
     makeRS(ptrDelegatedAddForVal.zone.id, ptrDelegatedAddForVal.recordName, PTR)
   private val existingPtrV6: RecordSet =
     makeRS(ptrV6AddForVal.zone.id, ptrV6AddForVal.recordName, PTR)
+  private val deletedZoneApex: RecordSet =
+    makeRS("deletedZone", apexAddForVal.recordName, SOA)
 
   object TestRecordSetRepo extends EmptyRecordSetRepo {
     val dbRecordSets: Set[(RecordSet, String)] =
@@ -153,7 +155,10 @@ class BatchChangeServiceSpec
         (existingNonApex, "non-apex.test.com."),
         (existingPtr, "11.55.144.10.in-addr.arpa."),
         (existingPtrDelegated, "193.64/25.55.144.10.in-addr.arpa."),
-        (existingPtrV6, "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa.")
+        (
+          existingPtrV6,
+          "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa."),
+        (deletedZoneApex, "apex.test.com.")
       )
 
     override def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
