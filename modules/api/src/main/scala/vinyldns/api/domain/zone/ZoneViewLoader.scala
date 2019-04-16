@@ -17,7 +17,6 @@
 package vinyldns.api.domain.zone
 
 import cats.effect._
-import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
@@ -34,8 +33,6 @@ trait ZoneViewLoader {
 }
 
 object DnsZoneViewLoader extends DnsConversions {
-  private val logger: Logger = LoggerFactory.getLogger("vinyldns.api.domain.zone.DnsZoneViewLoader")
-
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
     val conn =
       ZoneConnectionValidator
@@ -61,7 +58,6 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
     extends ZoneViewLoader
     with DnsConversions
     with Monitored {
-  import DnsZoneViewLoader._
 
   def load: () => IO[ZoneView] =
     () =>
@@ -74,16 +70,10 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
             xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
 
           // not accepting unknown record types
-          val (supportedRecords, droppedRecords) = rawDnsRecords.partition { record =>
-            fromDnsRecordType(record.getType) != RecordType.UNKNOWN
-          }
+          val supportedRecords =
+            rawDnsRecords.filter(record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
 
           val dnsZoneName = zoneDnsName(zone.name)
-
-          if (droppedRecords.nonEmpty) {
-            logger.warn(
-              s"Zone sync for zone [$dnsZoneName] dropped ${droppedRecords.length} unsupported record sets")
-          }
 
           val recordSets = supportedRecords.map(toRecordSet(_, dnsZoneName, zone.id))
 
