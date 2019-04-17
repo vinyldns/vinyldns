@@ -57,20 +57,20 @@ class BatchChangeServiceSpec
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
 
-  private val apexAddA = AddChangeInput("apex.test.com.", RecordType.A, 100, AData("1.1.1.1"))
+  private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, 100, AData("1.1.1.1"))
   private val nonApexAddA =
-    AddChangeInput("non-apex.test.com.", RecordType.A, 100, AData("1.1.1.1"))
+    AddChangeInput("non-apex.test.com", RecordType.A, 100, AData("1.1.1.1"))
   private val onlyApexAddA =
-    AddChangeInput("only.apex.exists.", RecordType.A, 100, AData("1.1.1.1"))
+    AddChangeInput("only.apex.exists", RecordType.A, 100, AData("1.1.1.1"))
   private val onlyBaseAddAAAA =
-    AddChangeInput("have.only.base.", RecordType.AAAA, 3600, AAAAData("1:2:3:4:5:6:7:8"))
+    AddChangeInput("have.only.base", RecordType.AAAA, 3600, AAAAData("1:2:3:4:5:6:7:8"))
   private val noZoneAddA = AddChangeInput("no.zone.match.", RecordType.A, 100, AData("1.1.1.1"))
   private val cnameAdd =
-    AddChangeInput("cname.test.com.", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
+    AddChangeInput("cname.test.com", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
   private val cnameApexAdd =
-    AddChangeInput("apex.test.com.", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
+    AddChangeInput("apex.test.com", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
   private val cnameReverseAdd = AddChangeInput(
-    "cname.55.144.10.in-addr.arpa.",
+    "cname.55.144.10.in-addr.arpa",
     RecordType.CNAME,
     100,
     CNAMEData("testing.cname.com."))
