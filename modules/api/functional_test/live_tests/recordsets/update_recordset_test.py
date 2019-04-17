@@ -1669,7 +1669,7 @@ def test_ns_update_for_unapproved_server_fails(shared_zone_test_context):
 
 def test_update_to_txt_dotted_host_succeeds(shared_zone_test_context):
     """
-    Tests that a dotted host record set update succeeds
+    Tests that a TXT dotted host record set update succeeds
     """
     result_rs = None
     ok_zone = shared_zone_test_context.ok_zone
