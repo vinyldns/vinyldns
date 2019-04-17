@@ -106,7 +106,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             changesWithUserIds
               .filter { chg =>
                 chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") &&
-                chg.recordSet.typ != RecordType.SRV
+                chg.recordSet.typ != RecordType.SRV && chg.recordSet.typ != RecordType.TXT
               }
               .map(_.recordSet.name)
               .grouped(1000)
