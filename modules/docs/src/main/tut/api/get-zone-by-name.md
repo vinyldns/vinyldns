@@ -1,16 +1,16 @@
 ---
 layout: docs
-title: "Get Zone"
+title: "Get Zone by Name"
 section: "api"
 ---
 
-# Get Zone
+# Get Zone by Name
 
-Retrieves a zone with the matching zone id
+Retrieves a zone with the matching zone name
 
 #### HTTP REQUEST
 
-> GET /zones/{zoneId}
+> GET /zones/name/{zoneName}
 
 #### HTTP RESPONSE TYPES
 
