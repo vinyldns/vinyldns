@@ -1667,20 +1667,21 @@ def test_ns_update_for_unapproved_server_fails(shared_zone_test_context):
             client.delete_recordset(ns_rs['zoneId'], ns_rs['id'], status=(202,404))
             client.wait_until_recordset_deleted(ns_rs['zoneId'], ns_rs['id'])
 
-def test_update_to_dotted_host_fails(shared_zone_test_context):
+def test_update_to_txt_dotted_host_succeeds(shared_zone_test_context):
     """
-    Tests that a dotted host record set update fails
+    Tests that a TXT dotted host record set update succeeds
     """
     result_rs = None
     ok_zone = shared_zone_test_context.ok_zone
     client = shared_zone_test_context.ok_vinyldns_client
+
     try:
         result_rs = seed_text_recordset(client, "update_with_dots", ok_zone)
-
         result_rs['name'] = "update_with.dots"
 
-        error = client.update_recordset(result_rs, status=422)
-        assert_that(error, is_('Record with name update_with.dots is a dotted host which is illegal in this zone ok.'))
+        update_rs = client.update_recordset(result_rs, status=202)
+        result_rs = client.wait_until_recordset_change_status(update_rs, 'Complete')['recordSet']
+
     finally:
         if result_rs:
             delete_result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
