@@ -114,8 +114,11 @@ options:
     - title: Delete Zone
       url: api/delete-zone.html
       menu_section: zoneapireference
-    - title: Get Zone
-      url: api/get-zone.html
+    - title: Get Zone by ID
+      url: api/get-zone-by-id.html
+      menu_section: zoneapireference
+    - title: Get Zone by Name
+      url: api/get-zone-by-name.html
       menu_section: zoneapireference
     - title: List / Search Zone
       url: api/list-zones.html

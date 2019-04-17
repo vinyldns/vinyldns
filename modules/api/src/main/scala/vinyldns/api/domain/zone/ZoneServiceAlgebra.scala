@@ -34,6 +34,8 @@ trait ZoneServiceAlgebra {
 
   def getZone(zoneId: String, auth: AuthPrincipal): Result[ZoneInfo]
 
+  def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo]
+
   def listZones(
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String],

@@ -387,6 +387,17 @@ class VinylDNSClient(object):
 
         return data
 
+    def get_zone_by_name(self, zone_name, **kwargs):
+        """
+        Gets a zone for the given zone name
+        :param zone_name: the name of the zone to retrieve
+        :return: the zone, or will 404 if not found
+        """
+        url = urljoin(self.index_url, u'/zones/name/{0}'.format(zone_name))
+        response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, **kwargs)
+
+        return data
+
     def list_zone_changes(self, zone_id, start_from=None, max_items=None, **kwargs):
         """
         Gets the zone changes for the given zone id

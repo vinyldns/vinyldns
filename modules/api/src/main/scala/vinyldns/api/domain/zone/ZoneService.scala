@@ -121,6 +121,14 @@ class ZoneService(
       groupName <- getGroupName(zone.adminGroupId)
     } yield ZoneInfo(zone, aclInfo, groupName)
 
+  def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
+    for {
+      zone <- getZoneByNameOrFail(zoneName)
+      _ <- canSeeZone(auth, zone).toResult
+      aclInfo <- getZoneAclDisplay(zone.acl)
+      groupName <- getGroupName(zone.adminGroupId)
+    } yield ZoneInfo(zone, aclInfo, groupName)
+
   def listZones(
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String] = None,
@@ -232,6 +240,12 @@ class ZoneService(
     zoneRepository
       .getZone(zoneId)
       .orFail(ZoneNotFoundError(s"Zone with id $zoneId does not exists"))
+      .toResult[Zone]
+
+  def getZoneByNameOrFail(zoneName: String): Result[Zone] =
+    zoneRepository
+      .getZoneByName(zoneName)
+      .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
       .toResult[Zone]
 
   def validateZoneConnectionIfChanged(newZone: Zone, existingZone: Zone): Result[Unit] =

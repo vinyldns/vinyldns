@@ -332,7 +332,7 @@ class ZoneServiceSpec
   }
 
   "Getting a Zone" should {
-    "not fail with no zone returned" in {
+    "fail with no zone returned" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notAZoneId")
 
       val error = leftResultOf(underTest.getZone("notAZoneId", okAuth).value)
@@ -404,6 +404,26 @@ class ZoneServiceSpec
       val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), "Unknown group name")
       val result: ZoneInfo = rightResultOf(underTest.getZone(abcZone.id, abcAuth).value)
       result shouldBe expectedZoneInfo
+    }
+
+    "return a zone by name with failure when no zone is found" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName("someZoneName")
+
+      val error = leftResultOf(underTest.getZoneByName("someZoneName", okAuth).value)
+      error shouldBe a[ZoneNotFoundError]
+    }
+
+    "return the appropriate zone as a ZoneInfo on getZoneByName" in {
+      doReturn(IO.pure(Some(abcZone))).when(mockZoneRepo).getZoneByName(abcZone.name)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
+
+      val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), abcGroup.name)
+      val result = underTest.getZoneByName(abcZone.name, abcAuth).value.unsafeRunSync()
+      result.right.value shouldBe expectedZoneInfo
     }
   }
 
