@@ -19,7 +19,7 @@ package vinyldns.api.engine
 import cats.effect.{ContextShift, IO}
 import cats.syntax.all._
 import org.joda.time.DateTime
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.dns.DnsConversions
 import vinyldns.api.domain.zone.{DnsZoneViewLoader, VinylDNSZoneViewLoader}
 import vinyldns.core.domain.record._
@@ -34,7 +34,7 @@ import vinyldns.core.domain.zone.{
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 
-  private implicit val logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
+  private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneSyncHandler")
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
@@ -95,41 +95,30 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
 
         recordSetChanges.flatMap { allChanges =>
           val changesWithUserIds = allChanges.map(_.withUserId(zoneChange.userId))
-          // not accepting unknown record types
-          val (changes, dropped) = changesWithUserIds.partition { rs =>
-            rs.recordSet.typ != RecordType.UNKNOWN
-          }
 
-          if (dropped.nonEmpty) {
-            val droppedInfo = dropped
-              .map(chg => chg.recordSet.name + " " + chg.recordSet.typ)
-              .mkString(", ")
-            logger.warn(
-              s"Zone sync for change $zoneChange dropped ${dropped.size} recordsets: $droppedInfo")
-          }
-
-          if (changes.isEmpty) {
+          if (changesWithUserIds.isEmpty) {
             logger.info(s"Zone sync for change $zoneChange had no records to sync")
             IO.pure(
               zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
                 status = ZoneChangeStatus.Synced))
           } else {
-            val dottedRecords = changes
+            changesWithUserIds
               .filter { chg =>
                 chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") &&
                 chg.recordSet.typ != RecordType.SRV
               }
               .map(_.recordSet.name)
-              .mkString(", ")
-            if (dottedRecords.nonEmpty) {
-              logger.info(
-                s"Zone sync for '${zone.name}' (id: ${zone.id}) " +
-                  s"includes the following dotted host records: [$dottedRecords]")
-            }
+              .grouped(1000)
+              .foreach { dottedGroup =>
+                val dottedGroupString = dottedGroup.mkString(", ")
+                logger.info(s"Zone sync for '${zone.name}' (id: ${zone.id}) " +
+                  s"includes the following ${dottedGroup.length} dotted host records: [$dottedGroupString]")
+              }
+
             logger.info(
-              s"Zone sync for change $zoneChange found ${changes.size} changes to be saved")
-            val changeSet = ChangeSet(changes).copy(status = ChangeSetStatus.Applied)
+              s"Zone sync for change $zoneChange found ${changesWithUserIds.size} changes to be saved")
+            val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
 
             // we want to make sure we write to both the change repo and record set repo
             // at the same time as this can take a while

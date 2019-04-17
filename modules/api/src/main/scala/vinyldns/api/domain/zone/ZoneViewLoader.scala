@@ -22,7 +22,7 @@ import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
@@ -33,7 +33,6 @@ trait ZoneViewLoader {
 }
 
 object DnsZoneViewLoader extends DnsConversions {
-
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
     val conn =
       ZoneConnectionValidator
@@ -70,8 +69,13 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
           val rawDnsRecords: List[DNS.Record] =
             xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
 
+          // not accepting unknown record types
+          val supportedRecords =
+            rawDnsRecords.filter(record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
+
           val dnsZoneName = zoneDnsName(zone.name)
-          val recordSets = rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id))
+
+          val recordSets = supportedRecords.map(toRecordSet(_, dnsZoneName, zone.id))
 
           ZoneView(zone, recordSets)
         }
