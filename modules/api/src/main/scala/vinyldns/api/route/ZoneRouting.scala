@@ -60,8 +60,7 @@ trait ZoneRoute extends Directives {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
                   s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT") {
-                  execute(
-                    zoneService.listZones(authPrincipal, nameFilter, startFrom, maxItems)) {
+                  execute(zoneService.listZones(authPrincipal, nameFilter, startFrom, maxItems)) {
                     result =>
                       complete(StatusCodes.OK, result)
                   }

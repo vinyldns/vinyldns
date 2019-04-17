@@ -155,7 +155,7 @@ def test_list_zones_no_search_first_page(list_zones_context):
     assert_that(zones[1]['name'], is_('list-zones-test-searched-2.'))
     assert_that(zones[2]['name'], is_('list-zones-test-searched-3.'))
 
-    assert_that(result['nextId'], is_(zones[2]['name']))
+    assert_that(result['nextId'], is_('list-zones-test-searched-3.'))
     assert_that(result['maxItems'], is_(3))
     assert_that(result, is_not(has_key('startFrom')))
     assert_that(result, is_not(has_key('nameFilter')))

@@ -16,7 +16,7 @@
 
 package vinyldns.mysql.repository
 
-import cats.effect._
+import cats.effect.{IO, _}
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
@@ -205,18 +205,60 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
+  /**
+    * This is somewhat complicated due to how we need to build the SQL.
+    *
+    * - Dynamically build the accessor list combining the user id and group ids
+    * - Do not include a zone name filter if there is no filter applied
+    * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
+    *
+    * @return a ListZonesResults
+    */
   def listZones(
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
       startFrom: Option[String] = None,
       maxItems: Int = 100): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZones") {
-      buildZoneSearch(
-        authPrincipal.signedInUser,
-        authPrincipal.memberGroupIds,
-        zoneNameFilter,
-        startFrom,
-        maxItems)
+      IO {
+        DB.readOnly { implicit s =>
+          val (withAccessorCheck, accessors) =
+            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds)
+          val sb = new StringBuilder
+          sb.append(withAccessorCheck)
+
+          val filters = List(
+            zoneNameFilter.map(flt => s"z.name LIKE '%$flt%'"),
+            startFrom.map(os => s"z.name > '$os'")
+          ).flatten
+
+          if (filters.nonEmpty) {
+            sb.append(" WHERE ")
+            sb.append(filters.mkString(" AND "))
+          }
+
+          sb.append(s" ORDER BY z.name ASC ")
+          sb.append(s" LIMIT $maxItems")
+
+          val query = sb.toString
+
+          val results: List[Zone] = SQL(query)
+            .bind(accessors: _*)
+            .map(extractZone(1))
+            .list()
+            .apply()
+
+          val nextId = if (results.size < maxItems) None else results.lastOption.map(_.name)
+
+          ListZonesResults(
+            zones = results,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = zoneNameFilter
+          )
+        }
+      }
     }
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] =
@@ -238,57 +280,6 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             .single
             .apply()
         }
-      }
-    }
-
-  /**
-    * This is somewhat complicated due to how we need to build the SQL.
-    *
-    * - Dynamically build the accessor list combining the user id and group ids
-    * - Do not include a zone name filter if there is no filter applied
-    * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
-    *
-    * @return a ListZonesResults
-    */
-  private def buildZoneSearch(
-      user: User,
-      groupIds: Seq[String],
-      zoneNameFilter: Option[String],
-      startFrom: Option[String],
-      maxItems: Int): IO[ListZonesResults] =
-    IO {
-      DB.readOnly { implicit s =>
-        val (withAccessorCheck, accessors) = withAccessors(user, groupIds)
-        val sb = new StringBuilder
-        sb.append(withAccessorCheck)
-        zoneNameFilter.foreach(flt => sb.append(s" WHERE z.name LIKE '%$flt%'"))
-        startFrom.foreach { os =>
-          val prefix = if (sb.toString.contains("WHERE")) " AND " else " WHERE "
-          sb.append(s" $prefix z.name > '$os'")
-        }
-        sb.append(s" ORDER BY z.name ASC ")
-        sb.append(s" LIMIT $maxItems")
-
-        val query = sb.toString
-
-        val results: List[Zone] = SQL(query)
-          .bind(accessors: _*)
-          .map(extractZone(1))
-          .list()
-          .apply()
-
-        val nextId = results match {
-          case _ if results.size <= maxItems | results.isEmpty => None
-          case _ => Some(results.lastOption.map(_.name))
-        }
-
-        ListZonesResults(
-          zones = results,
-          nextId = nextId.flatten,
-          startFrom = startFrom,
-          maxItems = maxItems,
-          zonesFilter = zoneNameFilter
-        )
       }
     }
 
