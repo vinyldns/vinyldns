@@ -101,14 +101,6 @@ class ZoneSyncHandlerSpec
     created = DateTime.now,
     records = List(AData("4.4.4.4"))
   )
-  private val testRecordUnknown = RecordSet(
-    zoneId = testZone.id,
-    name = "jkl",
-    typ = RecordType.UNKNOWN,
-    ttl = 100,
-    status = RecordSetStatus.Active,
-    created = DateTime.now,
-    records = List())
 
   private val testReversePTR = RecordSet(
     zoneId = testReverseZone.id,
@@ -407,17 +399,16 @@ class ZoneSyncHandlerSpec
       result.zone.latestSync shouldBe defined
     }
 
-    "filters out unknown record types but allow dotted hosts" in {
+    "allow dotted hosts" in {
       val captor = ArgumentCaptor.forClass(classOf[ChangeSet])
       val testVinylDNSView = mock[ZoneView]
 
-      val unknownChange = RecordSetChangeGenerator.forAdd(testRecordUnknown, testZone)
       val dottedChange = RecordSetChangeGenerator.forAdd(testRecordDotted, testZone)
       val okDottedChange = RecordSetChangeGenerator.forAdd(testRecordDottedOk, testZone)
       val expectedChanges = Seq(okDottedChange, dottedChange)
       val correctChangeSet = testChangeSet.copy(changes = expectedChanges)
 
-      doReturn(List(unknownChange, dottedChange, okDottedChange))
+      doReturn(List(dottedChange, okDottedChange))
         .when(testVinylDNSView)
         .diff(any[ZoneView])
       doReturn(() => IO(testVinylDNSView)).when(mockVinylDNSLoader).load

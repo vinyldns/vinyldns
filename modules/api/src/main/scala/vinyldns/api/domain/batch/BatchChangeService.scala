@@ -31,7 +31,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.record.{RecordSet, RecordSetRepository}
+import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
 
 object BatchChangeService {
@@ -69,7 +69,7 @@ class BatchChangeService(
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
-      recordSets <- getExistingRecordSets(changesWithZones).toBatchResult
+      recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       validatedSingleChanges = validateChangesWithContext(
         changesWithZones,
         recordSets,
@@ -153,15 +153,19 @@ class BatchChangeService(
   }
 
   def getExistingRecordSets(
-      changes: ValidatedBatch[ChangeForValidation]): IO[ExistingRecordSets] = {
-    val uniqueGets = changes.getValid.map(change => (change.zone.id, change.recordName)).toSet
-    val allIO = uniqueGets.map {
-      case (zoneId, rsName) =>
-        recordSetRepository.getRecordSetsByName(zoneId, rsName)
-    }
-    val allSeq: IO[List[List[RecordSet]]] = allIO.toList.sequence
+      changes: ValidatedBatch[ChangeForValidation],
+      zoneMap: ExistingZones): IO[ExistingRecordSets] = {
+    val uniqueGets = changes.getValid.map { change =>
+      change.inputChange.typ match {
+        case PTR => s"${change.recordName}.${change.zone.name}"
+        case _ => change.inputChange.inputName
+      }
+    }.toSet
 
-    allSeq.map(lst => ExistingRecordSets(lst.flatten))
+    for {
+      allRecordSets <- recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
+      recordSetsWithExistingZone = allRecordSets.filter(rs => zoneMap.getById(rs.zoneId))
+    } yield ExistingRecordSets(recordSetsWithExistingZone)
   }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
