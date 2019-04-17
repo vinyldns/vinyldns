@@ -57,20 +57,20 @@ class BatchChangeServiceSpec
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
 
-  private val apexAddA = AddChangeInput("apex.test.com.", RecordType.A, 100, AData("1.1.1.1"))
+  private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, 100, AData("1.1.1.1"))
   private val nonApexAddA =
-    AddChangeInput("non-apex.test.com.", RecordType.A, 100, AData("1.1.1.1"))
+    AddChangeInput("non-apex.test.com", RecordType.A, 100, AData("1.1.1.1"))
   private val onlyApexAddA =
-    AddChangeInput("only.apex.exists.", RecordType.A, 100, AData("1.1.1.1"))
+    AddChangeInput("only.apex.exists", RecordType.A, 100, AData("1.1.1.1"))
   private val onlyBaseAddAAAA =
-    AddChangeInput("have.only.base.", RecordType.AAAA, 3600, AAAAData("1:2:3:4:5:6:7:8"))
+    AddChangeInput("have.only.base", RecordType.AAAA, 3600, AAAAData("1:2:3:4:5:6:7:8"))
   private val noZoneAddA = AddChangeInput("no.zone.match.", RecordType.A, 100, AData("1.1.1.1"))
   private val cnameAdd =
-    AddChangeInput("cname.test.com.", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
+    AddChangeInput("cname.test.com", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
   private val cnameApexAdd =
-    AddChangeInput("apex.test.com.", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
+    AddChangeInput("apex.test.com", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
   private val cnameReverseAdd = AddChangeInput(
-    "cname.55.144.10.in-addr.arpa.",
+    "cname.55.144.10.in-addr.arpa",
     RecordType.CNAME,
     100,
     CNAMEData("testing.cname.com."))
@@ -136,15 +136,17 @@ class BatchChangeServiceSpec
     RecordSet(zoneId, name, typ, 100, RecordSetStatus.Active, DateTime.now())
 
   private val existingApex: RecordSet =
-    makeRS(apexAddForVal.zone.name, apexAddForVal.recordName, SOA)
+    makeRS(apexAddForVal.zone.id, apexAddForVal.recordName, SOA)
   private val existingNonApex: RecordSet =
-    makeRS(nonApexAddForVal.zone.name, nonApexAddForVal.recordName, TXT)
+    makeRS(nonApexAddForVal.zone.id, nonApexAddForVal.recordName, TXT)
   private val existingPtr: RecordSet =
-    makeRS(ptrAddForVal.zone.name, ptrAddForVal.recordName, PTR)
+    makeRS(ptrAddForVal.zone.id, ptrAddForVal.recordName, PTR)
   private val existingPtrDelegated: RecordSet =
-    makeRS(ptrDelegatedAddForVal.zone.name, ptrDelegatedAddForVal.recordName, PTR)
+    makeRS(ptrDelegatedAddForVal.zone.id, ptrDelegatedAddForVal.recordName, PTR)
   private val existingPtrV6: RecordSet =
-    makeRS(ptrV6AddForVal.zone.name, ptrV6AddForVal.recordName, PTR)
+    makeRS(ptrV6AddForVal.zone.id, ptrV6AddForVal.recordName, PTR)
+  private val deletedZoneApex: RecordSet =
+    makeRS("deletedZone", apexAddForVal.recordName, SOA)
 
   object TestRecordSetRepo extends EmptyRecordSetRepo {
     val dbRecordSets: Set[(RecordSet, String)] =
@@ -153,7 +155,10 @@ class BatchChangeServiceSpec
         (existingNonApex, "non-apex.test.com."),
         (existingPtr, "11.55.144.10.in-addr.arpa."),
         (existingPtrDelegated, "193.64/25.55.144.10.in-addr.arpa."),
-        (existingPtrV6, "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa.")
+        (
+          existingPtrV6,
+          "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa."),
+        (deletedZoneApex, "apex.test.com.")
       )
 
     override def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
@@ -371,15 +376,34 @@ class BatchChangeServiceSpec
         ptrDelegatedAddForVal.validNel,
         ptrV6AddForVal.validNel,
         error)
-      val result = await(underTest.getExistingRecordSets(in))
+      val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, delegatedPTRZone, ipv6PTRZone))
+      val result = await(underTest.getExistingRecordSets(in, zoneMap))
 
       val expected =
         List(existingApex, existingNonApex, existingPtr, existingPtrDelegated, existingPtrV6)
       result.recordSets should contain theSameElementsAs expected
     }
+
+    "combine gets for each valid record with existing zone" in {
+      val in = List(
+        apexAddForVal.validNel,
+        nonApexAddForVal.validNel,
+        ptrAddForVal.validNel,
+        ptrDelegatedAddForVal.validNel,
+        ptrV6AddForVal.validNel,
+        error)
+      val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, ipv6PTRZone))
+      val result = await(underTest.getExistingRecordSets(in, zoneMap))
+
+      val expected =
+        List(existingApex, existingNonApex, existingPtr, existingPtrV6)
+      result.recordSets should contain theSameElementsAs expected
+    }
+
     "not fail if gets all lefts" in {
       val errors = List(error)
-      val result = await(underTest.getExistingRecordSets(errors))
+      val zoneMap = ExistingZones(Set(apexZone, baseZone, ptrZone, delegatedPTRZone, ipv6PTRZone))
+      val result = await(underTest.getExistingRecordSets(errors, zoneMap))
 
       result.recordSets.length shouldBe 0
     }
