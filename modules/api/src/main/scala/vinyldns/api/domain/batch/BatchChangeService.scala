@@ -161,12 +161,11 @@ class BatchChangeService(
         case _ => change.inputChange.inputName
       }
     }.toSet
-    val allRecordSets = recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
-    val recordSetsWithExistingZone = allRecordSets.map { lst =>
-      lst.filter(rs => zoneMap.getById(rs.zoneId))
-    }
 
-    recordSetsWithExistingZone.map(ExistingRecordSets)
+    for {
+      allRecordSets <- recordSetRepository.getRecordSetsByFQDNs(uniqueGets)
+      recordSetsWithExistingZone = allRecordSets.filter(rs => zoneMap.getById(rs.zoneId))
+    } yield ExistingRecordSets(recordSetsWithExistingZone)
   }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
