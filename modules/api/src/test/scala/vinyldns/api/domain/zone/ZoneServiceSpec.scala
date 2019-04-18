@@ -439,7 +439,7 @@ class ZoneServiceSpec
     }
 
     "return a zone by name with failure when no zone is found" in {
-      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName("someZoneName")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName("someZoneName.")
 
       val error = leftResultOf(underTest.getZoneByName("someZoneName", okAuth).value)
       error shouldBe a[ZoneNotFoundError]
@@ -454,7 +454,7 @@ class ZoneServiceSpec
       doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
 
       val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), abcGroup.name)
-      val result = underTest.getZoneByName(abcZone.name, abcAuth).value.unsafeRunSync()
+      val result = underTest.getZoneByName("abc.zone.recordsets", abcAuth).value.unsafeRunSync()
       result.right.value shouldBe expectedZoneInfo
     }
   }

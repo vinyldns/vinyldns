@@ -24,6 +24,7 @@ import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 
 object ZoneService {
   def apply(
@@ -123,7 +124,7 @@ class ZoneService(
 
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
-      zone <- getZoneByNameOrFail(zoneName)
+      zone <- getZoneByNameOrFail(ensureTrailingDot(zoneName))
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
