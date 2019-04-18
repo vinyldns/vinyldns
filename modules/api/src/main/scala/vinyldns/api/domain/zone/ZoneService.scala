@@ -121,13 +121,15 @@ class ZoneService(
       groupName <- getGroupName(zone.adminGroupId)
     } yield ZoneInfo(zone, aclInfo, groupName)
 
-  def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
+  def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] = {
+    val qualifiedName = if (zoneName.endsWith(".")) zoneName else s"$zoneName."
     for {
-      zone <- getZoneByNameOrFail(zoneName)
+      zone <- getZoneByNameOrFail(qualifiedName)
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
     } yield ZoneInfo(zone, aclInfo, groupName)
+  }
 
   def listZones(
       authPrincipal: AuthPrincipal,
