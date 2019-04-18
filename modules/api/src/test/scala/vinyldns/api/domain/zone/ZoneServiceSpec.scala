@@ -407,7 +407,7 @@ class ZoneServiceSpec
     }
 
     "return a zone by name with failure when no zone is found" in {
-      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName("someZoneName")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName("someZoneName.")
 
       val error = leftResultOf(underTest.getZoneByName("someZoneName", okAuth).value)
       error shouldBe a[ZoneNotFoundError]
@@ -423,6 +423,21 @@ class ZoneServiceSpec
 
       val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), abcGroup.name)
       val result = underTest.getZoneByName(abcZone.name, abcAuth).value.unsafeRunSync()
+      result.right.value shouldBe expectedZoneInfo
+    }
+
+    "return the appropriate zone as a ZoneInfo on getZoneByName when trailing dot is omitted" in {
+      val zoneNameOmittingTrailingDot = abcZone.name.dropRight(1)
+      doReturn(IO.pure(Some(abcZone))).when(mockZoneRepo).getZoneByName(abcZone.name)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+      doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Some(abcGroup))).when(mockGroupRepo).getGroup(anyString)
+
+      val expectedZoneInfo = ZoneInfo(abcZone, ZoneACLInfo(Set()), abcGroup.name)
+      val result =
+        underTest.getZoneByName(zoneNameOmittingTrailingDot, abcAuth).value.unsafeRunSync()
       result.right.value shouldBe expectedZoneInfo
     }
   }
