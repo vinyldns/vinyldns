@@ -101,7 +101,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "id").required[String]("Missing Zone.id"),
         (js \ "name")
           .required[String]("Missing Zone.name")
-          .map(name => if (name.endsWith(".")) name else s"$name."),
+          .map(ensureTrailingDot),
         (js \ "email").required[String]("Missing Zone.email"),
         (js \ "connection").optional[ZoneConnection],
         (js \ "transferConnection").optional[ZoneConnection],
