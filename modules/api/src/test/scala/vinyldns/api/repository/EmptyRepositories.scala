@@ -19,7 +19,7 @@ package vinyldns.api.repository
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
-import vinyldns.core.domain.zone.{Zone, ZoneRepository}
+import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
 import cats.effect._
 import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
@@ -64,8 +64,8 @@ trait EmptyZoneRepo extends ZoneRepository {
   def listZones(
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
-      offset: Option[Int] = None,
-      pageSize: Int = 100): IO[List[Zone]] = IO.pure(List())
+      startFrom: Option[String] = None,
+      maxItems: Int = 100): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] = IO.pure(List())
 

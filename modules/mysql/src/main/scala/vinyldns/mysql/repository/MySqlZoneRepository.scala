@@ -16,14 +16,14 @@
 
 package vinyldns.mysql.repository
 
-import cats.effect._
+import cats.effect.{IO, _}
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
-import vinyldns.core.domain.zone.{Zone, ZoneRepository, ZoneStatus}
+import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository, ZoneStatus}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -205,23 +205,58 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
+  /**
+    * This is somewhat complicated due to how we need to build the SQL.
+    *
+    * - Dynamically build the accessor list combining the user id and group ids
+    * - Do not include a zone name filter if there is no filter applied
+    * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
+    *
+    * @return a ListZonesResults
+    */
   def listZones(
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
-      offset: Option[Int] = None,
-      pageSize: Int = 100): IO[List[Zone]] =
+      startFrom: Option[String] = None,
+      maxItems: Int = 100): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZones") {
       IO {
         DB.readOnly { implicit s =>
-          buildZoneSearch(
-            authPrincipal.signedInUser,
-            authPrincipal.memberGroupIds,
-            zoneNameFilter,
-            offset,
-            pageSize)
+          val (withAccessorCheck, accessors) =
+            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds)
+          val sb = new StringBuilder
+          sb.append(withAccessorCheck)
+
+          val filters = List(
+            zoneNameFilter.map(flt => s"z.name LIKE '%$flt%'"),
+            startFrom.map(os => s"z.name > '$os'")
+          ).flatten
+
+          if (filters.nonEmpty) {
+            sb.append(" WHERE ")
+            sb.append(filters.mkString(" AND "))
+          }
+
+          sb.append(s" ORDER BY z.name ASC ")
+          sb.append(s" LIMIT $maxItems")
+
+          val query = sb.toString
+
+          val results: List[Zone] = SQL(query)
+            .bind(accessors: _*)
             .map(extractZone(1))
             .list()
             .apply()
+
+          val nextId = if (results.size < maxItems) None else results.lastOption.map(_.name)
+
+          ListZonesResults(
+            zones = results,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = zoneNameFilter
+          )
         }
       }
     }
@@ -248,30 +283,6 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-  /**
-    * This is somewhat complicated due to how we need to build the SQL.
-    *
-    * - Dynamically build the accessor list combining the user id and group ids
-    * - Do not include a zone name filter if there is no filter applied
-    * - Dynamically build the LIMIT clause.  We cannot specify an offset if this is the first page (offset == 0)
-    *
-    * @return A fully bound scalike SQL that can be run
-    */
-  private def buildZoneSearch(
-      user: User,
-      groupIds: Seq[String],
-      zoneNameFilter: Option[String],
-      offset: Option[Int],
-      pageSize: Int) = {
-
-    val (withAccessorCheck, accessors) = withAccessors(user, groupIds)
-    val (withZoneNameSQL, zoneNameParams) = withZoneNameFilter(withAccessorCheck, zoneNameFilter)
-    val sortedSQL = withZoneNameSQL + " ORDER BY z.name ASC"
-    val (finalSQL, pagingParams) = withPaging(sortedSQL, offset, pageSize)
-
-    SQL(finalSQL).bind(accessors ++ zoneNameParams ++ pagingParams: _*)
-  }
-
   private def withAccessors(user: User, groupIds: Seq[String]): (String, Seq[Any]) =
     // Super users do not need to join across to check zone access as they have access to all of the zones
     if (user.isSuper || user.isSupport) {
@@ -288,19 +299,6 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     """.stripMargin
       (withAccessorCheck, accessors)
     }
-
-  /* Append a WHERE clause for the zone name if it is provided */
-  private def withZoneNameFilter(sql: String, zoneNameFilter: Option[String]): (String, Seq[Any]) =
-    zoneNameFilter
-      .map(filter => s"%$filter%")
-      .map(znf => (sql + " WHERE z.name LIKE (?)", Seq(znf)))
-      .getOrElse(sql, Seq.empty)
-
-  /* For the first page (offset not specified), we do not specify an offset / skip */
-  private def withPaging(sql: String, offset: Option[Int], pageSize: Int): (String, Seq[Any]) =
-    offset
-      .map(os => (sql + " LIMIT ?, ?", Seq(os, pageSize)))
-      .getOrElse(sql + " LIMIT ?", Seq(pageSize))
 
   /* Limit the accessors so that we don't have boundless parameterized queries */
   private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {

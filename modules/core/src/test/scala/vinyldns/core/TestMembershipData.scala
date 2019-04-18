@@ -36,6 +36,7 @@ object TestMembershipData {
 
   val dummyUser = User("dummyName", "dummyAccess", "dummySecret")
   val superUser = User("super", "superAccess", "superSecret", isSuper = true)
+  val supportUser = User("support", "supportAccess", "supportSecret", isSupport = true)
   val lockedUser = User("locked", "lockedAccess", "lockedSecret", lockStatus = LockStatus.Locked)
   val sharedZoneUser = User("sharedZoneAdmin", "sharedAccess", "sharedSecret")
 
@@ -115,6 +116,8 @@ object TestMembershipData {
   val notAuth: AuthPrincipal = AuthPrincipal(User("not", "auth", "secret"), Seq.empty)
 
   val sharedAuth: AuthPrincipal = AuthPrincipal(sharedZoneUser, Seq(abcGroup.id))
+
+  val supportUserAuth: AuthPrincipal = AuthPrincipal(supportUser, Seq(okGroup.id))
 
   val superUserAuth = AuthPrincipal(superUser, Seq.empty)
 

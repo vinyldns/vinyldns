@@ -201,8 +201,8 @@ object RecordSetChangeInfo {
 case class ListZonesResponse(
     zones: List[ZoneSummaryInfo],
     nameFilter: Option[String],
-    startFrom: Option[Int] = None,
-    nextId: Option[Int] = None,
+    startFrom: Option[String] = None,
+    nextId: Option[String] = None,
     maxItems: Int = 100)
 
 // Errors
