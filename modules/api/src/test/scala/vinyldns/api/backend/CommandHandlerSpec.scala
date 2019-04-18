@@ -273,7 +273,8 @@ class CommandHandlerSpec
             count,
             100.millis,
             stop,
-            connections
+            connections,
+            1
           )
           .take(1)
 
