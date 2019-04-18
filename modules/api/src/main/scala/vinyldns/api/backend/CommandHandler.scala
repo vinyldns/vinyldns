@@ -51,7 +51,8 @@ object CommandHandler {
       count: MessageCount,
       pollingInterval: FiniteDuration,
       pauseSignal: SignallingRef[IO, Boolean],
-      connections: ConfiguredDnsConnections)(implicit timer: Timer[IO]): Stream[IO, Unit] = {
+      connections: ConfiguredDnsConnections,
+      maxOpen: Int = 4)(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
     // Polls queue for message batches, connected to the signal which is toggled in the status endpoint
     val messageSource = startPolling(mq, count, pollingInterval).pauseWhen(pauseSignal)
@@ -69,7 +70,7 @@ object CommandHandler {
     def flow(): Stream[IO, Unit] =
       messageSource
         .map(_.observe(increaseTimeoutWhenSyncing).through(changeRequestProcessor).to(updateQueue))
-        .parJoin(4)
+        .parJoin(maxOpen)
         .handleErrorWith { error =>
           logger.error("Encountered unexpected error in main flow", error)
 
