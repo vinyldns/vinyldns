@@ -100,6 +100,18 @@ def test_get_zone_by_name(shared_zone_test_context):
     assert_that(result['name'], is_(shared_zone_test_context.system_test_zone['name']))
     assert_that(result['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
 
+def test_get_zone_by_name_without_trailing_dot_succeeds(shared_zone_test_context):
+    """
+    Test get an existing zone by name succeeds when trailing dot is omitted
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    result = client.get_zone_by_name(shared_zone_test_context.system_test_zone['name'][:-1], status=200)['zone']
+
+    assert_that(result['id'], is_(shared_zone_test_context.system_test_zone['id']))
+    assert_that(result['name'], is_(shared_zone_test_context.system_test_zone['name']))
+    assert_that(result['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
+
 def test_get_zone_by_name_fails_without_access(shared_zone_test_context):
     """
     Test get an existing zone by name without access
