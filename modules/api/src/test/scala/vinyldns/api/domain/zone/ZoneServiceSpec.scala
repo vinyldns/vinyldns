@@ -164,7 +164,25 @@ class ZoneServiceSpec
       resultZone.shared shouldBe true
     }
 
-    "return a NotAuthorizedError if zone is shared and user is not a super user" in {
+    "succeed if zone is shared and user is both a zone admin and support user" in {
+      val newZone = createZoneAuthorized.copy(shared = true)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val resultZone = rightResultOf(
+        underTest
+          .connectToZone(newZone, supportUserAuth)
+          .map(_.asInstanceOf[ZoneChange])
+          .value).zone
+
+      Option(resultZone.id) should not be None
+      resultZone.email shouldBe okZone.email
+      resultZone.name shouldBe okZone.name
+      resultZone.status shouldBe ZoneStatus.Syncing
+      resultZone.connection shouldBe okZone.connection
+      resultZone.shared shouldBe true
+    }
+
+    "return a NotAuthorizedError if zone is shared and user is not a super or zone admin and support user" in {
       val newZone = createZoneAuthorized.copy(shared = true)
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
@@ -261,7 +279,21 @@ class ZoneServiceSpec
       result shouldBe a[ZoneChange]
     }
 
-    "return a NotAuthorizedError if zone shared flag is updated and user is not a super user" in {
+    "succeed if zone shared flag is updated and user is both a zone admin and support user" in {
+      val newZone = updateZoneAuthorized.copy(shared = false)
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+        .when(mockZoneRepo)
+        .getZone(newZone.id)
+
+      val result = rightResultOf(
+        underTest
+          .updateZone(newZone, supportUserAuth)
+          .value)
+      result shouldBe a[ZoneChange]
+    }
+
+    "return a NotAuthorizedError if zone shared flag is updated and user is not a super or zone admin " +
+      "and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
       doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
         .when(mockZoneRepo)
@@ -271,7 +303,7 @@ class ZoneServiceSpec
       error shouldBe a[NotAuthorizedError]
     }
 
-    "succeed if zone shared flag is unchanged and user is not a super user" in {
+    "succeed if zone shared flag is unchanged and user is not a super or zone admin and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = true, adminGroupId = okGroup.id)
       doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
         .when(mockZoneRepo)
