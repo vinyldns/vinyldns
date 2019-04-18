@@ -219,29 +219,27 @@ class ZoneRoutingSpec
     def listZones(
         authPrincipal: AuthPrincipal,
         nameFilter: Option[String],
-        startFrom: Option[Int],
+        startFrom: Option[String],
         maxItems: Int): Result[ListZonesResponse] = {
 
       val outcome = (authPrincipal, nameFilter, startFrom, maxItems) match {
-        case (_, None, Some(3), 3) =>
+        case (_, None, Some("zone3."), 3) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
-              startFrom = Some(3),
-              nextId = Some(6),
-              maxItems = 3
-            )
+              startFrom = Some("zone3."),
+              nextId = Some("zone6."),
+              maxItems = 3)
           )
-        case (_, None, Some(4), 4) =>
+        case (_, None, Some("zone4."), 4) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
-              startFrom = Some(4),
+              startFrom = Some("zone4."),
               nextId = None,
-              maxItems = 4
-            )
+              maxItems = 4)
           )
 
         case (_, None, None, 3) =>
@@ -250,20 +248,18 @@ class ZoneRoutingSpec
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
               startFrom = None,
-              nextId = Some(3),
-              maxItems = 3
-            )
+              nextId = Some("zone3."),
+              maxItems = 3)
           )
 
-        case (_, Some(filter), Some(4), 4) =>
+        case (_, Some(filter), Some("zone4."), 4) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = Some(filter),
-              startFrom = Some(4),
+              startFrom = Some("zone4."),
               nextId = None,
-              maxItems = 4
-            )
+              maxItems = 4)
           )
 
         case (_, None, None, _) =>
@@ -272,9 +268,7 @@ class ZoneRoutingSpec
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
               startFrom = None,
-              nextId = None,
-              maxItems = 100
-            )
+              nextId = None)
           )
 
         case _ => Left(InvalidRequest("shouldnt get here"))
@@ -813,26 +807,26 @@ class ZoneRoutingSpec
 
   "GET zones" should {
     "return the next id when more results exist" in {
-      Get(s"/zones?startFrom=3&maxItems=3") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?startFrom=zone3.&maxItems=3") ~> zoneRoute(okAuth) ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
           .only(zone1.id, zone2.id, zone3.id)
-        resp.nextId shouldBe Some(6)
+        resp.nextId shouldBe Some("zone6.")
         resp.maxItems shouldBe 3
-        resp.startFrom shouldBe Some(3)
+        resp.startFrom shouldBe Some("zone3.")
       }
     }
 
     "not return the next id when there are no more results" in {
-      Get(s"/zones?startFrom=4&maxItems=4") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?startFrom=zone4.&maxItems=4") ~> zoneRoute(okAuth) ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
           .only(zone1.id, zone2.id, zone3.id)
         resp.nextId shouldBe None
         resp.maxItems shouldBe 4
-        resp.startFrom shouldBe Some(4)
+        resp.startFrom shouldBe Some("zone4.")
       }
     }
 
@@ -842,21 +836,21 @@ class ZoneRoutingSpec
         val zones = resp.zones
         (zones.map(_.id) should contain)
           .only(zone1.id, zone2.id, zone3.id)
-        resp.nextId shouldBe Some(3)
+        resp.nextId shouldBe Some("zone3.")
         resp.maxItems shouldBe 3
         resp.startFrom shouldBe None
       }
     }
 
     "return the name filter when provided" in {
-      Get(s"/zones?nameFilter=foo&startFrom=4&maxItems=4") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?nameFilter=foo&startFrom=zone4.&maxItems=4") ~> zoneRoute(okAuth) ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
           .only(zone1.id, zone2.id, zone3.id)
         resp.nextId shouldBe None
         resp.maxItems shouldBe 4
-        resp.startFrom shouldBe Some(4)
+        resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("foo")
       }
     }
