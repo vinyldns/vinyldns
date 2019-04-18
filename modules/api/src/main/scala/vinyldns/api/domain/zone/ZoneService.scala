@@ -19,8 +19,9 @@ package vinyldns.api.domain.zone
 import cats.implicits._
 import vinyldns.api.Interfaces
 import vinyldns.api.domain.AccessValidationAlgebra
-import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.api.domain.dns.DnsConversions._
 import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
@@ -239,13 +240,13 @@ class ZoneService(
   def getZoneOrFail(zoneId: String): Result[Zone] =
     zoneRepository
       .getZone(zoneId)
-      .orFail(ZoneNotFoundError(s"Zone with id $zoneId does not exists"))
+      .orFail(ZoneNotFoundError(s"Zone with ID $zoneId does not exist"))
       .toResult[Zone]
 
   def getZoneByNameOrFail(zoneName: String): Result[Zone] =
     zoneRepository
-      .getZoneByName(zoneName)
-      .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
+      .getZoneByName(zoneDnsName(zoneName).toString)
+      .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exist"))
       .toResult[Zone]
 
   def validateZoneConnectionIfChanged(newZone: Zone, existingZone: Zone): Result[Unit] =
