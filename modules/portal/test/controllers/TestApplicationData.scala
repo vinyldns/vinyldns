@@ -180,9 +180,10 @@ trait TestApplicationData { this: Mockito =>
   )
 
   val hobbitZoneId = "uuid-abcdef-12345"
+  val hobbitZoneName = "hobbits"
   val hobbitZone: JsValue = Json.parse(s"""{
       | "id":             "${hobbitZoneId}",
-      | "name":           "hobbits",
+      | "name":           "${hobbitZoneName}",
       | "email":          "hobbitAdmin@shire.me",
       | "status":         "Active",
       | "account":        "system",
