@@ -23,6 +23,7 @@ import vinyldns.client.models.record.{RecordSetChange, RecordSetChangeList, Reco
 import vinyldns.client.models.zone.{GetZone, Zone, ZoneList}
 import vinyldns.client.components.JsNative.logError
 import upickle.default.ReadWriter
+import vinyldns.client.models.batch.BatchChangeList
 
 import scala.scalajs.js.URIUtils
 import scala.util.{Failure, Success, Try}
@@ -46,8 +47,8 @@ sealed trait RequestRoute[T] {
     if (map.isEmpty) ""
     else
       map.foldLeft("") {
-        case (a, (name, value)) if a.isEmpty => s"?$name=${URIUtils.encodeURIComponent(value)}"
-        case (a, (name, value)) => s"$a&$name=${URIUtils.encodeURIComponent(value)}"
+        case (acc, (name, value)) if acc.isEmpty => s"?$name=${URIUtils.encodeURIComponent(value)}"
+        case (acc, (name, value)) => s"$acc&$name=${URIUtils.encodeURIComponent(value)}"
       }
 }
 
@@ -71,8 +72,7 @@ final case class ListGroupsRoute(
   implicit val rw: default.ReadWriter[GroupList] = GroupList.rw
 
   val queryStrings: Map[String, String] =
-    Map.empty[String, String] ++
-      Map("maxItems" -> maxItems.toString) ++
+    Map("maxItems" -> maxItems.toString) ++
       nameFilter.map(f => "groupNameFilter" -> f) ++
       startFrom.map(s => "startFrom" -> s)
 
@@ -153,8 +153,7 @@ final case class ListZonesRoute(
   implicit val rw: default.ReadWriter[ZoneList] = ZoneList.rw
 
   val queryStrings: Map[String, String] =
-    Map.empty[String, String] ++
-      Map("maxItems" -> maxItems.toString) ++
+    Map("maxItems" -> maxItems.toString) ++
       nameFilter.map(f => "nameFilter" -> f) ++
       startFrom.map(s => "startFrom" -> s.toString)
 
@@ -191,8 +190,7 @@ final case class ListRecordSetsRoute(
   implicit val rw: default.ReadWriter[RecordSetList] = RecordSetList.rw
 
   val queryStrings: Map[String, String] =
-    Map.empty[String, String] ++
-      Map("maxItems" -> maxItems.toString) ++
+    Map("maxItems" -> maxItems.toString) ++
       nameFilter.map(f => "recordNameFilter" -> f) ++
       startFrom.map(s => "startFrom" -> s)
 
@@ -231,4 +229,15 @@ final case class ListRecordSetChangesRoute(
     startFrom.map(s => "startFrom" -> s)
 
   def path: String = s"/api/zones/$zoneId/recordsetchanges${toQueryString(queryStrings)}"
+}
+
+final case class ListBatchChangesRoute(maxItems: Int = 100, startFrom: Option[String] = None)
+    extends RequestRoute[BatchChangeList] {
+  implicit val rw: default.ReadWriter[BatchChangeList] = BatchChangeList.batchChangeListRw
+
+  val queryStrings: Map[String, String] = Map.empty[String, String] ++
+    Map("maxItems" -> maxItems.toString) ++
+    startFrom.map(s => "startFrom" -> s)
+
+  def path: String = s"/api/zones/batchrecordchanges${toQueryString(queryStrings)}"
 }

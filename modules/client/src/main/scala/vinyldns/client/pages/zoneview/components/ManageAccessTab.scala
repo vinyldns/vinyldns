@@ -63,13 +63,20 @@ object ManageAccessTab {
           "This Zone is set to",
           <.strong(" SHARED:"),
           """
-            | In addition to rules above, DNS Record Sets will have an "owner group" field.
-            | Any user in VinylDNS can create a record and set an owner group for that entry.
-            | Users can also set owner groups on unclaimed records.
-            | Once an owner group is set other users cannot make updates unless they are in the
-            | Admin Group or have an Access Rule.
+            | In addition to rules above, DNS Record Sets will have a "Record Owner Group" field.
+            | Any user in VinylDNS can create a Record Set and set a Record Owner Group for that record.
+            | Users can also set Record Owner Groups on unclaimed Record Sets.
+            | Once an Owner Group is set, other users cannot make updates unless they are in the
+            | Admin Group or have an Access Rule. The Zone Admin Group and Access Rules will still apply as normal.
           """.stripMargin
         )
-      else TagMod.empty
+      else
+        <.p(
+          "This Zone is set to",
+          <.strong(" PRIVATE:"),
+          """
+            | The "Owner Group" field on Record Sets will be ignored and not affect access.
+          """.stripMargin
+        )
   }
 }

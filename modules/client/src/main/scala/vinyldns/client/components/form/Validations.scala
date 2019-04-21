@@ -100,7 +100,7 @@ object Validations {
   def validateNoEmptyLines(value: String, checks: Validations): Either[String, Unit] =
     if (checks.noEmptyLines)
       Either.cond(
-        emptyLineRegex.findFirstIn(value).isEmpty || value.isEmpty,
+        emptyLineRegex.findFirstIn(value).isEmpty,
         (),
         "Cannot contain empty lines"
       )

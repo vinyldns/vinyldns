@@ -44,3 +44,6 @@ final case class ToZoneViewRecordsTab(id: String) extends ToZoneViewPage
 final case class ToZoneViewAccessTab(id: String) extends ToZoneViewPage
 final case class ToZoneViewZoneTab(id: String) extends ToZoneViewPage
 final case class ToZoneViewChangesTab(id: String) extends ToZoneViewPage
+
+// batch change list
+object ToBatchChangeListPage extends Page

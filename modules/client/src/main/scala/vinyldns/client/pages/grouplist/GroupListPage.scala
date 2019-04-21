@@ -30,7 +30,7 @@ import vinyldns.client.router.Page
 object GroupListPage extends PropsFromAppRouter {
   case class State(showCreateGroup: Boolean = false)
 
-  private val component = ScalaComponent
+  val component = ScalaComponent
     .builder[Props]("GroupListPage")
     .initialState(State())
     .renderBackend[Backend]

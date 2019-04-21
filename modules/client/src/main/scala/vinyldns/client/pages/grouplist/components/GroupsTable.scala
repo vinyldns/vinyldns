@@ -164,7 +164,7 @@ object GroupsTable {
       <.tr(
         <.td(^.className := "col-md-3", group.name),
         <.td(^.className := "col-md-3", group.email),
-        <.td(^.className := "col-md-3", group.description),
+        <.td(^.className := "col-md-3", s"${group.description.getOrElse("")}"),
         <.td(
           ^.className := "col-md-3",
           <.div(

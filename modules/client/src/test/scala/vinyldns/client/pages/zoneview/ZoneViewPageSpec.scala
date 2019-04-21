@@ -162,21 +162,5 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         c.outerHtmlScrubbed() should include("Loading...")
       }
     }
-
-    "show loading message if zone is none" in new Fixture {
-      (mockHttp.get[GroupList] _)
-        .expects(ListGroupsRoute(), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], None)
-        }
-
-      ReactTestUtils.withRenderedIntoDocument(
-        ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
-      ) { c =>
-        c.state.zone shouldBe None
-        c.outerHtmlScrubbed() should include("Loading...")
-      }
-    }
   }
 }

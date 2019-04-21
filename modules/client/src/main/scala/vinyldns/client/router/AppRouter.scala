@@ -26,6 +26,7 @@ import vinyldns.client.pages.groupview.GroupViewPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
+import vinyldns.client.pages.batchlist.BatchChangeListPage
 import vinyldns.client.pages.credentials.ApiCredentialsPage
 import vinyldns.client.pages.grouplist.GroupListPage
 import vinyldns.client.pages.zonelist.ZoneListPage
@@ -78,6 +79,9 @@ object AppRouter {
           dynamicRouteCT[ToZoneViewChangesTab](("zones" / string(uuidRegex) / "changes")
             .caseClass[ToZoneViewChangesTab]) ~> (p =>
             renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
+        | // batch change list
+          staticRoute("zones" / "batchrecordchanges", ToBatchChangeListPage) ~>
+            renderR(ctl => BatchChangeListPage(ToBatchChangeListPage, ctl, HttpHelper))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }
@@ -86,6 +90,7 @@ object AppRouter {
     LeftNav.NavItem("Home", "fa fa-home", ToHomePage),
     LeftNav.NavItem("Zones", "fa fa-table", ToZoneListPage),
     LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage),
+    LeftNav.NavItem("DNS Record Requests", "fa fa-list", ToBatchChangeListPage),
     LeftNav.NavItem("API Credentials", "fa fa-key", ToApiCredentialsPage),
   )
 
