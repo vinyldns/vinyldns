@@ -76,7 +76,7 @@ angular.module('service.records', [])
         }
 
         function isDotted(record, zoneName) {
-            var canHaveDots = ['PTR', 'NS', 'SOA', 'SRV'];
+            var canHaveDots = ['PTR', 'NS', 'SOA', 'SRV', 'NAPTR'];
 
             return canHaveDots.indexOf(record.type) == -1 &&
                 record.name.indexOf(".") != -1 &&
@@ -163,6 +163,13 @@ angular.module('service.records', [])
                     });
                     newRecord.onlyFour = true;
                     break;
+                case 'NAPTR':
+                    newRecord.naptrItems = [];
+                    angular.forEach(record.records, function(item) {
+                        newRecord.naptrItems.push(item);
+                    });
+                    newRecord.onlyFour = true;
+                    break;
                 case 'SSHFP':
                     newRecord.sshfpItems = [];
                     angular.forEach(record.records, function(item) {
@@ -231,6 +238,17 @@ angular.module('service.records', [])
                             "weight": Number(record.weight),
                             "port": Number(record.port),
                             "target": record.target});
+                    });
+                    break;
+                case 'NAPTR':
+                    newRecord.records = [];
+                    angular.forEach(record.naptrItems, function(record) {
+                        newRecord.records.push({"order": Number(record.order),
+                            "preference": Number(record.preference),
+                            "flags": record.flags,
+                            "service": record.service,
+                            "regexp": record.regexp,
+                            "replacement": record.replacement});
                     });
                     break;
                 case 'SPF':

@@ -57,6 +57,7 @@ trait DnsJsonProtocol extends JsonValidation {
     SOASerializer,
     SPFSerializer,
     SRVSerializer,
+    NAPTRSerializer,
     SSHFPSerializer,
     TXTSerializer,
     JsonV[ZoneACL]
@@ -263,6 +264,7 @@ trait DnsJsonProtocol extends JsonValidation {
       case RecordType.SOA => js.required[List[SOAData]]("Missing SOA Records")
       case RecordType.SPF => js.required[List[SPFData]]("Missing SPF Records")
       case RecordType.SRV => js.required[List[SRVData]]("Missing SRV Records")
+      case RecordType.NAPTR => js.required[List[NAPTRData]]("Missing NAPTR Records")
       case RecordType.SSHFP => js.required[List[SSHFPData]]("Missing SSHFP Records")
       case RecordType.TXT => js.required[List[TXTData]]("Missing TXT Records")
       case _ => s"Unsupported type $typ, valid types include ${RecordType.values}".invalidNel
@@ -415,6 +417,44 @@ trait DnsJsonProtocol extends JsonValidation {
           )
           .map(ensureTrailingDot)
       ).mapN(SRVData.apply)
+  }
+
+  case object NAPTRSerializer extends ValidationSerializer[NAPTRData] {
+    override def fromJson(js: JValue): ValidatedNel[String, NAPTRData] =
+      (
+        (js \ "order")
+          .required[Integer]("Missing NAPTR.order")
+          .check(
+            "NAPTR.order must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)
+          ),
+        (js \ "preference")
+          .required[Integer]("Missing NAPTR.preference")
+          .check(
+            "NAPTR.preference must be an unsigned 16 bit number" -> (i => i <= 65535 && i >= 0)
+          ),
+        (js \ "flags")
+          .required[String]("Missing NAPTR.flags")
+          .check(
+            "NAPTR.flags must be less than 2 characters" -> (_.length < 2)
+          ),
+        (js \ "service")
+          .required[String]("Missing NAPTR.service")
+          .check(
+            "NAPTR.service must be less than 255 characters" -> checkDomainNameLen
+          ),
+        (js \ "regexp")
+          .required[String]("Missing NAPTR.regexp")
+          .check(
+            "NAPTR.regexp must be less than 255 characters" -> checkDomainNameLen
+          ),
+        // should also check regex validity
+        (js \ "replacement")
+          .required[String]("Missing NAPTR.replacement")
+          .check(
+            "NAPTR.replacement must be less than 255 characters" -> checkDomainNameLen
+          )
+          .map(ensureTrailingDot)
+      ).mapN(NAPTRData.apply)
   }
 
   case object SSHFPSerializer extends ValidationSerializer[SSHFPData] {

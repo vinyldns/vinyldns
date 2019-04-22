@@ -154,6 +154,15 @@ class ProtobufConversionsSpec
     DateTime.now,
     None,
     List(SRVData(1, 2, 3, "target")))
+  private val naptr = RecordSet(
+    zone.id,
+    "naptr",
+    RecordType.NAPTR,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target")))
   private val sshfp = RecordSet(
     zone.id,
     "sshfp",
@@ -527,6 +536,10 @@ class ProtobufConversionsSpec
       fromPB(toPB(srv)) shouldBe srv
     }
 
+    "convert from protobuf for NAPTR recordset" in {
+      fromPB(toPB(naptr)) shouldBe naptr
+    }
+
     "convert from protobuf for SSHFP recordset" in {
       fromPB(toPB(sshfp)) shouldBe sshfp
     }
@@ -659,6 +672,25 @@ class ProtobufConversionsSpec
 
     "convert from protobuf for SRV data" in {
       val from = SRVData(1, 2, 3, "target")
+      val pb = toPB(from)
+      val data = fromPB(pb)
+
+      data shouldBe from
+    }
+
+    "convert to protobuf for NAPTR data" in {
+      val from = NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target")
+      val pb = toPB(from)
+      pb.getOrder shouldBe from.order
+      pb.getPreference shouldBe from.preference
+      pb.getFlags shouldBe from.flags
+      pb.getService shouldBe from.service
+      pb.getRegexp shouldBe from.regexp
+      pb.getReplacement shouldBe from.replacement
+    }
+
+    "convert from protobuf for NAPTR data" in {
+      val from = NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target")
       val pb = toPB(from)
       val data = fromPB(pb)
 

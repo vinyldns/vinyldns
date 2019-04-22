@@ -142,6 +142,16 @@ class DnsConversionsSpec
     DateTime.now,
     None,
     List(SRVData(1, 2, 3, "target.vinyldns.")))
+  private val testNAPTR = RecordSet(
+    testZone.id,
+    "naptr-record",
+    RecordType.NAPTR,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target.vinyldns."))
+  )
   private val testSSHFP = RecordSet(
     testZone.id,
     "sshfp-record",
@@ -350,6 +360,11 @@ class DnsConversionsSpec
       verifyMatch(result, testSRV)
     }
 
+    "convert NAPTR record set" in {
+      val result = rightValue(toDnsRRset(testNAPTR, testZoneName))
+      verifyMatch(result, testNAPTR)
+    }
+
     "convert TXT record set" in {
       val result = rightValue(toDnsRRset(testTXT, testZoneName))
       verifyMatch(result, testTXT)
@@ -464,6 +479,9 @@ class DnsConversionsSpec
     "convert to/from RecordType SRV" in {
       verifyMatch(testSRV, roundTrip(testSRV))
     }
+    "convert to/from RecordType NAPTR" in {
+      verifyMatch(testNAPTR, roundTrip(testNAPTR))
+    }
     "convert to/from RecordType SSHFP" in {
       verifyMatch(testSSHFP, roundTrip(testSSHFP))
     }
@@ -508,6 +526,9 @@ class DnsConversionsSpec
     }
     "support SRV" in {
       toDnsRecordType(RecordType.SRV) shouldBe DNS.Type.SRV
+    }
+    "support NAPTR" in {
+      toDnsRecordType(RecordType.NAPTR) shouldBe DNS.Type.NAPTR
     }
     "support TXT" in {
       toDnsRecordType(RecordType.TXT) shouldBe DNS.Type.TXT

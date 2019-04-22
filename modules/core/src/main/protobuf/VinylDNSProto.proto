@@ -94,6 +94,15 @@ message SRVData {
   required string target = 4;
 }
 
+message NAPTRData {
+  required int32 order = 1;
+  required int32 preference = 2;
+  required string flags = 4;
+  required string service = 5;
+  required string regexp = 6;
+  required string replacement = 7;
+}
+
 message SSHFPData {
   required int32 algorithm = 1;
   required int32 typ = 2;

@@ -73,6 +73,26 @@ object SRVData {
     new SRVData(priority, weight, port, ensureTrailingDot(target))
 }
 
+final case class NAPTRData(
+    order: Integer,
+    preference: Integer,
+    flags: String,
+    service: String,
+    regexp: String,
+    replacement: String)
+    extends RecordData
+
+object NAPTRData {
+  def apply(
+      order: Integer,
+      preference: Integer,
+      flags: String,
+      service: String,
+      regexp: String,
+      replacement: String): NAPTRData =
+    new NAPTRData(order, preference, flags, service, regexp, ensureTrailingDot(replacement))
+}
+
 final case class SSHFPData(algorithm: Integer, typ: Integer, fingerprint: String) extends RecordData
 
 final case class TXTData(text: String) extends RecordData

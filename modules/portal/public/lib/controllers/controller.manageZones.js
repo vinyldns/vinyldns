@@ -63,7 +63,7 @@ angular.module('controller.manageZones', [])
             readOnly: false
         }
     };
-    $scope.aclRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'SSHFP', 'TXT'];
+    $scope.aclRecordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
 
     /**
      * Zone modal control functions

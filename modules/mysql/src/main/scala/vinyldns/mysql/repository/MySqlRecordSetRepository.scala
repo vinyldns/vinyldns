@@ -318,6 +318,7 @@ object MySqlRecordSetRepository extends ProtobufConversions {
       case RecordType.TXT => 10
       case RecordType.SOA => 11
       case RecordType.DS => 12
+      case RecordType.NAPTR => 13
       case RecordType.UNKNOWN => unknownRecordType
     }
 

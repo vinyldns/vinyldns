@@ -133,6 +133,7 @@ trait DnsConversions {
     case DNS.Type.SOA => RecordType.SOA
     case DNS.Type.SPF => RecordType.SPF
     case DNS.Type.SRV => RecordType.SRV
+    case DNS.Type.NAPTR => RecordType.NAPTR
     case DNS.Type.SSHFP => RecordType.SSHFP
     case DNS.Type.TXT => RecordType.TXT
     case _ => RecordType.UNKNOWN
@@ -150,6 +151,7 @@ trait DnsConversions {
       case x: DNS.SOARecord => fromSOARecord(x, zoneName, zoneId)
       case x: DNS.SPFRecord => fromSPFRecord(x, zoneName, zoneId)
       case x: DNS.SRVRecord => fromSRVRecord(x, zoneName, zoneId)
+      case x: DNS.NAPTRRecord => fromNAPTRRecord(x, zoneName, zoneId)
       case x: DNS.SSHFPRecord => fromSSHFPRecord(x, zoneName, zoneId)
       case x: DNS.TXTRecord => fromTXTRecord(x, zoneName, zoneId)
       case _ => fromUnknownRecordType(r, zoneName, zoneId)
@@ -267,6 +269,18 @@ trait DnsConversions {
       List(SRVData(data.getPriority, data.getWeight, data.getPort, data.getTarget.toString))
     }
 
+  def fromNAPTRRecord(r: DNS.NAPTRRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
+    fromDnsRecord(r, zoneName, zoneId) { data =>
+      List(
+        NAPTRData(
+          data.getOrder,
+          data.getPreference,
+          data.getFlags,
+          data.getService,
+          data.getRegexp,
+          data.getReplacement.toString))
+    }
+
   def fromSSHFPRecord(r: DNS.SSHFPRecord, zoneName: DNS.Name, zoneId: String): RecordSet =
     fromDnsRecord(r, zoneName, zoneId) { data =>
       List(SSHFPData(data.getAlgorithm, data.getDigestType, new String(data.getFingerPrint)))
@@ -339,6 +353,18 @@ trait DnsConversions {
             port,
             DNS.Name.fromString(target))
 
+        case NAPTRData(order, preference, flags, service, regexp, replacement) =>
+          new DNS.NAPTRRecord(
+            recordName,
+            DNS.DClass.IN,
+            ttl,
+            order,
+            preference,
+            flags,
+            service,
+            regexp,
+            DNS.Name.fromString(replacement))
+
         case SSHFPData(algorithm, typ, fingerprint) =>
           new DNS.SSHFPRecord(recordName, DNS.DClass.IN, ttl, algorithm, typ, fingerprint.getBytes)
 
@@ -371,6 +397,7 @@ trait DnsConversions {
     case RecordType.SPF => DNS.Type.SPF
     case RecordType.SSHFP => DNS.Type.SSHFP
     case RecordType.SRV => DNS.Type.SRV
+    case RecordType.NAPTR => DNS.Type.NAPTR
     case RecordType.TXT => DNS.Type.TXT
   }
 
