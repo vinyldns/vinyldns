@@ -27,12 +27,14 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
+import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
 
 trait ZoneViewLoader {
   def load: () => IO[ZoneView]
 }
 
 object DnsZoneViewLoader extends DnsConversions {
+
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
     val conn =
       ZoneConnectionValidator
@@ -65,30 +67,27 @@ case class DnsZoneViewLoader(
   def load: () => IO[ZoneView] =
     () =>
       monitor("dns.loadZoneView") {
-        IO {
-          val xfr = zoneTransfer(zone)
-          xfr.run()
-
-          val rawDnsRecords: List[DNS.Record] =
-            xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
-
-          // not accepting unknown record types
-          val supportedRecords =
-            rawDnsRecords.filter(record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
-
-          val dnsZoneName = zoneDnsName(zone.name)
-
-          val recordSets = supportedRecords.map(toRecordSet(_, dnsZoneName, zone.id))
-
-          if (recordSets.length > maxZoneSize)
-            throw ZoneTooLargeError(
+        for {
+          rawDnsRecords <- IO {
+            val xfr = zoneTransfer(zone)
+            xfr.run()
+            val rawRecords = xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
+            // not accepting unknown record types
+            rawRecords.filter(record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
+          }
+          _ <- if (rawDnsRecords.length > maxZoneSize) IO.raiseError {
+            ZoneTooLargeError(
               s"""
-                   |ZoneTooLargeError: Zone '${zone.name}' (id: '${zone.id}') contains ${recordSets.length} records
-                   |which exceeds the max of $maxZoneSize
-                 """.stripMargin.replace("\n", " ")
+                 |ZoneTooLargeError: Zone '${zone.name}' (id: '${zone.id}') contains ${rawDnsRecords.length} records
+                 |which exceeds the max of $maxZoneSize
+                   """.stripMargin.replace("\n", " ")
             )
-          else ZoneView(zone, recordSets)
-        }
+          } else IO.pure(Unit)
+          recordSets <- IO {
+            val dnsZoneName = zoneDnsName(zone.name)
+            rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id))
+          }
+        } yield ZoneView(zone, recordSets)
     }
 }
 

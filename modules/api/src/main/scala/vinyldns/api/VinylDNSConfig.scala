@@ -113,5 +113,5 @@ object VinylDNSConfig {
       vinyldnsConfig.getStringList(key).asScala.toList
     } else List()
 
-  lazy val maxZoneSize: Int = vinyldnsConfig.getInt("max-zone-size")
+  lazy val maxZoneSize: Int = vinyldnsConfig.as[Option[Int]]("max-zone-size").getOrElse(60000)
 }
