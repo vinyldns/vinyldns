@@ -145,6 +145,7 @@ angular.module('controller.manageZones', [])
         var zone = angular.copy($scope.updateZoneInfo);
         zone = zonesService.normalizeZoneDates(zone);
         zone = zonesService.setConnectionKeys(zone);
+        zone = zonesService.checkBackendId(zone);
         $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
         $scope.updateZone(zone, 'Zone Update');
     };
