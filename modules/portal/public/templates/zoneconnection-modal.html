@@ -33,6 +33,26 @@
             </modal-element>
 
             <div class="dns-connection-form">
+                <h4>Optional DNS server connection settings</h4>
+                <hr>
+                <span class="help-block">
+                    If none of the following options are filled, default connection settings are used.
+                </span>
+            </div>
+
+            <div class="dns-connection-form">
+                <h4>DNS Zone Backend ID (Optional)</h4>
+                <hr>
+            </div>
+            <modal-element label="Backend Id">
+                <input id="zone-backendId" type="text" ng-model="currentZone.backendId" name="backendIdVal" class="form-control"/>
+                <span class="help-block">
+                    The ID for a pre-configured DNS connection configuration. Please contact your DNS admin team
+                    if a configuration exists.
+                </span>
+            </modal-element>
+
+            <div class="dns-connection-form">
                 <h4>DNS Server (Optional)</h4>
                 <hr>
             </div>
@@ -91,6 +111,7 @@
                     would be used to connect to server <i>bind-01.sys.example.net</i> on port 5300
                 </span>
             </modal-element>
+
         </modal-body>
         <modal-footer>
             <button type="button" class="btn btn-default pull-left" ng-click="resetCurrentZone()">Clear Form</button>

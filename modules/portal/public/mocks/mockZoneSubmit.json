@@ -7,5 +7,6 @@
     "key":"abc123",
     "primaryServer":"1.2.3.4"
   },
-  "shared":false
+  "shared":false,
+  "backendId":"testBackendID"
 }

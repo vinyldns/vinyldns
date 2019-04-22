@@ -68,6 +68,15 @@
                                 </div>
                             </div>
 
+                            <div class="form-group">
+                                <label class="col-md-3 control-label">DNS Backend ID (optional)</label>
+                                <div class="col-md-9">
+                                    <div>
+                                        <input id="zone-update-backendID" type="text" ng-model="updateZoneInfo.backendId" class="form-control" ng-disabled="!isZoneAdmin"/>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                         <div class="col-md-6">
 
@@ -178,6 +187,7 @@
                                         ng-click="clearUpdateTransferConnection()" type="button">Clear Connection</button>
                             </div>
                         </div>
+
                     </div>
                 </div>
 

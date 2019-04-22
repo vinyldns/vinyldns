@@ -80,6 +80,7 @@
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Admin Group</th>
+                                    <th>Backend ID</th>
                                     <th>Status</th>
                                     @if(meta.sharedDisplayEnabled) {
                                         <th>Type</th>
@@ -95,6 +96,7 @@
                                       <a ng-if="isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
                                       <span ng-if="!isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
                                   </td>
+                                  <td ng-bind="zone.backendId"></td>
                                   <td ng-bind="zone.status"></td>
                                   @if(meta.sharedDisplayEnabled) {
                                     <td>{{zone.shared ? "Shared" : "Private"}}</td>

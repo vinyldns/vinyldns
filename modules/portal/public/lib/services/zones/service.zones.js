@@ -96,6 +96,13 @@ angular.module('service.zones', [])
             return zone;
         };
 
+        this.checkBackendId = function(zone) {
+            if (zone.backendId === ''){
+                zone.backendId = undefined;
+            }
+            return zone;
+        };
+
         this.toApiIso = function(date) {
             /* when we parse the DateTimes from the api it gets turned into javascript readable format
              * instead of just staying the way it is, so for now converting it back to ISO format on the fly,

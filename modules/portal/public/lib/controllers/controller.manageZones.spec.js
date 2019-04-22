@@ -64,6 +64,8 @@ describe('Controller: ManageZonesController', function () {
             .and.stub();
         var setConnectionKeys = spyOn(this.zonesService, 'setConnectionKeys')
             .and.stub();
+        var checkBackendId = spyOn(this.zonesService, 'checkBackendId')
+                    .and.stub();
         var updateZone = spyOn(this.scope, 'updateZone')
             .and.stub();
 
