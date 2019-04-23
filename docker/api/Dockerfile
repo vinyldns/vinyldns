@@ -1,6 +1,6 @@
-FROM openjdk:8u171-jdk-stretch
+FROM openjdk:8u201-jdk-alpine3.9
 
-RUN apt-get update && apt-get install -y netcat-openbsd
+RUN apk add --update --no-cache netcat-openbsd bash
 
 # install the jar onto the server, asserts this Dockerfile is copied to target/scala-2.12 after a build
 COPY vinyldns.jar /app/vinyldns-server.jar
