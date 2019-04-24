@@ -35,7 +35,7 @@
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR", ttl: 200});
-                var changesLength =$scope.newBatch.changes.length;
+                var changesLength = $scope.newBatch.changes.length;
                 $timeout(function() {document.getElementsByClassName("changeType")[changesLength - 1].focus()});
             };
 
@@ -44,6 +44,7 @@
             };
 
             $scope.confirmSubmit = function(form) {
+                console.log(form.$error)
                 if(form.$invalid){
                     form.$setSubmitted();
                     $scope.formStatus = "pendingSubmit";
@@ -51,6 +52,8 @@
             };
 
             $scope.createBatchChange = function() {
+                console.log("creating a batch change")
+                console.log($scope.newBatch.changes)
                 //flag to prevent multiple clicks until previous promise has resolved.
                 $scope.processing = true;
 
@@ -107,6 +110,42 @@
             function handleError(error, type) {
                 var alert = utilityService.failure(error, type);
                 $scope.alerts.push(alert);
+            }
+
+            $scope.uploadCSV = function() {
+                var fileList = document.getElementById("batchChangeCsv");
+                if (fileList.files.length > 0 && fileList.files[0].type == "text/csv"){
+                    $scope.newBatch.changes = [];
+                    var reader = new FileReader();
+
+                    reader.onload = function(e) {
+                      var rows = e.target.result.split("\n");
+                      for(var i = 1; i < rows.length; i++) {
+                        var change = {};
+                        var headers = ["changeType", "type", "inputName", "ttl", "record"];
+                        var rowContent = rows[i].split(",");
+                        for(var j = 0; j < rowContent.length; j++) {
+                            if (headers[j] == "ttl") {
+                                change[headers[j]] = parseInt(rowContent[j].trim())
+                            } else if (headers[j] == "record"){
+                                if (change["type"] == "A" || change["type"] == "AAAA" || change["type"] == "A+PTR" || change["type"] == "AAAA+PTR"){
+                                    change[headers[j]] = {"address": rowContent[j].trim()}
+                                } else if (change["type"] == "CNAME") {
+                                    change[headers[j]] = {"cname": rowContent[j].trim()}
+                                } else if (change["type"] == "PTR") {
+                                    change[headers[j]] = {"ptrdname": rowContent[j].trim()}
+                                }
+                            } else {
+                                change[headers[j]] = rowContent[j].trim()
+                            }
+                        }
+                        $scope.newBatch.changes.push(change);
+                      }
+                      $timeout();
+                    }
+                    reader.readAsText(fileList.files[0]);
+                    $scope.csvInput = null;
+                }
             }
         });
 })();

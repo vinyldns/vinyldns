@@ -383,3 +383,11 @@ label.switch {
 .main-footer-text {
     color: #73879C;
 }
+
+input[type="file"] {
+    display: none;
+}
+
+.batch-change-csv-label {
+    cursor: pointer;
+}

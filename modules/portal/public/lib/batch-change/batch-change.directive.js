@@ -38,6 +38,7 @@
                                 '([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])',
                                 ')$'
     ].join(''));
+    var CSV_REGEX = /\.csv$/;
 
     app.directive('fqdn', function() {
         return {
@@ -68,6 +69,52 @@
                 ctrl.$validators.ipv6 = function(modelValue, viewValue) {
                     return IPV6_REGEX.test(viewValue);
                 }
+            }
+        };
+    });
+
+    app.directive('csv', function() {
+        return {
+            require: 'ngModel',
+            link: function(scope, elm, attrs, ctrl) {
+                ctrl.$validators.csv = function(modelValue, viewValue) {
+                    elm.on('change', function(e){
+                        if (e.target.files[0]) {
+                            ctrl.$setViewValue(e.target.files[0].name);
+                        } else {
+                            ctrl.$setViewValue(elm.val());
+                        }
+                    })
+                    return CSV_REGEX.test(viewValue);
+                }
+            }
+        };
+    });
+
+    app.directive('filled', function() {
+        return {
+            require: 'ngModel',
+            link: function(scope, elm, attrs, ctrl) {
+                ctrl.$validators.filled = function(modelValue, viewValue) {
+                    elm.on('change', function(e){
+                        if (e.target.files[0]) {
+                            ctrl.$setViewValue(e.target.files[0].name);
+                        } else {
+                            ctrl.$setViewValue(elm.val());
+                        }
+                    })
+                    return viewValue ? true : false
+                }
+            }
+        };
+    });
+
+    app.directive('isolateForm', function() {
+        return {
+            restrict: 'A',
+            require: ['form', '^form'],
+            link: function(scope, elm, attrs, forms) {
+                forms[1].$removeControl(forms[0]);
             }
         };
     });
