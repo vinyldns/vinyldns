@@ -112,7 +112,7 @@ lazy val apiAssemblySettings = Seq(
 )
 
 lazy val apiDockerSettings = Seq(
-  dockerBaseImage := "openjdk:8u171-jdk",
+  dockerBaseImage := "openjdk:8u201-jdk-alpine3.9",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "api",
   dockerExposedPorts := Seq(9000),
@@ -133,15 +133,14 @@ lazy val apiDockerSettings = Seq(
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials")),
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
-    ExecCmd("RUN", "apt-get", "update"),
-    ExecCmd("RUN", "apt-get", "install", "-y", "netcat-openbsd"),
+    ExecCmd("RUN", "apk", "add", "--update", "--no-cache", "netcat-openbsd", "bash"),
     Cmd("USER", "daemon") // switch back to the daemon user
   ),
   composeFile := baseDirectory.value.getAbsolutePath + "/../../docker/docker-compose.yml"
 )
 
 lazy val portalDockerSettings = Seq(
-  dockerBaseImage := "openjdk:8u171-jdk",
+  dockerBaseImage := "openjdk:8u201-jdk-alpine3.9",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "portal",
   dockerExposedPorts := Seq(9001),
@@ -162,8 +161,7 @@ lazy val portalDockerSettings = Seq(
   bashScriptExtraDefines += "(cd /opt/docker/ && ./wait-for-dependencies.sh && cd -)",
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
-    ExecCmd("RUN", "apt-get", "update"),
-    ExecCmd("RUN", "apt-get", "install", "-y", "netcat-openbsd"),
+    ExecCmd("RUN", "apk", "add", "--update", "--no-cache", "netcat-openbsd", "bash"),
     Cmd("USER", "daemon") // switch back to the daemon user
   ),
 
