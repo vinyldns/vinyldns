@@ -1742,6 +1742,122 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".getZoneByName" should {
+      "return ok (200) if the zone is found" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/name/$hobbitZoneName") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              TestVinylDNS(
+                testConfigLdap,
+                mockLdapAuthenticator,
+                mockUserAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.getZoneByName(hobbitZoneName)(
+                FakeRequest(GET, s"/zones/name/$hobbitZoneName")
+                  .withSession(
+                    "username" -> frodoUser.userName,
+                    "accessKey" -> frodoUser.accessKey))
+
+            status(result) must beEqualTo(OK)
+            hasCacheHeaders(result)
+            contentAsJson(result) must beEqualTo(hobbitZone)
+          }
+        }
+      }
+      "return a not found (404) if the zone does not exist" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/name/not-hobbits") =>
+            defaultActionBuilder {
+              Results.NotFound
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val mockUserAccessor = mock[UserAccountAccessor]
+            mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+            mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+            val underTest =
+              TestVinylDNS(
+                testConfigLdap,
+                mockLdapAuthenticator,
+                mockUserAccessor,
+                client,
+                components,
+                crypto)
+            val result =
+              underTest.getZoneByName("not-hobbits")(FakeRequest(GET, "/zones/name/not-hobbits")
+                .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
+
+            status(result) must beEqualTo(NOT_FOUND)
+            hasCacheHeaders(result)
+          }
+        }
+      }
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/name/$hobbitZoneName") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.getZoneByName(hobbitZoneName)(
+                FakeRequest(GET, s"/api/zones/name/$hobbitZoneName"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/name/$hobbitZoneName") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitZone)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockLockedUserAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.getZoneByName(hobbitZoneName)(
+              FakeRequest(GET, s"/api/zones/name/$hobbitZoneName").withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
+          }
+        }
+      }
+    }
+
     ".syncZone" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
