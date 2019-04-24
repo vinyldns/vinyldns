@@ -1745,7 +1745,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     ".getZoneByName" should {
       "return ok (200) if the zone is found" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
-          case backendGET(p"/zones/name/${hobbitZoneName}") =>
+          case backendGET(p"/zones/name/$hobbitZoneName") =>
             defaultActionBuilder {
               Results.Ok(hobbitZone)
             }
