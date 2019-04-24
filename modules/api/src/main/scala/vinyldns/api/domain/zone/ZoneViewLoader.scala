@@ -68,25 +68,18 @@ case class DnsZoneViewLoader(
     () =>
       monitor("dns.loadZoneView") {
         for {
-          rawDnsRecords <- IO {
+          zoneXfr <- IO {
             val xfr = zoneTransfer(zone)
             xfr.run()
-            val rawRecords = xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
-            // not accepting unknown record types
-            rawRecords.filter(record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
+            xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
           }
-          _ <- if (rawDnsRecords.length > maxZoneSize) IO.raiseError {
-            ZoneTooLargeError(
-              s"""
-                 |ZoneTooLargeError: Zone '${zone.name}' (id: '${zone.id}') contains ${rawDnsRecords.length} records
-                 |which exceeds the max of $maxZoneSize
-                   """.stripMargin.replace("\n", " ")
-            )
-          } else IO.pure(Unit)
-          recordSets <- IO {
-            val dnsZoneName = zoneDnsName(zone.name)
-            rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id))
-          }
+          rawDnsRecords = zoneXfr.filter(record =>
+            fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
+          _ <- if (rawDnsRecords.length > maxZoneSize)
+            IO.raiseError(ZoneTooLargeError(zone, rawDnsRecords.length, maxZoneSize))
+          else IO.pure(Unit)
+          dnsZoneName <- IO(zoneDnsName(zone.name))
+          recordSets = rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id))
         } yield ZoneView(zone, recordSets)
     }
 }
