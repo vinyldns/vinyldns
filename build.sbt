@@ -112,7 +112,7 @@ lazy val apiAssemblySettings = Seq(
 )
 
 lazy val apiDockerSettings = Seq(
-  dockerBaseImage := "openjdk:8u201-jdk-alpine3.9",
+  dockerBaseImage := "openjdk:8u191-jdk-alpine3.9",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "api",
   dockerExposedPorts := Seq(9000),
@@ -140,7 +140,7 @@ lazy val apiDockerSettings = Seq(
 )
 
 lazy val portalDockerSettings = Seq(
-  dockerBaseImage := "openjdk:8u201-jdk-alpine3.9",
+  dockerBaseImage := "openjdk:8u191-jdk-alpine3.9",
   dockerUsername := Some("vinyldns"),
   packageName in Docker := "portal",
   dockerExposedPorts := Seq(9001),
