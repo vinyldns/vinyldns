@@ -247,6 +247,86 @@
                     Add Row
                 </button>
             </modal-element>
+ 
+            <modal-element ng-if="currentRecord.type == 'NAPTR'" label="Record Data">
+                <table class="table table-condensed">
+                    <tr>
+                        <td class="table-col-10"><label class="control-label">Order</label></td>
+                        <td class="table-col-10"><label class="control-label">Preference</label></td>
+                        <td class="table-col-10"><label class="control-label">Flags</label></td>
+                        <td class="table-col-20"><label class="control-label">Service</label></td>
+                        <td class="table-col-25"><label class="control-label">Regexp</label></td>
+                        <td class="table-col-25"><label class="control-label">Replacement</label></td>
+                        <td></td>
+                    </tr>
+                    <tr ng-repeat="item in currentRecord.naptrItems">
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['order_' + ($index)].$invalid}">
+                            <input name="order_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.order"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['preference_' + ($index)].$invalid}">
+                            <input name="weight_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.preference"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['flags_' + ($index)].$invalid}">
+                            <input name="flags_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.flags"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['service_' + ($index)].$invalid}">
+                            <input name="flags_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.service"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['regexp_' + ($index)].$invalid}">
+                            <input name="flags_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.regexp"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly">
+                            </input>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['replacement_' + ($index)].$invalid}">
+                            <input name="target_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.replacement"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required>
+                            </input>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger fa fa-times"
+                                    ng-disabled="disabledStates.indexOf(recordModal.action) > -1"
+                                    ng-click="deleteNaptr($index)">
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+
+                <button type="button" class="btn btn-success"
+                        ng-disabled="disabledStates.indexOf(recordModal.action) > -1" ng-click="addNewNaptr()">
+                    Add Row
+                </button>
+            </modal-element>
 
             <modal-element ng-if="currentRecord.type == 'SSHFP'" label="Record Data">
                 <table class="table table-condensed">

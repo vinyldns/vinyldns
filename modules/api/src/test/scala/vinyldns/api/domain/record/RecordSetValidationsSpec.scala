@@ -55,8 +55,18 @@ class RecordSetValidationsSpec
         error shouldBe an[InvalidRequest]
       }
 
+      "return invalid request when adding a NAPTR record to an IP4 reverse zone" in {
+        val error = leftValue(validRecordTypes(naptr, zoneIp4))
+        error shouldBe an[InvalidRequest]
+      }
+
       "return invalid request when adding a SRV record to an IP6 reverse zone" in {
         val error = leftValue(validRecordTypes(srv, zoneIp6))
+        error shouldBe an[InvalidRequest]
+      }
+
+      "return invalid request when adding a NAPTR record to an IP6 reverse zone" in {
+        val error = leftValue(validRecordTypes(naptr, zoneIp6))
         error shouldBe an[InvalidRequest]
       }
 
@@ -213,6 +223,29 @@ class RecordSetValidationsSpec
 
           typeSpecificAddValidations(test, List(), zone) should be(right)
         }
+      }
+      "Skip dotted checks on NAPTR" should {
+        "return success for an NAPTR record with FQDN" in {
+          val test = naptr.copy(name = "sub.naptr.example.com.")
+          val zone = okZone.copy(name = "example.com.")
+
+          typeSpecificAddValidations(test, List(), zone) should be(right)
+        }
+
+        "return success for an NAPTR record without FQDN" in {
+          val test = naptr.copy(name = "sub.naptr")
+          val zone = okZone.copy(name = "example.com.")
+
+          typeSpecificAddValidations(test, List(), zone) should be(right)
+        }
+
+        "return success on a wildcard NAPTR" in {
+          val test = naptr.copy(name = "*.sub.naptr.example.com.")
+          val zone = okZone.copy(name = "example.com.")
+
+          typeSpecificAddValidations(test, List(), zone) should be(right)
+        }
+
       }
       "Skip dotted checks on PTR" should {
         "return success for a PTR record with dots in a reverse zone" in {

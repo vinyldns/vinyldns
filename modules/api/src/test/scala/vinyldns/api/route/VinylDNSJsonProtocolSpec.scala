@@ -444,6 +444,55 @@ class VinylDNSJsonProtocolSpec
       anonymize(actual).records shouldBe List(SRVData(1, 20, 5000, "srv."))
     }
 
+    "parse a record set with an absolute NAPTR target passes" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "NAPTR") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> Extraction.decompose(
+            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))))
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.NAPTR,
+        1000,
+        RecordSetStatus.Pending,
+        new DateTime(2010, 1, 1, 0, 0),
+        records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+    }
+    "convert relative NAPTR target to an absolute NAPTR target" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "NAPTR") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> Extraction.decompose(
+            Set(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr"))))
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.NAPTR,
+        1000,
+        RecordSetStatus.Pending,
+        new DateTime(2010, 1, 1, 0, 0),
+        records = List(NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+      anonymize(actual).records shouldBe List(
+        NAPTRData(1, 20, "U", "E2U+sip", "!.*!test.!", "naptr."))
+    }
+
     "parse a record set with an absolute PTR domain name" in {
       val recordSetJValue: JValue =
         ("zoneId" -> "1") ~~

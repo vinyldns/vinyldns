@@ -63,5 +63,11 @@ class RecordSetSpec extends WordSpec with Matchers {
 
       result.records shouldBe List(SRVData(1, 2, 3, "target."))
     }
+
+    "ensure trailing dot on NAPTR record target" in {
+      val result = naptr
+
+      result.records shouldBe List(NAPTRData(1, 2, "S", "E2U+sip", "", "target."))
+    }
   }
 }

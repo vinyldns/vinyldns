@@ -165,6 +165,7 @@ trait ProtobufConversions {
       case RecordType.SOA => fromPB(VinylDNSProto.SOAData.parseFrom(rd.getData))
       case RecordType.SPF => fromPB(VinylDNSProto.SPFData.parseFrom(rd.getData))
       case RecordType.SRV => fromPB(VinylDNSProto.SRVData.parseFrom(rd.getData))
+      case RecordType.NAPTR => fromPB(VinylDNSProto.NAPTRData.parseFrom(rd.getData))
       case RecordType.SSHFP => fromPB(VinylDNSProto.SSHFPData.parseFrom(rd.getData))
       case RecordType.TXT => fromPB(VinylDNSProto.TXTData.parseFrom(rd.getData))
     }
@@ -202,6 +203,15 @@ trait ProtobufConversions {
 
   def fromPB(data: VinylDNSProto.SRVData): SRVData =
     SRVData(data.getPriority, data.getWeight, data.getPort, data.getTarget)
+
+  def fromPB(data: VinylDNSProto.NAPTRData): NAPTRData =
+    NAPTRData(
+      data.getOrder,
+      data.getPreference,
+      data.getFlags,
+      data.getService,
+      data.getRegexp,
+      data.getReplacement)
 
   def fromPB(data: VinylDNSProto.SSHFPData): SSHFPData =
     SSHFPData(data.getAlgorithm, data.getTyp, data.getFingerPrint)
@@ -283,6 +293,17 @@ trait ProtobufConversions {
       .setWeight(data.weight)
       .build()
 
+  def toPB(data: NAPTRData): VinylDNSProto.NAPTRData =
+    VinylDNSProto.NAPTRData
+      .newBuilder()
+      .setOrder(data.order)
+      .setPreference(data.preference)
+      .setFlags(data.flags)
+      .setService(data.service)
+      .setRegexp(data.regexp)
+      .setReplacement(data.replacement)
+      .build()
+
   def toPB(data: SSHFPData): VinylDNSProto.SSHFPData =
     VinylDNSProto.SSHFPData
       .newBuilder()
@@ -307,6 +328,7 @@ trait ProtobufConversions {
       case x: SOAData => toPB(x)
       case x: SPFData => toPB(x)
       case x: SRVData => toPB(x)
+      case x: NAPTRData => toPB(x)
       case x: SSHFPData => toPB(x)
       case x: TXTData => toPB(x)
     }

@@ -92,7 +92,7 @@ object RecordSetValidations {
       case NS => nsValidations(newRecordSet, zone)
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
-      case SRV | TXT => ().asRight // SRV and TXT do not go through dotted host check
+      case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
       case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }
@@ -107,7 +107,7 @@ object RecordSetValidations {
       case NS => nsValidations(newRecordSet, zone, Some(oldRecordSet))
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
-      case SRV | TXT => ().asRight // SRV and TXT do not go through dotted host check
+      case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
       case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
       case _ => isNotDotted(newRecordSet, zone)
     }

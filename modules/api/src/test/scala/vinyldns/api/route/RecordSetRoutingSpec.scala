@@ -261,6 +261,16 @@ class RecordSetRoutingSpec
     None,
     List(SRVData(1, 2, 3, "target.")))
 
+  private val naptr = RecordSet(
+    okZone.id,
+    "naptr",
+    RecordType.NAPTR,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NAPTRData(1, 2, "U", "E2U+sip", "!.*!test.!", "target.")))
+
   private val sshfp = RecordSet(
     okZone.id,
     "sshfp",
@@ -325,6 +335,7 @@ class RecordSetRoutingSpec
     soa.id -> soa,
     spf.id -> spf,
     srv.id -> srv,
+    naptr.id -> naptr,
     sshfp.id -> sshfp,
     txt.id -> txt
   )
@@ -908,6 +919,7 @@ class RecordSetRoutingSpec
       validateErrors(testRecordBase(RecordType.SOA, JNothing), "Missing SOA Records")
       validateErrors(testRecordBase(RecordType.SPF, JNothing), "Missing SPF Records")
       validateErrors(testRecordBase(RecordType.SRV, JNothing), "Missing SRV Records")
+      validateErrors(testRecordBase(RecordType.NAPTR, JNothing), "Missing NAPTR Records")
       validateErrors(testRecordBase(RecordType.SSHFP, JNothing), "Missing SSHFP Records")
       validateErrors(testRecordBase(RecordType.TXT, JNothing), "Missing TXT Records")
     }
@@ -1121,6 +1133,56 @@ class RecordSetRoutingSpec
         "SRV.priority must be an unsigned 16 bit number",
         "SRV.weight must be an unsigned 16 bit number",
         "SRV.port must be an unsigned 16 bit number"
+      )
+    }
+
+    "supports NAPTR" in {
+      validateCreateRecordType(naptr)
+    }
+
+    "return errors for NAPTR record missing data" in {
+      validateErrors(
+        testRecordType(RecordType.NAPTR, "key" -> "val"),
+        "Missing NAPTR.order",
+        "Missing NAPTR.preference",
+        "Missing NAPTR.flags",
+        "Missing NAPTR.service",
+        "Missing NAPTR.regexp",
+        "Missing NAPTR.replacement"
+      )
+    }
+
+    "return errors for invalid NAPTR record data" in {
+      validateErrors(
+        testRecordType(
+          RecordType.NAPTR,
+          ("replacement" -> Random.alphanumeric.take(260).mkString) ~~
+            // should check regex better
+            ("regexp" -> Random.alphanumeric.take(260).mkString) ~~
+            ("service" -> Random.alphanumeric.take(260).mkString) ~~
+            ("flags" -> Random.alphanumeric.take(2).mkString) ~~
+            ("order" -> 50000000) ~~
+            ("preference" -> 50000000)
+        ),
+        "NAPTR.order must be an unsigned 16 bit number",
+        "NAPTR.preference must be an unsigned 16 bit number",
+        "NAPTR.flags must be less than 2 characters",
+        "NAPTR.service must be less than 255 characters",
+        "NAPTR.regexp must be less than 255 characters",
+        "NAPTR.replacement must be less than 255 characters"
+      )
+      validateErrors(
+        testRecordType(
+          RecordType.NAPTR,
+          ("regexp" -> Random.alphanumeric.take(10).mkString) ~~
+            ("service" -> Random.alphanumeric.take(10).mkString) ~~
+            ("replacement" -> Random.alphanumeric.take(10).mkString) ~~
+            ("flags" -> Random.alphanumeric.take(1).mkString) ~~
+            ("order" -> -1) ~~
+            ("preference" -> -1)
+        ),
+        "NAPTR.order must be an unsigned 16 bit number",
+        "NAPTR.preference must be an unsigned 16 bit number"
       )
     }
 

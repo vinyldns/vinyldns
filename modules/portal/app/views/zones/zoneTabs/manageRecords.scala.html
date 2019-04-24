@@ -265,6 +265,21 @@
                                 </span>
                             </ul>
                         </span>
+                        <span ng-if="record.type == 'NAPTR'">
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.naptrItems track by $index"
+                                ng-if="!record.onlyFour || $index <= 3">
+                                    Order: {{ item.order }} | Preference: {{ item.preference }} | Flags: {{ item.flags }}
+                                    | Service: {{ item.service }} | Regexp: {{ item.regexp }} | Replacement: {{ item.replacement }}
+                                </li>
+                                <li ng-if="record.onlyFour && record.naptrItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">more...</a>
+                                </li>
+                                <li ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">less...</a>
+                                </li>
+                            </ul>
+                        </span>
                         <span ng-if="record.type == 'SSHFP'">
                             <ul class="table-cell-list">
                                 <li ng-repeat="item in record.sshfpItems track by $index"

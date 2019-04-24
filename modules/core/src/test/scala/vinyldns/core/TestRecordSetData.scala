@@ -108,6 +108,16 @@ object TestRecordSetData {
     None,
     List(SRVData(1, 2, 3, "target")))
 
+  val naptr: RecordSet = RecordSet(
+    okZone.id,
+    "naptr",
+    RecordType.NAPTR,
+    200,
+    RecordSetStatus.Active,
+    DateTime.now,
+    None,
+    List(NAPTRData(1, 2, "S", "E2U+sip", "", "target")))
+
   val mx: RecordSet = RecordSet(
     okZone.id,
     "mx",

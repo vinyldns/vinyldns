@@ -24,7 +24,7 @@ angular.module('controller.records', [])
     $scope.query = "";
     $scope.alerts = [];
 
-    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'SSHFP', 'TXT'];
+    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
         {name: '(4) Ed25519', number: 4}];
     $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
@@ -92,6 +92,7 @@ angular.module('controller.records', [])
             ttl: 300,
             mxItems: [{preference:'', exchange:''}],
             srvItems: [{priority:'', weight:'', port:'', target:''}],
+            naptrItems: [{order:'', preference:'', flags:'', service:'', regexp:'', replacement:''}],
             sshfpItems: [{algorithm:'', type:'', fingerprint:''}]
         };
         $scope.currentRecord = angular.copy(record);
@@ -236,6 +237,18 @@ angular.module('controller.records', [])
         $scope.currentRecord.srvItems.splice(index, 1);
         if($scope.currentRecord.srvItems.length == 0) {
             $scope.addNewSrv();
+        }
+    };
+
+    $scope.addNewNaptr = function() {
+        var dataObj = {order:'', preference:'', flags:'', service:'', regexp:'', replacement:''};
+        $scope.currentRecord.naptrItems.push(dataObj);
+    };
+
+    $scope.deleteNaptr = function(index) {
+        $scope.currentRecord.naptrItems.splice(index, 1);
+        if($scope.currentRecord.naptrItems.length == 0) {
+            $scope.addNewNaptr();
         }
     };
 

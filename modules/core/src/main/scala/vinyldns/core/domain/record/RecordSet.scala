@@ -22,7 +22,7 @@ import org.joda.time.DateTime
 
 object RecordType extends Enumeration {
   type RecordType = Value
-  val A, AAAA, CNAME, DS, PTR, MX, NS, SOA, SRV, TXT, SSHFP, SPF, UNKNOWN = Value
+  val A, AAAA, CNAME, DS, PTR, MX, NS, SOA, SRV, NAPTR, TXT, SSHFP, SPF, UNKNOWN = Value
 }
 
 object RecordSetStatus extends Enumeration {
