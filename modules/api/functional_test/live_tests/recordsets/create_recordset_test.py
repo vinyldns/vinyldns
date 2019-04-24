@@ -64,6 +64,82 @@ def test_create_recordset_with_dns_verify(shared_zone_test_context):
                 pass
 
 
+def test_create_naptr_origin_record(shared_zone_test_context):
+    """
+    Test creating naptr origin records works
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_rs = None
+    try:
+        new_rs = {
+            'zoneId': shared_zone_test_context.ok_zone['id'],
+            'name': 'ok.',
+            'type': 'NAPTR',
+            'ttl': 100,
+            'records': [
+                {
+                    'order': 10,
+                    'preference': 100,
+                    'flags': 'S',
+                    'service': 'SIP+D2T',
+                    'regexp': '',
+                    'replacement': '_sip._udp.ok.'
+                }
+            ]
+        }
+        result = client.create_recordset(new_rs, status=202)
+
+        assert_that(result['changeType'], is_('Create'))
+        assert_that(result['status'], is_('Pending'))
+        assert_that(result['created'], is_not(none()))
+        assert_that(result['userId'], is_not(none()))
+
+        result_rs = result['recordSet']
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        verify_recordset(result_rs, new_rs)
+
+    finally:
+        if result_rs:
+            delete_result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+
+def test_create_naptr_non_origin_record(shared_zone_test_context):
+    """
+    Test creating naptr records works
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_rs = None
+    try:
+        new_rs = {
+            'zoneId': shared_zone_test_context.ok_zone['id'],
+            'name': 'testnaptr',
+            'type': 'NAPTR',
+            'ttl': 100,
+            'records': [
+                {
+                    'order': 10,
+                    'preference': 100,
+                    'flags': 'S',
+                    'service': 'SIP+D2T',
+                    'regexp': '',
+                    'replacement': '_sip._udp.ok.'
+                }
+            ]
+        }
+        result = client.create_recordset(new_rs, status=202)
+
+        assert_that(result['changeType'], is_('Create'))
+        assert_that(result['status'], is_('Pending'))
+        assert_that(result['created'], is_not(none()))
+        assert_that(result['userId'], is_not(none()))
+
+        result_rs = result['recordSet']
+        result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
+        verify_recordset(result_rs, new_rs)
+
+    finally:
+        if result_rs:
+            delete_result = client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=202)
+
 def test_create_srv_recordset_with_service_and_protocol(shared_zone_test_context):
     """
     Test creating a new srv record set with service and protocol works
