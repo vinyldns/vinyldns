@@ -133,7 +133,7 @@ trait TestApplicationData { this: Mockito =>
 
   val hobbitGroupId = "uuid-12345-abcdef"
   val hobbitGroup: JsValue = Json.parse(s"""{
-       | "id":          "${hobbitGroupId}",
+       | "id":          "$hobbitGroupId",
        | "name":        "hobbits",
        | "email":       "hobbitAdmin@shire.me",
        | "description": "Hobbits of the shire",
@@ -173,22 +173,23 @@ trait TestApplicationData { this: Mockito =>
 
   val hobbitGroupMembers: JsValue = Json.parse(
     s"""{
-       | "members": [ ${frodoJsonString} ],
+       | "members": [ $frodoJsonString ],
        | "maxItems": 100
        |}
      """.stripMargin
   )
 
   val hobbitZoneId = "uuid-abcdef-12345"
+  val hobbitZoneName = "hobbits"
   val hobbitZone: JsValue = Json.parse(s"""{
-      | "id":             "${hobbitZoneId}",
-      | "name":           "hobbits",
+      | "id":             "$hobbitZoneId",
+      | "name":           "$hobbitZoneName",
       | "email":          "hobbitAdmin@shire.me",
       | "status":         "Active",
       | "account":        "system",
       | "shared":         false,
       | "adminGroupName": "hobbits",
-      | "adminGroupId":   "${hobbitGroupId}"
+      | "adminGroupId":   "$hobbitGroupId"
       | }
     """.stripMargin)
 
@@ -199,13 +200,13 @@ trait TestApplicationData { this: Mockito =>
       | "account":        "system",
       | "shared":         false,
       | "adminGroupName": "hobbits",
-      | "adminGroupId":   "${hobbitGroupId}"
+      | "adminGroupId":   "$hobbitGroupId"
       | }
     """.stripMargin)
 
   val hobbitRecordSetId = "uuid-record-12345"
   val hobbitRecordSet: JsValue = Json.parse(s"""{
-      | "zoneId":        "${hobbitZoneId}",
+      | "zoneId":        "$hobbitZoneId",
       | "name":          "ok",
       | "typ":           "${RecordType.A}",
       | "ttl":           "200",

@@ -370,6 +370,15 @@ class VinylDNS @Inject()(
     // $COVERAGE-ON$
   }
 
+  def getZoneByName(name: String): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest =
+      new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/name/$name")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def syncZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$
     val vinyldnsRequest =
