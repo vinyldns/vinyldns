@@ -17,3 +17,6 @@ If you don't want a user to have full access to a zone you can use ACL rules to 
 1. Submit the form
 
 [![ACL rule form screenshot](../img/portal/create-acl-rule.png){:.screenshot}](../img/portal/create-acl-rule.png)
+
+### <span class="important">**NEW**</span> Shared Zones
+The shared zone feature is designed to allow more granular record ownership and management in a flexible way. Super users can mark zones as 'shared' which then allow any users to create new records or claim existing unowned records in zones. Zone administrators can assign records in a shared zone to specific groups by designating a group when creating the record set or when updating existing records in the portal. Users who are not zone administrators can create new records in shared zones, or claim and modify unowned records in shared zones, through the [Batch Change](batch-changes) interface.
