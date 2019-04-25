@@ -79,7 +79,7 @@ case class DnsZoneViewLoader(
             IO.raiseError(ZoneTooLargeError(zone, rawDnsRecords.length, maxZoneSize))
           else IO.pure(Unit)
           dnsZoneName <- IO(zoneDnsName(zone.name))
-          recordSets = rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id))
+          recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
         } yield ZoneView(zone, recordSets)
     }
 }
