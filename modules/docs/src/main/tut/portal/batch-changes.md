@@ -15,7 +15,6 @@ Batch change is an alternative to submitting individual RecordSet changes and pr
 * <span class="important">**NEW**</span> **Records in shared zones.** All users are permitted to create new records or update unowned records in shared zones.
 
 #### Supported record types
-<<<<<<< HEAD
 * Current supported record types for batch change are: **A**, **AAAA**, **CNAME**, **PTR**, **TXT**, and **MX**.
 * Additionally, there are **A+PTR** and **AAAA+PTR** types that will be processed as separate A (or AAAA) and PTR changes in the VinylDNS backend. Deletes for **A+PTR** and **AAAA+PTR** require Input Name and Record Data.
 * Supported record types for records in shared zones may vary.
