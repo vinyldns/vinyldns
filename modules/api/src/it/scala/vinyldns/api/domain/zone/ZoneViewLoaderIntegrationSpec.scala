@@ -44,5 +44,13 @@ class ZoneViewLoaderIntegrationSpec extends WordSpec with Matchers {
           .load()
           .unsafeRunSync())
     }
+
+    "return a failure if the zone is larger than the max zone size" in {
+      assertThrows[ZoneTooLargeError](
+        DnsZoneViewLoader(Zone("vinyldns.", "test@test.com"), DnsZoneViewLoader.dnsZoneTransfer, 1)
+          .load()
+          .unsafeRunSync()
+      )
+    }
   }
 }

@@ -27,12 +27,14 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
+import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
 
 trait ZoneViewLoader {
   def load: () => IO[ZoneView]
 }
 
 object DnsZoneViewLoader extends DnsConversions {
+
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
     val conn =
       ZoneConnectionValidator
@@ -54,7 +56,10 @@ object DnsZoneViewLoader extends DnsConversions {
     DnsZoneViewLoader(zone, dnsZoneTransfer)
 }
 
-case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
+case class DnsZoneViewLoader(
+    zone: Zone,
+    zoneTransfer: Zone => ZoneTransferIn,
+    maxZoneSize: Int = VinylDNSConfig.maxZoneSize)
     extends ZoneViewLoader
     with DnsConversions
     with Monitored {
@@ -62,23 +67,20 @@ case class DnsZoneViewLoader(zone: Zone, zoneTransfer: Zone => ZoneTransferIn)
   def load: () => IO[ZoneView] =
     () =>
       monitor("dns.loadZoneView") {
-        IO {
-          val xfr = zoneTransfer(zone)
-          xfr.run()
-
-          val rawDnsRecords: List[DNS.Record] =
+        for {
+          zoneXfr <- IO {
+            val xfr = zoneTransfer(zone)
+            xfr.run()
             xfr.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
-
-          // not accepting unknown record types
-          val supportedRecords =
-            rawDnsRecords.filter(record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
-
-          val dnsZoneName = zoneDnsName(zone.name)
-
-          val recordSets = supportedRecords.map(toRecordSet(_, dnsZoneName, zone.id))
-
-          ZoneView(zone, recordSets)
-        }
+          }
+          rawDnsRecords = zoneXfr.filter(record =>
+            fromDnsRecordType(record.getType) != RecordType.UNKNOWN)
+          _ <- if (rawDnsRecords.length > maxZoneSize)
+            IO.raiseError(ZoneTooLargeError(zone, rawDnsRecords.length, maxZoneSize))
+          else IO.pure(Unit)
+          dnsZoneName <- IO(zoneDnsName(zone.name))
+          recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
+        } yield ZoneView(zone, recordSets)
     }
 }
 

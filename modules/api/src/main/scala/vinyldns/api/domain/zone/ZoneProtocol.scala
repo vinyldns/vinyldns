@@ -240,3 +240,14 @@ case class ConnectionFailed(zone: Zone, message: String) extends Throwable(messa
 
 case class ZoneValidationFailed(zone: Zone, errors: List[String], message: String)
     extends Throwable(message)
+
+case class ZoneTooLargeError(msg: String) extends Throwable(msg)
+
+object ZoneTooLargeError {
+  def apply(zone: Zone, zoneSize: Int, maxZoneSize: Int): ZoneTooLargeError = new ZoneTooLargeError(
+    s"""
+       |ZoneTooLargeError: Zone '${zone.name}' (id: '${zone.id}') contains $zoneSize records
+       |which exceeds the max of $maxZoneSize
+    """.stripMargin.replace("\n", " ")
+  )
+}

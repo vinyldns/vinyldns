@@ -463,6 +463,11 @@ vinyldns {
     host = "0.0.0.0"
     port = 9000
   }
+  
+  # The maximum number of records VinylDNS will load when syncing a DNS Zone
+  # this is to prevent possible out of memory errors when loading a Zone
+  # this does not stop the zone from existing in DNS, but you will not be able to manage it in VinylDNS if the number of records exceeds the max
+  max-zone-size = 60000
 
   # the delay between zone syncs so we are not syncing too often
   sync-delay = 10000
