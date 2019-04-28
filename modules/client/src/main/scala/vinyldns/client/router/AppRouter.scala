@@ -26,6 +26,7 @@ import vinyldns.client.pages.groupview.GroupViewPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
+import vinyldns.client.pages.batchcreate.BatchChangeCreatePage
 import vinyldns.client.pages.batchlist.BatchChangeListPage
 import vinyldns.client.pages.credentials.ApiCredentialsPage
 import vinyldns.client.pages.grouplist.GroupListPage
@@ -82,6 +83,9 @@ object AppRouter {
         | // batch change list
           staticRoute("zones" / "batchrecordchanges", ToBatchChangeListPage) ~>
             renderR(ctl => BatchChangeListPage(ToBatchChangeListPage, ctl, HttpHelper))
+        | // batch change list
+          staticRoute("zones" / "batchrecordchanges" / "new", ToBatchChangeCreatePage) ~>
+            renderR(ctl => BatchChangeCreatePage(ToBatchChangeCreatePage, ctl, HttpHelper))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }

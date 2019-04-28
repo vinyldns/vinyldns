@@ -17,15 +17,16 @@
 package vinyldns.client.models.batch
 
 import upickle.default._
-import vinyldns.client.models.OptionRW
+import vinyldns.client.models.{OptionRW, PagingKeyRW}
+import vinyldns.client.models.Pagination.PagingKey
 
 case class BatchChangeList(
     batchChanges: List[BatchChangeSummary],
     maxItems: Int,
-    startFrom: Option[String] = None,
-    nextId: Option[String] = None
+    startFrom: PagingKey = None,
+    nextId: PagingKey = None
 )
 
-object BatchChangeList extends OptionRW {
+object BatchChangeList extends OptionRW with PagingKeyRW {
   implicit val batchChangeListRw: ReadWriter[BatchChangeList] = macroRW[BatchChangeList]
 }

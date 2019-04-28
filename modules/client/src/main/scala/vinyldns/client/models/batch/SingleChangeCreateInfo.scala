@@ -26,11 +26,15 @@ case class SingleChangeCreateInfo(
     `type`: String,
     ttl: Int,
     record: RecordData,
-    systemMessage: Option[String]
+    errors: Option[List[String]]
 )
 
 object SingleChangeCreateInfo extends OptionRW {
-  implicit val singleChangeCreateInfoRw: ReadWriter[SingleChangeCreateInfo] = macroRW
+  implicit val singleChangeCreateInfoRw: ReadWriter[SingleChangeCreateInfo] =
+    macroRW
 
-  def apply(): SingleChangeCreateInfo = SingleChangeCreateInfo("", "", "", 300, RecordData(), None)
+  type BatchChangeErrors = List[SingleChangeCreateInfo]
+
+  def apply(): SingleChangeCreateInfo =
+    new SingleChangeCreateInfo("", "Add", "A+PTR", 300, RecordData(), None)
 }

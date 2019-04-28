@@ -17,7 +17,7 @@
 package vinyldns.client.router
 
 // The AppRouter must route to a Page from this file
-// Routes are dynamic, and can pull things like ints and strings from the route to build a case class
+// Routes can pull things like ints and strings from the path to build a case class
 sealed trait Page
 
 // home
@@ -47,3 +47,6 @@ final case class ToZoneViewChangesTab(id: String) extends ToZoneViewPage
 
 // batch change list
 object ToBatchChangeListPage extends Page
+
+// batch create
+object ToBatchChangeCreatePage extends Page

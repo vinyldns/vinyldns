@@ -115,6 +115,8 @@ object LeftNav {
         fromSubTitle(groupView.id)
       case (zoneView: ToZoneViewPage, _: ToZoneListPage.type) =>
         fromSubTitle(zoneView.id)
+      case (_: ToBatchChangeCreatePage.type, _: ToBatchChangeListPage.type) =>
+        fromSubTitle("Create")
       case _ => TagMod.empty
     }
   }
@@ -124,6 +126,7 @@ object LeftNav {
       case _ if target.getClass == P.selectedPage.getClass => true
       case (_: ToGroupViewPage, _: ToGroupListPage.type) => true
       case (_: ToZoneViewPage, _: ToZoneListPage.type) => true
+      case (_: ToBatchChangeCreatePage.type, _: ToBatchChangeListPage.type) => true
       case _ => false
     }
 

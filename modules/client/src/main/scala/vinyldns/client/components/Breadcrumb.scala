@@ -58,6 +58,8 @@ object Breadcrumb {
         List(home(P), zones(P), viewZoneActive).toTagMod
       case _: ToBatchChangeListPage.type =>
         List(home(P), batchChangeListActive).toTagMod
+      case _: ToBatchChangeCreatePage.type =>
+        List(home(P), batchChangeList(P), createBatchChangeActive).toTagMod
       case _ => TagMod.empty
     }
 
@@ -82,6 +84,12 @@ object Breadcrumb {
 
   val batchChangeListActive =
     <.li(^.key := "batchlist", cursorPointer, ^.className := "active", "DNS Record Requests")
-//  def batchChangeList(P: Props): TagMod =
-//    <.li(^.key := "batchlist", cursorPointer, <.a("DNS Record Requests", P.router.setOnClick(ToBatchChangeListPage)))
+  def batchChangeList(P: Props): TagMod =
+    <.li(
+      ^.key := "batchlist",
+      cursorPointer,
+      <.a("DNS Record Requests", P.router.setOnClick(ToBatchChangeListPage)))
+
+  val createBatchChangeActive =
+    <.li(^.key := "createbatch", cursorPointer, ^.className := "active", "New")
 }

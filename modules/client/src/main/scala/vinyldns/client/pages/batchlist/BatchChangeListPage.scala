@@ -25,7 +25,7 @@ import vinyldns.client.http.Http
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.pages.batchlist.components.BatchChangesTable
 import vinyldns.client.router.AppRouter.PropsFromAppRouter
-import vinyldns.client.router.Page
+import vinyldns.client.router.{Page, ToBatchChangeCreatePage}
 
 object BatchChangeListPage extends PropsFromAppRouter {
 
@@ -67,6 +67,7 @@ object BatchChangeListPage extends PropsFromAppRouter {
                     <.button(
                       ^.className := "btn btn-default test-create-batch",
                       ^.`type` := "button",
+                      P.router.setOnClick(ToBatchChangeCreatePage),
                       <.span(^.className := "fa fa-plus-square"),
                       "  Create Request"
                     ),
