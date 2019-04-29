@@ -34,7 +34,7 @@ This does not apply to zone administrators or users with specific ACL access rul
 1. Add a description.
 1. Add record changes in one of two ways:
  - Select the *Add a Change* button to add additional rows for data entry as needed.
- - Select the *Import CSV* button to choose a CSV file of the record changes, then select *Upload* to confirm your submission. Download a sample CSV [here](../static/batch-csv-sample.csv).
+ - Select the *Import CSV* button to choose a CSV file of the record changes, then select *Upload* to confirm your submission. Download a sample CSV [here](../static/batch-csv-sample.csv). **Note** The header row is required.
 1. Select the submit button. Confirm your submission.
  - If your submission was successful you'll redirect to the batch change summary page where you will see the status of the batch change request overall and of the individual records in the batch change.
  - If there are errors in the batch change you will remain on the form with prompts to correct errors before you attempt to submit again.

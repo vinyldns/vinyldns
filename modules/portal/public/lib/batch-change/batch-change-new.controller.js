@@ -125,7 +125,15 @@
                         var headers = ["changeType", "type", "inputName", "ttl", "record"];
                         var rowContent = rows[i].split(",");
                         for(var j = 0; j < rowContent.length; j++) {
-                            if (headers[j] == "ttl") {
+                            if (headers[j] == "changeType") {
+                                if (rowContent[j].trim().match(/add/i)) {
+                                   change[headers[j]] = "Add"
+                                } else if (rowContent[j].trim().match(/delete/i)) {
+                                    change[headers[j]] = "DeleteRecordSet"
+                                }
+                            } else if (headers[j] == "type") {
+                                change[headers[j]] = rowContent[j].trim().toUpperCase()
+                            } else if (headers[j] == "ttl") {
                                 change[headers[j]] = parseInt(rowContent[j].trim())
                             } else if (headers[j] == "record"){
                                 if (change["type"] == "A" || change["type"] == "AAAA" || change["type"] == "A+PTR" || change["type"] == "AAAA+PTR"){
