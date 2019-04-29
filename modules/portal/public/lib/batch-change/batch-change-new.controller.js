@@ -152,7 +152,10 @@
                       $timeout();
                     }
                     reader.readAsText(fileList.files[0]);
+                    $scope.csvForm.batchChangeCsv.$viewValue = undefined;
                     $scope.csvInput = null;
+                    $scope.csvForm.$setPristine();
+                    $scope.csvForm.$setUntouched;
                 }
             }
         });
