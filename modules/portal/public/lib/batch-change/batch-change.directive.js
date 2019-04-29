@@ -77,15 +77,17 @@
         return {
             require: 'ngModel',
             link: function(scope, elm, attrs, ctrl) {
+                var fileType;
                 ctrl.$validators.csv = function(modelValue, viewValue) {
                     elm.on('change', function(e){
-                        if (e.target.files[0]) {
+                        if (e.target.files.length > 0) {
+                            fileType = e.target.files[0].type;
                             ctrl.$setViewValue(e.target.files[0].name);
                         } else {
-                            ctrl.$setViewValue(elm.val());
+                            ctrl.$setViewValue();
                         }
                     })
-                    return CSV_REGEX.test(viewValue);
+                    return fileType == "text/csv" ? true : false
                 }
             }
         };
@@ -95,15 +97,12 @@
         return {
             require: 'ngModel',
             link: function(scope, elm, attrs, ctrl) {
+                var filled;
                 ctrl.$validators.filled = function(modelValue, viewValue) {
                     elm.on('change', function(e){
-                        if (e.target.files[0]) {
-                            ctrl.$setViewValue(e.target.files[0].name);
-                        } else {
-                            ctrl.$setViewValue(elm.val());
-                        }
+                        filled = e.target.files.length > 0 ? true : false;
                     })
-                    return viewValue ? true : false
+                    return filled
                 }
             }
         };
