@@ -577,14 +577,14 @@ class RecordSetServiceSpec
 
       result should be(right)
     }
-    "succeed for super user in shared zone" in {
+    "fail for super user if not zone admin" in {
       val result =
         underTest
           .deleteRecordSet(sharedZoneRecord.id, sharedZoneRecord.zoneId, superUserAuth)
           .value
           .unsafeRunSync()
 
-      result should be(right)
+      result should be(left)
     }
   }
 

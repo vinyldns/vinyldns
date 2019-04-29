@@ -40,7 +40,7 @@ object AccessValidations extends AccessValidationAlgebra {
       NotAuthorizedError(
         s"""User '${auth.signedInUser.userName}' cannot create or modify zone '$zoneName' because
            |they are not in the Zone Admin Group '$zoneAdminGroupId'""".stripMargin
-          .replace("\n", " ")))(auth.canEditAll || auth.isGroupMember(zoneAdminGroupId))
+          .replace("\n", " ")))(auth.isSuper || auth.isGroupMember(zoneAdminGroupId))
 
   def canAddRecordSet(
       auth: AuthPrincipal,
@@ -94,7 +94,7 @@ object AccessValidations extends AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordSets: List[RecordSetInfo],
       zone: Zone): List[RecordSetListInfo] =
-    if (auth.canEditAll || auth.isGroupMember(zone.adminGroupId))
+    if (auth.isSuper || auth.isGroupMember(zone.adminGroupId))
       recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))
     else {
       val rulesForUser = zone.acl.rules.filter(ruleAppliesToUser(auth, _))
@@ -185,12 +185,12 @@ object AccessValidations extends AccessValidationAlgebra {
       zone: Zone,
       recordOwnerGroupId: Option[String] = None): AccessLevel = auth match {
     case testUser if testUser.isTestUser && !zone.isTest => AccessLevel.NoAccess
-    case admin if admin.canEditAll || admin.isGroupMember(zone.adminGroupId) =>
+    case admin if admin.isGroupMember(zone.adminGroupId) =>
       AccessLevel.Delete
     case recordOwner
         if zone.shared && sharedRecordAccess(recordOwner, recordType, recordOwnerGroupId) =>
       AccessLevel.Delete
-    case supportUser if supportUser.canReadAll =>
+    case support if support.canReadAll =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
     case _ => getAccessFromAcl(auth, recordName, recordType, zone)

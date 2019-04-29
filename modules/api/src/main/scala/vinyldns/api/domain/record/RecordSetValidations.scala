@@ -247,7 +247,7 @@ object RecordSetValidations {
       case (Some(groupId), None) =>
         InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
       case (Some(groupId), Some(_)) =>
-        if (authPrincipal.canEditAll || authPrincipal.isGroupMember(groupId)) ().asRight
+        if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
 }

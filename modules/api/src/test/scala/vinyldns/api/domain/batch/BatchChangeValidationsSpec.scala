@@ -864,7 +864,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateChangesWithContext: should succeed for AddChangeForValidation if user is a superUser") {
+    "validateChangesWithContext: should fail for AddChangeForValidation if user is a superUser with no other access") {
     val addA = AddChangeForValidation(
       validZone,
       "valid",
@@ -875,7 +875,7 @@ class BatchChangeValidationsSpec
       AuthPrincipal(superUser, Seq.empty),
       None)
 
-    result(0) shouldBe valid
+    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
   }
 
   property(
@@ -1000,7 +1000,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateChangesWithContext: should succeed for DeleteChangeForValidation if user is a superUser") {
+    "validateChangesWithContext: should fail for DeleteChangeForValidation if user is a superUser with no other access") {
     val deleteA =
       DeleteChangeForValidation(validZone, "valid", DeleteChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
@@ -1009,7 +1009,8 @@ class BatchChangeValidationsSpec
       ExistingRecordSets(List(existingDeleteRecord)),
       AuthPrincipal(superUser, Seq.empty),
       None)
-    result(0) shouldBe valid
+
+    result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
   }
 
   property(
@@ -1485,16 +1486,6 @@ class BatchChangeValidationsSpec
       List(deleteSharedChange.validNel),
       ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
       sharedAuth,
-      None)
-
-    result(0) shouldBe valid
-  }
-
-  property("validateChangesWithContext: should delete record for super user in shared zone") {
-    val result = validateChangesWithContext(
-      List(deleteSharedChange.validNel),
-      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
-      superUserAuth,
       None)
 
     result(0) shouldBe valid
