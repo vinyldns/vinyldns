@@ -159,4 +159,45 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
         "Name Server test-foo-ns. is not an approved name server.")
     }
   }
+
+  "isStringInRegexList" should {
+    val regexList = List(
+      "three3{3}".r,
+      "foo(bar)?".r,
+      "fIzB?uz".r
+    )
+
+    "return true if string is in regex list" in {
+      isStringInRegexList(regexList, "three333") shouldBe true
+      isStringInRegexList(regexList, "foo") shouldBe true
+      isStringInRegexList(regexList, "fIzuz") shouldBe true
+    }
+
+    "return false if string is not in regex list" in {
+      isStringInRegexList(regexList, "three3") shouldBe false
+      isStringInRegexList(regexList, "foob") shouldBe false
+      isStringInRegexList(regexList, "fIzBBuz") shouldBe false
+    }
+
+    "return false if regex list is empty" in {
+      isStringInRegexList(List(), "bran") shouldBe false
+    }
+  }
+
+  "toCaseIgnoredRegexList" should {
+    val rawList = List(
+      "three3{3}",
+      "foo(bar)?",
+      "fIzB?uz"
+    )
+
+    "make regexes that ignore case" in {
+      val regexList = toCaseIgnoredRegexList(rawList)
+
+      isStringInRegexList(regexList, "fizbuz") shouldBe true
+      isStringInRegexList(regexList, "fizBuz") shouldBe true
+      isStringInRegexList(regexList, "fIzUz") shouldBe true
+      isStringInRegexList(regexList, "FIZBUZ") shouldBe true
+    }
+  }
 }

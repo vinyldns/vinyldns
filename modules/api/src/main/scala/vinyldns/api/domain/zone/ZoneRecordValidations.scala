@@ -27,6 +27,9 @@ import scala.util.matching.Regex
 
 object ZoneRecordValidations {
 
+  def toCaseIgnoredRegexList(rawList: List[String]): List[Regex] =
+    rawList.map(raw => s"""(?i)$raw""".r)
+
   /* Checks to see if an individual string is part of the regex list */
   def isStringInRegexList(regexList: List[Regex], string: String): Boolean =
     regexList.exists(rx => rx.findAllIn(string).contains(string))
