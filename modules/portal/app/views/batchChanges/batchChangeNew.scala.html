@@ -194,8 +194,10 @@
                             <div class="form-group">
                                 <button type="button" id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length >= batchChangeLimit"><span class="glyphicon glyphicon-plus"></span> Add a Change</button>
                                 <ng-form name="csvForm" isolate-form>
-                                    <label class="batch-change-csv-label btn btn-default" for="batchChangeCsv" id="batchChangeCsvImportLabel" ng-if="csvForm.batchChangeCsv.$pristine || csvForm.batchChangeCsv.$error.filled"><span class="glyphicon glyphicon-import"></span> Import CSV</label>
-                                    <label class="batch-change-csv-label btn btn-default" for="batchChangeCsv" id="batchChangeCsvChangeLabel" ng-if="csvForm.batchChangeCsv.$dirty && csvForm.batchChangeCsv.$$success.filled"><span class="glyphicon glyphicon-folder-open"></span> Change File</label>
+                                    <label class="batch-change-csv-label btn btn-default" for="batchChangeCsv" id="batchChangeCsvImportLabel">
+                                        <span ng-if="csvForm.batchChangeCsv.$pristine || csvForm.batchChangeCsv.$error.filled"><span class="glyphicon glyphicon-import"></span> Import CSV</span>
+                                        <span ng-if="csvForm.batchChangeCsv.$dirty && csvForm.batchChangeCsv.$$success.filled"><span class="glyphicon glyphicon-folder-open"></span> Change File</span>
+                                    </label>
                                     <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" filled csv>
                                     <button class="btn btn-success" ng-click="uploadCSV()" type="button" ng-if="csvForm.batchChangeCsv.$dirty && csvForm.batchChangeCsv.$valid" id="batchChangeCsvUpload"><span class="glyphicon glyphicon-upload"></span> Upload {{csvForm.batchChangeCsv.$viewValue}}</button>
                                     <p ng-show="csvForm.batchChangeCsv.$error.csv && csvForm.batchChangeCsv.$$success.filled" class="batch-change-error-help">{{csvForm.batchChangeCsv.$viewValue}} is not a CSV file.</p>
