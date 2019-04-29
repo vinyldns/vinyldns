@@ -398,7 +398,7 @@ class VinylDNSClient(object):
 
         return data
 
-    def get_backendids(self, **kwargs):
+    def get_backend_ids(self, **kwargs):
         """
         Gets list of configured backend ids
         :return: list of strings

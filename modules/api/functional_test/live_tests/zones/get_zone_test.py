@@ -130,10 +130,10 @@ def test_get_zone_by_name_returns_404_when_not_found(shared_zone_test_context):
     client.get_zone_by_name("zone_name_does_not_exist", status=404)
 
 
-def test_get_zone_backendids(shared_zone_test_context):
+def test_get_zone_backend_ids(shared_zone_test_context):
     """
     Test that you can get possible backend ids for zones
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    response = client.get_backendids(status = 200)
+    response = client.get_backend_ids(status = 200)
     assert_that(response, is_([u'func-test-backend']))
