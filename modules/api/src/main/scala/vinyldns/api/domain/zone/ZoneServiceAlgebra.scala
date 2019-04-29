@@ -58,4 +58,6 @@ trait ZoneServiceAlgebra {
       aclRuleInfo: ACLRuleInfo,
       authPrincipal: AuthPrincipal): Result[ZoneCommandResult]
 
+  def getBackendIds(): Result[List[String]]
+
 }

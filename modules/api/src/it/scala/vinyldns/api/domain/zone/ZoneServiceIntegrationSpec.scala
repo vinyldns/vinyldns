@@ -150,6 +150,13 @@ class ZoneServiceIntegrationSpec
     }
   }
 
+  "getBackendIds" should {
+    "return backend ids in config" in {
+      testZoneService.getBackendIds().value.unsafeRunSync() shouldBe Right(
+        List("func-test-backend"))
+    }
+  }
+
   private def waitForSuccess[T](f: => IO[T]): T = {
     val waiting = f.unsafeToFuture().recover { case _ => Thread.sleep(2000); waitForSuccess(f) }
     Await.result[T](waiting, 15.seconds)

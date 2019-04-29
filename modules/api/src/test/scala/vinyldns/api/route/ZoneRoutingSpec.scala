@@ -20,6 +20,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.effect.IO
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -337,6 +338,8 @@ class ZoneRoutingSpec
       }
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
+
+    def getBackendIds(): Result[List[String]] = IO(List("backend-1", "backend-2")).toResult
   }
 
   val zoneService: ZoneServiceAlgebra = TestZoneService
@@ -1049,6 +1052,15 @@ class ZoneRoutingSpec
         status shouldBe Conflict
       }
     }
+  }
 
+  "GET backendids" should {
+    "return a 200 OK with the backend ids" in {
+      Get("/zones/backendids") ~> zoneRoute(okAuth) ~> check {
+        status shouldBe OK
+        val result = responseAs[List[String]]
+        result shouldBe List("backend-1", "backend-2")
+      }
+    }
   }
 }

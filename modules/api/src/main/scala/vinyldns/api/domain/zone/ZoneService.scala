@@ -16,8 +16,9 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect.IO
 import cats.implicits._
-import vinyldns.api.Interfaces
+import vinyldns.api.{Interfaces, VinylDNSConfig}
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
@@ -210,6 +211,9 @@ class ZoneService(
       _ <- messageQueue.send(zoneChange).toResult[Unit]
     } yield zoneChange
   }
+
+  def getBackendIds(): Result[List[String]] =
+    IO(VinylDNSConfig.configuredDnsConnections.dnsBackends.map(_.id)).toResult
 
   def zoneDoesNotExist(zoneName: String): Result[Unit] =
     zoneRepository

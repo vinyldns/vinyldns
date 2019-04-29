@@ -398,6 +398,16 @@ class VinylDNSClient(object):
 
         return data
 
+    def get_backendids(self, **kwargs):
+        """
+        Gets list of configured backend ids
+        :return: list of strings
+        """
+        url = urljoin(self.index_url, u'/zones/backendids')
+        response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, **kwargs)
+
+        return data
+
     def list_zone_changes(self, zone_id, start_from=None, max_items=None, **kwargs):
         """
         Gets the zone changes for the given zone id
