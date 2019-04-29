@@ -1000,7 +1000,8 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateChangesWithContext: should fail for DeleteChangeForValidation if user is a superUser with no other access") {
+    """ validateChangesWithContext: should fail for DeleteChangeForValidation
+      | if user is superUser with no other access""".stripMargin) {
     val deleteA =
       DeleteChangeForValidation(validZone, "valid", DeleteChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
