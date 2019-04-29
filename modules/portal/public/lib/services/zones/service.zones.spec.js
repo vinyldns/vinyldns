@@ -55,6 +55,15 @@ describe('Service: zoneService', function () {
         this.$httpBackend.flush();
     });
 
+    it('http backend gets called properly when getting backend ids', function () {
+            this.$httpBackend.expectGET('/api/zones/backendids').respond('ids returned');
+            this.zonesService.getBackendIds()
+                .then(function(response) {
+                    expect(response.data).toBe('ids returned');
+                });
+            this.$httpBackend.flush();
+        });
+
     it('sendZone should completely remove connections if they have empty objects', function(done) {
 
         var zonePayload = {

@@ -26,6 +26,12 @@ angular.module('controller.manageZones', [])
             handleError(error, 'getMyGroup:get-groups-failure');
         });
 
+     zonesService.getBackendIds().then(function (results) {
+         if (results.data) {
+             $scope.backendIds = results.data;
+         }
+     });
+
     /**
      * Zone scope data initial setup
      */

@@ -32,6 +32,11 @@ angular.module('service.zones', [])
             return $http.get(url);
         };
 
+        this.getBackendIds = function() {
+            var url = "/api/zones/backendids";
+            return $http.get(url);
+        }
+
         this.sendZone = function (payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
             $log.info("service.zones: sending zone", sanitizedPayload);

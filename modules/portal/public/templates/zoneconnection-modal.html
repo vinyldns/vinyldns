@@ -45,10 +45,16 @@
                 <hr>
             </div>
             <modal-element label="Backend Id">
-                <input id="zone-backendId" type="text" ng-model="currentZone.backendId" name="backendIdVal" class="form-control"/>
+                <select id="zone-backendId" name="backendIdVal" class="form-control" ng-model="currentZone.backendId">
+                    <option value=""></option>
+                    <option ng-repeat="id in backendIds" value="{{id}}">
+                        {{id}}
+                    </option>
+                </select>
                 <span class="help-block">
-                    The ID for a pre-configured DNS connection configuration. Please contact your DNS admin team
-                    if a configuration exists.
+                    The Id for a pre-configured DNS connection configuration. Please contact your DNS admin team
+                    for more information if you believe you need a custom connection. In most cases, the default
+                    connection will suffice.
                 </span>
             </modal-element>
 

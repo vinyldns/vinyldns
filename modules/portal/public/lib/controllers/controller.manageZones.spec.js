@@ -40,6 +40,11 @@ describe('Controller: ManageZonesController', function () {
                 }
             });
         };
+        zonesService.getBackendIds = function() {
+                    return $q.when({
+                        data: ['backend-1', 'backend-2']
+                    });
+                };
         this.scope.addAclRuleForm = {
             $setPristine: function(){}
         };

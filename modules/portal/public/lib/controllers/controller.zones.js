@@ -55,6 +55,12 @@ angular.module('controller.zones', [])
         $scope.resetCurrentZone();
     });
 
+    zonesService.getBackendIds().then(function (results) {
+        if (results.data) {
+            $scope.backendIds = results.data;
+        }
+    });
+
     $scope.isGroupMember = function(groupId) {
         var groupMember = $scope.myGroups.find(function(group) {
             return groupId === group.id;

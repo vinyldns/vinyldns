@@ -2714,6 +2714,62 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
       }
     }
+
+    "getBackendIds" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/backendids") =>
+            defaultActionBuilder {
+              Results.Ok(Json.parse("['backend-1', 'backend-2']"))
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.getBackendIds()(FakeRequest(GET, "/zones/backendids"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendGET(p"/zones/backendids") =>
+            defaultActionBuilder {
+              Results.Ok(Json.parse("['backend-1', 'backend-2']"))
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockLockedUserAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.getBackendIds()(
+              FakeRequest(GET, "/zones/backendids")
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
+          }
+        }
+      }
+    }
   }
 
   def buildmockUserAccessor: UserAccountAccessor = {

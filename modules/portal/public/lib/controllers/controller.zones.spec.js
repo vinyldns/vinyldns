@@ -52,6 +52,11 @@ describe('Controller: ZonesController', function () {
                 }
             });
         };
+        zonesService.getBackendIds = function() {
+            return $q.when({
+                data: ['backend-1', 'backend-2']
+            });
+        };
 
         this.controller = $controller('ZonesController', {'$scope': this.scope});
     }));
