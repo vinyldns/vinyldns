@@ -1951,6 +1951,21 @@ def test_update_high_value_domain_fails(shared_zone_test_context):
     assert_that(errors_system, is_('Record name "high-value-domain.system-test." is configured as a High Value Domain, so it cannot be modified.'))
 
 
+def test_update_high_value_domain_fails_case_insensitive(shared_zone_test_context):
+    """
+    Test that updating a high value domain fails regardless of case
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone_system = shared_zone_test_context.system_test_zone
+    list_results_page_system = client.list_recordsets(zone_system['id'],  status=200)['recordSets']
+    record_system = [item for item in list_results_page_system if item['name'] == 'high-value-domain-UPPER-CASE'][0]
+    record_system['ttl'] = record_system['ttl'] + 100
+
+    errors_system = client.update_recordset(record_system, status=422)
+    assert_that(errors_system, is_('Record name "high-value-domain-UPPER-CASE.system-test." is configured as a High Value Domain, so it cannot be modified.'))
+
+
 def test_update_high_value_domain_fails_ip4_ptr(shared_zone_test_context):
     """
     Test that updating a high value domain fails for ip4 ptr

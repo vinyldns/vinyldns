@@ -188,7 +188,8 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
     val rawList = List(
       "three3{3}",
       "foo(bar)?",
-      "fIzB?uz"
+      "fIzB?uz",
+      ".*high-value.*"
     )
 
     "make regexes that ignore case" in {
@@ -198,6 +199,8 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
       isStringInRegexList(regexList, "fizBuz") shouldBe true
       isStringInRegexList(regexList, "fIzUz") shouldBe true
       isStringInRegexList(regexList, "FIZBUZ") shouldBe true
+      isStringInRegexList(regexList, "foo.HIGH-VALUE.test.com") shouldBe true
+      isStringInRegexList(regexList, "foo.HIGH-VALUE.test.com") shouldBe true
     }
   }
 }
