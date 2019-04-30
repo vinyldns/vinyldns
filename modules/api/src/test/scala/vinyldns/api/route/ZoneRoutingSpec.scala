@@ -339,7 +339,7 @@ class ZoneRoutingSpec
       outcome.map(c => c.asInstanceOf[ZoneCommandResult]).toResult
     }
 
-    def getBackendIds(): Result[List[String]] = IO(List("backend-1", "backend-2")).toResult
+    def getBackendIds(): Result[List[String]] = List("backend-1", "backend-2").toResult
   }
 
   val zoneService: ZoneServiceAlgebra = TestZoneService

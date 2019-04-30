@@ -109,7 +109,7 @@ angular.module('controller.zones', [])
 
         //flag to prevent multiple clicks until previous promise has resolved.
         $scope.processing = true;
-        zone = zonesService.checkBackendId(zone);
+        $scope.currentZone = zonesService.checkBackendId($scope.currentZone);
 
         zonesService.sendZone($scope.currentZone)
             .then(function () {
