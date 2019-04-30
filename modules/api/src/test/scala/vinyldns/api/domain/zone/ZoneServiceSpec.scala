@@ -116,6 +116,27 @@ class ZoneServiceSpec
       resultZone.shared shouldBe false
     }
 
+    "make zone isTest flag false if the user isTest flag is false" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val nonTestUser = okAuth.copy(signedInUser = okAuth.signedInUser.copy(isTest = false))
+      val resultChange: ZoneChange = rightResultOf(
+        underTest.connectToZone(createZoneAuthorized, nonTestUser).map(_.asInstanceOf[ZoneChange]).value)
+
+      resultChange.zone.isTest shouldBe false
+    }
+
+    "make zone isTest flag true if the user isTest flag is true" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      okAuth.signedInUser.isTest shouldBe true
+
+      val resultChange: ZoneChange = rightResultOf(
+        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
+
+      resultChange.zone.isTest shouldBe true
+    }
+
     "return a ZoneAlreadyExists error if the zone exists" in {
       doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
 
