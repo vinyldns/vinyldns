@@ -87,7 +87,6 @@ object Zone {
       shared = shared,
       acl = acl,
       adminGroupId = adminGroupId,
-      isTest = isTest,
       backendId = backendId
     )
   }
@@ -115,7 +114,6 @@ final case class CreateZoneInput(
     shared: Boolean = false,
     acl: ZoneACL = ZoneACL(),
     adminGroupId: String,
-    isTest: Boolean = false,
     backendId: Option[String] = None)
 
 final case class UpdateZoneInput(
