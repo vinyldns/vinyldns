@@ -35,7 +35,7 @@ shared        | boolean     | An indicator that the zone is shared with anyone. 
 acl           | ZoneACL     | The access control rules governing the zone.  See the [Zone ACL Rule Attributes](#zone-acl-rule-attr) for more information
 id            | string      | The unique identifier for this zone
 latestSync    | date-time   | The last date and time the zone was synced
-isTest        | boolean     | Defaults to **false**. See [isTest](#is-test) 
+isTest        | boolean     | Defaults to **false**. Used for restricted access during VinylDNS testing, can be ignored by clients
 
 #### ZONE EXAMPLE <a id="zone-example"></a>
 
@@ -250,9 +250,3 @@ Will give Read permissions to PTR Record Sets 1000:1000:1000:1000:0000:0000:0000
 ### SHARED ZONES <a id="shared-zones"></a>
 
 Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in those zones. Once a record is owned, only users in the record owner group, the zone administrators and those with relevant ACL rules can modify or delete the record. The [batch change API endpoint](../api/create-batchchange) and [batch change area of the portal](../portal/batch-changes) are where users can create new records in shared zones, modify records they own, or claim unowned records. If a zone's shared state changes to false the record ownership access is no longer applicable.
-
-### isTest <a id="is-test"></a>
-
-Zones have a boolean attribute `isTest` that is used so [Test Users](../api/membership-model.md#test-users) can
-update the Zone and its DNS records. `isTest` only impacts test users and access for normal users, groups, acl rules, etc
-is unchanged. This attribute can only be set on Zone create.

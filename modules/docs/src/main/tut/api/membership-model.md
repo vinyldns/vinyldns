@@ -74,7 +74,7 @@ lastName      | string      | Last name of the user |
 email         | string      | Email address of the user |
 created       | date-time   | The timestamp GMT when the user was created |
 id            | string      | Unique UUID of the user |
-isTest        | boolean     | Defaults to **false**. See [Test Users](#test-users) |
+isTest        | boolean     | Defaults to **false**. Used for restricted access during VinylDNS testing, can be ignored by clients |
 
 To get your access and secret keys, log into the VinylDNS portal and then with the top right drop-down select **Download Credentials**
 
@@ -90,9 +90,3 @@ To get your access and secret keys, log into the VinylDNS portal and then with t
   "isTest": false
 }
 ```
-
-### TEST USERS <a id="test-users"></a>
-
-The `isTest` attribute restricts a user's access to Zones. The [Zone Model](../api/zone-model.md) also has its
-own `isTest` attribute that can be set on Zone create. If a user has `isTest` set to `true`,
-then they can **only** manage Zones that also have `isTest` set to `true`.
