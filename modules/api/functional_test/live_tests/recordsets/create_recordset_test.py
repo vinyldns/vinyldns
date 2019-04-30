@@ -1801,6 +1801,29 @@ def test_create_high_value_domain_fails(shared_zone_test_context):
     assert_that(error, is_('Record name "high-value-domain.ok." is configured as a High Value Domain, so it cannot be modified.'))
 
 
+def test_create_high_value_domain_fails_case_insensitive(shared_zone_test_context):
+    """
+    Test that the High Value Domain validation works regardless of case
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+    new_rs = {
+        'zoneId': zone['id'],
+        'name': 'hIgH-vAlUe-dOmAiN',
+        'type': 'A',
+        'ttl': 100,
+        'records': [
+            {
+                'address': '1.1.1.1'
+            }
+        ]
+    }
+
+    error = client.create_recordset(new_rs, status=422)
+    assert_that(error, is_('Record name "hIgH-vAlUe-dOmAiN.ok." is configured as a High Value Domain, so it cannot be modified.'))
+
+
 def test_create_high_value_domain_fails_for_ip4_ptr(shared_zone_test_context):
     """
     Test that creating a record configured as a High Value Domain fails for ip4 ptr record

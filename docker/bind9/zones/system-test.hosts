@@ -13,3 +13,4 @@ test                IN  A   4.4.4.4
 @                   IN  A   5.5.5.5
 already-exists      IN  A   6.6.6.6
 high-value-domain   IN  A   1.1.1.1
+high-VALUE-domain-UPPER-CASE   IN  A   1.1.1.1

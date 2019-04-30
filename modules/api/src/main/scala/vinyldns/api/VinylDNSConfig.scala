@@ -25,6 +25,7 @@ import vinyldns.api.crypto.Crypto
 import com.comcast.ip4s._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
+import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record.RecordType
 
 import scala.collection.JavaConverters._
@@ -58,10 +59,11 @@ object VinylDNSConfig {
   lazy val cryptoConfig: Config = vinyldnsConfig.getConfig("crypto")
   lazy val system: ActorSystem = ActorSystem("VinylDNS", VinylDNSConfig.config)
   lazy val approvedNameServers: List[Regex] =
-    vinyldnsConfig.getStringList("approved-name-servers").asScala.toList.map(n => n.r)
+    ZoneRecordValidations.toCaseIgnoredRegexList(getOptionalStringList("approved-name-servers"))
 
   lazy val highValueRegexList: List[Regex] =
-    getOptionalStringList("high-value-domains.regex-list").map(n => n.r)
+    ZoneRecordValidations.toCaseIgnoredRegexList(
+      getOptionalStringList("high-value-domains.regex-list"))
 
   lazy val highValueIpList: List[IpAddress] =
     getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
