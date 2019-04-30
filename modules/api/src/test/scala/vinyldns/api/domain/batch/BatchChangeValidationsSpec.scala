@@ -999,8 +999,7 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
   }
 
-  property(
-    """ validateChangesWithContext: should fail for DeleteChangeForValidation
+  property(""" validateChangesWithContext: should fail for DeleteChangeForValidation
       | if user is superUser with no other access""".stripMargin) {
     val deleteA =
       DeleteChangeForValidation(validZone, "valid", DeleteChangeInput("valid.ok.", RecordType.A))
