@@ -117,10 +117,10 @@
                 if (fileList.files.length > 0 && fileList.files[0].type == "text/csv"){
                     $scope.newBatch.changes = [];
                     var reader = new FileReader();
-
                     reader.onload = function(e) {
                       var rows = e.target.result.split("\n");
                       for(var i = 1; i < rows.length; i++) {
+                        if (rows[i].length < 10) { continue; }
                         var change = {};
                         var headers = ["changeType", "type", "inputName", "ttl", "record"];
                         var rowContent = rows[i].split(",");
