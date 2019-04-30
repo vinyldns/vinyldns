@@ -76,7 +76,7 @@ final case class Zone(
 }
 
 object Zone {
-  def apply(createZoneInput: CreateZoneInput): Zone = {
+  def apply(createZoneInput: CreateZoneInput, isTest: Boolean): Zone = {
     import createZoneInput._
 
     Zone(
@@ -87,7 +87,8 @@ object Zone {
       shared = shared,
       acl = acl,
       adminGroupId = adminGroupId,
-      backendId = backendId
+      backendId = backendId,
+      isTest = isTest
     )
   }
 

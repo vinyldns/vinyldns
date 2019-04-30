@@ -33,8 +33,7 @@ object ZoneChangeGenerator {
       status: ZoneChangeStatus = Pending): ZoneChange =
     ZoneChange(
       zone
-        .copy(id = UUID.randomUUID().toString, created = DateTime.now, status = ZoneStatus.Syncing,
-          isTest = authPrincipal.signedInUser.isTest),
+        .copy(id = UUID.randomUUID().toString, created = DateTime.now, status = ZoneStatus.Syncing),
       authPrincipal.userId,
       ZoneChangeType.Create,
       status
