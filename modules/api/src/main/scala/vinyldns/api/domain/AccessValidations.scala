@@ -38,7 +38,7 @@ object AccessValidations extends AccessValidationAlgebra {
       zoneAdminGroupId: String): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(
-        s"""User '${auth.signedInUser.userName}' cannot modify zone '$zoneName' because
+        s"""User '${auth.signedInUser.userName}' cannot create or modify zone '$zoneName' because
            |they are not in the Zone Admin Group '$zoneAdminGroupId'""".stripMargin
           .replace("\n", " ")))(auth.canEditAll || auth.isGroupMember(zoneAdminGroupId))
 
