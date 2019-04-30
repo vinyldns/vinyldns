@@ -289,7 +289,7 @@ class ZoneServiceSpec
 
     "succeed if zone shared flag is updated and user is a super user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
@@ -302,7 +302,7 @@ class ZoneServiceSpec
 
     "succeed if zone shared flag is updated and user is both a zone admin and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
@@ -316,7 +316,7 @@ class ZoneServiceSpec
     "return a NotAuthorizedError if zone shared flag is updated and user is not a super or zone admin " +
       "and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
@@ -326,7 +326,7 @@ class ZoneServiceSpec
 
     "succeed if zone shared flag is unchanged and user is not a super or zone admin and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = true, adminGroupId = okGroup.id)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
