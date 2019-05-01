@@ -70,7 +70,7 @@ class ZoneService(
       _ <- zoneDoesNotExist(createZoneInput.name)
       _ <- adminGroupExists(createZoneInput.adminGroupId)
       _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
-      zoneToCreate = Zone(createZoneInput)
+      zoneToCreate = Zone(createZoneInput, auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]

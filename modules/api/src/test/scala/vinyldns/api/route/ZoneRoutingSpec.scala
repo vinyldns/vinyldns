@@ -134,11 +134,11 @@ class ZoneRoutingSpec
           Right(
             zoneCreate.copy(
               status = ZoneChangeStatus.Complete,
-              zone = Zone(createZoneInput).copy(status = ZoneStatus.Active)))
+              zone = Zone(createZoneInput, false).copy(status = ZoneStatus.Active)))
         case error.email => Left(new RuntimeException("fail"))
-        case connectionFailed.email => Left(ConnectionFailed(Zone(createZoneInput), "fail"))
+        case connectionFailed.email => Left(ConnectionFailed(Zone(createZoneInput, false), "fail"))
         case zoneValidationFailed.email =>
-          Left(ZoneValidationFailed(Zone(createZoneInput), List("fail"), "failure message"))
+          Left(ZoneValidationFailed(Zone(createZoneInput, false), List("fail"), "failure message"))
         case nonSuperUserSharedZone.email =>
           Left(NotAuthorizedError("unauth"))
       }

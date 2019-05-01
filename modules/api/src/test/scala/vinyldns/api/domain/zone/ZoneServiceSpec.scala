@@ -116,6 +116,33 @@ class ZoneServiceSpec
       resultZone.shared shouldBe false
     }
 
+    "make zone isTest flag false if the user isTest flag is false" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val nonTestUser = okAuth.copy(signedInUser = okAuth.signedInUser.copy(isTest = false))
+      val resultChange: ZoneChange = rightResultOf(
+        underTest
+          .connectToZone(createZoneAuthorized, nonTestUser)
+          .map(_.asInstanceOf[ZoneChange])
+          .value)
+
+      resultChange.zone.isTest shouldBe false
+    }
+
+    "make zone isTest flag true if the user isTest flag is true" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val testUser = okAuth.copy(signedInUser = okAuth.signedInUser.copy(isTest = true))
+      testUser.isTestUser shouldBe true
+      val resultChange: ZoneChange = rightResultOf(
+        underTest
+          .connectToZone(createZoneAuthorized, testUser)
+          .map(_.asInstanceOf[ZoneChange])
+          .value)
+
+      resultChange.zone.isTest shouldBe true
+    }
+
     "return a ZoneAlreadyExists error if the zone exists" in {
       doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
 
@@ -268,7 +295,7 @@ class ZoneServiceSpec
 
     "succeed if zone shared flag is updated and user is a super user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
@@ -281,7 +308,7 @@ class ZoneServiceSpec
 
     "succeed if zone shared flag is updated and user is both a zone admin and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
@@ -295,7 +322,7 @@ class ZoneServiceSpec
     "return a NotAuthorizedError if zone shared flag is updated and user is not a super or zone admin " +
       "and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = false)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
@@ -305,7 +332,7 @@ class ZoneServiceSpec
 
     "succeed if zone shared flag is unchanged and user is not a super or zone admin and support user" in {
       val newZone = updateZoneAuthorized.copy(shared = true, adminGroupId = okGroup.id)
-      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true)))))
+      doReturn(IO.pure(Some(Zone(createZoneAuthorized.copy(shared = true), false))))
         .when(mockZoneRepo)
         .getZone(newZone.id)
 
