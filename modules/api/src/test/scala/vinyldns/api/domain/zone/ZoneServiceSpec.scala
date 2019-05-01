@@ -121,7 +121,10 @@ class ZoneServiceSpec
 
       val nonTestUser = okAuth.copy(signedInUser = okAuth.signedInUser.copy(isTest = false))
       val resultChange: ZoneChange = rightResultOf(
-        underTest.connectToZone(createZoneAuthorized, nonTestUser).map(_.asInstanceOf[ZoneChange]).value)
+        underTest
+          .connectToZone(createZoneAuthorized, nonTestUser)
+          .map(_.asInstanceOf[ZoneChange])
+          .value)
 
       resultChange.zone.isTest shouldBe false
     }
@@ -129,10 +132,13 @@ class ZoneServiceSpec
     "make zone isTest flag true if the user isTest flag is true" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
-      okAuth.signedInUser.isTest shouldBe true
-
+      val testUser = okAuth.copy(signedInUser = okAuth.signedInUser.copy(isTest = true))
+      testUser.isTestUser shouldBe true
       val resultChange: ZoneChange = rightResultOf(
-        underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value)
+        underTest
+          .connectToZone(createZoneAuthorized, testUser)
+          .map(_.asInstanceOf[ZoneChange])
+          .value)
 
       resultChange.zone.isTest shouldBe true
     }
