@@ -35,9 +35,11 @@ package vinyldns.client
 import java.util.UUID
 
 import japgolly.scalajs.react.Callback
+import vinyldns.client.models.batch.BatchChangeSummary
 import vinyldns.client.models.membership.{Group, Id, User}
 import vinyldns.client.models.record.{RecordData, RecordSet, RecordSetChange}
 import vinyldns.client.models.zone.{ACLRule, Rules, Zone}
+import vinyldns.core.domain.batch.BatchChangeStatus
 import vinyldns.core.domain.record.{RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{AccessLevel, ZoneStatus}
 
@@ -143,6 +145,21 @@ trait SharedTestData {
         RecordSetChangeStatus.Complete
       )
   }
+
+  def generateBatchChangeSummaries(numChanges: Int): Seq[BatchChangeSummary] =
+    for {
+      i <- 0 until numChanges
+    } yield
+      BatchChangeSummary(
+        testUser.id,
+        testUser.userName,
+        s"created-$i",
+        i,
+        BatchChangeStatus.Complete,
+        UUID.randomUUID().toString,
+        Some("comments"),
+        None
+      )
 
   // a lot of times components use anonymous functions like refreshGroups, setNotification, etc
   def generateNoOpHandler[T]: T => Callback = _ => Callback.empty

@@ -96,7 +96,24 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
                         S.createInfo.changes.zipWithIndex.map {
                           case (change, index) =>
                             singleChangeRow(change, index)
-                        }.toTagMod
+                        }.toTagMod,
+                        <.tr(
+                          <.td,
+                          <.td,
+                          <.td,
+                          <.td,
+                          <.td,
+                          <.td,
+                          <.td,
+                          <.td(
+                            <.button(
+                              ^.className := "btn btn-info",
+                              ^.`type` := "button",
+                              ^.onClick --> addRow(),
+                              "Add Row"
+                            )
+                          )
+                        )
                       )
                     )
                   ),
@@ -146,6 +163,13 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
           <.th
         )
       )
+
+    def addRow(): Callback =
+      bs.modState { s =>
+        val withNewRow = s.createInfo.changes ::: List(SingleChangeCreateInfo())
+        val createInfoWithNewRow = s.createInfo.copy(changes = withNewRow)
+        s.copy(createInfo = createInfoWithNewRow)
+      }
 
     def singleChangeRow(change: SingleChangeCreateInfo, index: Int): TagMod =
       <.tr(
@@ -203,7 +227,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
               ^.onChange ==> { e: ReactEventFromInput =>
                 changeSingleInputTTL(e.target.value, change, index)
               },
-              ^.value := change.ttl
+              ^.value := Try(change.ttl.get.toString).getOrElse("")
             )
           else TagMod.empty
         ),
@@ -257,7 +281,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         change: SingleChangeCreateInfo,
         index: Int): Callback =
       bs.modState { s =>
-        val newSingleChange = change.copy(`type` = value, record = RecordData())
+        val newSingleChange = change.copy(`type` = value, record = Some(RecordData()))
         val newSingleChanges = s.createInfo.changes.patch(index, List(newSingleChange), 1)
         val newCreateInfo = s.createInfo.copy(changes = newSingleChanges)
         s.copy(createInfo = newCreateInfo)
@@ -273,7 +297,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
 
     def changeSingleInputTTL(value: String, change: SingleChangeCreateInfo, index: Int): Callback =
       bs.modState { s =>
-        val newSingleChange = change.copy(ttl = Try(value.toInt).getOrElse(0))
+        val newSingleChange = change.copy(ttl = Some(Try(value.toInt).getOrElse(0)))
         val newSingleChanges = s.createInfo.changes.patch(index, List(newSingleChange), 1)
         val newCreateInfo = s.createInfo.copy(changes = newSingleChanges)
         s.copy(createInfo = newCreateInfo)
@@ -293,8 +317,9 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
             case cname if cname == "CNAME" => RecordData(cname = Some(value))
             case ptrdname if ptrdname == "PTR" => RecordData(ptrdname = Some(value))
             case text if text == "TXT" => RecordData(text = Some(value))
+            case _ => RecordData()
           }
-        val newSingleChange = change.copy(record = recordData)
+        val newSingleChange = change.copy(record = Some(recordData))
         val newSingleChanges = s.createInfo.changes.patch(index, List(newSingleChange), 1)
         val newCreateInfo = s.createInfo.copy(changes = newSingleChanges)
         s.copy(createInfo = newCreateInfo)
@@ -302,8 +327,12 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
 
     def changeMxPreference(value: String, change: SingleChangeCreateInfo, index: Int): Callback =
       bs.modState { s =>
-        val recordData = change.record.copy(preference = Some(Try(value.toInt).getOrElse(0)))
-        val newSingleChange = change.copy(record = recordData)
+        val preference = Some(Try(value.toInt).getOrElse(0))
+        val recordData = change.record match {
+          case Some(r) => r.copy(preference = preference)
+          case None => RecordData(preference = preference)
+        }
+        val newSingleChange = change.copy(record = Some(recordData))
         val newSingleChanges = s.createInfo.changes.patch(index, List(newSingleChange), 1)
         val newCreateInfo = s.createInfo.copy(changes = newSingleChanges)
         s.copy(createInfo = newCreateInfo)
@@ -311,8 +340,12 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
 
     def changeMxExchange(value: String, change: SingleChangeCreateInfo, index: Int): Callback =
       bs.modState { s =>
-        val recordData = change.record.copy(exchange = Some(value))
-        val newSingleChange = change.copy(record = recordData)
+        val exchange = Some(value)
+        val recordData = change.record match {
+          case Some(r) => r.copy(exchange = exchange)
+          case None => RecordData(exchange = exchange)
+        }
+        val newSingleChange = change.copy(record = Some(recordData))
         val newSingleChanges = s.createInfo.changes.patch(index, List(newSingleChange), 1)
         val newCreateInfo = s.createInfo.copy(changes = newSingleChanges)
         s.copy(createInfo = newCreateInfo)
@@ -327,17 +360,27 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         s.copy(createInfo = s.createInfo.copy(comments = comments))
       }
 
-    def toRecordDataDisplay(change: SingleChangeCreateInfo): String =
+    def toRecordDataDisplay(change: SingleChangeCreateInfo): String = {
+      val recordData = change.record match {
+        case Some(r) => r
+        case None => RecordData()
+      }
       change.`type` match {
         case address
             if address == "A" || address == "A+PTR" || address == "AAAA" || address == "AAAA+PTR" =>
-          change.record.addressToString
-        case cname if cname == "CNAME" => change.record.cnameToString
-        case ptrdname if ptrdname == "PTR" => change.record.ptrdnameToString
-        case text if text == "TXT" => change.record.textToString
+          recordData.addressToString
+        case cname if cname == "CNAME" => recordData.cnameToString
+        case ptrdname if ptrdname == "PTR" => recordData.ptrdnameToString
+        case text if text == "TXT" => recordData.textToString
+      }
+    }
+
+    def toMxInput(change: SingleChangeCreateInfo, index: Int): TagMod = {
+      val recordData = change.record match {
+        case Some(r) => r
+        case None => RecordData()
       }
 
-    def toMxInput(change: SingleChangeCreateInfo, index: Int): TagMod =
       <.div(
         <.label(
           ^.className := "batch-label",
@@ -350,7 +393,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
           ^.onChange ==> { e: ReactEventFromInput =>
             changeMxPreference(e.target.value, change, index)
           },
-          ^.value := change.record.preferenceToString
+          ^.value := recordData.preferenceToString
         ),
         <.br,
         <.label(
@@ -363,9 +406,10 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
           ^.onChange ==> { e: ReactEventFromInput =>
             changeMxExchange(e.target.value, change, index)
           },
-          ^.value := change.record.exchangeToString
-        ),
+          ^.value := recordData.exchangeToString
+        )
       )
+    }
 
     def toErrorClass(change: SingleChangeCreateInfo): String =
       change.errors match {

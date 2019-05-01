@@ -590,14 +590,13 @@ class VinylDNS @Inject()(
     // $COVERAGE-OFF$
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
-      (name, values) <- request.queryString
-    } queryParameters.put(name, values.asJava)
+      (startFrom, maxItems) <- request.queryString
+    } queryParameters.put(startFrom, maxItems.asJava)
     val vinyldnsRequest = new VinylDNSRequest(
       "GET",
       s"$vinyldnsServiceBackend",
       "zones/batchrecordchanges",
       parameters = queryParameters)
-    Logger.error(vinyldnsRequest.toString)
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Logger.info(response.body)
       Status(response.status)(response.body)

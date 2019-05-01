@@ -27,6 +27,7 @@ import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.Pagination
 import vinyldns.client.models.batch.{BatchChangeList, BatchChangeSummary}
 import vinyldns.client.router.Page
+import vinyldns.core.domain.batch.BatchChangeStatus
 
 import scala.util.Try
 
@@ -134,7 +135,7 @@ object BatchChangesTable {
         <.td(change.createdTimestamp),
         <.td(change.id),
         <.td(change.totalChanges),
-        <.td(change.status.toString),
+        <.td(toStatus(change.status)),
         <.td(s"${change.comments.getOrElse("")}"),
         <.td("actions")
       )
@@ -173,5 +174,18 @@ object BatchChangesTable {
           listBatchChanges(P, s, s.pagination.popped)
         }
       )
+
+    def toStatus(status: BatchChangeStatus.BatchChangeStatus): TagMod =
+      status match {
+        case BatchChangeStatus.Complete =>
+          <.span(^.className := "label label-success", ^.name := status.toString, "Complete")
+        case BatchChangeStatus.Pending =>
+          <.span(^.className := "label label-warning", ^.name := status.toString, "Pending")
+        case BatchChangeStatus.Failed =>
+          <.span(^.className := "label label-danger", ^.name := status.toString, "Failure")
+        case BatchChangeStatus.PartialFailure =>
+          <.span(^.className := "label label-danger", ^.name := status.toString, "Partial Failure")
+        case _ => <.span(status.toString)
+      }
   }
 }
