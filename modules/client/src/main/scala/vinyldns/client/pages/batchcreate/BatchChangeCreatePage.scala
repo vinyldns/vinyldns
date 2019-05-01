@@ -21,24 +21,27 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
-import vinyldns.client.http.{CreateBatchChangeRoute, Http, HttpResponse}
+import vinyldns.client.http.{CreateBatchChangeRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.batch.{BatchChangeCreateInfo, SingleChangeCreateInfo}
 import vinyldns.client.models.record.RecordData
 import vinyldns.client.router.AppRouter.PropsFromAppRouter
 import vinyldns.client.components.AlertBox.addNotification
 import upickle.default._
+import vinyldns.client.models.membership.{Group, GroupList}
 import vinyldns.client.router.Page
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 object BatchChangeCreatePage extends PropsFromAppRouter {
-  case class State(createInfo: BatchChangeCreateInfo)
+  case class State(createInfo: BatchChangeCreateInfo, groupList: Option[GroupList] = None)
 
   val component = ScalaComponent
     .builder[Props]("BatchCreatePage")
     .initialState(State(BatchChangeCreateInfo()))
     .renderBackend[Backend]
+    .componentWillMount(e => e.backend.listGroups(e.props))
     .build
 
   def apply(page: Page, routerCtl: RouterCtl[Page], http: Http): Unmounted[Props, State, Backend] =
@@ -46,97 +49,172 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
 
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
-      <.div(
-        GlobalStyle.Styles.height100,
-        ^.className := "right_col",
-        ^.role := "main",
-        <.div(
-          ^.className := "page-title",
+      S.groupList match {
+        case Some(gl) =>
           <.div(
-            ^.className := "title_left",
-            <.h3(<.span(^.className := "fa fa-list"), "  Create a DNS Record Request"))),
-        <.div(^.className := "clearfix"),
-        <.div(
-          ^.className := "page-content-wrap",
-          <.div(
-            ^.className := "row",
+            GlobalStyle.Styles.height100,
+            ^.className := "right_col",
+            ^.role := "main",
             <.div(
-              ^.className := "col-md-12 col-sm-12 col-xs-12",
-              <.form(
-                ^.onSubmit ==> { e: ReactEventFromInput =>
-                  e.preventDefaultCB >>
-                    submitBatchChange(P, S)
-                },
+              ^.className := "page-title",
+              <.div(
+                ^.className := "title_left",
+                <.h3(
+                  <.span(^.className := "fa fa-list"),
+                  "  Create a DNS Record Request (Batch Change)"))),
+            <.div(^.className := "clearfix"),
+            <.div(
+              ^.className := "page-content-wrap",
+              <.div(
+                ^.className := "row",
                 <.div(
-                  ^.className := "panel panel-default",
-                  <.div(
-                    ^.className := "panel-heading",
+                  ^.className := "col-md-12 col-sm-12 col-xs-12",
+                  <.form(
+                    ^.className := "test-create-form",
+                    ^.onSubmit ==> { e: ReactEventFromInput =>
+                      e.preventDefaultCB >>
+                        submitBatchChange(P, S)
+                    },
                     <.div(
-                      ^.className := "form-group",
-                      <.label(
-                        ^.className := "h5",
-                        "Description"
+                      ^.className := "panel panel-default",
+                      <.div(
+                        ^.className := "panel-heading",
+                        <.div(
+                          <.div(
+                            ^.className := "form-group col-md-12",
+                            <.label(
+                              ^.className := "h5",
+                              "Description"
+                            ),
+                            <.input(
+                              ^.className := "form-control test-comments",
+                              ^.onChange ==> { e: ReactEventFromInput =>
+                                changeComments(e.target.value)
+                              },
+                              ^.value := s"${S.createInfo.comments.getOrElse("")}"
+                            )
+                          ),
+                          ownerGroupField(S, gl.groups),
+                          <.div(
+                            ^.className := "form-group col-md-12",
+                            <.p(
+                              """
+                                |Zones loaded into VinylDNS are either set to Shared or Private (default).
+                                |In Private Zones, Owner Group is ignored and does not have an impact.
+                                |In Shared Zones, all records will be created with an Owner Group, and further updates
+                                |to those records must be made by someone in that Owner Group, or a Zone Admin.
+                              """.stripMargin.replaceAll("\n", " ")
+                            )
+                          )
+                        ),
+                        <.div(^.className := "clearfix")
                       ),
-                      <.input(
-                        ^.className := "form-control",
-                        ^.onChange ==> { e: ReactEventFromInput =>
-                          changeComments(e.target.value)
-                        },
-                        ^.value := s"${S.createInfo.comments.getOrElse("")}"
-                      )
-                    )
-                  ),
-                  <.div(
-                    ^.className := "panel-body",
-                    <.h4("Changes"),
-                    <.table(
-                      ^.className := "table",
-                      toTableHeader(),
-                      <.tbody(
-                        S.createInfo.changes.zipWithIndex.map {
-                          case (change, index) =>
-                            singleChangeRow(change, index)
-                        }.toTagMod,
-                        <.tr(
-                          <.td,
-                          <.td,
-                          <.td,
-                          <.td,
-                          <.td,
-                          <.td,
-                          <.td,
-                          <.td(
-                            <.button(
-                              ^.className := "btn btn-info",
-                              ^.`type` := "button",
-                              ^.onClick --> addRow(),
-                              "Add Row"
+                      <.div(
+                        ^.className := "panel-body",
+                        <.h4("Changes"),
+                        <.table(
+                          ^.className := "table",
+                          toTableHeader(),
+                          <.tbody(
+                            S.createInfo.changes.zipWithIndex.map {
+                              case (change, index) =>
+                                singleChangeRow(change, index)
+                            }.toTagMod,
+                            <.tr( // last row with add button
+                              <.td,
+                              <.td,
+                              <.td,
+                              <.td,
+                              <.td,
+                              <.td,
+                              <.td,
+                              <.td(
+                                <.button(
+                                  ^.className := "btn btn-info test-add-button",
+                                  ^.`type` := "button",
+                                  ^.onClick --> addRow(),
+                                  "Add Row"
+                                )
+                              )
                             )
                           )
                         )
+                      ),
+                      <.div(
+                        ^.className := "panel-footer clearfix",
+                        <.button(
+                          ^.className := "btn btn-primary pull-right test-submit-button",
+                          ^.`type` := "submit",
+                          ^.disabled := !isValidOwnerGroup(S),
+                          "Submit"
+                        )
                       )
-                    )
-                  ),
-                  <.div(
-                    ^.className := "panel-footer clearfix",
-                    <.button(
-                      ^.className := "btn btn-primary pull-right",
-                      ^.`type` := "submit",
-                      "Submit"
                     )
                   )
                 )
               )
             )
           )
-        )
+        case None => <.p("Loading...")
+      }
+
+    def ownerGroupField(S: State, groups: List[Group]): TagMod = {
+      val inputClass =
+        if (isValidOwnerGroup(S)) "form-control test-owner-group-name"
+        else "form-control parsley-error test-owner-group-name"
+      <.div(
+        ^.className := "form-group col-md-4",
+        <.label(
+          ^.className := "h5",
+          "Owner Group Name"
+        ),
+        <.input(
+          GlobalStyle.Styles.cursorPointer,
+          ^.className := inputClass,
+          ^.onChange ==> { e: ReactEventFromInput =>
+            changeOwnerGroup(e.target.value, groups)
+          },
+          ^.placeholder := "Search for a group you are in",
+          ^.list := "ownerGroupName",
+          ^.value := s"${S.createInfo.ownerGroupName.getOrElse("")}"
+        ),
+        <.datalist(
+          ^.id := "ownerGroupName",
+          groups.map { g =>
+            <.option(^.key := g.name, ^.value := g.name, s"${g.name} (id: ${g.id})")
+          }.toTagMod
+        ),
+        (S.createInfo.ownerGroupName, S.createInfo.ownerGroupId) match {
+          case (Some(_), Some(id)) =>
+            <.div(
+              ^.className := "help-block",
+              s"Group ID: '$id'"
+            )
+          case (Some(name), None) =>
+            <.ul(
+              ^.className := "parsley-errors-list filled",
+              <.li(
+                ^.className := "parley-required",
+                s"You are not in a group named '$name'"
+              )
+            )
+          case _ => TagMod.empty
+        }
       )
+    }
+
+    def isValidOwnerGroup(S: State): Boolean =
+      (S.createInfo.ownerGroupName, S.createInfo.ownerGroupId) match {
+        case (None, None) => true
+        case (Some(_), Some(_)) => true
+        case _ => false
+      }
 
     def toTableHeader(): TagMod =
       <.thead(
         <.tr(
           <.th("#"),
-          <.th(^.className := "col-md-2", "Change Type"),
+          <.th("Change Type"),
           <.th("Record Type"),
           <.th(
             GlobalStyle.Styles.keepWhitespace,
@@ -159,7 +237,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
             )
           ),
           <.th(^.className := "col-md-2", "Record Data"),
-          <.th,
+          <.th(^.className := "col-md-2"),
           <.th
         )
       )
@@ -173,13 +251,13 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
 
     def singleChangeRow(change: SingleChangeCreateInfo, index: Int): TagMod =
       <.tr(
-        ^.className := toErrorClass(change),
+        ^.className := toSingleChangeRowClass(change),
         <.td(
           index + 1
         ),
         <.td(
           <.select(
-            ^.className := "form-control",
+            ^.className := "form-control test-change-type",
             ^.required := true,
             ^.onChange ==> { e: ReactEventFromInput =>
               changeSingleChangeType(e.target.value, change, index)
@@ -190,15 +268,15 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         ),
         <.td(
           <.select(
-            ^.className := "form-control",
+            ^.className := "form-control test-record-type",
             ^.required := true,
             ^.onChange ==> { e: ReactEventFromInput =>
               changeSingleRecordType(e.target.value, change, index)
             },
             ^.value := change.`type`,
             List(
-              "A+PTR", // +PTRs will be converted before posting the batch change
-              "AAAA+PTR",
+              "A+PTR", // +PTR will be converted before posting the batch change
+              "AAAA+PTR", // +PTR will be converted before posting the batch change
               "A",
               "AAAA",
               "CNAME",
@@ -210,7 +288,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         ),
         <.td(
           <.input(
-            ^.className := "form-control",
+            ^.className := "form-control test-input-name",
             ^.required := true,
             ^.onChange ==> { e: ReactEventFromInput =>
               changeSingleInputName(e.target.value, change, index)
@@ -221,7 +299,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         <.td(
           if (change.changeType == "Add")
             <.input(
-              ^.className := "form-control",
+              ^.className := "form-control test-ttl",
               ^.required := true,
               ^.`type` := "Number",
               ^.onChange ==> { e: ReactEventFromInput =>
@@ -232,10 +310,10 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
           else TagMod.empty
         ),
         <.td(
-          if (change.changeType == "Add")
+          if (change.changeType == "Add" || change.`type` == "A+PTR" || change.`type` == "AAAA+PTR")
             if (change.`type` != "MX")
               <.input(
-                ^.className := "form-control",
+                ^.className := "form-control test-record-data",
                 ^.required := true,
                 ^.onChange ==> { e: ReactEventFromInput =>
                   changeSingleInputRecordData(e.target.value, change, index)
@@ -253,7 +331,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         ),
         <.td(
           <.button(
-            ^.className := "btn btn-danger",
+            ^.className := "btn btn-danger test-delete-button",
             ^.`type` := "button",
             "Delete",
             ^.onClick --> bs.modState { s =>
@@ -360,6 +438,19 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         s.copy(createInfo = s.createInfo.copy(comments = comments))
       }
 
+    def changeOwnerGroup(value: String, groups: List[Group]): Callback =
+      bs.modState { s =>
+        val ownerGroupName =
+          if (value.isEmpty) None
+          else Some(value)
+
+        val ownerGroupId = groups.find(_.name == value.trim).map(_.id)
+
+        s.copy(
+          createInfo =
+            s.createInfo.copy(ownerGroupName = ownerGroupName, ownerGroupId = ownerGroupId))
+      }
+
     def toRecordDataDisplay(change: SingleChangeCreateInfo): String = {
       val recordData = change.record match {
         case Some(r) => r
@@ -387,7 +478,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
           "Preference"
         ),
         <.input(
-          ^.className := "form-control",
+          ^.className := "form-control test-preference",
           ^.required := true,
           ^.`type` := "Number",
           ^.onChange ==> { e: ReactEventFromInput =>
@@ -401,7 +492,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
           "Exchange"
         ),
         <.input(
-          ^.className := "form-control",
+          ^.className := "form-control test-exchange",
           ^.required := true,
           ^.onChange ==> { e: ReactEventFromInput =>
             changeMxExchange(e.target.value, change, index)
@@ -411,11 +502,34 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
       )
     }
 
-    def toErrorClass(change: SingleChangeCreateInfo): String =
+    def toSingleChangeRowClass(change: SingleChangeCreateInfo): String =
       change.errors match {
-        case Some(errors) => if (errors.isEmpty) "" else "changeError"
-        case None => ""
+        case Some(errors) =>
+          if (errors.isEmpty) "test-single-change-row" else "test-single-change-row changeError"
+        case None => "test-single-change-row"
       }
+
+    @tailrec
+    final def jointPtrConversion(createInfo: BatchChangeCreateInfo): BatchChangeCreateInfo = {
+      val nextJointIndex =
+        createInfo.changes.indexWhere(c => c.`type` == "A+PTR" || c.`type` == "AAAA+PTR")
+      if (nextJointIndex == -1) createInfo
+      else {
+        val jointChange = createInfo.changes(nextJointIndex)
+        val addressChange =
+          if (jointChange.`type` == "A+PTR") jointChange.copy(`type` = "A")
+          else jointChange.copy(`type` = "AAAA")
+        val ptrChange = jointChange.copy(
+          `type` = "PTR",
+          inputName = Try(jointChange.record.get.addressToString).getOrElse(""),
+          record = Some(RecordData(ptrdname = Some(jointChange.inputName)))
+        )
+
+        val patchedChanged =
+          createInfo.changes.patch(nextJointIndex, List(addressChange, ptrChange), 1)
+        jointPtrConversion(createInfo.copy(changes = patchedChanged))
+      }
+    }
 
     def submitBatchChange(P: Props, S: State): Callback =
       P.http.withConfirmation(
@@ -437,8 +551,20 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
               addNotification(P.http.toNotification(s"creating batch request", httpResponse)) >>
                 bs.modState(_.copy(createInfo = withErrors))
           }
-          P.http.post(CreateBatchChangeRoute, write(S.createInfo), onSuccess, onFailure)
+          val convertedJointPtr = jointPtrConversion(S.createInfo)
+          P.http.post(CreateBatchChangeRoute, write(convertedJointPtr), onSuccess, onFailure)
         }
       )
+
+    def listGroups(P: Props): Callback = {
+      val onSuccess = { (_: HttpResponse, parsed: Option[GroupList]) =>
+        bs.modState(_.copy(groupList = parsed))
+      }
+      val onFailure = { httpResponse: HttpResponse =>
+        addNotification(P.http.toNotification("listing groups", httpResponse, onlyOnError = true))
+      }
+      P.http.get(ListGroupsRoute(), onSuccess, onFailure)
+    }
+
   }
 }

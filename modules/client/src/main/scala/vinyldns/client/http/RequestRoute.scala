@@ -249,7 +249,7 @@ object CreateBatchChangeRoute extends RequestRoute[BatchChangeCreateInfo] {
     Try {
       read[List[SingleChangeCreateInfo]](httpResponse.responseText)
     } match {
-      case Success(p) => Some(BatchChangeCreateInfo(p, None, None))
+      case Success(p) => Some(BatchChangeCreateInfo(p, None, None, None))
       case Failure(e) =>
         logError(e.getMessage)
         None

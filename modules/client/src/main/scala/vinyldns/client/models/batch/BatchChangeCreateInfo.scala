@@ -22,12 +22,13 @@ import vinyldns.client.models.OptionRW
 case class BatchChangeCreateInfo(
     changes: List[SingleChangeCreateInfo],
     comments: Option[String],
-    ownerGroupId: Option[String]
+    ownerGroupId: Option[String],
+    ownerGroupName: Option[String]
 )
 
 object BatchChangeCreateInfo extends OptionRW {
   implicit val batchChangeCreateInfoRw: ReadWriter[BatchChangeCreateInfo] = macroRW
 
   def apply(): BatchChangeCreateInfo =
-    new BatchChangeCreateInfo(List(SingleChangeCreateInfo()), None, None)
+    new BatchChangeCreateInfo(List(SingleChangeCreateInfo()), None, None, None)
 }
