@@ -81,7 +81,7 @@
                     elm.on('change', function(e){
                         if (e.target.files.length > 0) {
                             fileType = e.target.files[0].type;
-                            ctrl.$setViewValue(e.target.files[0].name);
+                            ctrl.$setViewValue(e.target.files[0]);
                         } else {
                             ctrl.$setViewValue();
                         }
@@ -96,13 +96,13 @@
         return {
             require: 'ngModel',
             link: function(scope, elm, attrs, ctrl) {
-                var filled;
-                ctrl.$validators.filled = function(modelValue, viewValue) {
-                    elm.on('change', function(e){
-                        filled = e.target.files.length > 0 ? true : false;
-                    })
-                    return filled
-                }
+                elm.on('change', function(e){
+                    if (e.target.files.length > 0) {
+                        ctrl.$setValidity('filled', true);
+                    } else {
+                        ctrl.$setValidity('filled', false);
+                    }
+                })
             }
         };
     });

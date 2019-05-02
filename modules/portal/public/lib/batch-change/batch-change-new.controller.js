@@ -112,50 +112,59 @@
                 $scope.alerts.push(alert);
             }
 
-            $scope.uploadCSV = function() {
-                var fileList = document.getElementById("batchChangeCsv");
-                if (fileList.files.length > 0 && fileList.files[0].type == "text/csv"){
+            $scope.uploadCSV = function(file) {
+                if (file.type == "text/csv"){
                     $scope.newBatch.changes = [];
                     var reader = new FileReader();
                     reader.onload = function(e) {
-                      var rows = e.target.result.split("\n");
-                      for(var i = 1; i < rows.length; i++) {
+                        var rows = e.target.result.split("\n");
+                        for(var i = 1; i < rows.length; i++) {
                         if (rows[i].length < 10) { continue; }
-                        var change = {};
-                        var headers = ["changeType", "type", "inputName", "ttl", "record"];
-                        var rowContent = rows[i].split(",");
-                        for(var j = 0; j < rowContent.length; j++) {
-                            if (headers[j] == "changeType") {
-                                if (rowContent[j].trim().match(/add/i)) {
-                                   change[headers[j]] = "Add"
-                                } else if (rowContent[j].trim().match(/delete/i)) {
-                                    change[headers[j]] = "DeleteRecordSet"
-                                }
-                            } else if (headers[j] == "type") {
-                                change[headers[j]] = rowContent[j].trim().toUpperCase()
-                            } else if (headers[j] == "ttl") {
-                                change[headers[j]] = parseInt(rowContent[j].trim())
-                            } else if (headers[j] == "record"){
-                                if (change["type"] == "A" || change["type"] == "AAAA" || change["type"] == "A+PTR" || change["type"] == "AAAA+PTR"){
-                                    change[headers[j]] = {"address": rowContent[j].trim()}
-                                } else if (change["type"] == "CNAME") {
-                                    change[headers[j]] = {"cname": rowContent[j].trim()}
-                                } else if (change["type"] == "PTR") {
-                                    change[headers[j]] = {"ptrdname": rowContent[j].trim()}
-                                }
-                            } else {
-                                change[headers[j]] = rowContent[j].trim()
-                            }
+                            parseRow(rows[i])
                         }
-                        $scope.newBatch.changes.push(change);
-                      }
-                      $timeout();
+                        $timeout();
                     }
-                    reader.readAsText(fileList.files[0]);
-                    document.getElementById("batchChangeCsv").value = null
+                    reader.readAsText(file);
+                    resetForm();
+                } else {
+                    $scope.alerts.push({type: 'danger', content: 'Import failed. Not a valid CSV file.'});
+                };
+
+                function parseRow(row) {
+                    var change = {};
+                    var headers = ["changeType", "type", "inputName", "ttl", "record"];
+                    var rowContent = row.split(",");
+                    for(var j = 0; j < rowContent.length; j++) {
+                        if (headers[j] == "changeType") {
+                            if (rowContent[j].trim().match(/add/i)) {
+                               change[headers[j]] = "Add"
+                            } else if (rowContent[j].trim().match(/delete/i)) {
+                                change[headers[j]] = "DeleteRecordSet"
+                            }
+                        } else if (headers[j] == "type") {
+                            change[headers[j]] = rowContent[j].trim().toUpperCase()
+                        } else if (headers[j] == "ttl") {
+                            change[headers[j]] = parseInt(rowContent[j].trim())
+                        } else if (headers[j] == "record"){
+                            if (change["type"] == "A" || change["type"] == "AAAA" || change["type"] == "A+PTR" || change["type"] == "AAAA+PTR"){
+                                change[headers[j]] = {"address": rowContent[j].trim()}
+                            } else if (change["type"] == "CNAME") {
+                                change[headers[j]] = {"cname": rowContent[j].trim()}
+                            } else if (change["type"] == "PTR") {
+                                change[headers[j]] = {"ptrdname": rowContent[j].trim()}
+                            }
+                        } else {
+                            change[headers[j]] = rowContent[j].trim()
+                        }
+                    }
+                    $scope.newBatch.changes.push(change);
+                }
+
+                function resetForm() {
+                    document.getElementById("batchChangeCsv").value = null;
                     $scope.csvInput = null;
                     $scope.csvForm.$setPristine();
-                    $scope.csvForm.$setUntouched;
+                    $scope.csvForm.$setUntouched();
                 }
             }
         });
