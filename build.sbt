@@ -397,12 +397,15 @@ lazy val client = (project in file("modules/client"))
   .settings(
     name := "client",
     libraryDependencies ++= clientDependencies.value ++ clientTestDependencies.value.map(_ % "test"),
-    requireJsDomEnv in Test := true,
     npmDependencies in Compile ++= clientNpmDependencies,
-    coverageEnabled := false,
     webpackBundlingMode := BundlingMode.LibraryOnly(),
-    //needed if depending on core
     unmanagedSourceDirectories in Compile ++= (unmanagedSourceDirectories in (core, Compile)).value
+  )
+  .settings(
+    requireJsDomEnv in Test := true, // remove if using coverage
+    coverageEnabled := false
+    // coverage is too finiky with scala.js for now, if that's ever fixed need this jsEnv instead
+    // jsEnv in Test := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv()
   )
   .dependsOn(core)
 
