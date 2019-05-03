@@ -23,13 +23,17 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.http.{CreateBatchChangeRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.models.batch.{BatchChangeCreateInfo, SingleChangeCreateInfo}
+import vinyldns.client.models.batch.{
+  BatchChangeCreateInfo,
+  BatchChangeResponse,
+  SingleChangeCreateInfo
+}
 import vinyldns.client.models.record.RecordData
 import vinyldns.client.router.AppRouter.PropsFromAppRouter
 import vinyldns.client.components.AlertBox.addNotification
 import upickle.default._
 import vinyldns.client.models.membership.{GroupListResponse, GroupResponse}
-import vinyldns.client.router.Page
+import vinyldns.client.router.{Page, ToBatchChangeListPage, ToBatchChangeViewPage}
 
 import scala.annotation.tailrec
 import scala.util.Try
@@ -535,10 +539,16 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
       P.http.withConfirmation(
         "Are you sure you want to make this DNS Record Request?",
         Callback.lazily {
-          val onSuccess = { (httpResponse: HttpResponse, _: Option[BatchChangeCreateInfo]) =>
-            addNotification(
-              P.http.toNotification("creating batch request", httpResponse)
-            )
+          val onSuccess = {
+            (httpResponse: HttpResponse, _: Option[BatchChangeCreateInfo]) =>
+              val id = Try(read[BatchChangeResponse](httpResponse.responseText).id).toOption
+              val redirect = id match {
+                case Some(batchId) => P.router.set(ToBatchChangeViewPage(batchId))
+                case None => P.router.set(ToBatchChangeListPage)
+              }
+              addNotification(
+                P.http.toNotification("creating batch request", httpResponse)
+              ) >> redirect
           }
           val onFailure = {
             httpResponse: HttpResponse =>

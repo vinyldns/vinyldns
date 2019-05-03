@@ -28,7 +28,7 @@ import scala.language.existentials
 
 class BatchChangesTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = MockRouterCtl[Page]()
-  val initialBatchChanges = generateBatchChangeSummaries(10)
+  val initialBatchChanges = generateBatchChangeSummaryResponses(10)
   val initialBatchChangeList = BatchChangeListResponse(initialBatchChanges.toList, 100)
 
   class Fixture(changes: Option[BatchChangeListResponse] = Some(initialBatchChangeList)) {

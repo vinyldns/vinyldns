@@ -26,7 +26,7 @@ import vinyldns.client.http._
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.Pagination
 import vinyldns.client.models.batch.{BatchChangeListResponse, BatchChangeSummaryResponse}
-import vinyldns.client.router.Page
+import vinyldns.client.router.{Page, ToBatchChangeViewPage}
 import vinyldns.core.domain.batch.BatchChangeStatus
 
 import scala.util.Try
@@ -120,7 +120,7 @@ object BatchChangesTable {
                     )
                   ),
                   <.tbody(
-                    bcl.batchChanges.map(toTableRow).toTagMod
+                    bcl.batchChanges.map(c => toTableRow(P, c)).toTagMod
                   )
                 )
               )
@@ -130,14 +130,21 @@ object BatchChangesTable {
         }
       )
 
-    def toTableRow(change: BatchChangeSummaryResponse): TagMod =
+    def toTableRow(P: Props, change: BatchChangeSummaryResponse): TagMod =
       <.tr(
         <.td(change.createdTimestamp),
         <.td(change.id),
         <.td(change.totalChanges),
         <.td(toStatus(change.status)),
         <.td(s"${change.comments.getOrElse("")}"),
-        <.td("actions")
+        <.td(
+          <.button(
+            ^.className := "btn btn-info",
+            ^.`type` := "button",
+            P.router.setOnClick(ToBatchChangeViewPage(change.id)),
+            "View"
+          )
+        )
       )
 
     def listBatchChanges(P: Props, S: State, startFrom: Option[String] = None): Callback = {

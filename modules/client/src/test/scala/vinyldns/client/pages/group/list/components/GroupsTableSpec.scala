@@ -30,7 +30,7 @@ import scala.language.existentials
 
 class GroupsTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val initialGroupList = GroupListResponse(generateGroups(10).toList, 100)
+  val initialGroupList = GroupListResponse(generateGroupResponses(10).toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]

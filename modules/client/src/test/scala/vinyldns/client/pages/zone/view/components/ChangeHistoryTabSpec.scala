@@ -28,11 +28,11 @@ import vinyldns.client.router.Page
 
 class ChangeHistoryTabSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val initialZone = generateZones(1).head
-  val initialRecordSetChanges = generateRecordSetChanges(10, initialZone)
+  val initialZone = generateZoneResponses(1).head
+  val initialRecordSetChanges = generateRecordSetChangeResponses(10, initialZone)
   val initialRecordSetChangeList =
     RecordSetChangeListResponse(initialZone.id, initialRecordSetChanges.toList, 100)
-  val initialGroups = generateGroups(10)
+  val initialGroups = generateGroupResponses(10)
   val initialGroupList = GroupListResponse(initialGroups.toList, 100)
 
   trait Fixture {

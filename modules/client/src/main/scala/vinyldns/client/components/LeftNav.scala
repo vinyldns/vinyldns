@@ -69,6 +69,7 @@ object LeftNav {
                         <.span(^.className := "fa fa-chevron-right"),
                         P.router.setOnClick(item.page)
                       ),
+                      // determine if the current menu item has active children
                       toSubMenu(P, item.page)
                     )
                   }
@@ -95,8 +96,12 @@ object LeftNav {
     if (isActive) "active"
     else ""
 
+  /*
+    Make sub menus for children, e.g. zone view is a child of the Zone menu
+   */
   def toSubMenu(P: Props, parent: Page): TagMod = {
-    def fromSubTitle(title: String): TagMod =
+    // some title => sub menu div
+    def titleToMenu(title: String): TagMod =
       <.ul(
         GlobalStyle.Styles.displayBlock,
         ^.className := "nav child_menu",
@@ -110,23 +115,31 @@ object LeftNav {
         )
       )
 
+    // (child, parent)
     (P.selectedPage, parent) match {
       case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
-        fromSubTitle(groupView.id)
+        titleToMenu(groupView.id)
       case (zoneView: ToZoneViewPage, _: ToZoneListPage.type) =>
-        fromSubTitle(zoneView.id)
+        titleToMenu(zoneView.id)
       case (_: ToBatchChangeCreatePage.type, _: ToBatchChangeListPage.type) =>
-        fromSubTitle("Create")
+        titleToMenu("Create")
+      case (batchView: ToBatchChangeViewPage, _: ToBatchChangeListPage.type) =>
+        titleToMenu(batchView.id)
       case _ => TagMod.empty
     }
   }
 
+  /*
+    If we have a sub menu we want the parent menu to be highlighted as it was active
+   */
   def isActive(P: Props, target: Page): Boolean =
+    // (child, parent)
     (P.selectedPage, target) match {
       case _ if target.getClass == P.selectedPage.getClass => true
       case (_: ToGroupViewPage, _: ToGroupListPage.type) => true
       case (_: ToZoneViewPage, _: ToZoneListPage.type) => true
       case (_: ToBatchChangeCreatePage.type, _: ToBatchChangeListPage.type) => true
+      case (_: ToBatchChangeViewPage, _: ToBatchChangeListPage.type) => true
       case _ => false
     }
 

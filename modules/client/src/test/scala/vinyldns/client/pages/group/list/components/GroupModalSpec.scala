@@ -115,7 +115,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
   "GroupModal update" should {
     "be an update modal if existing group" in {
       val mockHttp = mock[Http]
-      val existing = generateGroups(1).head
+      val existing = generateGroupResponses(1).head
 
       val props =
         GroupModal.Props(
@@ -133,7 +133,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
     "not call withConfirmation if submitted without required fields" in {
       val mockHttp = mock[Http]
-      val existing = generateGroups(1).head
+      val existing = generateGroupResponses(1).head
 
       (mockHttp.withConfirmation _).expects(*, *).never()
       (mockHttp.put _).expects(*, *, *, *).never()
@@ -166,7 +166,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
     "call withConfirmation if submitting with required fields" in {
       val mockHttp = mock[Http]
-      val existing = generateGroups(1).head
+      val existing = generateGroupResponses(1).head
 
       (mockHttp.withConfirmation _).expects(*, *).once().returns(Callback.empty)
       (mockHttp.put _).expects(*, *, *, *).never()
@@ -188,7 +188,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
     "call http.put if submitting with required fields and confirming" in {
       val mockHttp = mock[Http]
-      val existing = generateGroups(1).head
+      val existing = generateGroupResponses(1).head
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.put[GroupResponse] _)
@@ -213,7 +213,7 @@ class GroupModalSpec extends WordSpec with Matchers with MockFactory with Shared
 
     "submit properly updated group" in {
       val mockHttp = mock[Http]
-      val existing = generateGroups(1).head
+      val existing = generateGroupResponses(1).head
       val updated = existing.copy(
         name = "new-name",
         email = "new-email@test.com",

@@ -29,7 +29,7 @@ import vinyldns.client.router.{Page, ToGroupListPage}
 import scala.language.existentials
 
 class GroupListPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
-  val initialGroupList = GroupListResponse(generateGroups(1).toList, 100)
+  val initialGroupList = GroupListResponse(generateGroupResponses(1).toList, 100)
   val mockRouter = MockRouterCtl[Page]()
 
   trait Fixture {

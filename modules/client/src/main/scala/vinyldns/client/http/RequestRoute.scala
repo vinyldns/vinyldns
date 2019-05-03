@@ -33,6 +33,7 @@ import vinyldns.client.components.JsNative.logError
 import vinyldns.client.models.batch.{
   BatchChangeCreateInfo,
   BatchChangeListResponse,
+  BatchChangeResponse,
   SingleChangeCreateInfo
 }
 
@@ -268,4 +269,10 @@ object CreateBatchChangeRoute extends RequestRoute[BatchChangeCreateInfo] {
         logError(e.getMessage)
         None
     }
+}
+
+final case class GetBatchChangeRoute(id: String) extends RequestRoute[BatchChangeResponse] {
+  implicit val rw: ReadWriter[BatchChangeResponse] = BatchChangeResponse.batchChangeRw
+
+  def path: String = s"/api/batchchanges/$id"
 }

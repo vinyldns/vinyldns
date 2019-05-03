@@ -33,9 +33,9 @@ import scala.language.existentials
 
 class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val zone = generateZones(1).head
-  val existing = generateRecordSets(1, zone.id).head
-  val initialGroups = generateGroups(1)
+  val zone = generateZoneResponses(1).head
+  val existing = generateRecordSetResponses(1, zone.id).head
+  val initialGroups = generateGroupResponses(1)
   val initialGroupList = GroupListResponse(initialGroups.toList, 100)
 
   class Fixture(isUpdate: Boolean = false) {

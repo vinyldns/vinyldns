@@ -35,11 +35,11 @@ package vinyldns.client
 import java.util.UUID
 
 import japgolly.scalajs.react.Callback
-import vinyldns.client.models.batch.BatchChangeSummaryResponse
+import vinyldns.client.models.batch.{BatchChangeSummaryResponse, SingleChangeResponse}
 import vinyldns.client.models.membership.{GroupResponse, Id, UserResponse}
 import vinyldns.client.models.record.{RecordData, RecordSetChangeResponse, RecordSetResponse}
 import vinyldns.client.models.zone.{ACLRule, Rules, ZoneResponse}
-import vinyldns.core.domain.batch.BatchChangeStatus
+import vinyldns.core.domain.batch.{BatchChangeStatus, SingleChangeStatus}
 import vinyldns.core.domain.record.{RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{AccessLevel, ZoneStatus}
 
@@ -68,12 +68,12 @@ trait SharedTestData {
     Some("desc"),
     None,
     None,
-    Some(generateGroups(1).head.id),
+    Some(generateGroupResponses(1).head.id),
     Some("mask*"),
-    Some(generateGroups(1).head.name)
+    Some(generateGroupResponses(1).head.name)
   )
 
-  def generateGroups(
+  def generateGroupResponses(
       numGroups: Int,
       members: List[UserResponse] = List(testUser),
       admins: List[UserResponse] = List(testUser)): Seq[GroupResponse] = {
@@ -93,7 +93,7 @@ trait SharedTestData {
         Some(s"created-$i"))
   }
 
-  def generateZones(numZones: Int): Seq[ZoneResponse] =
+  def generateZoneResponses(numZones: Int): Seq[ZoneResponse] =
     for {
       i <- 0 until numZones
     } yield
@@ -112,7 +112,7 @@ trait SharedTestData {
         adminGroupName = Some(s"adminGroupName-$i")
       )
 
-  def generateRecordSets(numRecords: Int, zoneId: String): Seq[RecordSetResponse] =
+  def generateRecordSetResponses(numRecords: Int, zoneId: String): Seq[RecordSetResponse] =
     for {
       i <- 0 until numRecords
     } yield
@@ -129,10 +129,10 @@ trait SharedTestData {
         Some("Delete") // note the records table update and delete buttons are conditional
       )
 
-  def generateRecordSetChanges(
+  def generateRecordSetChangeResponses(
       numChanges: Int,
       zone: ZoneResponse): Seq[RecordSetChangeResponse] = {
-    val records = generateRecordSets(numChanges, zone.id)
+    val records = generateRecordSetResponses(numChanges, zone.id)
     for {
       i <- 0 until numChanges
     } yield
@@ -148,7 +148,7 @@ trait SharedTestData {
       )
   }
 
-  def generateBatchChangeSummaries(numChanges: Int): Seq[BatchChangeSummaryResponse] =
+  def generateBatchChangeSummaryResponses(numChanges: Int): Seq[BatchChangeSummaryResponse] =
     for {
       i <- 0 until numChanges
     } yield
@@ -161,6 +161,26 @@ trait SharedTestData {
         UUID.randomUUID().toString,
         Some("comments"),
         None
+      )
+
+  def generateSingleChangeResponses(numChanges: Int): Seq[SingleChangeResponse] =
+    for {
+      i <- 0 until numChanges
+    } yield
+      SingleChangeResponse(
+        "Add",
+        s"record-$i.zone-$i.",
+        RecordType.A,
+        SingleChangeStatus.Complete,
+        s"record-$i",
+        s"zone-$i",
+        s"zoneid-$i",
+        s"id-$i",
+        Some(s"recordchangeid-$i"),
+        Some(s"recordsetid-$i"),
+        Some(300),
+        Some(s"systemmessage-$i"),
+        Some(RecordData(address = Some("1.1.1.1")))
       )
 
   // a lot of times components use anonymous functions like refreshGroups, setNotification, etc

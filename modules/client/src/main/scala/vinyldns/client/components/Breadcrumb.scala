@@ -60,6 +60,8 @@ object Breadcrumb {
         List(home(P), batchChangeListActive).toTagMod
       case _: ToBatchChangeCreatePage.type =>
         List(home(P), batchChangeList(P), createBatchChangeActive).toTagMod
+      case _: ToBatchChangeViewPage =>
+        List(home(P), batchChangeList(P), viewBatchChangeActive).toTagMod
       case _ => TagMod.empty
     }
 
@@ -92,4 +94,7 @@ object Breadcrumb {
 
   val createBatchChangeActive =
     <.li(^.key := "createbatch", cursorPointer, ^.className := "active", "New")
+
+  val viewBatchChangeActive =
+    <.li(^.key := "batchview", cursorPointer, ^.className := "active", "View")
 }

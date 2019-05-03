@@ -30,7 +30,7 @@ import scala.language.existentials
 
 class MembersTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val initialMemberList = MemberListResponse(List(testUser, dummyUser), None, None, 100)
-  val initialGroup = generateGroups(1, initialMemberList.members).head
+  val initialGroup = generateGroupResponses(1, initialMemberList.members).head
 
   val emptyMembersList = MemberListResponse(List(), None, None, 100)
   val mockRouter = MockRouterCtl[Page]()

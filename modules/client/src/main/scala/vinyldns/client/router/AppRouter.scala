@@ -28,6 +28,7 @@ import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
 import vinyldns.client.pages.batch.create.BatchChangeCreatePage
 import vinyldns.client.pages.batch.list.BatchChangeListPage
+import vinyldns.client.pages.batch.view.BatchChangeViewPage
 import vinyldns.client.pages.credentials.ApiCredentialsPage
 import vinyldns.client.pages.group.list.GroupListPage
 import vinyldns.client.pages.zone.list.ZoneListPage
@@ -81,11 +82,15 @@ object AppRouter {
             .caseClass[ToZoneViewChangesTab]) ~> (p =>
             renderR(ctl => ZoneViewPage(p, ctl, HttpHelper)))
         | // batch change list
-          staticRoute("zones" / "batchrecordchanges", ToBatchChangeListPage) ~>
+          staticRoute("batch", ToBatchChangeListPage) ~>
             renderR(ctl => BatchChangeListPage(ToBatchChangeListPage, ctl, HttpHelper))
-        | // batch change list
-          staticRoute("zones" / "batchrecordchanges" / "new", ToBatchChangeCreatePage) ~>
+        | // batch change create
+          staticRoute("batch" / "new", ToBatchChangeCreatePage) ~>
             renderR(ctl => BatchChangeCreatePage(ToBatchChangeCreatePage, ctl, HttpHelper))
+        | // batch change view
+          dynamicRouteCT[ToBatchChangeViewPage](("batch" / string(uuidRegex))
+            .caseClass[ToBatchChangeViewPage]) ~> (p =>
+            renderR(ctl => BatchChangeViewPage(p, ctl, HttpHelper)))
     ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
       .renderWith(layout)
   }

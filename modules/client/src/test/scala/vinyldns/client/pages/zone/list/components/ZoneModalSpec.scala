@@ -32,7 +32,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
   trait Fixture {
     val mockHttp = mock[Http]
-    val groupList = GroupListResponse(generateGroups(2).toList, 100)
+    val groupList = GroupListResponse(generateGroupResponses(2).toList, 100)
     val props =
       ZoneModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit], groupList)
   }
@@ -309,7 +309,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
   "ZoneModal Update" should {
     "correctly http.put a zone update" in new Fixture {
-      val existing = generateZones(1).head
+      val existing = generateZoneResponses(1).head
       val expected = existing.copy(
         shared = true,
         connection = Some(ZoneConnection("name", "name", "key", "server")),

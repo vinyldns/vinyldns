@@ -30,7 +30,7 @@ import scala.language.existentials
 
 class ZonesTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val initialZoneList = ZoneListResponse(generateZones(10).toList, 100)
+  val initialZoneList = ZoneListResponse(generateZoneResponses(10).toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]

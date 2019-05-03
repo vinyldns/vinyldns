@@ -36,7 +36,7 @@ class BatchChangeCreatePageSpec
     with MockFactory
     with SharedTestData {
   val mockRouter = MockRouterCtl[Page]()
-  val groups = generateGroups(5)
+  val groups = generateGroupResponses(5)
   val groupList = GroupListResponse(groups.toList, 100)
 
   class Fixture(gl: Option[GroupListResponse] = Some(groupList)) {

@@ -35,8 +35,8 @@ import scala.language.existentials
 
 class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val initialAclList = List(userAclRule, groupAclRule)
-  val initialZone = generateZones(1).head.copy(acl = Rules(initialAclList))
-  val initialGroups = generateGroups(10).toList
+  val initialZone = generateZoneResponses(1).head.copy(acl = Rules(initialAclList))
+  val initialGroups = generateGroupResponses(10).toList
   val mockRouter = mock[RouterCtl[Page]]
 
   class Fixture(isUpdate: Boolean = false) {

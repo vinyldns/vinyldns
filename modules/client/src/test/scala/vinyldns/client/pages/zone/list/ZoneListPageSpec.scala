@@ -105,7 +105,7 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
     "reset pagination info when using search button" in {
       val mockHttp = mock[Http]
       val groupList = GroupListResponse(List(), 100)
-      val zoneList = ZoneListResponse(generateZones(1).toList, 100)
+      val zoneList = ZoneListResponse(generateZoneResponses(1).toList, 100)
       val zoneListWithNext = zoneList.copy(nextId = Some("next"))
 
       (mockHttp.get[GroupListResponse] _)
@@ -171,7 +171,7 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
     "reset pagination info when using refresh button" in {
       val mockHttp = mock[Http]
       val groupList = GroupListResponse(List(), 100)
-      val zoneList = ZoneListResponse(generateZones(1).toList, 100)
+      val zoneList = ZoneListResponse(generateZoneResponses(1).toList, 100)
       val zoneListWithNext = zoneList.copy(nextId = Some("next"))
 
       (mockHttp.get[GroupListResponse] _)

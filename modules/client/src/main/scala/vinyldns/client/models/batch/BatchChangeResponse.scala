@@ -32,15 +32,17 @@ trait BatchChangeStatusRW {
       )
 }
 
-case class BatchChange(
+case class BatchChangeResponse(
     userId: String,
     userName: String,
     createdTimestamp: String,
-    changes: List[SingleChangeCreateInfo],
+    changes: List[SingleChangeResponse],
     status: BatchChangeStatus.BatchChangeStatus,
     id: String,
-    comments: Option[String] = None)
+    comments: Option[String] = None,
+    ownerGroupName: Option[String] = None,
+    ownerGroupId: Option[String] = None)
 
-object BatchChange extends OptionRW with BatchChangeStatusRW {
-  implicit val batchChangeRw: ReadWriter[BatchChange] = macroRW[BatchChange]
+object BatchChangeResponse extends OptionRW with BatchChangeStatusRW {
+  implicit val batchChangeRw: ReadWriter[BatchChangeResponse] = macroRW[BatchChangeResponse]
 }

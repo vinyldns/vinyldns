@@ -22,7 +22,7 @@ import vinyldns.client.SharedTestData
 import vinyldns.core.domain.record.RecordType
 
 class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
-  val baseRecord = generateRecordSets(1, "zoneId").head
+  val baseRecord = generateRecordSetResponses(1, "zoneId").head
 
   "RecordSet.recordDataDisplay" should {
     "display an A record" in {

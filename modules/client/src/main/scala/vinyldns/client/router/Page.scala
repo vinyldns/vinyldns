@@ -50,3 +50,6 @@ object ToBatchChangeListPage extends Page
 
 // batch create
 object ToBatchChangeCreatePage extends Page
+
+// batch view
+final case class ToBatchChangeViewPage(id: String) extends Page

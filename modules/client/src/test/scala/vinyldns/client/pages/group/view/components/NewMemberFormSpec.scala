@@ -28,7 +28,7 @@ import upickle.default.write
 import scala.language.existentials
 
 class NewMemberFormSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
-  val group = generateGroups(1).head
+  val group = generateGroupResponses(1).head
 
   "NewMemberForm" should {
     "not call lookup user if submitted without username" in {

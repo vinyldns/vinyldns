@@ -30,8 +30,8 @@ import scala.language.existentials
 
 class ManageZoneTabSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val initialZone = generateZones(1).head
-  val initialGroups = generateGroups(1)
+  val initialZone = generateZoneResponses(1).head
+  val initialGroups = generateGroupResponses(1)
   val initialGroupList = GroupListResponse(initialGroups.toList, 100)
 
   trait Fixture {

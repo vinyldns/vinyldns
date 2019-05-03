@@ -30,9 +30,9 @@ import scala.language.existentials
 
 class RecordSetChangeTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val zone = generateZones(1).head
-  val initialRecordSetChanges = generateRecordSetChanges(10, zone)
-  val initialGroups = generateGroups(1)
+  val zone = generateZoneResponses(1).head
+  val initialRecordSetChanges = generateRecordSetChangeResponses(10, zone)
+  val initialGroups = generateGroupResponses(1)
   val initialGroupList = GroupListResponse(initialGroups.toList, 100)
 
   class Fixture(withNext: Boolean = false) {
