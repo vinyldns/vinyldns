@@ -23,6 +23,9 @@ import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.AccessLevel
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 
+/*
+  A ZoneResponse has acl rules come in the format {rules: [...]}
+ */
 case class Rules(rules: List[ACLRule])
 
 object Rules {

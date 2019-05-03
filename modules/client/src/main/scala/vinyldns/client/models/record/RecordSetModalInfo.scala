@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.zone
+package vinyldns.client.models.record
 
-import vinyldns.client.models.OptionRW
-import upickle.default.{ReadWriter, macroRW}
+import vinyldns.core.domain.record.RecordType
 
-case class ZoneCreateInfo(
-    name: String,
-    email: String,
-    adminGroupId: String,
-    shared: Boolean,
-    connection: Option[ZoneConnection],
-    transferConnection: Option[ZoneConnection])
-    extends ZoneModalInfo
-
-object ZoneCreateInfo extends OptionRW {
-  implicit val rw: ReadWriter[ZoneCreateInfo] = macroRW
+trait RecordSetModalInfo {
+  def name: String
+  def zoneId: String
+  def `type`: RecordType.RecordType
+  def ttl: Int
+  def records: List[RecordData]
+  def ownerGroupId: Option[String]
 }

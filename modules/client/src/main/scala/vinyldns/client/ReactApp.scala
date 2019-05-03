@@ -22,7 +22,7 @@ import org.scalajs.dom.document
 import org.scalajs.dom.ext.Ajax
 import vinyldns.client.http.{CurrentUserRoute, HttpResponse}
 import vinyldns.client.css.AppCSS
-import vinyldns.client.models.membership.User
+import vinyldns.client.models.membership.UserResponse
 import vinyldns.client.router.AppRouter
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -37,7 +37,7 @@ object ReactApp {
   final val version: Option[String] =
     Try(Option[String](document.getElementById("version").getAttribute("content")))
       .getOrElse(None)
-  var loggedInUser: User = _
+  var loggedInUser: UserResponse = _
 
   @JSExport
   def main(containerId: String): Unit = {

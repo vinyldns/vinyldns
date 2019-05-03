@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.zone
+package vinyldns.client.models.batch
 
-import vinyldns.client.models.OptionRW
-import upickle.default.{ReadWriter, macroRW}
+import upickle.default._
+import vinyldns.client.models.{OptionRW, PagingKeyRW}
+import vinyldns.client.models.Pagination.PagingKey
 
-case class ZoneCreateInfo(
-    name: String,
-    email: String,
-    adminGroupId: String,
-    shared: Boolean,
-    connection: Option[ZoneConnection],
-    transferConnection: Option[ZoneConnection])
-    extends ZoneModalInfo
+case class BatchChangeListResponse(
+    batchChanges: List[BatchChangeSummaryResponse],
+    maxItems: Int,
+    startFrom: PagingKey = None,
+    nextId: PagingKey = None
+)
 
-object ZoneCreateInfo extends OptionRW {
-  implicit val rw: ReadWriter[ZoneCreateInfo] = macroRW
+object BatchChangeListResponse extends OptionRW with PagingKeyRW {
+  implicit val batchChangeListRw: ReadWriter[BatchChangeListResponse] =
+    macroRW[BatchChangeListResponse]
 }

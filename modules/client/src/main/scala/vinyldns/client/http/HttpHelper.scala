@@ -21,11 +21,11 @@ import japgolly.scalajs.react.extra.Ajax
 import vinyldns.client.ReactApp
 import org.scalajs.dom
 import vinyldns.client.components.AlertBox.Notification
-import vinyldns.client.models.membership.User
+import vinyldns.client.models.membership.UserResponse
 
 object HttpHelper extends Http {
   val csrf: String = ReactApp.csrf.getOrElse("")
-  val loggedInUser: User = ReactApp.loggedInUser
+  val loggedInUser: UserResponse = ReactApp.loggedInUser
   val POST = "POST"
   val PUT = "PUT"
   val DELETE = "DELETE"
@@ -107,5 +107,5 @@ object HttpHelper extends Http {
 
   def isError(httpResponse: HttpResponse): Boolean = httpResponse.statusCode >= 400
 
-  def getLoggedInUser(): User = loggedInUser
+  def getLoggedInUser(): UserResponse = loggedInUser
 }

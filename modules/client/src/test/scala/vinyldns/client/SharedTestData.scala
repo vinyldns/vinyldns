@@ -35,19 +35,19 @@ package vinyldns.client
 import java.util.UUID
 
 import japgolly.scalajs.react.Callback
-import vinyldns.client.models.batch.BatchChangeSummary
-import vinyldns.client.models.membership.{Group, Id, User}
-import vinyldns.client.models.record.{RecordData, RecordSet, RecordSetChange}
-import vinyldns.client.models.zone.{ACLRule, Rules, Zone}
+import vinyldns.client.models.batch.BatchChangeSummaryResponse
+import vinyldns.client.models.membership.{GroupResponse, Id, UserResponse}
+import vinyldns.client.models.record.{RecordData, RecordSetChangeResponse, RecordSetResponse}
+import vinyldns.client.models.zone.{ACLRule, Rules, ZoneResponse}
 import vinyldns.core.domain.batch.BatchChangeStatus
 import vinyldns.core.domain.record.{RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import vinyldns.core.domain.zone.{AccessLevel, ZoneStatus}
 
 trait SharedTestData {
-  val testUser: User =
-    User("testUser", "testId", Some("test"), Some("user"), Some("testuser@email.com"))
-  val dummyUser: User =
-    User("dummyUser", "dummyId", Some("dummy"), Some("user"), Some("dummyuser@email.com"))
+  val testUser: UserResponse =
+    UserResponse("testUser", "testId", Some("test"), Some("user"), Some("testuser@email.com"))
+  val dummyUser: UserResponse =
+    UserResponse("dummyUser", "dummyId", Some("dummy"), Some("user"), Some("dummyuser@email.com"))
 
   val testUUID = "99701afe-9794-431c-9986-41ce074c9387"
 
@@ -75,15 +75,15 @@ trait SharedTestData {
 
   def generateGroups(
       numGroups: Int,
-      members: List[User] = List(testUser),
-      admins: List[User] = List(testUser)): Seq[Group] = {
+      members: List[UserResponse] = List(testUser),
+      admins: List[UserResponse] = List(testUser)): Seq[GroupResponse] = {
     val memberIds = members.map(m => Id(m.id))
     val adminIds = admins.map(m => Id(m.id))
 
     for {
       i <- 0 until numGroups
     } yield
-      Group(
+      GroupResponse(
         s"name-$i",
         s"email-$i@test.com",
         s"id-$i",
@@ -93,11 +93,11 @@ trait SharedTestData {
         Some(s"created-$i"))
   }
 
-  def generateZones(numZones: Int): Seq[Zone] =
+  def generateZones(numZones: Int): Seq[ZoneResponse] =
     for {
       i <- 0 until numZones
     } yield
-      Zone(
+      ZoneResponse(
         UUID.randomUUID().toString,
         s"name-$i.",
         s"email-$i@test.com",
@@ -112,11 +112,11 @@ trait SharedTestData {
         adminGroupName = Some(s"adminGroupName-$i")
       )
 
-  def generateRecordSets(numRecords: Int, zoneId: String): Seq[RecordSet] =
+  def generateRecordSets(numRecords: Int, zoneId: String): Seq[RecordSetResponse] =
     for {
       i <- 0 until numRecords
     } yield
-      RecordSet(
+      RecordSetResponse(
         s"id-$i",
         RecordType.A,
         zoneId,
@@ -129,12 +129,14 @@ trait SharedTestData {
         Some("Delete") // note the records table update and delete buttons are conditional
       )
 
-  def generateRecordSetChanges(numChanges: Int, zone: Zone): Seq[RecordSetChange] = {
+  def generateRecordSetChanges(
+      numChanges: Int,
+      zone: ZoneResponse): Seq[RecordSetChangeResponse] = {
     val records = generateRecordSets(numChanges, zone.id)
     for {
       i <- 0 until numChanges
     } yield
-      RecordSetChange(
+      RecordSetChangeResponse(
         zone,
         records(i),
         testUser.id,
@@ -146,11 +148,11 @@ trait SharedTestData {
       )
   }
 
-  def generateBatchChangeSummaries(numChanges: Int): Seq[BatchChangeSummary] =
+  def generateBatchChangeSummaries(numChanges: Int): Seq[BatchChangeSummaryResponse] =
     for {
       i <- 0 until numChanges
     } yield
-      BatchChangeSummary(
+      BatchChangeSummaryResponse(
         testUser.id,
         testUser.userName,
         s"created-$i",

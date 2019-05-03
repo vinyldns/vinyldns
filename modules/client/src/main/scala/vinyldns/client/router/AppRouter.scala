@@ -22,16 +22,16 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html.Div
 import vinyldns.client.components.{AlertBox, Breadcrumb, LeftNav, TopNav}
 import vinyldns.client.pages.extras.NotFoundPage
-import vinyldns.client.pages.groupview.GroupViewPage
+import vinyldns.client.pages.group.view.GroupViewPage
 import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
-import vinyldns.client.pages.batchcreate.BatchChangeCreatePage
-import vinyldns.client.pages.batchlist.BatchChangeListPage
+import vinyldns.client.pages.batch.create.BatchChangeCreatePage
+import vinyldns.client.pages.batch.list.BatchChangeListPage
 import vinyldns.client.pages.credentials.ApiCredentialsPage
-import vinyldns.client.pages.grouplist.GroupListPage
-import vinyldns.client.pages.zonelist.ZoneListPage
-import vinyldns.client.pages.zoneview.ZoneViewPage
+import vinyldns.client.pages.group.list.GroupListPage
+import vinyldns.client.pages.zone.list.ZoneListPage
+import vinyldns.client.pages.zone.view.ZoneViewPage
 
 object AppRouter {
   trait PropsFromAppRouter {

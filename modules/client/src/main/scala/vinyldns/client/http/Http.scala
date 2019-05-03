@@ -18,11 +18,11 @@ package vinyldns.client.http
 
 import japgolly.scalajs.react.Callback
 import vinyldns.client.components.AlertBox.Notification
-import vinyldns.client.models.membership.User
+import vinyldns.client.models.membership.UserResponse
 
 trait Http {
   val csrf: String
-  val loggedInUser: User
+  val loggedInUser: UserResponse
   type OnSuccess[T] = (HttpResponse, Option[T]) => Callback
   type OnFailure = HttpResponse => Callback
 
@@ -52,5 +52,5 @@ trait Http {
 
   def isError(httpResponse: HttpResponse): Boolean
 
-  def getLoggedInUser(): User
+  def getLoggedInUser(): UserResponse
 }

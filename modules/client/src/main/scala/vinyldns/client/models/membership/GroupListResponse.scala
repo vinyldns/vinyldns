@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.zone
+package vinyldns.client.models.membership
 
-import vinyldns.client.models.OptionRW
 import upickle.default.{ReadWriter, macroRW}
+import vinyldns.client.models.Pagination.PagingKey
+import vinyldns.client.models.{OptionRW, PagingKeyRW}
 
-case class ZoneCreateInfo(
-    name: String,
-    email: String,
-    adminGroupId: String,
-    shared: Boolean,
-    connection: Option[ZoneConnection],
-    transferConnection: Option[ZoneConnection])
-    extends ZoneModalInfo
+case class GroupListResponse(
+    groups: List[GroupResponse],
+    maxItems: Int,
+    startFrom: PagingKey = None,
+    nextId: PagingKey = None,
+    groupNameFilter: Option[String] = None)
 
-object ZoneCreateInfo extends OptionRW {
-  implicit val rw: ReadWriter[ZoneCreateInfo] = macroRW
+object GroupListResponse extends OptionRW with PagingKeyRW {
+  implicit val rw: ReadWriter[GroupListResponse] = macroRW
 }
