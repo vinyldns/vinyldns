@@ -43,7 +43,8 @@ final case class Zone(
     adminGroupId: String = "system",
     latestSync: Option[DateTime] = None,
     isTest: Boolean = false,
-    backendId: Option[String] = None) {
+    backendId: Option[String] = None,
+    userHasAccess: Boolean = true) { // <-- note, this is hacky as it has nothing to do with the zone
   val isIPv4: Boolean = name.endsWith("in-addr.arpa.")
   val isIPv6: Boolean = name.endsWith("ip6.arpa.")
   val isReverse: Boolean = isIPv4 || isIPv6

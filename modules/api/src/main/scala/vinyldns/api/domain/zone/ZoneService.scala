@@ -134,9 +134,15 @@ class ZoneService(
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String] = None,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): Result[ListZonesResponse] = {
+      maxItems: Int = 100,
+      searchAll: Boolean = false): Result[ListZonesResponse] = {
     for {
-      listZonesResult <- zoneRepository.listZones(authPrincipal, nameFilter, startFrom, maxItems)
+      listZonesResult <- zoneRepository.listZones(
+        authPrincipal,
+        nameFilter,
+        startFrom,
+        maxItems,
+        searchAll)
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
       groups <- groupRepository.getGroups(groupIds)
