@@ -23,6 +23,7 @@ angular.module('controller.zones', [])
     $scope.hasZones = false; // Re-assigned each time zones are fetched without a query
 
     $scope.query = "";
+    $scope.searchAll = false;
 
     // Paging status for zone sets
     var zonesPaging = pagingService.getNewPagingParams(100);
@@ -79,7 +80,7 @@ angular.module('controller.zones', [])
         }
 
         return zonesService
-            .getZones(zonesPaging.maxItems, undefined, $scope.query)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, $scope.searchAll)
             .then(success)
             .catch(function (error) {
                 handleError(error, 'zonesService::getZones-failure');
@@ -154,7 +155,7 @@ angular.module('controller.zones', [])
     $scope.prevPage = function () {
         var startFrom = pagingService.getPrevStartFrom(zonesPaging);
         return zonesService
-            .getZones(zonesPaging.maxItems, startFrom, $scope.query)
+            .getZones(zonesPaging.maxItems, startFrom, $scope.query, $scope.searchAll)
             .then(function(response) {
                 zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonesPaging);
                 updateZoneDisplay(response.data.zones);
@@ -166,7 +167,7 @@ angular.module('controller.zones', [])
 
     $scope.nextPage = function () {
         return zonesService
-            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query)
+            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query, $scope.searchAll)
             .then(function(response) {
                 var zoneSets = response.data.zones;
                 zonesPaging = pagingService.nextPageUpdate(zoneSets, response.data.nextId, zonesPaging);

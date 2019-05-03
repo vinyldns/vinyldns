@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import vinyldns.api.{Interfaces, VinylDNSConfig}
 import vinyldns.api.domain.AccessValidationAlgebra
@@ -59,6 +60,9 @@ class ZoneService(
   import accessValidation._
   import zoneValidations._
   import Interfaces._
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def connectToZone(
       createZoneInput: CreateZoneInput,
@@ -136,6 +140,16 @@ class ZoneService(
       startFrom: Option[String] = None,
       maxItems: Int = 100,
       searchAll: Boolean = false): Result[ListZonesResponse] = {
+
+    def getGroupsAndAccess(
+        groupIds: Set[String],
+        zoneIds: Seq[String]): IO[(Set[Group], Seq[String])] =
+      if (zoneIds.isEmpty) {
+        groupRepository.getGroups(groupIds).map(groups => (groups, Nil))
+      } else {
+        (groupRepository.getGroups(groupIds), zoneRepository.getAccess(zoneIds, authPrincipal)).parTupled
+      }
+
     for {
       listZonesResult <- zoneRepository.listZones(
         authPrincipal,
@@ -145,8 +159,9 @@ class ZoneService(
         searchAll)
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
-      groups <- groupRepository.getGroups(groupIds)
-      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups)
+      r <- getGroupsAndAccess(groupIds, zones.map(_.id))
+      (groups, zoneIdsAccessible) = r // note: this is a withFilter issue in IO unfortunately
+      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups, zoneIdsAccessible)
     } yield
       ListZonesResponse(
         zoneSummaryInfos,
@@ -156,13 +171,16 @@ class ZoneService(
         listZonesResult.maxItems)
   }.toResult
 
-  def zoneAdminGroupMapping(zones: List[Zone], groups: Set[Group]): List[ZoneSummaryInfo] =
+  def zoneAdminGroupMapping(
+      zones: List[Zone],
+      groups: Set[Group],
+      zoneIdsAccessible: Seq[String]): List[ZoneSummaryInfo] =
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {
         case Some(group) => group.name
         case None => "Unknown group name"
       }
-      ZoneSummaryInfo(zn, groupName)
+      ZoneSummaryInfo(zn, groupName, zoneIdsAccessible.contains(zn.id))
     }
 
   def listZoneChanges(

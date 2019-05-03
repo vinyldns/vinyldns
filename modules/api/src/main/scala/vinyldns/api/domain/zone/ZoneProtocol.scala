@@ -81,10 +81,11 @@ case class ZoneSummaryInfo(
     adminGroupId: String,
     adminGroupName: String,
     latestSync: Option[DateTime],
-    backendId: Option[String])
+    backendId: Option[String],
+    hasAccess: Boolean)
 
 object ZoneSummaryInfo {
-  def apply(zone: Zone, groupName: String): ZoneSummaryInfo =
+  def apply(zone: Zone, groupName: String, hasAccess: Boolean = true): ZoneSummaryInfo =
     ZoneSummaryInfo(
       name = zone.name,
       email = zone.email,
@@ -100,7 +101,8 @@ object ZoneSummaryInfo {
       adminGroupId = zone.adminGroupId,
       adminGroupName = groupName,
       latestSync = zone.latestSync,
-      zone.backendId
+      zone.backendId,
+      hasAccess
     )
 }
 

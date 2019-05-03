@@ -220,7 +220,8 @@ class ZoneRoutingSpec
         authPrincipal: AuthPrincipal,
         nameFilter: Option[String],
         startFrom: Option[String],
-        maxItems: Int): Result[ListZonesResponse] = {
+        maxItems: Int,
+        searchAll: Boolean): Result[ListZonesResponse] = {
 
       val outcome = (authPrincipal, nameFilter, startFrom, maxItems) match {
         case (_, None, Some("zone3."), 3) =>

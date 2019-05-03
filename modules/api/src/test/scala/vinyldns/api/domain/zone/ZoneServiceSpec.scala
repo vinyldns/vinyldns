@@ -490,7 +490,7 @@ class ZoneServiceSpec
     "not fail with no zones returned" in {
       doReturn(IO.pure(ListZonesResults(List())))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 100)
+        .listZones(abcAuth, None, None, 100, false)
       doReturn(IO.pure(Set(abcGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
@@ -502,12 +502,17 @@ class ZoneServiceSpec
     }
 
     "return the appropriate zones" in {
+      val resultZones = List(abcZone, xyzZone)
+      val resultZoneIds = resultZones.map(_.id)
       doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone))))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 100)
+        .listZones(abcAuth, None, None, 100, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
+      doReturn(IO.pure(resultZoneIds))
+        .when(mockZoneRepo)
+        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
       result.zones shouldBe List(abcZoneSummary, xyzZoneSummary)
@@ -518,10 +523,16 @@ class ZoneServiceSpec
     }
 
     "return Unknown group name if zone admin group cannot be found" in {
-      doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone))))
+      val resultZones = List(abcZone, xyzZone)
+      val resultZoneIds = resultZones.map(_.id)
+
+      doReturn(IO.pure(ListZonesResults(resultZones)))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 100)
+        .listZones(abcAuth, None, None, 100, false)
       doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(resultZoneIds))
+        .when(mockZoneRepo)
+        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
       val expectedZones =
@@ -534,13 +545,17 @@ class ZoneServiceSpec
     }
 
     "set the nextId appropriately" in {
-      doReturn(
-        IO.pure(ListZonesResults(List(abcZone, xyzZone), maxItems = 2, nextId = Some("zone2."))))
+      val resultZones = List(abcZone, xyzZone)
+      val resultZoneIds = resultZones.map(_.id)
+      doReturn(IO.pure(ListZonesResults(resultZones, maxItems = 2, nextId = Some("zone2."))))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, None, 2)
+        .listZones(abcAuth, None, None, 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
+      doReturn(IO.pure(resultZoneIds))
+        .when(mockZoneRepo)
+        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, maxItems = 2).value)
@@ -552,18 +567,24 @@ class ZoneServiceSpec
     }
 
     "set the nameFilter when provided" in {
+      val resultZones = List(abcZone, xyzZone)
+      val resultZoneIds = resultZones.map(_.id)
+
       doReturn(
         IO.pure(
           ListZonesResults(
-            List(abcZone, xyzZone),
+            resultZones,
             zonesFilter = Some("foo"),
             maxItems = 2,
             nextId = Some("zone2."))))
         .when(mockZoneRepo)
-        .listZones(abcAuth, Some("foo"), None, 2)
+        .listZones(abcAuth, Some("foo"), None, 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
+      doReturn(IO.pure(resultZoneIds))
+        .when(mockZoneRepo)
+        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, nameFilter = Some("foo"), maxItems = 2).value)
@@ -574,13 +595,18 @@ class ZoneServiceSpec
     }
 
     "set the startFrom when provided" in {
-      doReturn(
-        IO.pure(ListZonesResults(List(abcZone, xyzZone), startFrom = Some("zone4."), maxItems = 2)))
+      val resultZones = List(abcZone, xyzZone)
+      val resultZoneIds = resultZones.map(_.id)
+
+      doReturn(IO.pure(ListZonesResults(resultZones, startFrom = Some("zone4."), maxItems = 2)))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, Some("zone4."), 2)
+        .listZones(abcAuth, None, Some("zone4."), 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
+      doReturn(IO.pure(resultZoneIds))
+        .when(mockZoneRepo)
+        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)
@@ -589,18 +615,25 @@ class ZoneServiceSpec
     }
 
     "set the nextId to be the current result set size plus the start from" in {
+
+      val resultZones = List(abcZone, xyzZone)
+      val resultZoneIds = resultZones.map(_.id)
       doReturn(
         IO.pure(
           ListZonesResults(
-            List(abcZone, xyzZone),
+            resultZones,
             startFrom = Some("zone4."),
             maxItems = 2,
             nextId = Some("zone6."))))
         .when(mockZoneRepo)
-        .listZones(abcAuth, None, Some("zone4."), 2)
+        .listZones(abcAuth, None, Some("zone4."), 2, false)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
+
+      doReturn(IO.pure(resultZoneIds))
+        .when(mockZoneRepo)
+        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)

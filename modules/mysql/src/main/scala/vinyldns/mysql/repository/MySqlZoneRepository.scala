@@ -105,7 +105,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
   private final val BASE_ZONE_SEARCH_SQL =
     """
-      |SELECT z.data, za.accessor_id
+      |SELECT z.data
       |  FROM zone z
        """.stripMargin
 
@@ -283,12 +283,39 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
+  def getAccess(zones: Seq[String], authPrincipal: AuthPrincipal): IO[Seq[String]] =
+    monitor("repo.ZoneJDBC.getAccess") {
+      IO {
+        DB.readOnly { implicit s =>
+          // need to dynamically build our query list
+          // WHERE zone_access.zone_id IN (?) for zones
+          //   AND zone_acecss.accessor_id IN (?) for the user and groups
+          val accessors =
+            buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds)
+          val accessorQuestionMarks = List.fill(accessors.size)("?").mkString(",")
+          val zoneQuestionMarks = List.fill(zones.size)("?").mkString(",")
+
+          // Returns the zone ids that the user has access to
+          val query =
+            s"""
+              |SELECT zone_id
+              |  FROM zone_access
+              | WHERE zone_id IN ($zoneQuestionMarks)
+              |   AND accessor_id IN($accessorQuestionMarks)
+            """.stripMargin
+
+          // bind zone ids FIRST then the accessors
+          SQL(query).bind(zones ++ accessors: _*).map(_.string(1)).list().apply()
+        }
+      }
+    }
+
   private def withAccessors(
       user: User,
       groupIds: Seq[String],
       searchAll: Boolean): (String, Seq[Any]) =
     // Super users do not need to join across to check zone access as they have access to all of the zones
-    if (user.isSuper || user.isSupport) {
+    if (user.isSuper || user.isSupport || searchAll) {
       (BASE_ZONE_SEARCH_SQL, Seq.empty)
     } else {
       // User is not super or support,
@@ -296,21 +323,11 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       val accessors = buildZoneSearchAccessorList(user, groupIds)
       val questionMarks = List.fill(accessors.size)("?").mkString(",")
 
-      val withAccessorCheck = if (searchAll) {
-        // If we are searching all, the user may not have access to the zone.  We want to know that, so
-        // join through the zone access table to get an accessor id, but accept the possibility it will be NULL
-        BASE_ZONE_SEARCH_SQL +
-          s"""
-             |    LEFT OUTER JOIN zone_access za ON z.id = za.zone_id
-             |      AND za.accessor_id IN ($questionMarks)
-          """.stripMargin
-      } else {
-        BASE_ZONE_SEARCH_SQL +
-          s"""
+      val withAccessorCheck = BASE_ZONE_SEARCH_SQL +
+        s"""
            |    JOIN zone_access za ON z.id = za.zone_id
            |      AND za.accessor_id IN ($questionMarks)
           """.stripMargin
-      }
       (withAccessorCheck, accessors)
     }
 
@@ -380,9 +397,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
   }
 
   private def extractZone(columnIndex: Int): WrappedResultSet => Zone = res => {
-    val z = fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))
-    val accessFound = res.stringOpt(2).isDefined
-    z.copy(userHasAccess = accessFound)
+    fromPB(VinylDNSProto.Zone.parseFrom(res.bytes(columnIndex)))
   }
 
   def deleteTx(zone: Zone): IO[Zone] =

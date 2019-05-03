@@ -288,6 +288,21 @@ class MySqlZoneRepositoryIntegrationSpec
       f.unsafeRunSync().zones shouldBe empty
     }
 
+    "return zones if user is not authorized but searchAll is true" in {
+      val unauthorized = AuthPrincipal(
+        signedInUser = User("not-authorized", "not-authorized", "not-authorized"),
+        memberGroupIds = Seq.empty
+      )
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          zones <- repo.listZones(unauthorized, searchAll = true)
+        } yield zones
+
+      f.unsafeRunSync().zones should contain theSameElementsAs testZones
+    }
+
     "not return zones when access is revoked" in {
       // ok user can access both zones, dummy can only access first zone
       val zones = testZones.take(2)
