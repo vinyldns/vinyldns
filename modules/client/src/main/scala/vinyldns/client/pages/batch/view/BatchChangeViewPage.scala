@@ -27,6 +27,7 @@ import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.router.AppRouter.PropsFromAppRouter
 import vinyldns.client.router.{Page, ToBatchChangeViewPage, ToGroupViewPage}
+import vinyldns.client.components.JsNative.toReadableTimestamp
 import vinyldns.core.domain.batch.SingleChangeStatus
 
 object BatchChangeViewPage extends PropsFromAppRouter {
@@ -62,7 +63,7 @@ object BatchChangeViewPage extends PropsFromAppRouter {
                   <.h3(<.span(^.className := "fa fa-list"), "  DNS Record Request (Batch Change)"),
                   <.h5(s"ID: ${bc.id}"),
                   toOwnerGroupHeader(P, bc),
-                  <.h5(s"Created: ${bc.createdTimestamp}"),
+                  <.h5(s"Created: ${toReadableTimestamp(bc.createdTimestamp)}"),
                   toDescriptionHeader(bc)
                 )
               ),

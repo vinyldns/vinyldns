@@ -22,6 +22,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components.AlertBox.addNotification
+import vinyldns.client.components.JsNative.toReadableTimestamp
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.http.{Http, HttpResponse, ListRecordSetChangesRoute}
 import vinyldns.client.models.Pagination
@@ -188,7 +189,7 @@ object RecordSetChangeTable {
 
     def toTableRow(change: RecordSetChangeResponse): TagMod =
       <.tr(
-        <.td(change.created),
+        <.td(toReadableTimestamp(change.created)),
         <.td(change.recordSet.name),
         <.td(change.recordSet.`type`.toString),
         <.td(change.changeType.toString),

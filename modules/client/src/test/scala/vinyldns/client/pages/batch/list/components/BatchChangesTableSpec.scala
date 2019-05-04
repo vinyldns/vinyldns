@@ -23,6 +23,7 @@ import vinyldns.client.SharedTestData
 import vinyldns.client.http.{Http, HttpResponse, ListBatchChangesRoute}
 import vinyldns.client.models.batch.BatchChangeListResponse
 import vinyldns.client.router.Page
+import vinyldns.client.components.JsNative.toReadableTimestamp
 
 import scala.language.existentials
 
@@ -74,7 +75,7 @@ class BatchChangesTableSpec extends WordSpec with Matchers with MockFactory with
         val html = table.outerHtmlScrubbed()
 
         initialBatchChangeList.batchChanges.map { change =>
-          html should include(s"""<td>${change.createdTimestamp}</td>""")
+          html should include(s"""<td>${toReadableTimestamp(change.createdTimestamp)}</td>""")
           html should include(s"""<td>${change.id}</td>""")
           html should include(s"""${change.status.toString}""")
           html should include(s"<td>${change.comments.getOrElse("")}</td>")

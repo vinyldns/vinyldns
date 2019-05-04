@@ -20,6 +20,7 @@ import japgolly.scalajs.react.Callback
 
 import scala.scalajs.js.timers.setTimeout
 import scala.scalajs.js.Dynamic.global
+import scala.scalajs.js.Date
 import scala.util.Try
 
 object JsNative {
@@ -37,4 +38,17 @@ object JsNative {
     ()
   }
 
+  def toReadableTimestamp(t: String): String =
+    Try {
+      val datetime = new Date(Date.parse(t))
+      val date = datetime.toDateString()
+      val time = datetime.toLocaleTimeString()
+      s"$date $time"
+    }.getOrElse(t)
+
+  def toReadableTimestamp(tO: Option[String]): String =
+    tO match {
+      case Some(t) => toReadableTimestamp(t)
+      case None => ""
+    }
 }

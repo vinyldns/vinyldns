@@ -25,6 +25,7 @@ import vinyldns.client.http._
 import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.pages.zone.list.components.ZoneModal
 import vinyldns.client.router.Page
+import vinyldns.client.components.JsNative.toReadableTimestamp
 
 import scala.language.existentials
 
@@ -51,9 +52,9 @@ class ManageZoneTabSpec extends WordSpec with Matchers with MockFactory with Sha
         val html = c.outerHtmlScrubbed()
         html should include(s"<td>${initialZone.email}</td>")
         html should include("<td>Private</td>")
-        html should include(s"<td>${initialZone.created}</td>")
-        html should include(s"<td>${initialZone.updated.get}</td>")
-        html should include(s"<td>${initialZone.latestSync.get}</td>")
+        html should include(s"<td>${toReadableTimestamp(initialZone.created)}</td>")
+        html should include(s"<td>${toReadableTimestamp(initialZone.updated)}</td>")
+        html should include(s"<td>${toReadableTimestamp(initialZone.latestSync)}</td>")
         html should include("<td>default</td>")
       }
     }

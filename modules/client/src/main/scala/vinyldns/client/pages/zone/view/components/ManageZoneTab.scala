@@ -27,6 +27,7 @@ import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.models.zone.ZoneResponse
 import vinyldns.client.pages.zone.list.components.ZoneModal
 import vinyldns.client.router.Page
+import vinyldns.client.components.JsNative.toReadableTimestamp
 
 object ManageZoneTab {
   case class Props(
@@ -69,15 +70,15 @@ object ManageZoneTab {
               ),
               <.tr(
                 <.th("Created:"),
-                <.td(P.zone.created)
+                <.td(toReadableTimestamp(P.zone.created))
               ),
               <.tr(
                 <.th("Latest Update:"),
-                <.td(s"${P.zone.updated.getOrElse("")}")
+                <.td(toReadableTimestamp(P.zone.updated))
               ),
               <.tr(
                 <.th("Latest Sync:"),
-                <.td(s"${P.zone.latestSync.getOrElse("")}")
+                <.td(toReadableTimestamp(P.zone.latestSync))
               ),
               <.tr(
                 <.th("DNS Connection:"),

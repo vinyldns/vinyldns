@@ -27,6 +27,7 @@ import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.Pagination
 import vinyldns.client.models.batch.{BatchChangeListResponse, BatchChangeSummaryResponse}
 import vinyldns.client.router.{Page, ToBatchChangeViewPage}
+import vinyldns.client.components.JsNative.toReadableTimestamp
 import vinyldns.core.domain.batch.BatchChangeStatus
 
 import scala.util.Try
@@ -132,7 +133,7 @@ object BatchChangesTable {
 
     def toTableRow(P: Props, change: BatchChangeSummaryResponse): TagMod =
       <.tr(
-        <.td(change.createdTimestamp),
+        <.td(toReadableTimestamp(change.createdTimestamp)),
         <.td(change.id),
         <.td(change.totalChanges),
         <.td(toStatus(change.status)),

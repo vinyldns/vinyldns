@@ -25,6 +25,7 @@ import vinyldns.client.http._
 import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.models.record.RecordSetChangeListResponse
 import vinyldns.client.router.Page
+import vinyldns.client.components.JsNative.toReadableTimestamp
 
 import scala.language.existentials
 
@@ -123,7 +124,7 @@ class RecordSetChangeTableSpec extends WordSpec with Matchers with MockFactory w
         val table = ReactTestUtils.findRenderedDOMComponentWithTag(c, "table")
         val html = table.outerHtmlScrubbed()
         initialRecordSetChangeList.recordSetChanges.map { r =>
-          html should include(r.created)
+          html should include(toReadableTimestamp(r.created))
           html should include(r.recordSet.name)
           html should include(r.recordSet.`type`.toString)
           html should include(r.changeType.toString)
