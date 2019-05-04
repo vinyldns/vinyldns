@@ -23,14 +23,17 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute}
+import vinyldns.client.http.{GetBackendIdsRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.pages.zone.list.components.{ZoneModal, ZonesTable}
 import vinyldns.client.router.AppRouter.PropsFromAppRouter
 import vinyldns.client.router.Page
 
 object ZoneListPage extends PropsFromAppRouter {
-  case class State(groupList: Option[GroupListResponse] = None, showCreateZone: Boolean = false)
+  case class State(
+      groupList: Option[GroupListResponse] = None,
+      backendIds: Option[List[String]] = None,
+      showCreateZone: Boolean = false)
 
   val component = ScalaComponent
     .builder[Props]("ZoneListPage")
@@ -46,8 +49,8 @@ object ZoneListPage extends PropsFromAppRouter {
     val refToTable = Ref.toScalaComponent(ZonesTable.component)
 
     def render(P: Props, S: State): VdomElement =
-      S.groupList match {
-        case Some(groupList) =>
+      (S.groupList, S.backendIds) match {
+        case (Some(groupList), Some(backendIds)) =>
           <.div(
             GlobalStyle.Styles.height100,
             ^.className := "right_col",
@@ -119,9 +122,9 @@ object ZoneListPage extends PropsFromAppRouter {
                 )
               )
             ),
-            createZoneModal(P, S, groupList: GroupListResponse)
+            createZoneModal(P, S, groupList, backendIds)
           )
-        case None =>
+        case _ =>
           // show loading message
           <.div(
             GlobalStyle.Styles.height100,
@@ -152,11 +155,20 @@ object ZoneListPage extends PropsFromAppRouter {
           )
       }
 
-    def createZoneModal(P: Props, S: State, groupList: GroupListResponse): TagMod =
+    def createZoneModal(
+        P: Props,
+        S: State,
+        groupList: GroupListResponse,
+        backendIds: List[String]): TagMod =
       if (S.showCreateZone)
         ZoneModal(
           ZoneModal
-            .Props(P.http, _ => makeCreateFormInvisible, _ => refreshZonesTable, groupList))
+            .Props(
+              P.http,
+              _ => makeCreateFormInvisible,
+              _ => refreshZonesTable,
+              groupList,
+              backendIds))
       else TagMod.empty
 
     def refreshZonesTable: Callback =
@@ -197,6 +209,17 @@ object ZoneListPage extends PropsFromAppRouter {
         addNotification(P.http.toNotification("listing groups", httpResponse, onlyOnError = true))
       }
       P.http.get(ListGroupsRoute(), onSuccess, onFailure)
+    }
+
+    def getBackendIds(P: Props): Callback = {
+      val onSuccess = { (_: HttpResponse, parsed: Option[List[String]]) =>
+        bs.modState(_.copy(backendIds = parsed))
+      }
+      val onFailure = { httpResponse: HttpResponse =>
+        addNotification(
+          P.http.toNotification("listing backend ids", httpResponse, onlyOnError = true))
+      }
+      P.http.get(GetBackendIdsRoute, onSuccess, onFailure)
     }
   }
 }

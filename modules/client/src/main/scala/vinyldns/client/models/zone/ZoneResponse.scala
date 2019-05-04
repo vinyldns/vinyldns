@@ -34,7 +34,8 @@ case class ZoneResponse(
     updated: Option[String] = None,
     adminGroupName: Option[String] = None,
     connection: Option[ZoneConnection] = None,
-    transferConnection: Option[ZoneConnection] = None
+    transferConnection: Option[ZoneConnection] = None,
+    backendId: Option[String] = None
 ) extends ZoneModalInfo
 
 object ZoneResponse extends OptionRW {

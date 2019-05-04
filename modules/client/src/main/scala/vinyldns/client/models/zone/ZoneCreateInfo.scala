@@ -26,7 +26,8 @@ case class ZoneCreateInfo(
     adminGroupName: Option[String],
     shared: Boolean,
     connection: Option[ZoneConnection],
-    transferConnection: Option[ZoneConnection])
+    transferConnection: Option[ZoneConnection],
+    backendId: Option[String])
     extends ZoneModalInfo
 
 object ZoneCreateInfo extends OptionRW {

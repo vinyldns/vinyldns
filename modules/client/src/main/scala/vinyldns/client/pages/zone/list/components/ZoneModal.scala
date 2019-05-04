@@ -35,12 +35,14 @@ object ZoneModal {
       zone: ZoneModalInfo,
       customServer: Boolean = false,
       customTransfer: Boolean = false,
+      customBackendId: Boolean = false,
       isUpdate: Boolean = false)
   case class Props(
       http: Http,
       close: Unit => Callback,
       refreshZones: Unit => Callback,
       groupList: GroupListResponse,
+      backendIds: List[String],
       existing: Option[ZoneResponse] = None)
 
   val component = ScalaComponent
@@ -48,8 +50,13 @@ object ZoneModal {
     .initialStateFromProps { p =>
       p.existing match {
         case Some(e) =>
-          State(e, e.connection.isDefined, e.transferConnection.isDefined, isUpdate = true)
-        case None => State(ZoneCreateInfo("", "", "", None, shared = false, None, None))
+          State(
+            e,
+            e.connection.isDefined,
+            e.transferConnection.isDefined,
+            e.backendId.isDefined,
+            isUpdate = true)
+        case None => State(ZoneCreateInfo("", "", "", None, shared = false, None, None, None))
       }
     }
     .renderBackend[Backend]
@@ -75,7 +82,29 @@ object ZoneModal {
               generateInputFieldProps(P, S),
               _ => if (S.isUpdate) updateZone(P, S) else createZone(P, S)
             ),
+            // toggle backend id
             <.div(
+              <.div(
+                ^.className := "form-group",
+                <.label(
+                  ^.className := "check col-md-3 col-sm-3 col-xs-12 control-label",
+                  "Backend ID  ",
+                  <.input(
+                    GlobalStyle.Styles.cursorPointer,
+                    ^.className := "test-toggle-backendid",
+                    ^.`type` := "checkbox",
+                    ^.checked := S.customBackendId,
+                    ^.onChange --> toggleBackendId
+                  )
+                ),
+                <.div(
+                  ^.className := "help-block col-md-6 col-sm-6 col-xs-12",
+                  """
+                    |Check if using the ID of a pre-configured connection (uncommon).
+                    |Otherwise the default connection will be used.
+                  """.stripMargin.replaceAll("\n", " ")
+                )
+              ),
               // toggle custom connection
               <.div(
                 ^.className := "form-group",
@@ -92,7 +121,10 @@ object ZoneModal {
                 ),
                 <.div(
                   ^.className := "help-block col-md-6 col-sm-6 col-xs-12",
-                  "Check if using a custom DNS connection (uncommon). Otherwise the default will be used."
+                  """
+                    |Check if using a custom DNS connection (uncommon).
+                    |Otherwise the default connection will be used.
+                  """.stripMargin.replaceAll("\n", " ")
                 )
               ),
               // toggle custom transfer
@@ -111,7 +143,10 @@ object ZoneModal {
                 ),
                 <.div(
                   ^.className := "help-block col-md-6 col-sm-6 col-xs-12",
-                  "Check if using a custom DNS Transfer connection (uncommon). Otherwise the default will be used."
+                  """
+                    |Check if using a custom DNS Transfer connection (uncommon).
+                    |Otherwise the default connection will be used.
+                  """.stripMargin.replaceAll("\n", " ")
                 )
               ),
               // toggle shared
@@ -203,9 +238,30 @@ object ZoneModal {
       )
 
       baseProps :::
+        generateCustomBackendIdField(P, S) :::
         generateCustomConnectionFields(S) :::
         generateCustomConnectionFields(S, isTransfer = true)
     }
+
+    def generateCustomBackendIdField(P: Props, S: State): List[ValidatedInput.Props] =
+      if (S.customBackendId)
+        List(
+          ValidatedInput.Props(
+            changeBackendId,
+            value = Some(S.zone.backendId.getOrElse("")),
+            inputClass = Some("test-backend-id"),
+            label = Some("Backend ID"),
+            helpText = Some(
+              """
+                |The ID for a pre-configured DNS connection configuration. Please contact your DNS admin team
+                |for more information if you believe you need a custom connection. In most cases, the default
+                |connection will suffice.
+              """.stripMargin
+            ),
+            options = List(("", "")) ::: P.backendIds.map(o => (o, o))
+          )
+        )
+      else List()
 
     def generateCustomConnectionFields(
         S: State,
@@ -280,6 +336,17 @@ object ZoneModal {
         }
       }
 
+    def toggleBackendId(): Callback =
+      bs.modState { s =>
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[ZoneResponse]
+          s.copy(zone = zone.copy(backendId = None), customBackendId = !s.customBackendId)
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(backendId = None), customBackendId = !s.customBackendId)
+        }
+      }
+
     def toggleShared(): Callback =
       bs.modState { s =>
         if (s.isUpdate) {
@@ -331,6 +398,18 @@ object ZoneModal {
 
     def toAdminGroupDatalist(groupList: GroupListResponse): List[(String, String)] =
       groupList.groups.map(g => g.name -> s"${g.name} (id: ${g.id})")
+
+    def changeBackendId(value: String): Callback =
+      bs.modState { s =>
+        val id = if (value.isEmpty) None else Some(value)
+        if (s.isUpdate) {
+          val zone = s.zone.asInstanceOf[ZoneResponse]
+          s.copy(zone = zone.copy(backendId = id))
+        } else {
+          val zone = s.zone.asInstanceOf[ZoneCreateInfo]
+          s.copy(zone = zone.copy(backendId = id))
+        }
+      }
 
     def changeName(value: String): Callback =
       bs.modState { s =>

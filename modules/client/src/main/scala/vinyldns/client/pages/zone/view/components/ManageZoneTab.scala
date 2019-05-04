@@ -33,6 +33,7 @@ object ManageZoneTab {
   case class Props(
       zone: ZoneResponse,
       groupList: GroupListResponse,
+      backendIds: List[String],
       http: Http,
       routerCtl: RouterCtl[Page],
       refreshZone: Unit => Callback)
@@ -120,6 +121,7 @@ object ManageZoneTab {
               _ => makeUpdateFormInvisible,
               _ => P.refreshZone(()),
               P.groupList,
+              P.backendIds,
               Some(P.zone)))
       else TagMod.empty
 

@@ -276,3 +276,10 @@ final case class GetBatchChangeRoute(id: String) extends RequestRoute[BatchChang
 
   def path: String = s"/api/batchchanges/$id"
 }
+
+object GetBackendIdsRoute extends RequestRoute[List[String]] {
+  implicit val rw: ReadWriter[List[String]] =
+    ReadWriter.join(SeqLikeReader[List, String], SeqLikeWriter[List, String])
+
+  def path: String = "/api/zones/backendids"
+}

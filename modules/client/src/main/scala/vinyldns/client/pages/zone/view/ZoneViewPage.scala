@@ -24,7 +24,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.http.{GetZoneRoute, Http, HttpResponse, ListGroupsRoute}
+import vinyldns.client.http._
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.pages.zone.view.components.{
@@ -37,13 +37,18 @@ import vinyldns.client.router._
 import vinyldns.core.domain.zone.ZoneStatus
 
 object ZoneViewPage extends PropsFromAppRouter {
-  case class State(zone: Option[ZoneResponse] = None, groupList: Option[GroupListResponse] = None)
+  case class State(
+      zone: Option[ZoneResponse] = None,
+      groupList: Option[GroupListResponse] = None,
+      backendIds: Option[List[String]] = None)
 
   private val component = ScalaComponent
     .builder[Props]("ViewZone")
     .initialState(State())
     .renderBackend[Backend]
-    .componentWillMount(e => e.backend.getZone(e.props) >> e.backend.getGroups(e.props))
+    .componentWillMount(e =>
+      e.backend.getZone(e.props) >> e.backend.getGroups(e.props) >>
+        e.backend.getBackendIds(e.props))
     .build
 
   def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, State, Backend] =
@@ -55,8 +60,8 @@ object ZoneViewPage extends PropsFromAppRouter {
         GlobalStyle.Styles.height100,
         ^.className := "right_col",
         ^.role := "main",
-        (S.zone, S.groupList) match {
-          case (Some(zone), Some(groupList)) =>
+        (S.zone, S.groupList, S.backendIds) match {
+          case (Some(zone), Some(groupList), Some(backendIds)) =>
             <.div(
               <.div(
                 ^.className := "page-title",
@@ -88,7 +93,7 @@ object ZoneViewPage extends PropsFromAppRouter {
                     ^.className := "panel-body tab-content",
                     <.div(
                       ^.className := "tab-pane active",
-                      tabContent(P, zone, groupList)
+                      tabContent(P, zone, groupList, backendIds)
                     )
                   )
                 )
@@ -166,14 +171,19 @@ object ZoneViewPage extends PropsFromAppRouter {
       }
     }
 
-    def tabContent(P: Props, zone: ZoneResponse, groupList: GroupListResponse): VdomElement =
+    def tabContent(
+        P: Props,
+        zone: ZoneResponse,
+        groupList: GroupListResponse,
+        backendIds: List[String]): VdomElement =
       P.page match {
         case _: ToZoneViewRecordsTab =>
           ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, groupList, P.http, P.router))
         case _: ToZoneViewAccessTab =>
           ManageAccessTab(ManageAccessTab.Props(zone, groupList, P.http, P.router, _ => getZone(P)))
         case _: ToZoneViewZoneTab =>
-          ManageZoneTab(ManageZoneTab.Props(zone, groupList, P.http, P.router, _ => getZone(P)))
+          ManageZoneTab(
+            ManageZoneTab.Props(zone, groupList, backendIds, P.http, P.router, _ => getZone(P)))
         case _: ToZoneViewChangesTab =>
           ChangeHistoryTab(ChangeHistoryTab.Props(zone, groupList, P.http, P.router))
         case _ =>
@@ -201,6 +211,17 @@ object ZoneViewPage extends PropsFromAppRouter {
       }
 
       P.http.get(ListGroupsRoute(100), onSuccess, onFailure)
+    }
+
+    def getBackendIds(P: Props): Callback = {
+      val onSuccess = { (_: HttpResponse, parsed: Option[List[String]]) =>
+        bs.modState(_.copy(backendIds = parsed))
+      }
+      val onFailure = { httpResponse: HttpResponse =>
+        addNotification(
+          P.http.toNotification("listing backend ids", httpResponse, onlyOnError = true))
+      }
+      P.http.get(GetBackendIdsRoute, onSuccess, onFailure)
     }
 
     def toStatus(status: ZoneStatus.ZoneStatus): TagMod =

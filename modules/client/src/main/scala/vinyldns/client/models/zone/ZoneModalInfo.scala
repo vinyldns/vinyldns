@@ -24,6 +24,7 @@ trait ZoneModalInfo {
   def adminGroupName: Option[String]
   def connection: Option[ZoneConnection]
   def transferConnection: Option[ZoneConnection]
+  def backendId: Option[String]
 
   def newConnectionKeyName(value: String): Option[ZoneConnection] =
     this.connection match {
