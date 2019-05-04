@@ -80,23 +80,23 @@ class ValidationsSpec extends WordSpec with Matchers with MockFactory with Share
     }
   }
 
-  "Validations.validateIsOption" should {
-    val matchDatalist = Validations(matchOptions = true)
+  "Validations.validateIsInGroup" should {
+    val matchGroup = Validations(matchGroup = true)
     val options = List("value1" -> "display1", "value2" -> "display2")
 
     "fail if input is not in options" in {
-      Validations.validateIsOption("no-existo", matchDatalist, options).isLeft shouldBe true
+      Validations.validateIsInGroup("no-existo", matchGroup, options).isLeft shouldBe true
     }
 
     "pass if input is an option" in {
-      Validations.validateIsOption("value1", matchDatalist, options).isRight shouldBe true
-      Validations.validateIsOption("value2", matchDatalist, options).isRight shouldBe true
+      Validations.validateIsInGroup("value1", matchGroup, options).isRight shouldBe true
+      Validations.validateIsInGroup("value2", matchGroup, options).isRight shouldBe true
     }
 
     "pass if validation is not set" in {
-      Validations.validateIsOption("", defaultValidations, options).isRight shouldBe true
-      Validations.validateIsOption("value", defaultValidations, options).isRight shouldBe true
-      Validations.validateIsOption("1234567890", defaultValidations, options).isRight shouldBe true
+      Validations.validateIsInGroup("", defaultValidations, options).isRight shouldBe true
+      Validations.validateIsInGroup("value", defaultValidations, options).isRight shouldBe true
+      Validations.validateIsInGroup("1234567890", defaultValidations, options).isRight shouldBe true
     }
   }
 

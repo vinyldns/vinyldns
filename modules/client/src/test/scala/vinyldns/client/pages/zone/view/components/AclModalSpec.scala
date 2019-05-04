@@ -35,8 +35,9 @@ import scala.language.existentials
 
 class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val initialAclList = List(userAclRule, groupAclRule)
-  val initialZone = generateZoneResponses(1).head.copy(acl = Rules(initialAclList))
   val initialGroups = generateGroupResponses(10).toList
+  val initialZone =
+    generateZoneResponses(1, initialGroups(0)).head.copy(acl = Rules(initialAclList))
   val mockRouter = mock[RouterCtl[Page]]
 
   class Fixture(isUpdate: Boolean = false) {
@@ -83,8 +84,9 @@ class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTe
         accessLevel = AccessLevel.Write,
         recordTypes = Seq(RecordType.A),
         description = Some("desc"),
-        groupId = Some(testUUID),
-        recordMask = Some("mask*")
+        groupId = Some(initialGroups(0).id),
+        recordMask = Some("mask*"),
+        displayName = Some(initialGroups(0).name)
       )
 
       ReactTestUtils.withRenderedIntoDocument(AclModal(props)) { c =>
@@ -92,13 +94,13 @@ class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTe
         val aclType = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-type")
         Simulate.change(aclType, SimEvent.Change(AclType.Group.toString))
 
-        val groupId = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupid")
+        val groupName = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-group-name")
         val accessLevel = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-accesslevel")
         val mask = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-recordmask")
         val desc = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-description")
         val recordTypes = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-recordtypes")
 
-        Simulate.change(groupId, SimEvent.Change(expectedRule.groupId.get))
+        Simulate.change(groupName, SimEvent.Change(expectedRule.displayName.get))
         Simulate.change(accessLevel, SimEvent.Change(expectedRule.accessLevel.toString))
         Simulate.change(mask, SimEvent.Change(expectedRule.recordMask.get))
         Simulate.change(desc, SimEvent.Change(expectedRule.description.get))
@@ -119,8 +121,9 @@ class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTe
         accessLevel = AccessLevel.Write,
         recordTypes = Seq(RecordType.A),
         description = Some("desc"),
-        groupId = Some(testUUID),
-        recordMask = Some("mask*")
+        groupId = Some(initialGroups(0).id),
+        recordMask = Some("mask*"),
+        displayName = Some(initialGroups(0).name)
       )
 
       val updatedZone = initialZone.copy(acl = Rules(expectedRule +: initialZone.acl.rules))
@@ -135,13 +138,13 @@ class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTe
         val aclType = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-type")
         Simulate.change(aclType, SimEvent.Change(AclType.Group.toString))
 
-        val groupId = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupid")
+        val groupName = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-group-name")
         val accessLevel = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-accesslevel")
         val mask = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-recordmask")
         val desc = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-description")
         val recordTypes = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-recordtypes")
 
-        Simulate.change(groupId, SimEvent.Change(expectedRule.groupId.get))
+        Simulate.change(groupName, SimEvent.Change(expectedRule.displayName.get))
         Simulate.change(accessLevel, SimEvent.Change(expectedRule.accessLevel.toString))
         Simulate.change(mask, SimEvent.Change(expectedRule.recordMask.get))
         Simulate.change(desc, SimEvent.Change(expectedRule.description.get))
@@ -215,10 +218,11 @@ class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTe
         accessLevel = AccessLevel.Write,
         recordTypes = Seq(RecordType.A),
         description = Some("desc"),
-        groupId = Some(testUUID),
+        groupId = Some(initialGroups(0).id),
         recordMask = Some("mask*"),
         userId = None,
-        userName = None
+        userName = None,
+        displayName = Some(initialGroups(0).name)
       )
 
       val updatedZone =
@@ -234,13 +238,13 @@ class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTe
         val aclType = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-type")
         Simulate.change(aclType, SimEvent.Change(AclType.Group.toString))
 
-        val groupId = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-groupid")
+        val groupName = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-group-name")
         val accessLevel = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-accesslevel")
         val mask = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-recordmask")
         val desc = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-description")
         val recordTypes = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-recordtypes")
 
-        Simulate.change(groupId, SimEvent.Change(expectedRule.groupId.get))
+        Simulate.change(groupName, SimEvent.Change(expectedRule.displayName.get))
         Simulate.change(accessLevel, SimEvent.Change(expectedRule.accessLevel.toString))
         Simulate.change(mask, SimEvent.Change(expectedRule.recordMask.get))
         Simulate.change(desc, SimEvent.Change(expectedRule.description.get))

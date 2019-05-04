@@ -23,6 +23,7 @@ case class ZoneCreateInfo(
     name: String,
     email: String,
     adminGroupId: String,
+    adminGroupName: Option[String],
     shared: Boolean,
     connection: Option[ZoneConnection],
     transferConnection: Option[ZoneConnection])

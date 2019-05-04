@@ -25,4 +25,5 @@ trait RecordSetModalInfo {
   def ttl: Int
   def records: List[RecordData]
   def ownerGroupId: Option[String]
+  def ownerGroupName: Option[String]
 }

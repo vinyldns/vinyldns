@@ -529,9 +529,9 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
           record = Some(RecordData(ptrdname = Some(jointChange.inputName)))
         )
 
-        val patchedChanged =
+        val patchedChanges =
           createInfo.changes.patch(nextJointIndex, List(addressChange, ptrChange), 1)
-        jointPtrConversion(createInfo.copy(changes = patchedChanged))
+        jointPtrConversion(createInfo.copy(changes = patchedChanges))
       }
     }
 

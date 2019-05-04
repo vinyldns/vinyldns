@@ -18,14 +18,15 @@ package vinyldns.client.models.zone
 
 import org.scalatest.{Matchers, WordSpec}
 
-class BasicZoneInfoSpec extends WordSpec with Matchers {
-  val noConnections = ZoneCreateInfo("name.", "test@email.com", "adminGroupId", false, None, None)
+class ZoneModalInfoSpec extends WordSpec with Matchers {
+  val noConnections =
+    ZoneCreateInfo("name.", "test@email.com", "adminGroupId", None, false, None, None)
   val connection = ZoneConnection("keyName", "keyName", "key", "1.1.1.1")
   val transfer = ZoneConnection("tKeyName", "tKeyName", "tkey", "2.2.2.2")
   val withConnections = noConnections
     .copy(connection = Some(connection), transferConnection = Some(transfer))
 
-  "BasicZoneInfo.newConnectionKeyName" should {
+  "ZoneModalInfo.newConnectionKeyName" should {
     "work when changing existing key name" in {
       val expected =
         withConnections.copy(connection = Some(connection.copy(name = "new", keyName = "new")))
@@ -43,7 +44,7 @@ class BasicZoneInfoSpec extends WordSpec with Matchers {
     }
   }
 
-  "BasicZoneInfo.newConnectionKey" should {
+  "ZoneModalInfo.newConnectionKey" should {
     "work when changing existing key" in {
       val expected =
         withConnections.copy(connection = Some(connection.copy(key = "new")))
@@ -61,7 +62,7 @@ class BasicZoneInfoSpec extends WordSpec with Matchers {
     }
   }
 
-  "BasicZoneInfo.newConnectionServer" should {
+  "ZoneModalInfo.newConnectionServer" should {
     "work when changing existing server" in {
       val expected =
         withConnections.copy(connection = Some(connection.copy(primaryServer = "new")))
@@ -79,7 +80,7 @@ class BasicZoneInfoSpec extends WordSpec with Matchers {
     }
   }
 
-  "BasicZoneInfo.newTransferKeyName" should {
+  "ZoneModalInfo.newTransferKeyName" should {
     "work when changing existing transfer key name" in {
       val expected =
         withConnections.copy(
@@ -99,7 +100,7 @@ class BasicZoneInfoSpec extends WordSpec with Matchers {
     }
   }
 
-  "BasicZoneInfo.newTransferKey" should {
+  "ZoneModalInfo.newTransferKey" should {
     "work when changing existing transfer key" in {
       val expected =
         withConnections.copy(transferConnection = Some(transfer.copy(key = "new")))
@@ -117,7 +118,7 @@ class BasicZoneInfoSpec extends WordSpec with Matchers {
     }
   }
 
-  "BasicZoneInfo.newTransferServer" should {
+  "ZoneModalInfo.newTransferServer" should {
     "work when changing existing transfer server" in {
       val expected =
         withConnections.copy(transferConnection = Some(transfer.copy(primaryServer = "new")))

@@ -28,14 +28,14 @@ import vinyldns.client.router.Page
 
 class ManageRecordSetsTabSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val initialZone = generateZoneResponses(1).head
+  val initialGroups = generateGroupResponses(10)
+  val initialGroupList = GroupListResponse(initialGroups.toList, 100)
+  val initialZone = generateZoneResponses(1, initialGroups(0)).head
   val initialRecordSets = generateRecordSetResponses(10, initialZone.id)
   val initialRecordSetList = RecordSetListResponse(initialRecordSets.toList, 100)
   val initialRecordSetChanges = generateRecordSetChangeResponses(10, initialZone)
   val initialRecordSetChangeList =
     RecordSetChangeListResponse(initialZone.id, initialRecordSetChanges.toList, 100)
-  val initialGroups = generateGroupResponses(10)
-  val initialGroupList = GroupListResponse(initialGroups.toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]

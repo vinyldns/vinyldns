@@ -23,7 +23,7 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components._
 import vinyldns.client.http.{CreateZoneRoute, Http, HttpResponse, UpdateZoneRoute}
-import vinyldns.client.models.membership.GroupListResponse
+import vinyldns.client.models.membership.{GroupListResponse, GroupResponse}
 import vinyldns.client.components.AlertBox.addNotification
 import upickle.default.write
 import vinyldns.client.css.GlobalStyle
@@ -49,7 +49,7 @@ object ZoneModal {
       p.existing match {
         case Some(e) =>
           State(e, e.connection.isDefined, e.transferConnection.isDefined, isUpdate = true)
-        case None => State(ZoneCreateInfo("", "", "", shared = false, None, None))
+        case None => State(ZoneCreateInfo("", "", "", None, shared = false, None, None))
       }
     }
     .renderBackend[Backend]
@@ -181,17 +181,17 @@ object ZoneModal {
           validations = Some(Validations(required = true))
         ),
         ValidatedInput.Props(
-          changeAdminGroupId,
-          value = Some(S.zone.adminGroupId),
+          changeAdminGroup(_, P.groupList.groups),
+          value = S.zone.adminGroupName,
           inputClass = Some("test-group-admin"),
-          label = Some("Admin Group Id"),
+          label = Some("Admin Group"),
           helpText = Some(s"""
                |The Vinyl Group that will be given admin rights to the zone.
                | All users in the admin group will have the ability to manage
                | all records in the zone, as well as change zone level information
                | and access rules. You can create a new group from the Groups page.
               """.stripMargin),
-          validations = Some(Validations(required = true, uuid = true)),
+          validations = Some(Validations(required = true, matchGroup = true)),
           options = toAdminGroupDatalist(P.groupList),
           placeholder =
             if (P.groupList.groups.isEmpty)
@@ -330,7 +330,7 @@ object ZoneModal {
       )
 
     def toAdminGroupDatalist(groupList: GroupListResponse): List[(String, String)] =
-      groupList.groups.map(g => g.id -> s"${g.name} (${g.id})")
+      groupList.groups.map(g => g.name -> s"${g.name} (id: ${g.id})")
 
     def changeName(value: String): Callback =
       bs.modState { s =>
@@ -354,14 +354,20 @@ object ZoneModal {
         }
       }
 
-    def changeAdminGroupId(value: String): Callback =
+    def changeAdminGroup(value: String, groups: List[GroupResponse]): Callback =
       bs.modState { s =>
+        val adminGroupId = groups.find(_.name == value.trim).map(_.id)
+
         if (s.isUpdate) {
           val zone = s.zone.asInstanceOf[ZoneResponse]
-          s.copy(zone = zone.copy(adminGroupId = value))
+          s.copy(
+            zone =
+              zone.copy(adminGroupId = adminGroupId.getOrElse(""), adminGroupName = Some(value)))
         } else {
           val zone = s.zone.asInstanceOf[ZoneCreateInfo]
-          s.copy(zone = zone.copy(adminGroupId = value))
+          s.copy(
+            zone =
+              zone.copy(adminGroupId = adminGroupId.getOrElse(""), adminGroupName = Some(value)))
         }
       }
 

@@ -26,12 +26,13 @@ case class RecordSetCreateInfo(
     name: String,
     ttl: Int,
     records: List[RecordData],
-    ownerGroupId: Option[String])
+    ownerGroupId: Option[String],
+    ownerGroupName: Option[String])
     extends RecordSetModalInfo
 
 object RecordSetCreateInfo extends RecordSetTypeRW with OptionRW {
   implicit val rw: ReadWriter[RecordSetCreateInfo] = macroRW
 
   def apply(zoneId: String): RecordSetCreateInfo =
-    new RecordSetCreateInfo(zoneId, RecordType.A, "", 300, List(RecordData()), None)
+    new RecordSetCreateInfo(zoneId, RecordType.A, "", 300, List(RecordData()), None, None)
 }

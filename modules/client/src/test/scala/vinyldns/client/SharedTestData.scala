@@ -93,7 +93,7 @@ trait SharedTestData {
         Some(s"created-$i"))
   }
 
-  def generateZoneResponses(numZones: Int): Seq[ZoneResponse] =
+  def generateZoneResponses(numZones: Int, adminGroup: GroupResponse): Seq[ZoneResponse] =
     for {
       i <- 0 until numZones
     } yield
@@ -101,7 +101,7 @@ trait SharedTestData {
         UUID.randomUUID().toString,
         s"name-$i.",
         s"email-$i@test.com",
-        UUID.randomUUID().toString,
+        adminGroup.id,
         ZoneStatus.Active,
         s"created-$i",
         "system",
@@ -109,7 +109,7 @@ trait SharedTestData {
         Rules(List()),
         latestSync = Some(s"sync-$i"),
         updated = Some(s"updated-$i"),
-        adminGroupName = Some(s"adminGroupName-$i")
+        adminGroupName = Some(adminGroup.name)
       )
 
   def generateRecordSetResponses(numRecords: Int, zoneId: String): Seq[RecordSetResponse] =

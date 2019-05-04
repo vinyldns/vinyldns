@@ -188,17 +188,16 @@ object AclModal {
         case AclType.Group =>
           List(selectApplyTo) :+
             ValidatedInput.Props(
-              changeGroupId,
-              value = S.rule.groupId,
-              inputClass = Some("test-groupid"),
-              label = Some("Target Group Id"),
+              changeGroup(_, P.groups),
+              value = S.rule.displayName,
+              inputClass = Some("test-group-name"),
+              label = Some("Target Group"),
               helpText = Some(s"""
                                  |The Vinyl Group that the rule applies to.
-                                 | Search for a group you are in by name or Id.
-                                 | If you not in the target group, you can still input the Group Id
+                                 | Search for a group you are in by name or Id
                               """.stripMargin),
-              validations = Some(Validations(required = true, uuid = true)),
-              options = P.groups.map(g => (g.id, g.name)),
+              validations = Some(Validations(required = true, matchGroup = true)),
+              options = P.groups.map(g => (g.name, s"${g.name} (id: ${g.id})")),
               inputType = InputType.Datalist
             )
       }
@@ -257,12 +256,10 @@ object AclModal {
         s.copy(rule = s.rule.copy(userName = userName))
       }
 
-    def changeGroupId(value: String): Callback =
+    def changeGroup(name: String, groups: List[GroupResponse]): Callback =
       bs.modState { s =>
-        val groupId =
-          if (value.isEmpty) None
-          else Some(value)
-        s.copy(rule = s.rule.copy(groupId = groupId))
+        val groupId = groups.find(_.name == name.trim).map(_.id)
+        s.copy(rule = s.rule.copy(groupId = groupId, displayName = Some(name)))
       }
 
     def changeAccessLevel(value: String): Callback =

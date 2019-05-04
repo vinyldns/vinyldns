@@ -19,8 +19,9 @@ package vinyldns.client.models.zone
 trait ZoneModalInfo {
   def name: String
   def email: String
-  def adminGroupId: String
   def shared: Boolean
+  def adminGroupId: String
+  def adminGroupName: Option[String]
   def connection: Option[ZoneConnection]
   def transferConnection: Option[ZoneConnection]
 

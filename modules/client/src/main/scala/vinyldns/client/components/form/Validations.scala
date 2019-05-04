@@ -23,7 +23,7 @@ case class Validations(
     maxSize: Option[Int] = None,
     noSpaces: Boolean = false,
     required: Boolean = false,
-    matchOptions: Boolean = false,
+    matchGroup: Boolean = false,
     uuid: Boolean = false,
     noEmptyLines: Boolean = false)
 
@@ -40,7 +40,7 @@ object Validations {
           _ <- validateRequired(value, checks)
           _ <- validateMaxSize(value, checks)
           _ <- validateNoSpaces(value, checks)
-          _ <- validateIsOption(value, checks, options)
+          _ <- validateIsInGroup(value, checks, options)
           _ <- validateUUID(value, checks)
           _ <- validateNoEmptyLines(value, checks)
         } yield ()
@@ -76,15 +76,15 @@ object Validations {
       )
     else ().asRight
 
-  def validateIsOption(
+  def validateIsInGroup(
       value: String,
       checks: Validations,
       options: List[(String, String)]): Either[String, Unit] =
-    if (checks.matchOptions)
+    if (checks.matchGroup)
       Either.cond(
-        options.exists { case (v, _) => v == value },
+        value.isEmpty || options.exists { case (v, _) => v == value },
         (),
-        "Must choose an option in list"
+        s"You are not in a group named '$value'"
       )
     else ().asRight
 

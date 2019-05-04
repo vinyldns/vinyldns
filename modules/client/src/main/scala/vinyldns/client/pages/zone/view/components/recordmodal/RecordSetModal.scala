@@ -25,7 +25,7 @@ import vinyldns.client.components.JsNative._
 import vinyldns.client.components.Modal
 import vinyldns.client.components.form._
 import vinyldns.client.http.{CreateRecordSetRoute, Http, HttpResponse, UpdateRecordSetRoute}
-import vinyldns.client.models.membership.GroupListResponse
+import vinyldns.client.models.membership.{GroupListResponse, GroupResponse}
 import vinyldns.client.models.record._
 import vinyldns.client.models.zone.ZoneResponse
 import vinyldns.client.pages.zone.view.components.recordmodal.recordinput._
@@ -143,17 +143,17 @@ object RecordSetModal {
           validations = Some(Validations(required = true))
         ),
         ValidatedInput.Props(
-          changeOwnerGroupId,
-          value = S.recordSet.ownerGroupId,
+          changeOwnerGroup(_, P.groupList.groups),
+          value = if (P.readOnly) S.recordSet.ownerGroupId else S.recordSet.ownerGroupName,
           inputClass = Some("test-owner-group"),
-          label = Some("Record Owner Group Id"),
+          label = Some("Record Owner Group"),
           helpText = Some(s"""
                              |If set and the Zone is SHARED, then this group will own the Record and other
                              | creates/updates must be made by a member of the Group. The Zone Admin Group will
-                             | always have full access, and Zone Access Rules will still apply as normal.
+                             | always have full access, and other Zone Access Rules will still apply.
               """.stripMargin),
-          validations = Some(Validations(uuid = true)),
-          options = P.groupList.groups.map(g => g.id -> s"${g.name} (${g.id})"),
+          validations = if (P.readOnly) None else Some(Validations(matchGroup = true)),
+          options = P.groupList.groups.map(g => g.name -> s"${g.name} (id: ${g.id})"),
           placeholder = Some("Search for a Group you are in by name or id"),
           inputType = InputType.Datalist
         )
@@ -282,18 +282,18 @@ object RecordSetModal {
         }
       }
 
-    def changeOwnerGroupId(value: String): Callback =
+    def changeOwnerGroup(name: String, groups: List[GroupResponse]): Callback =
       bs.modState { s =>
-        val id =
-          if (value.isEmpty) None
-          else Some(value)
+        val ownerGroupId = groups.find(_.name == name.trim).map(_.id)
+        val ownerGroupName = if (name.isEmpty) None else Some(name)
+
         if (s.isUpdate) {
           val record = s.recordSet.asInstanceOf[RecordSetResponse]
-          val modified = record.copy(ownerGroupId = id)
+          val modified = record.copy(ownerGroupId = ownerGroupId, ownerGroupName = ownerGroupName)
           s.copy(recordSet = modified)
         } else {
           val record = s.recordSet.asInstanceOf[RecordSetCreateInfo]
-          val modified = record.copy(ownerGroupId = id)
+          val modified = record.copy(ownerGroupId = ownerGroupId, ownerGroupName = ownerGroupName)
           s.copy(recordSet = modified)
         }
       }

@@ -62,7 +62,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(testUUID))
+        Simulate.change(adminField, SimEvent.Change(groupList.groups(0).name))
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
         Simulate.submit(form)
@@ -70,7 +70,14 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
     }
 
     "call http.post if submitting with required fields and confirming" in new Fixture {
-      val expectedZone = ZoneCreateInfo("test-zone.", "test@email.com", testUUID, false, None, None)
+      val expectedZone = ZoneCreateInfo(
+        "test-zone.",
+        "test@email.com",
+        groupList.groups(0).id,
+        Some(groupList.groups(0).name),
+        false,
+        None,
+        None)
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.post[ZoneResponse] _)
@@ -89,7 +96,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(testUUID))
+        Simulate.change(adminField, SimEvent.Change(groupList.groups(0).name))
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
         Simulate.submit(form)
@@ -119,7 +126,14 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
     "make request with shared toggled on" in new Fixture {
       val expectedZone =
-        ZoneCreateInfo("test-zone.", "test@email.com", testUUID, true, None, None)
+        ZoneCreateInfo(
+          "test-zone.",
+          "test@email.com",
+          groupList.groups(0).id,
+          Some(groupList.groups(0).name),
+          true,
+          None,
+          None)
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.post[ZoneResponse] _)
@@ -142,7 +156,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(testUUID))
+        Simulate.change(adminField, SimEvent.Change(groupList.groups(0).name))
 
         val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-zone-form")
         Simulate.submit(form)
@@ -154,7 +168,8 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         ZoneCreateInfo(
           "test-zone.",
           "test@email.com",
-          testUUID,
+          groupList.groups(0).id,
+          Some(groupList.groups(0).name),
           false,
           Some(ZoneConnection("name", "name", "key", "1.1.1.1")),
           None)
@@ -185,7 +200,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(testUUID))
+        Simulate.change(adminField, SimEvent.Change(groupList.groups(0).name))
         Simulate.change(customKeyName, SimEvent.Change("name"))
         Simulate.change(customKey, SimEvent.Change("key"))
         Simulate.change(customServer, SimEvent.Change("1.1.1.1"))
@@ -200,10 +215,12 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         ZoneCreateInfo(
           "test-zone.",
           "test@email.com",
-          testUUID,
+          groupList.groups(0).id,
+          Some(groupList.groups(0).name),
           false,
           None,
-          transferConnection = Some(ZoneConnection("name", "name", "key", "1.1.1.1")))
+          transferConnection = Some(ZoneConnection("name", "name", "key", "1.1.1.1"))
+        )
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.post[ZoneResponse] _)
@@ -231,7 +248,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(testUUID))
+        Simulate.change(adminField, SimEvent.Change(groupList.groups(0).name))
         Simulate.change(customKeyName, SimEvent.Change("name"))
         Simulate.change(customKey, SimEvent.Change("key"))
         Simulate.change(customServer, SimEvent.Change("1.1.1.1"))
@@ -246,7 +263,8 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         ZoneCreateInfo(
           "test-zone.",
           "test@email.com",
-          testUUID,
+          groupList.groups(0).id,
+          Some(groupList.groups(0).name),
           false,
           connection = Some(ZoneConnection("name", "name", "key", "server")),
           transferConnection = Some(ZoneConnection("tname", "tname", "tkey", "tserver"))
@@ -291,7 +309,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
         Simulate.change(nameField, SimEvent.Change("test-zone."))
         Simulate.change(emailField, SimEvent.Change("test@email.com"))
-        Simulate.change(adminField, SimEvent.Change(testUUID))
+        Simulate.change(adminField, SimEvent.Change(groupList.groups(0).name))
 
         Simulate.change(customKeyName, SimEvent.Change("name"))
         Simulate.change(customKey, SimEvent.Change("key"))
@@ -309,7 +327,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
   "ZoneModal Update" should {
     "correctly http.put a zone update" in new Fixture {
-      val existing = generateZoneResponses(1).head
+      val existing = generateZoneResponses(1, groupList.groups(0)).head
       val expected = existing.copy(
         shared = true,
         connection = Some(ZoneConnection("name", "name", "key", "server")),

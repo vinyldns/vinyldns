@@ -32,9 +32,10 @@ import scala.language.existentials
 
 class AclTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val initialAclList = List(userAclRule, groupAclRule)
-  val initialZone = generateZoneResponses(1).head.copy(acl = Rules(initialAclList))
   val initialGroups = generateGroupResponses(1)
   val initialGroupList = GroupListResponse(initialGroups.toList, 100)
+  val initialZone =
+    generateZoneResponses(1, initialGroups(0)).head.copy(acl = Rules(initialAclList))
   val mockRouter = mock[RouterCtl[Page]]
 
   trait Fixture {

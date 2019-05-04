@@ -35,11 +35,11 @@ import vinyldns.client.router._
 
 class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
-  val initialZone = generateZoneResponses(1).head
-  val initialRecordSets = generateRecordSetResponses(10, initialZone.id)
-  val initialRecordSetList = RecordSetListResponse(initialRecordSets.toList, 100)
   val initialGroups = generateGroupResponses(10)
   val initialGroupList = GroupListResponse(initialGroups.toList, 100)
+  val initialZone = generateZoneResponses(1, initialGroups(0)).head
+  val initialRecordSets = generateRecordSetResponses(10, initialZone.id)
+  val initialRecordSetList = RecordSetListResponse(initialRecordSets.toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]
