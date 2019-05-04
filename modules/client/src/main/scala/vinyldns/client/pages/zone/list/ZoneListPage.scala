@@ -39,7 +39,7 @@ object ZoneListPage extends PropsFromAppRouter {
     .builder[Props]("ZoneListPage")
     .initialState(State())
     .renderBackend[Backend]
-    .componentWillMount(e => e.backend.listGroups(e.props))
+    .componentWillMount(e => e.backend.listGroups(e.props) >> e.backend.getBackendIds(e.props))
     .build
 
   def apply(page: Page, router: RouterCtl[Page], http: Http): Unmounted[Props, State, Backend] =

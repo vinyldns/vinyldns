@@ -21,7 +21,7 @@ import japgolly.scalajs.react.test._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.client.SharedTestData
-import vinyldns.client.http.{Http, HttpResponse, ListGroupsRoute, ListZonesRoute}
+import vinyldns.client.http._
 import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.models.zone.ZoneListResponse
 import vinyldns.client.pages.zone.list.components.ZoneModal
@@ -31,6 +31,7 @@ import scala.language.existentials
 
 class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = MockRouterCtl[Page]()
+  val backendIds = List("backend-id")
 
   trait Fixture {
     val mockHttp = mock[Http]
@@ -42,6 +43,13 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
       .once()
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(groupList))
+      }
+
+    (mockHttp.get[List[String]] _)
+      .expects(GetBackendIdsRoute, *, *)
+      .once()
+      .onCall { (_, onSuccess, _) =>
+        onSuccess.apply(mock[HttpResponse], Some(backendIds))
       }
 
     (mockHttp.get[ZoneListResponse] _)
@@ -122,6 +130,13 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
           onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
         }
 
+      (mockHttp.get[List[String]] _)
+        .expects(GetBackendIdsRoute, *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(backendIds))
+        }
+
       ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
         c =>
           (mockHttp.get[ZoneListResponse] _)
@@ -186,6 +201,13 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
+        }
+
+      (mockHttp.get[List[String]] _)
+        .expects(GetBackendIdsRoute, *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(backendIds))
         }
 
       ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {

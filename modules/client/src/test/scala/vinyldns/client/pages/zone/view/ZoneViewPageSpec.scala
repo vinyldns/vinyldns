@@ -40,6 +40,7 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
   val initialZone = generateZoneResponses(1, initialGroups(0)).head
   val initialRecordSets = generateRecordSetResponses(10, initialZone.id)
   val initialRecordSetList = RecordSetListResponse(initialRecordSets.toList, 100)
+  val backendIds = List("backend-id")
 
   trait Fixture {
     val mockHttp = mock[Http]
@@ -50,10 +51,24 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialZone))
       }
+
+    (mockHttp.get[GroupListResponse] _)
+      .expects(ListGroupsRoute(), *, *)
+      .once()
+      .onCall { (_, onSuccess, _) =>
+        onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
+      }
+
+    (mockHttp.get[List[String]] _)
+      .expects(GetBackendIdsRoute, *, *)
+      .once()
+      .onCall { (_, onSuccess, _) =>
+        onSuccess.apply(mock[HttpResponse], Some(backendIds))
+      }
   }
 
   "ZoneViewPage" should {
-    "get zone, record set changes, records, and groups when mounting records tab" in new Fixture {
+    "get zone, record set changes, records, groups, and backendids when mounting records tab" in new Fixture {
       (mockHttp.get[RecordSetChangeListResponse] _)
         .expects(ListRecordSetChangesRoute(initialZone.id, 5), *, *)
         .once()
@@ -68,54 +83,39 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
           onSuccess.apply(mock[HttpResponse], Some(initialRecordSetList))
         }
 
-      (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
-        }
-
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewRecordsTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        c.state.groupList shouldBe Some(initialGroupList)
+        c.state.backendIds shouldBe Some(backendIds)
         ReactTestUtils.findRenderedComponentWithType(c, ManageRecordSetsTab.component)
       }
     }
 
-    "get zone and groups when mounting access tab" in new Fixture {
-      (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
-        }
-
+    "get zone, groups, and backendids when mounting access tab" in new Fixture {
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewAccessTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        c.state.groupList shouldBe Some(initialGroupList)
+        c.state.backendIds shouldBe Some(backendIds)
         ReactTestUtils.findRenderedComponentWithType(c, ManageAccessTab.component)
       }
     }
 
-    "get zone and groups when mounting manage zone tab" in new Fixture {
-      (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
-        }
-
+    "get zone, groups, and backendids when mounting manage zone tab" in new Fixture {
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewZoneTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        c.state.groupList shouldBe Some(initialGroupList)
+        c.state.backendIds shouldBe Some(backendIds)
         ReactTestUtils.findRenderedComponentWithType(c, ManageZoneTab.component)
       }
     }
 
-    "get zone, record set changes, and groups when mounting changes tab" in new Fixture {
+    "get zone, record set changes, groups, and backendids when mounting changes tab" in new Fixture {
       (mockHttp.get[RecordSetChangeListResponse] _)
         .expects(ListRecordSetChangesRoute(initialZone.id), *, *)
         .once()
@@ -123,17 +123,12 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
           onSuccess.apply(mock[HttpResponse], None)
         }
 
-      (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
-        .once()
-        .onCall { (_, onSuccess, _) =>
-          onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
-        }
-
       ReactTestUtils.withRenderedIntoDocument(
         ZoneViewPage(ToZoneViewChangesTab(initialZone.id), mockRouter, mockHttp)
       ) { c =>
         c.state.zone shouldBe Some(initialZone)
+        c.state.groupList shouldBe Some(initialGroupList)
+        c.state.backendIds shouldBe Some(backendIds)
         ReactTestUtils.findRenderedComponentWithType(c, ChangeHistoryTab.component)
       }
     }
@@ -153,6 +148,13 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
+        }
+
+      (mockHttp.get[List[String]] _)
+        .expects(GetBackendIdsRoute, *, *)
+        .once()
+        .onCall { (_, onSuccess, _) =>
+          onSuccess.apply(mock[HttpResponse], Some(backendIds))
         }
 
       ReactTestUtils.withRenderedIntoDocument(

@@ -109,7 +109,8 @@ trait SharedTestData {
         Rules(List()),
         latestSync = Some(s"sync-$i"),
         updated = Some(s"updated-$i"),
-        adminGroupName = Some(adminGroup.name)
+        adminGroupName = Some(adminGroup.name),
+        backendId = Some("backend-id")
       )
 
   def generateRecordSetResponses(numRecords: Int, zoneId: String): Seq[RecordSetResponse] =

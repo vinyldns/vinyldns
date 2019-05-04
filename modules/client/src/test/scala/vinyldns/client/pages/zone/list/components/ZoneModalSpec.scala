@@ -32,9 +32,15 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
 
   trait Fixture {
     val mockHttp = mock[Http]
+    val backendIds = List("backend-id")
     val groupList = GroupListResponse(generateGroupResponses(2).toList, 100)
     val props =
-      ZoneModal.Props(mockHttp, generateNoOpHandler[Unit], generateNoOpHandler[Unit], groupList)
+      ZoneModal.Props(
+        mockHttp,
+        generateNoOpHandler[Unit],
+        generateNoOpHandler[Unit],
+        groupList,
+        backendIds)
   }
 
   "ZoneModal Create" should {
@@ -76,6 +82,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
         groupList.groups(0).id,
         Some(groupList.groups(0).name),
         false,
+        None,
         None,
         None)
 
@@ -133,6 +140,7 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
           Some(groupList.groups(0).name),
           true,
           None,
+          None,
           None)
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
@@ -172,7 +180,9 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
           Some(groupList.groups(0).name),
           false,
           Some(ZoneConnection("name", "name", "key", "1.1.1.1")),
-          None)
+          None,
+          None
+        )
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
       (mockHttp.post[ZoneResponse] _)
@@ -219,7 +229,8 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
           Some(groupList.groups(0).name),
           false,
           None,
-          transferConnection = Some(ZoneConnection("name", "name", "key", "1.1.1.1"))
+          transferConnection = Some(ZoneConnection("name", "name", "key", "1.1.1.1")),
+          None
         )
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
@@ -267,7 +278,8 @@ class ZoneModalSpec extends WordSpec with Matchers with MockFactory with SharedT
           Some(groupList.groups(0).name),
           false,
           connection = Some(ZoneConnection("name", "name", "key", "server")),
-          transferConnection = Some(ZoneConnection("tname", "tname", "tkey", "tserver"))
+          transferConnection = Some(ZoneConnection("tname", "tname", "tkey", "tserver")),
+          None
         )
 
       (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)

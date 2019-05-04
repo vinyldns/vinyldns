@@ -101,7 +101,6 @@ object ZoneModal {
                   ^.className := "help-block col-md-6 col-sm-6 col-xs-12",
                   """
                     |Check if using the ID of a pre-configured connection (uncommon).
-                    |Otherwise the default connection will be used.
                   """.stripMargin.replaceAll("\n", " ")
                 )
               ),
@@ -251,6 +250,7 @@ object ZoneModal {
             value = Some(S.zone.backendId.getOrElse("")),
             inputClass = Some("test-backend-id"),
             label = Some("Backend ID"),
+            inputType = InputType.Select,
             helpText = Some(
               """
                 |The ID for a pre-configured DNS connection configuration. Please contact your DNS admin team

@@ -20,7 +20,7 @@ import org.scalatest.{Matchers, WordSpec}
 
 class ZoneModalInfoSpec extends WordSpec with Matchers {
   val noConnections =
-    ZoneCreateInfo("name.", "test@email.com", "adminGroupId", None, false, None, None)
+    ZoneCreateInfo("name.", "test@email.com", "adminGroupId", None, false, None, None, None)
   val connection = ZoneConnection("keyName", "keyName", "key", "1.1.1.1")
   val transfer = ZoneConnection("tKeyName", "tKeyName", "tkey", "2.2.2.2")
   val withConnections = noConnections

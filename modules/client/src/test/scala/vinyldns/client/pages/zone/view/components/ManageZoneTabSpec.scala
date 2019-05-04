@@ -34,12 +34,14 @@ class ManageZoneTabSpec extends WordSpec with Matchers with MockFactory with Sha
   val initialGroups = generateGroupResponses(1)
   val initialGroupList = GroupListResponse(initialGroups.toList, 100)
   val initialZone = generateZoneResponses(1, initialGroups(0)).head
+  val backendIds = List("backend-id")
 
   trait Fixture {
     val mockHttp = mock[Http]
     val props = ManageZoneTab.Props(
       initialZone,
       initialGroupList,
+      backendIds,
       mockHttp,
       mockRouter,
       generateNoOpHandler[Unit]
@@ -55,6 +57,7 @@ class ManageZoneTabSpec extends WordSpec with Matchers with MockFactory with Sha
         html should include(s"<td>${toReadableTimestamp(initialZone.created)}</td>")
         html should include(s"<td>${toReadableTimestamp(initialZone.updated)}</td>")
         html should include(s"<td>${toReadableTimestamp(initialZone.latestSync)}</td>")
+        html should include("<td>backend-id</td>")
         html should include("<td>default</td>")
       }
     }

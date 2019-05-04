@@ -82,6 +82,12 @@ object ManageZoneTab {
                 <.td(toReadableTimestamp(P.zone.latestSync))
               ),
               <.tr(
+                <.th("Backend ID:"),
+                <.td(
+                  s"""${P.zone.backendId.getOrElse("")}"""
+                )
+              ),
+              <.tr(
                 <.th("DNS Connection:"),
                 <.td(
                   P.zone.connection match {
