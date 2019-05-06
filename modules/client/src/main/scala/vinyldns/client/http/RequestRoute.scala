@@ -283,3 +283,18 @@ object GetBackendIdsRoute extends RequestRoute[List[String]] {
 
   def path: String = "/api/zones/backendids"
 }
+
+final case class SyncZoneRoute(id: String) extends RequestRoute[ZoneResponse] {
+  implicit val rw: ReadWriter[ZoneResponse] = ZoneResponse.rw
+
+  def path: String = s"/api/zones/$id/sync"
+
+  // route returns an object {zone: ...}
+  override def parse(httpResponse: HttpResponse): Option[ZoneResponse] =
+    Try(read[GetZoneResponse](httpResponse.responseText)) match {
+      case Success(p) => Some(p.zone)
+      case Failure(e) =>
+        logError(e.getMessage)
+        None
+    }
+}

@@ -16,6 +16,7 @@
 
 package vinyldns.client.pages.zone.view
 
+import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.RouterCtl
 import org.scalamock.scalatest.MockFactory
 import org.scalatest._
@@ -32,6 +33,8 @@ import vinyldns.client.pages.zone.view.components.{
   ManageZoneTab
 }
 import vinyldns.client.router._
+
+import scala.language.existentials
 
 class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
@@ -162,6 +165,25 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
       ) { c =>
         c.state.zone shouldBe None
         c.outerHtmlScrubbed() should include("Loading...")
+      }
+    }
+
+    "Http.post a Zone Sync when clicking sync button and confirming" in new Fixture {
+      (mockHttp.withConfirmation _)
+        .expects(*, *)
+        .once()
+        .onCall((_, cb) => cb)
+
+      (mockHttp.post[ZoneResponse] _)
+        .expects(SyncZoneRoute(initialZone.id), *, *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(
+        ZoneViewPage(ToZoneViewZoneTab(initialZone.id), mockRouter, mockHttp)
+      ) { c =>
+        val syncButton = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-sync")
+        Simulate.click(syncButton)
       }
     }
   }

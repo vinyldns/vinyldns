@@ -35,6 +35,7 @@ import vinyldns.client.pages.zone.view.components.{
 }
 import vinyldns.client.router._
 import vinyldns.core.domain.zone.ZoneStatus
+import vinyldns.client.components.JsNative._
 
 object ZoneViewPage extends PropsFromAppRouter {
   case class State(
@@ -80,6 +81,14 @@ object ZoneViewPage extends PropsFromAppRouter {
                       s""" ${zone.adminGroupName.getOrElse("")}""",
                       P.router.setOnClick(ToGroupViewPage(zone.adminGroupId))
                     )
+                  ),
+                  <.button(
+                    ^.className := "btn btn-round btn-default test-sync",
+                    GlobalStyle.Styles.keepWhitespace,
+                    ^.`type` := "button",
+                    ^.onClick --> syncZone(P),
+                    <.span(^.className := "fa fa-exchange"),
+                    " Sync DNS Records"
                   )
                 )
               ),
@@ -201,6 +210,28 @@ object ZoneViewPage extends PropsFromAppRouter {
 
       P.http.get(GetZoneRoute(zoneId), onSuccess, onFailure)
     }
+
+    def syncZone(P: Props): Callback =
+      P.http.withConfirmation(
+        """
+          |Are you sure want to Sync this Zone? You will not be able to update DNS records via VinylDNS until the sync
+          | is complete. A Zone Sync will compare a Zones actual DNS records with those in VinylDNS to ensure VinylDNS
+          | is up to date. It will NOT modify any records in DNS.
+        """.stripMargin,
+        Callback.lazily {
+          val zoneId = P.page.asInstanceOf[ToZoneViewPage].id
+          val onFailure = { httpResponse: HttpResponse =>
+            addNotification(P.http.toNotification("syncing zone", httpResponse))
+          }
+          val onSuccess = { (httpResponse: HttpResponse, parsed: Option[ZoneResponse]) =>
+            addNotification(P.http.toNotification("syncing zone", httpResponse)) >>
+              bs.modState(_.copy(zone = parsed)) >>
+              withDelay(TWO_SECONDS_IN_MILLIS, getZone(P))
+          }
+
+          P.http.post(SyncZoneRoute(zoneId), "", onSuccess, onFailure)
+        }
+      )
 
     def getGroups(P: Props): Callback = {
       val onFailure = { httpResponse: HttpResponse =>
