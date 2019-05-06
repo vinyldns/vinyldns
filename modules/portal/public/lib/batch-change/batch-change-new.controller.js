@@ -52,8 +52,6 @@
             };
 
             $scope.createBatchChange = function() {
-                console.log("creating a batch change")
-                console.log($scope.newBatch.changes)
                 //flag to prevent multiple clicks until previous promise has resolved.
                 $scope.processing = true;
 
