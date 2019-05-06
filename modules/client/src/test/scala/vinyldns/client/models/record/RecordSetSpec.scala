@@ -264,5 +264,49 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
           |</li>
           |</ul>""".stripMargin.replaceAll("\n", "")
     }
+
+    "display a NAPTR record" in {
+      val records = List(
+        RecordData(
+          order = Some(10),
+          preference = Some(100),
+          flags = Some("S"),
+          service = Some("SIP"),
+          regexp = Some("foo"),
+          replacement = Some("target1.")),
+        RecordData(
+          order = Some(20),
+          preference = Some(101),
+          flags = Some(""),
+          service = Some(""),
+          regexp = Some("bar"),
+          replacement = Some("target2."))
+      )
+
+      val withRecords = baseRecord.copy(`type` = RecordType.NAPTR, records = records)
+
+      ReactTestUtils
+        .renderIntoDocument(withRecords.recordDataDisplay)
+        .outerHtmlScrubbed() shouldBe
+        """
+          |<ul class="table-cell-list">
+          |<li>
+          |Order: 10 |
+          | Preference: 100 |
+          | Flags: S |
+          | Service: SIP |
+          | Regexp: foo |
+          | Replacement: target1.
+          |</li>
+          |<li>
+          |Order: 20 |
+          | Preference: 101 |
+          | Flags:  |
+          | Service:  |
+          | Regexp: bar |
+          | Replacement: target2.
+          |</li>
+          |</ul>""".stripMargin.replaceAll("\n", "")
+    }
   }
 }

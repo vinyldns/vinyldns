@@ -584,6 +584,60 @@ class RecordSetModalSpec extends WordSpec with Matchers with MockFactory with Sh
         Simulate.submit(form)
       }
     }
+
+    "properly http.post a create NAPTR record" in new Fixture {
+      val expectedData =
+        List(
+          RecordData(
+            order = Some(1),
+            preference = Some(2),
+            flags = Some("S"),
+            service = Some("SIP"),
+            regexp = Some(""),
+            replacement = Some("target."))
+        )
+      val expectedRecord =
+        RecordSetCreateInfo(zone.id, RecordType.NAPTR, "foo", 300, expectedData, None, None)
+
+      (mockHttp.withConfirmation _)
+        .expects(*, *)
+        .once()
+        .onCall((_, cb) => cb)
+
+      (mockHttp.post[RecordSetChangeResponse] _)
+        .expects(CreateRecordSetRoute(zone.id), write(expectedRecord), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(RecordSetModal(props)) { c =>
+        val form = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-record-form")
+
+        val typ = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-type")
+        Simulate.change(typ, SimEvent.Change(expectedRecord.`type`.toString))
+
+        val name = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-name")
+        val ttl = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-ttl")
+
+        val order = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-order")
+        val preference = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-preference")
+        val flags = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-flags")
+        val service = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-service")
+        val regexp = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-regexp")
+        val replacement = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-replacement")
+
+        Simulate.change(name, SimEvent.Change(expectedRecord.name))
+        Simulate.change(ttl, SimEvent.Change(expectedRecord.ttl.toString))
+
+        Simulate.change(order(0), SimEvent.Change("1"))
+        Simulate.change(preference(0), SimEvent.Change("2"))
+        Simulate.change(flags(0), SimEvent.Change("S"))
+        Simulate.change(service(0), SimEvent.Change("SIP"))
+        Simulate.change(regexp(0), SimEvent.Change(""))
+        Simulate.change(replacement(0), SimEvent.Change("target."))
+
+        Simulate.submit(form)
+      }
+    }
   }
 
   "RecordSetModal Update" should {

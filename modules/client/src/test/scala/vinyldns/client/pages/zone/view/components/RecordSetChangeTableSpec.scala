@@ -128,7 +128,7 @@ class RecordSetChangeTableSpec extends WordSpec with Matchers with MockFactory w
           html should include(r.recordSet.name)
           html should include(r.recordSet.`type`.toString)
           html should include(r.changeType.toString)
-          html should include(r.userName)
+          html should include(r.userName.getOrElse(""))
           html should include(r.status.toString)
           html should include(r.systemMessage.getOrElse(""))
         }

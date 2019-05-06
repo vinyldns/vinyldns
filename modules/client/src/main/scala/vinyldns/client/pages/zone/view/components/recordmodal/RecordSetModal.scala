@@ -121,7 +121,8 @@ object RecordSetModal {
             RecordType.SRV.toString -> RecordType.SRV.toString,
             RecordType.TXT.toString -> RecordType.TXT.toString,
             RecordType.SSHFP.toString -> RecordType.SSHFP.toString,
-            RecordType.SPF.toString -> RecordType.SPF.toString
+            RecordType.SPF.toString -> RecordType.SPF.toString,
+            RecordType.NAPTR.toString -> RecordType.NAPTR.toString
           ),
           inputType = InputType.Select,
           value = Some(S.recordSet.`type`.toString),
@@ -237,6 +238,7 @@ object RecordSetModal {
         case RecordType.SRV => SrvInput.toTagMod(S, bs)
         case RecordType.SSHFP => SshfpInput.toTagMod(S, bs)
         case RecordType.DS => DsInput.toTagMod(S, bs)
+        case RecordType.NAPTR => NaptrInput.toTagMod(S, bs)
         case _ => TagMod.empty
       }
 

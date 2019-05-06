@@ -50,7 +50,14 @@ case class RecordData(
     fingerprint: Option[String] = None,
     keytag: Option[Int] = None,
     digesttype: Option[Int] = None,
-    digest: Option[String] = None) {
+    digest: Option[String] = None,
+    order: Option[Int] = None,
+    flags: Option[String] = None,
+    service: Option[String] = None,
+    regexp: Option[String] = None,
+    replacement: Option[String] = None) {
+
+  // convert to strings for display purposes
   def addressToString: String = this.address.getOrElse("")
   def cnameToString: String = this.cname.getOrElse("")
   def preferenceToString: String = Try(this.preference.get.toString).getOrElse("")
@@ -75,6 +82,11 @@ case class RecordData(
   def keytagToString: String = Try(this.keytag.get.toString).getOrElse("")
   def digesttypeToString: String = Try(this.digesttype.get.toString).getOrElse("")
   def digestToString: String = this.digest.getOrElse("")
+  def orderToString: String = Try(this.order.get.toString).getOrElse("")
+  def flagsToString: String = this.flags.getOrElse("")
+  def serviceToString: String = this.service.getOrElse("")
+  def regexpToString: String = this.regexp.getOrElse("")
+  def replacementToString: String = this.replacement.getOrElse("")
 }
 
 object RecordData extends OptionRW {
@@ -158,6 +170,21 @@ object RecordData extends OptionRW {
                  | Algorithm: ${rd.algorithmToString} |
                  | DigestType: ${rd.digesttypeToString} |
                  | Digest: ${rd.digestToString}""".stripMargin.replaceAll("\n", "")
+            )
+          }.toTagMod
+        )
+      case (naptrList, RecordType.NAPTR) =>
+        <.ul(
+          ^.className := "table-cell-list",
+          naptrList.map { rd =>
+            <.li(
+              s"""
+                 |Order: ${rd.orderToString} |
+                 | Preference: ${rd.preferenceToString} |
+                 | Flags: ${rd.flagsToString} |
+                 | Service: ${rd.serviceToString} |
+                 | Regexp: ${rd.regexpToString} |
+                 | Replacement: ${rd.replacementToString}""".stripMargin.replaceAll("\n", "")
             )
           }.toTagMod
         )

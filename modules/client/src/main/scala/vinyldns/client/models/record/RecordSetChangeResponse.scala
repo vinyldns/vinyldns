@@ -28,9 +28,9 @@ case class RecordSetChangeResponse(
     userId: String,
     created: String,
     id: String,
-    userName: String,
     changeType: RecordSetChangeType.RecordSetChangeType,
     status: RecordSetChangeStatus.RecordSetChangeStatus,
+    userName: Option[String] = None,
     systemMessage: Option[String] = None,
     updates: Option[RecordSetResponse] = None) {}
 

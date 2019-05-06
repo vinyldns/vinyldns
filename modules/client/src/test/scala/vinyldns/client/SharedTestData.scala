@@ -143,9 +143,9 @@ trait SharedTestData {
         testUser.id,
         s"created-$i",
         s"id-$i",
-        testUser.userName,
         RecordSetChangeType.Create,
-        RecordSetChangeStatus.Complete
+        RecordSetChangeStatus.Complete,
+        Some(testUser.userName)
       )
   }
 

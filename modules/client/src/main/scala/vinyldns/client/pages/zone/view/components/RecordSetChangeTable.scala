@@ -147,14 +147,13 @@ object RecordSetChangeTable {
                     ^.className := "table",
                     <.thead(
                       <.tr(
-                        List(
-                          "Time",
-                          "RecordSet Name",
-                          "RecordSet Type",
-                          "Change Type",
-                          "User",
-                          "Status",
-                          "Additional Info").map(h => <.th(h)).toTagMod
+                        <.th("Time"),
+                        <.th("RecordSet Name"),
+                        <.th("RecordSet Type"),
+                        <.th("Change Type"),
+                        <.th("User"),
+                        <.th("Status"),
+                        <.th(^.className := "col-md-4", "Additional Info")
                       )
                     ),
                     <.tbody(
@@ -193,23 +192,29 @@ object RecordSetChangeTable {
         <.td(change.recordSet.name),
         <.td(change.recordSet.`type`.toString),
         <.td(change.changeType.toString),
-        <.td(change.userName),
+        <.td(s"""${change.userName.getOrElse("")}"""),
         <.td(toStatus(change.status)),
         <.td(
-          <.p(s"${change.systemMessage.getOrElse("")}"),
+          <.p(s"""${change.systemMessage.getOrElse("")}"""),
           toAdditionalInfo(change)
         )
       )
 
     def toAdditionalInfo(change: RecordSetChangeResponse): TagMod =
-      change.changeType match {
-        case RecordSetChangeType.Create =>
+      (change.changeType, change.status) match {
+        case (_, RecordSetChangeStatus.Failed) =>
+          <.a(
+            GlobalStyle.Styles.cursorPointer,
+            "View failed recordset",
+            ^.onClick --> makeViewRecordModalVisible(Some(change.recordSet))
+          )
+        case (RecordSetChangeType.Create, _) =>
           <.a(
             GlobalStyle.Styles.cursorPointer,
             "View created recordset",
             ^.onClick --> makeViewRecordModalVisible(Some(change.recordSet))
           )
-        case RecordSetChangeType.Update =>
+        case (RecordSetChangeType.Update, _) =>
           <.div(
             <.a(
               GlobalStyle.Styles.cursorPointer,
@@ -223,7 +228,7 @@ object RecordSetChangeTable {
               ^.onClick --> makeViewRecordModalVisible(Some(change.recordSet))
             )
           )
-        case RecordSetChangeType.Delete =>
+        case (RecordSetChangeType.Delete, _) =>
           <.a(
             GlobalStyle.Styles.cursorPointer,
             "View deleted recordset",
