@@ -69,6 +69,11 @@ trait ZoneRoute extends Directives {
             }
         }
       } ~
+      (get & path("zones" / "backendids") & monitor("Endpoint.getBackendIds")) {
+        execute(zoneService.getBackendIds()) { ids =>
+          complete(StatusCodes.OK, ids)
+        }
+      } ~
       (get & path("zones" / Segment) & monitor("Endpoint.getZone")) { id =>
         execute(zoneService.getZone(id, authPrincipal)) { zone =>
           complete(StatusCodes.OK, GetZoneResponse(zone))

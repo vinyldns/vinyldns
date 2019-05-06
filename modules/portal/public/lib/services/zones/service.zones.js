@@ -32,6 +32,11 @@ angular.module('service.zones', [])
             return $http.get(url);
         };
 
+        this.getBackendIds = function() {
+            var url = "/api/zones/backendids";
+            return $http.get(url);
+        }
+
         this.sendZone = function (payload) {
             var sanitizedPayload = this.sanitizeConnections(payload);
             $log.info("service.zones: sending zone", sanitizedPayload);
@@ -92,6 +97,13 @@ angular.module('service.zones', [])
                 } else if (zone.hiddenTransferKey.trim() == '' && zone.transferConnection.keyName == '' && zone.transferConnection.primaryServer == '') {
                     zone.transferConnection.key = '';
                 }
+            }
+            return zone;
+        };
+
+        this.checkBackendId = function(zone) {
+            if (zone.backendId === ''){
+                zone.backendId = undefined;
             }
             return zone;
         };

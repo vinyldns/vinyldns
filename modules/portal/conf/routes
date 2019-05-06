@@ -24,6 +24,7 @@ GET           /download-creds-file/:fileName     @controllers.VinylDNS.serveCred
 POST          /regenerate-creds                  @controllers.VinylDNS.regenerateCreds
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
+GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds
 GET           /api/zones/:id                     @controllers.VinylDNS.getZone(id: String)
 GET           /api/zones/name/:name              @controllers.VinylDNS.getZoneByName(name: String)
 POST          /api/zones                         @controllers.VinylDNS.addZone

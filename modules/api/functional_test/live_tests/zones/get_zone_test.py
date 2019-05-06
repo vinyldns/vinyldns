@@ -19,6 +19,7 @@ def test_get_zone_by_id(shared_zone_test_context):
     assert_that(retrieved['id'], is_(shared_zone_test_context.system_test_zone['id']))
     assert_that(retrieved['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
 
+
 def test_get_shared_zone_by_id(shared_zone_test_context):
     """
     Test get an existing shared zone by id
@@ -31,6 +32,7 @@ def test_get_shared_zone_by_id(shared_zone_test_context):
     assert_that(retrieved['id'], is_(shared_zone_test_context.shared_zone['id']))
     assert_that(retrieved['adminGroupName'], is_('testSharedZoneGroup'))
     assert_that(retrieved['shared'], is_(True))
+
 
 def test_get_zone_fails_without_access(shared_zone_test_context):
     """
@@ -88,6 +90,7 @@ def test_get_zone_includes_acl_display_name(shared_zone_test_context):
     assert_that(acl, has_item(group_acl_rule))
     assert_that(len(acl), is_(2))
 
+
 def test_get_zone_by_name(shared_zone_test_context):
     """
     Test get an existing zone by name
@@ -100,6 +103,7 @@ def test_get_zone_by_name(shared_zone_test_context):
     assert_that(result['name'], is_(shared_zone_test_context.system_test_zone['name']))
     assert_that(result['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
 
+
 def test_get_zone_by_name_without_trailing_dot_succeeds(shared_zone_test_context):
     """
     Test get an existing zone by name without including trailing dot
@@ -111,6 +115,7 @@ def test_get_zone_by_name_without_trailing_dot_succeeds(shared_zone_test_context
     assert_that(result['id'], is_(shared_zone_test_context.system_test_zone['id']))
     assert_that(result['name'], is_(shared_zone_test_context.system_test_zone['name']))
     assert_that(result['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
+
 
 def test_get_zone_by_name_fails_without_access(shared_zone_test_context):
     """
@@ -128,3 +133,12 @@ def test_get_zone_by_name_returns_404_when_not_found(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     client.get_zone_by_name("zone_name_does_not_exist", status=404)
+
+
+def test_get_zone_backend_ids(shared_zone_test_context):
+    """
+    Test that you can get possible backend ids for zones
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    response = client.get_backend_ids(status = 200)
+    assert_that(response, is_([u'func-test-backend']))

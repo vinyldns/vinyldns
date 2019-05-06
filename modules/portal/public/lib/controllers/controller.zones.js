@@ -55,6 +55,12 @@ angular.module('controller.zones', [])
         $scope.resetCurrentZone();
     });
 
+    zonesService.getBackendIds().then(function (results) {
+        if (results.data) {
+            $scope.backendIds = results.data;
+        }
+    });
+
     $scope.isGroupMember = function(groupId) {
         var groupMember = $scope.myGroups.find(function(group) {
             return groupId === group.id;
@@ -103,6 +109,7 @@ angular.module('controller.zones', [])
 
         //flag to prevent multiple clicks until previous promise has resolved.
         $scope.processing = true;
+        $scope.currentZone = zonesService.checkBackendId($scope.currentZone);
 
         zonesService.sendZone($scope.currentZone)
             .then(function () {
