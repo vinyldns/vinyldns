@@ -1813,7 +1813,7 @@ def test_ipv4_ptr_record_when_zone_discovery_only_finds_mismatched_delegated_zon
         # re-create classless base zone and update zone info in shared_zone_test_context for use in future tests
          zone_create_change = ok_client.create_zone(shared_zone_test_context.classless_base_zone_json, status=202)
          shared_zone_test_context.classless_base_zone = zone_create_change['zone']
-         ok_client.wait_until_zone_exists(zone_create_change)
+         ok_client.wait_until_zone_active(zone_create_change[u'zone'][u'id'])
 
 def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
     """

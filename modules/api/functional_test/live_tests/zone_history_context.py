@@ -54,7 +54,7 @@ class ZoneHistoryContext(object):
             }, status=202)
         self.zone = zone_change['zone']
 
-        self.client.wait_until_zone_exists(zone_change)
+        self.client.wait_until_zone_active(zone_change[u'zone'][u'id'])
 
         # change the zone nine times to we have update events in zone change history, ten total changes including creation
         for i in range(2,11):
