@@ -35,6 +35,8 @@ import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.pages.zone.view.components.recordmodal.RecordSetModal
 import vinyldns.client.components.JsNative._
 import vinyldns.client.models.membership.GroupListResponse
+import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.RecordType.RecordType
 
 import scala.util.Try
 
@@ -216,7 +218,7 @@ object RecordSetTable {
 
     def toTableRow(P: Props, S: State, recordSet: RecordSetResponse): TagMod =
       <.tr(
-        <.td(recordSet.name),
+        <.td(toRecordSetName(recordSet.name, recordSet.`type`, P.zone.name)),
         <.td(recordSet.`type`.toString),
         <.td(recordSet.ttl),
         <.td(recordSet.recordDataDisplay),
@@ -259,6 +261,17 @@ object RecordSetTable {
           )
         )
       )
+
+    def toRecordSetName(recordName: String, recordType: RecordType, zoneName: String): TagMod =
+      if (RecordSetResponse.labelHasInvalidDot(recordName, recordType, zoneName))
+        <.div(
+          ^.className := "text-danger",
+          ^.title := s"Dotted hosts are invalid! Please delete or update without a '.'",
+          VdomAttr("data-toggle") := "tooltip",
+          s"$recordName ",
+          <.span(^.className := "fa fa-warning")
+        )
+      else <.div(recordName)
 
     def listRecordSets(P: Props, S: State, startFrom: Option[String] = None): Callback = {
       val onSuccess = { (_: HttpResponse, parsed: Option[RecordSetListResponse]) =>

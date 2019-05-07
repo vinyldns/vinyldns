@@ -21,10 +21,8 @@ import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.core.domain.record.RecordType
 
-class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
-  val baseRecord = generateRecordSetResponses(1, "zoneId").head
-
-  "RecordSet.recordDataDisplay" should {
+class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
+  "RecordData.toDisplay" should {
     "display an A record" in {
       val records = List(
         RecordData(address = Some("1.1.1.1")),
@@ -32,10 +30,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(address = Some("3.3.3.3"))
       )
 
-      val withRecords = baseRecord.copy(records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.A))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>1.1.1.1</li><li>2.2.2.2</li><li>3.3.3.3</li></ul>"""
     }
@@ -47,10 +43,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(address = Some("3::3"))
       )
 
-      val withRecords = baseRecord.copy(records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.AAAA))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>1::1</li><li>2::2</li><li>3::3</li></ul>"""
     }
@@ -58,10 +52,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
     "display a CNAME record" in {
       val record = List(RecordData(cname = Some("cname.")))
 
-      val withRecords = baseRecord.copy(`type` = RecordType.CNAME, records = record)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(record, RecordType.CNAME))
         .outerHtmlScrubbed() shouldBe
         "<p>cname.</p>"
     }
@@ -80,10 +72,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
           digest = Some("ds2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.DS, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.DS))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -108,10 +98,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(preference = Some(2), exchange = Some("e2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.MX, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.MX))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -132,10 +120,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(nsdname = Some("ns2."))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.NS, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.NS))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>ns1.</li><li>ns2.</li></ul>"""
     }
@@ -146,10 +132,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(ptrdname = Some("ptr2."))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.PTR, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.PTR))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>ptr1.</li><li>ptr2.</li></ul>"""
     }
@@ -166,10 +150,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
           minimum = Some(5))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.SOA, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SOA))
         .outerHtmlScrubbed() shouldBe
         """
           |<table><tbody>
@@ -189,10 +171,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(text = Some("spf2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.SPF, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SPF))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>spf1</li><li>spf2</li></ul>"""
     }
@@ -203,10 +183,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(text = Some("txt2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.TXT, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.TXT))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>txt1</li><li>txt2</li></ul>"""
     }
@@ -217,10 +195,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(priority = Some(4), weight = Some(5), port = Some(6), target = Some("t2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.SRV, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SRV))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -245,10 +221,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
         RecordData(algorithm = Some(2), `type` = Some(2), fingerprint = Some("f2"))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.SSHFP, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SSHFP))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -283,10 +257,8 @@ class RecordSetSpec extends WordSpec with Matchers with SharedTestData {
           replacement = Some("target2."))
       )
 
-      val withRecords = baseRecord.copy(`type` = RecordType.NAPTR, records = records)
-
       ReactTestUtils
-        .renderIntoDocument(withRecords.recordDataDisplay)
+        .renderIntoDocument(RecordData.toDisplay(records, RecordType.NAPTR))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">

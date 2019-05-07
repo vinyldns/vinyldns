@@ -20,6 +20,7 @@ import japgolly.scalajs.react.vdom.html_<^.VdomElement
 import upickle.default._
 import vinyldns.client.models.OptionRW
 import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.RecordType.RecordType
 
 trait RecordSetTypeRW {
   implicit val recordTypeRW: ReadWriter[RecordType.RecordType] =
@@ -63,4 +64,16 @@ case class RecordSetResponse(
 
 object RecordSetResponse extends OptionRW with RecordSetTypeRW {
   implicit val rw: ReadWriter[RecordSetResponse] = macroRW
+
+  def labelHasInvalidDot(recordName: String, recordType: RecordType, zoneName: String): Boolean = {
+    val canHaveDots =
+      List(RecordType.PTR, RecordType.NS, RecordType.SOA, RecordType.SRV, RecordType.NAPTR)
+
+    (recordName, recordType) match {
+      case (noDot, _) if !noDot.contains(".") => false
+      case (_, whitelistedType) if canHaveDots.contains(whitelistedType) => false
+      case (dottedApex, _) if dottedApex.stripPrefix(".") == zoneName.stripPrefix(".") => false
+      case _ => true
+    }
+  }
 }
