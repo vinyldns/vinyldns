@@ -31,18 +31,6 @@ class NewMemberFormSpec extends WordSpec with Matchers with MockFactory with Sha
   val group = generateGroupResponses(1).head
 
   "NewMemberForm" should {
-    "not call lookup user if submitted without username" in {
-      val mockHttp = mock[Http]
-
-      (mockHttp.get _).expects(*, *, *).never()
-
-      ReactTestUtils.withRenderedIntoDocument(
-        NewMemberForm(NewMemberForm.Props(mockHttp, group, generateNoOpHandler[Unit]))) { c =>
-        val form = ReactTestUtils.findRenderedDOMComponentWithTag(c, "form")
-        Simulate.submit(form)
-      }
-    }
-
     "call lookup user when submitted with username" in {
       val mockHttp = mock[Http]
 

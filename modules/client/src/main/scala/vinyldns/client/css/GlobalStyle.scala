@@ -24,7 +24,7 @@ object GlobalStyle {
   object Styles extends StyleSheet.Inline {
     import dsl._
     /*
-     These are additive, and you can plop them in any html tag to inherit the class,
+     These are additive, and you can plop as many as you want in a tag object to inherit the css class,
      as long as the file has "import scalacss.ScalaCssReact._"
      */
 
@@ -55,6 +55,8 @@ object GlobalStyle {
     val keepWhitespace = style(whiteSpace.pre)
 
     val noWrap = style(whiteSpace.nowrap)
+
+    val padLeft10 = style(paddingLeft :=! "10px")
 
     val noop = style()
   }

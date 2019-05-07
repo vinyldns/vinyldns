@@ -28,7 +28,6 @@ import vinyldns.client.http.{Http, HttpResponse, LookupUserRoute, UpdateGroupRou
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.membership.{GroupResponse, Id, UserResponse}
 import vinyldns.client.components.AlertBox.addNotification
-import vinyldns.client.components.form.{ValidatedForm, ValidatedInput, Validations}
 
 object NewMemberForm {
   case class State(
@@ -47,15 +46,31 @@ object NewMemberForm {
 
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
-      ValidatedForm(
-        ValidatedForm.Props(
-          "col-md-10 test-new-member-form",
-          generateInputFieldProps(S),
-          _ => lookupUser(P, S)
-        ),
+      <.form(
+        ^.className := "form-inline",
+        ^.onSubmit ==> { e: ReactEventFromInput =>
+          e.preventDefaultCB >> lookupUser(P, S)
+        },
         <.div(
+          ^.className := "col-md-8",
           <.div(
-            ^.className := "form-group col-md-2",
+            ^.className := "form-group",
+            <.div(
+              ^.className := "input-group",
+              <.input(
+                ^.className := "form-control test-new-member-username",
+                ^.placeholder := "Username",
+                ^.required := true,
+                ^.onChange ==> { e: ReactEventFromInput =>
+                  val username = e.target.value
+                  bs.modState(_.copy(username = username))
+                }
+              )
+            )
+          ),
+          <.div(
+            ^.className := "form-group",
+            GlobalStyle.Styles.padLeft10,
             <.label(
               ^.className := "check",
               <.input(
@@ -70,36 +85,23 @@ object NewMemberForm {
                 GlobalStyle.Styles.cursorPointer,
                 ^.className := "fa fa-info-circle",
                 VdomAttr("data-toggle") := "tooltip",
-                ^.title := "Managers can add new members, and edit or delete the Group"
+                ^.title := "Add this member as a Manager. Managers can add new members, and edit or delete the Group"
               )
             )
           ),
           <.div(
-            ^.className := "form-group col-md-1",
-            <.button(
-              ^.className := "btn btn-default",
-              ^.`type` := "submit",
-              ^.className := "btn btn-success",
-              "Add Member"
+            ^.className := "form-group",
+            GlobalStyle.Styles.padLeft10,
+            <.div(
+              ^.className := "input-group",
+              <.button(
+                ^.className := "btn btn-sm btn-default",
+                ^.`type` := "submit",
+                ^.className := "btn btn-success",
+                "Add Member"
+              )
             )
           )
-        )
-      )
-
-    def generateInputFieldProps(S: State): List[ValidatedInput.Props] =
-      List(
-        ValidatedInput.Props(
-          (value: String) => bs.modState(_.copy(username = value)),
-          labelSize = "",
-          inputSize = "col-md-3",
-          inputClass = Some("test-new-member-username"),
-          placeholder = Some("username"),
-          value = Some(S.username),
-          validations = Some(
-            Validations(
-              required = true,
-              noSpaces = false
-            ))
         )
       )
 
