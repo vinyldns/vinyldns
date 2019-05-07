@@ -71,4 +71,49 @@
             }
         };
     });
+
+    app.directive('csv', function() {
+        return {
+            require: 'ngModel',
+            link: function(scope, elm, attrs, ctrl) {
+                var fileType;
+                ctrl.$validators.csv = function(modelValue, viewValue) {
+                    elm.on('change', function(e){
+                        if (e.target.files.length > 0) {
+                            fileType = e.target.files[0].type;
+                            ctrl.$setViewValue(e.target.files[0]);
+                        } else {
+                            ctrl.$setViewValue();
+                        }
+                    })
+                    return fileType == "text/csv" ? true : false
+                }
+            }
+        };
+    });
+
+    app.directive('filled', function() {
+        return {
+            require: 'ngModel',
+            link: function(scope, elm, attrs, ctrl) {
+                elm.on('change', function(e){
+                    if (e.target.files.length > 0) {
+                        ctrl.$setValidity('filled', true);
+                    } else {
+                        ctrl.$setValidity('filled', false);
+                    }
+                })
+            }
+        };
+    });
+
+    app.directive('isolateForm', function() {
+        return {
+            restrict: 'A',
+            require: ['form', '^form'],
+            link: function(scope, elm, attrs, forms) {
+                forms[1].$removeControl(forms[0]);
+            }
+        };
+    });
 })();
