@@ -149,24 +149,18 @@
                         </span>
                         <span ng-if="record.type == 'CNAME'">{{ record.cnameRecordData }}</span>
                         <span ng-if="record.type == 'DS'">
-                            <table>
-                                <tr>
-                                    <td>Keytag:</td>
-                                    <td> {{record.dsKeyTag}} </td>
-                                </tr>
-                                <tr>
-                                    <td>Algorithm:</td>
-                                    <td> {{record.dsAlgorithm}} </td>
-                                </tr>
-                                <tr>
-                                    <td>Digesttype:</td>
-                                    <td> {{record.dsDigestType}} </td>
-                                </tr>
-                                <tr>
-                                    <td>Digest:</td>
-                                    <td> {{record.dsDigest}} </td>
-                                </tr>
-                            </table>
+                            <ul class="table-cell-list">
+                                <li ng-repeat="item in record.dsItems track by $index"
+                                    ng-if="!record.onlyFour || $index <= 3">
+                                    Keytag: {{ item.keytag }} | Algorithm: {{ item.algorithm }} | Digest Type: {{ item.digesttype }} | Digest: {{ item.digest }}
+                                </li>
+                                <span ng-if="record.onlyFour && record.mxItems.length > 4">
+                                    <a href ng-click="record.onlyFour=false">Show more...</a>
+                                </span>
+                                <span ng-if="!record.onlyFour">
+                                    <a href ng-click="record.onlyFour=true">Show fewer...</a>
+                                </span>
+                            </ul>
                         </span>
                         <span ng-if="record.type == 'MX'">
                             <ul class="table-cell-list">

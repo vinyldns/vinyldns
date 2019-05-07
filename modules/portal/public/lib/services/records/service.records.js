@@ -111,11 +111,12 @@ angular.module('service.records', [])
                     newRecord.cnameRecordData = record.records[0].cname;
                     break;
                 case 'DS':
-                    newRecord.dsKeyTag = record.records[0].keytag;
-                    newRecord.dsAlgorithm = record.records[0].algorithm;
-                    newRecord.dsDigestType = record.records[0].digesttype;
-                    newRecord.dsDigest = record.records[0].digest;
-                    newRecord.canBeEdited = false;
+                    newRecord.dsItems = [];
+                    angular.forEach(record.records, function(item){
+                        newRecord.dsItems.push(item);
+                    });
+                    newRecord.onlyFour = true;
+
                     break;
                 case 'MX':
                     newRecord.mxItems = [];
@@ -212,6 +213,12 @@ angular.module('service.records', [])
                     break;
                 case 'CNAME':
                     newRecord.records = [{"cname": record.cnameRecordData}];
+                    break;
+                case 'DS':
+                    newRecord.records = [];
+                    angular.forEach(record.dsItems, function(record) {
+                        newRecord.records.push({"keytag": Number(record.keytag), "algorithm": Number(record.algorithm), "digesttype": Number(record.digesttype), "digest": record.digest})
+                    });
                     break;
                 case 'MX':
                     newRecord.records = [];
