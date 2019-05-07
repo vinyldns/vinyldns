@@ -22,17 +22,25 @@ import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle
+import vinyldns.client.models.CustomLink
 import vinyldns.client.router._
+import upickle.default.read
+import vinyldns.client.ReactApp.customLinksJson
+import vinyldns.client.components.JsNative.logError
+
+import scala.util.{Failure, Success, Try}
 
 object LeftNav {
   case class NavItem(name: String, faClassName: String, page: Page)
   case class Props(menus: List[NavItem], selectedPage: Page, router: RouterCtl[Page])
+  case class State(customLinks: List[CustomLink] = List())
 
-  def apply(props: Props): Unmounted[Props, Unit, Unit] = component(props)
+  def apply(props: Props): Unmounted[Props, State, Unit] = component(props)
 
   private val component = ScalaComponent
     .builder[Props]("LeftNav")
-    .render_P { P =>
+    .initialState(State())
+    .render_PS { (P, S) =>
       <.div(
         ^.className := "col-md-3 col-sm-3 col-xs-3 left_col",
         <.div(
@@ -74,10 +82,24 @@ object LeftNav {
                     )
                   }
                 ),
+                S.customLinks.map { link =>
+                  if (link.displayOnSidebar)
+                    <.li(
+                      ^.key := link.title,
+                      ^.onMouseEnter ==> mouseEnter,
+                      ^.onMouseLeave ==> (e => mouseExit(e, isActive = false)),
+                      <.a(
+                        ^.href := link.href,
+                        <.i(^.className := link.icon),
+                        link.title
+                      )
+                    )
+                  else TagMod.empty
+                }.toTagMod,
                 <.li(
                   ^.key := "logout",
                   ^.onMouseEnter ==> mouseEnter,
-                  ^.onMouseLeave ==> (e => mouseExit(e, false)),
+                  ^.onMouseLeave ==> (e => mouseExit(e, isActive = false)),
                   <.a(
                     ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
                     <.i(^.className := "fa fa-sign-out"),
@@ -89,6 +111,17 @@ object LeftNav {
           )
         )
       )
+    }
+    .componentWillMount { e =>
+      customLinksJson match {
+        case Some(j) =>
+          Try(read[List[CustomLink]](j)) match {
+            case Success(list) => e.modState(_.copy(customLinks = list))
+            case Failure(error) =>
+              Callback(logError(s"Failure parsing custom links: ${error.getMessage}"))
+          }
+        case None => Callback.empty
+      }
     }
     .build
 

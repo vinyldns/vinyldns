@@ -37,6 +37,9 @@ object ReactApp {
   final val version: Option[String] =
     Try(Option[String](document.getElementById("version").getAttribute("content")))
       .getOrElse(None)
+  final val customLinksJson: Option[String] =
+    Try(Option[String](document.getElementById("custom-links").getAttribute("content")))
+      .getOrElse(None)
   var loggedInUser: UserResponse = _
 
   @JSExport

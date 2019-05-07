@@ -16,18 +16,32 @@
 
 package models
 import play.api.Configuration
+import play.api.libs.json._
+
 
 case class Meta(
     version: String,
     sharedDisplayEnabled: Boolean,
     batchChangeLimit: Int,
-    defaultTtl: Long)
+    defaultTtl: Long,
+    customLinksJson: String)
 object Meta {
+  implicit val customLinkWrites: Writes[CustomLink] = new Writes[CustomLink] {
+    def writes(customLink: CustomLink): JsObject = Json.obj(
+      "displayOnSidebar" -> customLink.displayOnSidebar,
+      "displayOnLoginScreen" -> customLink.displayOnLoginScreen,
+      "title" -> customLink.title,
+      "href" -> customLink.href,
+      "icon" -> customLink.icon
+    )
+  }
+
   def apply(config: Configuration): Meta =
     Meta(
       config.getOptional[String]("vinyldns.version").getOrElse("unknown"),
       config.getOptional[Boolean]("shared-display-enabled").getOrElse(false),
       config.getOptional[Int]("batch-change-limit").getOrElse(1000),
-      config.getOptional[Long]("default-ttl").getOrElse(7200L)
+      config.getOptional[Long]("default-ttl").getOrElse(7200L),
+      Json.toJson(CustomLinks(config).links).toString()
     )
 }
