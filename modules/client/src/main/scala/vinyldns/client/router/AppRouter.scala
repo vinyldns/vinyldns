@@ -23,7 +23,6 @@ import org.scalajs.dom.html.Div
 import vinyldns.client.components.{AlertBox, Breadcrumb, LeftNav, TopNav}
 import vinyldns.client.pages.extras.NotFoundPage
 import vinyldns.client.pages.group.view.GroupViewPage
-import vinyldns.client.pages.home.HomePage
 import vinyldns.client.ReactApp.version
 import vinyldns.client.http.{Http, HttpHelper}
 import vinyldns.client.pages.batch.create.BatchChangeCreatePage
@@ -45,14 +44,8 @@ object AppRouter {
   private val config = RouterConfigDsl[Page].buildConfig { dsl =>
     import dsl._
     (
-      staticRoute("", ToHomePage) ~>
-        renderR(ctl => HomePage(ToHomePage, ctl, HttpHelper))
-        | // home
-          staticRoute("home", ToHomePage) ~>
-            renderR(ctl => HomePage(ToHomePage, ctl, HttpHelper))
-        | // 404
-          staticRoute("404", ToNotFound) ~>
-            render(NotFoundPage())
+      staticRoute("", ToZoneListPage) ~>
+        renderR(ctl => ZoneListPage(ToZoneListPage, ctl, HttpHelper))
         | // api credentials
           staticRoute("credentials", ToApiCredentialsPage) ~>
             renderR(ctl => ApiCredentialsPage(ToApiCredentialsPage, ctl, HttpHelper))
@@ -91,15 +84,17 @@ object AppRouter {
           dynamicRouteCT[ToBatchChangeViewPage](("batch" / string(uuidRegex))
             .caseClass[ToBatchChangeViewPage]) ~> (p =>
             renderR(ctl => BatchChangeViewPage(p, ctl, HttpHelper)))
-    ).notFound(redirectToPage(ToNotFound)(Redirect.Replace))
+        | // 404
+          dynamicRouteCT[ToNotFound]("404" / string(".*")
+            .caseClass[ToNotFound]) ~> (p => render(NotFoundPage(p.path)))
+    ).notFound(p => redirectToPage(ToNotFound(p.value))(Redirect.Replace))
       .renderWith(layout)
   }
 
   private val menu = List(
-    LeftNav.NavItem("Home", "fa fa-home", ToHomePage),
     LeftNav.NavItem("Zones", "fa fa-table", ToZoneListPage),
     LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage),
-    LeftNav.NavItem("DNS Record Requests", "fa fa-list", ToBatchChangeListPage),
+    LeftNav.NavItem("Batch Changes", "fa fa-list", ToBatchChangeListPage),
     LeftNav.NavItem("API Credentials", "fa fa-key", ToApiCredentialsPage),
   )
 
@@ -125,13 +120,6 @@ object AppRouter {
             ^.className := "main-footer-text text-right",
             "VinylDNS",
             version.map(v => s" version $v"),
-            <.br,
-            <.a(
-              ^.href := "https://github.com/vinyldns",
-              "Made with ",
-              <.i(^.className := "fa fa-heart"),
-              " on Github"
-            )
           )
         )
       )

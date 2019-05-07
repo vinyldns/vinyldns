@@ -24,10 +24,12 @@ import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.css.GlobalStyle
 
 object NotFoundPage {
+  case class Props(notFound: String)
+
   private val component =
     ScalaComponent
-      .builder[Unit]("NotFound")
-      .render { _ =>
+      .builder[Props]("NotFound")
+      .render_P { P =>
         <.div(
           GlobalStyle.Styles.height100,
           ^.className := "right_col",
@@ -43,7 +45,7 @@ object NotFoundPage {
                   ^.src := (BaseUrl.fromWindowOrigin / "public/images/404.png").value
                 ),
                 <.b,
-                <.h4("Oops! That page doesn't appear to be in our records...")
+                <.h4(s"""Oops! The page "${P.notFound}" doesn't appear to be in our records...""")
               )
             )
           )
@@ -51,5 +53,5 @@ object NotFoundPage {
       }
       .build
 
-  def apply(): Unmounted[Unit, Unit, Unit] = component()
+  def apply(notFound: String): Unmounted[Props, Unit, Unit] = component(Props(notFound))
 }

@@ -45,29 +45,24 @@ object Breadcrumb {
 
   def toBreadcrumb(P: Props): TagMod =
     P.selectedPage match {
-      case _: ToHomePage.type => homeActive
       case _: ToApiCredentialsPage.type =>
-        List(home(P), credentialsActive).toTagMod
+        List(credentialsActive).toTagMod
       case _: ToGroupListPage.type =>
-        List(home(P), groupsActive).toTagMod
+        List(groupsActive).toTagMod
       case _: ToGroupViewPage =>
-        List(home(P), groups(P), viewGroupActive).toTagMod
+        List(groups(P), viewGroupActive).toTagMod
       case _: ToZoneListPage.type =>
-        List(home(P), zonesActive).toTagMod
+        List(zonesActive).toTagMod
       case _: ToZoneViewPage =>
-        List(home(P), zones(P), viewZoneActive).toTagMod
+        List(zones(P), viewZoneActive).toTagMod
       case _: ToBatchChangeListPage.type =>
-        List(home(P), batchChangeListActive).toTagMod
+        List(batchChangeListActive).toTagMod
       case _: ToBatchChangeCreatePage.type =>
-        List(home(P), batchChangeList(P), createBatchChangeActive).toTagMod
+        List(batchChangeList(P), createBatchChangeActive).toTagMod
       case _: ToBatchChangeViewPage =>
-        List(home(P), batchChangeList(P), viewBatchChangeActive).toTagMod
+        List(batchChangeList(P), viewBatchChangeActive).toTagMod
       case _ => TagMod.empty
     }
-
-  val homeActive = <.li(^.key := "home", cursorPointer, ^.className := "active", "Home")
-  def home(P: Props): TagMod =
-    <.li(^.key := "home", cursorPointer, <.a("Home", P.router.setOnClick(ToHomePage)))
 
   val groupsActive = <.li(^.key := "groups", cursorPointer, ^.className := "active", "Groups")
   def groups(P: Props): TagMod =
@@ -85,7 +80,7 @@ object Breadcrumb {
     <.li(^.key := "credentials", cursorPointer, ^.className := "active", "API Credentials")
 
   val batchChangeListActive =
-    <.li(^.key := "batchlist", cursorPointer, ^.className := "active", "DNS Record Requests")
+    <.li(^.key := "batchlist", cursorPointer, ^.className := "active", "Batch Changes")
   def batchChangeList(P: Props): TagMod =
     <.li(
       ^.key := "batchlist",
@@ -93,7 +88,7 @@ object Breadcrumb {
       <.a("DNS Record Requests", P.router.setOnClick(ToBatchChangeListPage)))
 
   val createBatchChangeActive =
-    <.li(^.key := "createbatch", cursorPointer, ^.className := "active", "New")
+    <.li(^.key := "createbatch", cursorPointer, ^.className := "active", "Create")
 
   val viewBatchChangeActive =
     <.li(^.key := "batchview", cursorPointer, ^.className := "active", "View")

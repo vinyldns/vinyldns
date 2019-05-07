@@ -20,14 +20,11 @@ package vinyldns.client.router
 // Routes can pull things like ints and strings from the path to build a case class
 sealed trait Page
 
-// home
-object ToHomePage extends Page
-
 // api credentials
 object ToApiCredentialsPage extends Page
 
 // 404
-object ToNotFound extends Page
+final case class ToNotFound(path: String) extends Page
 
 // group list
 object ToGroupListPage extends Page

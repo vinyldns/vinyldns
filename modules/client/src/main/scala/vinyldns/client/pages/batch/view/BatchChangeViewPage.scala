@@ -60,7 +60,7 @@ object BatchChangeViewPage extends PropsFromAppRouter {
                 ^.className := "page-title",
                 <.div(
                   ^.className := "title_left",
-                  <.h3(<.span(^.className := "fa fa-list"), "  DNS Record Request (Batch Change)"),
+                  <.h3(<.span(^.className := "fa fa-list"), "  Batch Change"),
                   <.h5(s"ID: ${bc.id}"),
                   toOwnerGroupHeader(P, bc),
                   <.h5(s"Created: ${toReadableTimestamp(bc.createdTimestamp)}"),

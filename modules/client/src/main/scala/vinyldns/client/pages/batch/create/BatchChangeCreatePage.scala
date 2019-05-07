@@ -63,9 +63,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
               ^.className := "page-title",
               <.div(
                 ^.className := "title_left",
-                <.h3(
-                  <.span(^.className := "fa fa-list"),
-                  "  Create a DNS Record Request (Batch Change)"))),
+                <.h3(<.span(^.className := "fa fa-list"), "  Create a Batch Change"))),
             <.div(^.className := "clearfix"),
             <.div(
               ^.className := "page-content-wrap",

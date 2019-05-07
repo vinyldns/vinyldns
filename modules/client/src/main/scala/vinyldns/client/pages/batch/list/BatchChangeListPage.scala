@@ -49,7 +49,7 @@ object BatchChangeListPage extends PropsFromAppRouter {
           ^.className := "page-title",
           <.div(
             ^.className := "title_left",
-            <.h3(<.span(^.className := "fa fa-list"), "  DNS Record Requests (Batch Changes)"))),
+            <.h3(<.span(^.className := "fa fa-list"), "  Batch Changes"))),
         <.div(^.className := "clearfix"),
         <.div(
           ^.className := "page-content-wrap",
@@ -69,7 +69,7 @@ object BatchChangeListPage extends PropsFromAppRouter {
                       ^.`type` := "button",
                       P.router.setOnClick(ToBatchChangeCreatePage),
                       <.span(^.className := "fa fa-plus-square"),
-                      "  Create Request"
+                      "  Create"
                     ),
                     // refresh button
                     <.button(
