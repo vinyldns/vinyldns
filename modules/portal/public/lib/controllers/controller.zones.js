@@ -77,7 +77,7 @@ angular.module('controller.zones', [])
                 });
             };
         });
-        return groupMember !== undefined || $scope.profile.isSuper
+        return groupMember || $scope.profile.isSuper
     };
 
     /* Refreshes zone data set and then re-displays */

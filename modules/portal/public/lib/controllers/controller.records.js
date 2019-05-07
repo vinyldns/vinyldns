@@ -15,7 +15,7 @@
  */
 
 angular.module('controller.records', [])
-    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
+    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, profileService, utilityService, $q) {
 
     /**
       * Scope data initial setup
@@ -69,6 +69,14 @@ angular.module('controller.records', [])
     };
 
     $scope.isZoneAdmin = false;
+
+    profileService.getAuthenticatedUserData().then(function (results) {
+        if (results.data) {
+            $scope.profile = results.data
+        }
+    }, function () {
+        $scope.profile = $scope.profile || {};
+    });
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -359,11 +367,18 @@ angular.module('controller.records', [])
     }
 
     function determineAdmin(){
-        var groupIds = $scope.myGroups.map(function(grp) {return grp['id']});
-        $scope.isZoneAdmin = groupIds.indexOf($scope.zoneInfo.adminGroupId) > -1;
+        var groupMember;
+        $scope.myGroups.find(function(group) {
+            if ($scope.zoneInfo.adminGroupId === group.id) {
+                group.members.find(function(member){
+                    return groupMember = $scope.profile.id === member.id;
+                });
+            };
+        });
+        $scope.isZoneAdmin = groupMember || $scope.profile.isSuper
     }
 
-    $scope.isGroupMember = function(groupId) {
+    $scope.canAccessGroup = function(groupId) {
         var groupMember = $scope.myGroups.find(function(group) {
             return groupId === group.id;
         });
