@@ -120,7 +120,7 @@
                         if (rows[i].length < 10) { continue; }
                             parseRow(rows[i])
                         }
-                        $timeout();
+                        $scope.$apply();
                     }
                     reader.readAsText(file);
                     resetForm();
@@ -132,11 +132,11 @@
                     var change = {};
                     var headers = ["changeType", "type", "inputName", "ttl", "record"];
                     var rowContent = row.split(",");
-                    for(var j = 0; j < rowContent.length; j++) {
+                    for (var j = 0; j < rowContent.length; j++) {
                         if (headers[j] == "changeType") {
-                            if (rowContent[j].trim().match(/add/i)) {
+                            if (rowContent[j].match(/add/i)) {
                                change[headers[j]] = "Add"
-                            } else if (rowContent[j].trim().match(/delete/i)) {
+                            } else if (rowContent[j].match(/delete/i)) {
                                 change[headers[j]] = "DeleteRecordSet"
                             }
                         } else if (headers[j] == "type") {
