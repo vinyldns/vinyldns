@@ -190,15 +190,6 @@ class AccessValidationsSpec
       accessValidationTest
         .canAddRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
     }
-
-    "return true if recordset is NS and user is a superuser" in {
-      val auth = okAuth.copy(
-        signedInUser = okAuth.signedInUser.copy(isSuper = true),
-        memberGroupIds = Seq.empty)
-      accessValidationTest.canAddRecordSet(auth, ns.name, ns.typ, zoneNotAuthorized) should be(
-        right)
-    }
-
     "return true if recordset is NS and user is in the admin group" in {
       val zone = okZone
       val auth = okAuth
@@ -466,7 +457,7 @@ class AccessValidationsSpec
   }
 
   "getAccessLevel" should {
-    "return AccessLevel.Delete if the user is admin/super" in {
+    "return AccessLevel.Delete if the user is admin" in {
       val mockRecordSet = mock[RecordSet]
       val result =
         accessValidationTest.getAccessLevel(
@@ -524,15 +515,21 @@ class AccessValidationsSpec
     }
 
     "return AccessLevel.Read if the user is support only" in {
-      val mockRecordSet = mock[RecordSet]
-      val supportAuth = okAuth.copy(
-        signedInUser = okAuth.signedInUser.copy(isSupport = true),
-        memberGroupIds = Seq.empty)
       val result = accessValidationTest.getAccessLevel(
-        supportAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        okZone,
+        supportUserAuth,
+        "test",
+        RecordType.A,
+        okZone.copy(adminGroupId = "not-a-real-group"),
+        None)
+      result shouldBe AccessLevel.Read
+    }
+
+    "return AccessLevel.Read if the user is super user not in the admin group" in {
+      val result = accessValidationTest.getAccessLevel(
+        superUserAuth,
+        "test",
+        RecordType.A,
+        okZone.copy(adminGroupId = "not-a-real-group"),
         None)
       result shouldBe AccessLevel.Read
     }

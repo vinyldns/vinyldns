@@ -280,7 +280,10 @@ class BatchChangeServiceSpec
       val ownerGroupId = Some("user-is-not-member")
       val input = BatchChangeInput(None, List(apexAddA), ownerGroupId)
       val result =
-        rightResultOf(underTest.applyBatchChange(input, AuthPrincipal(superUser, Seq())).value)
+        rightResultOf(
+          underTest
+            .applyBatchChange(input, AuthPrincipal(superUser, Seq(baseZone.adminGroupId)))
+            .value)
 
       result.changes.length shouldBe 1
     }

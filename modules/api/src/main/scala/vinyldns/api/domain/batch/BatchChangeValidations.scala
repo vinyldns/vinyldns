@@ -87,7 +87,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       case (None, _) => ().validNel
       case (Some(groupId), None) => GroupDoesNotExist(groupId).invalidNel
       case (Some(groupId), Some(_)) =>
-        if (authPrincipal.isGroupMember(groupId) || authPrincipal.canEditAll) ().validNel
+        if (authPrincipal.isGroupMember(groupId) || authPrincipal.isSuper) ().validNel
         else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
     }
 
