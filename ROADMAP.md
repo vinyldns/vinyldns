@@ -7,26 +7,15 @@ we anticipate the "plan" to change.  This document will be updated regularly to 
 This document is organized by priority / planned release timeframes.  Reading top-down should give you a sense of the order in which new features are planned to be delivered.
 
 ## Batch Change
-**Planned for: Q1 2019**
-A major new feature introduced recently is the ability to make multiple changes across zones.  The changes are applied
-by consulting the _current_ access control model.  The access control model follows:
+**Planned for: Q2 2019**
+Q2 work is focused primarily on feature development for batch changes
 
-1. If the user is an admin (VinylDNS or Zone admin), they can make any changes to DNS records
-1. If the user is granted access to make the change by an ACL rule, the change is allowed
-1. Otherwise, the change is rejected with a `Not Authorized`
-
-The final phase of work will add several new features to Batch Changes.  Those include:
-
-1. [Shared Zones](https://github.com/vinyldns/rfcs/pull/6) - IP space and large common zones are cumbersome to manage using fine-grained ACL rules.  Shared zones
-enable self-service management of records via a record ownership model for access controls.  Record ownership assigns
-a group as the owner of the record to restrict who can modify that record.
-1. Profanity filter - reject changes that use profane language in record labels or text.
-1. Blacklisting - allow rejections on any DNS records that are in a blacklist.  This will prevent high-value domains
-from being modified via VinylDNS.
-1. Reverse lookup management - support auto-updating PTR records when making record changes
+1. Scaling batch changes - allow up to 1000 record changes in a single batch
+1. Manual review of batch changes - allow a support user to manually review and approve or reject batch changes that fail under certain circumstances (such as missing zones)
+1. Bulk import for batch change - allow a user to bulk import batch changes from a CSV file (e.g. Excel) to simplify the input of a large number of record changes
 
 ## Zone Management
-**Planned for: Q2 2019**
+**Planned for: Q3 2019**
 Presently VinylDNS _connects to existing zones_ for management.  Zone Management will allow users
 to create and manage zones in the authoritative systems themselves.  The following high-level features are planned:
 
