@@ -20,11 +20,12 @@ describe('Controller: RecordsController', function () {
         module('service.groups'),
         module('service.records'),
         module('service.paging'),
+        module('service.profile'),
         module('service.utility'),
         module('directives.modals.record.module'),
         module('controller.records')
     });
-    beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService) {
+    beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService, profileService) {
         this.rootScope = $rootScope;
         this.scope = this.rootScope.$new();
         this.$httpBackend = $httpBackend;
@@ -32,6 +33,7 @@ describe('Controller: RecordsController', function () {
         this.groupsService = groupsService;
         this.recordsService = recordsService;
         this.pagingService = pagingService;
+        this.profileService = profileService;
         this.q = $q;
     }));
 
