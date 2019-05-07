@@ -61,11 +61,23 @@ angular.module('controller.zones', [])
         }
     });
 
-    $scope.isGroupMember = function(groupId) {
-        var groupMember = $scope.myGroups.find(function(group) {
+    $scope.canAccessGroup = function(groupId) {
+        var groupAccess = $scope.myGroups.find(function(group) {
             return groupId === group.id;
         });
-        return groupMember !== undefined
+        return groupAccess !== undefined
+    };
+
+    $scope.isZoneAdmin = function(groupId) {
+        var groupMember;
+        $scope.myGroups.find(function(group) {
+            if (groupId === group.id) {
+                group.members.find(function(member){
+                    return groupMember = $scope.profile.id === member.id;
+                });
+            };
+        });
+        return groupMember !== undefined || $scope.profile.isSuper
     };
 
     /* Refreshes zone data set and then re-displays */

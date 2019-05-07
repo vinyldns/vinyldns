@@ -92,8 +92,8 @@
                                   <td ng-bind="zone.name"></td>
                                   <td ng-bind="zone.email"></td>
                                   <td>
-                                      <a ng-if="isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
-                                      <span ng-if="!isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
+                                      <a ng-if="canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
+                                      <span ng-if="!canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
                                   </td>
                                   <td ng-bind="zone.status"></td>
                                   @if(meta.sharedDisplayEnabled) {
@@ -107,7 +107,8 @@
                                       </a>
                                       <button id="zone-delete-{{zone.name}}"
                                       class="btn btn-danger btn-rounded mb-control"
-                                      ng-click="confirmDeleteZone(zone);">
+                                      ng-click="confirmDeleteZone(zone);"
+                                      ng-if="isZoneAdmin(zone.adminGroupId)">
                                         Abandon
                                       </button>
                                     </div>
