@@ -117,7 +117,8 @@
                     reader.onload = function(e) {
                         var rows = e.target.result.split("\n");
                         for(var i = 1; i < rows.length; i++) {
-                        if (rows[i].length < 10) { continue; }
+                            var lengthCheck = rows[i].replace(/,+/g, '').trim().length
+                            if (lengthCheck == 0) { continue; }
                             parseRow(rows[i])
                         }
                         $scope.$apply();
