@@ -141,4 +141,4 @@ def test_get_zone_backend_ids(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
     response = client.get_backend_ids(status = 200)
-    assert_that(response, is_([u'func-test-backend']))
+    assert_that(response, has_item(u'func-test-backend'))
