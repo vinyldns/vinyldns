@@ -70,7 +70,7 @@ CNAME        | cname       | string      |
 <br>         |             |             |
 DS           | keytag      | integer     |
 DS           | algorithm   | integer     |
-DS           | digest type | integer     |
+DS           | digesttype | integer      |
 DS           | digest      | string      |
 <br>         |             |             |
 MX           | preference  | integer     |
