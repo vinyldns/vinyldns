@@ -136,7 +136,7 @@ def test_update_missing_zone_data(shared_zone_test_context):
         }
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result[u'zone'][u'id'])
 
         update_zone = {
             'id': result_zone['id'],
@@ -186,7 +186,7 @@ def test_update_invalid_zone_data(shared_zone_test_context):
         }
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result[u'zone'][u'id'])
 
         update_zone = {
             'id': result_zone['id'],
@@ -720,7 +720,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
             }, status=202
         )
         zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result[u'zone'][u'id'])
 
         import json
         print json.dumps(zone, indent=3)
