@@ -576,7 +576,6 @@ angular.module('controller.records', [])
     }
 
     function profileFailure(results) {
-        $scope.profile = $scope.profile || {};
         handleError(results, 'profileService::getAuthenticatedUserData-catch');
     }
 
