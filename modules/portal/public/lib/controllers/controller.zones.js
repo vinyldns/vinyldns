@@ -69,11 +69,10 @@ angular.module('controller.zones', [])
     };
 
     $scope.isZoneAdmin = function(groupId) {
-        var groupMember;
-        $scope.myGroups.find(function(group) {
+        var groupMember = $scope.myGroups.find(function(group) {
             if (groupId === group.id) {
-                group.members.find(function(member){
-                    return groupMember = $scope.profile.id === member.id;
+                return group.members.find(function(member){
+                    return $scope.profile.id === member.id;
                 });
             };
         });
