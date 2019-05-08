@@ -368,13 +368,12 @@ angular.module('controller.records', [])
 
     function determineAdmin(){
         var groupMember;
-        $scope.myGroups.find(function(group) {
-            if ($scope.zoneInfo.adminGroupId === group.id) {
-                group.members.find(function(member){
-                    return groupMember = $scope.profile.id === member.id;
-                });
-            };
-        });
+        var groupIds = $scope.myGroups.map(function(grp) {return grp['id']});
+        var theGroupIndex = groupIds.indexOf($scope.zoneInfo.adminGroupId);
+        if (theGroupIndex > -1) {
+            var stuff = $scope.myGroups[theGroupIndex].members.map(function(member) {return member['id']});
+            groupMember = stuff.indexOf($scope.profile.id) > -1;
+        }
         $scope.isZoneAdmin = groupMember || $scope.profile.isSuper
     }
 

@@ -122,12 +122,14 @@ describe('Controller: RecordsController', function () {
             maxItems: 100}};
 
         this.scope.zoneInfo = {};
+        this.scope.profile = {id: "7096b806-c12a-4171-ba13-7fabb523acee", isSuper: false};
         spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when({ data: {zone: mockZone}}));
         spyOn(this.groupsService, 'getMyGroups')
             .and.stub()
             .and.returnValue(this.q.when(mockGroups));
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
         this.scope.refreshZone();
         this.scope.$digest();
 
@@ -160,12 +162,94 @@ describe('Controller: RecordsController', function () {
             maxItems: 100}};
 
         this.scope.zoneInfo = {};
+        this.scope.profile = {id: "notAdmin", isSuper: false};
         spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when({ data: {zone: mockZone}}));
         spyOn(this.groupsService, 'getMyGroups')
             .and.stub()
             .and.returnValue(this.q.when(mockGroups));
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
+        this.scope.refreshZone();
+        this.scope.$digest();
+
+        expect(this.scope.zoneInfo).toEqual(mockZone);
+        expect(this.scope.isZoneAdmin).toBe(false);
+    });
+
+    it('refreshZone updates zoneInfo and isZoneAdmin when user is a super user', function() {
+        mockZone = {
+            name: "dummy.",
+            email: "test@test.com",
+            status: "Active",
+            created: "2017-02-15T14:58:39Z",
+            account: "c8234503-bfda-4b80-897f-d74129051eaa",
+            acl: {rules: []},
+            adminGroupId: "c8234503-bfda-4b80-897f-d74129051eaa",
+            id: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+            shared: false,
+            status: "Active"
+        };
+        mockGroups = {data: { groups: [
+            {id: "some-other-id",
+                name: "test",
+                email: "test@test.com",
+                admins: [{id: "7096b806-c12a-4171-ba13-7fabb523acee"}],
+                created: "2017-02-15T14:58:31Z",
+                members: [{id: "7096b806-c12a-4171-ba13-7fabb523acee"}],
+                status: "Active"}
+        ],
+            maxItems: 100}};
+
+        this.scope.zoneInfo = {};
+        this.scope.profile = {id: "notAdmin", isSuper: true};
+        spyOn(this.recordsService, 'getZone')
+            .and.stub()
+            .and.returnValue(this.q.when({ data: {zone: mockZone}}));
+        spyOn(this.groupsService, 'getMyGroups')
+            .and.stub()
+            .and.returnValue(this.q.when(mockGroups));
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
+        this.scope.refreshZone();
+        this.scope.$digest();
+
+        expect(this.scope.zoneInfo).toEqual(mockZone);
+        expect(this.scope.isZoneAdmin).toBe(true);
+    });
+
+    it('refreshZone updates zoneInfo and isZoneAdmin when user is a support user only', function() {
+        mockZone = {
+            name: "dummy.",
+            email: "test@test.com",
+            status: "Active",
+            created: "2017-02-15T14:58:39Z",
+            account: "c8234503-bfda-4b80-897f-d74129051eaa",
+            acl: {rules: []},
+            adminGroupId: "c8234503-bfda-4b80-897f-d74129051eaa",
+            id: "c5c87405-2ec8-4e03-b2dc-c6758a5d9666",
+            shared: false,
+            status: "Active"
+        };
+        mockGroups = {data: { groups: [
+            {id: "some-other-id",
+                name: "test",
+                email: "test@test.com",
+                admins: [{id: "7096b806-c12a-4171-ba13-7fabb523acee"}],
+                created: "2017-02-15T14:58:31Z",
+                members: [{id: "7096b806-c12a-4171-ba13-7fabb523acee"}],
+                status: "Active"}
+        ],
+            maxItems: 100}};
+
+        this.scope.zoneInfo = {};
+        this.scope.profile = {id: "notAdmin", isSupport: true, isSuper: false};
+        spyOn(this.recordsService, 'getZone')
+            .and.stub()
+            .and.returnValue(this.q.when({ data: {zone: mockZone}}));
+        spyOn(this.groupsService, 'getMyGroups')
+            .and.stub()
+            .and.returnValue(this.q.when(mockGroups));
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
         this.scope.refreshZone();
         this.scope.$digest();
 
