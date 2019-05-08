@@ -571,7 +571,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
       val onFailure = { httpResponse: HttpResponse =>
         addNotification(P.http.toNotification("listing groups", httpResponse, onlyOnError = true))
       }
-      P.http.get(ListGroupsRoute(), onSuccess, onFailure)
+      P.http.get(ListGroupsRoute(1000), onSuccess, onFailure)
     }
 
   }

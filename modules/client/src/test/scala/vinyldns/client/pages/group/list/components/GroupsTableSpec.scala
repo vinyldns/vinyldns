@@ -36,7 +36,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
     val mockHttp = mock[Http]
 
     (mockHttp.get[GroupListResponse] _)
-      .expects(ListGroupsRoute(), *, *)
+      .expects(ListGroupsRoute(100), *, *)
       .once()
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
@@ -57,7 +57,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
       val mockHttp = mock[Http]
 
       (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
+        .expects(ListGroupsRoute(100), *, *)
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], None)
@@ -75,7 +75,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
       val mockHttp = mock[Http]
 
       (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
+        .expects(ListGroupsRoute(100), *, *)
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(GroupListResponse(List(), 100)))

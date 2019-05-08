@@ -77,7 +77,7 @@ object RegenerateCredentialsRoute extends RequestRoute[Unit] {
 }
 
 final case class ListGroupsRoute(
-    maxItems: Int = 100,
+    maxItems: Int = 1000,
     nameFilter: Option[String] = None,
     startFrom: Option[String] = None)
     extends RequestRoute[GroupListResponse] {

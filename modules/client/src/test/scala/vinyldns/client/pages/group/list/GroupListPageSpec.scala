@@ -36,7 +36,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
     val mockHttp = mock[Http]
 
     (mockHttp.get[GroupListResponse] _)
-      .expects(ListGroupsRoute(), *, *)
+      .expects(ListGroupsRoute(100), *, *)
       .once()
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
@@ -81,7 +81,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
 
     "call http.get with groupNameFilter when someone uses search bar" in new Fixture {
       (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(nameFilter = Some("filter")), *, *)
+        .expects(ListGroupsRoute(100, nameFilter = Some("filter")), *, *)
         .once()
         .returns(Callback.empty)
 
@@ -100,7 +100,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       val groupListWithNext = initialGroupList.copy(nextId = Some("next"))
 
       (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
+        .expects(ListGroupsRoute(100), *, *)
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
@@ -109,7 +109,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>
           (mockHttp.get[GroupListResponse] _)
-            .expects(ListGroupsRoute(startFrom = Some("next")), *, *)
+            .expects(ListGroupsRoute(100, startFrom = Some("next")), *, *)
             .once()
             .onCall { (_, onSuccess, _) =>
               onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
@@ -122,7 +122,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
           next.outerHtmlScrubbed() should include("Page 3")
 
           (mockHttp.get[GroupListResponse] _)
-            .expects(ListGroupsRoute(), *, *)
+            .expects(ListGroupsRoute(100), *, *)
             .once()
             .onCall { (_, onSuccess, _) =>
               onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
@@ -137,7 +137,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
 
     "call http.get with groupNameFilter when someone uses refresh button" in new Fixture {
       (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(nameFilter = Some("filter")), *, *)
+        .expects(ListGroupsRoute(100, nameFilter = Some("filter")), *, *)
         .once()
         .returns(Callback.empty)
 
@@ -157,7 +157,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       val groupListWithNext = initialGroupList.copy(nextId = Some("next"))
 
       (mockHttp.get[GroupListResponse] _)
-        .expects(ListGroupsRoute(), *, *)
+        .expects(ListGroupsRoute(100), *, *)
         .once()
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
@@ -166,7 +166,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>
           (mockHttp.get[GroupListResponse] _)
-            .expects(ListGroupsRoute(startFrom = Some("next")), *, *)
+            .expects(ListGroupsRoute(100, startFrom = Some("next")), *, *)
             .once()
             .onCall { (_, onSuccess, _) =>
               onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
@@ -179,7 +179,7 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
           next.outerHtmlScrubbed() should include("Page 3")
 
           (mockHttp.get[GroupListResponse] _)
-            .expects(ListGroupsRoute(), *, *)
+            .expects(ListGroupsRoute(100), *, *)
             .once()
             .onCall { (_, onSuccess, _) =>
               onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))

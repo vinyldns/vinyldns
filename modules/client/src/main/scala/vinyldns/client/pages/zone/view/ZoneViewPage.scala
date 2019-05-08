@@ -241,7 +241,7 @@ object ZoneViewPage extends PropsFromAppRouter {
         bs.modState(_.copy(groupList = parsed))
       }
 
-      P.http.get(ListGroupsRoute(100), onSuccess, onFailure)
+      P.http.get(ListGroupsRoute(1000), onSuccess, onFailure)
     }
 
     def getBackendIds(P: Props): Callback = {
