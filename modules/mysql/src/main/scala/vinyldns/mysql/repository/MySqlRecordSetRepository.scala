@@ -312,7 +312,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .update()
             .apply()
         }
-        logger.info(s"Deleted $numDeleted from zone $zoneName (zone id: $zoneId)")
+        logger.info(s"Deleted $numDeleted records from zone $zoneName (zone id: $zoneId)")
         numDeleted
       }.handleErrorWith { error =>
         logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId)", error)
