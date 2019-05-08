@@ -499,4 +499,24 @@ class MySqlRecordSetRepositoryIntegrationSpec
       result shouldBe None
     }
   }
+
+  "deleteRecordSetsInZone" should {
+    "delete recordsets from table with matching zone id" in {
+      insert(okZone, 20)
+      insert(abcZone, 10)
+
+      repo.getRecordSetCount(okZone.id).unsafeRunSync() shouldBe 20
+      repo.getRecordSetCount(abcZone.id).unsafeRunSync() shouldBe 10
+
+      repo.deleteRecordSetsInZone(okZone.id, okZone.name).unsafeRunSync() shouldBe 20
+
+      repo.getRecordSetCount(okZone.id).unsafeRunSync() shouldBe 0
+      repo.getRecordSetCount(abcZone.id).unsafeRunSync() shouldBe 10
+    }
+
+    "return 0 if there is nothing to delete" in {
+      repo.getRecordSetCount(okZone.id).unsafeRunSync() shouldBe 0
+      repo.deleteRecordSetsInZone(okZone.id, okZone.name).unsafeRunSync() shouldBe 0
+    }
+  }
 }

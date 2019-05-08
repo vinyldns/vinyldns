@@ -18,6 +18,7 @@ package vinyldns.mysql.repository
 
 import cats.effect._
 import cats.implicits._
+import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
@@ -65,6 +66,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   private val DELETE_RECORDSET =
     sql"DELETE FROM recordset WHERE id = ?"
 
+  private val DELETE_RECORDSETS_IN_ZONE =
+    sql"DELETE FROM recordset WHERE zone_id = ?"
+
   private val BASE_FIND_RECORDSETS_BY_FQDNS =
     """
       |SELECT data
@@ -79,6 +83,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       |WHERE owner_group_id = {ownerGroupId}
       |LIMIT 1
     """.stripMargin
+
+  private final val logger = LoggerFactory.getLogger(classOf[MySqlRecordSetRepository])
 
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
@@ -294,6 +300,23 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .single
             .apply()
         }
+      }
+    }
+
+  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Int] =
+    monitor("repo.RecordSet.deleteRecordSetsInZone") {
+      IO {
+        val numDeleted = DB.localTx { implicit s =>
+          DELETE_RECORDSETS_IN_ZONE
+            .bind(zoneId)
+            .update()
+            .apply()
+        }
+        logger.info(s"Deleted $numDeleted from zone $zoneName (zone id: $zoneId)")
+        numDeleted
+      }.handleErrorWith { error =>
+        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId)", error)
+        IO.raiseError(error)
       }
     }
 }

@@ -17,17 +17,17 @@
 package vinyldns.api.engine
 
 import cats.effect.IO
-import vinyldns.core.domain.zone.{
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus,
-  ZoneRepository
-}
+import org.slf4j.{Logger, LoggerFactory}
+import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.domain.zone._
 
 object ZoneChangeHandler {
+  private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneChangeHandler")
+
   def apply(
       zoneRepository: ZoneRepository,
-      zoneChangeRepository: ZoneChangeRepository): ZoneChange => IO[ZoneChange] =
+      zoneChangeRepository: ZoneChangeRepository,
+      recordSetRepository: RecordSetRepository): ZoneChange => IO[ZoneChange] =
     zoneChange =>
       zoneRepository.save(zoneChange.zone).flatMap {
         case Left(duplicateZoneError) =>
@@ -36,6 +36,24 @@ object ZoneChangeHandler {
               status = ZoneChangeStatus.Failed,
               systemMessage = Some(duplicateZoneError.message))
           )
+        case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
+          recordSetRepository
+            .deleteRecordSetsInZone(zoneChange.zone.id, zoneChange.zone.name)
+            .attempt
+            .map {
+              case Left(e: Throwable) =>
+                logger.error(
+                  s"""Encountered error deleting recordsets from deleted
+                       |zone ${zoneChange.zone.name} (zone id: ${zoneChange.zone.id})""".stripMargin
+                    .replaceAll("\n", " "),
+                  e
+                )
+                zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
+
+              case Right(_) =>
+                zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
+            }
+          zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
         case Right(_) =>
           zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
     }
