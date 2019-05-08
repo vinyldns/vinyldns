@@ -340,7 +340,7 @@ class RecordSetServiceIntegrationSpec
     "update relative NS record without trailing dot" in {
       val newRecord = subTestRecordNS.copy(ttl = 200)
       val result = testRecordSetService
-        .updateRecordSet(newRecord, superUserAuth)
+        .updateRecordSet(newRecord, auth)
         .value
         .unsafeToFuture()
         .mapTo[Either[Throwable, RecordSetChange]]
@@ -536,15 +536,6 @@ class RecordSetServiceIntegrationSpec
     "delete successfully for zone admin in shared zone" in {
       val result = testRecordSetService
         .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, auth)
-        .value
-        .unsafeRunSync()
-
-      result should be(right)
-    }
-
-    "delete successfully for super user in shared zone" in {
-      val result = testRecordSetService
-        .deleteRecordSet(sharedTestRecord.id, sharedTestRecord.zoneId, superUserAuth)
         .value
         .unsafeRunSync()
 

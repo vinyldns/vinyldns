@@ -20,7 +20,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.membership.Group
 
 case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
-  def canEditAll: Boolean =
+  def isSuper: Boolean =
     signedInUser.isSuper
 
   def canReadAll: Boolean =
