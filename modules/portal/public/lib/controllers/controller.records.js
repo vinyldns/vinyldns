@@ -41,6 +41,7 @@ angular.module('controller.records', [])
     $scope.recordsetChanges = {};
     $scope.currentRecord = {};
     $scope.zoneInfo = {};
+    $scope.profile = {};
 
     var loadZonesPromise;
     var loadRecordsPromise;
@@ -69,14 +70,6 @@ angular.module('controller.records', [])
     };
 
     $scope.isZoneAdmin = false;
-
-    profileService.getAuthenticatedUserData().then(function (results) {
-        if (results.data) {
-            $scope.profile = results.data
-        }
-    }, function () {
-        $scope.profile = $scope.profile || {};
-    });
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -575,9 +568,24 @@ angular.module('controller.records', [])
             });
     };
 
+    function profileSuccess(results) {
+        if (results.data) {
+            $scope.profile = results.data;
+            $log.log('profileService::getAuthenticatedUserData-success');
+        }
+    }
+
+    function profileFailure(results) {
+        $scope.profile = $scope.profile || {};
+        handleError(results, 'profileService::getAuthenticatedUserData-catch');
+    }
+
     loadZonesPromise = $timeout($scope.refreshZone, 0);
     loadRecordsPromise = $timeout($scope.refreshRecords, 0);
     $timeout($scope.refreshRecordChangesPreview, 0);
     $timeout($scope.refreshRecordChanges, 0);
 
+    profileService.getAuthenticatedUserData()
+        .then(profileSuccess, profileFailure)
+        .catch(profileFailure);
 });
