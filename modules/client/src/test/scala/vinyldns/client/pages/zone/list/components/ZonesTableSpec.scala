@@ -23,6 +23,7 @@ import org.scalatest._
 import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
 import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute}
+import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.models.zone.{ZoneListResponse, ZoneResponse}
 import vinyldns.client.router.Page
 
@@ -30,11 +31,14 @@ import scala.language.existentials
 
 class ZonesTableSpec extends WordSpec with Matchers with MockFactory with SharedTestData {
   val mockRouter = mock[RouterCtl[Page]]
+  val groups = generateGroupResponses(1)
+  val groupList = GroupListResponse(groups.toList, 100)
   val initialZoneList =
     ZoneListResponse(generateZoneResponses(10, generateGroupResponses(1).head).toList, 100)
 
   trait Fixture {
     val mockHttp = mock[Http]
+    val props = ZonesTable.Props(mockHttp, mockRouter, groupList)
 
     (mockHttp.get[ZoneListResponse] _)
       .expects(ListZonesRoute(), *, *)
@@ -42,12 +46,15 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialZoneList))
       }
+
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
   }
 
   "ZonesTable" should {
     "get zones when mounting" in new Fixture {
-      val props = ZonesTable.Props(mockHttp, mockRouter)
-
       ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
         c.state.zonesList shouldBe Some(initialZoneList)
       }
@@ -55,6 +62,7 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
 
     "display loading message when zone list is none" in {
       val mockHttp = mock[Http]
+      val props = ZonesTable.Props(mockHttp, mockRouter, groupList)
 
       (mockHttp.get[ZoneListResponse] _)
         .expects(ListZonesRoute(), *, *)
@@ -63,8 +71,6 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
           onSuccess.apply(mock[HttpResponse], None)
         }
 
-      val props = ZonesTable.Props(mockHttp, mockRouter)
-
       ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
         c.outerHtmlScrubbed() shouldBe "<div><p>Loading your zones...</p></div>"
       }
@@ -72,6 +78,7 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
 
     "display no zones message when zone list is empty" in {
       val mockHttp = mock[Http]
+      val props = ZonesTable.Props(mockHttp, mockRouter, groupList)
 
       (mockHttp.get[ZoneListResponse] _)
         .expects(ListZonesRoute(), *, *)
@@ -80,16 +87,12 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
           onSuccess.apply(mock[HttpResponse], Some(ZoneListResponse(List(), 100)))
         }
 
-      val props = ZonesTable.Props(mockHttp, mockRouter)
-
       ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
         c.outerHtmlScrubbed() shouldBe "<div><p>You don't have any zones yet</p></div>"
       }
     }
 
     "display zones in table" in new Fixture {
-      val props = ZonesTable.Props(mockHttp, mockRouter)
-
       ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
         val table = ReactTestUtils.findRenderedDOMComponentWithTag(c, "table")
         val html = table.outerHtmlScrubbed()
@@ -104,8 +107,6 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
     }
 
     "call withConfirmation when clicking abandon button" in new Fixture {
-      val props = ZonesTable.Props(mockHttp, mockRouter)
-
       (mockHttp.withConfirmation _).expects(*, *).once().returns(Callback.empty)
       (mockHttp.delete[ZoneResponse] _).expects(*, *, *).never()
 
@@ -116,8 +117,6 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
     }
 
     "call http.delete when clicking abandon button and confirming" in new Fixture {
-      val props = ZonesTable.Props(mockHttp, mockRouter)
-
       (mockHttp.withConfirmation _).expects(*, *).repeat(10 to 10).onCall((_, cb) => cb)
 
       initialZoneList.zones.map { z =>

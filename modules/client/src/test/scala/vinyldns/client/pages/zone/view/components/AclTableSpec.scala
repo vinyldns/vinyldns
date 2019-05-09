@@ -40,6 +40,12 @@ class AclTableSpec extends WordSpec with Matchers with MockFactory with SharedTe
 
   trait Fixture {
     val mockHttp = mock[Http]
+
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
+
     val props = AclTable.Props(
       initialZone,
       initialGroups.toList,
@@ -60,6 +66,11 @@ class AclTableSpec extends WordSpec with Matchers with MockFactory with SharedTe
         mockRouter,
         generateNoOpHandler[Unit]
       )
+
+      (mockHttp.getLoggedInUser _)
+        .expects()
+        .anyNumberOfTimes()
+        .returns(testUser)
 
       ReactTestUtils.withRenderedIntoDocument(AclTable(props)) { c =>
         c.props.zone.acl shouldBe Rules(List())

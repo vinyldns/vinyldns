@@ -117,7 +117,7 @@ object ZoneListPage extends PropsFromAppRouter {
                       )
                     ),
                     // table
-                    refToTable.component(ZonesTable.Props(P.http, P.router))
+                    refToTable.component(ZonesTable.Props(P.http, P.router, groupList))
                   )
                 )
               )

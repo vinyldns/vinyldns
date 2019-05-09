@@ -44,6 +44,11 @@ class AclModalSpec extends WordSpec with Matchers with MockFactory with SharedTe
     val mockHttp = mock[Http]
     val existing = if (isUpdate) Some(userAclRule, 1) else None
 
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
+
     val props = AclModal.Props(
       initialZone,
       mockHttp,

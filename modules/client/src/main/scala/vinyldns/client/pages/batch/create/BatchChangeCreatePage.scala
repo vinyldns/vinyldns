@@ -190,7 +190,13 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
               )
             )
           )
-        case None => <.p("Loading...")
+        case None =>
+          <.div(
+            GlobalStyle.Styles.height100,
+            ^.className := "right_col",
+            ^.role := "main",
+            <.div(<.p("Loading..."))
+          )
       }
 
     def ownerGroupField(S: State, groups: List[GroupResponse]): TagMod = {

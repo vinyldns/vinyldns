@@ -27,12 +27,13 @@ import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute
 import vinyldns.client.models.zone.{ZoneListResponse, ZoneResponse}
 import vinyldns.client.components.JsNative._
 import vinyldns.client.models.Pagination
+import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.router.{Page, ToGroupViewPage, ToZoneViewRecordsTab, ToZoneViewZoneTab}
 
 import scala.util.Try
 
 object ZonesTable {
-  case class Props(http: Http, router: RouterCtl[Page])
+  case class Props(http: Http, router: RouterCtl[Page], groupList: GroupListResponse)
   case class State(
       zonesList: Option[ZoneListResponse] = None,
       nameFilter: Option[String] = None,
@@ -189,6 +190,9 @@ object ZonesTable {
             <.button(
               ^.className := "btn btn-warning btn-rounded test-edit",
               P.router.setOnClick(ToZoneViewZoneTab(zone.id)),
+              ^.disabled := !ZoneResponse.canEdit(
+                P.http.getLoggedInUser(),
+                P.groupList.groups.find(_.id == zone.adminGroupId)),
               ^.title := s"Edit zone ${zone.name}",
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-edit"),
@@ -198,6 +202,9 @@ object ZonesTable {
               ^.className := "btn btn-danger btn-rounded test-abandon",
               ^.`type` := "button",
               ^.onClick --> deleteZone(P, S, zone),
+              ^.disabled := !ZoneResponse.canEdit(
+                P.http.getLoggedInUser(),
+                P.groupList.groups.find(_.id == zone.adminGroupId)),
               ^.title := s"Abandon zone ${zone.name}",
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-trash"),

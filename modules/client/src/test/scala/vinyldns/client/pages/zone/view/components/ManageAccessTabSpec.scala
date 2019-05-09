@@ -33,6 +33,12 @@ class ManageAccessTabSpec extends WordSpec with Matchers with MockFactory with S
 
   trait Fixture {
     val mockHttp = mock[Http]
+
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
+
     val props = ManageAccessTab.Props(
       initialZone,
       initialGroupList,

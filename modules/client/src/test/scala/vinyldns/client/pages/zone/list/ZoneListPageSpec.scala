@@ -45,6 +45,11 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
         onSuccess.apply(mock[HttpResponse], Some(groupList))
       }
 
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
+
     (mockHttp.get[List[String]] _)
       .expects(GetBackendIdsRoute, *, *)
       .once()
@@ -137,6 +142,11 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
           onSuccess.apply(mock[HttpResponse], Some(backendIds))
         }
 
+      (mockHttp.getLoggedInUser _)
+        .expects()
+        .anyNumberOfTimes()
+        .returns(testUser)
+
       ReactTestUtils.withRenderedIntoDocument(ZoneListPage(ToZoneListPage, mockRouter, mockHttp)) {
         c =>
           (mockHttp.get[ZoneListResponse] _)
@@ -202,6 +212,11 @@ class ZoneListPageSpec extends WordSpec with Matchers with MockFactory with Shar
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(zoneListWithNext))
         }
+
+      (mockHttp.getLoggedInUser _)
+        .expects()
+        .anyNumberOfTimes()
+        .returns(testUser)
 
       (mockHttp.get[List[String]] _)
         .expects(GetBackendIdsRoute, *, *)

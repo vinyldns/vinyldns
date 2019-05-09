@@ -66,6 +66,8 @@ object AclTable {
                 ^.className := "btn btn-default test-create-acl",
                 ^.`type` := "button",
                 ^.onClick --> makeCreateAclModalVisible,
+                ^.disabled := !ZoneResponse
+                  .canEdit(P.http.getLoggedInUser(), P.groups.find(_.id == P.zone.adminGroupId)),
                 <.span(^.className := "fa fa-plus-square"),
                 "  Create Access Rule"
               ),
@@ -132,12 +134,16 @@ object AclTable {
               ^.className := "btn btn-info btn-rounded test-edit",
               ^.`type` := "button",
               ^.onClick --> makeUpdateAclModalVisible(rule, index),
+              ^.disabled := !ZoneResponse
+                .canEdit(P.http.getLoggedInUser(), P.groups.find(_.id == P.zone.adminGroupId)),
               <.span(^.className := "fa fa-edit"),
               " Update"
             ),
             <.button(
               ^.className := "btn btn-danger btn-rounded test-delete",
               ^.`type` := "button",
+              ^.disabled := !ZoneResponse
+                .canEdit(P.http.getLoggedInUser(), P.groups.find(_.id == P.zone.adminGroupId)),
               ^.onClick --> deleteAclRule(P, rule, index),
               <.span(^.className := "fa fa-trash"),
               " Delete"
