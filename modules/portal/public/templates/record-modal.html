@@ -82,11 +82,73 @@
                        ng-model="currentRecord.cnameRecordData"
                        ng-class="recordModal.details.class"
                        ng-readonly="recordModal.details.readOnly"
-                       required>
-                </input>
+                       required/>
                 <modal-invalid>
                     Must specify target FQDN for CNAME
                 </modal-invalid>
+            </modal-element>
+
+
+            <modal-element ng-if="currentRecord.type == 'DS'" label="Record Data">
+                <table class="table table-condensed">
+                    <tr>
+                        <td class="table-col-20"><label class="control-label">Keytag</label></td>
+                        <td><label class="control-label">Algorithm</label></td>
+                        <td><label class="control-label">Digest Type</label></td>
+                        <td><label class="control-label">Digest</label></td>
+                        <td></td>
+                    </tr>
+                    <tr ng-repeat="item in currentRecord.dsItems">
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['keytag_' + ($index)].$invalid}">
+                            <input name="keytag_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.keytag"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   min="0"
+                                   max="65535"
+                                   required/>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['algorithm_' + ($index)].$invalid}">
+                            <select name="algorithm_{{$index}}"
+                                    class="form-control"
+                                    ng-model="item.algorithm"
+                                    ng-class="recordModal.basics.class"
+                                    ng-options="item.number as item.name for item in dsAlgorithms"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    required>
+                            </select>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['digesttype_' + ($index)].$invalid}">
+                            <select name="digesttype_{{$index}}"
+                                    class="form-control"
+                                    ng-model="item.digesttype"
+                                    ng-class="recordModal.basics.class"
+                                    ng-options="item.number as item.name for item in dsDigestTypes"
+                                    ng-readonly="recordModal.details.readOnly"
+                                    required>
+                            </select>
+                        </td>
+                        <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['digest_' + ($index)].$invalid}">
+                            <input name="digest_{{$index}}"
+                                   class="form-control"
+                                   ng-model="item.digest"
+                                   ng-class="recordModal.details.class"
+                                   ng-readonly="recordModal.details.readOnly"
+                                   required/>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger fa fa-times"
+                                    ng-disabled="disabledStates.indexOf(recordModal.action) > -1"
+                                    ng-click="deleteDs($index)">
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+                <button type="button" class="btn btn-success"
+                        ng-disabled="disabledStates.indexOf(recordModal.action) > -1" ng-click="addNewDs()">
+                    Add Row
+                </button>
             </modal-element>
 
             <modal-element ng-if="currentRecord.type == 'MX'" label="Record Data">
@@ -103,18 +165,15 @@
                                    ng-model="item.preference"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
-
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['exchange_' + ($index)].$invalid}">
                             <input name="exchange_{{$index}}"
                                    class="form-control"
                                    ng-model="item.exchange"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td>
                             <button type="button" class="btn btn-sm btn-danger fa fa-times"
@@ -203,8 +262,7 @@
                                    ng-model="item.priority"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['weight_' + ($index)].$invalid}">
                             <input name="weight_{{$index}}"
@@ -212,8 +270,7 @@
                                    ng-model="item.weight"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['port_' + ($index)].$invalid}">
                             <input name="port_{{$index}}"
@@ -221,8 +278,7 @@
                                    ng-model="item.port"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['target_' + ($index)].$invalid}">
                             <input name="target_{{$index}}"
@@ -230,8 +286,7 @@
                                    ng-model="item.target"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td>
                             <button type="button" class="btn btn-sm btn-danger fa fa-times"
@@ -266,8 +321,7 @@
                                    ng-model="item.order"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['preference_' + ($index)].$invalid}">
                             <input name="weight_{{$index}}"
@@ -275,8 +329,7 @@
                                    ng-model="item.preference"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['flags_' + ($index)].$invalid}">
                             <input name="flags_{{$index}}"
@@ -284,8 +337,7 @@
                                    ng-model="item.flags"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['service_' + ($index)].$invalid}">
                             <input name="flags_{{$index}}"
@@ -293,16 +345,14 @@
                                    ng-model="item.service"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['regexp_' + ($index)].$invalid}">
                             <input name="flags_{{$index}}"
                                    class="form-control"
                                    ng-model="item.regexp"
                                    ng-class="recordModal.details.class"
-                                   ng-readonly="recordModal.details.readOnly">
-                            </input>
+                                   ng-readonly="recordModal.details.readOnly"/>
                         </td>
                         <td ng-class="{'has-error': addRecordForm.$submitted && addRecordForm['replacement_' + ($index)].$invalid}">
                             <input name="target_{{$index}}"
@@ -310,8 +360,7 @@
                                    ng-model="item.replacement"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td>
                             <button type="button" class="btn btn-sm btn-danger fa fa-times"
@@ -361,8 +410,7 @@
                                    ng-model="item.fingerprint"
                                    ng-class="recordModal.details.class"
                                    ng-readonly="recordModal.details.readOnly"
-                                   required>
-                            </input>
+                                   required/>
                         </td>
                         <td>
                             <button type="button" class="btn btn-sm btn-danger fa fa-times"

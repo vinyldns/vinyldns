@@ -24,11 +24,18 @@ angular.module('controller.records', [])
     $scope.query = "";
     $scope.alerts = [];
 
-    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
+    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
         {name: '(4) Ed25519', number: 4}];
     $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
-
+    $scope.dsAlgorithms = [{name: '(3) DSA', number: 3}, {name: '(5) RSASHA1', number: 5},
+        {name: '(6) DSA_NSEC3_SHA1', number: 6}, {name: '(7) RSASHA1_NSEC3_SHA1' , number: 7},
+        {name: '(8) RSASHA256', number: 8}, {name: '(10) RSASHA512' , number: 10},
+        {name: '(12) ECC_GOST', number: 12}, {name: '(13) ECDSAP256SHA256' , number: 13},
+        {name: '(14) ECDSAP384SHA384', number: 14}, {name: '(15) ED25519', number: 15},
+        {name: '(16) ED448', number: 16},{name: '(253) PRIVATEDNS', number: 253},
+        {name: '(254) PRIVATEOID', number: 254}]
+    $scope.dsDigestTypes = [{name: '(1) SHA1', number: 1}, {name: '(2) SHA256', number: 2}, {name: '(3) GOSTR341194', number: 3}, {name: '(4) SHA384', number: 4}]
     $scope.records = {};
     $scope.recordsetChangesPreview = {};
     $scope.recordsetChanges = {};
@@ -90,6 +97,7 @@ angular.module('controller.records', [])
         record = {
             type: "A",
             ttl: 300,
+            dsItems: [{keytag:'', algorithm: '', digesttype: '', digest: ''}],
             mxItems: [{preference:'', exchange:''}],
             srvItems: [{priority:'', weight:'', port:'', target:''}],
             naptrItems: [{order:'', preference:'', flags:'', service:'', regexp:'', replacement:''}],
@@ -213,6 +221,18 @@ angular.module('controller.records', [])
                 return 'danger';
             default:
                 return 'info';
+        }
+    };
+
+    $scope.addNewDs = function() {
+        var dataObj = {preference:'', exchange:''};
+        $scope.currentRecord.dsItems.push(dataObj);
+    };
+
+    $scope.deleteDs = function(index) {
+        $scope.currentRecord.dsItems.splice(index, 1);
+        if($scope.currentRecord.dsItems.length == 0) {
+            $scope.addNewDs();
         }
     };
 
