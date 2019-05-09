@@ -364,8 +364,8 @@ angular.module('controller.records', [])
         var groupIds = $scope.myGroups.map(function(grp) {return grp['id']});
         var theGroupIndex = groupIds.indexOf($scope.zoneInfo.adminGroupId);
         if (theGroupIndex > -1) {
-            var stuff = $scope.myGroups[theGroupIndex].members.map(function(member) {return member['id']});
-            groupMember = stuff.indexOf($scope.profile.id) > -1;
+            var groupMemberIds = $scope.myGroups[theGroupIndex].members.map(function(member) {return member['id']});
+            groupMember = groupMemberIds.indexOf($scope.profile.id) > -1;
         }
         $scope.isZoneAdmin = groupMember || $scope.profile.isSuper
     }
