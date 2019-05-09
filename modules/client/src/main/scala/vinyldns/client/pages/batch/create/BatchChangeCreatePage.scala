@@ -142,6 +142,11 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
                           <.span(^.className := "fa fa-download"),
                           " Export to CSV"
                         ),
+                        <.a(
+                          ^.target := "_blank",
+                          ^.href := "https://www.vinyldns.io/portal/batch-changes#create-a-batch-change",
+                          "Download Sample CSV"
+                        ),
                         <.table(
                           ^.className := "table",
                           toTableHeader(),
