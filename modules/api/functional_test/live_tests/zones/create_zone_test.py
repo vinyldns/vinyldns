@@ -102,7 +102,7 @@ def test_create_zone_without_transfer_connection_leaves_it_empty(shared_zone_tes
         }
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result[u'zone'][u'id'])
 
         get_result = client.get_zone(result_zone['id'])
 
@@ -224,7 +224,7 @@ def test_create_zone_no_connection_uses_defaults(shared_zone_test_context):
     try:
         zone_change = client.create_zone(zone, status=202)
         zone = zone_change['zone']
-        client.wait_until_zone_exists(zone_change)
+        client.wait_until_zone_active(zone_change[u'zone'][u'id'])
 
         # Check response from create
         assert_that(zone['name'], is_(zone_name+'.'))
@@ -278,7 +278,7 @@ def test_zone_connection_only(shared_zone_test_context):
     try:
         zone_change = client.create_zone(zone, status=202)
         zone = zone_change['zone']
-        client.wait_until_zone_exists(zone_change)
+        client.wait_until_zone_active(zone_change[u'zone'][u'id'])
 
         # Check response from create
         assert_that(zone['name'], is_(zone_name+'.'))
@@ -384,7 +384,7 @@ def test_zone_transfer_connection(shared_zone_test_context):
     try:
         zone_change = client.create_zone(zone, status=202)
         zone = zone_change['zone']
-        client.wait_until_zone_exists(zone_change)
+        client.wait_until_zone_active(zone_change[u'zone'][u'id'])
 
         # Check response from create
         assert_that(zone['name'], is_(zone_name+'.'))

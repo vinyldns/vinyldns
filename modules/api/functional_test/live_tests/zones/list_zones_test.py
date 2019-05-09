@@ -82,7 +82,7 @@ class ListZonesTestContext(object):
             self.zone_ids = [self.search_zone_1['id'], self.search_zone_2['id'], self.search_zone_3['id'], self.non_search_zone_1['id'], self.non_search_zone_2['id']]
             zone_changes = [search_zone_1_change, search_zone_2_change, search_zone_3_change, non_search_zone_1_change, non_search_zone_2_change]
             for change in zone_changes:
-                self.client.wait_until_zone_exists(change)
+                self.client.wait_until_zone_active(change[u'zone'][u'id'])
         except:
             # teardown if there was any issue in setup
             try:

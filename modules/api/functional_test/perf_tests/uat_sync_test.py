@@ -40,7 +40,7 @@ def test_sync_zone_success():
         }
         zone_change = client.create_zone(zone, status=202)
         zone = zone_change['zone']
-        client.wait_until_zone_exists(zone_change)
+        client.wait_until_zone_active(zone_change[u'zone'][u'id'])
 
     zone_id = zone['id']
 

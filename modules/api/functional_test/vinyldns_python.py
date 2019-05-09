@@ -728,13 +728,6 @@ class VinylDNSClient(object):
 
         assert_that(response, is_(404))
 
-    #TODO Replace calls to this method with wait_until_zone_active and remove
-    def wait_until_zone_exists(self, zone_change, **kwargs):
-        """
-        Shim method to invoke wait_until_zone_active
-        """
-        self.wait_until_zone_active(zone_change[u'zone'][u'id'])
-
     def wait_until_zone_active(self, zone_id):
         """
         Waits a period of time for the zone sync to complete.

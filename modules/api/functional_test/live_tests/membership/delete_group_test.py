@@ -106,7 +106,7 @@ def test_delete_admin_group(shared_zone_test_context):
 
         result = client.create_zone(zone, status=202)
         result_zone = result['zone']
-        client.wait_until_zone_exists(result)
+        client.wait_until_zone_active(result[u'zone'][u'id'])
 
         client.delete_group(result_group['id'], status=400)
 
