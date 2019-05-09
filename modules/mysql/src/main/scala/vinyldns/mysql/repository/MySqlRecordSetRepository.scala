@@ -303,7 +303,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
       }
     }
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Int] =
+  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] =
     monitor("repo.RecordSet.deleteRecordSetsInZone") {
       IO {
         val numDeleted = DB.localTx { implicit s =>
@@ -313,7 +313,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             .apply()
         }
         logger.info(s"Deleted $numDeleted records from zone $zoneName (zone id: $zoneId)")
-        numDeleted
       }.handleErrorWith { error =>
         logger.error(s"Failed deleting records from zone $zoneName (zone id: $zoneId)", error)
         IO.raiseError(error)

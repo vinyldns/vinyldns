@@ -253,7 +253,7 @@ class DynamoDBRecordSetRepository private[repository] (
       )
     }
 
-  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Int] =
+  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] =
     monitor("repo.RecordSet.deleteRecordSetsInZone") {
       IO.raiseError(
         UnsupportedDynamoDBRepoFunction(

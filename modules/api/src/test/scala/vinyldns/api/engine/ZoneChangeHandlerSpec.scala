@@ -70,7 +70,7 @@ class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar {
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
 
     doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
-    doReturn(IO.pure(1))
+    doReturn(IO.pure(()))
       .when(mockRecordSetRepo)
       .deleteRecordSetsInZone(deleteChange.zone.id, deleteChange.zone.name)
     doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
