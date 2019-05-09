@@ -49,5 +49,37 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("vinyldns.version" -> "foo-bar")
       Meta(Configuration.from(config)).defaultTtl must beEqualTo(7200)
     }
+    "convert links from config to json" in {
+      val linkOne = CustomLink(false, true, "title 1", "href 1", "icon 1")
+      val config = Map(
+        "links" -> List(
+          Map(
+            "displayOnSidebar" -> linkOne.displayOnSidebar,
+            "displayOnLoginScreen" -> linkOne.displayOnLoginScreen,
+            "title" -> linkOne.title,
+            "href" -> linkOne.href,
+            "icon" -> linkOne.icon
+          )
+        )
+      )
+      val expected =
+        s"""
+           |[
+           |{
+           |"displayOnSidebar":false,
+           |"displayOnLoginScreen":true,
+           |"title":"title 1",
+           |"href":"href 1",
+           |"icon":"icon 1"
+           |}
+           |]""".stripMargin.replaceAll("\n", "")
+      Meta(Configuration.from(config)).customLinksJson must beEqualTo(expected)
+    }
+
+    "convert empty links from config to json" in {
+      val config = Map("nolinks" -> "wah")
+      val expected = "[]"
+      Meta(Configuration.from(config)).customLinksJson must beEqualTo(expected)
+    }
   }
 }

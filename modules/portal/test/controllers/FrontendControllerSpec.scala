@@ -38,6 +38,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
   val disabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
 
+  val v2ClientConfig: Configuration = config ++ Configuration.from(Map("v2client.enabled" -> true))
+
   val mockOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   val underTest = new FrontendController(
     components,
@@ -64,6 +66,20 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     oidcConfig,
     userAccessor,
     enabledOidcAuthenticator
+  )
+
+  val v2ClientUnderTest = new FrontendController(
+    components,
+    v2ClientConfig,
+    userAccessor,
+    mock[OidcAuthenticator]
+  )
+
+  val v2ClientUnderTestLocked = new FrontendController(
+    components,
+    v2ClientConfig,
+    lockedUserAccessor,
+    mock[OidcAuthenticator]
   )
 
   "FrontendController" should {
@@ -125,6 +141,37 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           contentAsString(result) must contain("Are you sure you want to log out")
           contentAsString(result) must contain("Batch Changes | VinylDNS")
         }
+      }
+    }
+
+    "Get for '/v2' when enabled" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = v2ClientUnderTest.clientV2("")(FakeRequest(GET, "/v2").withCSRFToken)
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login")
+      }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result = v2ClientUnderTestLocked.clientV2("")(
+          FakeRequest(GET, "/v2")
+            .withSession("username" -> "lockedFbaggins")
+            .withCSRFToken)
+
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+    }
+
+    "Get for '/v2' when disabled" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = underTest.clientV2("")(FakeRequest(GET, "/v2").withCSRFToken)
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login")
+      }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result = lockedUserUnderTest.clientV2("")(
+          FakeRequest(GET, "/v2")
+            .withSession("username" -> "lockedFbaggins")
+            .withCSRFToken)
+        headers(result) must contain("Location" -> "/noaccess")
       }
     }
 
