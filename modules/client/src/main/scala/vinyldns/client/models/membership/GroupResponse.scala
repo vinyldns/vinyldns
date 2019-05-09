@@ -30,5 +30,8 @@ case class GroupResponse(
     extends GroupModalInfo
 
 object GroupResponse extends OptionRW {
+  def canEdit(admins: Seq[Id], user: UserResponse): Boolean =
+    user.isSuper || user.isSupport || admins.exists(_.id == user.id)
+
   implicit val rw: ReadWriter[GroupResponse] = macroRW
 }

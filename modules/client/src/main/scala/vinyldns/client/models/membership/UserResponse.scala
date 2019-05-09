@@ -16,7 +16,8 @@
 
 package vinyldns.client.models.membership
 
-import upickle.default.{ReadWriter, Reader, Writer, macroRW}
+import upickle.default.{ReadWriter, macroRW}
+import vinyldns.client.models.OptionRW
 
 case class UserResponse(
     userName: String,
@@ -25,21 +26,9 @@ case class UserResponse(
     lastName: Option[String] = None,
     email: Option[String] = None,
     isSuper: Boolean = false,
+    isSupport: Boolean = false,
     lockStatus: String = "Unlocked")
 
-object UserResponse {
+object UserResponse extends OptionRW {
   implicit val rw: ReadWriter[UserResponse] = macroRW
-
-  // uPickle by default treats empty options as empty arrays, this has it use None
-  implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
-    implicitly[Writer[T]].comap[Option[T]] {
-      case None => null.asInstanceOf[T]
-      case Some(x) => x
-    }
-
-  implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-    implicitly[Reader[T]].mapNulls {
-      case null => None
-      case x => Some(x)
-    }
 }

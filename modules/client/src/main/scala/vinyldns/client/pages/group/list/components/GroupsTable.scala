@@ -183,6 +183,7 @@ object GroupsTable {
               ^.onClick --> makeUpdateFormVisible(group),
               ^.title := s"Edit group ${group.name}",
               VdomAttr("data-toggle") := "tooltip",
+              ^.disabled := !GroupResponse.canEdit(group.admins, P.http.getLoggedInUser()),
               <.span(^.className := "fa fa-edit"),
               " Edit"
             ),
@@ -192,6 +193,7 @@ object GroupsTable {
               ^.onClick --> deleteGroup(P, S, group),
               ^.title := s"Delete group ${group.name}",
               VdomAttr("data-toggle") := "tooltip",
+              ^.disabled := !GroupResponse.canEdit(group.admins, P.http.getLoggedInUser()),
               <.span(^.className := "fa fa-trash"),
               " Delete"
             )

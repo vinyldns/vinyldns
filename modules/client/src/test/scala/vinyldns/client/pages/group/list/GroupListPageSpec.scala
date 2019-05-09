@@ -41,6 +41,11 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
       }
+
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
   }
 
   "GroupListPage" should {
@@ -106,6 +111,11 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
           onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
         }
 
+      (mockHttp.getLoggedInUser _)
+        .expects()
+        .anyNumberOfTimes()
+        .returns(testUser)
+
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>
           (mockHttp.get[GroupListResponse] _)
@@ -162,6 +172,11 @@ class GroupListPageSpec extends WordSpec with Matchers with MockFactory with Sha
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(groupListWithNext))
         }
+
+      (mockHttp.getLoggedInUser _)
+        .expects()
+        .anyNumberOfTimes()
+        .returns(testUser)
 
       ReactTestUtils.withRenderedIntoDocument(GroupListPage(ToGroupListPage, mockRouter, mockHttp)) {
         c =>

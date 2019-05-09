@@ -151,13 +151,13 @@ object LeftNav {
     // (child, parent)
     (P.selectedPage, parent) match {
       case (groupView: ToGroupViewPage, _: ToGroupListPage.type) =>
-        titleToMenu(groupView.id)
+        titleToMenu("View")
       case (zoneView: ToZoneViewPage, _: ToZoneListPage.type) =>
-        titleToMenu(zoneView.id)
+        titleToMenu("View")
       case (_: ToBatchChangeCreatePage.type, _: ToBatchChangeListPage.type) =>
         titleToMenu("Create")
       case (batchView: ToBatchChangeViewPage, _: ToBatchChangeListPage.type) =>
-        titleToMenu(batchView.id)
+        titleToMenu("View")
       case _ => TagMod.empty
     }
   }

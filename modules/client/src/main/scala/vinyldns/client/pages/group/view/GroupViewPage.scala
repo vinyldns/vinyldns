@@ -72,7 +72,9 @@ object GroupViewPage extends PropsFromAppRouter {
                       ^.className := "panel panel-default",
                       <.div(
                         ^.className := "panel-heading",
-                        NewMemberForm(NewMemberForm.Props(P.http, group, _ => getGroup(P))),
+                        if (GroupResponse.canEdit(group.admins, P.http.getLoggedInUser()))
+                          NewMemberForm(NewMemberForm.Props(P.http, group, _ => getGroup(P)))
+                        else TagMod.empty,
                         <.div(^.className := "clearfix")
                       ),
                       <.div(

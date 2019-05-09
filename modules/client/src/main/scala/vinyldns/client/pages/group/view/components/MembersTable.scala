@@ -80,7 +80,7 @@ object MembersTable {
                     ^.className := s"btn btn-danger btn-rounded test-delete-${m.userName}",
                     ^.`type` := "button",
                     ^.onClick --> deleteMember(P, m),
-                    ^.disabled := !isAdminOrSuper(P),
+                    ^.disabled := !GroupResponse.canEdit(P.group.admins, P.http.getLoggedInUser()),
                     ^.title := s"Remove ${m.userName} from group",
                     VdomAttr("data-toggle") := "tooltip",
                     <.span(^.className := "fa fa-trash"),
@@ -100,14 +100,8 @@ object MembersTable {
         case (None, None) => ""
       }
 
-    def isAdminOrSuper(P: Props): Boolean = {
-      val isManager = P.group.admins.contains(Id(P.http.getLoggedInUser().id))
-
-      isManager || P.http.getLoggedInUser().isSuper
-    }
-
     def groupManagerWidget(P: Props, user: UserResponse): TagMod = {
-      val canUpdate = isAdminOrSuper(P)
+      val canUpdate = GroupResponse.canEdit(P.group.admins, P.http.getLoggedInUser())
       val isManagerAlready = P.group.admins.contains(Id(user.id))
 
       def toggleFunction: Callback =

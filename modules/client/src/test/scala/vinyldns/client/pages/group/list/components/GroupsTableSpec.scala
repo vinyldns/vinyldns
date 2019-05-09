@@ -41,6 +41,11 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
       }
+
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
   }
 
   "GroupsTable" should {
