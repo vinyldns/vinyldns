@@ -30,8 +30,8 @@ import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.record._
-import vinyldns.core.TestZoneData.testConnection
-import vinyldns.core.TestMembershipData.{okAuth, okGroup, okUser}
+import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.Await
@@ -56,15 +56,9 @@ class ZoneServiceIntegrationSpec
   private var testZoneService: ZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
-  private val liveZone = Zone(
-    s"live-test-zone.",
-    "test@test.com",
-    status = ZoneStatus.Active,
-    connection = testConnection,
-    adminGroupId = okGroup.id)
 
   private val testRecordSOA = RecordSet(
-    zoneId = liveZone.id,
+    zoneId = okZone.id,
     name = "vinyldns",
     typ = RecordType.SOA,
     ttl = 38400,
@@ -74,7 +68,7 @@ class ZoneServiceIntegrationSpec
       List(SOAData("172.17.42.1.", "admin.test.com.", 1439234395, 10800, 3600, 604800, 38400))
   )
   private val testRecordNS = RecordSet(
-    zoneId = liveZone.id,
+    zoneId = okZone.id,
     name = "vinyldns",
     typ = RecordType.NS,
     ttl = 38400,
@@ -83,7 +77,7 @@ class ZoneServiceIntegrationSpec
     records = List(NSData("172.17.42.1."))
   )
   private val testRecordA = RecordSet(
-    zoneId = liveZone.id,
+    zoneId = okZone.id,
     name = "jenkins",
     typ = RecordType.A,
     ttl = 38400,
@@ -91,9 +85,9 @@ class ZoneServiceIntegrationSpec
     created = DateTime.now,
     records = List(AData("10.1.1.1")))
 
-  private val changeSetSOA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordSOA, liveZone))
-  private val changeSetNS = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordNS, liveZone))
-  private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, liveZone))
+  private val changeSetSOA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordSOA, okZone))
+  private val changeSetNS = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordNS, okZone))
+  private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, okZone))
 
   def clearRecordSetRepo(): Unit =
     DB.localTx { s =>
@@ -109,7 +103,7 @@ class ZoneServiceIntegrationSpec
     clearRecordSetRepo()
     clearZoneRepo()
 
-    waitForSuccess(zoneRepo.save(liveZone))
+    waitForSuccess(zoneRepo.save(okZone))
     // Seeding records in DB
     waitForSuccess(recordSetRepo.apply(changeSetSOA))
     waitForSuccess(recordSetRepo.apply(changeSetNS))
@@ -136,7 +130,7 @@ class ZoneServiceIntegrationSpec
     "reject a DeleteZone with bad auth" in {
       val result =
         testZoneService
-          .deleteZone(liveZone.id, badAuth)
+          .deleteZone(okZone.id, badAuth)
           .value
           .unsafeToFuture()
       whenReady(result) { out =>
@@ -144,19 +138,19 @@ class ZoneServiceIntegrationSpec
       }
     }
     "accept a DeleteZone" in {
-      val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, liveZone))
+      val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, okZone))
       waitForSuccess(recordSetRepo.apply(removeARecord))
 
       val result =
         testZoneService
-          .deleteZone(liveZone.id, okAuth)
+          .deleteZone(okZone.id, okAuth)
           .value
           .unsafeToFuture()
           .mapTo[Either[Throwable, ZoneChange]]
       whenReady(result, timeout) { out =>
         out.isRight shouldBe true
         val change = out.toOption.get
-        change.zone.id shouldBe liveZone.id
+        change.zone.id shouldBe okZone.id
         change.changeType shouldBe ZoneChangeType.Delete
       }
     }
