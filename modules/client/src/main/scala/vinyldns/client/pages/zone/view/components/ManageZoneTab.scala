@@ -111,6 +111,9 @@ object ManageZoneTab {
             ^.`type` := "button",
             ^.className := "btn btn-primary pull-right test-update",
             ^.onClick --> makeUpdateFormVisible,
+            ^.disabled := !ZoneResponse.canEdit(
+              P.http.getLoggedInUser(),
+              P.groupList.groups.find(_.id == P.zone.adminGroupId)),
             <.span(^.className := "fa fa-edit"),
             " Edit",
           )

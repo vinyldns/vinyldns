@@ -87,6 +87,9 @@ object ZoneViewPage extends PropsFromAppRouter {
                     GlobalStyle.Styles.keepWhitespace,
                     ^.`type` := "button",
                     ^.onClick --> syncZone(P),
+                    ^.disabled := !ZoneResponse.canEdit(
+                      P.http.getLoggedInUser(),
+                      groupList.groups.find(_.id == zone.adminGroupId)),
                     <.span(^.className := "fa fa-exchange"),
                     " Sync DNS Records"
                   )

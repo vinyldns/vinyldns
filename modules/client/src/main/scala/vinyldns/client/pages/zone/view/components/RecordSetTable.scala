@@ -236,28 +236,26 @@ object RecordSetTable {
         <.td(
           <.div(
             ^.className := "btn-group",
-            if (recordSet.canUpdate(P.zone.name))
-              <.button(
-                ^.className := "btn btn-info btn-rounded test-edit",
-                ^.`type` := "button",
-                ^.onClick --> makeUpdateRecordModalVisible(recordSet),
-                ^.title := s"Update record set (name: ${recordSet.name}, id: ${recordSet.id})",
-                VdomAttr("data-toggle") := "tooltip",
-                <.span(^.className := "fa fa-edit"),
-                " Update"
-              )
-            else TagMod.empty,
-            if (recordSet.canDelete(P.zone.name))
-              <.button(
-                ^.className := "btn btn-danger btn-rounded test-delete",
-                ^.`type` := "button",
-                ^.onClick --> deleteRecordSet(P, S, recordSet),
-                ^.title := s"Delete record set (name: ${recordSet.name}, id: ${recordSet.id})",
-                VdomAttr("data-toggle") := "tooltip",
-                <.span(^.className := "fa fa-trash"),
-                " Delete"
-              )
-            else TagMod.empty
+            <.button(
+              ^.className := "btn btn-info btn-rounded test-edit",
+              ^.`type` := "button",
+              ^.onClick --> makeUpdateRecordModalVisible(recordSet),
+              ^.title := s"Update record set (name: ${recordSet.name}, id: ${recordSet.id})",
+              ^.disabled := !recordSet.canUpdate(P.zone.name),
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-edit"),
+              " Update"
+            ),
+            <.button(
+              ^.className := "btn btn-danger btn-rounded test-delete",
+              ^.`type` := "button",
+              ^.disabled := !recordSet.canDelete(P.zone.name),
+              ^.onClick --> deleteRecordSet(P, S, recordSet),
+              ^.title := s"Delete record set (name: ${recordSet.name}, id: ${recordSet.id})",
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-trash"),
+              " Delete"
+            )
           )
         )
       )

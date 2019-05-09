@@ -18,6 +18,7 @@ package vinyldns.client.models.zone
 
 import vinyldns.client.models.OptionRW
 import upickle.default._
+import vinyldns.client.models.membership.{GroupResponse, UserResponse}
 import vinyldns.core.domain.zone.ZoneStatus
 
 case class ZoneResponse(
@@ -39,6 +40,9 @@ case class ZoneResponse(
 ) extends ZoneModalInfo
 
 object ZoneResponse extends OptionRW {
+  def canEdit(user: UserResponse, adminGroup: Option[GroupResponse]): Boolean =
+    user.isSuper || user.isSupport || adminGroup.exists(_.admins.exists(_.id == user.id))
+
   implicit val zoneStatusRW: ReadWriter[ZoneStatus.ZoneStatus] =
     readwriter[ujson.Value]
       .bimap[ZoneStatus.ZoneStatus](

@@ -127,7 +127,7 @@ trait SharedTestData {
         List(RecordData(address = Some("1.1.1.1"))),
         "account",
         s"created-$i",
-        Some("Delete") // note the records table update and delete buttons are conditional
+        Some(AccessLevel.Delete) // note the records table update and delete buttons are conditional
       )
 
   def generateRecordSetChangeResponses(

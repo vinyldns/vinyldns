@@ -62,6 +62,11 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
       }
 
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
+
     (mockHttp.get[List[String]] _)
       .expects(GetBackendIdsRoute, *, *)
       .once()
@@ -152,6 +157,11 @@ class ZoneViewPageSpec extends WordSpec with Matchers with MockFactory with Shar
         .onCall { (_, onSuccess, _) =>
           onSuccess.apply(mock[HttpResponse], Some(initialGroupList))
         }
+
+      (mockHttp.getLoggedInUser _)
+        .expects()
+        .anyNumberOfTimes()
+        .returns(testUser)
 
       (mockHttp.get[List[String]] _)
         .expects(GetBackendIdsRoute, *, *)

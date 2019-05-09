@@ -18,7 +18,7 @@ package vinyldns.client.models.zone
 
 import upickle.default._
 import vinyldns.client.models.OptionRW
-import vinyldns.client.models.record.RecordSetTypeRW
+import vinyldns.client.models.record.{AccessLevelRW, RecordSetTypeRW}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.AccessLevel
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
@@ -42,7 +42,7 @@ case class ACLRule(
     recordMask: Option[String] = None,
     displayName: Option[String] = None)
 
-object ACLRule extends OptionRW with RecordSetTypeRW {
+object ACLRule extends OptionRW with RecordSetTypeRW with AccessLevelRW {
   object AclType extends Enumeration {
     type AclType = Value
     val User, Group = Value
@@ -57,15 +57,5 @@ object ACLRule extends OptionRW with RecordSetTypeRW {
       case AccessLevel.Write => "Read + Write"
       case AccessLevel.Delete => "Read + Write + Delete"
     }
-
-  implicit val accessLevelRW: ReadWriter[AccessLevel.AccessLevel] =
-    readwriter[ujson.Value]
-      .bimap[AccessLevel.AccessLevel](
-        fromStatus => ujson.Value.JsonableString(fromStatus.toString),
-        toStatus => {
-          val raw = toStatus.toString().replaceAll("^\"|\"$", "")
-          AccessLevel.withName(raw)
-        }
-      )
   implicit val rw: ReadWriter[ACLRule] = macroRW
 }

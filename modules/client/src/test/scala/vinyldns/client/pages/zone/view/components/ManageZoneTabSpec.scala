@@ -38,6 +38,12 @@ class ManageZoneTabSpec extends WordSpec with Matchers with MockFactory with Sha
 
   trait Fixture {
     val mockHttp = mock[Http]
+
+    (mockHttp.getLoggedInUser _)
+      .expects()
+      .anyNumberOfTimes()
+      .returns(testUser)
+
     val props = ManageZoneTab.Props(
       initialZone,
       initialGroupList,

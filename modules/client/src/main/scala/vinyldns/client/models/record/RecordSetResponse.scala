@@ -21,6 +21,7 @@ import upickle.default._
 import vinyldns.client.models.OptionRW
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.zone.AccessLevel
 
 trait RecordSetTypeRW {
   implicit val recordTypeRW: ReadWriter[RecordType.RecordType] =
@@ -30,6 +31,18 @@ trait RecordSetTypeRW {
         toType => {
           val raw = toType.toString().replaceAll("^\"|\"$", "")
           RecordType.withName(raw)
+        }
+      )
+}
+
+trait AccessLevelRW {
+  implicit val accessLevelRW: ReadWriter[AccessLevel.AccessLevel] =
+    readwriter[ujson.Value]
+      .bimap[AccessLevel.AccessLevel](
+        fromType => ujson.Value.JsonableString(fromType.toString),
+        toType => {
+          val raw = toType.toString().replaceAll("^\"|\"$", "")
+          AccessLevel.withName(raw)
         }
       )
 }
@@ -44,25 +57,26 @@ case class RecordSetResponse(
     records: List[RecordData],
     account: String,
     created: String,
-    accessLevel: Option[String] = None,
+    accessLevel: Option[AccessLevel.AccessLevel] = None,
     ownerGroupId: Option[String] = None,
     ownerGroupName: Option[String] = None)
     extends RecordSetModalInfo {
 
   def canUpdate(zoneName: String): Boolean =
-    (this.accessLevel == Some("Update") || this.accessLevel == Some("Delete")) &&
-      this.`type` != RecordType.SOA &&
-      !(this.`type` == RecordType.NS && this.name == zoneName)
+    if (this.`type` == RecordType.SOA) false
+    else if (this.`type` == RecordType.NS && this.name == zoneName) false
+    else
+      this.accessLevel.contains(AccessLevel.Write) || this.accessLevel.contains(AccessLevel.Delete)
 
   def canDelete(zoneName: String): Boolean =
-    this.accessLevel == Some("Delete") &&
-      this.`type` != RecordType.SOA &&
-      !(this.`type` == RecordType.NS && this.name == zoneName)
+    if (this.`type` == RecordType.SOA) false
+    else if (this.`type` == RecordType.NS && this.name == zoneName) false
+    else this.accessLevel.contains(AccessLevel.Delete)
 
   def recordDataDisplay: VdomElement = RecordData.toDisplay(this.records, this.`type`)
 }
 
-object RecordSetResponse extends OptionRW with RecordSetTypeRW {
+object RecordSetResponse extends OptionRW with RecordSetTypeRW with AccessLevelRW {
   implicit val rw: ReadWriter[RecordSetResponse] = macroRW
 
   def labelHasInvalidDot(recordName: String, recordType: RecordType, zoneName: String): Boolean = {
