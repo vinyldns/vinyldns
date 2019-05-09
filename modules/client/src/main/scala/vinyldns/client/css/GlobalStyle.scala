@@ -32,6 +32,7 @@ object GlobalStyle {
     val width100 = style(width :=! "100%")
 
     val displayBlock = style(display.block.important)
+    val displayHidden = style(display.none)
     val cursorPointer = style(cursor.pointer)
 
     val alertBox = style(

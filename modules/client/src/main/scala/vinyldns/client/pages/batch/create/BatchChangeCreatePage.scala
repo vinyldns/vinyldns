@@ -21,6 +21,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom
+import org.scalajs.dom.raw.{BlobPropertyBag, URL}
+import org.scalajs.dom.{Blob, FileList, FileReader, UIEvent}
 import vinyldns.client.http.{CreateBatchChangeRoute, Http, HttpResponse, ListGroupsRoute}
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.batch.{
@@ -32,11 +35,12 @@ import vinyldns.client.models.record.RecordData
 import vinyldns.client.router.AppRouter.PropsFromAppRouter
 import vinyldns.client.components.AlertBox.addNotification
 import upickle.default._
+import vinyldns.client.components.AlertBox
 import vinyldns.client.models.membership.{GroupListResponse, GroupResponse}
 import vinyldns.client.router.{Page, ToBatchChangeListPage, ToBatchChangeViewPage}
 
 import scala.annotation.tailrec
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object BatchChangeCreatePage extends PropsFromAppRouter {
   case class State(createInfo: BatchChangeCreateInfo, groupList: Option[GroupListResponse] = None)
@@ -113,7 +117,31 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
                       ),
                       <.div(
                         ^.className := "panel-body",
-                        <.h4("Changes"),
+                        <.h4(
+                          "Changes"
+                        ),
+                        <.label(
+                          ^.className := "btn btn-default",
+                          ^.`for` := "csv-upload",
+                          <.span(^.className := "fa fa-upload"),
+                          " Import from CSV",
+                          <.input(
+                            ^.className := "test-csv-import",
+                            ^.id := "csv-upload",
+                            ^.`type` := "file",
+                            GlobalStyle.Styles.displayHidden,
+                            ^.onChange ==> { e: ReactEventFromInput =>
+                              Callback(importCsv(e.target.files))
+                            }
+                          )
+                        ),
+                        <.button(
+                          ^.className := "btn btn-default test-csv-download",
+                          ^.`type` := "button",
+                          ^.onClick --> Callback(downloadCsv(S)),
+                          <.span(^.className := "fa fa-download"),
+                          " Export to CSV"
+                        ),
                         <.table(
                           ^.className := "table",
                           toTableHeader(),
@@ -276,16 +304,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
               changeSingleRecordType(e.target.value, change, index)
             },
             ^.value := change.`type`,
-            List(
-              "A+PTR", // +PTR will be converted before posting the batch change
-              "AAAA+PTR", // +PTR will be converted before posting the batch change
-              "A",
-              "AAAA",
-              "CNAME",
-              "PTR",
-              "TXT",
-              "MX"
-            ).map(o => <.option(^.value := o, o)).toTagMod
+            SingleChangeCreateInfo.validRecordTypes.map(o => <.option(^.value := o, o)).toTagMod
           )
         ),
         <.td(
@@ -320,7 +339,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
                 ^.onChange ==> { e: ReactEventFromInput =>
                   changeSingleInputRecordData(e.target.value, change, index)
                 },
-                ^.value := toRecordDataDisplay(change)
+                ^.value := SingleChangeCreateInfo.toRecordDataDisplay(change)
               )
             else toMxInput(change, index)
           else TagMod.empty
@@ -453,21 +472,6 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
             s.createInfo.copy(ownerGroupName = ownerGroupName, ownerGroupId = ownerGroupId))
       }
 
-    def toRecordDataDisplay(change: SingleChangeCreateInfo): String = {
-      val recordData = change.record match {
-        case Some(r) => r
-        case None => RecordData()
-      }
-      change.`type` match {
-        case address
-            if address == "A" || address == "A+PTR" || address == "AAAA" || address == "AAAA+PTR" =>
-          recordData.addressToString
-        case cname if cname == "CNAME" => recordData.cnameToString
-        case ptrdname if ptrdname == "PTR" => recordData.ptrdnameToString
-        case text if text == "TXT" => recordData.textToString
-      }
-    }
-
     def toMxInput(change: SingleChangeCreateInfo, index: Int): TagMod = {
       val recordData = change.record match {
         case Some(r) => r
@@ -574,5 +578,91 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
       P.http.get(ListGroupsRoute(1000), onSuccess, onFailure)
     }
 
+    def convertCsvContentToSingleChanges(content: String): Callback = {
+      val lines = content.lines.toList
+      if (lines.isEmpty)
+        addNotification(
+          Some(
+            AlertBox.Notification(
+              Some("reading csv"),
+              Some("uploaded file appears to be empty"),
+              isError = true)))
+      else {
+        val actualHeaders = lines.head.trim.stripLineEnd
+        if (SingleChangeCreateInfo.csvHeaders.toLowerCase != actualHeaders.toLowerCase)
+          addNotification(
+            Some(
+              AlertBox.Notification(
+                Some("reading csv"),
+                Some(s"missing headers line '${SingleChangeCreateInfo.csvHeaders}'"),
+                isError = true)))
+        else {
+          val parsedChanges: List[Either[Throwable, SingleChangeCreateInfo]] =
+            lines.zipWithIndex.flatMap {
+              case (raw, index) =>
+                val trimmedInput = raw.trim.stripLineEnd
+                val readableIndex = index + 1
+                (trimmedInput, readableIndex) match {
+                  case (_, 1) => None // header
+                  case (_, _) if trimmedInput.isEmpty => None
+                  case (singleChangeString, rowNumber) =>
+                    Some(SingleChangeCreateInfo.parseFromCsvRow(singleChangeString, rowNumber))
+                }
+            }
+
+          val (leftGroup, rightGroup) = parsedChanges.partition(_.isLeft)
+          val (lefts, rights) =
+            (leftGroup.flatMap(_.left.toOption), rightGroup.flatMap(_.right.toOption))
+
+          if (lefts.isEmpty)
+            bs.modState(s => s.copy(createInfo = s.createInfo.copy(changes = rights)))
+          else {
+            val errorMessage = lefts.map(_.getMessage).mkString(",")
+            addNotification(
+              Some(
+                AlertBox.Notification(
+                  Some("reading csv"),
+                  Some(s"error parsing rows: '$errorMessage'"),
+                  isError = true)))
+          }
+        }
+      }
+    }
+
+    def importCsv(fileList: FileList): Unit =
+      Try[Unit] {
+        val reader = new FileReader()
+        reader.readAsText(fileList.item(0))
+        reader.onload = { _: UIEvent =>
+          val content = reader.result.asInstanceOf[String]
+          convertCsvContentToSingleChanges(content).runNow()
+        }
+      } match {
+        case Success(_) => ()
+        case Failure(_) =>
+          addNotification(
+            Some(AlertBox
+              .Notification(Some("reading csv"), Some("could not upload file"), isError = true)))
+            .runNow()
+          ()
+      }
+
+    def downloadCsv(S: State): Unit =
+      Try {
+        val asString = SingleChangeCreateInfo.toCsv(S.createInfo.changes)
+        val file = new Blob(scala.scalajs.js.Array(asString), BlobPropertyBag("text/csv"))
+        dom.window.open(URL.createObjectURL(file))
+      } match {
+        case Success(_) => ()
+        case Failure(_) =>
+          addNotification(
+            Some(
+              AlertBox
+                .Notification(
+                  Some("downloading csv"),
+                  Some("could not download file"),
+                  isError = true)))
+          ()
+      }
   }
 }

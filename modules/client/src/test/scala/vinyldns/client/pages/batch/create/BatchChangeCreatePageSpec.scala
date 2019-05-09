@@ -834,5 +834,37 @@ class BatchChangeCreatePageSpec
         c.outerHtmlScrubbed() should include("zone discovery failed for foo.no-existo.")
       }
     }
+
+    "properly import a csv" in new Fixture {
+      val csvText =
+        """Change Type,Record Type,Input Name,TTL,Record Data
+          |Add,A,foo.ok.,300,1.1.1.1
+          |Add,A+PTR,foo.ok.,300,1.1.1.1
+          |DeleteRecordSet,CNAME,bar.ok.,,
+        """.stripMargin
+
+      ReactTestUtils.withRenderedIntoDocument(
+        BatchChangeCreatePage(ToBatchChangeCreatePage, mockRouter, mockHttp)) { c =>
+        c.backend.convertCsvContentToSingleChanges(csvText).runNow()
+
+        val expected = List(
+          SingleChangeCreateInfo(
+            "foo.ok.",
+            "Add",
+            "A",
+            Some(300),
+            Some(RecordData(address = Some("1.1.1.1")))),
+          SingleChangeCreateInfo(
+            "foo.ok.",
+            "Add",
+            "A+PTR",
+            Some(300),
+            Some(RecordData(address = Some("1.1.1.1")))),
+          SingleChangeCreateInfo("bar.ok.", "DeleteRecordSet", "CNAME")
+        )
+
+        c.state.createInfo.changes shouldBe expected
+      }
+    }
   }
 }
