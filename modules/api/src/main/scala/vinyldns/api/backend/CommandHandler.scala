@@ -185,7 +185,7 @@ object CommandHandler {
       connections: ConfiguredDnsConnections)(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
-      ZoneChangeHandler(zoneRepo, zoneChangeRepo)
+      ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)
     val recordChangeHandler =
       RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
     val zoneSyncHandler =

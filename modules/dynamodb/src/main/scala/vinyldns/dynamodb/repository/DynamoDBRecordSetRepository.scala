@@ -252,4 +252,15 @@ class DynamoDBRecordSetRepository private[repository] (
         )
       )
     }
+
+  def deleteRecordSetsInZone(zoneId: String, zoneName: String): IO[Unit] =
+    monitor("repo.RecordSet.deleteRecordSetsInZone") {
+      IO.raiseError(
+        UnsupportedDynamoDBRepoFunction(
+          s"""deleteRecordSetsInZone(zoneid=$zoneId, zoneName=$zoneName)
+             |is not supported by VinylDNS DynamoDB RecordSetRepository""".stripMargin
+            .replaceAll("\n", " ")
+        )
+      )
+    }
 }

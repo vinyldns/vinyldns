@@ -23,26 +23,25 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.TestZoneData.zoneChangePending
+import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
-import vinyldns.core.domain.zone.{
-  ZoneChange,
-  ZoneChangeRepository,
-  ZoneChangeStatus,
-  ZoneRepository
-}
+import vinyldns.core.domain.zone._
 
 class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar {
 
-  "ZoneChangeHandler" should {
-    "save the zone change and zone" in {
-      val mockZoneRepo = mock[ZoneRepository]
-      val mockChangeRepo = mock[ZoneChangeRepository]
-      val change = zoneChangePending
+  trait Fixture {
+    val mockZoneRepo = mock[ZoneRepository]
+    val mockChangeRepo = mock[ZoneChangeRepository]
+    val mockRecordSetRepo = mock[RecordSetRepository]
+    val change = zoneChangePending
+    val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo, mockRecordSetRepo)
+  }
 
+  "ZoneChangeHandler" should {
+    "save the zone change and zone" in new Fixture {
       doReturn(IO.pure(Right(change.zone))).when(mockZoneRepo).save(change.zone)
       doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
 
-      val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo)
       test(change).unsafeRunSync()
 
       val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
@@ -53,15 +52,10 @@ class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar {
     }
   }
 
-  "save the zone change as failed if the zone does not save" in {
-    val mockZoneRepo = mock[ZoneRepository]
-    val mockChangeRepo = mock[ZoneChangeRepository]
-    val change = zoneChangePending
-
+  "save the zone change as failed if the zone does not save" in new Fixture {
     doReturn(IO.pure(Left(DuplicateZoneError("message")))).when(mockZoneRepo).save(change.zone)
     doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
 
-    val test = ZoneChangeHandler(mockZoneRepo, mockChangeRepo)
     test(change).unsafeRunSync()
 
     val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
@@ -70,5 +64,41 @@ class ZoneChangeHandlerSpec extends WordSpec with Matchers with MockitoSugar {
     val savedChange = changeCaptor.getValue
     savedChange.status shouldBe ZoneChangeStatus.Failed
     savedChange.systemMessage shouldBe Some("Zone with name \"message\" already exists.")
+  }
+
+  "save a delete zone change as synced if recordset delete succeeds" in new Fixture {
+    val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
+
+    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    doReturn(IO.pure(()))
+      .when(mockRecordSetRepo)
+      .deleteRecordSetsInZone(deleteChange.zone.id, deleteChange.zone.name)
+    doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(deleteChange).unsafeRunSync()
+
+    val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+    verify(mockChangeRepo).save(changeCaptor.capture())
+
+    val savedChange = changeCaptor.getValue
+    savedChange.status shouldBe ZoneChangeStatus.Synced
+  }
+
+  "save a delete zone change as synced if recordset delete fails" in new Fixture {
+    val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
+
+    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    doReturn(IO.raiseError(new Throwable("error")))
+      .when(mockRecordSetRepo)
+      .deleteRecordSetsInZone(deleteChange.zone.id, deleteChange.zone.name)
+    doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(deleteChange).unsafeRunSync()
+
+    val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+    verify(mockChangeRepo).save(changeCaptor.capture())
+
+    val savedChange = changeCaptor.getValue
+    savedChange.status shouldBe ZoneChangeStatus.Synced
   }
 }

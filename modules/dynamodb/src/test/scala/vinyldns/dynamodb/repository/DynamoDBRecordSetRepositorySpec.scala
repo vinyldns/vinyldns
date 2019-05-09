@@ -404,4 +404,13 @@ class DynamoDBRecordSetRepositorySpec
         .unsafeRunSync()
     }
   }
+
+  "DynamoDBRecordSetRepository.deleteRecordSetsInZone" should {
+    "return an error if used" in {
+      val store = new TestDynamoRecordSetRepo
+      an[UnsupportedDynamoDBRepoFunction] should be thrownBy store
+        .deleteRecordSetsInZone("zoneId", "zoneName")
+        .unsafeRunSync()
+    }
+  }
 }

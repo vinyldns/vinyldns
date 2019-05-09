@@ -18,18 +18,20 @@ package vinyldns.api.domain.zone
 
 import cats.effect._
 import org.joda.time.DateTime
-import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest._
+import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
-import vinyldns.api.{DynamoDBApiIntegrationSpec, MySqlApiIntegrationSpec, ResultHelpers}
+import scalikejdbc.DB
+import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.record._
-import vinyldns.dynamodb.repository.{DynamoDBRecordSetRepository, DynamoDBRepositorySettings}
-import vinyldns.core.TestZoneData.testConnection
+import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.TestMembershipData.{okAuth, okUser}
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.Await
@@ -37,35 +39,26 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 class ZoneServiceIntegrationSpec
-    extends DynamoDBApiIntegrationSpec
-    with ResultHelpers
+    extends WordSpec
+    with ScalaFutures
+    with Matchers
     with MockitoSugar
-    with MySqlApiIntegrationSpec {
-
-  private val recordSetTable = "recordSetTest"
-
-  private val recordSetStoreConfig = DynamoDBRepositorySettings(s"$recordSetTable", 30, 30)
+    with ResultHelpers
+    with MySqlApiIntegrationSpec
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach {
 
   private val timeout = PatienceConfiguration.Timeout(Span(10, Seconds))
 
-  private var recordSetRepo: RecordSetRepository = _
-  private var zoneRepo: ZoneRepository = _
+  private val recordSetRepo = recordSetRepository
+  private val zoneRepo: ZoneRepository = zoneRepository
 
   private var testZoneService: ZoneServiceAlgebra = _
 
-  private val user = User(s"live-test-user", "key", "secret")
-  private val group = Group(s"test-group", "test@test.com", adminUserIds = Set(user.id))
-  private val auth = AuthPrincipal(user, Seq(group.id))
-  private val badAuth = AuthPrincipal(user, Seq())
-  private val zone = Zone(
-    s"live-test-zone.",
-    "test@test.com",
-    status = ZoneStatus.Active,
-    connection = testConnection,
-    adminGroupId = group.id)
+  private val badAuth = AuthPrincipal(okUser, Seq())
 
   private val testRecordSOA = RecordSet(
-    zoneId = zone.id,
+    zoneId = okZone.id,
     name = "vinyldns",
     typ = RecordType.SOA,
     ttl = 38400,
@@ -75,15 +68,16 @@ class ZoneServiceIntegrationSpec
       List(SOAData("172.17.42.1.", "admin.test.com.", 1439234395, 10800, 3600, 604800, 38400))
   )
   private val testRecordNS = RecordSet(
-    zoneId = zone.id,
+    zoneId = okZone.id,
     name = "vinyldns",
     typ = RecordType.NS,
     ttl = 38400,
     status = RecordSetStatus.Active,
     created = DateTime.now,
-    records = List(NSData("172.17.42.1.")))
+    records = List(NSData("172.17.42.1."))
+  )
   private val testRecordA = RecordSet(
-    zoneId = zone.id,
+    zoneId = okZone.id,
     name = "jenkins",
     typ = RecordType.A,
     ttl = 38400,
@@ -91,16 +85,25 @@ class ZoneServiceIntegrationSpec
     created = DateTime.now,
     records = List(AData("10.1.1.1")))
 
-  private val changeSetSOA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordSOA, zone))
-  private val changeSetNS = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordNS, zone))
-  private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, zone))
+  private val changeSetSOA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordSOA, okZone))
+  private val changeSetNS = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordNS, okZone))
+  private val changeSetA = ChangeSet(RecordSetChangeGenerator.forAdd(testRecordA, okZone))
 
-  def setup(): Unit = {
-    recordSetRepo =
-      DynamoDBRecordSetRepository(recordSetStoreConfig, dynamoIntegrationConfig).unsafeRunSync()
-    zoneRepo = zoneRepository
+  def clearRecordSetRepo(): Unit =
+    DB.localTx { s =>
+      s.executeUpdate("DELETE FROM recordset")
+    }
 
-    waitForSuccess(zoneRepo.save(zone))
+  def clearZoneRepo(): Unit =
+    DB.localTx { s =>
+      s.executeUpdate("DELETE FROM zone")
+    }
+
+  override protected def beforeEach(): Unit = {
+    clearRecordSetRepo()
+    clearZoneRepo()
+
+    waitForSuccess(zoneRepo.save(okZone))
     // Seeding records in DB
     waitForSuccess(recordSetRepo.apply(changeSetSOA))
     waitForSuccess(recordSetRepo.apply(changeSetNS))
@@ -118,13 +121,16 @@ class ZoneServiceIntegrationSpec
     )
   }
 
-  def tearDown(): Unit = ()
+  override protected def afterAll(): Unit = {
+    clearZoneRepo()
+    clearRecordSetRepo()
+  }
 
   "ZoneEntity" should {
     "reject a DeleteZone with bad auth" in {
       val result =
         testZoneService
-          .deleteZone(zone.id, badAuth)
+          .deleteZone(okZone.id, badAuth)
           .value
           .unsafeToFuture()
       whenReady(result) { out =>
@@ -132,19 +138,19 @@ class ZoneServiceIntegrationSpec
       }
     }
     "accept a DeleteZone" in {
-      val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, zone))
+      val removeARecord = ChangeSet(RecordSetChangeGenerator.forDelete(testRecordA, okZone))
       waitForSuccess(recordSetRepo.apply(removeARecord))
 
       val result =
         testZoneService
-          .deleteZone(zone.id, auth)
+          .deleteZone(okZone.id, okAuth)
           .value
           .unsafeToFuture()
           .mapTo[Either[Throwable, ZoneChange]]
       whenReady(result, timeout) { out =>
         out.isRight shouldBe true
         val change = out.toOption.get
-        change.zone.id shouldBe zone.id
+        change.zone.id shouldBe okZone.id
         change.changeType shouldBe ZoneChangeType.Delete
       }
     }
