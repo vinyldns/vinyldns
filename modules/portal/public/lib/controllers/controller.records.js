@@ -15,7 +15,7 @@
  */
 
 angular.module('controller.records', [])
-    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, utilityService, $q) {
+    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, profileService, utilityService, $q) {
 
     /**
       * Scope data initial setup
@@ -41,6 +41,7 @@ angular.module('controller.records', [])
     $scope.recordsetChanges = {};
     $scope.currentRecord = {};
     $scope.zoneInfo = {};
+    $scope.profile = {};
 
     var loadZonesPromise;
     var loadRecordsPromise;
@@ -69,6 +70,7 @@ angular.module('controller.records', [])
     };
 
     $scope.isZoneAdmin = false;
+    $scope.canReadZone = false;
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -351,6 +353,7 @@ angular.module('controller.records', [])
         .then(
             function (results) {
                 $scope.myGroups = results.groups;
+                $scope.myGroupIds = results.groups.map(function(grp) {return grp['id']});
                 determineAdmin()
             })
         .catch(function (error){
@@ -359,15 +362,26 @@ angular.module('controller.records', [])
     }
 
     function determineAdmin(){
-        var groupIds = $scope.myGroups.map(function(grp) {return grp['id']});
-        $scope.isZoneAdmin = groupIds.indexOf($scope.zoneInfo.adminGroupId) > -1;
+        $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup()
+        $scope.canReadZone = canReadZone()
     }
 
-    $scope.isGroupMember = function(groupId) {
-        var groupMember = $scope.myGroups.find(function(group) {
-            return groupId === group.id;
-        });
-        return groupMember !== undefined
+    function isInAdminGroup() {
+        var groupMember = false;
+        var theGroupIndex = $scope.myGroupIds.indexOf($scope.zoneInfo.adminGroupId);
+        if (theGroupIndex > -1) {
+            var groupMemberIds = $scope.myGroups[theGroupIndex].members.map(function(member) {return member['id']});
+            groupMember = groupMemberIds.indexOf($scope.profile.id) > -1;
+        }
+        return groupMember;
+    }
+
+    function canReadZone() {
+        return $scope.myGroupIds.indexOf($scope.zoneInfo.adminGroupId) > -1;
+    }
+
+    function canAccessGroup(groupId) {
+        return $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
     /**
@@ -561,9 +575,23 @@ angular.module('controller.records', [])
             });
     };
 
+    function profileSuccess(results) {
+        if (results.data) {
+            $scope.profile = results.data;
+            $log.log('profileService::getAuthenticatedUserData-success');
+        }
+    }
+
+    function profileFailure(results) {
+        handleError(results, 'profileService::getAuthenticatedUserData-catch');
+    }
+
     loadZonesPromise = $timeout($scope.refreshZone, 0);
     loadRecordsPromise = $timeout($scope.refreshRecords, 0);
     $timeout($scope.refreshRecordChangesPreview, 0);
     $timeout($scope.refreshRecordChanges, 0);
 
+    profileService.getAuthenticatedUserData()
+        .then(profileSuccess, profileFailure)
+        .catch(profileFailure);
 });

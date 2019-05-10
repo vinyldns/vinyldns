@@ -67,7 +67,7 @@
         <div class="btn-group">
             <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
             <button id="create-record-button" class="btn btn-default" ng-click="createRecord()"><span class="fa fa-plus"></span> Create Record Set</button>
-            <button id="zone-sync-button" class="btn btn-default mb-control" ng-hide="!isZoneAdmin" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
+            <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="isZoneAdmin" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
         </div>
 
         <div>
@@ -306,8 +306,8 @@
                     </td>
                     @if(meta.sharedDisplayEnabled) {
                         <td ng-if="zoneInfo.shared">
-                            <a ng-if="record.ownerGroupName && isGroupMember(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}"></a>
-                            <span ng-if="record.ownerGroupName && !isGroupMember(record.ownerGroupId)" ng-bind="record.ownerGroupName"></span>
+                            <a ng-if="record.ownerGroupName && canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName" href="/groups/{{record.ownerGroupId}}"></a>
+                            <span ng-if="record.ownerGroupName && !canAccessGroup(record.ownerGroupId)" ng-bind="record.ownerGroupName"></span>
                             <span ng-if="!record.ownerGroupId">Unowned</span>
                             <span ng-if="record.ownerGroupId && !record.ownerGroupName" class="text-danger" data-toggle="tooltip" data-placement="top"
                                   title="Group with ID {{record.ownerGroupId}} no longer exists."><span class="fa fa-warning"></span> Group deleted</span>

@@ -51,6 +51,7 @@ angular.module('controller.zones', [])
     groupsService.getMyGroups().then(function (results) {
         if (results.data) {
             $scope.myGroups = results.data.groups;
+            $scope.myGroupIds = results.data.groups.map(function(grp) {return grp['id']});
         }
         $scope.resetCurrentZone();
     });
@@ -61,11 +62,8 @@ angular.module('controller.zones', [])
         }
     });
 
-    $scope.isGroupMember = function(groupId) {
-        var groupMember = $scope.myGroups.find(function(group) {
-            return groupId === group.id;
-        });
-        return groupMember !== undefined
+    $scope.canAccessGroup = function(groupId) {
+        return $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
     /* Refreshes zone data set and then re-displays */
@@ -123,30 +121,6 @@ angular.module('controller.zones', [])
                 handleError(error, 'zonesService::sendZone-failure');
                 $scope.processing = false;
             });
-    };
-
-    $scope.confirmDeleteZone = function (zoneInfo) {
-        $scope.currentZone = zoneInfo;
-        $("#delete_zone_connection_modal").modal("show");
-    };
-
-    $scope.submitDeleteZone = function (id) {
-        zonesService.delZone(id)
-            .then(function () {
-                $("#delete_zone_connection_modal").modal("hide");
-                $scope.refreshZones();
-            })
-            .catch(function (error) {
-                $("#delete_zone_connection_modal").modal("hide");
-                $scope.zoneError = true;
-                handleError(error, 'zonesService::sendZone-failure');
-            });
-    };
-
-    $scope.cancel = function () {
-        $scope.resetCurrentZone();
-        $("#modal_zone_connect").modal("hide");
-        $("#delete_zone_connection_modal").modal("hide");
     };
 
     function handleError(error, type) {

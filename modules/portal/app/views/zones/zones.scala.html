@@ -92,8 +92,8 @@
                                   <td ng-bind="zone.name"></td>
                                   <td ng-bind="zone.email"></td>
                                   <td>
-                                      <a ng-if="isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
-                                      <span ng-if="!isGroupMember(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
+                                      <a ng-if="canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
+                                      <span ng-if="!canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>
                                   </td>
                                   <td ng-bind="zone.status"></td>
                                   @if(meta.sharedDisplayEnabled) {
@@ -105,11 +105,6 @@
                                       ng-href="/zones/{{ zone.id }}">
                                         View
                                       </a>
-                                      <button id="zone-delete-{{zone.name}}"
-                                      class="btn btn-danger btn-rounded mb-control"
-                                      ng-click="confirmDeleteZone(zone);">
-                                        Abandon
-                                      </button>
                                     </div>
                                   </td>
                                 </tr>
@@ -143,37 +138,6 @@
 <!-- END PAGE CONTENT -->
 
 <zoneconnection></zoneconnection>
-
-<div class="modal fade in" id="delete_zone_connection_modal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span>
-              </button>
-                <div class="modal-title">Abandon Zone?</div>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to abandon the <strong>{{currentZone.name}}</strong> zone? This will disconnect the zone from Vinyl,
-                but recordsets will still exist unless deleted from
-                <a ng-href="/zones/{{currentZone.id}}">
-                <strong>Manage Records</strong></a></p>
-            </div>
-            <div class="modal-footer">
-                <form name="deleteZoneConnectionForm" ng-submit="deleteZoneConnection()" role="form" class="form-horizontal" novalidate>
-                    <button type="submit" id="zone-delete-yes-button"
-                    class="btn btn-danger pull-right"
-                    ng-click="submitDeleteZone(currentZone.id)">
-                      Abandon
-                    </button>
-                    <button type="button" class="btn btn-primary"
-                    ng-click="cancel()">
-                      Close
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 }
 
 @plugins = {
