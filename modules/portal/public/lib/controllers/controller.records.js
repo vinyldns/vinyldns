@@ -70,6 +70,7 @@ angular.module('controller.records', [])
     };
 
     $scope.isZoneAdmin = false;
+    $scope.canReadZone = false;
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -361,17 +362,26 @@ angular.module('controller.records', [])
     }
 
     function determineAdmin(){
+        $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup()
+        $scope.canReadZone = canReadZone()
+    }
+
+    function isInAdminGroup() {
         var groupMember;
         var theGroupIndex = $scope.myGroupIds.indexOf($scope.zoneInfo.adminGroupId);
         if (theGroupIndex > -1) {
             var groupMemberIds = $scope.myGroups[theGroupIndex].members.map(function(member) {return member['id']});
             groupMember = groupMemberIds.indexOf($scope.profile.id) > -1;
         }
-        $scope.isZoneAdmin = groupMember || $scope.profile.isSuper
+        return groupMember
     }
 
-    $scope.canAccessGroup = function(groupId) {
-        return $scope.myGroupIds.indexOf(groupId) > -1
+    function canReadZone() {
+        return $scope.myGroupIds.indexOf($scope.zoneInfo.adminGroupId) > -1;
+    }
+
+    function canAccessGroup(groupId) {
+        return $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
     /**
