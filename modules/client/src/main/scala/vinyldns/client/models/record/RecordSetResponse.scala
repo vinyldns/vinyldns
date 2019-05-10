@@ -18,6 +18,7 @@ package vinyldns.client.models.record
 
 import japgolly.scalajs.react.vdom.html_<^.VdomElement
 import upickle.default._
+import vinyldns.client.components.RecordDataDisplay
 import vinyldns.client.models.OptionRW
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -73,7 +74,8 @@ case class RecordSetResponse(
     else if (this.`type` == RecordType.NS && this.name == zoneName) false
     else this.accessLevel.contains(AccessLevel.Delete)
 
-  def recordDataDisplay: VdomElement = RecordData.toDisplay(this.records, this.`type`)
+  def recordDataDisplay: VdomElement =
+    RecordDataDisplay(RecordDataDisplay.Props(this.records, this.`type`))
 }
 
 object RecordSetResponse extends OptionRW with RecordSetTypeRW with AccessLevelRW {

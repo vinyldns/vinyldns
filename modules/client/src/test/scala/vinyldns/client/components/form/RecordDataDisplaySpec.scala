@@ -14,15 +14,82 @@
  * limitations under the License.
  */
 
-package vinyldns.client.models.record
+package vinyldns.client.components.form
 
 import org.scalatest._
 import japgolly.scalajs.react.test._
-import vinyldns.client.SharedTestData
+import vinyldns.client.components.RecordDataDisplay
+import vinyldns.client.models.record.RecordData
 import vinyldns.core.domain.record.RecordType
 
-class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
-  "RecordData.toDisplay" should {
+import scala.language.existentials
+
+class RecordDataDisplaySpec extends WordSpec with Matchers {
+  "RecordDataDisplay" should {
+    "show only 4 if there are more than 4 records" in {
+      val records = List(
+        RecordData(address = Some("1.1.1.1")),
+        RecordData(address = Some("2.2.2.2")),
+        RecordData(address = Some("3.3.3.3")),
+        RecordData(address = Some("4.4.4.4")),
+        RecordData(address = Some("5.5.5.5")),
+        RecordData(address = Some("6.6.6.6"))
+      )
+
+      ReactTestUtils.withRenderedIntoDocument(
+        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A))) { c =>
+        val liElements = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
+        liElements.length shouldBe 5
+        liElements.last.outerHtmlScrubbed() should include("more...")
+      }
+    }
+
+    "show all if there are more than 4 records and more is clicked" in {
+      val records = List(
+        RecordData(address = Some("1.1.1.1")),
+        RecordData(address = Some("2.2.2.2")),
+        RecordData(address = Some("3.3.3.3")),
+        RecordData(address = Some("4.4.4.4")),
+        RecordData(address = Some("5.5.5.5")),
+        RecordData(address = Some("6.6.6.6"))
+      )
+
+      ReactTestUtils.withRenderedIntoDocument(
+        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A))) { c =>
+        val more = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-more")
+        Simulate.click(more)
+        val liElements = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
+        liElements.length shouldBe 7
+        liElements.last.outerHtmlScrubbed() should include("less...")
+      }
+    }
+
+    "hide elements if there are more than 4 records and less is clicked" in {
+      val records = List(
+        RecordData(address = Some("1.1.1.1")),
+        RecordData(address = Some("2.2.2.2")),
+        RecordData(address = Some("3.3.3.3")),
+        RecordData(address = Some("4.4.4.4")),
+        RecordData(address = Some("5.5.5.5")),
+        RecordData(address = Some("6.6.6.6"))
+      )
+
+      ReactTestUtils.withRenderedIntoDocument(
+        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A))) { c =>
+        val more = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-more")
+        Simulate.click(more)
+        val liElements = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
+        liElements.length shouldBe 7
+        liElements.last.outerHtmlScrubbed() should include("less...")
+
+        val less = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-less")
+        Simulate.click(less)
+        val liElementsAfter = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
+        liElementsAfter.length shouldBe 5
+        liElementsAfter.last.outerHtmlScrubbed() should include("more...")
+      }
+    }
+
     "display an A record" in {
       val records = List(
         RecordData(address = Some("1.1.1.1")),
@@ -31,7 +98,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.A))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A)))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>1.1.1.1</li><li>2.2.2.2</li><li>3.3.3.3</li></ul>"""
     }
@@ -44,18 +111,18 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.AAAA))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.AAAA)))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>1::1</li><li>2::2</li><li>3::3</li></ul>"""
     }
 
     "display a CNAME record" in {
-      val record = List(RecordData(cname = Some("cname.")))
+      val records = List(RecordData(cname = Some("cname.")))
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(record, RecordType.CNAME))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.CNAME)))
         .outerHtmlScrubbed() shouldBe
-        "<p>cname.</p>"
+        """<ul class="table-cell-list"><li>cname.</li></ul>"""
     }
 
     "display a DS record" in {
@@ -73,7 +140,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.DS))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.DS)))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -99,7 +166,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.MX))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.MX)))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -121,7 +188,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.NS))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.NS)))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>ns1.</li><li>ns2.</li></ul>"""
     }
@@ -133,7 +200,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.PTR))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.PTR)))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>ptr1.</li><li>ptr2.</li></ul>"""
     }
@@ -151,9 +218,10 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SOA))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SOA)))
         .outerHtmlScrubbed() shouldBe
         """
+          |<ul class="table-cell-list">
           |<table><tbody>
           |<tr><td>Mname:</td><td>mname</td></tr>
           |<tr><td>Rname:</td><td>rname</td></tr>
@@ -162,7 +230,8 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
           |<tr><td>Retry:</td><td>3</td></tr>
           |<tr><td>Expire:</td><td>4</td></tr>
           |<tr><td class="GlobalStyle_Styles-keepWhitespace">Minimum:   </td><td>5</td></tr>
-          |</tbody></table>""".stripMargin.replaceAll("\n", "")
+          |</tbody></table>
+          |</ul>""".stripMargin.replaceAll("\n", "")
     }
 
     "display a SPF record" in {
@@ -172,7 +241,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SPF))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SPF)))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>spf1</li><li>spf2</li></ul>"""
     }
@@ -184,7 +253,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.TXT))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.TXT)))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>txt1</li><li>txt2</li></ul>"""
     }
@@ -196,7 +265,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SRV))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SRV)))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -217,23 +286,23 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
 
     "display a SSHFP record" in {
       val records = List(
-        RecordData(algorithm = Some(1), `type` = Some(1), fingerprint = Some("f1")),
-        RecordData(algorithm = Some(2), `type` = Some(2), fingerprint = Some("f2"))
+        RecordData(algorithm = Some(1), `type` = Some(2), fingerprint = Some("f1")),
+        RecordData(algorithm = Some(3), `type` = Some(4), fingerprint = Some("f2")),
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.SSHFP))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SSHFP)))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
           |<li>
           |Algorithm: 1 |
-          | Type: 1 |
+          | Type: 2 |
           | Fingerprint: f1
           |</li>
           |<li>
-          |Algorithm: 2 |
-          | Type: 2 |
+          |Algorithm: 3 |
+          | Type: 4 |
           | Fingerprint: f2
           |</li>
           |</ul>""".stripMargin.replaceAll("\n", "")
@@ -258,7 +327,7 @@ class RecordDataSpec extends WordSpec with Matchers with SharedTestData {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordData.toDisplay(records, RecordType.NAPTR))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.NAPTR)))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">

@@ -16,13 +16,8 @@
 
 package vinyldns.client.models.record
 
-import scalacss.ScalaCssReact._
-import japgolly.scalajs.react.vdom.html_<^.{^, _}
 import upickle.default._
-import vinyldns.client.css.GlobalStyle
 import vinyldns.client.models.OptionRW
-import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.record.RecordType.RecordType
 
 import scala.util.Try
 
@@ -148,113 +143,4 @@ object RecordData extends OptionRW {
 
   def textsToInput(records: List[RecordData]): Option[String] =
     Some(records.map(_.textToString).mkString("\n"))
-
-  def toDisplay(records: List[RecordData], recordType: RecordType): VdomElement = // scalastyle:ignore
-    (records, recordType) match {
-      case (aList, RecordType.A | RecordType.AAAA) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          aList.map { rd =>
-            <.li(s"${rd.addressToString}")
-          }.toTagMod
-        )
-      case (cname, RecordType.CNAME) =>
-        <.p(s"${Try(cname.head.cnameToString).getOrElse("")}")
-      case (dsList, RecordType.DS) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          dsList.map { rd =>
-            <.li(
-              s"""
-                 |KeyTag: ${rd.keytagToString} |
-                 | Algorithm: ${rd.algorithmToString} |
-                 | DigestType: ${rd.digesttypeToString} |
-                 | Digest: ${rd.digestToString}""".stripMargin.replaceAll("\n", "")
-            )
-          }.toTagMod
-        )
-      case (naptrList, RecordType.NAPTR) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          naptrList.map { rd =>
-            <.li(
-              s"""
-                 |Order: ${rd.orderToString} |
-                 | Preference: ${rd.preferenceToString} |
-                 | Flags: ${rd.flagsToString} |
-                 | Service: ${rd.serviceToString} |
-                 | Regexp: ${rd.regexpToString} |
-                 | Replacement: ${rd.replacementToString}""".stripMargin.replaceAll("\n", "")
-            )
-          }.toTagMod
-        )
-      case (mxList, RecordType.MX) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          mxList.map { rd =>
-            <.li(
-              s"""
-                 |Preference: ${rd.preferenceToString} |
-                 | Exchange: ${rd.exchangeToString}""".stripMargin.replaceAll("\n", "")
-            )
-          }.toTagMod
-        )
-      case (nsList, RecordType.NS) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          nsList.map { rd =>
-            <.li(s"${rd.nsdnameToString}")
-          }.toTagMod
-        )
-      case (ptrList, RecordType.PTR) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          ptrList.map { rd =>
-            <.li(s"${rd.ptrdnameToString}")
-          }.toTagMod
-        )
-      case (soa, RecordType.SOA) =>
-        <.table(
-          <.tbody(
-            <.tr(<.td("Mname:"), <.td(s"${Try(soa.head.mnameToString).getOrElse("")}")),
-            <.tr(<.td("Rname:"), <.td(s"${Try(soa.head.rnameToString).getOrElse("")}")),
-            <.tr(<.td("Serial:"), <.td(s"${Try(soa.head.serialToString).getOrElse("")}")),
-            <.tr(<.td("Refresh:"), <.td(s"${Try(soa.head.refreshToString).getOrElse("")}")),
-            <.tr(<.td("Retry:"), <.td(s"${Try(soa.head.retryToString).getOrElse("")}")),
-            <.tr(<.td("Expire:"), <.td(s"${Try(soa.head.expireToString).getOrElse("")}")),
-            <.tr(
-              <.td(GlobalStyle.Styles.keepWhitespace, "Minimum:   "),
-              <.td(s"${Try(soa.head.minimumToString).getOrElse("")}"))
-          )
-        )
-      case (spfOrTxtList, RecordType.SPF | RecordType.TXT) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          spfOrTxtList.map { rd =>
-            <.li(s"${rd.textToString}")
-          }.toTagMod
-        )
-      case (srvList, RecordType.SRV) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          srvList.map { rd =>
-            <.li(s"""
-                    |Priority: ${rd.priorityToString} |
-                 | Weight: ${rd.weightToString} |
-                 | Port: ${rd.portToString} |
-                 | Target: ${rd.targetToString}""".stripMargin.replaceAll("\n", ""))
-          }.toTagMod
-        )
-      case (sshfpList, RecordType.SSHFP) =>
-        <.ul(
-          ^.className := "table-cell-list",
-          sshfpList.map { rd =>
-            <.li(s"""
-                    |Algorithm: ${rd.algorithmToString} |
-                 | Type: ${rd.typeToString} |
-                 | Fingerprint: ${rd.fingerprintToString}""".stripMargin.replaceAll("\n", ""))
-          }.toTagMod
-        )
-      case (other, _) => <.p(other.toString())
-    }
 }

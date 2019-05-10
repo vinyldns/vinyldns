@@ -21,6 +21,7 @@ import japgolly.scalajs.react.vdom.VdomElement
 import vinyldns.client.models.OptionRW
 import vinyldns.core.domain.batch.SingleChangeStatus
 import upickle.default._
+import vinyldns.client.components.RecordDataDisplay
 import vinyldns.client.models.record.{RecordData, RecordSetTypeRW}
 import vinyldns.core.domain.record.RecordType
 
@@ -42,7 +43,7 @@ case class SingleChangeResponse(
   def recordDataDisplay: VdomElement =
     this.record match {
       case Some(r) =>
-        RecordData.toDisplay(List(r), this.`type`)
+        RecordDataDisplay(RecordDataDisplay.Props(List(r), this.`type`))
       case None => <.p
     }
 }
