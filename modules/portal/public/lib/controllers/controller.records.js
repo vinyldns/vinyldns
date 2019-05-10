@@ -371,7 +371,7 @@ angular.module('controller.records', [])
     }
 
     $scope.canAccessGroup = function(groupId) {
-        $scope.myGroupIds.indexOf(groupId) > -1
+        return $scope.myGroupIds.indexOf(groupId) > -1
     };
 
     /**
