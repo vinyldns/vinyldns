@@ -23,12 +23,11 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute}
+import vinyldns.client.http.{Http, HttpResponse, ListZonesRoute}
 import vinyldns.client.models.zone.{ZoneListResponse, ZoneResponse}
-import vinyldns.client.components.JsNative._
 import vinyldns.client.models.Pagination
 import vinyldns.client.models.membership.GroupListResponse
-import vinyldns.client.router.{Page, ToGroupViewPage, ToZoneViewRecordsTab, ToZoneViewZoneTab}
+import vinyldns.client.router.{Page, ToGroupViewPage, ToZoneViewRecordsTab}
 
 import scala.util.Try
 
@@ -143,7 +142,7 @@ object ZonesTable {
                     )
                   ),
                   <.tbody(
-                    zl.zones.map(toTableRow(P, S, _)).toTagMod
+                    zl.zones.map(toTableRow(P, _)).toTagMod
                   )
                 )
               )
@@ -164,10 +163,7 @@ object ZonesTable {
       P.http.get(ListZonesRoute(S.maxItems, S.nameFilter, startFrom), onSuccess, onFailure)
     }
 
-    def toTableRow(P: Props, S: State, zone: ZoneResponse): TagMod = {
-      val canEdit = ZoneResponse.canEdit(
-        P.http.getLoggedInUser(),
-        P.groupList.groups.find(_.id == zone.adminGroupId))
+    def toTableRow(P: Props, zone: ZoneResponse): TagMod =
       <.tr(
         <.td(zone.name),
         <.td(zone.email),
@@ -189,49 +185,9 @@ object ZonesTable {
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-eye"),
               " View"
-            ),
-            <.button(
-              ^.className := "btn btn-warning btn-rounded test-edit",
-              P.router.setOnClick(ToZoneViewZoneTab(zone.id)),
-              ^.disabled := !canEdit,
-              ^.title := s"Edit zone ${zone.name}",
-              VdomAttr("data-toggle") := "tooltip",
-              <.span(^.className := "fa fa-edit"),
-              " Edit"
-            ),
-            <.button(
-              ^.className := "btn btn-danger btn-rounded test-abandon",
-              ^.`type` := "button",
-              ^.onClick --> deleteZone(P, S, zone),
-              ^.disabled := !canEdit,
-              ^.title := s"Abandon zone ${zone.name}",
-              VdomAttr("data-toggle") := "tooltip",
-              <.span(^.className := "fa fa-trash"),
-              " Abandon"
             )
           )
         )
-      )
-    }
-
-    def deleteZone(P: Props, S: State, zone: ZoneResponse): Callback =
-      P.http.withConfirmation(
-        s"""
-             |Are you sure you want to abandon zone ${zone.name}? You can re-connect to the zone at a later date.
-             |
-             |Abandoning a zone does not delete any of its DNS records, the zone will still exist in DNS.
-           """.stripMargin,
-        Callback
-          .lazily {
-            val onSuccess = { (httpResponse: HttpResponse, _: Option[ZoneResponse]) =>
-              addNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse)) >>
-                withDelay(HALF_SECOND_IN_MILLIS, listZones(P, S))
-            }
-            val onFailure = { httpResponse: HttpResponse =>
-              addNotification(P.http.toNotification(s"deleting zone ${zone.name}", httpResponse))
-            }
-            P.http.delete(DeleteZoneRoute(zone.id), onSuccess, onFailure)
-          }
       )
 
     def updateNameFilter(value: String): Callback =

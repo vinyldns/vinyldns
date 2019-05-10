@@ -16,15 +16,14 @@
 
 package vinyldns.client.pages.zone.list.components
 
-import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.RouterCtl
 import org.scalamock.scalatest.MockFactory
 import org.scalatest._
 import japgolly.scalajs.react.test._
 import vinyldns.client.SharedTestData
-import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse, ListZonesRoute}
+import vinyldns.client.http.{Http, HttpResponse, ListZonesRoute}
 import vinyldns.client.models.membership.GroupListResponse
-import vinyldns.client.models.zone.{ZoneListResponse, ZoneResponse}
+import vinyldns.client.models.zone.ZoneListResponse
 import vinyldns.client.router.Page
 
 import scala.language.existentials
@@ -46,11 +45,6 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
       .onCall { (_, onSuccess, _) =>
         onSuccess.apply(mock[HttpResponse], Some(initialZoneList))
       }
-
-    (mockHttp.getLoggedInUser _)
-      .expects()
-      .anyNumberOfTimes()
-      .returns(testUser)
   }
 
   "ZonesTable" should {
@@ -103,34 +97,6 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
           html should include(s"""${zone.adminGroupName.get}""")
           html should include("<td>Private</td>")
         }
-      }
-    }
-
-    "call withConfirmation when clicking abandon button" in new Fixture {
-      (mockHttp.withConfirmation _).expects(*, *).once().returns(Callback.empty)
-      (mockHttp.delete[ZoneResponse] _).expects(*, *, *).never()
-
-      ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
-        val delete = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-abandon")(0)
-        Simulate.click(delete)
-      }
-    }
-
-    "call http.delete when clicking abandon button and confirming" in new Fixture {
-      (mockHttp.withConfirmation _).expects(*, *).repeat(10 to 10).onCall((_, cb) => cb)
-
-      initialZoneList.zones.map { z =>
-        (mockHttp
-          .delete[ZoneResponse] _)
-          .expects(DeleteZoneRoute(z.id), *, *)
-          .once()
-          .returns(Callback.empty)
-      }
-
-      ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
-        val deleteButtons = ReactTestUtils.scryRenderedDOMComponentsWithClass(c, "test-abandon")
-        (deleteButtons should have).length(10)
-        deleteButtons.foreach(Simulate.click(_))
       }
     }
   }

@@ -16,6 +16,7 @@
 
 package vinyldns.client.pages.zone.view.components
 
+import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.RouterCtl
 import org.scalamock.scalatest.MockFactory
 import org.scalatest._
@@ -26,6 +27,7 @@ import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.pages.zone.list.components.ZoneModal
 import vinyldns.client.router.Page
 import vinyldns.client.components.JsNative.toReadableTimestamp
+import vinyldns.client.models.zone.ZoneResponse
 
 import scala.language.existentials
 
@@ -98,6 +100,29 @@ class ManageZoneTabSpec extends WordSpec with Matchers with MockFactory with Sha
 
         c.state.showUpdateZone shouldBe false
         ReactTestUtils.scryRenderedComponentsWithType(c, ZoneModal.component) shouldBe empty
+      }
+    }
+
+    "call withConfirmation when clicking abandon button" in new Fixture {
+      (mockHttp.withConfirmation _).expects(*, *).once().returns(Callback.empty)
+      (mockHttp.delete[ZoneResponse] _).expects(*, *, *).never()
+
+      ReactTestUtils.withRenderedIntoDocument(ManageZoneTab(props)) { c =>
+        val deleteButton = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-abandon")
+        Simulate.click(deleteButton)
+      }
+    }
+
+    "call http.delete when clicking abandon button and confirming" in new Fixture {
+      (mockHttp.withConfirmation _).expects(*, *).once().onCall((_, cb) => cb)
+      (mockHttp.delete[ZoneResponse] _)
+        .expects(DeleteZoneRoute(initialZone.id), *, *)
+        .once()
+        .returns(Callback.empty)
+
+      ReactTestUtils.withRenderedIntoDocument(ManageZoneTab(props)) { c =>
+        val deleteButton = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-abandon")
+        Simulate.click(deleteButton)
       }
     }
   }

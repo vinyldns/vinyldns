@@ -21,12 +21,13 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
+import vinyldns.client.components.AlertBox.addNotification
 import vinyldns.client.css.GlobalStyle
-import vinyldns.client.http.Http
+import vinyldns.client.http.{DeleteZoneRoute, Http, HttpResponse}
 import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.client.models.zone.ZoneResponse
 import vinyldns.client.pages.zone.list.components.ZoneModal
-import vinyldns.client.router.Page
+import vinyldns.client.router.{Page, ToZoneListPage}
 import vinyldns.client.components.JsNative.toReadableTimestamp
 
 object ManageZoneTab {
@@ -108,13 +109,26 @@ object ManageZoneTab {
               )
             )
           ),
-          <.button(
-            ^.`type` := "button",
-            ^.className := "btn btn-primary pull-right test-update",
-            ^.onClick --> makeUpdateFormVisible,
-            ^.disabled := !P.canEdit,
-            <.span(^.className := "fa fa-edit"),
-            " Edit",
+          <.div(
+            ^.className := "btn-group pull-right",
+            <.button(
+              ^.`type` := "button",
+              ^.className := "btn btn-warning test-update",
+              ^.onClick --> makeUpdateFormVisible,
+              ^.disabled := !P.canEdit,
+              <.span(^.className := "fa fa-edit"),
+              " Edit"
+            ),
+            <.button(
+              ^.className := "btn btn-danger btn-rounded test-abandon",
+              ^.`type` := "button",
+              ^.onClick --> deleteZone(P),
+              ^.disabled := !P.canEdit,
+              ^.title := s"Abandon zone ${P.zone.name}",
+              VdomAttr("data-toggle") := "tooltip",
+              <.span(^.className := "fa fa-trash"),
+              " Abandon"
+            )
           )
         ),
         zoneUpdateModal(P, S)
@@ -132,6 +146,26 @@ object ManageZoneTab {
               P.backendIds,
               Some(P.zone)))
       else TagMod.empty
+
+    def deleteZone(P: Props): Callback =
+      P.http.withConfirmation(
+        s"""
+           |Are you sure you want to abandon zone ${P.zone.name}? You can re-connect to the zone at a later date.
+           |
+           |Abandoning a zone does not delete any of its DNS records, the zone will still exist in DNS.
+           """.stripMargin,
+        Callback
+          .lazily {
+            val onSuccess = { (httpResponse: HttpResponse, _: Option[ZoneResponse]) =>
+              addNotification(P.http.toNotification(s"deleting zone ${P.zone.name}", httpResponse)) >>
+                P.routerCtl.set(ToZoneListPage)
+            }
+            val onFailure = { httpResponse: HttpResponse =>
+              addNotification(P.http.toNotification(s"deleting zone ${P.zone.name}", httpResponse))
+            }
+            P.http.delete(DeleteZoneRoute(P.zone.id), onSuccess, onFailure)
+          }
+      )
 
     def makeUpdateFormVisible: Callback =
       bs.modState(_.copy(showUpdateZone = true))
