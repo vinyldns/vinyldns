@@ -41,7 +41,7 @@ describe('Controller: ZonesController', function () {
         groupsService.getMyGroups = function() {
             return $q.when({
                 data: {
-                    groups: "all my groups"
+                    groups: [{id: "all my groups"}]
                 }
             });
         };
@@ -63,7 +63,7 @@ describe('Controller: ZonesController', function () {
 
     it('test that we properly get users groups when loading ZonesController', function(){
         this.scope.$digest();
-        expect(this.scope.myGroups).toBe("all my groups");
+        expect(this.scope.myGroups).toEqual([{id: "all my groups"}]);
     });
 
     it('nextPage should call getZones with the correct parameters', function () {

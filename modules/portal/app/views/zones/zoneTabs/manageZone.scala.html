@@ -198,17 +198,25 @@
 
             </div>
             <div class="form-group panel-footer" ng-if="isZoneAdmin">
-                <div class="col-md-12">
-                    <span ng-if="currentManageZoneState == manageZoneState.UPDATE">
-                        <button id="zone-update-button" type="button"
-                                ng-disabled="!objectsDiffer(updateZoneInfo, zoneInfo) && updateZoneInfo.hiddenKey == '' &&
-                                             updateZoneInfo.hiddenTransferKey == ''"
-                                class="btn btn-primary pull-right"
-                                ng-click="clickUpdateZone()">Update Zone</button>
-                        <button type="button" class="btn btn-primary" ng-click="refreshZone()"
-                                ng-disabled="!objectsDiffer(updateZoneInfo, zoneInfo) && updateZoneInfo.hiddenKey == '' &&
-                                             updateZoneInfo.hiddenTransferKey == ''">Reset</button>
-                    </span>
+                <div class="col-md-3">
+                    <button ng-if="currentManageZoneState == manageZoneState.UPDATE" type="button" class="btn btn-primary" ng-click="refreshZone()"
+                            ng-disabled="!objectsDiffer(updateZoneInfo, zoneInfo) && updateZoneInfo.hiddenKey == '' &&
+                                         updateZoneInfo.hiddenTransferKey == ''">
+                        Reset
+                    </button>
+                </div>
+                <div class="vinyldns-flex-right">
+                    <button ng-if="currentManageZoneState == manageZoneState.UPDATE" id="zone-update-button" type="button"
+                            ng-disabled="!objectsDiffer(updateZoneInfo, zoneInfo) && updateZoneInfo.hiddenKey == '' &&
+                                         updateZoneInfo.hiddenTransferKey == ''"
+                            class="btn btn-primary"
+                            ng-click="clickUpdateZone()">
+                        Update Zone
+                    </button>
+                    <button id="zone-delete-{{zone.name}}" class="btn btn-danger btn-rounded mb-control"
+                            ng-click="confirmDeleteZone();">
+                        Abandon Zone
+                    </button>
 
                     <span class="update-zone-msg" ng-if="currentManageZoneState == manageZoneState.CONFIRM_UPDATE">
                         <span>Are you sure you want to update this zone?&emsp;</span>
@@ -224,7 +232,7 @@
     <!-- END ZONE INFO FORM -->
 
     <!-- START ACL TABLE -->
-<div class="panel panel-default" ng-if="isZoneAdmin">
+<div class="panel panel-default">
 
     <div class="panel-heading">
         <h3 class="panel-title">
@@ -237,7 +245,7 @@
             <button id="refresh-acl-rules-button" class="btn btn-default" ng-click="refreshZone()">
                 <span class="fa fa-refresh"></span> Refresh
             </button>
-            <button id="create-acl-rule-button" class="btn btn-default" ng-click="clickCreateAclRule()">
+            <button ng-if="isZoneAdmin" id="create-acl-rule-button" class="btn btn-default" ng-click="clickCreateAclRule()">
                 <span class="fa fa-plus"></span> Create ACL Rule
             </button>
         </div>
@@ -281,7 +289,7 @@
                     </td>
 
                     <td>
-                        <span>
+                        <span ng-if="isZoneAdmin">
                             <button class="btn btn-info btn-sm" id="update-acl-rule-button-{{$index}}"
                                 ng-click="clickUpdateAclRule($index)">
                                 Update
@@ -460,3 +468,34 @@
     </modal>
 </form>
     <!-- END ACL MODAL -->
+
+<div class="modal fade in" id="delete_zone_connection_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span>
+                </button>
+                <div class="modal-title">Abandon Zone?</div>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to abandon the <strong>{{zoneInfo.name}}</strong> zone? This will disconnect the zone from Vinyl,
+                    but recordsets will still exist unless deleted from
+                    <a ng-href="/zones/{{zoneInfo.id}}">
+                        <strong>Manage Records</strong></a></p>
+            </div>
+            <div class="modal-footer">
+                <form name="deleteZoneConnectionForm" ng-submit="deleteZoneConnection()" role="form" class="form-horizontal" novalidate>
+                    <button type="submit" id="zone-delete-yes-button"
+                            class="btn btn-danger pull-right"
+                            ng-click="submitDeleteZone(zoneInfo.id)">
+                        Abandon
+                    </button>
+                    <button type="button" class="btn btn-primary"
+                            data-dismiss="modal">
+                        Close
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

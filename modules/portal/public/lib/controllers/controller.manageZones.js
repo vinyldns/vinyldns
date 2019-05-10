@@ -83,6 +83,27 @@ angular.module('controller.manageZones', [])
         $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
     };
 
+    $scope.confirmDeleteZone = function() {
+        $("#delete_zone_connection_modal").modal("show");
+    };
+
+    $scope.submitDeleteZone = function() {
+        zonesService.delZone($scope.zoneInfo.id)
+            .then(function (response) {
+                $("#delete_zone_connection_modal").modal("hide");
+                var msg = response.statusText + " (HTTP "+response.status+"): " + response.data.changeType + " zone '" + response.data.zone.name + "'";
+                $scope.alerts.push({type: "success", content: msg});
+                $timeout(function(){
+                    location.href = "/zones";
+                 }, 2000);
+            })
+            .catch(function (error) {
+                $("#delete_zone_connection_modal").modal("hide");
+                $scope.zoneError = true;
+                handleError(error, 'zonesService::sendZone-failure');
+            });
+    };
+
     /**
      * Acl modal control functions
      */

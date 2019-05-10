@@ -396,3 +396,8 @@ input[type="file"] {
 .batch-change-csv-label {
     cursor: pointer;
 }
+
+.vinyldns-flex-right {
+    display: flex;
+    justify-content: flex-end;
+}
