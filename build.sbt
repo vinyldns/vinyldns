@@ -406,7 +406,8 @@ lazy val docSettings = Seq(
   micrositeGithubToken := sys.env.get("SBT_MICROSITES_PUBLISH_TOKEN"),
   ghpagesNoJekyll := false,
   fork in tut := true,
-  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/tut/{{ page.path }}"))
+  micrositeEditButton := Some(MicrositeEditButton("Improve this page", "/edit/master/modules/docs/src/main/tut/{{ page.path }}")),
+  includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.jpeg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.webm" | "*.ico" | "CNAME" | "*.yml" | "*.svg" | "*.json" | "*.csv"
 )
 
 lazy val docs = (project in file("modules/docs"))
