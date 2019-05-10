@@ -197,7 +197,7 @@ class MySqlZoneRepositoryIntegrationSpec
       )
 
       f.unsafeRunSync()
-      repo.listZones(okUserAuth).unsafeRunSync().zones should contain allElementsOf testZones
+      repo.listZones(okUserAuth).unsafeRunSync().zones should contain theSameElementsAs testZones
 
       // dummy user only has access to one zone
       repo.listZones(dummyAuth).unsafeRunSync().zones should contain only testZones.head
