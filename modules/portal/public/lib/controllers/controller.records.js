@@ -352,6 +352,7 @@ angular.module('controller.records', [])
         .then(
             function (results) {
                 $scope.myGroups = results.groups;
+                $scope.myGroupIds = results.groups.map(function(grp) {return grp['id']});
                 determineAdmin()
             })
         .catch(function (error){
@@ -361,8 +362,7 @@ angular.module('controller.records', [])
 
     function determineAdmin(){
         var groupMember;
-        var groupIds = $scope.myGroups.map(function(grp) {return grp['id']});
-        var theGroupIndex = groupIds.indexOf($scope.zoneInfo.adminGroupId);
+        var theGroupIndex = $scope.myGroupIds.indexOf($scope.zoneInfo.adminGroupId);
         if (theGroupIndex > -1) {
             var groupMemberIds = $scope.myGroups[theGroupIndex].members.map(function(member) {return member['id']});
             groupMember = groupMemberIds.indexOf($scope.profile.id) > -1;
@@ -371,10 +371,7 @@ angular.module('controller.records', [])
     }
 
     $scope.canAccessGroup = function(groupId) {
-        var groupMember = $scope.myGroups.find(function(group) {
-            return groupId === group.id;
-        });
-        return groupMember !== undefined
+        $scope.myGroupIds.indexOf(groupId) > -1
     };
 
     /**

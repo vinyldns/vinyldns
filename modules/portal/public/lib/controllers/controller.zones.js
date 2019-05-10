@@ -63,7 +63,7 @@ angular.module('controller.zones', [])
     });
 
     $scope.canAccessGroup = function(groupId) {
-        return $scope.myGroupIds.indexOf(groupId) > -1;
+        $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
     /* Refreshes zone data set and then re-displays */
