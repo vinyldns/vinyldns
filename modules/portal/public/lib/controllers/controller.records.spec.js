@@ -242,7 +242,7 @@ describe('Controller: RecordsController', function () {
             maxItems: 100}};
 
         this.scope.zoneInfo = {};
-        this.scope.profile = {id: "notAdmin", isSupport: true, isSuper: false};
+        this.scope.profile = {id: "notAdmin", isSuper: false};
         spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when({ data: {zone: mockZone}}));

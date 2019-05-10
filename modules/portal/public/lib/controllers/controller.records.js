@@ -367,13 +367,13 @@ angular.module('controller.records', [])
     }
 
     function isInAdminGroup() {
-        var groupMember;
+        var groupMember = false;
         var theGroupIndex = $scope.myGroupIds.indexOf($scope.zoneInfo.adminGroupId);
         if (theGroupIndex > -1) {
             var groupMemberIds = $scope.myGroups[theGroupIndex].members.map(function(member) {return member['id']});
             groupMember = groupMemberIds.indexOf($scope.profile.id) > -1;
         }
-        return groupMember
+        return groupMember;
     }
 
     function canReadZone() {
