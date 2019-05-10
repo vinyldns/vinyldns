@@ -37,6 +37,7 @@ import vinyldns.client.components.JsNative._
 import vinyldns.client.models.membership.GroupListResponse
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.zone.AccessLevel
 
 import scala.util.Try
 
@@ -182,21 +183,23 @@ object RecordSetTable {
                         <.th("Type"),
                         <.th("Time To Live (s)"),
                         <.th("Record Data"),
-                        <.th(
-                          "Record Owner Group  ",
-                          <.span(
-                            GlobalStyle.Styles.cursorPointer,
-                            ^.className := "fa fa-info-circle",
-                            VdomAttr("data-toggle") := "tooltip",
-                            ^.title :=
-                              """
+                        if (P.zone.shared)
+                          <.th(
+                            "Record Owner Group  ",
+                            <.span(
+                              GlobalStyle.Styles.cursorPointer,
+                              ^.className := "fa fa-info-circle",
+                              VdomAttr("data-toggle") := "tooltip",
+                              ^.title :=
+                                """
                                 | When a Zone is set to SHARED, then any Group can create/update records and set
                                 | an Owner Group to manage it. Zone Admins will always have full access, and Zone
                                 | Access Rules will apply as normal. If the Zone is PRIVATE, then this field has no
                                 | effect.
                               """.stripMargin
+                            )
                           )
-                        ),
+                        else TagMod.empty,
                         <.th("Actions")
                       )
                     ),
@@ -221,18 +224,22 @@ object RecordSetTable {
         <.td(toRecordSetName(recordSet.name, recordSet.`type`, P.zone.name)),
         <.td(recordSet.`type`.toString),
         <.td(recordSet.ttl),
-        <.td(recordSet.recordDataDisplay),
-        <.td(
-          (recordSet.ownerGroupId, recordSet.ownerGroupName) match {
-            case (Some(id), Some(name)) =>
-              <.a(
-                GlobalStyle.Styles.cursorPointer,
-                name,
-                P.routerCtl.setOnClick(ToGroupViewPage(id))
-              )
-            case _ => TagMod.empty
-          }
-        ),
+        if (!recordSet.accessLevel.contains(AccessLevel.NoAccess))
+          <.td(recordSet.recordDataDisplay)
+        else <.td,
+        if (P.zone.shared)
+          <.td(
+            (recordSet.ownerGroupId, recordSet.ownerGroupName) match {
+              case (Some(id), Some(name)) =>
+                <.a(
+                  GlobalStyle.Styles.cursorPointer,
+                  name,
+                  P.routerCtl.setOnClick(ToGroupViewPage(id))
+                )
+              case _ => TagMod.empty
+            }
+          )
+        else TagMod.empty,
         <.td(
           <.div(
             ^.className := "btn-group",

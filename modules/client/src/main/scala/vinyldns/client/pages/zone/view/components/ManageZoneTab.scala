@@ -36,7 +36,8 @@ object ManageZoneTab {
       backendIds: List[String],
       http: Http,
       routerCtl: RouterCtl[Page],
-      refreshZone: Unit => Callback)
+      refreshZone: Unit => Callback,
+      canEdit: Boolean)
 
   case class State(
       showUpdateZone: Boolean = false
@@ -111,9 +112,7 @@ object ManageZoneTab {
             ^.`type` := "button",
             ^.className := "btn btn-primary pull-right test-update",
             ^.onClick --> makeUpdateFormVisible,
-            ^.disabled := !ZoneResponse.canEdit(
-              P.http.getLoggedInUser(),
-              P.groupList.groups.find(_.id == P.zone.adminGroupId)),
+            ^.disabled := !P.canEdit,
             <.span(^.className := "fa fa-edit"),
             " Edit",
           )

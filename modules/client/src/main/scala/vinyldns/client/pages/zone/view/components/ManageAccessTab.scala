@@ -31,7 +31,8 @@ object ManageAccessTab {
       groupList: GroupListResponse,
       http: Http,
       routerCtl: RouterCtl[Page],
-      refreshZone: Unit => Callback)
+      refreshZone: Unit => Callback,
+      canEdit: Boolean)
 
   val component = ScalaComponent
     .builder[Props]("ManageAccessTab")
@@ -46,15 +47,17 @@ object ManageAccessTab {
         <.p("Any user in the Admin Group has full access to update the Zone."),
         <.p("Access Rules are additional fine grained permissions for other users and groups."),
         getSharedInfoMessage(P),
-        AclTable(
-          AclTable.Props(
-            P.zone,
-            P.groupList.groups,
-            P.http,
-            P.routerCtl,
-            _ => P.refreshZone(())
+        if (P.canEdit)
+          AclTable(
+            AclTable.Props(
+              P.zone,
+              P.groupList.groups,
+              P.http,
+              P.routerCtl,
+              _ => P.refreshZone(())
+            )
           )
-        )
+        else TagMod.empty
       )
 
     def getSharedInfoMessage(P: Props): TagMod =

@@ -164,7 +164,10 @@ object ZonesTable {
       P.http.get(ListZonesRoute(S.maxItems, S.nameFilter, startFrom), onSuccess, onFailure)
     }
 
-    def toTableRow(P: Props, S: State, zone: ZoneResponse): TagMod =
+    def toTableRow(P: Props, S: State, zone: ZoneResponse): TagMod = {
+      val canEdit = ZoneResponse.canEdit(
+        P.http.getLoggedInUser(),
+        P.groupList.groups.find(_.id == zone.adminGroupId))
       <.tr(
         <.td(zone.name),
         <.td(zone.email),
@@ -190,9 +193,7 @@ object ZonesTable {
             <.button(
               ^.className := "btn btn-warning btn-rounded test-edit",
               P.router.setOnClick(ToZoneViewZoneTab(zone.id)),
-              ^.disabled := !ZoneResponse.canEdit(
-                P.http.getLoggedInUser(),
-                P.groupList.groups.find(_.id == zone.adminGroupId)),
+              ^.disabled := !canEdit,
               ^.title := s"Edit zone ${zone.name}",
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-edit"),
@@ -202,9 +203,7 @@ object ZonesTable {
               ^.className := "btn btn-danger btn-rounded test-abandon",
               ^.`type` := "button",
               ^.onClick --> deleteZone(P, S, zone),
-              ^.disabled := !ZoneResponse.canEdit(
-                P.http.getLoggedInUser(),
-                P.groupList.groups.find(_.id == zone.adminGroupId)),
+              ^.disabled := !canEdit,
               ^.title := s"Abandon zone ${zone.name}",
               VdomAttr("data-toggle") := "tooltip",
               <.span(^.className := "fa fa-trash"),
@@ -213,6 +212,7 @@ object ZonesTable {
           )
         )
       )
+    }
 
     def deleteZone(P: Props, S: State, zone: ZoneResponse): Callback =
       P.http.withConfirmation(

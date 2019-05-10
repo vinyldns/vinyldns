@@ -63,6 +63,8 @@ object ZoneViewPage extends PropsFromAppRouter {
         ^.role := "main",
         (S.zone, S.groupList, S.backendIds) match {
           case (Some(zone), Some(groupList), Some(backendIds)) =>
+            val canEdit = ZoneResponse
+              .canEdit(P.http.getLoggedInUser(), groupList.groups.find(_.id == zone.adminGroupId))
             <.div(
               <.div(
                 ^.className := "page-title",
@@ -87,9 +89,7 @@ object ZoneViewPage extends PropsFromAppRouter {
                     GlobalStyle.Styles.keepWhitespace,
                     ^.`type` := "button",
                     ^.onClick --> syncZone(P),
-                    ^.disabled := !ZoneResponse.canEdit(
-                      P.http.getLoggedInUser(),
-                      groupList.groups.find(_.id == zone.adminGroupId)),
+                    ^.disabled := !canEdit,
                     <.span(^.className := "fa fa-exchange"),
                     " Sync DNS Records"
                   )
@@ -105,7 +105,7 @@ object ZoneViewPage extends PropsFromAppRouter {
                     ^.className := "panel-body tab-content",
                     <.div(
                       ^.className := "tab-pane active",
-                      tabContent(P, zone, groupList, backendIds)
+                      tabContent(P, zone, groupList, backendIds, canEdit)
                     )
                   )
                 )
@@ -187,15 +187,18 @@ object ZoneViewPage extends PropsFromAppRouter {
         P: Props,
         zone: ZoneResponse,
         groupList: GroupListResponse,
-        backendIds: List[String]): VdomElement =
+        backendIds: List[String],
+        canEdit: Boolean): VdomElement =
       P.page match {
         case _: ToZoneViewRecordsTab =>
           ManageRecordSetsTab(ManageRecordSetsTab.Props(zone, groupList, P.http, P.router))
         case _: ToZoneViewAccessTab =>
-          ManageAccessTab(ManageAccessTab.Props(zone, groupList, P.http, P.router, _ => getZone(P)))
+          ManageAccessTab(
+            ManageAccessTab.Props(zone, groupList, P.http, P.router, _ => getZone(P), canEdit))
         case _: ToZoneViewZoneTab =>
           ManageZoneTab(
-            ManageZoneTab.Props(zone, groupList, backendIds, P.http, P.router, _ => getZone(P)))
+            ManageZoneTab
+              .Props(zone, groupList, backendIds, P.http, P.router, _ => getZone(P), canEdit))
         case _: ToZoneViewChangesTab =>
           ChangeHistoryTab(ChangeHistoryTab.Props(zone, groupList, P.http, P.router))
         case _ =>
