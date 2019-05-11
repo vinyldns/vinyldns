@@ -540,8 +540,8 @@ addCommandAlias("verify", "; project root; killDocker; " +
   "project api; dockerComposeUp; project dynamodb; dockerComposeUp; project mysql; dockerComposeUp; " +
   "project sqs; dockerComposeUp;" +
   "project root; coverage; " +
-  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test client/test" +
-  "sqs/test sqs/it:test; " +
+  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test " +
+  "mysql/it:test api/it:test portal/test client/test sqs/test sqs/it:test; " +
   "project root; coverageReport; coverageAggregate; killDocker"
 )
 
