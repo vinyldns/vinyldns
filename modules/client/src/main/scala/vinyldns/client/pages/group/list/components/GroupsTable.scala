@@ -162,6 +162,7 @@ object GroupsTable {
 
     def toTableRow(P: Props, S: State, group: GroupResponse): TagMod =
       <.tr(
+        ^.key := group.id,
         <.td(^.className := "col-md-3", group.name),
         <.td(^.className := "col-md-3", group.email),
         <.td(^.className := "col-md-3", s"${group.description.getOrElse("")}"),

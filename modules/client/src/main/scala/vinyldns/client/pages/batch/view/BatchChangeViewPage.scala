@@ -134,7 +134,7 @@ object BatchChangeViewPage extends PropsFromAppRouter {
                             )
                           ),
                           <.tbody(
-                            filteredChanges.map(toTableRow).toTagMod
+                            filteredChanges.zipWithIndex.map { case (c, i) => toTableRow(c, i) }.toTagMod
                           )
                         )
                       )
@@ -154,8 +154,9 @@ object BatchChangeViewPage extends PropsFromAppRouter {
         }
       )
 
-    def toTableRow(singleChange: SingleChangeResponse): TagMod =
+    def toTableRow(singleChange: SingleChangeResponse, index: Int): TagMod =
       <.tr(
+        ^.key := index.toString,
         <.td(singleChange.changeType),
         <.td(singleChange.inputName),
         <.td(singleChange.recordName),

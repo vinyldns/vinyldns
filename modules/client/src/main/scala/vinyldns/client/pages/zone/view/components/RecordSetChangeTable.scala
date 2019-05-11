@@ -188,6 +188,7 @@ object RecordSetChangeTable {
 
     def toTableRow(change: RecordSetChangeResponse): TagMod =
       <.tr(
+        ^.key := change.id,
         <.td(toReadableTimestamp(change.created)),
         <.td(change.recordSet.name),
         <.td(change.recordSet.`type`.toString),

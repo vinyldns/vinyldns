@@ -165,6 +165,7 @@ object ZonesTable {
 
     def toTableRow(P: Props, zone: ZoneResponse): TagMod =
       <.tr(
+        ^.key := zone.id,
         <.td(zone.name),
         <.td(zone.email),
         <.td(

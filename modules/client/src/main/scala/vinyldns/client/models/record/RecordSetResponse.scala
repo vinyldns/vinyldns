@@ -75,7 +75,7 @@ case class RecordSetResponse(
     else this.accessLevel.contains(AccessLevel.Delete)
 
   def recordDataDisplay: VdomElement =
-    RecordDataDisplay(RecordDataDisplay.Props(this.records, this.`type`))
+    RecordDataDisplay(RecordDataDisplay.Props(this.records, this.`type`, this.id))
 }
 
 object RecordSetResponse extends OptionRW with RecordSetTypeRW with AccessLevelRW {

@@ -58,9 +58,9 @@ object ValidatedForm {
         ^.onSubmit ==> (e => validateForm(e, P, S)),
         <.fieldset(
           ^.disabled := P.readOnly,
-          P.inputFieldProps
+          P.inputFieldProps.zipWithIndex
             .zip(S.refsToInputFields)
-            .map { case (props, ref) => ref.component(props) }
+            .map { case ((props, index), ref) => ref.component(props.copy(key = index.toString)) }
             .toTagMod
         ),
         children

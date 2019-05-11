@@ -70,6 +70,7 @@ object MembersTable {
               )),
             <.tbody(ml.members.map { m =>
               <.tr(
+                ^.key := m.id,
                 <.td(m.userName),
                 <.td(toName(m)),
                 <.td(m.email),

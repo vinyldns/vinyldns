@@ -133,6 +133,7 @@ object BatchChangesTable {
 
     def toTableRow(P: Props, change: BatchChangeSummaryResponse): TagMod =
       <.tr(
+        ^.key := change.id,
         <.td(toReadableTimestamp(change.createdTimestamp)),
         <.td(change.id),
         <.td(change.totalChanges),

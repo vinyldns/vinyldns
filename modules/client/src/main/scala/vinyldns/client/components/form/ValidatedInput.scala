@@ -51,6 +51,7 @@ object ValidatedInput {
       inputType: InputType = InputType.Input,
       options: List[(String, String)] = List(),
       disabled: Boolean = false,
+      key: String = "",
       validations: Option[Validations] = None)
   case class State(isValid: Boolean = true, errorMessage: Option[String] = None)
 
@@ -68,6 +69,7 @@ object ValidatedInput {
   class Backend {
     def render(P: Props, S: State): VdomElement =
       <.div(
+        ^.key := P.key,
         ^.className := "form-group",
         P.label.map { l =>
           <.label(
@@ -96,21 +98,22 @@ object ValidatedInput {
             ^.disabled := P.disabled
           )
         case InputType.Datalist =>
-          val dataListBinding = P.label.getOrElse("datalist")
+          val datalistBinding = P.label.getOrElse("datalist")
           List(
             <.input(
+              ^.key := s"$datalistBinding-input",
               ^.className := s"form-control ${generateInputClass(P, S)}",
               ^.`type` := fromEncoding(P),
               ^.value := P.value.getOrElse(""),
               ^.placeholder := P.placeholder.getOrElse(""),
               ^.onChange ==> ((e: ReactEventFromInput) => P.parentOnChange(e.target.value)),
               ^.required := Try(P.validations.get.required).getOrElse(false),
-              ^.list := dataListBinding,
+              ^.list := datalistBinding,
               ^.disabled := P.disabled,
               if (P.options.nonEmpty) GlobalStyle.Styles.cursorPointer
               else GlobalStyle.Styles.noop
             ),
-            toDatalist(P, dataListBinding)
+            toDatalist(P, datalistBinding)
           ).toTagMod
         case InputType.Select =>
           <.select(
@@ -121,7 +124,7 @@ object ValidatedInput {
             P.options.map {
               case (value, display) =>
                 <.option(
-                  ^.key := display,
+                  ^.key := value,
                   ^.value := value,
                   display
                 )
@@ -146,9 +149,10 @@ object ValidatedInput {
       if (P.options.isEmpty) TagMod.empty
       else
         <.datalist(
+          ^.key := s"$datalistBinding-options",
           ^.id := datalistBinding,
           P.options.map {
-            case (value, display) => <.option(^.key := display, ^.value := value, display)
+            case (value, display) => <.option(^.key := value, ^.value := value, display)
           }.toTagMod
         )
 

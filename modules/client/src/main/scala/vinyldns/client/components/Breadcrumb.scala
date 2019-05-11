@@ -85,7 +85,7 @@ object Breadcrumb {
     <.li(
       ^.key := "batchlist",
       cursorPointer,
-      <.a("DNS Record Requests", P.router.setOnClick(ToBatchChangeListPage)))
+      <.a("Batch Changes", P.router.setOnClick(ToBatchChangeListPage)))
 
   val createBatchChangeActive =
     <.li(^.key := "createbatch", cursorPointer, ^.className := "active", "Create")

@@ -37,7 +37,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils.withRenderedIntoDocument(
-        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A))) { c =>
+        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A, ""))) { c =>
         val liElements = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
         liElements.length shouldBe 5
         liElements.last.outerHtmlScrubbed() should include("more...")
@@ -55,7 +55,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils.withRenderedIntoDocument(
-        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A))) { c =>
+        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A, ""))) { c =>
         val more = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-more")
         Simulate.click(more)
         val liElements = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
@@ -75,7 +75,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils.withRenderedIntoDocument(
-        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A))) { c =>
+        RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A, ""))) { c =>
         val more = ReactTestUtils.findRenderedDOMComponentWithClass(c, "test-more")
         Simulate.click(more)
         val liElements = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
@@ -98,7 +98,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A, "")))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>1.1.1.1</li><li>2.2.2.2</li><li>3.3.3.3</li></ul>"""
     }
@@ -111,7 +111,8 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.AAAA)))
+        .renderIntoDocument(
+          RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.AAAA, "")))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>1::1</li><li>2::2</li><li>3::3</li></ul>"""
     }
@@ -120,7 +121,8 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       val records = List(RecordData(cname = Some("cname.")))
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.CNAME)))
+        .renderIntoDocument(
+          RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.CNAME, "")))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>cname.</li></ul>"""
     }
@@ -140,7 +142,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.DS)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.DS, "")))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -166,7 +168,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.MX)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.MX, "")))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -188,7 +190,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.NS)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.NS, "")))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>ns1.</li><li>ns2.</li></ul>"""
     }
@@ -200,7 +202,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.PTR)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.PTR, "")))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>ptr1.</li><li>ptr2.</li></ul>"""
     }
@@ -218,7 +220,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SOA)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SOA, "")))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -241,7 +243,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SPF)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SPF, "")))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>spf1</li><li>spf2</li></ul>"""
     }
@@ -253,7 +255,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.TXT)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.TXT, "")))
         .outerHtmlScrubbed() shouldBe
         """<ul class="table-cell-list"><li>txt1</li><li>txt2</li></ul>"""
     }
@@ -265,7 +267,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SRV)))
+        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SRV, "")))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -291,7 +293,8 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SSHFP)))
+        .renderIntoDocument(
+          RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.SSHFP, "")))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">
@@ -327,7 +330,8 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
       )
 
       ReactTestUtils
-        .renderIntoDocument(RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.NAPTR)))
+        .renderIntoDocument(
+          RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.NAPTR, "")))
         .outerHtmlScrubbed() shouldBe
         """
           |<ul class="table-cell-list">

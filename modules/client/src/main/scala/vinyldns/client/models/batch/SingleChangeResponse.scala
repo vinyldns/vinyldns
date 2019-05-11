@@ -43,7 +43,7 @@ case class SingleChangeResponse(
   def recordDataDisplay: VdomElement =
     this.record match {
       case Some(r) =>
-        RecordDataDisplay(RecordDataDisplay.Props(List(r), this.`type`))
+        RecordDataDisplay(RecordDataDisplay.Props(List(r), this.`type`, this.id))
       case None => <.p
     }
 }

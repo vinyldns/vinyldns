@@ -86,7 +86,8 @@ object DsInput extends RecordDataInput {
                         "253" -> "PRIVATEDNS",
                         "254" -> "PRIVATEOID"
                       ).map {
-                        case (value, display) => <.option(^.value := value, s"($value) $display")
+                        case (value, display) =>
+                          <.option(^.key := value, ^.value := value, s"($value) $display")
                       }.toTagMod,
                       ^.required := true
                     )
@@ -105,7 +106,8 @@ object DsInput extends RecordDataInput {
                         "3" -> "GOSTR341194",
                         "4" -> "SHA384"
                       ).map {
-                        case (value, display) => <.option(^.value := value, s"($value) $display")
+                        case (value, display) =>
+                          <.option(^.key := value, ^.value := value, s"($value) $display")
                       }.toTagMod,
                       ^.required := true
                     )

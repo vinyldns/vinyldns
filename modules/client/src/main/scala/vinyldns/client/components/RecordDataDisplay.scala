@@ -26,7 +26,7 @@ import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.RecordType.RecordType
 
 object RecordDataDisplay {
-  case class Props(recordData: List[RecordData], recordType: RecordType)
+  case class Props(recordData: List[RecordData], recordType: RecordType, recordId: String)
   case class State(showMore: Boolean = false)
 
   val component = ScalaComponent
@@ -39,106 +39,34 @@ object RecordDataDisplay {
 
   class Backend(bs: BackendScope[Props, State]) {
     def render(P: Props, S: State): VdomElement =
-      toDisplayList(P.recordData, P.recordType, S.showMore)
+      toDisplayList(P.recordData, P.recordType, P.recordId, S.showMore)
 
     def toDisplayList(
         records: List[RecordData],
         recordType: RecordType,
+        recordId: String,
         showMore: Boolean): VdomElement = {
       val recordsToShow = if (showMore) records else records.take(4)
 
-      val elements = (recordsToShow, recordType) match {
-        case (aList, RecordType.A | RecordType.AAAA) =>
-          aList.map { rd =>
-            <.li(s"${rd.addressToString}")
-          }
-        case (dsList, RecordType.DS) =>
-          dsList.map { rd =>
-            <.li(
-              s"""
-                   |KeyTag: ${rd.keytagToString} |
-                 | Algorithm: ${rd.algorithmToString} |
-                 | DigestType: ${rd.digesttypeToString} |
-                 | Digest: ${rd.digestToString}""".stripMargin.replaceAll("\n", "")
-            )
-          }
-        case (naptrList, RecordType.NAPTR) =>
-          naptrList.map { rd =>
-            <.li(
-              s"""
-                   |Order: ${rd.orderToString} |
-                 | Preference: ${rd.preferenceToString} |
-                 | Flags: ${rd.flagsToString} |
-                 | Service: ${rd.serviceToString} |
-                 | Regexp: ${rd.regexpToString} |
-                 | Replacement: ${rd.replacementToString}""".stripMargin.replaceAll("\n", "")
-            )
-          }
-        case (nsList, RecordType.NS) =>
-          nsList.map { rd =>
-            <.li(s"${rd.nsdnameToString}")
-          }
-        case (mxList, RecordType.MX) =>
-          mxList.map { rd =>
-            <.li(
-              s"""
-                   |Preference: ${rd.preferenceToString} |
-                 | Exchange: ${rd.exchangeToString}""".stripMargin.replaceAll("\n", "")
-            )
-          }
-        case (ptrList, RecordType.PTR) =>
-          ptrList.map { rd =>
-            <.li(s"${rd.ptrdnameToString}")
-          }
-        case (spfOrTxtList, RecordType.SPF | RecordType.TXT) =>
-          spfOrTxtList.map { rd =>
-            <.li(s"${rd.textToString}")
-          }
-        case (srvList, RecordType.SRV) =>
-          srvList.map { rd =>
-            <.li(s"""
-                      |Priority: ${rd.priorityToString} |
-                 | Weight: ${rd.weightToString} |
-                 | Port: ${rd.portToString} |
-                 | Target: ${rd.targetToString}""".stripMargin.replaceAll("\n", ""))
-          }
-        case (sshfpList, RecordType.SSHFP) =>
-          sshfpList.map { rd =>
-            <.li(s"""
-                      |Algorithm: ${rd.algorithmToString} |
-                 | Type: ${rd.typeToString} |
-                 | Fingerprint: ${rd.fingerprintToString}""".stripMargin.replaceAll("\n", ""))
-          }
-        case (cname, RecordType.CNAME) =>
-          cname.map { rd =>
-            <.li(s"${rd.cnameToString}")
-          }
-        case (soa, RecordType.SOA) =>
-          soa.map { rd =>
-            <.table(
-              <.tbody(
-                <.tr(<.td("Mname:"), <.td(s"${rd.mnameToString}")),
-                <.tr(<.td("Rname:"), <.td(s"${rd.rnameToString}")),
-                <.tr(<.td("Serial:"), <.td(s"${rd.serialToString}")),
-                <.tr(<.td("Refresh:"), <.td(s"${rd.refreshToString}")),
-                <.tr(<.td("Retry:"), <.td(s"${rd.retryToString}")),
-                <.tr(<.td("Expire:"), <.td(s"${rd.expireToString}")),
-                <.tr(
-                  <.td(GlobalStyle.Styles.keepWhitespace, "Minimum:   "),
-                  <.td(s"${rd.minimumToString}"))
-              )
-            )
-          }
-        case (other, _) =>
-          other.map { rd =>
-            <.li(rd.toString())
-          }
+      val elements = recordType match {
+        case RecordType.A | RecordType.AAAA => toDisplayA(recordsToShow, recordId)
+        case RecordType.DS => toDisplayDS(recordsToShow, recordId)
+        case RecordType.NAPTR => toDisplayNAPTR(recordsToShow, recordId)
+        case RecordType.NS => toDisplayNS(recordsToShow, recordId)
+        case RecordType.MX => toDisplayMX(recordsToShow, recordId)
+        case RecordType.PTR => toDisplayPTR(recordsToShow, recordId)
+        case RecordType.SPF | RecordType.TXT => toDisplayTXT(recordsToShow, recordId)
+        case RecordType.SRV => toDisplaySRV(recordsToShow, recordId)
+        case RecordType.SSHFP => toDisplaySSHFP(recordsToShow, recordId)
+        case RecordType.CNAME => toDisplayCNAME(recordsToShow, recordId)
+        case RecordType.SOA => toDisplaySOA(recordsToShow, recordId)
+        case _ => <.li("unsupported type")
       }
 
       if (records.length > 4)
         <.ul(
           ^.className := "table-cell-list",
-          elements.toTagMod,
+          elements,
           if (showMore)
             <.li(
               <.a(
@@ -159,8 +87,121 @@ object RecordDataDisplay {
       else
         <.ul(
           ^.className := "table-cell-list",
-          elements.toTagMod
+          elements
         )
     }
+
+    def toDisplayA(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(^.key := s"$recordId-$index", s"${rd.addressToString}")
+      }.toTagMod
+
+    def toDisplayDS(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(
+            ^.key := s"$recordId-$index",
+            s"""
+               |KeyTag: ${rd.keytagToString} |
+                 | Algorithm: ${rd.algorithmToString} |
+                 | DigestType: ${rd.digesttypeToString} |
+                 | Digest: ${rd.digestToString}""".stripMargin.replaceAll("\n", "")
+          )
+      }.toTagMod
+
+    def toDisplayNAPTR(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(
+            ^.key := s"$recordId-$index",
+            s"""
+               |Order: ${rd.orderToString} |
+                 | Preference: ${rd.preferenceToString} |
+                 | Flags: ${rd.flagsToString} |
+                 | Service: ${rd.serviceToString} |
+                 | Regexp: ${rd.regexpToString} |
+                 | Replacement: ${rd.replacementToString}""".stripMargin.replaceAll("\n", "")
+          )
+      }.toTagMod
+
+    def toDisplayNS(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(^.key := s"$recordId-$index", s"${rd.nsdnameToString}")
+      }.toTagMod
+
+    def toDisplayMX(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(
+            ^.key := s"$recordId-$index",
+            s"""
+               |Preference: ${rd.preferenceToString} |
+                 | Exchange: ${rd.exchangeToString}""".stripMargin.replaceAll("\n", "")
+          )
+      }.toTagMod
+
+    def toDisplayPTR(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(^.key := s"$recordId-$index", s"${rd.ptrdnameToString}")
+      }.toTagMod
+
+    def toDisplayTXT(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(^.key := s"$recordId-$index", s"${rd.textToString}")
+      }.toTagMod
+
+    def toDisplaySRV(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(
+            ^.key := s"$recordId-$index",
+            s"""
+                |Priority: ${rd.priorityToString} |
+                 | Weight: ${rd.weightToString} |
+                 | Port: ${rd.portToString} |
+                 | Target: ${rd.targetToString}""".stripMargin.replaceAll("\n", "")
+          )
+      }.toTagMod
+
+    def toDisplaySSHFP(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(
+            ^.key := s"$recordId-$index",
+            s"""
+                |Algorithm: ${rd.algorithmToString} |
+                 | Type: ${rd.typeToString} |
+                 | Fingerprint: ${rd.fingerprintToString}""".stripMargin.replaceAll("\n", "")
+          )
+      }.toTagMod
+
+    def toDisplayCNAME(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.li(^.key := s"$recordId-$index", s"${rd.cnameToString}")
+      }.toTagMod
+
+    def toDisplaySOA(records: List[RecordData], recordId: String): TagMod =
+      records.zipWithIndex.map {
+        case (rd, index) =>
+          <.table(
+            ^.key := s"$recordId-$index",
+            <.tbody(
+              <.tr(<.td("Mname:"), <.td(s"${rd.mnameToString}")),
+              <.tr(<.td("Rname:"), <.td(s"${rd.rnameToString}")),
+              <.tr(<.td("Serial:"), <.td(s"${rd.serialToString}")),
+              <.tr(<.td("Refresh:"), <.td(s"${rd.refreshToString}")),
+              <.tr(<.td("Retry:"), <.td(s"${rd.retryToString}")),
+              <.tr(<.td("Expire:"), <.td(s"${rd.expireToString}")),
+              <.tr(
+                <.td(GlobalStyle.Styles.keepWhitespace, "Minimum:   "),
+                <.td(s"${rd.minimumToString}"))
+            )
+          )
+      }.toTagMod
   }
 }

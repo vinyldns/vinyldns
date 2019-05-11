@@ -59,7 +59,8 @@ object SshfpInput extends RecordDataInput {
                         changeSshfpField(bs, e.target.value, index, SshfpField.Algorithm)
                       },
                       List("" -> "", "1" -> "RSA", "2" -> "DSA", "3" -> "ECDSA", "4" -> "Ed25519").map {
-                        case (value, display) => <.option(^.value := value, s"($value) $display")
+                        case (value, display) =>
+                          <.option(^.key := value, ^.value := value, s"($value) $display")
                       }.toTagMod,
                       ^.required := true
                     )
@@ -72,7 +73,8 @@ object SshfpInput extends RecordDataInput {
                         changeSshfpField(bs, e.target.value, index, SshfpField.Type)
                       },
                       List("" -> "", "1" -> "SHA-1", "2" -> "SHA-256").map {
-                        case (value, display) => <.option(^.value := value, s"($value) $display")
+                        case (value, display) =>
+                          <.option(^.key := value, ^.value := value, s"($value) $display")
                       }.toTagMod,
                       ^.required := true
                     )

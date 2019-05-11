@@ -111,6 +111,7 @@ object AclTable {
 
     def toTableRow(P: Props, rule: ACLRule, index: Int): TagMod =
       <.tr(
+        ^.key := index,
         <.td(toDisplayName(P, rule)),
         <.td(ACLRule.toAccessLevelDisplay(rule.accessLevel)),
         <.td(

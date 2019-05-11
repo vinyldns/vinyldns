@@ -48,6 +48,7 @@ object AlertBox {
         S.notifications.map {
           case (key, n) =>
             <.div(
+              ^.key := key,
               ^.className := "ui-pnotify ui-pnotify-fade-normal ui-pnotify-in ui-pnotify-fade-in ui-pnotify-move",
               GlobalStyle.Styles.notifyOuter,
               <.div(

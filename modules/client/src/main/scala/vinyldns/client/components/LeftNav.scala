@@ -63,25 +63,27 @@ object LeftNav {
               ^.className := "menu_section active",
               <.ul(
                 ^.className := "nav side-menu",
-                P.menus.toTagMod(
-                  item => {
-                    val active = isActive(P, item.page)
-                    <.li(
-                      ^.className := activeClass(active),
-                      ^.onMouseEnter ==> mouseEnter,
-                      ^.onMouseLeave ==> (e => mouseExit(e, active)),
-                      ^.key := item.name,
-                      <.a(
-                        <.i(^.className := item.faClassName),
-                        item.name,
-                        <.span(^.className := "fa fa-chevron-right"),
-                        P.router.setOnClick(item.page)
-                      ),
-                      // determine if the current menu item has active children
-                      toSubMenu(P, item.page)
-                    )
-                  }
-                ),
+                P.menus
+                  .map(
+                    item => {
+                      val active = isActive(P, item.page)
+                      <.li(
+                        ^.className := activeClass(active),
+                        ^.onMouseEnter ==> mouseEnter,
+                        ^.onMouseLeave ==> (e => mouseExit(e, active)),
+                        ^.key := item.name,
+                        <.a(
+                          <.i(^.className := item.faClassName),
+                          item.name,
+                          <.span(^.className := "fa fa-chevron-right"),
+                          P.router.setOnClick(item.page)
+                        ),
+                        // determine if the current menu item has active children
+                        toSubMenu(P, item.page)
+                      )
+                    }
+                  )
+                  .toTagMod,
                 S.customLinks.map { link =>
                   if (link.displayOnSidebar)
                     <.li(

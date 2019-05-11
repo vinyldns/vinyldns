@@ -220,18 +220,18 @@ object ZoneViewPage extends PropsFromAppRouter {
     def syncZone(P: Props): Callback =
       P.http.withConfirmation(
         """
-          |Are you sure want to Sync this Zone? You will not be able to update DNS records via VinylDNS until the sync
-          | is complete. A Zone Sync will compare a Zones actual DNS records with those in VinylDNS to ensure VinylDNS
-          | is up to date. It will NOT modify any records in DNS.
+          |Are you sure want to Sync this Zone? You will not be able to update DNS records via VinylDNS until the
+          |sync is complete. A Zone Sync will compare a Zones actual DNS records with those in VinylDNS to ensure
+          |VinylDNS is up to date. It will NOT modify any records in DNS.
         """.stripMargin,
         Callback.lazily {
           val zoneId = P.page.asInstanceOf[ToZoneViewPage].id
           val onFailure = { httpResponse: HttpResponse =>
             addNotification(P.http.toNotification("syncing zone", httpResponse))
           }
-          val onSuccess = { (httpResponse: HttpResponse, parsed: Option[ZoneResponse]) =>
+          val onSuccess = { (httpResponse: HttpResponse, _: Option[ZoneResponse]) =>
             addNotification(P.http.toNotification("syncing zone", httpResponse)) >>
-              bs.modState(_.copy(zone = parsed)) >>
+              getZone(P) >>
               withDelay(TWO_SECONDS_IN_MILLIS, getZone(P))
           }
 

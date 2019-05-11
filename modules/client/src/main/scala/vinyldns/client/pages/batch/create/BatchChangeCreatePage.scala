@@ -292,6 +292,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
 
     def singleChangeRow(change: SingleChangeCreateInfo, index: Int): TagMod =
       <.tr(
+        ^.key := index,
         ^.className := toSingleChangeRowClass(change),
         <.td(
           index + 1
@@ -304,7 +305,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
               changeSingleChangeType(e.target.value, change, index)
             },
             ^.value := change.changeType,
-            List("Add", "DeleteRecordSet").map(o => <.option(^.value := o, o)).toTagMod
+            List("Add", "DeleteRecordSet").map(o => <.option(^.key := o, ^.value := o, o)).toTagMod
           )
         ),
         <.td(
@@ -315,7 +316,9 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
               changeSingleRecordType(e.target.value, change, index)
             },
             ^.value := change.`type`,
-            SingleChangeCreateInfo.validRecordTypes.map(o => <.option(^.value := o, o)).toTagMod
+            SingleChangeCreateInfo.validRecordTypes
+              .map(o => <.option(^.key := o, ^.value := o, o))
+              .toTagMod
           )
         ),
         <.td(
@@ -357,7 +360,7 @@ object BatchChangeCreatePage extends PropsFromAppRouter {
         ),
         <.td(
           change.errors match {
-            case Some(es) => es.map(e => <.p(e)).toTagMod
+            case Some(es) => es.zipWithIndex.map { case (e, i) => <.p(^.key := i, e) }.toTagMod
             case None => TagMod.empty
           }
         ),

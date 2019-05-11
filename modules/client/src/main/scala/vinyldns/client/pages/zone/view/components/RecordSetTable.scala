@@ -221,6 +221,7 @@ object RecordSetTable {
 
     def toTableRow(P: Props, S: State, recordSet: RecordSetResponse): TagMod =
       <.tr(
+        ^.key := recordSet.id,
         <.td(toRecordSetName(recordSet.name, recordSet.`type`, P.zone.name)),
         <.td(recordSet.`type`.toString),
         <.td(recordSet.ttl),
