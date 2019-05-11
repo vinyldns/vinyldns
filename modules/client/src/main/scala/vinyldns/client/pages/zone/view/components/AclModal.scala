@@ -154,7 +154,7 @@ object AclModal {
             ^.`type` := "button",
             ^.className := "btn btn-sm btn-danger btn-round test-clear",
             ^.onClick --> bs.modState(s => s.copy(rule = s.rule.copy(recordTypes = Seq()))),
-            "Clear Types",
+            "Clear Types"
           )
         )
       )

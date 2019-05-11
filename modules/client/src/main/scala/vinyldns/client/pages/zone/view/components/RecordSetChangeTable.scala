@@ -100,7 +100,8 @@ object RecordSetChangeTable {
                         <.label(
                           GlobalStyle.Styles.keepWhitespace,
                           ^.className := "control-label",
-                          "Items per page:  "),
+                          "Items per page:  "
+                        ),
                         <.select(
                           ^.onChange ==> { e: ReactEventFromInput =>
                             val maxItems = Try(e.target.value.toInt).getOrElse(100)
@@ -114,7 +115,7 @@ object RecordSetChangeTable {
                           ^.value := S.maxItems,
                           List(100, 50, 25, 5, 1).map { o =>
                             <.option(^.key := o, o)
-                          }.toTagMod,
+                          }.toTagMod
                         )
                       ),
                       <.span(

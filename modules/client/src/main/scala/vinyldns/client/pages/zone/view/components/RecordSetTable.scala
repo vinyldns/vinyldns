@@ -146,7 +146,7 @@ object RecordSetTable {
                         ^.value := S.maxItems,
                         List(100, 50, 25, 5, 1).map { o =>
                           <.option(^.key := o, o)
-                        }.toTagMod,
+                        }.toTagMod
                       )
                     ),
                     <.span(

@@ -95,7 +95,7 @@ object AppRouter {
     LeftNav.NavItem("Zones", "fa fa-table", ToZoneListPage),
     LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage),
     LeftNav.NavItem("Batch Changes", "fa fa-list", ToBatchChangeListPage),
-    LeftNav.NavItem("API Credentials", "fa fa-key", ToApiCredentialsPage),
+    LeftNav.NavItem("API Credentials", "fa fa-key", ToApiCredentialsPage)
   )
 
   // used so the alert box addNotification can be static across the app
@@ -119,7 +119,7 @@ object AppRouter {
           <.p(
             ^.className := "main-footer-text text-right",
             "VinylDNS",
-            version.map(v => s" version $v"),
+            version.map(v => s" version $v")
           )
         )
       )

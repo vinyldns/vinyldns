@@ -55,7 +55,7 @@ object TopNav {
                   ^.className := "user-profile dropdown-toggle",
                   <.span(^.className := "fa fa-user"),
                   s"  ${P.http.getLoggedInUser().userName}  ",
-                  <.span(^.className := "fa fa-angle-down"),
+                  <.span(^.className := "fa fa-angle-down")
                 ),
                 dropdown(P, S)
               )

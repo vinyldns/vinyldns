@@ -63,7 +63,8 @@ object ZonesTable {
                     <.label(
                       GlobalStyle.Styles.keepWhitespace,
                       ^.className := "control-label",
-                      "Items per page:  "),
+                      "Items per page:  "
+                    ),
                     <.select(
                       ^.value := S.maxItems,
                       ^.onChange ==> { e: ReactEventFromInput =>
@@ -77,7 +78,7 @@ object ZonesTable {
                       },
                       List(100, 50, 25, 5, 1).map { o =>
                         <.option(^.key := o, o)
-                      }.toTagMod,
+                      }.toTagMod
                     )
                   ),
                   <.span(

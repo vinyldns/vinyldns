@@ -523,13 +523,15 @@ addCommandAlias("validate", "; root/clean; " +
   "dynamodb/headerCheck dynamodb/test:headerCheck dynamodb/it:headerCheck " +
   "mysql/headerCheck mysql/test:headerCheck mysql/it:headerCheck " +
   "sqs/headerCheck sqs/test:headerCheck sqs/it:headerCheck " +
-  "portal/headerCheck portal/test:headerCheck; " +
+  "portal/headerCheck portal/test:headerCheck" +
+  "client/headerCheck client/test:headerCheck;" +
   "all core/scalastyle core/test:scalastyle " +
   "api/scalastyle api/test:scalastyle api/it:scalastyle " +
   "dynamodb/scalastyle dynamodb/test:scalastyle dynamodb/it:scalastyle" +
   "mysql/scalastyle mysql/test:scalastyle mysql/it:scalastyle" +
   "sqs/scalastyle sqs/test:scalastyle sqs/it:scalastyle" +
-  "portal/scalastyle portal/test:scalastyle;" +
+  "portal/scalastyle portal/test:scalastyle" +
+  "client/scalastyle client/test:scalastyle;" +
   "portal/createJsHeaders;portal/checkJsHeaders;" +
   "root/compile;root/test:compile;root/it:compile"
 )
@@ -538,7 +540,7 @@ addCommandAlias("verify", "; project root; killDocker; " +
   "project api; dockerComposeUp; project dynamodb; dockerComposeUp; project mysql; dockerComposeUp; " +
   "project sqs; dockerComposeUp;" +
   "project root; coverage; " +
-  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test " +
+  "all core/test dynamodb/test mysql/test api/test dynamodb/it:test mysql/it:test api/it:test portal/test client/test" +
   "sqs/test sqs/it:test; " +
   "project root; coverageReport; coverageAggregate; killDocker"
 )

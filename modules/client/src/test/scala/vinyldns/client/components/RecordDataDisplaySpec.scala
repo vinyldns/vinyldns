@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package vinyldns.client.components.form
+package vinyldns.client.components
 
-import org.scalatest._
 import japgolly.scalajs.react.test._
-import vinyldns.client.components.RecordDataDisplay
+import org.scalatest._
 import vinyldns.client.models.record.RecordData
 import vinyldns.core.domain.record.RecordType
 
@@ -35,7 +34,6 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
         RecordData(address = Some("5.5.5.5")),
         RecordData(address = Some("6.6.6.6"))
       )
-
       ReactTestUtils.withRenderedIntoDocument(
         RecordDataDisplay(RecordDataDisplay.Props(records, RecordType.A, ""))) { c =>
         val liElements = ReactTestUtils.scryRenderedDOMComponentsWithTag(c, "li")
@@ -289,7 +287,7 @@ class RecordDataDisplaySpec extends WordSpec with Matchers {
     "display a SSHFP record" in {
       val records = List(
         RecordData(algorithm = Some(1), `type` = Some(2), fingerprint = Some("f1")),
-        RecordData(algorithm = Some(3), `type` = Some(4), fingerprint = Some("f2")),
+        RecordData(algorithm = Some(3), `type` = Some(4), fingerprint = Some("f2"))
       )
 
       ReactTestUtils

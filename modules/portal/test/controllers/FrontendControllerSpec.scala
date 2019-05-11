@@ -145,6 +145,14 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     }
 
     "Get for '/v2' when enabled" should {
+      "redirect to /v2" in new WithApplication(app) {
+        val result = v2ClientUnderTest.clientV2("")(
+          FakeRequest(GET, "/v2")
+            .withSession("username" -> "frodo")
+            .withCSRFToken)
+        status(result) must equalTo(OK)
+        contentAsString(result) must contain("scalajs")
+      }
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = v2ClientUnderTest.clientV2("")(FakeRequest(GET, "/v2").withCSRFToken)
         status(result) must equalTo(SEE_OTHER)

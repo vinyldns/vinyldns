@@ -101,7 +101,7 @@ class FrontendController @Inject()(
       """.stripMargin))
   }
 
-  def clientV2(unusedReactRoute: String): Action[AnyContent] = userAction { implicit request =>
+  def clientV2(reactRoute: String): Action[AnyContent] = userAction { implicit request =>
     if (v2ClientEnabled) Ok(views.html.v2client(request, meta))
     else Redirect("/")
   }
