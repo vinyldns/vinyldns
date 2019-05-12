@@ -6,7 +6,7 @@ scala:
 python:
   - 2.7
 
-sudo: true
+sudo: false
 
 jdk:
   - oraclejdk8
