@@ -45,8 +45,9 @@ Thank you! If you have contributed in any way, but do not see your name here, pl
 - Trent Schmidt
 - Ghafar Shah
 - Jess Stodola
+- Juan Valencia
+- Anastasia Vishnyakova
 - Jim Wakemen
 - Fei Wan
 - Andrew Wang
 - Peter Willis
-- Anastasia Vishnyakova
