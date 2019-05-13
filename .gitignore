@@ -25,3 +25,5 @@ release.version
 .ensime_cache
 package-lock.json
 *trustStore.jks
+.bloop
+.metals
