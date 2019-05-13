@@ -334,5 +334,4 @@ describe('Controller: RecordsController', function () {
         expect(getRecordSets.calls.mostRecent().args).toEqual(
             [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery]);
     });
-
 });
