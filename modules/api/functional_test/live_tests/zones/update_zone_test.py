@@ -569,11 +569,13 @@ def test_delete_acl_removes_permissions(shared_zone_test_context):
     ok_zone = ok_client.get_zone(shared_zone_test_context.ok_zone['id'])['zone']
 
     ok_view = ok_client.list_zones()['zones']
-    assert_that(ok_view, has_item(ok_zone))    # ok can see ok_zone
+    ok_view_ids = [z['id'] for z in ok_view]
+    assert_that(ok_view_ids, has_item(ok_zone['id']))    # ok can see ok_zone
 
     # verify dummy cannot see ok_zone
     dummy_view = dummy_client.list_zones()['zones']
-    assert_that(dummy_view, is_not(has_item(ok_zone))) # cannot view zone
+    dummy_view_ids = [z['id'] for z in dummy_view]
+    assert_that(dummy_view_ids, is_not(has_item(ok_zone['id'])))  # cannot view zone
 
     # add acl rule
     acl_rule = {
@@ -588,11 +590,13 @@ def test_delete_acl_removes_permissions(shared_zone_test_context):
     verify_acl_rule_is_present_once(acl_rule, ok_zone['acl'])
 
     ok_view = ok_client.list_zones()['zones']
-    assert_that(ok_view, has_item(ok_zone))    # ok can still see ok_zone
+    ok_view_ids = [z['id'] for z in ok_view]
+    assert_that(ok_view_ids, has_item(ok_zone['id']))    # ok can still see ok_zone
 
     # verify dummy can see ok_zone
     dummy_view = dummy_client.list_zones()['zones']
-    assert_that(dummy_view, has_item(ok_zone)) # can view zone
+    dummy_view_ids = [z['id'] for z in dummy_view]
+    assert_that(dummy_view_ids, has_item(ok_zone['id']))  # can view zone
 
     # delete acl rule
     result = ok_client.delete_zone_acl_rule_with_wait(shared_zone_test_context.ok_zone['id'], acl_rule, status=202)
@@ -600,11 +604,13 @@ def test_delete_acl_removes_permissions(shared_zone_test_context):
     verify_acl_rule_is_not_present(acl_rule, ok_zone['acl'])
 
     ok_view = ok_client.list_zones()['zones']
-    assert_that(ok_view, has_item(ok_zone))    # ok can still see ok_zone
+    ok_view_ids = [z['id'] for z in ok_view]
+    assert_that(ok_view_ids, has_item(ok_zone['id']))     # ok can still see ok_zone
 
     # verify dummy can not see ok_zone
     dummy_view = dummy_client.list_zones()['zones']
-    assert_that(dummy_view, is_not(has_item(ok_zone))) # cannot view zone
+    dummy_view_ids = [z['id'] for z in dummy_view]
+    assert_that(dummy_view_ids, is_not(has_item(ok_zone['id'])))  # cannot view zone
 
 
 def test_update_reverse_v4_zone(shared_zone_test_context):
