@@ -443,8 +443,54 @@ class MySqlZoneRepositoryIntegrationSpec
             acl = ZoneACL()
           )
 
-        // we are going to have 5 zones that havea different admin group id
+        // we are going to have 5 zones that have a different admin group id
         if (num % 2 == 0) z.copy(adminGroupId = differentAdminGroupId) else z
+      }
+
+      val sorted = testZones.sortBy(_.name)
+      val filtered = sorted.filter(_.adminGroupId == testZoneAdminGroupId)
+      val expectedFirstPage = filtered.take(2)
+      val expectedSecondPage = filtered.slice(2, 4)
+      val expectedThirdPage = filtered.slice(4, 6)
+
+      // make sure our auth is a member of the testZoneAdminGroup
+      val auth = AuthPrincipal(dummyUser, Seq(testZoneAdminGroupId))
+
+      saveZones(testZones).unsafeRunSync()
+
+      repo.listZones(auth, None, None, 2)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedFirstPage
+
+      repo.listZones(auth, None, Some(filtered(1).name), 2)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedSecondPage
+
+      repo.listZones(auth, None, Some(filtered(3).name), 2)
+        .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedThirdPage
+    }
+
+    "apply paging when doing a zone search as a zone admin with ACL rules" in {
+      // create 10 zones, but our user should only have access to 5 of them
+      val differentAdminGroupId = UUID.randomUUID().toString
+
+      val testZones = (0 until 10).map { num =>
+        val z =
+          okZone.copy(
+            name = num.toString + ".",
+            id = UUID.randomUUID().toString,
+            adminGroupId = testZoneAdminGroupId,
+            acl = ZoneACL(
+              rules = Set(
+                ACLRule(
+                  accessLevel = AccessLevel.Read,
+                  userId = Some(dummyUser.id),
+                  groupId = None
+                )
+              )
+            )
+          )
+
+        // we are going to have 5 zones that have a different admin group id
+        if (num % 2 == 0) z.copy(adminGroupId = differentAdminGroupId, acl = ZoneACL()) else z
       }
 
       val sorted = testZones.sortBy(_.name)
