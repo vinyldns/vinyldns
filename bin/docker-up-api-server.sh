@@ -44,7 +44,7 @@ do
         echo "Succeeded in connecting to VinylDNS API!"
         break
     else
-        echo "Retrying Again" >&2
+        echo "Retrying" >&2
 
         let RETRY-=1
         sleep 1
