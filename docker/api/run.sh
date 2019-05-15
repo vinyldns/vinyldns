@@ -32,7 +32,7 @@ do
     then
         break
     else
-        echo "Retrying Again" >&2
+        echo "Retrying" >&2
 
         let RETRY-=1
         sleep "$SLEEP_DURATION"
