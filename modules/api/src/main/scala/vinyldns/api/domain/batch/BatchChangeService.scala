@@ -100,15 +100,36 @@ class BatchChangeService(
       }
       .toBatchResult
 
-  def getZonesForRequest(changes: ValidatedBatch[ChangeInput]): IO[ExistingZones] = {
+  // zone name possibilities for all non-PTR changes
+  def getPossibleNonPtrZoneNames(nonPtr: List[ChangeInput]): Set[String] = {
+    def getZonesForDottedTypes(dotted: ChangeInput): Set[String] =
+      dotted.inputName
+        .split('.')
+        .foldRight(List[String]()) { (x, acc) =>
+          acc match {
+            case hd :: _ => s"$x.$hd" :: acc
+            case _ => List(x)
+          }
+        }
+        .toSet
 
-    // zone name possibilities for all non-PTR changes
-    def getPossibleNonPtrZoneNames(nonPtr: List[ChangeInput]): Set[String] = {
-      val apexZoneNames = nonPtr.map(_.inputName)
-      val nonApexZoneNames = apexZoneNames.map(getZoneFromNonApexFqdn)
-      (apexZoneNames ++ nonApexZoneNames).filterNot(_ == "").toSet
+    def getZonesForNonDottedTypes(nonDotted: ChangeInput): Set[String] = {
+      val apexZoneName = nonDotted.inputName
+      val nonApexZoneName = getZoneFromNonApexFqdn(apexZoneName)
+
+      Set(apexZoneName, nonApexZoneName).filterNot(_ == "")
     }
 
+    nonPtr
+      .map {
+        case txt if txt.typ == TXT => getZonesForDottedTypes(txt)
+        case otherForward => getZonesForNonDottedTypes(otherForward)
+      }
+      .toSet
+      .flatten
+  }
+
+  def getZonesForRequest(changes: ValidatedBatch[ChangeInput]): IO[ExistingZones] = {
     // ipv4 search will be by filter, NOT by specific name because of classless reverse zone delegation
     def getPtrIpv4ZoneFilters(ipv4ptr: List[ChangeInput]): Set[String] =
       ipv4ptr.flatMap(input => getIPv4NonDelegatedZoneName(input.inputName)).toSet
@@ -181,7 +202,8 @@ class BatchChangeService(
       zoneMap: ExistingZones): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | TXT | MX => standardZoneDiscovery(change, zoneMap)
+        case A | AAAA | MX => standardZoneDiscovery(change, zoneMap)
+        case TXT => dottedZoneDiscovery(change, zoneMap)
         case CNAME => cnameZoneDiscovery(change, zoneMap)
         case PTR if validateIpv4Address(change.inputName).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
@@ -199,6 +221,29 @@ class BatchChangeService(
     val nonApexZone = zoneMap.getByName(nonApexName)
 
     apexZone.orElse(nonApexZone) match {
+      case Some(zn) =>
+        ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
+      case None => ZoneDiscoveryError(change.inputName).invalidNel
+    }
+  }
+
+  def dottedZoneDiscovery(
+      change: ChangeInput,
+      zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
+
+    val zoneNames = change.inputName.split('.').foldRight(List[String]()) { (x, acc) =>
+      acc match {
+        case hd :: _ => s"$x.$hd" :: acc
+        case _ => List(x)
+      }
+    }
+
+    // zoneNames is ordered, 1st is apex
+    val zone = zoneNames.map(zoneMap.getByName).collectFirst {
+      case Some(zn) => zn
+    }
+
+    zone match {
       case Some(zn) =>
         ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
