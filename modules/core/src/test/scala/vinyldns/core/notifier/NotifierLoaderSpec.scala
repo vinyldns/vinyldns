@@ -25,10 +25,8 @@ import cats.effect.IO
 import org.mockito.Mockito._
 
 import scala.collection.JavaConverters._
-
-object Mocks extends MockitoSugar {
-  val mockUserRepository: UserRepository = mock[UserRepository]
-}
+import org.scalatest.BeforeAndAfterEach
+import cats.effect.ContextShift
 
 object MockNotifierProvider extends MockitoSugar {
 
@@ -55,13 +53,20 @@ class NotifierLoaderSpec
     with MockitoSugar
     with EitherValues
     with EitherMatchers
-    with ValidatedMatchers {
+    with ValidatedMatchers
+    with BeforeAndAfterEach {
+
+  implicit val cs: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   val placeholderConfig: Config = ConfigFactory.parseMap(Map[String, String]().asJava)
   val goodConfig = NotifierConfig("vinyldns.core.notifier.MockNotifierProvider", placeholderConfig)
 
-  import Mocks._
+  val mockUserRepository: UserRepository = mock[UserRepository]
+
   import MockNotifierProvider._
+
+  override def beforeEach: Unit =
+    reset(mockNotifier)
 
   "loadAll" should {
 
@@ -69,7 +74,7 @@ class NotifierLoaderSpec
 
       val notifier = NotifierLoader.loadAll(List.empty, mockUserRepository).unsafeRunSync()
 
-      notifier shouldNot be(null)
+      notifier shouldBe a[AllNotifiers]
       notifier.notify(Notification(3)).unsafeRunSync() shouldBe (())
     }
 
@@ -79,8 +84,6 @@ class NotifierLoaderSpec
       notifier shouldNot be(null)
 
       val notification = Notification(3)
-
-      reset(mockNotifier)
 
       when(mockNotifier.notify(notification)).thenReturn(IO.unit)
 
@@ -96,8 +99,6 @@ class NotifierLoaderSpec
       notifier shouldNot be(null)
 
       val notification = Notification(3)
-
-      reset(mockNotifier)
 
       when(mockNotifier.notify(notification)).thenReturn(IO.unit)
 

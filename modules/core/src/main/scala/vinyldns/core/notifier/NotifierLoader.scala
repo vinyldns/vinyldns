@@ -18,12 +18,14 @@ package vinyldns.core.notifier
 import vinyldns.core.domain.membership.UserRepository
 import cats.effect.IO
 import cats.implicits._
+import cats.effect.ContextShift
 
 object NotifierLoader {
 
-  def loadAll(configs: List[NotifierConfig], userRepository: UserRepository): IO[Notifier] =
+  def loadAll(configs: List[NotifierConfig], userRepository: UserRepository)(
+      implicit cs: ContextShift[IO]): IO[AllNotifiers] =
     for {
-      notifiers <- configs.traverse[IO, Notifier](load(_, userRepository))
+      notifiers <- configs.parTraverse(load(_, userRepository))
     } yield AllNotifiers(notifiers)
 
   def load(config: NotifierConfig, userRepository: UserRepository): IO[Notifier] =

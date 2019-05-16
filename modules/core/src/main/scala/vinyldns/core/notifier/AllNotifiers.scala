@@ -18,13 +18,11 @@ package vinyldns.core.notifier
 
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import scala.concurrent.ExecutionContext
 import org.slf4j.LoggerFactory
 
-final case class AllNotifiers(notifiers: List[Notifier]) extends Notifier {
+final case class AllNotifiers(notifiers: List[Notifier])(implicit val cs: ContextShift[IO]) {
 
   private val logger = LoggerFactory.getLogger("AllNotifiers")
-  private implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   def notify(notification: Notification[_]): IO[Unit] =
     for {

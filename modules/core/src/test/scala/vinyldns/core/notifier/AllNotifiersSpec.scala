@@ -21,6 +21,8 @@ import org.scalatest.mockito._
 import org.scalatest.{Matchers, WordSpec}
 import org.mockito.Mockito._
 import cats.effect.IO
+import org.scalatest.BeforeAndAfterEach
+import cats.effect.ContextShift
 
 class AllNotifiersSpec
     extends WordSpec
@@ -28,21 +30,25 @@ class AllNotifiersSpec
     with MockitoSugar
     with EitherValues
     with EitherMatchers
-    with ValidatedMatchers {
+    with ValidatedMatchers
+    with BeforeAndAfterEach {
+
+  implicit val cs: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   val mockNotifiers = List.fill(3)(mock[Notifier])
+
+  val notification = Notification("anything")
+
+  override def beforeEach: Unit =
+    mockNotifiers.foreach { mock =>
+      reset(mock)
+      when(mock.notify(notification)).thenReturn(IO.unit)
+    }
 
   "notifier" should {
     "notify all contained notifiers" in {
 
       val notifier = AllNotifiers(mockNotifiers)
-
-      val notification = Notification("anything")
-
-      mockNotifiers.foreach { mock =>
-        reset(mock)
-        when(mock.notify(notification)).thenReturn(IO.unit)
-      }
 
       notifier.notify(notification)
 
@@ -51,13 +57,6 @@ class AllNotifiersSpec
 
     "suppress errors from notifiers" in {
       val notifier = AllNotifiers(mockNotifiers)
-
-      val notification = Notification("anything")
-
-      mockNotifiers.foreach { mock =>
-        reset(mock)
-        when(mock.notify(notification)).thenReturn(IO.unit)
-      }
 
       when(mockNotifiers(2).notify(notification)).thenReturn(IO.raiseError(new Exception("fail")))
 
