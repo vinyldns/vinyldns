@@ -10,7 +10,7 @@ Retrieves the list of zones a user has access to.  The zone name is only sorted 
 
 #### HTTP REQUEST
 
-> GET /zones?nameFilter={yoursearchhere}&startFrom={response.nextId}&maxItems={1 - 100}
+> GET /zones?nameFilter={yoursearchhere}&startFrom={response.nextId}&maxItems={1 - 100}&searchAll={true | false}
 
 #### HTTP REQUEST PARAMS
 
@@ -36,6 +36,7 @@ zones         | Array of [Zones](../api/zone-model#zone-attributes) | An array o
 startFrom     | *any*         | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
 nextId        | *any*         | (optional) The identifier to be passed in as the *startFrom* parameter to retrieve the next page of results.  If there are no results left, this field will not be present.
 maxItems      | int           | The maxItems parameter that was sent in on the HTTP request.  This will be 100 if not sent. |
+searchAll     | boolean       | The searchAll parameter that was sent in on the HTTP request.  This will be 100 if not sent. |
 
 #### EXAMPLE RESPONSE
 
@@ -113,6 +114,7 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
       "latestSync": "2016-12-16T15:27:26Z"
     }
   ],
-  "maxItems": 100
+  "maxItems": 100,
+  "searchAll": false
 }
 ```

@@ -66,11 +66,6 @@ object ZoneInfo {
     )
 }
 
-object ZoneAccessLevel extends Enumeration {
-  type ZoneAccessLevel = Value
-  val ReadOnly, ACLAccess, ZoneAdmin, SuperUser = Value
-}
-
 case class ZoneSummaryInfo(
     name: String,
     email: String,
