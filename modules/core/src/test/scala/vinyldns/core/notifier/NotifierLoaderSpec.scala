@@ -38,13 +38,13 @@ object MockNotifierProvider extends MockitoSugar {
 
 class MockNotifierProvider extends NotifierProvider {
 
-  def load(config: NotifierConfig, userRepo: UserRepository) =
+  def load(config: NotifierConfig, userRepo: UserRepository): IO[Notifier] =
     IO.pure(MockNotifierProvider.mockNotifier)
 }
 
 class FailingProvider extends NotifierProvider {
 
-  def load(config: NotifierConfig, userRepo: UserRepository) =
+  def load(config: NotifierConfig, userRepo: UserRepository): IO[Notifier] =
     IO.raiseError(new IllegalStateException("always failing"))
 
 }
