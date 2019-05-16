@@ -102,17 +102,6 @@ class BatchChangeService(
 
   // zone name possibilities for all non-PTR changes
   def getPossibleNonPtrZoneNames(nonPtr: List[ChangeInput]): Set[String] = {
-    def getZonesForDottedTypes(dotted: ChangeInput): Set[String] =
-      dotted.inputName
-        .split('.')
-        .foldRight(List[String]()) { (x, acc) =>
-          acc match {
-            case hd :: _ => s"$x.$hd" :: acc
-            case _ => List(x)
-          }
-        }
-        .toSet
-
     def getZonesForNonDottedTypes(nonDotted: ChangeInput): Set[String] = {
       val apexZoneName = nonDotted.inputName
       val nonApexZoneName = getZoneFromNonApexFqdn(apexZoneName)
@@ -122,7 +111,7 @@ class BatchChangeService(
 
     nonPtr
       .map {
-        case txt if txt.typ == TXT => getZonesForDottedTypes(txt)
+        case txt if txt.typ == TXT => getAllPossibleZones(txt.inputName).toSet
         case otherForward => getZonesForNonDottedTypes(otherForward)
       }
       .toSet
@@ -231,12 +220,7 @@ class BatchChangeService(
       change: ChangeInput,
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
 
-    val zoneNames = change.inputName.split('.').foldRight(List[String]()) { (x, acc) =>
-      acc match {
-        case hd :: _ => s"$x.$hd" :: acc
-        case _ => List(x)
-      }
-    }
+    val zoneNames = getAllPossibleZones(change.inputName)
 
     // zoneNames is ordered, 1st is apex
     val zone = zoneNames.map(zoneMap.getByName).collectFirst {

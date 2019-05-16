@@ -71,6 +71,18 @@ trait DnsConversions {
   def getIPv6FullReverseName(ip: String): Option[String] =
     Try(DNS.ReverseMap.fromAddress(ip, DNS.Address.IPv6)).toOption.map(_.toString)
 
+  /*
+   * returns zone possibilities in most to least specific
+   * ex. test.example.com. => List(test.example.com., example.com., com.)
+   */
+  def getAllPossibleZones(domainName: String): List[String] =
+    domainName.split('.').foldRight(List[String]()) { (x, acc) =>
+      acc match {
+        case hd :: _ => s"$x.$hd" :: acc
+        case _ => List(s"$x.")
+      }
+    }
+
   def recordDnsName(recordName: String, zoneName: String): DNS.Name =
     if (omitTrailingDot(recordName) == omitTrailingDot(zoneName))
       zoneDnsName(zoneName)
