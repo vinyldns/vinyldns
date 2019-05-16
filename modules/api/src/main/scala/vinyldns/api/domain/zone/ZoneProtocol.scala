@@ -66,6 +66,11 @@ object ZoneInfo {
     )
 }
 
+object ZoneAccessLevel extends Enumeration {
+  type ZoneAccessLevel = Value
+  val ReadOnly, ACLAccess, ZoneAdmin, SuperUser = Value
+}
+
 case class ZoneSummaryInfo(
     name: String,
     email: String,
@@ -81,11 +86,10 @@ case class ZoneSummaryInfo(
     adminGroupId: String,
     adminGroupName: String,
     latestSync: Option[DateTime],
-    backendId: Option[String],
-    hasAccess: Boolean)
+    backendId: Option[String])
 
 object ZoneSummaryInfo {
-  def apply(zone: Zone, groupName: String, hasAccess: Boolean = true): ZoneSummaryInfo =
+  def apply(zone: Zone, groupName: String): ZoneSummaryInfo =
     ZoneSummaryInfo(
       name = zone.name,
       email = zone.email,
@@ -101,8 +105,7 @@ object ZoneSummaryInfo {
       adminGroupId = zone.adminGroupId,
       adminGroupName = groupName,
       latestSync = zone.latestSync,
-      zone.backendId,
-      hasAccess
+      zone.backendId
     )
 }
 
@@ -205,7 +208,8 @@ case class ListZonesResponse(
     nameFilter: Option[String],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
-    maxItems: Int = 100)
+    maxItems: Int = 100,
+    searchAll: Boolean = false)
 
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)

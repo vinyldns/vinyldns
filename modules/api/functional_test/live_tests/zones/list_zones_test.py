@@ -107,6 +107,7 @@ def list_zones_context(request):
 
     return ctx
 
+
 def test_list_zones_success(list_zones_context):
     """
     Test that we can retrieve a list of zones
@@ -118,6 +119,20 @@ def test_list_zones_success(list_zones_context):
     assert_that(retrieved, has_item(has_entry('name', 'list-zones-test-searched-1.')))
     assert_that(retrieved, has_item(has_entry('adminGroupName', 'list-zones-group')))
     assert_that(retrieved, has_item(has_entry('backendId', 'func-test-backend')))
+
+
+def test_list_zones_search_all(list_zones_context, shared_zone_test_context):
+    """
+    Test that we can retrieve a list of zones even ones we do not have access to
+    """
+    dummy_zone_name = shared_zone_test_context.dummy_zone['name']
+    result = list_zones_context.client.list_zones(name_filter=dummy_zone_name, search_all=True, status=200)
+    retrieved = result['zones']
+    assert_that(retrieved, has_length(1))
+
+    result = list_zones_context.client.list_zones(name_filter=dummy_zone_name, search_all=False, status=200)
+    retrieved = result['zones']
+    assert_that(retrieved, has_length(0))
 
 
 def test_list_zones_max_items_100(list_zones_context):

@@ -255,7 +255,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            zonesFilter = zoneNameFilter
+            zonesFilter = zoneNameFilter,
+            searchAll = searchAll
           )
         }
       }
@@ -279,33 +280,6 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             .map(_.string(1))
             .single
             .apply()
-        }
-      }
-    }
-
-  def getAccess(zones: Seq[String], authPrincipal: AuthPrincipal): IO[Seq[String]] =
-    monitor("repo.ZoneJDBC.getAccess") {
-      IO {
-        DB.readOnly { implicit s =>
-          // need to dynamically build our query list
-          // WHERE zone_access.zone_id IN (?) for zones
-          //   AND zone_acecss.accessor_id IN (?) for the user and groups
-          val accessors =
-            buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds)
-          val accessorQuestionMarks = List.fill(accessors.size)("?").mkString(",")
-          val zoneQuestionMarks = List.fill(zones.size)("?").mkString(",")
-
-          // Returns the zone ids that the user has access to
-          val query =
-            s"""
-              |SELECT zone_id
-              |  FROM zone_access
-              | WHERE zone_id IN ($zoneQuestionMarks)
-              |   AND accessor_id IN($accessorQuestionMarks)
-            """.stripMargin
-
-          // bind zone ids FIRST then the accessors
-          SQL(query).bind(zones ++ accessors: _*).map(_.string(1)).list().apply()
         }
       }
     }

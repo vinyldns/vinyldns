@@ -16,16 +16,15 @@
 
 package vinyldns.api.domain.zone
 
-import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import vinyldns.api.{Interfaces, VinylDNSConfig}
 import vinyldns.api.domain.AccessValidationAlgebra
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
+import vinyldns.api.{Interfaces, VinylDNSConfig}
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
-import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 
 object ZoneService {
   def apply(
@@ -57,12 +56,9 @@ class ZoneService(
     accessValidation: AccessValidationAlgebra)
     extends ZoneServiceAlgebra {
 
+  import Interfaces._
   import accessValidation._
   import zoneValidations._
-  import Interfaces._
-
-  private implicit val cs: ContextShift[IO] =
-    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def connectToZone(
       createZoneInput: CreateZoneInput,
@@ -141,15 +137,6 @@ class ZoneService(
       maxItems: Int = 100,
       searchAll: Boolean = false): Result[ListZonesResponse] = {
 
-    def getGroupsAndAccess(
-        groupIds: Set[String],
-        zoneIds: Seq[String]): IO[(Set[Group], Seq[String])] =
-      if (zoneIds.isEmpty) {
-        groupRepository.getGroups(groupIds).map(groups => (groups, Nil))
-      } else {
-        (groupRepository.getGroups(groupIds), zoneRepository.getAccess(zoneIds, authPrincipal)).parTupled
-      }
-
     for {
       listZonesResult <- zoneRepository.listZones(
         authPrincipal,
@@ -159,28 +146,26 @@ class ZoneService(
         searchAll)
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
-      r <- getGroupsAndAccess(groupIds, zones.map(_.id))
-      (groups, zoneIdsAccessible) = r // note: this is a withFilter issue in IO unfortunately
-      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups, zoneIdsAccessible)
+      groups <- groupRepository.getGroups(groupIds)
+      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups)
     } yield
       ListZonesResponse(
         zoneSummaryInfos,
         listZonesResult.zonesFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
-        listZonesResult.maxItems)
+        listZonesResult.maxItems,
+        listZonesResult.searchAll
+      )
   }.toResult
 
-  def zoneAdminGroupMapping(
-      zones: List[Zone],
-      groups: Set[Group],
-      zoneIdsAccessible: Seq[String]): List[ZoneSummaryInfo] =
+  def zoneAdminGroupMapping(zones: List[Zone], groups: Set[Group]): List[ZoneSummaryInfo] =
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {
         case Some(group) => group.name
         case None => "Unknown group name"
       }
-      ZoneSummaryInfo(zn, groupName, zoneIdsAccessible.contains(zn.id))
+      ZoneSummaryInfo(zn, groupName)
     }
 
   def listZoneChanges(

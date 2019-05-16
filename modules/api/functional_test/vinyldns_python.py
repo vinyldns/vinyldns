@@ -444,7 +444,7 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, **kwargs)
         return data
 
-    def list_zones(self, name_filter=None, start_from=None, max_items=None, **kwargs):
+    def list_zones(self, name_filter=None, start_from=None, max_items=None, search_all=False, **kwargs):
         """
         Gets a list of zones that currently exist
         :return: a list of zones
@@ -460,6 +460,9 @@ class VinylDNSClient(object):
 
         if max_items:
             query.append(u'maxItems=' + str(max_items))
+
+        if search_all:
+            query.append(u'searchAll=' + str(search_all))
 
         if query:
             url = url + u'?' + u'&'.join(query)

@@ -43,8 +43,6 @@ trait ZoneRepository extends Repository {
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 
   def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]]
-
-  def getAccess(zones: Seq[String], authPrincipal: AuthPrincipal): IO[Seq[String]]
 }
 
 object ZoneRepository {
