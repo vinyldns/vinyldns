@@ -220,10 +220,8 @@ class BatchChangeService(
       change: ChangeInput,
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
 
-    val zoneNames = getAllPossibleZones(change.inputName)
-
-    // zoneNames is ordered, 1st is apex
-    val zone = zoneNames.map(zoneMap.getByName).collectFirst {
+    // getAllPossibleZones is ordered most to least specific, so 1st match is right
+    val zone = getAllPossibleZones(change.inputName).map(zoneMap.getByName).collectFirst {
       case Some(zn) => zn
     }
 
