@@ -510,9 +510,6 @@ class ZoneServiceSpec
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
-      doReturn(IO.pure(resultZoneIds))
-        .when(mockZoneRepo)
-        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
       result.zones shouldBe List(abcZoneSummary, xyzZoneSummary)
@@ -530,9 +527,6 @@ class ZoneServiceSpec
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 100, false)
       doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
-      doReturn(IO.pure(resultZoneIds))
-        .when(mockZoneRepo)
-        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
       val expectedZones =
@@ -553,9 +547,6 @@ class ZoneServiceSpec
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
-      doReturn(IO.pure(resultZoneIds))
-        .when(mockZoneRepo)
-        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, maxItems = 2).value)
@@ -582,9 +573,6 @@ class ZoneServiceSpec
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
-      doReturn(IO.pure(resultZoneIds))
-        .when(mockZoneRepo)
-        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, nameFilter = Some("foo"), maxItems = 2).value)
@@ -604,9 +592,6 @@ class ZoneServiceSpec
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
-      doReturn(IO.pure(resultZoneIds))
-        .when(mockZoneRepo)
-        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)
@@ -630,10 +615,6 @@ class ZoneServiceSpec
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
-
-      doReturn(IO.pure(resultZoneIds))
-        .when(mockZoneRepo)
-        .getAccess(any[Seq[String]], any[AuthPrincipal])
 
       val result: ListZonesResponse =
         rightResultOf(underTest.listZones(abcAuth, startFrom = Some("zone4."), maxItems = 2).value)
