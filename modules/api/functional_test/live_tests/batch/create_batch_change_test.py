@@ -2077,14 +2077,15 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
         "changes": [
             # valid change
             get_change_TXT_json("good-record.ok."),
+            get_change_TXT_json("summed.ok."),
+            get_change_TXT_json("summed.ok.", text="test2"),
+            get_change_TXT_json("some.dotted.txt.ok.", text="dotted"),
+            get_change_TXT_json("ok.", text="apex"),
 
             # input validation failures
             get_change_TXT_json("bad-ttl-and-invalid-name$.ok.", ttl=29),
-            get_change_TXT_json("summed-fail.ok."),
-            get_change_TXT_json("summed-fail.ok.", text="test2"),
 
             # zone discovery failures
-            get_change_TXT_json("no.subzone.ok."),
             get_change_TXT_json("no.zone.at.all."),
 
             # context validation failures
@@ -2107,31 +2108,31 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="good-record.ok.", record_type="TXT", record_data="test")
-        assert_successful_change_in_error_response(response[2], input_name="summed-fail.ok.", record_type="TXT", record_data="test")
-        assert_successful_change_in_error_response(response[3], input_name="summed-fail.ok.", record_type="TXT", record_data="test2")
+        assert_successful_change_in_error_response(response[1], input_name="summed.ok.", record_type="TXT", record_data="test")
+        assert_successful_change_in_error_response(response[2], input_name="summed.ok.", record_type="TXT", record_data="test2")
+        assert_successful_change_in_error_response(response[3], input_name="some.dotted.txt.ok.", record_type="TXT", record_data="dotted")
+        assert_successful_change_in_error_response(response[4], input_name="ok.", record_type="TXT", record_data="apex")
 
         # ttl, domain name, record data
-        assert_failed_change_in_error_response(response[1], input_name="bad-ttl-and-invalid-name$.ok.", ttl=29, record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[5], input_name="bad-ttl-and-invalid-name$.ok.", ttl=29, record_type="TXT", record_data="test",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "bad-ttl-and-invalid-name$.ok.", '
                                                                'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failures
-        assert_failed_change_in_error_response(response[4], input_name="no.subzone.ok.", record_type="TXT", record_data="test",
-                                               error_messages=['Zone Discovery Failed: zone for "no.subzone.ok." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
-        assert_failed_change_in_error_response(response[5], input_name="no.zone.at.all.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[6], input_name="no.zone.at.all.", record_type="TXT", record_data="test",
                                                error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
 
         # context validations: cname duplicate
-        assert_failed_change_in_error_response(response[6], input_name="cname-duplicate.ok.", record_type="CNAME", record_data="test.com.",
+        assert_failed_change_in_error_response(response[7], input_name="cname-duplicate.ok.", record_type="CNAME", record_data="test.com.",
                                                error_messages=["Record Name \"cname-duplicate.ok.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[8], input_name="existing-txt.ok.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[9], input_name="existing-txt.ok.", record_type="TXT", record_data="test",
                                                error_messages=["Record \"existing-txt.ok.\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
-        assert_failed_change_in_error_response(response[9], input_name="existing-cname.ok.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[10], input_name="existing-cname.ok.", record_type="TXT", record_data="test",
                                                error_messages=["CNAME Conflict: CNAME record names must be unique. Existing record with name \"existing-cname.ok.\" and type \"CNAME\" conflicts with this record."])
-        assert_failed_change_in_error_response(response[10], input_name="user-add-unauthorized.dummy.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[11], input_name="user-add-unauthorized.dummy.", record_type="TXT", record_data="test",
                                                error_messages=["User \"ok\" is not authorized."])
 
     finally:
