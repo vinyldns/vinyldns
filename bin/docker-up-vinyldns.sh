@@ -25,7 +25,7 @@ function wait_for_url {
 			echo "Succeeded in connecting to ${URL}!"
 			break
 		else
-			echo "Retrying Again" >&2
+			echo "Retrying" >&2
 
 			let RETRY-=1
 			sleep 1

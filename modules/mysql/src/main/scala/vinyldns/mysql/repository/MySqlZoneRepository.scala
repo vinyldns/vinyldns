@@ -237,7 +237,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             sb.append(filters.mkString(" AND "))
           }
 
-          sb.append(s" ORDER BY z.name ASC ")
+          sb.append(s" GROUP BY z.name ")
           sb.append(s" LIMIT $maxItems")
 
           val query = sb.toString
