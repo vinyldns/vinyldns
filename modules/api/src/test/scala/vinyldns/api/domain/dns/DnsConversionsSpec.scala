@@ -667,7 +667,6 @@ class DnsConversionsSpec
       getIPv6FullReverseName("2001::42::8329") shouldBe None
     }
   }
-
   "recordDnsName" should {
     "return just zone name if record name is @" in {
       val recordName = "@"
@@ -683,6 +682,16 @@ class DnsConversionsSpec
       recordDnsName(nameWithoutDot, nameWithoutDot).toString() shouldBe nameWithDot
       recordDnsName(nameWithDot, nameWithoutDot).toString() shouldBe nameWithDot
       recordDnsName(nameWithoutDot, nameWithDot).toString() shouldBe nameWithDot
+    }
+  }
+  "getAllPossibleZones" should {
+    "return the ordered zone options for a fqdn" in {
+      val nameWithDot = "test.example.com."
+      val nameWithoutDot = "test.example.com"
+      val expected = List("test.example.com.", "example.com.", "com.")
+
+      getAllPossibleZones(nameWithDot) shouldBe expected
+      getAllPossibleZones(nameWithoutDot) shouldBe expected
     }
   }
 }

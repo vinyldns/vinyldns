@@ -22,7 +22,7 @@ import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
-import vinyldns.api.ValidatedBatchMatcherImprovements._
+import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
 import vinyldns.api._
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
@@ -559,6 +559,27 @@ class BatchChangeServiceSpec
         underTest.zoneDiscovery(List(cnameAdd.validNel), ExistingZones(Set(apexZone, baseZone)))
 
       result should containChangeForValidation(AddChangeForValidation(baseZone, "cname", cnameAdd))
+    }
+
+    "properly discover TXT records" in {
+      val apex = apexZone.name
+
+      val txtApex = AddChangeInput(apex, RecordType.TXT, 100, TXTData("test"))
+      val txtNormal = AddChangeInput(s"record.$apex", RecordType.TXT, 100, TXTData("test"))
+      val txtDotted =
+        AddChangeInput(s"some.dotted.record.$apex", RecordType.TXT, 100, TXTData("test"))
+
+      val expected = List(
+        AddChangeForValidation(apexZone, apex, txtApex),
+        AddChangeForValidation(apexZone, "record", txtNormal),
+        AddChangeForValidation(apexZone, "some.dotted.record", txtDotted)
+      )
+
+      val discovered = underTest.zoneDiscovery(
+        List(txtApex.validNel, txtNormal.validNel, txtDotted.validNel),
+        ExistingZones(Set(apexZone, baseZone)))
+
+      discovered.getValid shouldBe expected
     }
 
     "return an error if an apex zone is found for CNAME records" in {
