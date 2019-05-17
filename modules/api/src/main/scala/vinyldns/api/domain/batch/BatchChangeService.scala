@@ -100,15 +100,25 @@ class BatchChangeService(
       }
       .toBatchResult
 
-  def getZonesForRequest(changes: ValidatedBatch[ChangeInput]): IO[ExistingZones] = {
+  // zone name possibilities for all non-PTR changes
+  def getPossibleNonPtrZoneNames(nonPtr: List[ChangeInput]): Set[String] = {
+    def getZonesForNonDottedTypes(nonDotted: ChangeInput): Set[String] = {
+      val apexZoneName = nonDotted.inputName
+      val nonApexZoneName = getZoneFromNonApexFqdn(apexZoneName)
 
-    // zone name possibilities for all non-PTR changes
-    def getPossibleNonPtrZoneNames(nonPtr: List[ChangeInput]): Set[String] = {
-      val apexZoneNames = nonPtr.map(_.inputName)
-      val nonApexZoneNames = apexZoneNames.map(getZoneFromNonApexFqdn)
-      (apexZoneNames ++ nonApexZoneNames).filterNot(_ == "").toSet
+      Set(apexZoneName, nonApexZoneName).filterNot(_ == "")
     }
 
+    nonPtr
+      .map {
+        case txt if txt.typ == TXT => getAllPossibleZones(txt.inputName).toSet
+        case otherForward => getZonesForNonDottedTypes(otherForward)
+      }
+      .toSet
+      .flatten
+  }
+
+  def getZonesForRequest(changes: ValidatedBatch[ChangeInput]): IO[ExistingZones] = {
     // ipv4 search will be by filter, NOT by specific name because of classless reverse zone delegation
     def getPtrIpv4ZoneFilters(ipv4ptr: List[ChangeInput]): Set[String] =
       ipv4ptr.flatMap(input => getIPv4NonDelegatedZoneName(input.inputName)).toSet
@@ -181,7 +191,8 @@ class BatchChangeService(
       zoneMap: ExistingZones): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | TXT | MX => standardZoneDiscovery(change, zoneMap)
+        case A | AAAA | MX => standardZoneDiscovery(change, zoneMap)
+        case TXT => dottedZoneDiscovery(change, zoneMap)
         case CNAME => cnameZoneDiscovery(change, zoneMap)
         case PTR if validateIpv4Address(change.inputName).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
@@ -199,6 +210,22 @@ class BatchChangeService(
     val nonApexZone = zoneMap.getByName(nonApexName)
 
     apexZone.orElse(nonApexZone) match {
+      case Some(zn) =>
+        ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
+      case None => ZoneDiscoveryError(change.inputName).invalidNel
+    }
+  }
+
+  def dottedZoneDiscovery(
+      change: ChangeInput,
+      zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
+
+    // getAllPossibleZones is ordered most to least specific, so 1st match is right
+    val zone = getAllPossibleZones(change.inputName).map(zoneMap.getByName).collectFirst {
+      case Some(zn) => zn
+    }
+
+    zone match {
       case Some(zn) =>
         ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
