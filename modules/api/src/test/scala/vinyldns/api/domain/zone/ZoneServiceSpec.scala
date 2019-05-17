@@ -502,8 +502,6 @@ class ZoneServiceSpec
     }
 
     "return the appropriate zones" in {
-      val resultZones = List(abcZone, xyzZone)
-      val resultZoneIds = resultZones.map(_.id)
       doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone))))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 100, false)
@@ -521,7 +519,6 @@ class ZoneServiceSpec
 
     "return Unknown group name if zone admin group cannot be found" in {
       val resultZones = List(abcZone, xyzZone)
-      val resultZoneIds = resultZones.map(_.id)
 
       doReturn(IO.pure(ListZonesResults(resultZones)))
         .when(mockZoneRepo)
@@ -540,7 +537,6 @@ class ZoneServiceSpec
 
     "set the nextId appropriately" in {
       val resultZones = List(abcZone, xyzZone)
-      val resultZoneIds = resultZones.map(_.id)
       doReturn(IO.pure(ListZonesResults(resultZones, maxItems = 2, nextId = Some("zone2."))))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 2, false)
@@ -559,7 +555,6 @@ class ZoneServiceSpec
 
     "set the nameFilter when provided" in {
       val resultZones = List(abcZone, xyzZone)
-      val resultZoneIds = resultZones.map(_.id)
 
       doReturn(
         IO.pure(
@@ -584,7 +579,6 @@ class ZoneServiceSpec
 
     "set the startFrom when provided" in {
       val resultZones = List(abcZone, xyzZone)
-      val resultZoneIds = resultZones.map(_.id)
 
       doReturn(IO.pure(ListZonesResults(resultZones, startFrom = Some("zone4."), maxItems = 2)))
         .when(mockZoneRepo)
@@ -600,9 +594,7 @@ class ZoneServiceSpec
     }
 
     "set the nextId to be the current result set size plus the start from" in {
-
       val resultZones = List(abcZone, xyzZone)
-      val resultZoneIds = resultZones.map(_.id)
       doReturn(
         IO.pure(
           ListZonesResults(
