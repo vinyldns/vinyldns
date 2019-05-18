@@ -239,6 +239,7 @@ class Aws4Authenticator {
       .
       // and doesn't encode '~' at all
       replaceAllLiterally("%7E", "~")
+      .replaceAllLiterally("*", "%2A") // aws encodes the asterisk specially
 
   private def hexString(bs: Array[Byte]) =
     bs.foldLeft("")((out, b) => f"$out%s${b & 0x0ff}%02x")

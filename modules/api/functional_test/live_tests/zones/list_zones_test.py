@@ -208,7 +208,7 @@ def test_list_zones_with_search_first_page(list_zones_context):
 
     assert_that(result['nextId'], is_('list-zones-test-searched-2.'))
     assert_that(result['maxItems'], is_(2))
-    assert_that(result['nameFilter'], is_('searched'))
+    assert_that(result['nameFilter'], is_('*searched*'))
     assert_that(result, is_not(has_key('startFrom')))
 
 
@@ -239,5 +239,5 @@ def test_list_zones_with_search_last_page(list_zones_context):
 
     assert_that(result, is_not(has_key('nextId')))
     assert_that(result['maxItems'], is_(2))
-    assert_that(result['nameFilter'], is_('searched'))
+    assert_that(result['nameFilter'], is_('*searched*'))
     assert_that(result['startFrom'], is_('list-zones-test-searched-2.'))
