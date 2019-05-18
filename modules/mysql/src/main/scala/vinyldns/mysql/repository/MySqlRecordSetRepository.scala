@@ -191,7 +191,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val params = (Some('zoneId -> zoneId) ++
             startFrom.map(n => 'startFrom -> n) ++
-            recordNameFilter.map(f => 'nameFilter -> s"%$f%") ++
+            recordNameFilter.map(f => 'nameFilter -> f.replace('*', '%')) ++
             maxItems.map(m => 'maxItems -> m)).toSeq
 
           val query = "SELECT data FROM recordset WHERE zone_id = {zoneId} " + opts
