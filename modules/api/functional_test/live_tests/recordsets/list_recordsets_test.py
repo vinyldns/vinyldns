@@ -214,7 +214,7 @@ def test_list_recordsets_with_record_name_filter_all(rs_fixture):
     client = rs_fixture.client
     ok_zone = rs_fixture.test_context
 
-    list_results = client.list_recordsets(ok_zone['id'], record_name_filter="list", status=200)
+    list_results = client.list_recordsets(ok_zone['id'], record_name_filter="*list*", status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=10, offset=0)
 
 
@@ -227,7 +227,7 @@ def test_list_recordsets_with_record_name_filter_and_page_size(rs_fixture):
     ok_zone = rs_fixture.test_context
 
     #page of 4 items
-    list_results = client.list_recordsets(ok_zone['id'], max_items=4, record_name_filter="CNAME", status=200)
+    list_results = client.list_recordsets(ok_zone['id'], max_items=4, record_name_filter="*CNAME*", status=200)
     assert_that(list_results['recordSets'], has_length(4))
 
     list_results_records = list_results['recordSets'];
@@ -235,7 +235,7 @@ def test_list_recordsets_with_record_name_filter_and_page_size(rs_fixture):
         assert_that(list_results_records[i]['name'], contains_string('CNAME'))
 
     #page of 5 items but excess max items
-    list_results = client.list_recordsets(ok_zone['id'], max_items=7, record_name_filter="CNAME", status=200)
+    list_results = client.list_recordsets(ok_zone['id'], max_items=7, record_name_filter="*CNAME*", status=200)
     assert_that(list_results['recordSets'], has_length(5))
 
     list_results_records = list_results['recordSets'];
@@ -252,12 +252,12 @@ def test_list_recordsets_with_record_name_filter_and_chaining_pages_with_nextId(
     ok_zone = rs_fixture.test_context
 
     #page of 2 items
-    list_results = client.list_recordsets(ok_zone['id'], max_items=2, record_name_filter="CNAME", status=200)
+    list_results = client.list_recordsets(ok_zone['id'], max_items=2, record_name_filter="*CNAME*", status=200)
     assert_that(list_results['recordSets'], has_length(2))
     start_key = list_results['nextId']
 
     #page of 2 items
-    list_results = client.list_recordsets(ok_zone['id'], start_from=start_key, max_items=2, record_name_filter="CNAME", status=200)
+    list_results = client.list_recordsets(ok_zone['id'], start_from=start_key, max_items=2, record_name_filter="*CNAME*", status=200)
     assert_that(list_results['recordSets'], has_length(2))
 
     list_results_records = list_results['recordSets'];
@@ -272,7 +272,7 @@ def test_list_recordsets_with_record_name_filter_one(rs_fixture):
     client = rs_fixture.client
     ok_zone = rs_fixture.test_context
 
-    list_results = client.list_recordsets(ok_zone['id'], record_name_filter="8", status=200)
+    list_results = client.list_recordsets(ok_zone['id'], record_name_filter="*8*", status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=1, offset=8)
 
 
@@ -283,7 +283,7 @@ def test_list_recordsets_with_record_name_filter_none(rs_fixture):
     client = rs_fixture.client
     ok_zone = rs_fixture.test_context
 
-    list_results = client.list_recordsets(ok_zone['id'], record_name_filter="Dummy", status=200)
+    list_results = client.list_recordsets(ok_zone['id'], record_name_filter="*Dummy*", status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results, size=0, offset=0)
 
 

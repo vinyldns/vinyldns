@@ -199,7 +199,7 @@ def test_list_zones_with_search_first_page(list_zones_context):
     """
     Test that the first page of listing zones returns correctly when a name filter is provided
     """
-    result = list_zones_context.client.list_zones(name_filter='searched', max_items=2, status=200)
+    result = list_zones_context.client.list_zones(name_filter='*searched*', max_items=2, status=200)
     zones = result['zones']
 
     assert_that(zones, has_length(2))
@@ -231,7 +231,7 @@ def test_list_zones_with_search_last_page(list_zones_context):
     """
     Test that the second page of listing zones returns correctly when a name filter is provided
     """
-    result = list_zones_context.client.list_zones(name_filter='searched', start_from="list-zones-test-searched-2.", max_items=2, status=200)
+    result = list_zones_context.client.list_zones(name_filter='*searched*', start_from="list-zones-test-searched-2.", max_items=2, status=200)
     zones = result['zones']
 
     assert_that(zones, has_length(1))
