@@ -16,7 +16,7 @@ Retrieves the list of zones a user has access to.  The zone name is only sorted 
 
 name          | type          | required?   | description |
  ------------ | ------------- | ----------- | :---------- |
-nameFilter    | string        | no          | One or more characters contained in the name of the zone to search for.  For example `www-`.  This is a contains search only, no wildcards or regular expressions are supported |
+nameFilter    | string        | no          | Characters that are part of the zone name to search for.  The wildcard character `*` is supported, for example `www*` |
 startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | int           | no          | The number of items to return in the page.  Valid values are 1 - 100. Defaults to 100 if not provided. |
 

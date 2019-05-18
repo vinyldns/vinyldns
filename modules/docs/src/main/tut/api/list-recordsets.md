@@ -16,7 +16,7 @@ Retrieves a list of RecordSets from the zone
 
 name          | type          | required?   | description |
  ------------ | ------------- | ----------- | :---------- |
-recordNameFilter    | string        | no          | One or more characters contained in the name of the record set to search for.  For example `vinyl`.  This is a contains search only, no wildcards or regular expressions are supported |
+recordNameFilter    | string        | no          | Characters that are part of the record name to search for.  The wildcard character `*` is supported, for example `www*` |
 startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
 
