@@ -111,7 +111,7 @@
             <tbody>
                 <tr ng-repeat="(recordName, record) in records track by $index">
                     <td>
-                        <div ng-if="record.isDotted" class="text-danger" data-toggle="tooltip" data-placement="top"
+                        <div ng-if="record.isDotted" class="text-danger wrap-long-text" data-toggle="tooltip" data-placement="top"
                         title="Dotted hosts are invalid! Please delete or update without a '.'">
                             {{record.name}} <span class="fa fa-warning" />
                         </div>
