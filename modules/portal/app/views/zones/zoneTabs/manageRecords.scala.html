@@ -98,10 +98,10 @@
       <table id="recordDataTable" class="table table-hover table-striped">
             <thead>
                 <tr>
-                    <th>Name</th>
+                    <th class="col-md-4">Name</th>
                     <th>Type</th>
                     <th>TTL</th>
-                    <th>Record Data</th>
+                    <th class="col-md-4">Record Data</th>
                     @if(meta.sharedDisplayEnabled) {
                         <th ng-if="zoneInfo.shared">Owner Group Name</th>
                     }
@@ -115,17 +115,17 @@
                         title="Dotted hosts are invalid! Please delete or update without a '.'">
                             {{record.name}} <span class="fa fa-warning" />
                         </div>
-                        <div ng-if="!record.isDotted">
+                        <div class="wrap-long-text" ng-if="!record.isDotted">
                             {{record.name}}
                         </div>
                     </td>
-                    <td>{{record.type}}</td>
-                    <td>{{record.ttl}}</td>
-                    <td>
+                    <td class="wrap-long-text">{{record.type}}</td>
+                    <td class="wrap-long-text">{{record.ttl}}</td>
+                    <td class="record-data">
                         <span ng-if="record.accessLevel != 'NoAccess'">
                         <span ng-if="record.type == 'A'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.aRecordData track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.aRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
                                 <span ng-if="record.onlyFour && record.aRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">Show more...</a>
@@ -137,7 +137,7 @@
                         </span>
                         <span ng-if="record.type == 'AAAA'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.aaaaRecordData track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.aaaaRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
                                 <span ng-if="record.onlyFour && record.aaaaRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">Show more...</a>
@@ -150,7 +150,7 @@
                         <span ng-if="record.type == 'CNAME'">{{ record.cnameRecordData }}</span>
                         <span ng-if="record.type == 'DS'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.dsItems track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.dsItems track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">
                                     Keytag: {{ item.keytag }} | Algorithm: {{ item.algorithm }} | Digest Type: {{ item.digesttype }} | Digest: {{ item.digest }}
                                 </li>
@@ -164,7 +164,7 @@
                         </span>
                         <span ng-if="record.type == 'MX'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.mxItems track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.mxItems track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">
                                     Preference: {{ item.preference }} | Exchange: {{ item.exchange }}
                                 </li>
@@ -178,7 +178,7 @@
                         </span>
                         <span ng-if="record.type == 'NS'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.nsRecordData track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.nsRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
                                 <span ng-if="record.onlyFour && record.nsRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">Show more...</a>
@@ -190,7 +190,7 @@
                         </span>
                         <span ng-if="record.type == 'PTR'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.ptrRecordData track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.ptrRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
                                 <span ng-if="record.onlyFour && record.ptrRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">Show more...</a>
@@ -203,38 +203,38 @@
                         <span ng-if="record.type == 'SOA'">
                             <table>
                                 <tr>
-                                    <td> Mname: </td>
-                                    <td> {{ record.soaMName }} </td>
+                                    <td class="record-data-label"> Mname: </td>
+                                    <td class="wrap-long-text"> {{ record.soaMName }} </td>
                                 </tr>
                                 <tr>
-                                    <td> Rname: </td>
-                                    <td> {{ record.soaRName }} </td>
+                                    <td class="record-data-label"> Rname: </td>
+                                    <td class="wrap-long-text"> {{ record.soaRName }} </td>
                                 </tr>
                                 <tr>
-                                    <td> Serial: </td>
-                                    <td> {{ record.soaSerial }} </td>
+                                    <td class="record-data-label"> Serial: </td>
+                                    <td class="wrap-long-text"> {{ record.soaSerial }} </td>
                                 </tr>
                                 <tr>
-                                    <td> Refresh: </td>
-                                    <td> {{ record.soaRefresh }} </td>
+                                    <td class="record-data-label"> Refresh: </td>
+                                    <td class="wrap-long-text"> {{ record.soaRefresh }} </td>
                                 </tr>
                                 <tr>
-                                    <td> Retry: </td>
-                                    <td> {{ record.soaRetry }} </td>
+                                    <td class="record-data-label"> Retry: </td>
+                                    <td class="wrap-long-text"> {{ record.soaRetry }} </td>
                                 </tr>
                                 <tr>
-                                    <td> Expire: </td>
-                                    <td> {{ record.soaExpire }} </td>
+                                    <td class="record-data-label"> Expire: </td>
+                                    <td class="wrap-long-text"> {{ record.soaExpire }} </td>
                                 </tr>
                                 <tr>
-                                    <td> Minimum:&emsp; </td>
-                                    <td> {{ record.soaMinimum }} </td>
+                                    <td class="record-data-label"> Minimum:&emsp; </td>
+                                    <td class="wrap-long-text"> {{ record.soaMinimum }} </td>
                                 </tr>
                             </table>
                         </span>
                         <span ng-if="record.type == 'SPF'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.spfRecordData track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.spfRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
                                 <span ng-if="record.onlyFour && record.spfRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">Show more...</a>
@@ -246,7 +246,7 @@
                         </span>
                         <span ng-if="record.type == 'SRV'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.srvItems track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.srvItems track by $index"
                                 ng-if="!record.onlyFour || $index <= 3">
                                     Priority: {{ item.priority }} | Weight: {{ item.weight }} | Port: {{ item.port }}
                                     | Target: {{ item.target }}
@@ -261,7 +261,7 @@
                         </span>
                         <span ng-if="record.type == 'NAPTR'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.naptrItems track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.naptrItems track by $index"
                                 ng-if="!record.onlyFour || $index <= 3">
                                     Order: {{ item.order }} | Preference: {{ item.preference }} | Flags: {{ item.flags }}
                                     | Service: {{ item.service }} | Regexp: {{ item.regexp }} | Replacement: {{ item.replacement }}
@@ -276,7 +276,7 @@
                         </span>
                         <span ng-if="record.type == 'SSHFP'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.sshfpItems track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.sshfpItems track by $index"
                                 ng-if="!record.onlyFour || $index <= 3">
                                     Algorithm: {{ sshfpAlgorithms[item.algorithm-1].name }}
                                     | Type: {{ sshfpTypes[item.type-1].name }}
@@ -292,7 +292,7 @@
                         </span>
                         <span ng-if="record.type == 'TXT'">
                             <ul class="table-cell-list">
-                                <li ng-repeat="item in record.textRecordData track by $index"
+                                <li class="wrap-long-text" ng-repeat="item in record.textRecordData track by $index"
                                     ng-if="!record.onlyFour || $index <= 3">{{item}}</li>
                                 <span ng-if="record.onlyFour && record.textRecordData.length > 4">
                                     <a href ng-click="record.onlyFour=false">Show more...</a>

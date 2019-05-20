@@ -401,3 +401,11 @@ input[type="file"] {
     display: flex;
     justify-content: flex-end;
 }
+
+.wrap-long-text {
+    word-break: break-all;
+}
+
+.record-data-label {
+    vertical-align: top;
+}
