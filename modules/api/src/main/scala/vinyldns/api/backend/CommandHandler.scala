@@ -29,6 +29,7 @@ import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.duration._
+import vinyldns.core.notifier.AllNotifiers
 
 object CommandHandler {
 
@@ -182,12 +183,13 @@ object CommandHandler {
       recordSetRepo: RecordSetRepository,
       recordChangeRepo: RecordChangeRepository,
       batchChangeRepo: BatchChangeRepository,
+      notifiers: AllNotifiers,
       connections: ConfiguredDnsConnections)(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
       ZoneChangeHandler(zoneRepo, zoneChangeRepo, recordSetRepo)
     val recordChangeHandler =
-      RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo)
+      RecordSetChangeHandler(recordSetRepo, recordChangeRepo, batchChangeRepo, notifiers)
     val zoneSyncHandler =
       ZoneSyncHandler(recordSetRepo, recordChangeRepo, zoneChangeRepo, zoneRepo)
 

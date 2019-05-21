@@ -62,6 +62,15 @@ class MySqlBatchChangeRepository
          | WHERE bc.id = ?
         """.stripMargin
 
+  private final val GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE =
+    sql"""
+         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id
+         |  FROM single_change sc
+         |  JOIN batch_change bc
+         |    ON sc.batch_change_id = bc.id
+         | WHERE sc.id = ?
+        """.stripMargin
+
   private final val GET_BATCH_CHANGE_SUMMARY =
     sql"""
          |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
@@ -118,34 +127,59 @@ class MySqlBatchChangeRepository
       batchChangeFuture.value
     }
 
-  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]] =
-    monitor("repo.BatchChangeJDBC.updateSingleChanges") {
-      logger.info(
-        s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}")
-      IO {
-        DB.localTx { implicit s =>
-          val batchParams = singleChanges.map { singleChange =>
-            toPB(singleChange) match {
-              case Right(data) =>
-                val changeType = SingleChangeType.from(singleChange)
-                Seq(
-                  'inputName -> singleChange.inputName,
-                  'changeType -> changeType.toString,
-                  'data -> data.toByteArray,
-                  'status -> singleChange.status.toString,
-                  'recordSetChangeId -> singleChange.recordChangeId,
-                  'recordSetId -> singleChange.recordSetId,
-                  'zoneId -> singleChange.zoneId,
-                  'id -> singleChange.id
-                )
-              case Left(e) => throw e
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]] =
+    if (singleChanges.isEmpty)
+      IO.pure(None)
+    else
+      monitor("repo.BatchChangeJDBC.updateSingleChanges") {
+        logger.info(
+          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}")
+        IO {
+          DB.localTx { implicit s =>
+            val batchParams = singleChanges.map { singleChange =>
+              toPB(singleChange) match {
+                case Right(data) =>
+                  val changeType = SingleChangeType.from(singleChange)
+                  Seq(
+                    'inputName -> singleChange.inputName,
+                    'changeType -> changeType.toString,
+                    'data -> data.toByteArray,
+                    'status -> singleChange.status.toString,
+                    'recordSetChangeId -> singleChange.recordChangeId,
+                    'recordSetId -> singleChange.recordSetId,
+                    'zoneId -> singleChange.zoneId,
+                    'id -> singleChange.id
+                  )
+                case Left(e) => throw e
+              }
             }
+            UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
+            GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
+              .bind(singleChanges.head.id)
+              .map { result =>
+                BatchChange(
+                  result.string("user_id"),
+                  result.string("user_name"),
+                  Option(result.string("comments")),
+                  new org.joda.time.DateTime(result.timestamp("created_time")),
+                  Nil,
+                  Option(result.string("owner_group_id")),
+                  result.string("id")
+                )
+              }
+              .first
+              .apply()
+              .map { batchMeta =>
+                val changes = GET_SINGLE_CHANGES_BY_BCID
+                  .bind(batchMeta.id)
+                  .map(extractSingleChange(1))
+                  .list()
+                  .apply()
+                batchMeta.copy(changes = changes)
+              }
           }
-          UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
-          singleChanges
         }
       }
-    }
 
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] =
     if (singleChangeIds.isEmpty) {

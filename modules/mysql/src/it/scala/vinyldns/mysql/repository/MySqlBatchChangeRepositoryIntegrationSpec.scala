@@ -253,7 +253,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     "not fail on empty update single changes" in {
       val f = repo.updateSingleChanges(List())
 
-      f.unsafeRunSync() shouldBe List()
+      f.unsafeRunSync() shouldBe None
     }
 
     "update some changes in a batch" in {

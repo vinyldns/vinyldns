@@ -112,7 +112,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     batchChange.copy(changes = withStatus)
   }
 
-  def storeQueuingFailures(batchChange: BatchChange): BatchResult[List[SingleChange]] = {
+  def storeQueuingFailures(batchChange: BatchChange): BatchResult[Option[BatchChange]] = {
     val failedChanges = batchChange.changes.collect {
       case change if change.status == SingleChangeStatus.Failed => change
     }

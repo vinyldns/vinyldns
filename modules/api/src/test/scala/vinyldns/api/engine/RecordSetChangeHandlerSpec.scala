@@ -35,6 +35,8 @@ import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSet
 import vinyldns.core.TestRecordSetData._
 
 import scala.concurrent.ExecutionContext
+import vinyldns.core.notifier.{AllNotifiers, Notifier}
+import cats.effect.ContextShift
 
 class RecordSetChangeHandlerSpec
     extends WordSpec
@@ -50,6 +52,7 @@ class RecordSetChangeHandlerSpec
   private val mockDnsMessage = mock[DNS.Message]
   private val rsRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
   private val changeRepoCaptor = ArgumentCaptor.forClass(classOf[ChangeSet])
+  private val mockNotifier = mock[Notifier]
 
   private val batchRepo = new InMemoryBatchChangeRepository
 
@@ -89,11 +92,13 @@ class RecordSetChangeHandlerSpec
   private val cs = ChangeSet(rsChange)
 
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
-  private val underTest = RecordSetChangeHandler(mockRsRepo, mockChangeRepo, batchRepo)
+  private val underTest =
+    RecordSetChangeHandler(mockRsRepo, mockChangeRepo, batchRepo, AllNotifiers(List(mockNotifier)))
 
   override protected def beforeEach(): Unit = {
-    reset(mockConn, mockRsRepo, mockChangeRepo)
+    reset(mockConn, mockRsRepo, mockChangeRepo, mockNotifier)
     batchRepo.clear()
 
     // seed the linked batch change in the DB
@@ -102,6 +107,7 @@ class RecordSetChangeHandlerSpec
     doReturn(IO.pure(Nil))
       .when(mockRsRepo)
       .getRecordSets(anyString, anyString, any(classOf[RecordType]))
+
   }
 
   "Handling Pending Changes" should {
