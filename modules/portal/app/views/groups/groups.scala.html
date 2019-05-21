@@ -58,9 +58,9 @@
                             </thead>
                             <tbody>
                                 <tr ng-repeat="group in groups.items | orderBy:'+name'">
-                                    <td>{{group.name}}</td>
-                                    <td>{{group.email}}</td>
-                                    <td>{{group.description}}</td>
+                                    <td class="wrap-long-text">{{group.name}}</td>
+                                    <td class="wrap-long-text">{{group.email}}</td>
+                                    <td class="wrap-long-text">{{group.description}}</td>
                                     <td>
                                         <div class="table-form-group">
                                             <a class="btn btn-info btn-rounded" ng-href="/groups/{{group.id}}">
