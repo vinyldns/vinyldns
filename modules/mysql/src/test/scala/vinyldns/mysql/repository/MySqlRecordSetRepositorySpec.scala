@@ -17,6 +17,7 @@
 package vinyldns.mysql.repository
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.record.RecordType
+import vinyldns.core.TestRecordSetData.aaaa
 
 class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
   import MySqlRecordSetRepository._
@@ -68,6 +69,45 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
       toFQDN(zoneNameWithDot, recordName) shouldBe expected
       toFQDN(zoneName, recordNameWithDot) shouldBe expected
       toFQDN(zoneNameWithDot, recordNameWithDot) shouldBe expected
+    }
+  }
+
+  "PagingKey.fromStartFrom" should {
+    "return None if startFrom is None" in {
+      PagingKey.fromStartFrom(None) shouldBe None
+    }
+
+    "return None if startFrom is malformed" in {
+      val empty = ""
+      val noDelimiter = "nodelim"
+      val justDelimiter = s"${PagingKey.delimiter}"
+      val noType = s"name${PagingKey.delimiter}"
+
+      PagingKey.fromStartFrom(Some(empty)) shouldBe None
+      PagingKey.fromStartFrom(Some(noDelimiter)) shouldBe None
+      PagingKey.fromStartFrom(Some(justDelimiter)) shouldBe None
+      PagingKey.fromStartFrom(Some(noType)) shouldBe None
+    }
+
+    "return None if type is not an Int" in {
+      val startFrom = s"name${PagingKey.delimiter}notNumber"
+      PagingKey.fromStartFrom(Some(startFrom)) shouldBe None
+    }
+
+    "return correct PagingKey" in {
+      val expected = PagingKey("name", 5)
+      val startFrom = s"${expected.recordName}${PagingKey.delimiter}${expected.recordType}"
+      PagingKey.fromStartFrom(Some(startFrom)) shouldBe Some(expected)
+    }
+  }
+
+  "PagingKey.toNextId" should {
+    "return correct NextId" in {
+      val expectedName = "name"
+      val expectedType = MySqlRecordSetRepository.fromRecordType(RecordType.CNAME)
+      val last = aaaa.copy(name = expectedName, typ = RecordType.CNAME)
+
+      PagingKey.toNextId(last) shouldBe s"$expectedName${PagingKey.delimiter}$expectedType"
     }
   }
 }
