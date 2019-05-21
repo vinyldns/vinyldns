@@ -27,7 +27,7 @@
             <thead>
                 <tr>
                     <th>Time</th>
-                    <th>Recordset Name</th>
+                    <th class="col-md-5">Recordset Name</th>
                     <th>Recordset Type</th>
                     <th>Change Type</th>
                     <th>User</th>
@@ -38,14 +38,14 @@
             <tbody>
                 <tr ng-repeat="change in recordsetChanges track by $index">
                     <td>{{change.created}}</td>
-                    <td>{{change.recordSet.name}}</td>
+                    <td class="wrap-long-text">{{change.recordSet.name}}</td>
                     <td>{{change.recordSet.type}}</td>
                     <td>{{change.changeType}}</td>
                     <td>{{change.userName}}</td>
                     <td>
                         <span class="label label-{{ getRecordChangeStatusLabel(change.status) }}">{{ change.status }}</span>
                     </td>
-                    <td class="col-md-3">
+                    <td class="col-md-3 wrap-long-text">
                         {{change.systemMessage}}
                         <div ng-if="change.status !='Failed'">
                             <a ng-if="change.changeType =='Create'" ng-click="viewRecordInfo(change.recordSet)" class="force-cursor">View created recordset</a>
