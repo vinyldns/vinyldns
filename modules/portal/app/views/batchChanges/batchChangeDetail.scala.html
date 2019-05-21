@@ -95,28 +95,28 @@
                                 <!--record data name based on record type-->
                                     <td ng-if="change.type=='A'||change.type=='AAAA'">
                                         <ul>
-                                            <li>{{change.record.address}}</li>
+                                            <li class="wrap-long-text">{{change.record.address}}</li>
                                         </ul>
                                     </td>
                                     <td ng-if="change.type=='CNAME'">
                                         <ul>
-                                            <li>{{change.record.cname}}</li>
+                                            <li class="wrap-long-text">{{change.record.cname}}</li>
                                         </ul>
                                     </td>
                                     <td ng-if="change.type=='PTR'">
                                         <ul>
-                                            <li>{{change.record.ptrdname}}</li>
+                                            <li class="wrap-long-text">{{change.record.ptrdname}}</li>
                                         </ul>
                                     </td>
                                     <td ng-if="change.type=='TXT'">
                                         <ul>
-                                            <li>{{change.record.text}}</li>
+                                            <li class="wrap-long-text">{{change.record.text}}</li>
                                         </ul>
                                     </td>
                                     <td ng-if="change.type=='MX'">
                                         <ul>
-                                            <li>Preference: {{change.record.preference}}</li>
-                                            <li>Exchange: {{change.record.exchange}}</li>
+                                            <li class="wrap-long-text">Preference: {{change.record.preference}}</li>
+                                            <li class="wrap-long-text">Exchange: {{change.record.exchange}}</li>
                                         </ul>
                                     </td>
                                 <!--end record data name based on record type-->
@@ -127,7 +127,7 @@
                                     <span ng-if="change.status =='Failed'" class="label label-danger">{{change.status}}</span>
 
                                 </td>
-                                <td>{{change.systemMessage}}</td>
+                                <td class="wrap-long-text">{{change.systemMessage}}</td>
                             </tr>
                             </tbody>
                         </table>
