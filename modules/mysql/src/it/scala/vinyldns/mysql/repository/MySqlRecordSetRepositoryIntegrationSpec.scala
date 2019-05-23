@@ -341,10 +341,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
       found.recordSets should contain theSameElementsInOrderAs existing.slice(2, 4)
     }
     "return the record sets after startFrom respecting maxItems and filter" in {
-      // load some deterministic names so we can filter and respect max items
       val recordNames = List("aaa", "bbb", "ccc", "ddd", "eeez", "fffz", "ggg", "hhhz", "iii", "jjj")
-
-      // our search will be filtered by records with "z"
       val expectedNames = recordNames.filter(_.contains("z"))
 
       val newRecordSets =
@@ -359,9 +356,58 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val changes = newRecordSets.map(makeTestAddChange(_, okZone))
       insert(changes)
 
-      // start after the second, pulling 3 records that have "z"
       val startFrom = Some(newRecordSets(1).name)
-      val found = repo.listRecordSets(okZone.id, startFrom, Some(3), Some("z")).unsafeRunSync()
+      val found = repo.listRecordSets(okZone.id, startFrom, Some(3), Some("*z*")).unsafeRunSync()
+      found.recordSets.map(_.name) should contain theSameElementsInOrderAs expectedNames
+    }
+    "return record sets using starts with wildcard" in {
+      val recordNames = List("aaa", "aab", "ccc")
+      val expectedNames = recordNames.filter(_.startsWith("aa"))
+
+      val newRecordSets =
+        for {
+          n <- recordNames
+        } yield
+          aaaa.copy(
+            zoneId = okZone.id,
+            name = n,
+            id = UUID.randomUUID().toString)
+
+      val changes = newRecordSets.map(makeTestAddChange(_, okZone))
+      insert(changes)
+
+      val found = repo.listRecordSets(okZone.id, None, Some(3), Some("aa*")).unsafeRunSync()
+      found.recordSets.map(_.name) should contain theSameElementsInOrderAs expectedNames
+    }
+    "return record sets using ends with wildcard" in {
+      val recordNames = List("aaa", "aab", "ccb")
+      val expectedNames = recordNames.filter(_.endsWith("b"))
+
+      val newRecordSets =
+        for {
+          n <- recordNames
+        } yield aaaa.copy(zoneId = okZone.id, name = n, id = UUID.randomUUID().toString)
+
+      val changes = newRecordSets.map(makeTestAddChange(_, okZone))
+      insert(changes)
+
+      val found = repo.listRecordSets(okZone.id, None, Some(3), Some("*b")).unsafeRunSync()
+      found.recordSets.map(_.name) should contain theSameElementsInOrderAs expectedNames
+    }
+    "return record sets exact match with no wildcards" in {
+      // load some deterministic names so we can filter and respect max items
+      val recordNames = List("aaa", "aab", "ccb")
+      val expectedNames = List("aaa")
+
+      val newRecordSets =
+        for {
+          n <- recordNames
+        } yield aaaa.copy(zoneId = okZone.id, name = n, id = UUID.randomUUID().toString)
+
+      val changes = newRecordSets.map(makeTestAddChange(_, okZone))
+      insert(changes)
+
+      val found = repo.listRecordSets(okZone.id, None, Some(3), Some("aaa")).unsafeRunSync()
       found.recordSets.map(_.name) should contain theSameElementsInOrderAs expectedNames
     }
     "pages through the list properly" in {

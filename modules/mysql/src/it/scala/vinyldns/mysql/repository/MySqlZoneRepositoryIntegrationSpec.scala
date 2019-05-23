@@ -384,7 +384,7 @@ class MySqlZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-          retrieved <- repo.listZones(superUserAuth, zoneNameFilter = Some("system"))
+          retrieved <- repo.listZones(superUserAuth, zoneNameFilter = Some("system*"))
         } yield retrieved
 
       f.unsafeRunSync().zones should contain theSameElementsAs expectedZones
@@ -405,7 +405,69 @@ class MySqlZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system"))
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"))
+        } yield retrieved
+
+      f.unsafeRunSync().zones should contain theSameElementsInOrderAs expectedZones
+    }
+
+    "support starts with wildcard" in {
+
+      val testZones = Seq(
+        testZone("system-test", adminGroupId = "foo"),
+        testZone("system-temp", adminGroupId = "foo"),
+        testZone("system-nomatch", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(0), testZones(1)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"))
+        } yield retrieved
+
+      f.unsafeRunSync().zones should contain theSameElementsInOrderAs expectedZones
+    }
+
+    "support ends with wildcard" in {
+
+      val testZones = Seq(
+        testZone("system-test", adminGroupId = "foo"),
+        testZone("system-temp", adminGroupId = "foo"),
+        testZone("system-nomatch", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(0))
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("*test"))
+        } yield retrieved
+
+      f.unsafeRunSync().zones should contain theSameElementsInOrderAs expectedZones
+    }
+
+    "support contains wildcard" in {
+      val testZones = Seq(
+        testZone("system-jokerswild", adminGroupId = "foo"),
+        testZone("system-wildcard", adminGroupId = "foo"),
+        testZone("system-nomatch", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(0), testZones(1))
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("*wild*"))
         } yield retrieved
 
       f.unsafeRunSync().zones should contain theSameElementsInOrderAs expectedZones
