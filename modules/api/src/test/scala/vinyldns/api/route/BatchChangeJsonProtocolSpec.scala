@@ -374,6 +374,10 @@ class BatchChangeJsonProtocolSpec
         time,
         List(add, delete),
         None,
+        None,
+        None,
+        None,
+        None,
         "someId")
       val result = BatchChangeSerializer.toJson(batchChange)
 
@@ -423,6 +427,10 @@ class BatchChangeJsonProtocolSpec
         time,
         List(add, delete),
         Some("groupId"),
+        None,
+        None,
+        None,
+        None,
         "someId")
 
       val batchChangeInfo = BatchChangeInfo(batchChange, Some("groupName"))

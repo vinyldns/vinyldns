@@ -91,6 +91,10 @@ class BatchChangeRoutingSpec
             "singleDeleteChangeId")
         ),
         ownerGroupId,
+        None,
+        None,
+        None,
+        None,
         "batchId"
       )
 
