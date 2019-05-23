@@ -209,36 +209,36 @@ def test_list_recordsets_default_size_is_100(rs_fixture):
 
 def test_list_recordsets_duplicate_names(rs_fixture):
     """
-    Test that paging keys work for records with duplicate names, in this SOA and NS
+    Test that paging keys work for records with duplicate names
     """
     client = rs_fixture.client
     ok_zone = rs_fixture.test_context
 
-    apex_ns = False
-    apex_soa = False
+    created = []
 
-    start_key = None
-    offset = 0
-    while offset < 17:
-        list_results = client.list_recordsets(ok_zone['id'], status=200, start_from=start_key, max_items=1)
-        rs_fixture.check_recordsets_page_accuracy(list_results, size=1, offset=offset, nextId=True,
-                                                  startFrom=start_key, maxItems=1)
-        start_key = list_results['nextId']
-        offset = offset + 1
+    try:
+        record_data_a = [{'address': '1.1.1.1'}]
+        record_data_txt = [{'text': 'some=value'}]
 
-        record = list_results['recordSets'][0]
-        if record['name'] == "ok.":
-            if record['type'] == "SOA":
-                apex_soa = True
-            if record['type'] == "NS":
-                apex_ns = True
+        record_json_a = get_recordset_json(ok_zone, '0', 'A', record_data_a, ttl=100)
+        record_json_txt = get_recordset_json(ok_zone, '0', 'TXT', record_data_txt, ttl=100)
 
-    list_results = client.list_recordsets(ok_zone['id'], status=200, max_items=1, start_from=start_key)
-    rs_fixture.check_recordsets_page_accuracy(list_results, size=0, offset=offset, nextId=False,
-                                              maxItems=1, startFrom=start_key)
+        create_response = client.create_recordset(record_json_a, status=202)
+        created.append(client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']['id'])
 
-    assert_that(apex_ns, is_(True))
-    assert_that(apex_soa, is_(True))
+        create_response = client.create_recordset(record_json_txt, status=202)
+        created.append(client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']['id'])
+
+        list_results = client.list_recordsets(ok_zone['id'], status=200, start_from=None, max_items=1)
+        assert_that(list_results['recordSets'][0]['id'], is_(created[0]))
+
+        list_results = client.list_recordsets(ok_zone['id'], status=200, start_from=list_results['nextId'], max_items=1)
+        assert_that(list_results['recordSets'][0]['id'], is_(created[1]))
+
+    finally:
+        for id in created:
+            client.delete_recordset(ok_zone['id'], id, status=202)
+            client.wait_until_recordset_deleted(ok_zone['id'], id)
 
 
 def test_list_recordsets_with_record_name_filter_all(rs_fixture):

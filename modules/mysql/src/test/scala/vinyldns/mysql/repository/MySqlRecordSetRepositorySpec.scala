@@ -74,30 +74,32 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
 
   "PagingKey.fromStartFrom" should {
     "return None if startFrom is None" in {
-      PagingKey.fromStartFrom(None) shouldBe None
+      PagingKey(None) shouldBe None
     }
 
     "return None if startFrom is malformed" in {
       val empty = ""
       val noDelimiter = "nodelim"
       val justDelimiter = s"${PagingKey.delimiter}"
+      val noName = s"${PagingKey.delimiter}1"
       val noType = s"name${PagingKey.delimiter}"
 
-      PagingKey.fromStartFrom(Some(empty)) shouldBe None
-      PagingKey.fromStartFrom(Some(noDelimiter)) shouldBe None
-      PagingKey.fromStartFrom(Some(justDelimiter)) shouldBe None
-      PagingKey.fromStartFrom(Some(noType)) shouldBe None
+      PagingKey(Some(empty)) shouldBe None
+      PagingKey(Some(noDelimiter)) shouldBe None
+      PagingKey(Some(justDelimiter)) shouldBe None
+      PagingKey(Some(noName)) shouldBe None
+      PagingKey(Some(noType)) shouldBe None
     }
 
     "return None if type is not an Int" in {
       val startFrom = s"name${PagingKey.delimiter}notNumber"
-      PagingKey.fromStartFrom(Some(startFrom)) shouldBe None
+      PagingKey(Some(startFrom)) shouldBe None
     }
 
     "return correct PagingKey" in {
       val expected = PagingKey("name", 5)
       val startFrom = s"${expected.recordName}${PagingKey.delimiter}${expected.recordType}"
-      PagingKey.fromStartFrom(Some(startFrom)) shouldBe Some(expected)
+      PagingKey(Some(startFrom)) shouldBe Some(expected)
     }
   }
 

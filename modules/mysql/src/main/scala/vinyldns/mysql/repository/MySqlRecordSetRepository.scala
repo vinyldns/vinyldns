@@ -185,7 +185,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
-          val pagingKey = PagingKey.fromStartFrom(startFrom)
+          val pagingKey = PagingKey(startFrom)
 
           // make sure we sort ascending, so we can do the correct comparison later
           val opts =
@@ -370,19 +370,21 @@ object MySqlRecordSetRepository extends ProtobufConversions {
   case class PagingKey(recordName: String, recordType: Int)
 
   object PagingKey {
-    val delimiterRegex = "<recordName\\.\\.\\.\\.recordType>"
-    val delimiter = "<recordName....recordType>"
+    val delimiterRegex = "<\\.\\.\\.\\.>"
+    val delimiter = "<....>"
 
-    def fromStartFrom(startFrom: Option[String]): Option[PagingKey] =
+    def apply(startFrom: Option[String]): Option[PagingKey] =
       startFrom.flatMap { sf =>
         val tokens = sf.split(delimiterRegex)
         if (tokens.length != 2) None
         else {
           val recordName = tokens.head
-          Try(tokens(1).toInt) match {
-            case Success(recordType) => Some(PagingKey(recordName, recordType))
-            case Failure(_) => None
-          }
+          if (recordName.isEmpty) None
+          else
+            Try(tokens(1).toInt) match {
+              case Success(recordType) => Some(PagingKey(recordName, recordType))
+              case Failure(_) => None
+            }
         }
       }
 
