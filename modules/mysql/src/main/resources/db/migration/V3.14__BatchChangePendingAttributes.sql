@@ -2,7 +2,7 @@ CREATE SCHEMA IF NOT EXISTS ${dbName};
 
 USE ${dbName};
 
-ALTER TABLE batch_change ADD approval_status CHAR(20) NULL;
+ALTER TABLE batch_change ADD approval_status VARCHAR(20) NULL;
 ALTER TABLE batch_change ADD reviewer_id CHAR(36) NULL;
 ALTER TABLE batch_change ADD review_comment VARCHAR(1024) NULL;
 ALTER TABLE batch_change ADD review_timestamp DATETIME NULL;
