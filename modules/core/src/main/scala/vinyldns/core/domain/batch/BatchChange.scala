@@ -20,6 +20,7 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 
 case class BatchChange(
     userId: String,
@@ -28,6 +29,10 @@ case class BatchChange(
     createdTimestamp: DateTime,
     changes: List[SingleChange],
     ownerGroupId: Option[String] = None,
+    approvalStatus: Option[BatchChangeApprovalStatus] = None,
+    reviewerId: Option[String] = None,
+    reviewComment: Option[String] = None,
+    reviewTimestamp: Option[DateTime] = None,
     id: String = UUID.randomUUID().toString) {
   val status: BatchChangeStatus = {
     val singleStatuses = changes.map(_.status)
@@ -59,6 +64,11 @@ object BatchChangeStatus extends Enumeration {
       case (_, true, false) => BatchChangeStatus.Failed
       case _ => BatchChangeStatus.Complete
     }
+}
+
+object BatchChangeApprovalStatus extends Enumeration {
+  type BatchChangeApprovalStatus = Value
+  val AutoApproved, PendingApproval, ManuallyApproved, ManuallyRejected = Value
 }
 
 case class BatchChangeInfo(
