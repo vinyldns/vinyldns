@@ -100,7 +100,7 @@ class FrontendController @Inject()(
   }
 
   def index(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.batchChanges.batchChangeNew(request.user.userName)))
+    Future(Ok(views.html.batchChanges.batchChanges(request.user.userName)))
   }
 
   def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>
