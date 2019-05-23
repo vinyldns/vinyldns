@@ -364,13 +364,13 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
-      "render the batch changes view page when the user is logged in" in new WithApplication(app) {
+      "render the new batch change view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewNewBatchChange()(
             FakeRequest(GET, "/batchchanges/new").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
-        contentAsString(result) must contain("Batch Changes | VinylDNS")
+        contentAsString(result) must contain("New Batch Change | VinylDNS")
       }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
