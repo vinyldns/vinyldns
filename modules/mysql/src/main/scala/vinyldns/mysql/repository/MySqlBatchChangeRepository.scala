@@ -65,10 +65,9 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE =
     sql"""
          |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id
-         |  FROM single_change sc
-         |  JOIN batch_change bc
+         |  FROM batch_change bc
+         |  JOIN (SELECT id, batch_change_id from single_change where id = ?) sc
          |    ON sc.batch_change_id = bc.id
-         | WHERE sc.id = ?
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_SUMMARY =
@@ -156,17 +155,7 @@ class MySqlBatchChangeRepository
             UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
             GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
               .bind(singleChanges.head.id)
-              .map { result =>
-                BatchChange(
-                  result.string("user_id"),
-                  result.string("user_name"),
-                  Option(result.string("comments")),
-                  new org.joda.time.DateTime(result.timestamp("created_time")),
-                  Nil,
-                  Option(result.string("owner_group_id")),
-                  result.string("id")
-                )
-              }
+              .map(extractBatchChange(None))
               .first
               .apply()
               .map { batchMeta =>
@@ -254,22 +243,25 @@ class MySqlBatchChangeRepository
         DB.readOnly { implicit s =>
           GET_BATCH_CHANGE_METADATA
             .bind(batchChangeId)
-            .map { result =>
-              BatchChange(
-                result.string("user_id"),
-                result.string("user_name"),
-                Option(result.string("comments")),
-                new org.joda.time.DateTime(result.timestamp("created_time")),
-                Nil,
-                Option(result.string("owner_group_id")),
-                batchChangeId
-              )
-            }
+            .map(extractBatchChange(Some(batchChangeId)))
             .first
             .apply()
         }
       }
     }
+
+  private def extractBatchChange(batchChangeId: Option[String]): WrappedResultSet => BatchChange = {
+    result =>
+      BatchChange(
+        result.string("user_id"),
+        result.string("user_name"),
+        Option(result.string("comments")),
+        new org.joda.time.DateTime(result.timestamp("created_time")),
+        Nil,
+        Option(result.string("owner_group_id")),
+        batchChangeId.getOrElse(result.string("id"))
+      )
+  }
 
   private def saveBatchChange(batchChange: BatchChange)(
       implicit session: DBSession): BatchChange = {
