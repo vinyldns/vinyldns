@@ -393,7 +393,7 @@ class MySqlZoneRepositoryIntegrationSpec
     "apply the zone filter as a normal user" in {
 
       val testZones = Seq(
-        testZone("system-tes.t", adminGroupId = "foo"),
+        testZone("system-test.", adminGroupId = "foo"),
         testZone("system-temp.", adminGroupId = "foo"),
         testZone("system-nomatch.", adminGroupId = "bar")
       )
