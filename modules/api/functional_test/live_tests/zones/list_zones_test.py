@@ -231,7 +231,7 @@ def test_list_zones_with_search_last_page(list_zones_context):
     """
     Test that the second page of listing zones returns correctly when a name filter is provided
     """
-    result = list_zones_context.client.list_zones(name_filter='*searched*', start_from="list-zones-test-searched-2.", max_items=2, status=200)
+    result = list_zones_context.client.list_zones(name_filter='*test-searched-3', start_from="list-zones-test-searched-2.", max_items=2, status=200)
     zones = result['zones']
 
     assert_that(zones, has_length(1))
@@ -239,5 +239,5 @@ def test_list_zones_with_search_last_page(list_zones_context):
 
     assert_that(result, is_not(has_key('nextId')))
     assert_that(result['maxItems'], is_(2))
-    assert_that(result['nameFilter'], is_('*searched*'))
+    assert_that(result['nameFilter'], is_('*test-searched-3'))
     assert_that(result['startFrom'], is_('list-zones-test-searched-2.'))
