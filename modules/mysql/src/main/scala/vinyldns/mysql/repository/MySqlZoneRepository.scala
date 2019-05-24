@@ -27,6 +27,7 @@ import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository, ZoneSt
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
+import vinyldns.core.domain.DomainHelpers._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -228,7 +229,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           sb.append(withAccessorCheck)
 
           val filters = List(
-            zoneNameFilter.map(flt => s"z.name LIKE '${flt.replace('*', '%')}'"),
+            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
             startFrom.map(os => s"z.name > '$os'")
           ).flatten
 
