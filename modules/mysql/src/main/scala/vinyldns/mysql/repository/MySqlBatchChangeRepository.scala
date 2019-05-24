@@ -126,49 +126,55 @@ class MySqlBatchChangeRepository
       batchChangeFuture.value
     }
 
-  def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]] =
-    if (singleChanges.isEmpty)
-      IO.pure(None)
-    else
-      monitor("repo.BatchChangeJDBC.updateSingleChanges") {
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]] = {
+    def convertSingleChangeToParams(singleChange: SingleChange): Seq[(Symbol, AnyRef)] =
+      toPB(singleChange) match {
+        case Right(data) =>
+          val changeType = SingleChangeType.from(singleChange)
+          Seq(
+            'inputName -> singleChange.inputName,
+            'changeType -> changeType.toString,
+            'data -> data.toByteArray,
+            'status -> singleChange.status.toString,
+            'recordSetChangeId -> singleChange.recordChangeId,
+            'recordSetId -> singleChange.recordSetId,
+            'zoneId -> singleChange.zoneId,
+            'id -> singleChange.id
+          )
+        case Left(e) => throw e
+      }
+
+    def getBatchFromSingleChangeId(singleChangeId: String)(
+        implicit s: DBSession): Option[BatchChange] =
+      GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
+        .bind(singleChangeId)
+        .map(extractBatchChange(None))
+        .first
+        .apply()
+        .map { batchMeta =>
+          val changes = GET_SINGLE_CHANGES_BY_BCID
+            .bind(batchMeta.id)
+            .map(extractSingleChange(1))
+            .list()
+            .apply()
+          batchMeta.copy(changes = changes)
+        }
+
+    monitor("repo.BatchChangeJDBC.updateSingleChanges") {
+      IO {
         logger.info(
           s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}")
-        IO {
-          DB.localTx { implicit s =>
-            val batchParams = singleChanges.map { singleChange =>
-              toPB(singleChange) match {
-                case Right(data) =>
-                  val changeType = SingleChangeType.from(singleChange)
-                  Seq(
-                    'inputName -> singleChange.inputName,
-                    'changeType -> changeType.toString,
-                    'data -> data.toByteArray,
-                    'status -> singleChange.status.toString,
-                    'recordSetChangeId -> singleChange.recordChangeId,
-                    'recordSetId -> singleChange.recordSetId,
-                    'zoneId -> singleChange.zoneId,
-                    'id -> singleChange.id
-                  )
-                case Left(e) => throw e
-              }
-            }
-            UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
-            GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
-              .bind(singleChanges.head.id)
-              .map(extractBatchChange(None))
-              .first
-              .apply()
-              .map { batchMeta =>
-                val changes = GET_SINGLE_CHANGES_BY_BCID
-                  .bind(batchMeta.id)
-                  .map(extractSingleChange(1))
-                  .list()
-                  .apply()
-                batchMeta.copy(changes = changes)
-              }
-          }
+        DB.localTx { implicit s =>
+          for {
+            headChange <- singleChanges.headOption
+            batchParams = singleChanges.map(convertSingleChangeToParams)
+            _ = UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
+            batchChange <- getBatchFromSingleChangeId(headChange.id)
+          } yield batchChange
         }
       }
+    }
+  }
 
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] =
     if (singleChangeIds.isEmpty) {

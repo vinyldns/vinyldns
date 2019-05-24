@@ -55,10 +55,12 @@ object VinylDNSConfig {
 
   lazy val notifierConfigs: IO[List[NotifierConfig]] =
     vinyldnsConfig
-      .getConfigList("notifiers")
+      .getStringList("notifiers")
       .asScala
       .toList
-      .map(loadConfigF[IO, NotifierConfig](_))
+      .map { configKey =>
+        loadConfigF[IO, NotifierConfig](vinyldnsConfig, configKey)
+      }
       .parSequence
 
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
