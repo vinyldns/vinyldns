@@ -374,9 +374,9 @@ class MySqlZoneRepositoryIntegrationSpec
     "apply the zone filter as a super user" in {
 
       val testZones = Seq(
-        testZone("system-test"),
-        testZone("system-temp"),
-        testZone("no-match")
+        testZone("system-test."),
+        testZone("system-temp."),
+        testZone("no-match.")
       )
 
       val expectedZones = Seq(testZones(0), testZones(1))
@@ -393,9 +393,9 @@ class MySqlZoneRepositoryIntegrationSpec
     "apply the zone filter as a normal user" in {
 
       val testZones = Seq(
-        testZone("system-test", adminGroupId = "foo"),
-        testZone("system-temp", adminGroupId = "foo"),
-        testZone("system-nomatch", adminGroupId = "bar")
+        testZone("system-tes.t", adminGroupId = "foo"),
+        testZone("system-temp.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
       )
 
       val expectedZones = Seq(testZones(0), testZones(1)).sortBy(_.name)
@@ -414,9 +414,9 @@ class MySqlZoneRepositoryIntegrationSpec
     "support starts with wildcard" in {
 
       val testZones = Seq(
-        testZone("system-test", adminGroupId = "foo"),
-        testZone("system-temp", adminGroupId = "foo"),
-        testZone("system-nomatch", adminGroupId = "bar")
+        testZone("system-test.", adminGroupId = "foo"),
+        testZone("system-temp.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
       )
 
       val expectedZones = Seq(testZones(0), testZones(1)).sortBy(_.name)
@@ -435,9 +435,9 @@ class MySqlZoneRepositoryIntegrationSpec
     "support ends with wildcard" in {
 
       val testZones = Seq(
-        testZone("system-test", adminGroupId = "foo"),
-        testZone("system-temp", adminGroupId = "foo"),
-        testZone("system-nomatch", adminGroupId = "bar")
+        testZone("system-test.", adminGroupId = "foo"),
+        testZone("system-temp.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
       )
 
       val expectedZones = Seq(testZones(0))
@@ -455,9 +455,9 @@ class MySqlZoneRepositoryIntegrationSpec
 
     "support contains wildcard" in {
       val testZones = Seq(
-        testZone("system-jokerswild", adminGroupId = "foo"),
-        testZone("system-wildcard", adminGroupId = "foo"),
-        testZone("system-nomatch", adminGroupId = "bar")
+        testZone("system-jokerswild.", adminGroupId = "foo"),
+        testZone("system-wildcard.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
       )
 
       val expectedZones = Seq(testZones(0), testZones(1))
