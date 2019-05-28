@@ -33,6 +33,7 @@ import scala.util.matching.Regex
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, ZoneConnection}
 import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
+import vinyldns.core.notifier.NotifierConfig
 
 object VinylDNSConfig {
 
@@ -49,6 +50,16 @@ object VinylDNSConfig {
       .toList
       .map { configKey =>
         loadConfigF[IO, DataStoreConfig](vinyldnsConfig, configKey)
+      }
+      .parSequence
+
+  lazy val notifierConfigs: IO[List[NotifierConfig]] =
+    vinyldnsConfig
+      .getStringList("notifiers")
+      .asScala
+      .toList
+      .map { configKey =>
+        loadConfigF[IO, NotifierConfig](vinyldnsConfig, configKey)
       }
       .parSequence
 

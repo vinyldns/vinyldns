@@ -41,6 +41,7 @@ import vinyldns.core.repository.DataStoreLoader
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
+import vinyldns.core.notifier.NotifierLoader
 
 object Boot extends App {
 
@@ -86,6 +87,8 @@ object Boot extends App {
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
       msgsPerPoll <- IO.fromEither(MessageCount(queueConfig.messagesPerPoll))
       healthCheckTimeout <- VinylDNSConfig.healthCheckTimeout
+      notifierConfigs <- VinylDNSConfig.notifierConfigs
+      notifiers <- NotifierLoader.loadAll(notifierConfigs, repositories.userRepository)
       _ <- CommandHandler
         .run(
           messageQueue,
@@ -97,6 +100,7 @@ object Boot extends App {
           repositories.recordSetRepository,
           repositories.recordChangeRepository,
           repositories.batchChangeRepository,
+          notifiers,
           connections
         )
         .start

@@ -36,6 +36,7 @@ import vinyldns.core.TestZoneData._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import vinyldns.core.notifier.AllNotifiers
 
 class CommandHandlerSpec
     extends WordSpec
@@ -372,6 +373,7 @@ class CommandHandlerSpec
             recordSetRepo,
             recordChangeRepo,
             batchChangeRepo,
+            AllNotifiers(List.empty),
             connections
           )
 

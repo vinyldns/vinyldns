@@ -18,6 +18,7 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import cats.syntax.list._
+import cats.syntax.functor._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
@@ -112,11 +113,11 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     batchChange.copy(changes = withStatus)
   }
 
-  def storeQueuingFailures(batchChange: BatchChange): BatchResult[List[SingleChange]] = {
+  def storeQueuingFailures(batchChange: BatchChange): BatchResult[Unit] = {
     val failedChanges = batchChange.changes.collect {
       case change if change.status == SingleChangeStatus.Failed => change
     }
-    batchChangeRepo.updateSingleChanges(failedChanges)
+    batchChangeRepo.updateSingleChanges(failedChanges).as(())
   }.toBatchResult
 
   def createRecordSetChangesForBatch(

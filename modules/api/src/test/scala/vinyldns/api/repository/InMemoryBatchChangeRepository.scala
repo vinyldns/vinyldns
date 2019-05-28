@@ -22,6 +22,7 @@ import vinyldns.core.domain.batch._
 
 import scala.collection.concurrent
 import cats.effect._
+import cats.implicits._
 
 class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
@@ -80,11 +81,16 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       }
     }
 
-  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]] =
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]] =
     IO.pure {
         singleChanges.foreach(ch => singleChangesMap.put(ch.id, ch))
       }
-      .map(_ => singleChanges)
+      .flatMap { _ =>
+        (for {
+          sc <- singleChanges.headOption
+          storedChange <- batches.values.find(_.changes.contains(sc.id))
+        } yield getBatchChange(storedChange.id)).sequence.map(_.flatten)
+      }
 
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] = {
     val changes = singleChangeIds.flatMap(singleChangesMap.get)
