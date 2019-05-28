@@ -152,6 +152,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.userName shouldBe expected.userId
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
     actual.ownerGroupId shouldBe expected.ownerGroupId
+    actual.approvalStatus shouldBe expected.approvalStatus
+    actual.reviewerId shouldBe expected.reviewerId
+    actual.reviewComment shouldBe expected.reviewComment
+    actual.reviewTimestamp shouldBe expected.reviewTimestamp
   }
 
   private def areSame(actual: BatchChangeSummary, expected: BatchChangeSummary): Assertion = {
@@ -162,6 +166,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.userName shouldBe expected.userId
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
     actual.ownerGroupId shouldBe expected.ownerGroupId
+    actual.approvalStatus shouldBe expected.approvalStatus
+    actual.reviewerId shouldBe expected.reviewerId
+    actual.reviewComment shouldBe expected.reviewComment
+    actual.reviewTimestamp shouldBe expected.reviewTimestamp
   }
 
   private def areSame(
@@ -189,8 +197,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), Some(bcARecords))
     }
 
-    "save/get a batch change with empty comments, ownerGroup" in {
-      val testBatch = randomBatchChange.copy(comments = None, ownerGroupId = None)
+    "save/get a batch change with empty comments, ownerGroup, reviewerId, reviewComment, reviewTimeStamp" in {
+      val testBatch = randomBatchChange.copy(comments = None, ownerGroupId = None, reviewerId = None,
+        reviewComment = None, reviewTimestamp = None)
       val f =
         for {
           _ <- repo.save(testBatch)

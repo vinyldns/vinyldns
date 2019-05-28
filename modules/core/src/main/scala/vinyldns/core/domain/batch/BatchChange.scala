@@ -29,7 +29,7 @@ case class BatchChange(
     createdTimestamp: DateTime,
     changes: List[SingleChange],
     ownerGroupId: Option[String] = None,
-    approvalStatus: Option[BatchChangeApprovalStatus] = None,
+    approvalStatus: BatchChangeApprovalStatus,
     reviewerId: Option[String] = None,
     reviewComment: Option[String] = None,
     reviewTimestamp: Option[DateTime] = None,
@@ -80,7 +80,11 @@ case class BatchChangeInfo(
     ownerGroupId: Option[String],
     id: String,
     status: BatchChangeStatus,
-    ownerGroupName: Option[String]
+    ownerGroupName: Option[String],
+    approvalStatus: BatchChangeApprovalStatus,
+    reviewerId: Option[String],
+    reviewComment: Option[String],
+    reviewTimestamp: Option[DateTime]
 )
 
 object BatchChangeInfo {
@@ -95,7 +99,11 @@ object BatchChangeInfo {
       ownerGroupId,
       id,
       status,
-      ownerGroupName
+      ownerGroupName,
+      approvalStatus,
+      reviewerId,
+      reviewComment,
+      reviewTimestamp
     )
   }
 }

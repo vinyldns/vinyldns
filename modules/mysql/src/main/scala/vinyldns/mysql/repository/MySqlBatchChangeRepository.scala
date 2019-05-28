@@ -20,6 +20,7 @@ import cats.data._
 import cats.effect._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.core.route.Monitored
@@ -43,21 +44,24 @@ class MySqlBatchChangeRepository
 
   private final val PUT_BATCH_CHANGE =
     sql"""
-         |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id)
-         |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId})
+         |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
+         |                          approval_status, reviewer_id, review_comment, review_timestamp)
+         |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
+         |              {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
         """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =
     sql"""
          |INSERT INTO single_change(id, seq_num, input_name, change_type, data, status, batch_change_id,
-         |                                record_set_change_id, record_set_id, zone_id)
+         |                          record_set_change_id, record_set_id, zone_id)
          |     VALUES ({id}, {seqNum}, {inputName}, {changeType}, {data}, {status}, {batchChangeId},
-         |                                {recordSetChangeId}, {recordSetId}, {zoneId})
+         |             {recordSetChangeId}, {recordSetId}, {zoneId})
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_METADATA =
     sql"""
-         |SELECT user_id, user_name, created_time, comments, owner_group_id
+         |SELECT user_id, user_name, created_time, comments, owner_group_id,
+         |       approval_status, reviewer_id, review_comment, review_timestamp
          |  FROM batch_change bc
          | WHERE bc.id = ?
         """.stripMargin
@@ -73,6 +77,7 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_SUMMARY =
     sql"""
          |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
+         |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
          |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
          |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
          |              SUM( case sc.status when 'Complete' then 1 else 0 end )  AS complete_count
@@ -230,7 +235,11 @@ class MySqlBatchChangeRepository
                 pending + failed + complete,
                 BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
                 Option(res.string("owner_group_id")),
-                res.string("id")
+                res.string("id"),
+                toApprovalStatus(res.int("approval_status")),
+                Option(res.string("reviewer_id")),
+                Option(res.string("review_comment")),
+                Option(new org.joda.time.DateTime(res.timestamp("review_timestamp")))
               )
             }
             .list()
@@ -265,10 +274,10 @@ class MySqlBatchChangeRepository
         new org.joda.time.DateTime(result.timestamp("created_time")),
         Nil,
         Option(result.string("owner_group_id")),
-        None,
-        None,
-        None,
-        None,
+        toApprovalStatus(result.int("approval_status")),
+        Option(result.string("reviewer_id")),
+        Option(result.string("review_comment")),
+        Option(new org.joda.time.DateTime(result.dateTime("review_timestamp"))),
         batchChangeId.getOrElse(result.string("id"))
       )
   }
@@ -283,7 +292,11 @@ class MySqlBatchChangeRepository
           'userName -> batchChange.userName,
           'createdTime -> batchChange.createdTimestamp,
           'comments -> batchChange.comments,
-          'ownerGroupId -> batchChange.ownerGroupId
+          'ownerGroupId -> batchChange.ownerGroupId,
+          'approvalStatus -> fromApprovalStatus(batchChange.approvalStatus),
+          'reviewerId -> batchChange.reviewerId,
+          'reviewComment -> batchChange.reviewComment,
+          'reviewTimestamp -> batchChange.reviewTimestamp
         ): _*
       )
       .update()
@@ -334,4 +347,20 @@ class MySqlBatchChangeRepository
       case Left(e) => throw e
     }
   }
+
+  def fromApprovalStatus(typ: BatchChangeApprovalStatus): Int =
+    typ match {
+      case BatchChangeApprovalStatus.AutoApproved => 1
+      case BatchChangeApprovalStatus.PendingApproval => 2
+      case BatchChangeApprovalStatus.ManuallyApproved => 3
+      case BatchChangeApprovalStatus.ManuallyRejected => 4
+    }
+
+  def toApprovalStatus(key: Int): BatchChangeApprovalStatus =
+    key match {
+      case 2 => BatchChangeApprovalStatus.PendingApproval
+      case 3 => BatchChangeApprovalStatus.ManuallyApproved
+      case 4 => BatchChangeApprovalStatus.ManuallyRejected
+      case _ => BatchChangeApprovalStatus.AutoApproved
+    }
 }
