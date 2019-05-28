@@ -82,15 +82,15 @@
                                     <th>Admin Group</th>
                                     <th>Status</th>
                                     @if(meta.sharedDisplayEnabled) {
-                                        <th>Type</th>
+                                        <th>Access</th>
                                     }
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr ng-repeat="zone in zones">
-                                  <td ng-bind="zone.name"></td>
-                                  <td ng-bind="zone.email"></td>
+                                  <td class="wrap-long-text" ng-bind="zone.name"></td>
+                                  <td class="wrap-long-text" ng-bind="zone.email"></td>
                                   <td>
                                       <a ng-if="canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" href="/groups/{{zone.adminGroupId}}"></a>
                                       <span ng-if="!canAccessGroup(zone.adminGroupId)" ng-bind="zone.adminGroupName" style="line-height: 0"></span>

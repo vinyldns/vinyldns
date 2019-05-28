@@ -48,7 +48,7 @@
 
                             @if(meta.sharedDisplayEnabled) {
                                 <div class="form-group">
-                                    <label class="col-md-3 control-label">Type</label>
+                                    <label class="col-md-3 control-label">Access</label>
                                     <div class="col-md-9">
                                         <div>
                                             <p class="form-control-static">{{ updateZoneInfo.shared ? "Shared" : "Private" }}</p>
@@ -263,7 +263,7 @@
             </thead>
             <tbody>
                 <tr ng-repeat="rule in aclRules track by $index">
-                    <td>
+                    <td class="wrap-long-text">
                         {{rule.displayName}}
                     </td>
 
@@ -280,11 +280,11 @@
                         </ul>
                     </td>
 
-                    <td>
+                    <td class="wrap-long-text">
                         {{rule.recordMask}}
                     </td>
 
-                    <td>
+                    <td class="wrap-long-text">
                         {{rule.description}}
                     </td>
 

@@ -79,7 +79,7 @@
                                 <th>Recordset Name</th>
                                 <th>Zone Name</th>
                                 <th>Record Type</th>
-                                <th>Record Data</th>
+                                <th class="col-md-2">Record Data</th>
                                 <th>TTL</th>
                                 <th>Status</th>
                                 <th class="col-md-2">Additional Info</th>
@@ -88,35 +88,27 @@
                             <tbody>
                             <tr ng-repeat="change in batch.changes|filter:query">
                                 <td ng-bind="change.changeType"></td>
-                                <td>{{change.inputName}}</td>
-                                <td>{{change.recordName}}</td>
-                                <td>{{change.zoneName}}</td>
+                                <td class="wrap-long-text">{{change.inputName}}</td>
+                                <td class="wrap-long-text">{{change.recordName}}</td>
+                                <td class="wrap-long-text">{{change.zoneName}}</td>
                                 <td>{{change.type}}</td>
                                 <!--record data name based on record type-->
-                                    <td ng-if="change.type=='A'||change.type=='AAAA'">
-                                        <ul>
-                                            <li>{{change.record.address}}</li>
-                                        </ul>
+                                    <td ng-if="change.type=='A'||change.type=='AAAA'" class="wrap-long-text">
+                                        {{change.record.address}}
                                     </td>
                                     <td ng-if="change.type=='CNAME'">
-                                        <ul>
-                                            <li>{{change.record.cname}}</li>
-                                        </ul>
+                                        {{change.record.cname}}
                                     </td>
                                     <td ng-if="change.type=='PTR'">
-                                        <ul>
-                                            <li>{{change.record.ptrdname}}</li>
-                                        </ul>
+                                        {{change.record.ptrdname}}
                                     </td>
-                                    <td ng-if="change.type=='TXT'">
-                                        <ul>
-                                            <li>{{change.record.text}}</li>
-                                        </ul>
+                                    <td ng-if="change.type=='TXT'" class="wrap-long-text">
+                                        {{change.record.text}}
                                     </td>
                                     <td ng-if="change.type=='MX'">
                                         <ul>
-                                            <li>Preference: {{change.record.preference}}</li>
-                                            <li>Exchange: {{change.record.exchange}}</li>
+                                            <li class="wrap-long-text">Preference: {{change.record.preference}}</li>
+                                            <li class="wrap-long-text">Exchange: {{change.record.exchange}}</li>
                                         </ul>
                                     </td>
                                 <!--end record data name based on record type-->
@@ -127,7 +119,7 @@
                                     <span ng-if="change.status =='Failed'" class="label label-danger">{{change.status}}</span>
 
                                 </td>
-                                <td>{{change.systemMessage}}</td>
+                                <td class="wrap-long-text">{{change.systemMessage}}</td>
                             </tr>
                             </tbody>
                         </table>
