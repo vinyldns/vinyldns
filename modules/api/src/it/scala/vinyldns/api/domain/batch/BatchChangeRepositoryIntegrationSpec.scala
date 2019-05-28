@@ -20,7 +20,12 @@ import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.api.MySqlApiIntegrationSpec
 import vinyldns.core.TestMembershipData._
-import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  BatchChangeApprovalStatus,
+  SingleAddChange,
+  SingleChangeStatus
+}
 import vinyldns.core.domain.record.{AData, RecordType}
 import vinyldns.mysql.MySqlIntegrationSpec
 
@@ -51,7 +56,8 @@ class BatchChangeRepositoryIntegrationSpec
             SingleChangeStatus.Pending,
             None,
             None,
-            None))
+            None)),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
 
       val f = for {
