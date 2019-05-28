@@ -127,7 +127,11 @@ class MySqlBatchChangeRepository
     }
 
   def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]] = {
-    def convertSingleChangeToParams(singleChange: SingleChange): Seq[(Symbol, AnyRef)] =
+    def convertSingleChangeToParams(singleChange: SingleChange): Seq[(Symbol, AnyRef)] = {
+      val approvedSingleChange = singleChange match {
+        case approved: ApprovedSingleChange => Some(approved)
+        case _ => None
+      }
       toPB(singleChange) match {
         case Right(data) =>
           val changeType = SingleChangeType.from(singleChange)
@@ -136,13 +140,14 @@ class MySqlBatchChangeRepository
             'changeType -> changeType.toString,
             'data -> data.toByteArray,
             'status -> singleChange.status.toString,
-            'recordSetChangeId -> singleChange.recordChangeId,
-            'recordSetId -> singleChange.recordSetId,
-            'zoneId -> singleChange.zoneId,
+            'recordSetChangeId -> approvedSingleChange.map(_.recordChangeId),
+            'recordSetId -> approvedSingleChange.map(_.recordSetId),
+            'zoneId -> approvedSingleChange.map(_.zoneId).getOrElse("unknown"),
             'id -> singleChange.id
           )
         case Left(e) => throw e
       }
+    }
 
     def getBatchFromSingleChangeId(singleChangeId: String)(
         implicit s: DBSession): Option[BatchChange] =
@@ -290,6 +295,10 @@ class MySqlBatchChangeRepository
         toPB(singleChange) match {
           case Right(data) =>
             val changeType = SingleChangeType.from(singleChange)
+            val approvedSingleChange = singleChange match {
+              case approved: ApprovedSingleChange => Some(approved)
+              case _ => None
+            }
             Seq(
               'id -> singleChange.id,
               'seqNum -> seqNum,
@@ -298,9 +307,9 @@ class MySqlBatchChangeRepository
               'data -> data.toByteArray,
               'status -> singleChange.status.toString,
               'batchChangeId -> batchChange.id,
-              'recordSetChangeId -> singleChange.recordChangeId,
-              'recordSetId -> singleChange.recordSetId,
-              'zoneId -> singleChange.zoneId
+              'recordSetChangeId -> approvedSingleChange.map(_.recordChangeId),
+              'recordSetId -> approvedSingleChange.map(_.recordSetId),
+              'zoneId -> approvedSingleChange.map(_.zoneId).getOrElse("unknown")
             )
           case Left(e) => throw e
         }

@@ -126,7 +126,12 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       existingRecordSets: ExistingRecordSets,
       userId: String,
       ownerGroupId: Option[String]): List[RecordSetChange] = {
-    val grouped = changes.groupBy(_.recordKey)
+
+    val approvedChanges = changes.collect {
+      case a: ApprovedSingleChange => a
+    }
+
+    val grouped = approvedChanges.groupBy(_.recordKey)
 
     grouped.toList.flatMap {
       case (_, groupedChanges) =>

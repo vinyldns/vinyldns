@@ -26,22 +26,21 @@ sealed trait SingleChange {
   val id: String
   val status: SingleChangeStatus
   val systemMessage: Option[String]
-  val recordChangeId: Option[String]
-  val recordSetId: Option[String]
-  val zoneId: String
-  val recordName: String
   val typ: RecordType
   val inputName: String
-  val zoneName: String
-  val recordKey = RecordKey(zoneId, recordName, typ)
 
   def withFailureMessage(error: String): SingleChange = this match {
     case add: SingleAddChange =>
       add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
     case delete: SingleDeleteChange =>
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
+    case unapprovedAdd: UnapprovedSingleAddChange =>
+      // TODO not messing with status for now
+      unapprovedAdd.copy(systemMessage = Some(error))
   }
 
+  // TODO technically withProcessingError/complete should only work on ApprovedSingleChange types
+  // but it's pretty baked in at this point
   def withProcessingError(message: Option[String], failedRecordChangeId: String): SingleChange =
     this match {
       case add: SingleAddChange =>
@@ -54,6 +53,7 @@ sealed trait SingleChange {
           status = SingleChangeStatus.Failed,
           systemMessage = message,
           recordChangeId = Some(failedRecordChangeId))
+      case unapproved => unapproved
     }
 
   def complete(completeRecordChangeId: String, recordSetId: String): SingleChange = this match {
@@ -67,7 +67,17 @@ sealed trait SingleChange {
         status = SingleChangeStatus.Complete,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId))
+    case unapproved => unapproved
   }
+}
+
+sealed trait ApprovedSingleChange extends SingleChange {
+  val recordChangeId: Option[String]
+  val recordSetId: Option[String]
+  val zoneId: String
+  val recordName: String
+  val zoneName: String
+  val recordKey = RecordKey(zoneId, recordName, typ)
 }
 
 final case class SingleAddChange(
@@ -83,7 +93,7 @@ final case class SingleAddChange(
     recordChangeId: Option[String],
     recordSetId: Option[String],
     id: String = UUID.randomUUID().toString)
-    extends SingleChange
+    extends ApprovedSingleChange
 
 final case class SingleDeleteChange(
     zoneId: String,
@@ -91,6 +101,21 @@ final case class SingleDeleteChange(
     recordName: String,
     inputName: String,
     typ: RecordType,
+    status: SingleChangeStatus,
+    systemMessage: Option[String],
+    recordChangeId: Option[String],
+    recordSetId: Option[String],
+    id: String = UUID.randomUUID().toString)
+    extends ApprovedSingleChange
+
+final case class UnapprovedSingleAddChange(
+    zoneId: Option[String],
+    zoneName: Option[String],
+    recordName: Option[String],
+    inputName: String,
+    typ: RecordType,
+    ttl: Long,
+    recordData: RecordData,
     status: SingleChangeStatus,
     systemMessage: Option[String],
     recordChangeId: Option[String],

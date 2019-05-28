@@ -17,29 +17,33 @@
 package vinyldns.core.protobuf
 
 import cats.syntax.all._
-import vinyldns.core.domain.batch.{
-  SingleAddChange,
-  SingleChange,
-  SingleChangeStatus,
-  SingleDeleteChange
-}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType
-import vinyldns.core.protobuf.SingleChangeType.{SingleAddType, SingleChangeType, SingleDeleteType}
+import vinyldns.core.protobuf.SingleChangeType.{
+  SingleAddType,
+  SingleChangeType,
+  SingleDeleteType,
+  UnapprovedSingleAddType
+}
 import vinyldns.proto.VinylDNSProto
 
 object SingleChangeType extends Enumeration {
   type SingleChangeType = Value
-  val SingleAddType, SingleDeleteType = Value
+  val SingleAddType, SingleDeleteType, UnapprovedSingleAddType = Value
 
   def from(singleChange: SingleChange): SingleChangeType = singleChange match {
     case _: SingleAddChange => SingleChangeType.SingleAddType
     case _: SingleDeleteChange => SingleChangeType.SingleDeleteType
+    case _: UnapprovedSingleAddChange => SingleChangeType.UnapprovedSingleAddType
   }
 }
 
 trait BatchChangeProtobufConversions extends ProtobufConversions {
 
-  /* Currently, we only support the add change type.  When we support additional change we will add them here */
+  val protoUnknownEmpty = ""
+  def stringToOption(s: String): Option[String] = if (s == protoUnknownEmpty) None else Some(s)
+  def optionToString(s: Option[String]): String = s.getOrElse(protoUnknownEmpty)
+
   def fromPB(
       changeType: SingleChangeType,
       change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
@@ -76,7 +80,24 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
             if (change.hasRecordSetId) Some(change.getRecordSetId) else None,
             change.getId
           )
-
+        case UnapprovedSingleAddType =>
+          val changeData = VinylDNSProto.SingleAddChange.parseFrom(change.getChangeData.getData)
+          val recordType = RecordType.withName(change.getRecordType)
+          val recordData = fromPB(changeData.getRecordData, recordType)
+          UnapprovedSingleAddChange(
+            stringToOption(change.getZoneId),
+            stringToOption(change.getZoneName),
+            stringToOption(change.getRecordName),
+            change.getInputName,
+            RecordType.withName(change.getRecordType),
+            changeData.getTtl,
+            recordData,
+            SingleChangeStatus.withName(change.getStatus),
+            if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
+            if (change.hasRecordChangeId) Some(change.getRecordChangeId) else None,
+            if (change.hasRecordSetId) Some(change.getRecordSetId) else None,
+            change.getId
+          )
       }
     }
 
@@ -113,6 +134,34 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       sc.build()
     }
 
+  def toPB(change: UnapprovedSingleAddChange): Either[Throwable, VinylDNSProto.SingleChange] =
+    Either.catchNonFatal {
+      val rd = toRecordData(change.recordData)
+
+      // an UnapprovedSingleAddChange still has the same proto as SingleAddChange
+      val sad =
+        VinylDNSProto.SingleAddChange.newBuilder().setTtl(change.ttl).setRecordData(rd).build()
+      val scd = VinylDNSProto.SingleChangeData.newBuilder().setData(sad.toByteString)
+
+      val sc = VinylDNSProto.SingleChange
+        .newBuilder()
+        .setChangeData(scd)
+        .setChangeType(SingleAddType.toString)
+        .setId(change.id)
+        .setInputName(change.inputName)
+        .setRecordName(optionToString(change.recordName))
+        .setRecordType(change.typ.toString)
+        .setStatus(change.status.toString)
+        .setZoneId(optionToString(change.zoneId))
+        .setZoneName(optionToString(change.zoneName))
+
+      change.systemMessage.foreach(x => sc.setSystemMessage(x))
+      change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
+      change.recordSetId.foreach(x => sc.setRecordSetId(x))
+
+      sc.build()
+    }
+
   def toPB(change: SingleDeleteChange): Either[Throwable, VinylDNSProto.SingleChange] =
     Either.catchNonFatal {
       val sc = VinylDNSProto.SingleChange
@@ -137,5 +186,6 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
     change match {
       case sac: SingleAddChange => toPB(sac)
       case sdc: SingleDeleteChange => toPB(sdc)
+      case usac: UnapprovedSingleAddChange => toPB(usac)
     }
 }
