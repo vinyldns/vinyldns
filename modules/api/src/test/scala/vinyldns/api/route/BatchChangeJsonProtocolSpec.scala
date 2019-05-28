@@ -427,11 +427,12 @@ class BatchChangeJsonProtocolSpec
         time,
         List(add, delete),
         Some("groupId"),
+        BatchChangeApprovalStatus.AutoApproved,
         None,
         None,
         None,
-        None,
-        "someId")
+        "someId"
+      )
 
       val batchChangeInfo = BatchChangeInfo(batchChange, Some("groupName"))
 

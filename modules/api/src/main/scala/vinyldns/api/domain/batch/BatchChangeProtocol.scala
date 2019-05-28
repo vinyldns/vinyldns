@@ -16,20 +16,14 @@
 
 package vinyldns.api.domain.batch
 
-import org.joda.time.DateTime
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
-import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType._
 
 final case class BatchChangeInput(
     comments: Option[String],
     changes: List[ChangeInput],
-    ownerGroupId: Option[String] = None,
-    approvalStatus: BatchChangeApprovalStatus,
-    reviewerId: Option[String] = None,
-    reviewComment: Option[String] = None,
-    reviewTimestamp: Option[DateTime] = None)
+    ownerGroupId: Option[String] = None)
 
 sealed trait ChangeInput {
   val inputName: String
