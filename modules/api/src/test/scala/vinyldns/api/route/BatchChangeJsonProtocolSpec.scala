@@ -374,7 +374,7 @@ class BatchChangeJsonProtocolSpec
         time,
         List(add, delete),
         None,
-        None,
+        BatchChangeApprovalStatus.AutoApproved,
         None,
         None,
         None,

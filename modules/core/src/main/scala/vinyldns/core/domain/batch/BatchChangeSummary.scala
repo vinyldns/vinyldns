@@ -31,7 +31,7 @@ case class BatchChangeSummary(
     status: BatchChangeStatus,
     ownerGroupId: Option[String],
     id: String = UUID.randomUUID().toString,
-    approvalStatus: BatchChangeApprovalStatus,
+    approvalStatus: BatchChangeApprovalStatus = BatchChangeApprovalStatus.AutoApproved,
     reviewerId: Option[String],
     reviewComment: Option[String],
     reviewTimestamp: Option[DateTime],

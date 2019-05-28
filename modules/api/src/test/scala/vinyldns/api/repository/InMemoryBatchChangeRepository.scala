@@ -77,11 +77,12 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
           sc.createdTimestamp,
           singleChangesFromRepo,
           sc.ownerGroupId,
+          BatchChangeApprovalStatus.AutoApproved,
           None,
           None,
           None,
-          None,
-          sc.id)
+          sc.id
+        )
       }
     }
 
@@ -125,7 +126,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         sc.createdTimestamp,
         changes,
         sc.ownerGroupId,
-        None,
+        BatchChangeApprovalStatus.AutoApproved,
         None,
         None,
         None,
