@@ -81,13 +81,11 @@ class MySqlRecordSetRepositorySpec extends WordSpec with Matchers {
       val empty = ""
       val noDelimiter = "nodelim"
       val justDelimiter = s"${PagingKey.delimiter}"
-      val noName = s"${PagingKey.delimiter}1"
       val noType = s"name${PagingKey.delimiter}"
 
       PagingKey(Some(empty)) shouldBe None
       PagingKey(Some(noDelimiter)) shouldBe None
       PagingKey(Some(justDelimiter)) shouldBe None
-      PagingKey(Some(noName)) shouldBe None
       PagingKey(Some(noType)) shouldBe None
     }
 

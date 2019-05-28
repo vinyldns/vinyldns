@@ -26,7 +26,7 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   import MySqlRecordSetRepository._
@@ -374,19 +374,12 @@ object MySqlRecordSetRepository extends ProtobufConversions {
     val delimiter = "<....>"
 
     def apply(startFrom: Option[String]): Option[PagingKey] =
-      startFrom.flatMap { sf =>
-        val tokens = sf.split(delimiterRegex)
-        if (tokens.length != 2) None
-        else {
-          val recordName = tokens.head
-          if (recordName.isEmpty) None
-          else
-            Try(tokens(1).toInt) match {
-              case Success(recordType) => Some(PagingKey(recordName, recordType))
-              case Failure(_) => None
-            }
-        }
-      }
+      for {
+        sf <- startFrom
+        tokens = sf.split(delimiterRegex)
+        recordName <- tokens.headOption
+        recordType <- Try(tokens(1).toInt).toOption
+      } yield PagingKey(recordName, recordType)
 
     def toNextId(last: RecordSet): String = {
       val nextIdName = last.name
