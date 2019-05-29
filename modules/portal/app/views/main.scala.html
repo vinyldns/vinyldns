@@ -45,26 +45,26 @@
                         <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
                             <div class="menu_section">
                                 <ul class="nav side-menu vinyldns-side-menu">
+                                  @if(controller == "BatchChangesController" || controller == "BatchChangeNewController" || controller == "BatchChangeDetailController") {
+                                    <li class="active">
+                                        } else {
+                                    <li>
+                                        }
+                                        <a href="/batchchanges"><i class="fa fa-list-ol"></i>Batch Changes</a>
+                                    </li>
+                                  @if(controller == "GroupsController" || controller == "MembershipController") {
+                                    <li class="active">
+                                        } else {
+                                    <li>
+                                        }
+                                        <a href="/groups"><i class="fa fa-group"></i>Groups</a>
+                                    </li>
                                   @if(controller == "RecordsController" || controller == "ZonesController") {
                                     <li class="active">
                                   } else {
                                     <li>
                                   }
                                     <a href="/zones"><i class="fa fa-table"></i>Zones</a>
-                                  </li>
-                                  @if(controller == "GroupsController" || controller == "MembershipController") {
-                                    <li class="active">
-                                  } else {
-                                    <li>
-                                  }
-                                    <a href="/groups"><i class="fa fa-group"></i>Groups</a>
-                                  </li>
-                                  @if(controller == "BatchChangesController" || controller == "BatchChangeNewController" || controller == "BatchChangeDetailController") {
-                                    <li class="active">
-                                  } else {
-                                    <li>
-                                  }
-                                    <a href="/batchchanges"><i class="fa fa-list-ol"></i>Batch Changes</a>
                                   </li>
                                   @*****************************************
                                    * Custom links from application config *
