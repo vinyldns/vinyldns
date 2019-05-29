@@ -16,6 +16,8 @@ object Dependencies {
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
+  lazy val logbackV = "1.2.3"
+  lazy val logEncoderV = "5.3"
 
   lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
@@ -64,7 +66,8 @@ object Dependencies {
     "javax.xml.bind"            %  "jaxb-api"                       % jaxbV % "provided",
     "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
     "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
-    "ch.qos.logback"            %  "logback-classic"                % "1.0.7"
+    "ch.qos.logback"            %  "logback-classic"                % logbackV,
+    "net.logstash.logback"      %  "logstash-logback-encoder"       % logEncoderV
   )
 
   lazy val dynamoDBDependencies = Seq(
