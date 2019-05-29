@@ -62,6 +62,14 @@ class MySqlBatchChangeRepository
          | WHERE bc.id = ?
         """.stripMargin
 
+  private final val GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE =
+    sql"""
+         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id
+         |  FROM batch_change bc
+         |  JOIN (SELECT id, batch_change_id from single_change where id = ?) sc
+         |    ON sc.batch_change_id = bc.id
+        """.stripMargin
+
   private final val GET_BATCH_CHANGE_SUMMARY =
     sql"""
          |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
@@ -118,34 +126,55 @@ class MySqlBatchChangeRepository
       batchChangeFuture.value
     }
 
-  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]] =
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]] = {
+    def convertSingleChangeToParams(singleChange: SingleChange): Seq[(Symbol, AnyRef)] =
+      toPB(singleChange) match {
+        case Right(data) =>
+          val changeType = SingleChangeType.from(singleChange)
+          Seq(
+            'inputName -> singleChange.inputName,
+            'changeType -> changeType.toString,
+            'data -> data.toByteArray,
+            'status -> singleChange.status.toString,
+            'recordSetChangeId -> singleChange.recordChangeId,
+            'recordSetId -> singleChange.recordSetId,
+            'zoneId -> singleChange.zoneId,
+            'id -> singleChange.id
+          )
+        case Left(e) => throw e
+      }
+
+    def getBatchFromSingleChangeId(singleChangeId: String)(
+        implicit s: DBSession): Option[BatchChange] =
+      GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE
+        .bind(singleChangeId)
+        .map(extractBatchChange(None))
+        .first
+        .apply()
+        .map { batchMeta =>
+          val changes = GET_SINGLE_CHANGES_BY_BCID
+            .bind(batchMeta.id)
+            .map(extractSingleChange(1))
+            .list()
+            .apply()
+          batchMeta.copy(changes = changes)
+        }
+
     monitor("repo.BatchChangeJDBC.updateSingleChanges") {
-      logger.info(
-        s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}")
       IO {
+        logger.info(
+          s"Updating single change statuses: ${singleChanges.map(ch => (ch.id, ch.status))}")
         DB.localTx { implicit s =>
-          val batchParams = singleChanges.map { singleChange =>
-            toPB(singleChange) match {
-              case Right(data) =>
-                val changeType = SingleChangeType.from(singleChange)
-                Seq(
-                  'inputName -> singleChange.inputName,
-                  'changeType -> changeType.toString,
-                  'data -> data.toByteArray,
-                  'status -> singleChange.status.toString,
-                  'recordSetChangeId -> singleChange.recordChangeId,
-                  'recordSetId -> singleChange.recordSetId,
-                  'zoneId -> singleChange.zoneId,
-                  'id -> singleChange.id
-                )
-              case Left(e) => throw e
-            }
-          }
-          UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
-          singleChanges
+          for {
+            headChange <- singleChanges.headOption
+            batchParams = singleChanges.map(convertSingleChangeToParams)
+            _ = UPDATE_SINGLE_CHANGE.batchByName(batchParams: _*).apply()
+            batchChange <- getBatchFromSingleChangeId(headChange.id)
+          } yield batchChange
         }
       }
     }
+  }
 
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]] =
     if (singleChangeIds.isEmpty) {
@@ -220,22 +249,25 @@ class MySqlBatchChangeRepository
         DB.readOnly { implicit s =>
           GET_BATCH_CHANGE_METADATA
             .bind(batchChangeId)
-            .map { result =>
-              BatchChange(
-                result.string("user_id"),
-                result.string("user_name"),
-                Option(result.string("comments")),
-                new org.joda.time.DateTime(result.timestamp("created_time")),
-                Nil,
-                Option(result.string("owner_group_id")),
-                batchChangeId
-              )
-            }
+            .map(extractBatchChange(Some(batchChangeId)))
             .first
             .apply()
         }
       }
     }
+
+  private def extractBatchChange(batchChangeId: Option[String]): WrappedResultSet => BatchChange = {
+    result =>
+      BatchChange(
+        result.string("user_id"),
+        result.string("user_name"),
+        Option(result.string("comments")),
+        new org.joda.time.DateTime(result.timestamp("created_time")),
+        Nil,
+        Option(result.string("owner_group_id")),
+        batchChangeId.getOrElse(result.string("id"))
+      )
+  }
 
   private def saveBatchChange(batchChange: BatchChange)(
       implicit session: DBSession): BatchChange = {

@@ -62,6 +62,16 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
       VinylDNSConfig.getOptionalStringList("no-existo").length shouldBe 0
     }
 
+    "properly load the notifier configs" in {
+      val notifierConfigs = VinylDNSConfig.notifierConfigs.unsafeRunSync
+
+      notifierConfigs.length shouldBe 1
+
+      notifierConfigs.head.className shouldBe "someclass"
+
+      notifierConfigs.head.settings.getString("value").shouldBe("test")
+    }
+
     "load default keys" in {
       val defaultConn =
         ZoneConnection("vinyldns.", "vinyldns.", "nzisn+4G2ldMn0q1CV3vsg==", "127.0.0.1:19001")

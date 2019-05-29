@@ -253,7 +253,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     "not fail on empty update single changes" in {
       val f = repo.updateSingleChanges(List())
 
-      f.unsafeRunSync() shouldBe List()
+      f.unsafeRunSync() shouldBe None
     }
 
     "update some changes in a batch" in {
@@ -268,6 +268,25 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         } yield retrieved
 
       f.unsafeRunSync() shouldBe completed ++ incomplete
+    }
+    
+    "return the batch when updating single changes" in {
+      val batchChange = randomBatchChange
+      val completed = batchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
+      val f =
+        for {
+          _ <- repo.save(batchChange)
+          updated <- repo.updateSingleChanges(completed)
+          saved <- repo.getBatchChange(batchChange.id)
+        } yield (updated, saved)
+
+      val (retrieved, saved) = f.unsafeRunSync
+      retrieved shouldBe saved
+    }
+
+    "return no batch when single changes list is empty" in {
+      val f = repo.updateSingleChanges(List.empty)
+      f.unsafeRunSync shouldBe None
     }
 
     "get batch change summary by user ID" in {

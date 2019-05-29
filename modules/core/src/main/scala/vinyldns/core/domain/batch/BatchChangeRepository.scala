@@ -32,7 +32,7 @@ trait BatchChangeRepository extends Repository {
       maxItems: Int = 100): IO[BatchChangeSummaryList]
 
   // updateSingleChanges updates status, recordSetId, recordChangeId and systemMessage (in data).
-  def updateSingleChanges(singleChanges: List[SingleChange]): IO[List[SingleChange]]
+  def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]]
 
   def getSingleChanges(singleChangeIds: List[String]): IO[List[SingleChange]]
 
