@@ -237,7 +237,7 @@ class BatchChangeServiceSpec
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
-      val input = BatchChangeInput(None, List(apexAddA, nonApexAddA))
+      val input = BatchChangeInput(None, List(apexAddA, nonApexAddA), false)
 
       val result = rightResultOf(underTest.applyBatchChange(input, auth).value)
 
@@ -245,7 +245,7 @@ class BatchChangeServiceSpec
     }
 
     "fail if conversion cannot process" in {
-      val input = BatchChangeInput(Some("conversionError"), List(apexAddA, nonApexAddA))
+      val input = BatchChangeInput(Some("conversionError"), List(apexAddA, nonApexAddA), false)
       val result = leftResultOf(underTest.applyBatchChange(input, auth).value)
 
       result shouldBe an[BatchConversionError]
@@ -253,7 +253,7 @@ class BatchChangeServiceSpec
 
     "fail with GroupDoesNotExist if owner group ID is provided for a non-existent group" in {
       val ownerGroupId = "non-existent-group-id"
-      val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
+      val input = BatchChangeInput(None, List(apexAddA), false, Some(ownerGroupId))
       val result = leftResultOf(underTest.applyBatchChange(input, auth).value)
 
       result shouldBe InvalidBatchChangeInput(List(GroupDoesNotExist(ownerGroupId)))
@@ -261,7 +261,7 @@ class BatchChangeServiceSpec
 
     "fail with UserDoesNotBelongToOwnerGroup if normal user does not belong to group specified by owner group ID" in {
       val ownerGroupId = "user-is-not-member"
-      val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
+      val input = BatchChangeInput(None, List(apexAddA), false, Some(ownerGroupId))
       val result = leftResultOf(underTest.applyBatchChange(input, notAuth).value)
 
       result shouldBe
@@ -270,7 +270,7 @@ class BatchChangeServiceSpec
     }
 
     "succeed if owner group ID is provided and user is a member of the group" in {
-      val input = BatchChangeInput(None, List(apexAddA), Some(okGroup.id))
+      val input = BatchChangeInput(None, List(apexAddA), false, Some(okGroup.id))
       val result = rightResultOf(underTest.applyBatchChange(input, okAuth).value)
 
       result.changes.length shouldBe 1
@@ -278,7 +278,7 @@ class BatchChangeServiceSpec
 
     "succeed if owner group ID is provided and user is a super user" in {
       val ownerGroupId = Some("user-is-not-member")
-      val input = BatchChangeInput(None, List(apexAddA), ownerGroupId)
+      val input = BatchChangeInput(None, List(apexAddA), false, ownerGroupId)
       val result =
         rightResultOf(
           underTest
@@ -698,7 +698,7 @@ class BatchChangeServiceSpec
     "return a BatchChange if all data inputs are valid" in {
       val result = underTest
         .buildResponse(
-          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, cnameAdd)),
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, cnameAdd), false),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA).validNel,
@@ -756,7 +756,7 @@ class BatchChangeServiceSpec
     "return a BatchChangeErrorList if any data inputs are invalid" in {
       val result = underTest
         .buildResponse(
-          BatchChangeInput(None, List(noZoneAddA, nonApexAddA)),
+          BatchChangeInput(None, List(noZoneAddA, nonApexAddA), false),
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel),

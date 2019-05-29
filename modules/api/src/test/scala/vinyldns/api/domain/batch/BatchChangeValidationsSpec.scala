@@ -89,7 +89,7 @@ class BatchChangeValidationsSpec
     for {
       numChanges <- choose(min, max)
       changes <- listOfN(numChanges, validAChangeGen)
-    } yield batch.BatchChangeInput(None, changes)
+    } yield batch.BatchChangeInput(None, changes, false)
 
   private val createPrivateAddChange = AddChangeForValidation(
     okZone,
@@ -134,7 +134,7 @@ class BatchChangeValidationsSpec
   )
 
   property("validateBatchChangeInputSize: should fail if batch has no changes") {
-    validateBatchChangeInputSize(BatchChangeInput(None, List())) should
+    validateBatchChangeInputSize(BatchChangeInput(None, List(), false)) should
       haveInvalid[DomainValidationError](BatchChangeIsEmpty(maxChanges))
   }
 

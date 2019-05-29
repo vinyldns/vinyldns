@@ -127,4 +127,7 @@ object VinylDNSConfig {
     } else List()
 
   lazy val maxZoneSize: Int = vinyldnsConfig.as[Option[Int]]("max-zone-size").getOrElse(60000)
+
+  lazy val batchChangeManualReviewEnabled: Boolean =
+    vinyldnsConfig.as[Option[Boolean]]("batch-change-manual-review-enabled").getOrElse(false)
 }

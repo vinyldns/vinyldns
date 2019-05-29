@@ -21,6 +21,7 @@ import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
 import cats.implicits._
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidationError
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
@@ -52,8 +53,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       (
         (js \ "comments").optional[String],
         changeList,
-        (js \ "ownerGroupId").optional[String],
-        (js \ "manualReview").default(true)
+        (js \ "manualReview").default(VinylDNSConfig.batchChangeManualReviewEnabled),
+        (js \ "ownerGroupId").optional[String]
       ).mapN(BatchChangeInput)
     }
   }

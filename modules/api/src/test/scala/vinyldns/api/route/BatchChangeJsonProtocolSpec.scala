@@ -205,7 +205,8 @@ class BatchChangeJsonProtocolSpec
 
       result shouldBe BatchChangeInput(
         Some("some comment"),
-        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput))
+        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput),
+        false)
     }
 
     "successfully serialize valid add change data without comment and owner group ID" in {
@@ -213,7 +214,8 @@ class BatchChangeJsonProtocolSpec
 
       result shouldBe BatchChangeInput(
         None,
-        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput))
+        List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput),
+        false)
     }
 
     "successfully serialize valid add and delete change data without comment and owner group ID" in {
@@ -221,7 +223,8 @@ class BatchChangeJsonProtocolSpec
 
       result shouldBe BatchChangeInput(
         None,
-        List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput))
+        List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput),
+        false)
     }
 
     "successfully serialize valid add and delete change with comment and owner group ID" in {
@@ -233,18 +236,13 @@ class BatchChangeJsonProtocolSpec
           addAAAAChangeInput,
           addCNAMEChangeInput,
           addPTRChangeInput),
+        false,
         Some("owner-group-id")
       )
 
       BatchChangeInputSerializer
         .fromJson(BatchChangeInputSerializer.toJson(batchChange))
         .value shouldBe batchChange
-    }
-
-    "make manualReview true if it does not exist" in {
-      val result = BatchChangeInputSerializer.fromJson(addBatchChangeInputWithComment).value
-
-      result.manualReview shouldBe true
     }
 
     "successfully serialize manualReview if it is false" in {
@@ -270,6 +268,7 @@ class BatchChangeJsonProtocolSpec
           addAAAAChangeInput,
           addCNAMEChangeInput,
           addPTRChangeInput),
+        false,
         Some("owner-group-id")
       )
 
