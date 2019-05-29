@@ -239,10 +239,6 @@ class MySqlBatchChangeRepository
                 BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
                 Option(res.string("owner_group_id")),
                 res.string("id"),
-                toApprovalStatus(res.int("approval_status")),
-                Option(res.string("reviewer_id")),
-                Option(res.string("review_comment")),
-                toReviewTimestamp(res.timestampOpt("review_timestamp"))
               )
             }
             .list()
@@ -273,13 +269,13 @@ class MySqlBatchChangeRepository
       BatchChange(
         result.string("user_id"),
         result.string("user_name"),
-        Option(result.string("comments")),
+        result.stringOpt("comments"),
         new org.joda.time.DateTime(result.timestamp("created_time")),
         Nil,
         Option(result.string("owner_group_id")),
-        toApprovalStatus(result.int("approval_status")),
-        Option(result.string("reviewer_id")),
-        Option(result.string("review_comment")),
+        toApprovalStatus(result.intOpt("approval_status")),
+        result.stringOpt("reviewer_id"),
+        result.stringOpt("review_comment"),
         toReviewTimestamp(result.timestampOpt("review_timestamp")),
         batchChangeId.getOrElse(result.string("id"))
       )
@@ -359,17 +355,15 @@ class MySqlBatchChangeRepository
       case BatchChangeApprovalStatus.ManuallyRejected => 4
     }
 
-  def toApprovalStatus(key: Int): BatchChangeApprovalStatus =
+  def toApprovalStatus(key: Option[Int]): BatchChangeApprovalStatus =
     key match {
-      case 2 => BatchChangeApprovalStatus.PendingApproval
-      case 3 => BatchChangeApprovalStatus.ManuallyApproved
-      case 4 => BatchChangeApprovalStatus.ManuallyRejected
+      case Some(1) => BatchChangeApprovalStatus.AutoApproved
+      case Some(2) => BatchChangeApprovalStatus.PendingApproval
+      case Some(3) => BatchChangeApprovalStatus.ManuallyApproved
+      case Some(4) => BatchChangeApprovalStatus.ManuallyRejected
       case _ => BatchChangeApprovalStatus.AutoApproved
     }
 
   def toReviewTimestamp(result: Option[Timestamp]): Option[DateTime] =
-    result match {
-      case Some(value) => Option(new org.joda.time.DateTime(value))
-      case _ => None
-    }
+    result.map(new org.joda.time.DateTime(_))
 }

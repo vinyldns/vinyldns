@@ -19,7 +19,6 @@ package vinyldns.core.domain.batch
 import java.util.UUID
 
 import org.joda.time.DateTime
-import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 
 case class BatchChangeSummary(
@@ -31,10 +30,6 @@ case class BatchChangeSummary(
     status: BatchChangeStatus,
     ownerGroupId: Option[String],
     id: String = UUID.randomUUID().toString,
-    approvalStatus: BatchChangeApprovalStatus = BatchChangeApprovalStatus.AutoApproved,
-    reviewerId: Option[String],
-    reviewComment: Option[String],
-    reviewTimestamp: Option[DateTime],
     ownerGroupName: Option[String] = None)
 
 object BatchChangeSummary {
@@ -47,11 +42,7 @@ object BatchChangeSummary {
       batchchange.changes.length,
       batchchange.status,
       batchchange.ownerGroupId,
-      batchchange.id,
-      batchchange.approvalStatus,
-      batchchange.reviewerId,
-      batchchange.reviewComment,
-      batchchange.reviewTimestamp
+      batchchange.id
     )
 
   def apply(batchChangeInfo: BatchChangeInfo): BatchChangeSummary = {
@@ -65,10 +56,6 @@ object BatchChangeSummary {
       status,
       ownerGroupId,
       id,
-      approvalStatus,
-      reviewerId,
-      reviewComment,
-      reviewTimestamp,
       ownerGroupName
     )
   }

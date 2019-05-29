@@ -57,7 +57,6 @@ def test_get_batch_change_with_record_owner_group_success(shared_zone_test_conte
         assert_that(result, is_(completed_batch))
         assert_that(result['ownerGroupId'], is_(group['id']))
         assert_that(result['ownerGroupName'], is_(group['name']))
-        assert_that(result['approvalStatus'], is_('AutoApproved'))
 
     finally:
         for result_rs in to_delete:

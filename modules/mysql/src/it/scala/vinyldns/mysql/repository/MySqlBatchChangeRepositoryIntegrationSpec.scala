@@ -88,9 +88,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       ),
       Some(UUID.randomUUID().toString),
       BatchChangeApprovalStatus.AutoApproved,
-      None,
-      None,
-      None
+      Some(UUID.randomUUID().toString),
+      Some("review comment"),
+      Some(DateTime.now.plusSeconds(2))
     )
 
     val bcARecords: BatchChange = randomBatchChange
@@ -159,7 +159,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.approvalStatus shouldBe expected.approvalStatus
     actual.reviewerId shouldBe expected.reviewerId
     actual.reviewComment shouldBe expected.reviewComment
-    actual.reviewTimestamp shouldBe expected.reviewTimestamp
+    actual.reviewTimestamp match {
+      case Some(art) => art.getMillis shouldBe expected.reviewTimestamp.get.getMillis +- 2000
+      case None => actual.reviewTimestamp shouldBe expected.reviewTimestamp
+    }
   }
 
   private def areSame(actual: BatchChangeSummary, expected: BatchChangeSummary): Assertion = {
@@ -170,10 +173,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.userName shouldBe expected.userId
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
     actual.ownerGroupId shouldBe expected.ownerGroupId
-    actual.approvalStatus shouldBe expected.approvalStatus
-    actual.reviewerId shouldBe expected.reviewerId
-    actual.reviewComment shouldBe expected.reviewComment
-    actual.reviewTimestamp shouldBe expected.reviewTimestamp
   }
 
   private def areSame(

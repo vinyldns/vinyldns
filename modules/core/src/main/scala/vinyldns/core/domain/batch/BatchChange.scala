@@ -80,11 +80,7 @@ case class BatchChangeInfo(
     ownerGroupId: Option[String],
     id: String,
     status: BatchChangeStatus,
-    ownerGroupName: Option[String],
-    approvalStatus: BatchChangeApprovalStatus,
-    reviewerId: Option[String],
-    reviewComment: Option[String],
-    reviewTimestamp: Option[DateTime]
+    ownerGroupName: Option[String]
 )
 
 object BatchChangeInfo {
@@ -99,11 +95,7 @@ object BatchChangeInfo {
       ownerGroupId,
       id,
       status,
-      ownerGroupName,
-      approvalStatus,
-      reviewerId,
-      reviewComment,
-      reviewTimestamp
+      ownerGroupName
     )
   }
 }
