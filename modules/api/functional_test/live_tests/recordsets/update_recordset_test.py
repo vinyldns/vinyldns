@@ -2368,7 +2368,7 @@ def test_update_ds_bad_ttl(shared_zone_test_context):
             client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
 
-def test_update_zoneId_fails(shared_zone_test_context):
+def test_update_zone_id_fails(shared_zone_test_context):
     """
     Test that a 422 is returned if the zoneId in the body and route do not match
     """

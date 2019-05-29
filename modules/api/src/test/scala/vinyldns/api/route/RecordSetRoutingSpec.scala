@@ -379,9 +379,7 @@ class RecordSetRoutingSpec
         Right(
           RecordSetChange(
             zone = invalidChangeZone,
-            recordSet = recordSets
-              .get(rsId)
-              .get
+            recordSet = recordSets(rsId)
               .copy(
                 status = RecordSetStatus.Active,
                 created = DateTime.now,
