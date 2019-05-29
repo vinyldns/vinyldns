@@ -23,18 +23,21 @@ import vinyldns.core.protobuf.SingleChangeType.{
   SingleAddType,
   SingleChangeType,
   SingleDeleteType,
-  UnapprovedSingleAddType
+  UnapprovedSingleAddType,
+  UnapprovedSingleDeleteType
 }
 import vinyldns.proto.VinylDNSProto
+import vinyldns.proto.VinylDNSProto.SingleChange.Builder
 
 object SingleChangeType extends Enumeration {
   type SingleChangeType = Value
-  val SingleAddType, SingleDeleteType, UnapprovedSingleAddType = Value
+  val SingleAddType, SingleDeleteType, UnapprovedSingleAddType, UnapprovedSingleDeleteType = Value
 
   def from(singleChange: SingleChange): SingleChangeType = singleChange match {
     case _: SingleAddChange => SingleChangeType.SingleAddType
     case _: SingleDeleteChange => SingleChangeType.SingleDeleteType
     case _: UnapprovedSingleAddChange => SingleChangeType.UnapprovedSingleAddType
+    case _: UnapprovedSingleDeleteChange => SingleChangeType.UnapprovedSingleDeleteType
   }
 }
 
@@ -94,7 +97,18 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
             recordData,
             SingleChangeStatus.withName(change.getStatus),
             if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
-            if (change.hasRecordChangeId) Some(change.getRecordChangeId) else None,
+            if (change.hasRecordSetId) Some(change.getRecordSetId) else None,
+            change.getId
+          )
+        case UnapprovedSingleDeleteType =>
+          UnapprovedSingleDeleteChange(
+            stringToOption(change.getZoneId),
+            stringToOption(change.getZoneName),
+            stringToOption(change.getRecordName),
+            change.getInputName,
+            RecordType.withName(change.getRecordType),
+            SingleChangeStatus.withName(change.getStatus),
+            if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
             if (change.hasRecordSetId) Some(change.getRecordSetId) else None,
             change.getId
           )
@@ -108,84 +122,69 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
         fromPB(t, change)
       }
 
-  def toPB(change: SingleAddChange): Either[Throwable, VinylDNSProto.SingleChange] =
-    Either.catchNonFatal {
-      val rd = toRecordData(change.recordData)
-      val sad =
-        VinylDNSProto.SingleAddChange.newBuilder().setTtl(change.ttl).setRecordData(rd).build()
-      val scd = VinylDNSProto.SingleChangeData.newBuilder().setData(sad.toByteString)
-
-      val sc = VinylDNSProto.SingleChange
-        .newBuilder()
-        .setChangeData(scd)
-        .setChangeType(SingleAddType.toString)
-        .setId(change.id)
-        .setInputName(change.inputName)
-        .setRecordName(change.recordName)
-        .setRecordType(change.typ.toString)
-        .setStatus(change.status.toString)
-        .setZoneId(change.zoneId)
-        .setZoneName(change.zoneName)
-
-      change.systemMessage.foreach(x => sc.setSystemMessage(x))
-      change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
-      change.recordSetId.foreach(x => sc.setRecordSetId(x))
-
-      sc.build()
-    }
-
-  def toPB(change: UnapprovedSingleAddChange): Either[Throwable, VinylDNSProto.SingleChange] =
-    Either.catchNonFatal {
-      val rd = toRecordData(change.recordData)
-
-      // an UnapprovedSingleAddChange still has the same proto as SingleAddChange
-      val sad =
-        VinylDNSProto.SingleAddChange.newBuilder().setTtl(change.ttl).setRecordData(rd).build()
-      val scd = VinylDNSProto.SingleChangeData.newBuilder().setData(sad.toByteString)
-
-      val sc = VinylDNSProto.SingleChange
-        .newBuilder()
-        .setChangeData(scd)
-        .setChangeType(SingleAddType.toString)
-        .setId(change.id)
-        .setInputName(change.inputName)
-        .setRecordName(optionToString(change.recordName))
-        .setRecordType(change.typ.toString)
-        .setStatus(change.status.toString)
-        .setZoneId(optionToString(change.zoneId))
-        .setZoneName(optionToString(change.zoneName))
-
-      change.systemMessage.foreach(x => sc.setSystemMessage(x))
-      change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
-      change.recordSetId.foreach(x => sc.setRecordSetId(x))
-
-      sc.build()
-    }
-
-  def toPB(change: SingleDeleteChange): Either[Throwable, VinylDNSProto.SingleChange] =
-    Either.catchNonFatal {
-      val sc = VinylDNSProto.SingleChange
-        .newBuilder()
-        .setChangeType(SingleDeleteType.toString)
-        .setId(change.id)
-        .setInputName(change.inputName)
-        .setRecordName(change.recordName)
-        .setRecordType(change.typ.toString)
-        .setStatus(change.status.toString)
-        .setZoneId(change.zoneId)
-        .setZoneName(change.zoneName)
-
-      change.systemMessage.foreach(x => sc.setSystemMessage(x))
-      change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
-      change.recordSetId.foreach(x => sc.setRecordSetId(x))
-
-      sc.build()
-    }
-
   def toPB(change: SingleChange): Either[Throwable, VinylDNSProto.SingleChange] =
-    change match {
-      case sac: SingleAddChange => toPB(sac)
-      case sdc: SingleDeleteChange => toPB(sdc)
-      case usac: UnapprovedSingleAddChange => toPB(usac)
+    Either.catchNonFatal {
+      val sc = VinylDNSProto.SingleChange
+        .newBuilder()
+        .setChangeType(SingleChangeType.from(change).toString)
+        .setId(change.id)
+        .setInputName(change.inputName)
+        .setRecordType(change.typ.toString)
+        .setStatus(change.status.toString)
+
+      change.systemMessage.foreach(x => sc.setSystemMessage(x))
+      change.recordSetId.foreach(x => sc.setRecordSetId(x))
+
+      change match {
+        case sac: SingleAddChange => completePb(sc, sac)
+        case sdc: SingleDeleteChange => completePb(sc, sdc)
+        case usac: UnapprovedSingleAddChange => completePb(sc, usac)
+        case usdc: UnapprovedSingleDeleteChange => completePb(sc, usdc)
+      }
+
+      sc.build()
     }
+
+  private def completePb(builder: Builder, change: SingleAddChange): Unit = {
+    val rd = toRecordData(change.recordData)
+    val sad =
+      VinylDNSProto.SingleAddChange.newBuilder().setTtl(change.ttl).setRecordData(rd).build()
+    val scd = VinylDNSProto.SingleChangeData.newBuilder().setData(sad.toByteString)
+
+    builder
+      .setChangeData(scd)
+      .setRecordName(change.recordName)
+      .setZoneId(change.zoneId)
+      .setZoneName(change.zoneName)
+
+    change.recordChangeId.foreach(x => builder.setRecordChangeId(x))
+  }
+
+  private def completePb(builder: Builder, change: UnapprovedSingleAddChange): Unit = {
+    val rd = toRecordData(change.recordData)
+    val sad =
+      VinylDNSProto.SingleAddChange.newBuilder().setTtl(change.ttl).setRecordData(rd).build()
+    val scd = VinylDNSProto.SingleChangeData.newBuilder().setData(sad.toByteString)
+
+    builder
+      .setChangeData(scd)
+      .setRecordName(optionToString(change.recordName))
+      .setZoneId(optionToString(change.zoneId))
+      .setZoneName(optionToString(change.zoneName))
+  }
+
+  private def completePb(builder: Builder, change: SingleDeleteChange): Unit = {
+    builder
+      .setRecordName(change.recordName)
+      .setZoneId(change.zoneId)
+      .setZoneName(change.zoneName)
+
+    change.recordChangeId.foreach(x => builder.setRecordChangeId(x))
+  }
+
+  private def completePb(builder: Builder, change: UnapprovedSingleDeleteChange): Unit =
+    builder
+      .setRecordName(optionToString(change.recordName))
+      .setZoneId(optionToString(change.zoneId))
+      .setZoneName(optionToString(change.zoneName))
 }

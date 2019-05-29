@@ -27,12 +27,7 @@ import vinyldns.api.repository._
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
-import vinyldns.core.domain.batch.{
-  BatchChange,
-  SingleAddChange,
-  SingleChangeStatus,
-  SingleDeleteChange
-}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
@@ -354,7 +349,8 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       val returnedBatch = result.batchChange
 
       // validate failed status update returned
-      val failedChange = returnedBatch.changes(2)
+      val failedChange = returnedBatch.changes(2).asInstanceOf[ApprovedSingleChange]
+
       failedChange.status shouldBe SingleChangeStatus.Failed
       failedChange.recordChangeId shouldBe None
       failedChange.systemMessage shouldBe Some("Error queueing RecordSetChange for processing")
@@ -475,7 +471,9 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       recordSetChanges: List[RecordSetChange],
       batchChange: BatchChange,
       typ: RecordSetChangeType) = {
-    val singleChangesOut = batchChange.changes.filter(_.recordName == name)
+    val singleChangesOut = batchChange.changes.collect {
+      case app: ApprovedSingleChange if app.recordName == name => app
+    }
     singleChangesOut.length should be > 0
 
     val recordChangeOut = recordSetChanges
@@ -499,9 +497,8 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       name: String,
       recordSetChanges: List[RecordSetChange],
       batchChange: BatchChange) = {
-    val singleChangesOut = batchChange.changes.filter(_.recordName == name)
-    val expectedRecords = singleChangesOut.collect {
-      case add: SingleAddChange => add.recordData
+    val expectedRecords = batchChange.changes.collect {
+      case add: SingleAddChange if add.recordName == name => add.recordData
     }
 
     val recordChangeOut = recordSetChanges
