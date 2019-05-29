@@ -140,8 +140,8 @@ class MySqlBatchChangeRepository
             'changeType -> changeType.toString,
             'data -> data.toByteArray,
             'status -> singleChange.status.toString,
-            'recordSetChangeId -> approvedSingleChange.map(_.recordChangeId),
-            'recordSetId -> approvedSingleChange.map(_.recordSetId),
+            'recordSetChangeId -> approvedSingleChange.flatMap(_.recordChangeId),
+            'recordSetId -> singleChange.recordSetId,
             'zoneId -> approvedSingleChange.map(_.zoneId).getOrElse("unknown"),
             'id -> singleChange.id
           )
@@ -299,6 +299,7 @@ class MySqlBatchChangeRepository
               case approved: ApprovedSingleChange => Some(approved)
               case _ => None
             }
+
             Seq(
               'id -> singleChange.id,
               'seqNum -> seqNum,
@@ -307,8 +308,8 @@ class MySqlBatchChangeRepository
               'data -> data.toByteArray,
               'status -> singleChange.status.toString,
               'batchChangeId -> batchChange.id,
-              'recordSetChangeId -> approvedSingleChange.map(_.recordChangeId),
-              'recordSetId -> approvedSingleChange.map(_.recordSetId),
+              'recordSetChangeId -> approvedSingleChange.flatMap(_.recordChangeId),
+              'recordSetId -> singleChange.recordSetId,
               'zoneId -> approvedSingleChange.map(_.zoneId).getOrElse("unknown")
             )
           case Left(e) => throw e
