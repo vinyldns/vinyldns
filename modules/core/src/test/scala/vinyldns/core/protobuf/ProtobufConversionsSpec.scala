@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package vinyldns.api.protobuf
+package vinyldns.core.protobuf
 
 import org.joda.time.DateTime
 import org.scalatest.{Assertion, Matchers, OptionValues, WordSpec}
+import vinyldns.core.TestRecordSetData.ds
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
-import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.TestRecordSetData.ds
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._

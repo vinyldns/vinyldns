@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package vinyldns.api.protobuf
+package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
-import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
+import vinyldns.core.domain.batch.SingleChangeStatus
 import vinyldns.core.domain.record.{AData, RecordType}
-import vinyldns.core.protobuf.BatchChangeProtobufConversions
 
 class BatchChangeProtobufConversionsSpec
     extends WordSpec

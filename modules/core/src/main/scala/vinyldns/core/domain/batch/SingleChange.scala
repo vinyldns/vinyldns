@@ -28,12 +28,15 @@ sealed trait SingleChange {
   val systemMessage: Option[String]
   val recordChangeId: Option[String]
   val recordSetId: Option[String]
-  val zoneId: String
-  val recordName: String
+  val zoneId: Option[String]
+  val recordName: Option[String]
   val typ: RecordType
   val inputName: String
-  val zoneName: String
-  val recordKey = RecordKey(zoneId, recordName, typ)
+  val zoneName: Option[String]
+  val recordKey: Option[RecordKey] = (zoneId, recordName, typ) match {
+    case (Some(zid), Some(rname), t) => Some(RecordKey(zid, rname, t))
+    case _ => None
+  }
 
   def withFailureMessage(error: String): SingleChange = this match {
     case add: SingleAddChange =>
@@ -71,9 +74,9 @@ sealed trait SingleChange {
 }
 
 final case class SingleAddChange(
-    zoneId: String,
-    zoneName: String,
-    recordName: String,
+    zoneId: Option[String],
+    zoneName: Option[String],
+    recordName: Option[String],
     inputName: String,
     typ: RecordType,
     ttl: Long,
@@ -86,9 +89,9 @@ final case class SingleAddChange(
     extends SingleChange
 
 final case class SingleDeleteChange(
-    zoneId: String,
-    zoneName: String,
-    recordName: String,
+    zoneId: Option[String],
+    zoneName: Option[String],
+    recordName: Option[String],
     inputName: String,
     typ: RecordType,
     status: SingleChangeStatus,

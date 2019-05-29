@@ -126,6 +126,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       existingRecordSets: ExistingRecordSets,
       userId: String,
       ownerGroupId: Option[String]): List[RecordSetChange] = {
+    // TODO: note, this also assumes we are past approval and know the zone/record split at this point
     val grouped = changes.groupBy(_.recordKey)
 
     grouped.toList.flatMap {

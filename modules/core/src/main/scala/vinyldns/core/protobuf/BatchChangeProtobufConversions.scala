@@ -39,6 +39,10 @@ object SingleChangeType extends Enumeration {
 
 trait BatchChangeProtobufConversions extends ProtobufConversions {
 
+  val protoUnknownEmpty = ""
+  def stringToOption(s: String): Option[String] = if (s == protoUnknownEmpty) None else Some(s)
+  def optionToString(s: Option[String]): String = s.getOrElse(protoUnknownEmpty)
+
   /* Currently, we only support the add change type.  When we support additional change we will add them here */
   def fromPB(
       changeType: SingleChangeType,
@@ -50,9 +54,9 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
           val recordType = RecordType.withName(change.getRecordType)
           val recordData = fromPB(changeData.getRecordData, recordType)
           SingleAddChange(
-            change.getZoneId,
-            change.getZoneName,
-            change.getRecordName,
+            stringToOption(change.getZoneId),
+            stringToOption(change.getZoneName),
+            stringToOption(change.getRecordName),
             change.getInputName,
             RecordType.withName(change.getRecordType),
             changeData.getTtl,
@@ -65,9 +69,9 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
           )
         case SingleDeleteType =>
           SingleDeleteChange(
-            change.getZoneId,
-            change.getZoneName,
-            change.getRecordName,
+            stringToOption(change.getZoneId),
+            stringToOption(change.getZoneName),
+            stringToOption(change.getRecordName),
             change.getInputName,
             RecordType.withName(change.getRecordType),
             SingleChangeStatus.withName(change.getStatus),
@@ -100,11 +104,11 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
         .setChangeType(SingleAddType.toString)
         .setId(change.id)
         .setInputName(change.inputName)
-        .setRecordName(change.recordName)
+        .setRecordName(optionToString(change.recordName))
         .setRecordType(change.typ.toString)
         .setStatus(change.status.toString)
-        .setZoneId(change.zoneId)
-        .setZoneName(change.zoneName)
+        .setZoneId(optionToString(change.zoneId))
+        .setZoneName(optionToString(change.zoneName))
 
       change.systemMessage.foreach(x => sc.setSystemMessage(x))
       change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
@@ -120,11 +124,11 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
         .setChangeType(SingleDeleteType.toString)
         .setId(change.id)
         .setInputName(change.inputName)
-        .setRecordName(change.recordName)
+        .setRecordName(optionToString(change.recordName))
         .setRecordType(change.typ.toString)
         .setStatus(change.status.toString)
-        .setZoneId(change.zoneId)
-        .setZoneName(change.zoneName)
+        .setZoneId(optionToString(change.zoneId))
+        .setZoneName(optionToString(change.zoneName))
 
       change.systemMessage.foreach(x => sc.setSystemMessage(x))
       change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
