@@ -248,16 +248,14 @@ class BatchChangeJsonProtocolSpec
     }
 
     "successfully serialize manualReview if it is false" in {
-      val input = addBatchChangeInputWithComment.copy(
-        obj = addBatchChangeInputWithComment.obj ::: List(("manualReview", JBool.False)))
+      val input = addBatchChangeInputWithComment ~~ ("manualReview", JBool.False)
       val result = BatchChangeInputSerializer.fromJson(input).value
 
       result.manualReview shouldBe false
     }
 
     "successfully serialize manualReview if it is true" in {
-      val input = addBatchChangeInputWithComment.copy(
-        obj = addBatchChangeInputWithComment.obj ::: List(("manualReview", JBool.True)))
+      val input = addBatchChangeInputWithComment ~~ ("manualReview", JBool.True)
       val result = BatchChangeInputSerializer.fromJson(input).value
 
       result.manualReview shouldBe true
