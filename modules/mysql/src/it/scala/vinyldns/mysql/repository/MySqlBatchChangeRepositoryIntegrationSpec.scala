@@ -87,7 +87,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         deleteChange.copy(id = UUID.randomUUID().toString)
       ),
       Some(UUID.randomUUID().toString),
-      BatchChangeApprovalStatus.AutoApproved
+      BatchChangeApprovalStatus.AutoApproved,
+      None,
+      None,
+      None
     )
 
     val bcARecords: BatchChange = randomBatchChange
