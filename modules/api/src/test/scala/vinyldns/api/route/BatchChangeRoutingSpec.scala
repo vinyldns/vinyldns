@@ -430,4 +430,23 @@ class BatchChangeRoutingSpec
       }
     }
   }
+
+  "POST reject batch change" should {
+    "return OK if comments are provided" in {
+      Post("/zones/batchrecordchanges/existingID/reject").withEntity(HttpEntity(
+        ContentTypes.`application/json`,
+        compact(render("comments" -> "some comments")))) ~>
+        batchChangeRoute(okAuth) ~> check {
+        status shouldBe OK
+      }
+    }
+
+    "return OK if comments are not provided" in {
+      Post("/zones/batchrecordchanges/existingID/reject").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        batchChangeRoute(okAuth) ~> check {
+        status shouldBe OK
+      }
+    }
+  }
 }

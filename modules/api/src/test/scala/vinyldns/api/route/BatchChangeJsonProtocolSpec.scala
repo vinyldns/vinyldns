@@ -27,12 +27,7 @@ import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain._
 import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, ChangeForValidation}
 import vinyldns.api.domain.batch.ChangeInputType._
-import vinyldns.api.domain.batch.{
-  AddChangeInput,
-  BatchChangeInput,
-  DeleteChangeInput,
-  InvalidBatchChangeResponses
-}
+import vinyldns.api.domain.batch._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.batch.SingleChangeStatus._
 import vinyldns.core.domain.batch._
@@ -509,6 +504,24 @@ class BatchChangeJsonProtocolSpec
     "return the message of the BatchChange" in {
       val error = ZoneDiscoveryError("name")
       BatchChangeErrorSerializer.toJson(error).values shouldBe error.message
+    }
+  }
+
+  "Round-trip serialization/deserialization of a RejectBatchChangeInput" should {
+    "succeed if no comments are provided" in {
+      val rejectBatchChangeInput = RejectBatchChangeInput(None)
+      RejectBatchChangeInputSerializer
+        .fromJson(
+          RejectBatchChangeInputSerializer
+            .toJson(rejectBatchChangeInput)) shouldBe rejectBatchChangeInput.validNel
+    }
+
+    "succeed if comments are provided" in {
+      val rejectBatchChangeInput = RejectBatchChangeInput(Some("some comments"))
+      RejectBatchChangeInputSerializer
+        .fromJson(
+          RejectBatchChangeInputSerializer
+            .toJson(rejectBatchChangeInput)) shouldBe rejectBatchChangeInput.validNel
     }
   }
 }
