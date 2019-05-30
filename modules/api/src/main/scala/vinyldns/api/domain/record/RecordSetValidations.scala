@@ -250,4 +250,11 @@ object RecordSetValidations {
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
+
+  def recordSetIsInZone(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
+    Either.cond(
+      recordSet.zoneId == zone.id,
+      (),
+      InvalidRequest(s"""Cannot update RecordSet's zoneId attribute""")
+    )
 }
