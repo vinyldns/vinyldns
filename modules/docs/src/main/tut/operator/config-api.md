@@ -603,7 +603,7 @@ akka.http {
 }
 
 # types of unowned records that users can access in shared zones
-shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
+shared-approved-types = ["A", "AAAA", "CNAME", "PTR"]
     
 # FQDNs / IPs that cannot be modified via VinylDNS
 # regex-list used for all record types except PTR
