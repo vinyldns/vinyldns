@@ -77,10 +77,13 @@ trait BatchChangeRoute extends Directives {
               ) {
                 // TODO: Tie into batch change service with auth validation and rejection process
                 complete(StatusCodes.OK)
+                // TODO: Update response entity to return modified batch change
               }
             }
           } ~
+            // TODO: Tie into batch change service with auth validation and rejection process
             complete(StatusCodes.OK) // Required for optional request entity
+            // TODO: Update response entity to return modified batch change
         }
       }
   }
