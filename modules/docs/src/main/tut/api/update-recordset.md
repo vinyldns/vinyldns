@@ -17,7 +17,7 @@ Updates a RecordSet.  This performs a delete of the old record, and inserts the 
 
 name          | type          | required?   | description |
  ------------ | ------------- | ----------- | :---------- |
-zoneId        | string        | yes         | id of the zone where the recordset belongs |
+zoneId        | string        | yes         | id of the zone where the recordset belongs, this value **must** match the zoneId of the existing recordSet |
 id            | string        | yes         | the id of the recordset being updated |
 name          | string        | yes         | the name of the recordset being updated |
 type          | string        | yes         | the type of recordset |

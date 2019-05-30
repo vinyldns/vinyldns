@@ -275,7 +275,7 @@ class RecordSetServiceSpec
       result.status shouldBe RecordSetChangeStatus.Pending
     }
     "fail when the account is not authorized" in {
-      doReturn(IO.pure(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa.copy(zoneId = zoneNotAuthorized.id))))
         .when(mockRecordRepo)
         .getRecordSet(zoneNotAuthorized.id, aaaa.id)
       val result = leftResultOf(
@@ -496,6 +496,22 @@ class RecordSetServiceSpec
 
       result.recordSet.ttl shouldBe newRecord.ttl
       result.recordSet.ownerGroupId shouldBe None
+    }
+    "fail if the retrieved recordSet's zoneId does not match the payload zoneId" in {
+      val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
+      val newRecord = aaaa.copy(zoneId = abcZone.id)
+
+      val auth = okAuth.copy(memberGroupIds = okAuth.memberGroupIds :+ abcZone.adminGroupId)
+
+      doReturn(IO.pure(Some(abcZone)))
+        .when(mockZoneRepo)
+        .getZone(newRecord.zoneId)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.zoneId, newRecord.id)
+
+      val result = leftResultOf(underTest.updateRecordSet(newRecord, auth).value)
+      result shouldBe a[InvalidRequest]
     }
   }
 

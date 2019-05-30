@@ -7,6 +7,8 @@ from vinyldns_python import VinylDNSClient
 from test_data import TestData
 from vinyldns_context import VinylDNSTestContext
 import time
+import json
+from requests.compat import urljoin
 
 
 def test_update_a_with_same_name_as_cname(shared_zone_test_context):
@@ -2365,3 +2367,61 @@ def test_update_ds_bad_ttl(shared_zone_test_context):
         if result_rs:
             client.delete_recordset(result_rs['zoneId'], result_rs['id'], status=(202,404))
             client.wait_until_recordset_deleted(result_rs['zoneId'], result_rs['id'])
+
+def test_update_fails_when_payload_and_route_zone_id_does_not_match(shared_zone_test_context):
+    """
+    Test that a 422 is returned if the zoneId in the body and route do not match
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+
+    created = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_update_zone_id', 'A', [{'address': '1.1.1.1'}])
+        create_response = client.create_recordset(record_json, status=202)
+        created = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+        update = created
+        update['ttl'] = update['ttl'] + 100
+        update['zoneId'] = shared_zone_test_context.dummy_zone['id']
+
+        url = urljoin(client.index_url, u'/zones/{0}/recordsets/{1}'.format(zone[u'id'], update[u'id']))
+        response, error = client.make_request(url, u'PUT', client.headers, json.dumps(update), not_found_ok=True,
+                                             status=422)
+
+        assert_that(error, is_("Cannot update RecordSet's zoneId attribute"))
+
+    finally:
+        if created:
+            delete_result = client.delete_recordset(zone['id'], created['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_update_fails_when_payload_and_actual_zone_id_do_not_match(shared_zone_test_context):
+    """
+    Test that a 422 is returned if the zoneId in the body and the recordSets actual zoneId do not match
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+
+    created = None
+
+    try:
+        record_json = get_recordset_json(zone, 'test_update_zone_id', 'A', [{'address': '1.1.1.1'}])
+        create_response = client.create_recordset(record_json, status=202)
+        created = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+        update = created
+        update['zoneId'] = shared_zone_test_context.dummy_zone['id']
+
+        error = client.update_recordset(update, status=422)
+
+        assert_that(error, is_("Cannot update RecordSet's zoneId attribute"))
+
+    finally:
+        if created:
+            delete_result = client.delete_recordset(zone['id'], created['id'], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')

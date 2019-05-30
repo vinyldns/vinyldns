@@ -440,5 +440,16 @@ class RecordSetValidationsSpec
         error shouldBe an[InvalidRequest]
       }
     }
+
+    "recordSetIsInZone" should {
+      "pass if the recordSets's zoneId matches the zone's id" in {
+        recordSetIsInZone(aaaa.copy(zoneId = okZone.id), okZone) should be(right)
+      }
+
+      "fail if the recordSet's zoneId does not match the zone's id" in {
+        val error = leftValue(recordSetIsInZone(aaaa.copy(zoneId = "not-ok-zone"), okZone))
+        error shouldBe an[InvalidRequest]
+      }
+    }
   }
 }

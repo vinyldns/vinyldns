@@ -50,6 +50,7 @@ class RecordSetRoutingSpec
   private val zoneDeleted = Zone("inactive", "test@test.com", ZoneStatus.Deleted)
   private val notAuthorizedZone = Zone("notAuth", "test@test.com")
   private val syncingZone = Zone("syncing", "test@test.com")
+  private val invalidChangeZone = Zone("invalidChange", "test@test.com")
 
   private val rsAlreadyExists = RecordSet(
     okZone.id,
@@ -142,7 +143,7 @@ class RecordSetRoutingSpec
     List(AData("10.1.1.1")))
 
   private val rsNotAuthorized = RecordSet(
-    okZone.id,
+    notAuthorizedZone.id,
     "changenotauth",
     RecordType.A,
     200,
@@ -374,6 +375,19 @@ class RecordSetRoutingSpec
       case zoneDeleted.id => Left(ZoneInactiveError(zoneId))
       case notAuthorizedZone.id => Left(NotAuthorizedError(zoneId))
       case syncingZone.id => Left(ZoneUnavailableError(zoneId))
+      case invalidChangeZone.id =>
+        Right(
+          RecordSetChange(
+            zone = invalidChangeZone,
+            recordSet = recordSets(rsId)
+              .copy(
+                status = RecordSetStatus.Active,
+                created = DateTime.now,
+                updated = Some(DateTime.now)),
+            status = RecordSetChangeStatus.Complete,
+            changeType = chgType,
+            userId = authPrincipal.userId
+          ))
       case okZone.id =>
         rsId match {
           case rsError.id => Left(new RuntimeException("fail"))
@@ -740,6 +754,19 @@ class RecordSetRoutingSpec
           "Missing RecordSet.type",
           "Missing RecordSet.ttl"
         )
+      }
+    }
+
+    "return a 422 Unprocessable Entity if the zoneId does not match the one in the route" in {
+      Put(s"/zones/${okZone.id}/recordsets/${rsOk.id}")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            rsJson(rsOk.copy(zoneId = invalidChangeZone.id)))) ~>
+        recordSetRoute(okAuth) ~> check {
+        status shouldBe StatusCodes.UnprocessableEntity
+        val error = responseAs[String]
+        error shouldBe "Cannot update RecordSet's zoneId attribute"
       }
     }
 
