@@ -176,14 +176,14 @@ class BatchChangeJsonProtocolSpec
       result should haveInvalid("Missing BatchChangeInput.changes.type")
     }
 
-    "return an error if the ttl is not specified" in {
+    "default ttl if not specified" in {
       val json = buildAddChangeInputJson(
         inputName = Some("foo."),
         typ = Some(A),
         record = Some(AData("1.1.1.1")))
-      val result = ChangeInputSerializer.fromJson(json)
+      val result = ChangeInputSerializer.fromJson(json).value
 
-      result should haveInvalid("Missing BatchChangeInput.changes.ttl")
+      result shouldBe AddChangeInput("foo.", A, 7200, AData("1.1.1.1"))
     }
 
     "return an error if the record is not specified for add" in {
@@ -273,7 +273,6 @@ class BatchChangeJsonProtocolSpec
 
       result should haveInvalid("Missing BatchChangeInput.changes.inputName")
       result should haveInvalid("Missing BatchChangeInput.changes.type")
-      result should haveInvalid("Missing BatchChangeInput.changes.ttl")
     }
   }
 
