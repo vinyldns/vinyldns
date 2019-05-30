@@ -71,7 +71,7 @@ class BatchChangeRoutingSpec
             "recordName",
             "fqdn",
             A,
-            3600,
+            Some(3600),
             AData("1.1.1.1"),
             Pending,
             Some("systemMessage"),

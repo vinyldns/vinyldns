@@ -52,7 +52,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       name,
       fqdn,
       typ,
-      123,
+      Some(123),
       recordData,
       SingleChangeStatus.Pending,
       None,

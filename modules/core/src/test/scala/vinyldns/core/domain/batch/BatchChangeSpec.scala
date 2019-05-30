@@ -27,7 +27,7 @@ class BatchChangeSpec extends WordSpec with Matchers {
     "rname",
     "inputname",
     RecordType.A,
-    123,
+    Some(123),
     AData("2.2.2.2"),
     SingleChangeStatus.Pending,
     None,

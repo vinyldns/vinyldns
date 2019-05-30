@@ -35,7 +35,7 @@ class BatchChangeProtobufConversionsSpec
     "recordName",
     "inputName",
     RecordType.A,
-    100,
+    Some(100),
     AData("127.0.0.1"),
     SingleChangeStatus.Pending,
     Some("systemMessage"),

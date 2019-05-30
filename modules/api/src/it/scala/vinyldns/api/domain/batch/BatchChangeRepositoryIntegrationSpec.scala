@@ -46,7 +46,7 @@ class BatchChangeRepositoryIntegrationSpec
             "record-name",
             "a" * HOST_MAX_LENGTH,
             RecordType.A,
-            300,
+            Some(300),
             AData("1.1.1.1"),
             SingleChangeStatus.Pending,
             None,

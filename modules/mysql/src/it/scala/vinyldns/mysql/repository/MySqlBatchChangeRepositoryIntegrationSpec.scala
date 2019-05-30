@@ -47,7 +47,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         okZone.name,
         "test",
         "test.somezone.com.",
-        recordType, 3600,
+        recordType, Some(3600),
         recordData,
         Pending,
         None,
@@ -269,7 +269,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
       f.unsafeRunSync() shouldBe completed ++ incomplete
     }
-    
+
     "return the batch when updating single changes" in {
       val batchChange = randomBatchChange
       val completed = batchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
@@ -389,7 +389,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       // Expect to get only the second batch change, change_3.
       // Expect the ID of the next batch change to be 2.
       val expectedChanges =
-        BatchChangeSummaryList(List(BatchChangeSummary(change_three)), Some(1), Some(2), 1)
+      BatchChangeSummaryList(List(BatchChangeSummary(change_three)), Some(1), Some(2), 1)
 
       areSame(f.unsafeRunSync(), expectedChanges)
     }
