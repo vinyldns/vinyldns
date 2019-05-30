@@ -39,6 +39,8 @@ object SingleChangeType extends Enumeration {
 
 trait BatchChangeProtobufConversions extends ProtobufConversions {
 
+  val noneTtl: Long = -1L
+
   /* Currently, we only support the add change type.  When we support additional change we will add them here */
   def fromPB(
       changeType: SingleChangeType,
@@ -49,13 +51,15 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
           val changeData = VinylDNSProto.SingleAddChange.parseFrom(change.getChangeData.getData)
           val recordType = RecordType.withName(change.getRecordType)
           val recordData = fromPB(changeData.getRecordData, recordType)
+          val ttlData = changeData.getTtl
+          val ttl = if (ttlData == noneTtl) None else Some(ttlData)
           SingleAddChange(
             change.getZoneId,
             change.getZoneName,
             change.getRecordName,
             change.getInputName,
             RecordType.withName(change.getRecordType),
-            changeData.getTtl,
+            ttl,
             recordData,
             SingleChangeStatus.withName(change.getStatus),
             if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
@@ -91,7 +95,11 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
     Either.catchNonFatal {
       val rd = toRecordData(change.recordData)
       val sad =
-        VinylDNSProto.SingleAddChange.newBuilder().setTtl(change.ttl).setRecordData(rd).build()
+        VinylDNSProto.SingleAddChange
+          .newBuilder()
+          .setTtl(change.ttl.getOrElse(noneTtl))
+          .setRecordData(rd)
+          .build()
       val scd = VinylDNSProto.SingleChangeData.newBuilder().setData(sad.toByteString)
 
       val sc = VinylDNSProto.SingleChange

@@ -21,6 +21,7 @@ import cats.syntax.list._
 import cats.syntax.functor._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations.{
   BatchConversionOutput,
@@ -239,16 +240,21 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     val combinedData =
       changes.foldLeft(List[RecordData]())((acc, ch) => ch.recordData :: acc).distinct
     // recordName and typ are shared by all changes passed into this function, can pull those from any change
-    // TTL choice is arbitrary here; this is taking the 1st
+    // TTL choice is arbitrary here; this is taking the 1st defined
+    import cats.implicits._
+    val ttl = changes.map(_.ttl).collectFirst {
+      case Some(t) => t
+    }
     record.RecordSet(
       zone.id,
       changes.head.recordName,
       changes.head.typ,
-      changes.head.ttl,
+      ttl.getOrElse(VinylDNSConfig.defaultTtl),
       RecordSetStatus.Pending,
       DateTime.now,
       None,
       combinedData,
-      ownerGroupId = ownerGroupId)
+      ownerGroupId = ownerGroupId
+    )
   }
 }

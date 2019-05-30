@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.batch
 
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConversions.{getIPv4NonDelegatedZoneName, getIPv6FullReverseName}
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
@@ -93,21 +92,19 @@ object BatchTransformations {
       recordName: String,
       inputChange: AddChangeInput)
       extends ChangeForValidation {
-    def asNewStoredChange: SingleChange = {
-      val ttl = inputChange.ttl.getOrElse(VinylDNSConfig.defaultTtl)
+    def asNewStoredChange: SingleChange =
       SingleAddChange(
         zone.id,
         zone.name,
         recordName,
         inputChange.inputName,
         inputChange.typ,
-        ttl,
+        inputChange.ttl,
         inputChange.record,
         SingleChangeStatus.Pending,
         None,
         None,
         None)
-    }
 
     def isAddChangeForValidation: Boolean = true
 

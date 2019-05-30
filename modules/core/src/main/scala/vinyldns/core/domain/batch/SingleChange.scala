@@ -76,7 +76,7 @@ final case class SingleAddChange(
     recordName: String,
     inputName: String,
     typ: RecordType,
-    ttl: Long,
+    ttl: Option[Long],
     recordData: RecordData,
     status: SingleChangeStatus,
     systemMessage: Option[String],
