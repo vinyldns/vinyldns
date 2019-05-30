@@ -212,6 +212,39 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), Some(testBatch))
     }
 
+    "save/get a batch change with BatchChangeApprovalStatus.PendingApproval" in {
+      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      val f =
+        for {
+          _ <- repo.save(testBatch)
+          retrieved <- repo.getBatchChange(testBatch.id)
+        } yield retrieved
+
+      areSame(f.unsafeRunSync(), Some(testBatch))
+    }
+
+    "save/get a batch change with BatchChangeApprovalStatus.ManuallyApproved" in {
+      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+      val f =
+        for {
+          _ <- repo.save(testBatch)
+          retrieved <- repo.getBatchChange(testBatch.id)
+        } yield retrieved
+
+      areSame(f.unsafeRunSync(), Some(testBatch))
+    }
+
+    "save/get a batch change with BatchChangeApprovalStatus.ManuallyRejected" in {
+      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
+      val f =
+        for {
+          _ <- repo.save(testBatch)
+          retrieved <- repo.getBatchChange(testBatch.id)
+        } yield retrieved
+
+      areSame(f.unsafeRunSync(), Some(testBatch))
+    }
+
     "return none if a batch change is not found by ID" in {
       repo.getBatchChange("doesnotexist").unsafeRunSync() shouldBe empty
     }
