@@ -41,7 +41,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     SingleDeleteChangeSerializer,
     BatchChangeSerializer,
     BatchChangeErrorListSerializer,
-    BatchChangeErrorSerializer
+    BatchChangeErrorSerializer,
+    RejectBatchChangeInputSerializer
   )
 
   case object BatchChangeInputSerializer extends ValidationSerializer[BatchChangeInput] {
@@ -176,6 +177,12 @@ trait BatchChangeJsonProtocol extends JsonValidation {
 
   case object BatchChangeErrorSerializer extends ValidationSerializer[DomainValidationError] {
     override def toJson(dve: DomainValidationError): JValue = dve.message
+  }
+
+  case object RejectBatchChangeInputSerializer
+      extends ValidationSerializer[RejectBatchChangeInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, RejectBatchChangeInput] =
+      (js \ "comments").optional[String].map(RejectBatchChangeInput)
   }
 
   def extractRecord(typ: RecordType, js: JValue): ValidatedNel[String, RecordData] = {
