@@ -33,7 +33,7 @@ name          | type          | required?   | description |
 changeType    | ChangeInputType | yes       | Type of change input. Must be set to **Add** for *AddChangeInput*. |
 inputName     | string        | yes         | The fully qualified domain name of the record being added. For **PTR**, the input name is a valid IPv4 or IPv6 address. |
 type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
-ttl           | long          | yes         | The time-to-live in seconds. The minimum and maximum values are 30 and 2147483647, respectively. |
+ttl           | long          | no          | The time-to-live in seconds. The minimum and maximum values are 30 and 2147483647, respectively. If not provided, this field will use a system default of 7200 or whatever is configured by your instance |
 record        | [RecordData](../api/recordset-model/#record-data) | yes         | The data for the record. |
 
 ##### DeleteChangeInput <a id="deletechangeinput-attributes" />
