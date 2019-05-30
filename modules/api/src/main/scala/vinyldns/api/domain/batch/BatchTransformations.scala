@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.dns.DnsConversions.{getIPv4NonDelegatedZoneName, getIPv6FullReverseName}
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
@@ -59,6 +60,9 @@ object BatchTransformations {
     def get(zoneId: String, name: String, recordType: RecordType): Option[RecordSet] =
       recordSetMap.getOrElse((zoneId, name.toLowerCase), List()).find(_.typ == recordType)
 
+    def get(recordKey: RecordKey): Option[RecordSet] =
+      get(recordKey.zoneId, recordKey.recordName, recordKey.recordType)
+
     def containsRecordSetMatch(zoneId: String, name: String): Boolean =
       recordSetMap.contains(zoneId, name.toLowerCase)
 
@@ -89,19 +93,21 @@ object BatchTransformations {
       recordName: String,
       inputChange: AddChangeInput)
       extends ChangeForValidation {
-    def asNewStoredChange: SingleChange =
+    def asNewStoredChange: SingleChange = {
+      val ttl = inputChange.ttl.getOrElse(VinylDNSConfig.defaultTtl)
       SingleAddChange(
         zone.id,
         zone.name,
         recordName,
         inputChange.inputName,
         inputChange.typ,
-        inputChange.ttl,
+        ttl,
         inputChange.record,
         SingleChangeStatus.Pending,
         None,
         None,
         None)
+    }
 
     def isAddChangeForValidation: Boolean = true
 

@@ -178,6 +178,23 @@ class BatchChangeService(
     } yield ExistingRecordSets(recordSetsWithExistingZone)
   }
 
+  def doTtlMapping(
+      changes: ValidatedBatch[ChangeForValidation],
+      existingRecordSets: ExistingRecordSets): ValidatedBatch[ChangeForValidation] =
+    changes.mapValid {
+      case add: AddChangeForValidation =>
+        existingRecordSets
+          .get(add.recordKey)
+          .map { rs =>
+            val ttl = add.inputChange.ttl.getOrElse(rs.ttl)
+            val changeWithTtl = add.inputChange.copy(ttl = Some(ttl))
+            add.copy(inputChange = changeWithTtl)
+          }
+          .getOrElse(add)
+          .validNel
+      case del: DeleteChangeForValidation => del.validNel
+    }
+
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
     val ownerGroup = for {
       groupId <- OptionT.fromOption[IO](ownerGroupId)
