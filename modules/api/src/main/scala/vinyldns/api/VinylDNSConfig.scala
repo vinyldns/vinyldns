@@ -63,6 +63,7 @@ object VinylDNSConfig {
       }
       .parSequence
 
+  lazy val defaultTtl: Long = vinyldnsConfig.as[Option[Long]](s"default-ttl").getOrElse(7200L)
   lazy val restConfig: Config = vinyldnsConfig.getConfig("rest")
   lazy val monitoringConfig: Config = vinyldnsConfig.getConfig("monitoring")
   lazy val messageQueueConfig: IO[MessageQueueConfig] =
