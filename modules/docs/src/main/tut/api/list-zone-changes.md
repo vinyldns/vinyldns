@@ -42,6 +42,7 @@ maxItems      | int           | The maxItems parameter that was sent in on the H
 
 ```
 {
+  "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c",
   "zoneChanges": [
       {
         "status": "Synced",

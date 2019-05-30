@@ -93,14 +93,14 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
         }
-        "render the zone page when the user is logged in" in new WithApplication(app) {
+        "render the batch changes page when the user is logged in" in new WithApplication(app) {
           val result =
             underTest.index()(
               FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
           status(result) must beEqualTo(OK)
           contentType(result) must beSome.which(_ == "text/html")
           contentAsString(result) must contain("Are you sure you want to log out")
-          contentAsString(result) must contain("Zones | VinylDNS")
+          contentAsString(result) must contain("Batch Changes | VinylDNS")
         }
         "redirect to the no access page when a user is locked out" in new WithApplication(app) {
           val result =
@@ -115,7 +115,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
         }
-        "render the zone page when the user is logged in" in new WithApplication(app) {
+        "render the batch changes page when the user is logged in" in new WithApplication(app) {
           val result =
             oidcUnderTest.index()(
               FakeRequest(GET, "/index").withSession(VinylDNS.ID_TOKEN -> "test").withCSRFToken)
@@ -123,7 +123,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must beEqualTo(OK)
           contentType(result) must beSome.which(_ == "text/html")
           contentAsString(result) must contain("Are you sure you want to log out")
-          contentAsString(result) must contain("Zones | VinylDNS")
+          contentAsString(result) must contain("Batch Changes | VinylDNS")
         }
       }
     }
