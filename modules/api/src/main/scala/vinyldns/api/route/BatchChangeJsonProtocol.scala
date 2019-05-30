@@ -21,7 +21,6 @@ import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
 import cats.implicits._
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidationError
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
@@ -46,17 +45,21 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   )
 
   case object BatchChangeInputSerializer extends ValidationSerializer[BatchChangeInput] {
-    override def fromJson(js: JValue): ValidatedNel[String, BatchChangeInput] = {
-      val changeList =
-        (js \ "changes").required[List[ChangeInput]]("Missing BatchChangeInput.changes")
-
+    override def fromJson(js: JValue): ValidatedNel[String, BatchChangeInput] =
       (
         (js \ "comments").optional[String],
-        changeList,
-        (js \ "manualReview").default(VinylDNSConfig.batchChangeManualReviewEnabled),
+        (js \ "changes")
+          .required[List[ChangeInput]]("Missing BatchChangeInput.changes"),
+        (js \ "manualReview").default(true),
         (js \ "ownerGroupId").optional[String]
-      ).mapN(BatchChangeInput)
-    }
+      ).mapN {
+        (
+            comments: Option[String],
+            changes: List[ChangeInput],
+            manualReview: Boolean,
+            ownerGroupId: Option[String]) =>
+          BatchChangeInput.fromJson(comments, changes, manualReview, ownerGroupId)
+      }
   }
 
   case object ChangeInputSerializer extends ValidationSerializer[ChangeInput] {

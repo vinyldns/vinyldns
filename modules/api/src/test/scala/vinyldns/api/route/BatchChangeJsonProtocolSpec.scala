@@ -245,20 +245,6 @@ class BatchChangeJsonProtocolSpec
         .value shouldBe batchChange
     }
 
-    "successfully serialize manualReview if it is false" in {
-      val input = addBatchChangeInputWithComment ~~ ("manualReview", JBool.False)
-      val result = BatchChangeInputSerializer.fromJson(input).value
-
-      result.manualReview shouldBe false
-    }
-
-    "successfully serialize manualReview if it is true" in {
-      val input = addBatchChangeInputWithComment ~~ ("manualReview", JBool.True)
-      val result = BatchChangeInputSerializer.fromJson(input).value
-
-      result.manualReview shouldBe true
-    }
-
     "successfully serialize valid add and delete change without comment and with owner group ID" in {
       val batchChange = BatchChangeInput(
         None,

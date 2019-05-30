@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType._
@@ -25,6 +26,22 @@ final case class BatchChangeInput(
     changes: List[ChangeInput],
     manualReview: Boolean,
     ownerGroupId: Option[String] = None)
+
+object BatchChangeInput {
+  def fromJson(
+      comments: Option[String],
+      changes: List[ChangeInput],
+      requestedManualReview: Boolean,
+      ownerGroupId: Option[String] = None,
+      manualReviewEnabled: Boolean = VinylDNSConfig.batchChangeManualReviewEnabled)
+    : BatchChangeInput = {
+    val manualReview =
+      if (manualReviewEnabled) requestedManualReview
+      else false
+
+    new BatchChangeInput(comments, changes, manualReview, ownerGroupId)
+  }
+}
 
 sealed trait ChangeInput {
   val inputName: String

@@ -45,4 +45,46 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       input.changes(5).inputName shouldBe "cnamedot.test.com."
     }
   }
+
+  "BatchChangeInput.fromJson" should {
+    "force manual review to false if it is not enabled in config and passed into function as false" in {
+      val inputted = false
+      val config = false
+
+      val actual = BatchChangeInput.fromJson(None, List(), inputted, None, config).manualReview
+      val expected = false
+
+      actual shouldBe expected
+    }
+
+    "force manual review to false if it is not enabled in config and passed into function as true" in {
+      val inputted = true
+      val config = false
+
+      val actual = BatchChangeInput.fromJson(None, List(), inputted, None, config).manualReview
+      val expected = false
+
+      actual shouldBe expected
+    }
+
+    "allow manual review to be false if it is enabled in config and passed into function as false" in {
+      val inputted = false
+      val config = true
+
+      val actual = BatchChangeInput.fromJson(None, List(), inputted, None, config).manualReview
+      val expected = false
+
+      actual shouldBe expected
+    }
+
+    "allow manual review to be true if it is enabled in config and passed into function as true" in {
+      val inputted = true
+      val config = true
+
+      val actual = BatchChangeInput.fromJson(None, List(), inputted, None, config).manualReview
+      val expected = true
+
+      actual shouldBe expected
+    }
+  }
 }
