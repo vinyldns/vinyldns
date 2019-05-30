@@ -263,6 +263,27 @@ class BatchChangeJsonProtocolSpec
         .value shouldBe batchChange
     }
 
+    "successfully serialize manualReview if it is false" in {
+      val input = addBatchChangeInputWithComment ~~ ("manualReview", JBool.False)
+      val result = BatchChangeInputSerializer.fromJson(input).value
+
+      result.manualReview shouldBe false
+    }
+
+    "successfully serialize manualReview if it is true" in {
+      val input = addBatchChangeInputWithComment ~~ ("manualReview", JBool.True)
+      val result = BatchChangeInputSerializer.fromJson(input).value
+
+      result.manualReview shouldBe true
+    }
+
+    "default manualReview to true if it does not exist" in {
+      val input = addBatchChangeInputWithComment
+      val result = BatchChangeInputSerializer.fromJson(input).value
+
+      result.manualReview shouldBe true
+    }
+
     "return an error if the changes are not specified" in {
       val json = "comments" -> "some comments"
       val result = BatchChangeInputSerializer.fromJson(json)
