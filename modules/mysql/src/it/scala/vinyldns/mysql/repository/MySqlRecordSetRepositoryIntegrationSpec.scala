@@ -24,6 +24,7 @@ import scalikejdbc.DB
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.mysql.TestMySqlInstance
+import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
 
 class MySqlRecordSetRepositoryIntegrationSpec
   extends WordSpec
@@ -327,7 +328,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
     "return record sets after the startFrom when set" in {
       // load 5, start after the 3rd, we should get back the last two
       val existing = insert(okZone, 5).map(_.recordSet).sortBy(_.name)
-      val startFrom = Some(existing(2).name)
+      val startFrom = Some(PagingKey.toNextId(existing(2)))
       val found = repo.listRecordSets(okZone.id, startFrom, None, None).unsafeRunSync()
 
       found.recordSets should contain theSameElementsInOrderAs existing.drop(3)
@@ -335,7 +336,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
     "return the record sets after the startFrom respecting maxItems" in {
       // load 5, start after the 2nd, take 2, we should get back the 3rd and 4th
       val existing = insert(okZone, 5).map(_.recordSet).sortBy(_.name)
-      val startFrom = Some(existing(1).name)
+      val startFrom = Some(PagingKey.toNextId(existing(1)))
       val found = repo.listRecordSets(okZone.id, startFrom, Some(2), None).unsafeRunSync()
 
       found.recordSets should contain theSameElementsInOrderAs existing.slice(2, 4)
@@ -356,7 +357,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val changes = newRecordSets.map(makeTestAddChange(_, okZone))
       insert(changes)
 
-      val startFrom = Some(newRecordSets(1).name)
+      val startFrom = Some(PagingKey.toNextId(newRecordSets(1)))
       val found = repo.listRecordSets(okZone.id, startFrom, Some(3), Some("*z*")).unsafeRunSync()
       found.recordSets.map(_.name) should contain theSameElementsInOrderAs expectedNames
     }
@@ -415,14 +416,40 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val existing = insert(okZone, 5).map(_.recordSet).sortBy(_.name)
       val page1 = repo.listRecordSets(okZone.id, None, Some(2), None).unsafeRunSync()
       page1.recordSets should contain theSameElementsInOrderAs existing.slice(0, 2)
-      page1.nextId shouldBe Some(page1.recordSets(1).name)
+      page1.nextId shouldBe Some(PagingKey.toNextId(page1.recordSets(1)))
 
       val page2 = repo.listRecordSets(okZone.id, page1.nextId, Some(2), None).unsafeRunSync()
       page2.recordSets should contain theSameElementsInOrderAs existing.slice(2, 4)
-      page2.nextId shouldBe Some(page2.recordSets(1).name)
+      page2.nextId shouldBe Some(PagingKey.toNextId(page2.recordSets(1)))
 
       val page3 = repo.listRecordSets(okZone.id, page2.nextId, Some(2), None).unsafeRunSync()
       page3.recordSets should contain theSameElementsInOrderAs existing.slice(4, 5)
+      page3.nextId shouldBe None
+    }
+
+    "page properly when records have the same name" in {
+      val changes = generateInserts(okZone, 5)
+      val editedChanges = List(
+        changes(0).copy(recordSet = aaaa.copy(zoneId = okZone.id, name = "a-duplicate")),
+        changes(2).copy(recordSet = cname.copy(zoneId = okZone.id, name = "a-duplicate")),
+        changes(4).copy(recordSet = ns.copy(zoneId = okZone.id, name = "a-duplicate")),
+        changes(1).copy(recordSet = changes(1).recordSet.copy(name = "b-unique")),
+        changes(3).copy(recordSet = changes(3).recordSet.copy(name = "c-unqiue"))
+      )
+
+      insert(editedChanges)
+      val existing = editedChanges.map(_.recordSet)
+
+      val page1 = repo.listRecordSets(okZone.id, None, Some(2), None).unsafeRunSync()
+      page1.recordSets should contain theSameElementsInOrderAs List(existing(0), existing(1))
+      page1.nextId shouldBe Some(PagingKey.toNextId(page1.recordSets.last))
+
+      val page2 = repo.listRecordSets(okZone.id, page1.nextId, Some(2), None).unsafeRunSync()
+      page2.recordSets should contain theSameElementsInOrderAs List(existing(2), existing(3))
+      page2.nextId shouldBe Some(PagingKey.toNextId(page2.recordSets.last))
+
+      val page3 = repo.listRecordSets(okZone.id, page2.nextId, Some(2), None).unsafeRunSync()
+      page3.recordSets should contain theSameElementsInOrderAs List(existing(4))
       page3.nextId shouldBe None
     }
   }

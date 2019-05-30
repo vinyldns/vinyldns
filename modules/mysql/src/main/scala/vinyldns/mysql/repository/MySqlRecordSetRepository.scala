@@ -26,6 +26,8 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
+import scala.util.Try
+
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   import MySqlRecordSetRepository._
 
@@ -183,14 +185,19 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     monitor("repo.RecordSet.listRecordSets") {
       IO {
         DB.readOnly { implicit s =>
+          val pagingKey = PagingKey(startFrom)
+
           // make sure we sort ascending, so we can do the correct comparison later
-          val opts = (startFrom.as("AND name > {startFrom}") ++
-            recordNameFilter.as("AND name LIKE {nameFilter}") ++
-            Some("ORDER BY name ASC") ++
-            maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
+          val opts =
+            (pagingKey.as(
+              "AND ((name >= {startFromName} AND type > {startFromType}) OR name > {startFromName})") ++
+              recordNameFilter.as("AND name LIKE {nameFilter}") ++
+              Some("ORDER BY name ASC, type ASC") ++
+              maxItems.as("LIMIT {maxItems}")).toList.mkString(" ")
 
           val params = (Some('zoneId -> zoneId) ++
-            startFrom.map(n => 'startFrom -> n) ++
+            pagingKey.map(pk => 'startFromName -> pk.recordName) ++
+            pagingKey.map(pk => 'startFromType -> pk.recordType) ++
             recordNameFilter.map(f => 'nameFilter -> f.replace('*', '%')) ++
             maxItems.map(m => 'maxItems -> m)).toSeq
 
@@ -205,7 +212,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           // if size of results is less than the number returned, we don't have a next id
           // if maxItems is None, we don't have a next id
           val nextId =
-            maxItems.filter(_ == results.size).flatMap(_ => results.lastOption.map(_.name))
+            maxItems
+              .filter(_ == results.size)
+              .flatMap(_ => results.lastOption.map(PagingKey.toNextId))
 
           ListRecordSetResults(
             recordSets = results,
@@ -356,5 +365,27 @@ object MySqlRecordSetRepository extends ProtobufConversions {
 
     if (absoluteRecordSetName.equals(absoluteZoneName)) absoluteZoneName
     else absoluteRecordSetName + absoluteZoneName
+  }
+
+  case class PagingKey(recordName: String, recordType: Int)
+
+  object PagingKey {
+    val delimiterRegex = "\\.\\.\\.\\."
+    val delimiter = "...."
+
+    def apply(startFrom: Option[String]): Option[PagingKey] =
+      for {
+        sf <- startFrom
+        tokens = sf.split(delimiterRegex)
+        recordName <- tokens.headOption
+        recordType <- Try(tokens(1).toInt).toOption
+      } yield PagingKey(recordName, recordType)
+
+    def toNextId(last: RecordSet): String = {
+      val nextIdName = last.name
+      val nextIdType = MySqlRecordSetRepository.fromRecordType(last.typ)
+
+      s"$nextIdName$delimiter$nextIdType"
+    }
   }
 }
