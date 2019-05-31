@@ -30,7 +30,6 @@ trait BatchChangeRoute extends Directives {
   val batchChangeService: BatchChangeServiceAlgebra
 
   final private val MAX_ITEMS_LIMIT: Int = 100
-  final private val MAX_COMMENT_LENGTH: Int = 1024
 
   val batchChangeRoute: AuthPrincipal => server.Route = { authPrincipal: AuthPrincipal =>
     (post & path("zones" / "batchrecordchanges")) {
@@ -53,7 +52,7 @@ trait BatchChangeRoute extends Directives {
         parameters("startFrom".as[Int].?, "maxItems".as[Int].?(MAX_ITEMS_LIMIT)) {
           (startFrom: Option[Int], maxItems: Int) =>
             {
-              handleRejections(rejectionHandler) {
+              handleRejections(invalidQueryHandler) {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
                   s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
@@ -68,28 +67,17 @@ trait BatchChangeRoute extends Directives {
       } ~
       (post & path("zones" / "batchrecordchanges" / Segment / "reject")) { _ =>
         monitor("Endpoint.rejectBatchChange") {
-          entity(as[RejectBatchChangeInput]) { rejectBatchChangeInput =>
-            handleRejections(rejectionHandler) {
-              validate(
-                rejectBatchChangeInput.comments.forall(c =>
-                  c.length > 0 && c.length <= MAX_COMMENT_LENGTH),
-                s"Comment length must be between 1 and $MAX_COMMENT_LENGTH characters, inclusive."
-              ) {
-                // TODO: Tie into batch change service with auth validation and rejection process
-                complete(StatusCodes.OK)
-                // TODO: Update response entity to return modified batch change
-              }
-            }
-          } ~
+          entity(as[Option[RejectBatchChangeInput]]) { input =>
             // TODO: Tie into batch change service with auth validation and rejection process
-            complete(StatusCodes.OK) // Required for optional request entity
+            complete(StatusCodes.OK, input)
             // TODO: Update response entity to return modified batch change
+          }
         }
       }
   }
 
   // TODO: This is duplicated across routes.  Leaving duplicated until we upgrade our json serialization
-  private val rejectionHandler = RejectionHandler
+  private val invalidQueryHandler = RejectionHandler
     .newBuilder()
     .handle {
       case ValidationRejection(msg, _) =>

@@ -448,5 +448,21 @@ class BatchChangeRoutingSpec
         status shouldBe OK
       }
     }
+
+    "return BadRequest if comments exceed 1024 characters" in {
+      Post("/zones/batchrecordchanges/existingID/reject").withEntity(HttpEntity(
+        ContentTypes.`application/json`,
+        compact(render("comments" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute(okAuth)) ~> check {
+        status shouldBe BadRequest
+
+        responseEntity.toString should include("Comment length must not exceed 1024 characters.")
+      }
+    }
+
+    "return OK no request entity is provided" in {
+      Post("/zones/batchrecordchanges/existingID/reject") ~> batchChangeRoute(okAuth) ~> check {
+        status shouldBe OK
+      }
+    }
   }
 }

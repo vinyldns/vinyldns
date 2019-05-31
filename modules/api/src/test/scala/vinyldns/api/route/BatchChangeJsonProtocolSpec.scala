@@ -523,5 +523,14 @@ class BatchChangeJsonProtocolSpec
           RejectBatchChangeInputSerializer
             .toJson(rejectBatchChangeInput)) shouldBe rejectBatchChangeInput.validNel
     }
+
+    "fail if comments exceed MAX_COMMENT_LENGTH characters" in {
+      val rejectBatchChangeInput = RejectBatchChangeInput(Some("a" * 1025))
+      RejectBatchChangeInputSerializer
+        .fromJson(
+          RejectBatchChangeInputSerializer
+            .toJson(rejectBatchChangeInput)) shouldBe
+        s"Comment length must not exceed $MAX_COMMENT_LENGTH characters.".invalidNel
+    }
   }
 }
