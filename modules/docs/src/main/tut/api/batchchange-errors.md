@@ -90,6 +90,7 @@ Since by-change accumulated errors are collected at different stages, errors at 
 15. [Invalid Record Type In Reverse Zone](#InvalidRecordTypeInReverseZone)
 16. [Missing Owner Group Id](#MissingOwnerGroupId)
 17. [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
+18. [High Value Domain](#HighValueDomain)
 
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
@@ -443,3 +444,17 @@ If there are issues with the JSON provided in a batch change request, errors wil
    ]
 }
 ```
+
+#### 18. High Value Domain <a id="HighValueDomain"></a>
+
+##### Error Message:
+
+```
+Record Name "<record name>" is configured as a High Value Domain, so it cannot be modified.
+```
+
+##### Details:
+
+You are trying to create a record with a name that is not permitted in VinylDNS.
+The list of high value domains is specific to each VinylDNS instance.
+You should reach out to your VinylDNS administrators for more information.

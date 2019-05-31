@@ -602,6 +602,20 @@ akka.http {
   }
 }
 
-   # types of unowned records that users can access in shared zones
-    shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
+# types of unowned records that users can access in shared zones
+shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
+    
+# FQDNs / IPs that cannot be modified via VinylDNS
+# regex-list: list of regular expressions matching any FQDN that are not allowed to be modified by this VinylDNS instance
+# ip-list: list of IP addresses that cannot be modified by this VinylDNS instance
+high-value-domains = {
+    regex-list = [
+      "high-value-domain.*"
+    ip-list = [
+      "192.0.2.252",
+      "192.0.2.253",
+      "fd69:27cc:fe91:0:0:0:0:ffff",
+      "fd69:27cc:fe91:0:0:0:ffff:0"
+    ]
+}
 ```
