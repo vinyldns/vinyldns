@@ -510,18 +510,19 @@ def test_create_batch_change_with_missing_ttl_returns_default_or_existing(shared
     client = shared_zone_test_context.ok_vinyldns_client
     ok_zone = shared_zone_test_context.ok_zone
     update_name = "test-ttl-update-existing"
+    update_fqdn = update_name + ".ok"
     rs_update = get_recordset_json(ok_zone, update_name, "CNAME", [{"cname": "old-ttl.cname."}], ttl=300)
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
             {
                 "changeType": "DeleteRecordSet",
-                "inputName": update_name + ".ok",
+                "inputName": update_fqdn,
                 "type": "CNAME",
             },
             {
                 "changeType": "Add",
-                "inputName": update_name + ".ok",
+                "inputName": update_fqdn,
                 "type": "CNAME",
                 "record": {
                     "cname": "updated-ttl.cname."
@@ -549,14 +550,10 @@ def test_create_batch_change_with_missing_ttl_returns_default_or_existing(shared
         record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
         to_delete = set(record_set_list)
 
-        assert_that('ttl' not in result['changes'][0])
-        assert_that(result['changes'][1]['ttl'], is_(300))
-        assert_that('ttl' not in result['changes'][2])
-
         updated_record = client.get_recordset(record_set_list[0][0], record_set_list[0][1])['recordSet']
         assert_that(updated_record['ttl'], is_(300))
 
-        new_record = client.get_recordset(record_set_list[0][0], record_set_list[0][1])['recordSet']
+        new_record = client.get_recordset(record_set_list[2][0], record_set_list[2][1])['recordSet']
         assert_that(new_record['ttl'], is_(7200))
 
     finally:
