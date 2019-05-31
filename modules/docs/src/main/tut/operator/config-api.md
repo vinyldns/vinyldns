@@ -612,7 +612,6 @@ high-value-domains = {
     regex-list = [
       "high-value-domain.*"
     ip-list = [
-      # using reverse zones in the vinyldns/bind9 docker image for testing
       "192.0.2.252",
       "192.0.2.253",
       "fd69:27cc:fe91:0:0:0:0:ffff",
