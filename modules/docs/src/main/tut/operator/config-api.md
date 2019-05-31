@@ -606,12 +606,11 @@ akka.http {
 shared-approved-types = ["A", "AAAA", "CNAME", "PTR"]
     
 # FQDNs / IPs that cannot be modified via VinylDNS
-# regex-list used for all record types except PTR
-# ip-list used exclusively for PTR records
+# regex-list: list of regular expressions matching any FQDN that are not allowed to be modified by this VinylDNS instance
+# ip-list: list of IP addresses that cannot be modified by this VinylDNS instance
 high-value-domains = {
     regex-list = [
-      "high-value-domain.*" # for testing
-    ]
+      "high-value-domain.*"
     ip-list = [
       # using reverse zones in the vinyldns/bind9 docker image for testing
       "192.0.2.252",
@@ -620,5 +619,4 @@ high-value-domains = {
       "fd69:27cc:fe91:0:0:0:ffff:0"
     ]
 }
->>>>>>> add high value domain info to docs
 ```
