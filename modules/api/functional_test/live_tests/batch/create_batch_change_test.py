@@ -503,9 +503,10 @@ def test_create_batch_change_without_owner_group_id_succeeds(shared_zone_test_co
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
 
+@pytest.mark.skip_production
 def test_create_batch_change_with_missing_ttl_returns_default_or_existing(shared_zone_test_context):
     """
-    Test creating a batch change without a ttl fails
+    Test creating a batch change without a ttl returns the default or existing value
     """
     client = shared_zone_test_context.ok_vinyldns_client
     ok_zone = shared_zone_test_context.ok_zone
@@ -553,6 +554,7 @@ def test_create_batch_change_with_missing_ttl_returns_default_or_existing(shared
         updated_record = client.get_recordset(record_set_list[0][0], record_set_list[0][1])['recordSet']
         assert_that(updated_record['ttl'], is_(300))
 
+        # TODO: this assertion will fail if the default TTL is changed
         new_record = client.get_recordset(record_set_list[2][0], record_set_list[2][1])['recordSet']
         assert_that(new_record['ttl'], is_(7200))
 
