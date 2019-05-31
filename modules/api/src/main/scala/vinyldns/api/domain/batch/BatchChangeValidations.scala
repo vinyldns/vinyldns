@@ -100,7 +100,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
 
   def validateAddChangeInput(addChangeInput: AddChangeInput): SingleValidation[Unit] = {
-    val validTTL = validateTTL(addChangeInput.ttl).asUnit
+    val validTTL = addChangeInput.ttl.map(validateTTL(_).asUnit).getOrElse(().valid)
     val validRecord = validateRecordData(addChangeInput.record)
     val validInput = validateInputName(addChangeInput)
 

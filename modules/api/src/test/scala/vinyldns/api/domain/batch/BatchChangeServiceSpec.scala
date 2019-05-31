@@ -51,29 +51,30 @@ class BatchChangeServiceSpec
     with ValidatedMatchers {
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
+  private val ttl = Some(200L)
 
-  private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, 100, AData("1.1.1.1"))
+  private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
   private val nonApexAddA =
-    AddChangeInput("non-apex.test.com", RecordType.A, 100, AData("1.1.1.1"))
+    AddChangeInput("non-apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
   private val onlyApexAddA =
-    AddChangeInput("only.apex.exists", RecordType.A, 100, AData("1.1.1.1"))
+    AddChangeInput("only.apex.exists", RecordType.A, ttl, AData("1.1.1.1"))
   private val onlyBaseAddAAAA =
-    AddChangeInput("have.only.base", RecordType.AAAA, 3600, AAAAData("1:2:3:4:5:6:7:8"))
-  private val noZoneAddA = AddChangeInput("no.zone.match.", RecordType.A, 100, AData("1.1.1.1"))
+    AddChangeInput("have.only.base", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
+  private val noZoneAddA = AddChangeInput("no.zone.match.", RecordType.A, ttl, AData("1.1.1.1"))
   private val cnameAdd =
-    AddChangeInput("cname.test.com", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
+    AddChangeInput("cname.test.com", RecordType.CNAME, ttl, CNAMEData("testing.test.com."))
   private val cnameApexAdd =
-    AddChangeInput("apex.test.com", RecordType.CNAME, 100, CNAMEData("testing.test.com."))
+    AddChangeInput("apex.test.com", RecordType.CNAME, ttl, CNAMEData("testing.test.com."))
   private val cnameReverseAdd = AddChangeInput(
     "cname.55.144.10.in-addr.arpa",
     RecordType.CNAME,
-    100,
+    ttl,
     CNAMEData("testing.cname.com."))
-  private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, 100, PTRData("ptr"))
-  private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, 100, PTRData("ptr"))
-  private val ptrDelegatedAdd = AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("ptr"))
+  private val ptrAdd = AddChangeInput("10.144.55.11", RecordType.PTR, ttl, PTRData("ptr"))
+  private val ptrAdd2 = AddChangeInput("10.144.55.255", RecordType.PTR, ttl, PTRData("ptr"))
+  private val ptrDelegatedAdd = AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("ptr"))
   private val ptrV6Add =
-    AddChangeInput("2001:0000:0000:0000:0000:ff00:0042:8329", RecordType.PTR, 100, PTRData("ptr"))
+    AddChangeInput("2001:0000:0000:0000:0000:ff00:0042:8329", RecordType.PTR, ttl, PTRData("ptr"))
 
   private val authGrp = okGroup
   private val auth = okAuth
@@ -281,6 +282,23 @@ class BatchChangeServiceSpec
             .value)
 
       result.changes.length shouldBe 1
+    }
+
+    "succeed with excluded TTL" in {
+      val noTtl = AddChangeInput("no-ttl-add.test.com", RecordType.A, None, AData("1.1.1.1"))
+      val withTtl =
+        AddChangeInput("with-ttl-add.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
+      val noTtlDel = DeleteChangeInput("non-apex.test.com.", RecordType.TXT)
+      val noTtlUpdate =
+        AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
+
+      val input = BatchChangeInput(None, List(noTtl, withTtl, noTtlDel, noTtlUpdate))
+      val result = rightResultOf(underTest.applyBatchChange(input, auth).value)
+
+      result.changes.length shouldBe 4
+      result.changes(0).asInstanceOf[SingleAddChange].ttl shouldBe VinylDNSConfig.defaultTtl
+      result.changes(1).asInstanceOf[SingleAddChange].ttl shouldBe 900
+      result.changes(3).asInstanceOf[SingleAddChange].ttl shouldBe existingApex.ttl
     }
   }
 
@@ -495,7 +513,7 @@ class BatchChangeServiceSpec
         "0.1.0.0.2.ip6.arpa."
       )
 
-      val ptr = AddChangeInput(ip, RecordType.PTR, 100, PTRData("ptr.")).validNel
+      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData("ptr.")).validNel
       val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(List(ptr)))
 
       val zoneNames = underTestPTRZonesList.zones.map(_.name)
@@ -534,7 +552,7 @@ class BatchChangeServiceSpec
 
       val ips = ip1 :: ip2s
       val ptrs = ips.map { v6Name =>
-        AddChangeInput(v6Name, RecordType.PTR, 100, PTRData("ptr.")).validNel
+        AddChangeInput(v6Name, RecordType.PTR, ttl, PTRData("ptr.")).validNel
       }
 
       val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(ptrs))
@@ -585,10 +603,10 @@ class BatchChangeServiceSpec
     "properly discover TXT records" in {
       val apex = apexZone.name
 
-      val txtApex = AddChangeInput(apex, RecordType.TXT, 100, TXTData("test"))
-      val txtNormal = AddChangeInput(s"record.$apex", RecordType.TXT, 100, TXTData("test"))
+      val txtApex = AddChangeInput(apex, RecordType.TXT, ttl, TXTData("test"))
+      val txtNormal = AddChangeInput(s"record.$apex", RecordType.TXT, ttl, TXTData("test"))
       val txtDotted =
-        AddChangeInput(s"some.dotted.record.$apex", RecordType.TXT, 100, TXTData("test"))
+        AddChangeInput(s"some.dotted.record.$apex", RecordType.TXT, ttl, TXTData("test"))
 
       val expected = List(
         AddChangeForValidation(apexZone, apex, txtApex),
@@ -672,18 +690,18 @@ class BatchChangeServiceSpec
       val ptrv6ZoneBig = Zone("0.1.0.0.2.ip6.arpa.", "email", id = "ptrv6big")
 
       val smallZoneAdd =
-        AddChangeInput("2001:db8::ff00:42:8329", RecordType.PTR, 100, PTRData("ptr"))
+        AddChangeInput("2001:db8::ff00:42:8329", RecordType.PTR, ttl, PTRData("ptr"))
       val medZoneAdd = AddChangeInput(
         "2001:0db8:0111:0000:0000:ff00:0042:8329",
         RecordType.PTR,
-        100,
+        ttl,
         PTRData("ptr"))
       val bigZoneAdd = AddChangeInput(
         "2001:0000:0000:0000:0000:ff00:0042:8329",
         RecordType.PTR,
-        100,
+        ttl,
         PTRData("ptr"))
-      val notFoundZoneAdd = AddChangeInput("::1", RecordType.PTR, 100, PTRData("ptr"))
+      val notFoundZoneAdd = AddChangeInput("::1", RecordType.PTR, ttl, PTRData("ptr"))
 
       val ptripv6Adds = List(
         smallZoneAdd.validNel,
@@ -737,20 +755,21 @@ class BatchChangeServiceSpec
         "apex.test.com.",
         "apex.test.com.",
         A,
-        100,
+        ttl.get,
         AData("1.1.1.1"),
         SingleChangeStatus.Pending,
         None,
         None,
         None,
-        result.changes.head.id)
+        result.changes.head.id
+      )
       result.changes(1) shouldBe SingleAddChange(
         onlyBaseZone.id,
         onlyBaseZone.name,
         "have",
         "have.only.base.",
         AAAA,
-        3600,
+        ttl.get,
         AAAAData("1:2:3:4:5:6:7:8"),
         SingleChangeStatus.Pending,
         None,
@@ -764,7 +783,7 @@ class BatchChangeServiceSpec
         "cname",
         "cname.test.com.",
         CNAME,
-        100,
+        ttl.get,
         CNAMEData("testing.test.com."),
         SingleChangeStatus.Pending,
         None,

@@ -62,15 +62,17 @@ class BatchChangeValidationsSpec
     connection = testConnection,
     adminGroupId = okGroup.id)
 
+  private val ttl = Some(100L)
+
   private val validAChangeGen: Gen[AddChangeInput] = for {
     fqdn <- domainGenerator
     ip <- validIpv4Gen
-  } yield AddChangeInput(fqdn, RecordType.A, 100, AData(ip))
+  } yield AddChangeInput(fqdn, RecordType.A, ttl, AData(ip))
 
   private val validAAAAChangeGen: Gen[AddChangeInput] = for {
     fqdn <- domainGenerator
     ip <- validIpv6Gen
-  } yield AddChangeInput(fqdn, RecordType.AAAA, 100, AAAAData(ip))
+  } yield AddChangeInput(fqdn, RecordType.AAAA, ttl, AAAAData(ip))
 
   private val validAddChangeForValidationGen: Gen[AddChangeForValidation] = for {
     recordName <- domainComponentGenerator
@@ -80,7 +82,7 @@ class BatchChangeValidationsSpec
   private def generateValidAddChangeForValidation(rs: RecordSet): Gen[AddChangeForValidation] =
     for {
       recordName <- domainComponentGenerator
-      addChangeInput <- AddChangeInput(recordName, rs.typ, rs.ttl, rs.records.head)
+      addChangeInput <- AddChangeInput(recordName, rs.typ, Some(rs.ttl), rs.records.head)
     } yield AddChangeForValidation(validZone, recordName, addChangeInput)
 
   private val recordSetList = List(rsOk, aaaa, aaaaOrigin, abcRecord)
@@ -94,17 +96,17 @@ class BatchChangeValidationsSpec
   private val createPrivateAddChange = AddChangeForValidation(
     okZone,
     "private-create",
-    AddChangeInput("private-create", RecordType.A, 200, AData("1.1.1.1")))
+    AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1")))
 
   private val createSharedAddChange = AddChangeForValidation(
     sharedZone,
     "shared-create",
-    AddChangeInput("shared-create", RecordType.A, 200, AData("1.1.1.1")))
+    AddChangeInput("shared-create", RecordType.A, ttl, AData("1.1.1.1")))
 
   private val updatePrivateAddChange = AddChangeForValidation(
     okZone,
     "private-update",
-    AddChangeInput("private-update", RecordType.A, 300, AAAAData("1.2.3.4")))
+    AddChangeInput("private-update", RecordType.A, ttl, AAAAData("1.2.3.4")))
 
   private val updatePrivateDeleteChange = DeleteChangeForValidation(
     okZone,
@@ -114,7 +116,7 @@ class BatchChangeValidationsSpec
   private val updateSharedAddChange = AddChangeForValidation(
     sharedZone,
     "shared-update",
-    AddChangeInput("shared-update", RecordType.AAAA, 300, AAAAData("1:2:3:4:5:6:7:8")))
+    AddChangeInput("shared-update", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
 
   private val updateSharedDeleteChange = DeleteChangeForValidation(
     sharedZone,
@@ -226,13 +228,13 @@ class BatchChangeValidationsSpec
   }
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {
-    val goodInput = AddChangeInput("test.example.com.", RecordType.A, 200, AData("1.1.1.1"))
+    val goodInput = AddChangeInput("test.example.com.", RecordType.A, ttl, AData("1.1.1.1"))
     val goodAAAAInput =
-      AddChangeInput("testAAAA.example.com.", RecordType.AAAA, 200, AAAAData("1:2:3:4:5:6:7:8"))
+      AddChangeInput("testAAAA.example.com.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
     val invalidDomainNameInput =
-      AddChangeInput("invalidDomainName$", RecordType.A, 200, AAAAData("1:2:3:4:5:6:7:8"))
+      AddChangeInput("invalidDomainName$", RecordType.A, ttl, AAAAData("1:2:3:4:5:6:7:8"))
     val invalidIpv6Input =
-      AddChangeInput("testbad.example.com.", RecordType.AAAA, 200, AAAAData("invalidIpv6:123"))
+      AddChangeInput("testbad.example.com.", RecordType.AAAA, ttl, AAAAData("invalidIpv6:123"))
     val result =
       validateInputChanges(List(goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input))
     result(0) shouldBe valid
@@ -243,10 +245,10 @@ class BatchChangeValidationsSpec
 
   property("""validateInputName: should fail with a HighValueDomainError
       |if inputName is a High Value Domain""".stripMargin) {
-    val changeA = AddChangeInput("high-value-domain.foo.", RecordType.A, 300, AData("1.1.1.1"))
-    val changeIpV4 = AddChangeInput("192.0.2.252", RecordType.PTR, 300, PTRData("test."))
+    val changeA = AddChangeInput("high-value-domain.foo.", RecordType.A, ttl, AData("1.1.1.1"))
+    val changeIpV4 = AddChangeInput("192.0.2.252", RecordType.PTR, ttl, PTRData("test."))
     val changeIpV6 =
-      AddChangeInput("fd69:27cc:fe91:0:0:0:0:ffff", RecordType.PTR, 300, PTRData("test."))
+      AddChangeInput("fd69:27cc:fe91:0:0:0:0:ffff", RecordType.PTR, ttl, PTRData("test."))
 
     val resultA = validateInputName(changeA)
     val resultIpV4 = validateInputName(changeIpV4)
@@ -300,7 +302,7 @@ class BatchChangeValidationsSpec
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
       |if validateHostName fails for an invalid domain name""".stripMargin) {
-    val change = AddChangeInput("invalidDomainName$", RecordType.A, 100, AData("1.1.1.1"))
+    val change = AddChangeInput("invalidDomainName$", RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
@@ -308,7 +310,7 @@ class BatchChangeValidationsSpec
   property("""validateAddChangeInput: should fail with a DomainValidationError
       |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
-    val change = AddChangeInput(invalidDomainName, RecordType.A, 100, AData("1.1.1.1"))
+    val change = AddChangeInput(invalidDomainName, RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change)
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
       .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255)))
@@ -317,7 +319,8 @@ class BatchChangeValidationsSpec
   property(
     "validateAddChangeInput: should fail with InvalidRange if validateRange fails for an addChangeInput") {
     forAll(choose[Long](0, 29)) { invalidTTL: Long =>
-      val change = AddChangeInput("test.comcast.com.", RecordType.A, invalidTTL, AData("1.1.1.1"))
+      val change =
+        AddChangeInput("test.comcast.com.", RecordType.A, Some(invalidTTL), AData("1.1.1.1"))
       val result = validateAddChangeInput(change)
       result should haveInvalid[DomainValidationError](InvalidTTL(invalidTTL))
     }
@@ -326,7 +329,7 @@ class BatchChangeValidationsSpec
   property("""validateAddChangeInput: should fail with InvalidIpv4Address
       |if validateRecordData fails for an invalid ipv4 address""".stripMargin) {
     val invalidIpv4 = "invalidIpv4:123"
-    val change = AddChangeInput("test.comcast.com.", RecordType.A, 100, AData(invalidIpv4))
+    val change = AddChangeInput("test.comcast.com.", RecordType.A, ttl, AData(invalidIpv4))
     val result = validateAddChangeInput(change)
     result should haveInvalid[DomainValidationError](InvalidIpv4Address(invalidIpv4))
   }
@@ -334,14 +337,14 @@ class BatchChangeValidationsSpec
   property("""validateAddChangeInput: should fail with InvalidIpv6Address
       |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
     val invalidIpv6 = "invalidIpv6:123"
-    val change = AddChangeInput("test.comcast.com.", RecordType.AAAA, 100, AAAAData(invalidIpv6))
+    val change = AddChangeInput("test.comcast.com.", RecordType.AAAA, ttl, AAAAData(invalidIpv6))
     val result = validateAddChangeInput(change)
     result should haveInvalid[DomainValidationError](InvalidIpv6Address(invalidIpv6))
   }
 
   property("validateAddChangeInput: should fail if A inputName includes a reverse zone address") {
     val invalidInputName = "test.1.2.3.in-addr.arpa."
-    val badAChange = AddChangeInput(invalidInputName, RecordType.A, 100, AData("1.1.1.1"))
+    val badAChange = AddChangeInput(invalidInputName, RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(badAChange)
     result should haveInvalid[DomainValidationError](
       RecordInReverseZoneError(invalidInputName, RecordType.A.toString))
@@ -350,7 +353,7 @@ class BatchChangeValidationsSpec
   property("validateAddChangeInput: should fail if AAAA inputName includes a reverse zone address") {
     val invalidInputName = "test.1.2.3.ip6.arpa."
     val badAAAAChange =
-      AddChangeInput(invalidInputName, RecordType.AAAA, 100, AAAAData("1:2:3:4:5:6:7:8"))
+      AddChangeInput(invalidInputName, RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
     val result = validateAddChangeInput(badAAAAChange)
     result should haveInvalid[DomainValidationError](
       RecordInReverseZoneError(invalidInputName, RecordType.AAAA.toString))
@@ -360,7 +363,7 @@ class BatchChangeValidationsSpec
       |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "$$$"
     val change =
-      AddChangeInput("test.comcast.com.", RecordType.CNAME, 100, CNAMEData(invalidCNAMERecordData))
+      AddChangeInput("test.comcast.com.", RecordType.CNAME, ttl, CNAMEData(invalidCNAMERecordData))
     val result = validateAddChangeInput(change)
 
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidCNAMERecordData."))
@@ -370,7 +373,7 @@ class BatchChangeValidationsSpec
       |if validateRecordData fails for invalid CNAME record data""".stripMargin) {
     val invalidCNAMERecordData = "s" * 256
     val change =
-      AddChangeInput("test.comcast.com.", RecordType.CNAME, 100, CNAMEData(invalidCNAMERecordData))
+      AddChangeInput("test.comcast.com.", RecordType.CNAME, ttl, CNAMEData(invalidCNAMERecordData))
     val result = validateAddChangeInput(change)
 
     result should haveInvalid[DomainValidationError](
@@ -380,7 +383,7 @@ class BatchChangeValidationsSpec
   property("""validateAddChangeInput: PTR should fail with InvalidIPAddress
       |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidip.111."
-    val change = AddChangeInput(invalidIp, RecordType.PTR, 100, PTRData("test.comcast.com"))
+    val change = AddChangeInput(invalidIp, RecordType.PTR, ttl, PTRData("test.comcast.com"))
     val result = validateAddChangeInput(change)
 
     result should haveInvalid[DomainValidationError](InvalidIPAddress(invalidIp))
@@ -388,7 +391,7 @@ class BatchChangeValidationsSpec
 
   property("validateAddChangeInput: should fail with InvalidDomainName for invalid PTR record data") {
     val invalidPTRDname = "*invalidptrdname"
-    val change = AddChangeInput("4.5.6.7", RecordType.PTR, 100, PTRData(invalidPTRDname))
+    val change = AddChangeInput("4.5.6.7", RecordType.PTR, ttl, PTRData(invalidPTRDname))
     val result = validateAddChangeInput(change)
 
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidPTRDname."))
@@ -401,31 +404,31 @@ class BatchChangeValidationsSpec
     val addA1 = AddChangeForValidation(
       authZone,
       "valid",
-      AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1")))
+      AddChangeInput("valid.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val existingA = AddChangeForValidation(
       authZone,
       "existingA",
-      AddChangeInput("existingA.ok.", RecordType.A, 100, AData("1.1.1.1")))
+      AddChangeInput("existingA.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val existingCname = AddChangeForValidation(
       authZone,
       "existingCname",
-      AddChangeInput("existingCname.ok.", RecordType.CNAME, 3600, CNAMEData("cname")))
+      AddChangeInput("existingCname.ok.", RecordType.CNAME, ttl, CNAMEData("cname")))
     val addA2 = AddChangeForValidation(
       okZone,
       "valid2",
-      AddChangeInput("valid2.ok.", RecordType.A, 30, AData("1.1.1.1")))
+      AddChangeInput("valid2.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val duplicateNameCname = AddChangeForValidation(
       reverseZone,
       "199",
       AddChangeInput(
         "199.2.0.192.in-addr.arpa.",
         RecordType.CNAME,
-        100,
+        ttl,
         CNAMEData("199.192/30.2.0.192.in-addr.arpa")))
     val duplicateNamePTR = AddChangeForValidation(
       reverseZone,
       "199",
-      AddChangeInput("192.0.2.199", RecordType.PTR, 100, PTRData("ptr.ok.")))
+      AddChangeInput("192.0.2.199", RecordType.PTR, ttl, PTRData("ptr.ok.")))
 
     val existingRsList: List[RecordSet] = List(
       rsOk.copy(zoneId = existingA.zone.id, name = existingA.recordName),
@@ -466,7 +469,7 @@ class BatchChangeValidationsSpec
     val addUpdateA = AddChangeForValidation(
       okZone,
       "update",
-      AddChangeInput("update.ok.", RecordType.A, 200, AData("1.2.3.4")))
+      AddChangeInput("update.ok.", RecordType.A, ttl, AData("1.2.3.4")))
     val deleteUpdateA =
       DeleteChangeForValidation(okZone, "Update", DeleteChangeInput("update.ok.", RecordType.A))
     val result = validateChangesWithContext(
@@ -485,7 +488,7 @@ class BatchChangeValidationsSpec
     val addUpdateA = AddChangeForValidation(
       okZone.addACLRule(writeAcl),
       "update",
-      AddChangeInput("update.ok.", RecordType.A, 200, AData("1.2.3.4")))
+      AddChangeInput("update.ok.", RecordType.A, ttl, AData("1.2.3.4")))
     val deleteUpdateA = DeleteChangeForValidation(
       okZone.addACLRule(writeAcl),
       "update",
@@ -508,7 +511,7 @@ class BatchChangeValidationsSpec
     val addUpdateA = AddChangeForValidation(
       okZone.addACLRule(readAcl),
       "update",
-      AddChangeInput("update.ok.", RecordType.A, 200, AData("1.2.3.4")))
+      AddChangeInput("update.ok.", RecordType.A, ttl, AData("1.2.3.4")))
     val deleteUpdateA = DeleteChangeForValidation(
       okZone.addACLRule(readAcl),
       "update",
@@ -529,7 +532,7 @@ class BatchChangeValidationsSpec
     val addUpdateA = AddChangeForValidation(
       okZone,
       "does-not-exist",
-      AddChangeInput("does-not-exist.ok.", RecordType.A, 200, AData("1.2.3.4")))
+      AddChangeInput("does-not-exist.ok.", RecordType.A, ttl, AData("1.2.3.4")))
     val deleteUpdateA = DeleteChangeForValidation(
       okZone,
       "does-not-exist",
@@ -554,7 +557,7 @@ class BatchChangeValidationsSpec
     val addUpdateA = AddChangeForValidation(
       sharedZone,
       "mx",
-      AddChangeInput("mx.shared.", RecordType.MX, 300, MXData(200, "mx")))
+      AddChangeInput("mx.shared.", RecordType.MX, ttl, MXData(200, "mx")))
     val deleteUpdateA =
       DeleteChangeForValidation(sharedZone, "mx", DeleteChangeInput("mx.shared.", RecordType.MX))
     val result = validateChangesWithContext(
@@ -573,7 +576,7 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       okZone,
       "existing",
-      AddChangeInput("existing.ok.", RecordType.A, 200, AData("1.2.3.4")))
+      AddChangeInput("existing.ok.", RecordType.A, ttl, AData("1.2.3.4")))
     val deleteCname = DeleteChangeForValidation(
       okZone,
       "existing",
@@ -659,7 +662,7 @@ class BatchChangeValidationsSpec
     val addCname = AddChangeForValidation(
       validZone,
       "existingCname",
-      AddChangeInput("existingCname.ok.", RecordType.CNAME, 30, CNAMEData("cname")))
+      AddChangeInput("existingCname.ok.", RecordType.CNAME, ttl, CNAMEData("cname")))
     val deleteA = DeleteChangeForValidation(
       validZone,
       "existingCname",
@@ -681,7 +684,7 @@ class BatchChangeValidationsSpec
     val addCname = AddChangeForValidation(
       validZone,
       "existingCname",
-      AddChangeInput("existingCname.ok.", RecordType.CNAME, 30, CNAMEData("cname")))
+      AddChangeInput("existingCname.ok.", RecordType.CNAME, ttl, CNAMEData("cname")))
     val existingA = rsOk.copy(zoneId = addCname.zone.id, name = addCname.recordName)
     val newRecordSetList = existingA :: recordSetList
     val result = validateChangesWithContext(
@@ -702,7 +705,7 @@ class BatchChangeValidationsSpec
       AddChangeInput(
         "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
         RecordType.CNAME,
-        100,
+        ttl,
         CNAMEData("cname"))
     )
     val deletePtr = DeleteChangeForValidation(
@@ -728,7 +731,7 @@ class BatchChangeValidationsSpec
       AddChangeInput(
         "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
         RecordType.CNAME,
-        100,
+        ttl,
         CNAMEData("cname"))
     )
     val existingRecordPTR = ptrIp6.copy(zoneId = addCname.zone.id, name = addCname.recordName)
@@ -747,15 +750,15 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.ok.", RecordType.A, 200, AData("1.1.1.1")))
+      AddChangeInput("test.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val addAAAA = AddChangeForValidation(
       okZone,
       "testAAAA",
-      AddChangeInput("testAAAA.ok.", RecordType.AAAA, 200, AAAAData("1:2:3:4:5:6:7:8")))
+      AddChangeInput("testAAAA.ok.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
     val addCname = AddChangeForValidation(
       okZone,
       "new",
-      AddChangeInput("new.ok.", RecordType.CNAME, 200, CNAMEData("hey.ok.com.")))
+      AddChangeInput("new.ok.", RecordType.CNAME, ttl, CNAMEData("hey.ok.com.")))
     val result = validateChangesWithContext(
       List(addA.validNel, addAAAA.validNel, addCname.validNel),
       ExistingRecordSets(List()),
@@ -772,15 +775,15 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.ok.", RecordType.A, 200, AData("1.1.1.1")))
+      AddChangeInput("test.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val addDuplicateCname = AddChangeForValidation(
       okZone,
       "testAAAA",
-      AddChangeInput("testAAAA.ok.", RecordType.CNAME, 200, CNAMEData("hey.ok.com.")))
+      AddChangeInput("testAAAA.ok.", RecordType.CNAME, ttl, CNAMEData("hey.ok.com.")))
     val addAAAA = AddChangeForValidation(
       okZone,
       "testAAAA",
-      AddChangeInput("testAAAA.ok.", RecordType.AAAA, 200, AAAAData("1:2:3:4:5:6:7:8")))
+      AddChangeInput("testAAAA.ok.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
     val result = validateChangesWithContext(
       List(addA.validNel, addAAAA.validNel, addDuplicateCname.validNel),
       ExistingRecordSets(List()),
@@ -800,15 +803,15 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.ok.", RecordType.A, 200, AData("1.1.1.1")))
+      AddChangeInput("test.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val addCname = AddChangeForValidation(
       okZone,
       "testAAAA",
-      AddChangeInput("testAAAA.ok.", RecordType.CNAME, 200, CNAMEData("hey.ok.com.")))
+      AddChangeInput("testAAAA.ok.", RecordType.CNAME, ttl, CNAMEData("hey.ok.com.")))
     val addDuplicateCname = AddChangeForValidation(
       okZone,
       "testAAAA",
-      AddChangeInput("testAAAA.ok.", RecordType.CNAME, 200, CNAMEData("hey2.ok.com.")))
+      AddChangeInput("testAAAA.ok.", RecordType.CNAME, ttl, CNAMEData("hey2.ok.com.")))
     val result = validateChangesWithContext(
       List(addA.validNel, addCname.validNel, addDuplicateCname.validNel),
       ExistingRecordSets(List()),
@@ -829,15 +832,15 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.ok.", RecordType.A, 200, AData("1.1.1.1")))
+      AddChangeInput("test.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val addPtr = AddChangeForValidation(
       okZone,
       "193",
-      AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("test.ok.")))
+      AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("test.ok.")))
     val addDuplicatePtr = AddChangeForValidation(
       okZone,
       "193",
-      AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("hey.ok.com.")))
+      AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("hey.ok.com.")))
     val result = validateChangesWithContext(
       List(addA.validNel, addPtr.validNel, addDuplicatePtr.validNel),
       ExistingRecordSets(List()),
@@ -852,7 +855,7 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       validZone,
       "valid",
-      AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1")))
+      AddChangeInput("valid.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val result =
       validateChangesWithContext(
         List(addA.validNel),
@@ -868,7 +871,7 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       validZone,
       "valid",
-      AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1")))
+      AddChangeInput("valid.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val result = validateChangesWithContext(
       List(addA.validNel),
       ExistingRecordSets(recordSetList),
@@ -883,7 +886,7 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       validZone.addACLRule(ACLRule(accessLevel = AccessLevel.Write, userId = Some(notAuth.userId))),
       "valid",
-      AddChangeInput("valid.ok.", RecordType.A, 30, AData("1.1.1.1"))
+      AddChangeInput("valid.ok.", RecordType.A, ttl, AData("1.1.1.1"))
     )
     val result =
       validateChangesWithContext(
@@ -916,11 +919,11 @@ class BatchChangeValidationsSpec
     val addCname = AddChangeForValidation(
       validZone,
       "existing",
-      AddChangeInput("existing.ok.", RecordType.CNAME, 30, PTRData("orders.vinyldns.")))
+      AddChangeInput("existing.ok.", RecordType.CNAME, ttl, PTRData("orders.vinyldns.")))
     val addPtr = AddChangeForValidation(
       validZone,
       "existing",
-      AddChangeInput("existing.ok.", RecordType.PTR, 3600, CNAMEData("ptrdname.")))
+      AddChangeInput("existing.ok.", RecordType.PTR, ttl, CNAMEData("ptrdname.")))
     val result = validateChangesWithContext(
       List(addCname.validNel, addPtr.validNel),
       ExistingRecordSets(List()),
@@ -1053,22 +1056,22 @@ class BatchChangeValidationsSpec
     val addDuplicateA = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.com.", RecordType.A, 300, AData("10.1.1.1")))
+      AddChangeInput("test.com.", RecordType.A, ttl, AData("10.1.1.1")))
     val addDuplicateCname = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.com.", RecordType.CNAME, 300, CNAMEData("thing.com.")))
+      AddChangeInput("test.com.", RecordType.CNAME, ttl, CNAMEData("thing.com.")))
 
     val deleteA =
       DeleteChangeForValidation(okZone, "delete", DeleteChangeInput("delete.ok.", RecordType.A))
     val addCname = AddChangeForValidation(
       okZone,
       "delete",
-      AddChangeInput("delete.ok.", RecordType.CNAME, 300, CNAMEData("thing.com.")))
+      AddChangeInput("delete.ok.", RecordType.CNAME, ttl, CNAMEData("thing.com.")))
     val addA = AddChangeForValidation(
       okZone,
       "delete-this",
-      AddChangeInput("delete-this.ok.", RecordType.A, 300, AData("10.1.1.1")))
+      AddChangeInput("delete-this.ok.", RecordType.A, ttl, AData("10.1.1.1")))
     val deleteCname = DeleteChangeForValidation(
       okZone,
       "delete",
@@ -1106,19 +1109,19 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.ok.", RecordType.A, 200, AData("1.1.1.1")))
+      AddChangeInput("test.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val addAAAA = AddChangeForValidation(
       okZone,
       "testAAAA",
-      AddChangeInput("testAAAA.ok.", RecordType.AAAA, 200, AAAAData("1:2:3:4:5:6:7:8")))
+      AddChangeInput("testAAAA.ok.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
     val addCname = AddChangeForValidation(
       okZone,
       "new",
-      AddChangeInput("new.ok.", RecordType.CNAME, 200, CNAMEData("hey.ok.")))
+      AddChangeInput("new.ok.", RecordType.CNAME, ttl, CNAMEData("hey.ok.")))
     val addPtr = AddChangeForValidation(
       okZone,
       "193",
-      AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("test.ok.")))
+      AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("test.ok.")))
     val result = validateChangesWithContext(
       List(deleteA.validNel, addA.validNel, addAAAA.validNel, addCname.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingA)),
@@ -1137,15 +1140,15 @@ class BatchChangeValidationsSpec
     val addA = AddChangeForValidation(
       okZone,
       "test",
-      AddChangeInput("test.ok.", RecordType.A, 200, AData("1.1.1.1")))
+      AddChangeInput("test.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val addAAAA = AddChangeForValidation(
       okZone,
       "new",
-      AddChangeInput("new.ok.", RecordType.AAAA, 200, AAAAData("1:2:3:4:5:6:7:8")))
+      AddChangeInput("new.ok.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
     val addPtr = AddChangeForValidation(
       okZone,
       "193",
-      AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("test.ok.")))
+      AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("test.ok.")))
 
     val result = validateChangesWithContext(
       List(deleteCname.validNel, addA.validNel, addAAAA.validNel, addPtr.validNel),
@@ -1165,7 +1168,7 @@ class BatchChangeValidationsSpec
     val addCname = AddChangeForValidation(
       okZone,
       "new",
-      AddChangeInput("new.ok.", RecordType.CNAME, 100, CNAMEData("updateData.com")))
+      AddChangeInput("new.ok.", RecordType.CNAME, ttl, CNAMEData("updateData.com")))
     val result = validateChangesWithContext(
       List(deleteCname.validNel, addCname.validNel),
       ExistingRecordSets(List(existingCname)),
@@ -1188,11 +1191,11 @@ class BatchChangeValidationsSpec
     val addUpdateCname = AddChangeForValidation(
       okZone,
       "name-conflict",
-      AddChangeInput("add.ok.", RecordType.CNAME, 200, CNAMEData("updated.cname.")))
+      AddChangeInput("add.ok.", RecordType.CNAME, ttl, CNAMEData("updated.cname.")))
     val addCname = AddChangeForValidation(
       okZone,
       "name-conflict",
-      AddChangeInput("add.ok.", RecordType.CNAME, 300, CNAMEData("new.add.cname.")))
+      AddChangeInput("add.ok.", RecordType.CNAME, ttl, CNAMEData("new.add.cname.")))
 
     val result = validateChangesWithContext(
       List(deleteUpdateCname.validNel, addUpdateCname.validNel, addCname.validNel),
@@ -1221,7 +1224,7 @@ class BatchChangeValidationsSpec
     val addCname = AddChangeForValidation(
       validIp4ReverseZone,
       "193",
-      AddChangeInput("test.ok.", RecordType.CNAME, 200, CNAMEData("hey2.there.")))
+      AddChangeInput("test.ok.", RecordType.CNAME, ttl, CNAMEData("hey2.there.")))
 
     val result = validateChangesWithContext(
       List(deletePtr.validNel, addCname.validNel),
@@ -1246,7 +1249,7 @@ class BatchChangeValidationsSpec
     val addPtr = AddChangeForValidation(
       validIp4ReverseZone,
       "193",
-      AddChangeInput("192.0.2.193", RecordType.PTR, 100, PTRData("updateData.com")))
+      AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("updateData.com")))
     val result = validateChangesWithContext(
       List(deletePtr.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingPtr)),
@@ -1269,11 +1272,11 @@ class BatchChangeValidationsSpec
     val addUpdatePtr = AddChangeForValidation(
       validIp4ReverseZone,
       "193",
-      AddChangeInput("192.0.2.193", RecordType.PTR, 200, PTRData("updated.ptr.")))
+      AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("updated.ptr.")))
     val addPtr = AddChangeForValidation(
       validIp4ReverseZone,
       "193",
-      AddChangeInput("192.0.2.193", RecordType.PTR, 300, PTRData("new.add.ptr.")))
+      AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("new.add.ptr.")))
 
     val result = validateChangesWithContext(
       List(deleteUpdatePtr.validNel, addUpdatePtr.validNel, addPtr.validNel),
@@ -1285,13 +1288,13 @@ class BatchChangeValidationsSpec
   }
 
   property("validateAddChangeInput: should succeed for a valid TXT addChangeInput") {
-    val input = AddChangeInput("txt.ok.", RecordType.TXT, 100, TXTData("test"))
+    val input = AddChangeInput("txt.ok.", RecordType.TXT, ttl, TXTData("test"))
     val result = validateAddChangeInput(input)
     result shouldBe valid
   }
 
   property("validateAddChangeInput: should fail for a TXT addChangeInput with empty TXTData") {
-    val input = AddChangeInput("txt.ok.", RecordType.TXT, 100, TXTData(""))
+    val input = AddChangeInput("txt.ok.", RecordType.TXT, ttl, TXTData(""))
     val result = validateAddChangeInput(input)
     result should haveInvalid[DomainValidationError](InvalidLength("", 1, 64764))
   }
@@ -1299,20 +1302,20 @@ class BatchChangeValidationsSpec
   property(
     "validateAddChangeInput: should fail for a TXT addChangeInput with TXTData that is too many characters") {
     val txtData = "x" * 64765
-    val input = AddChangeInput("txt.ok.", RecordType.TXT, 100, TXTData(txtData))
+    val input = AddChangeInput("txt.ok.", RecordType.TXT, ttl, TXTData(txtData))
     val result = validateAddChangeInput(input)
     result should haveInvalid[DomainValidationError](InvalidLength(txtData, 1, 64764))
   }
 
   property("validateAddChangeInput: should succeed for a valid MX addChangeInput") {
-    val input = AddChangeInput("mx.ok.", RecordType.MX, 100, MXData(1, "foo.bar."))
+    val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(1, "foo.bar."))
     val result = validateAddChangeInput(input)
     result shouldBe valid
   }
 
   property("validateAddChangeInput: should fail for a MX addChangeInput with invalid preference") {
-    val inputSmall = AddChangeInput("mx.ok.", RecordType.MX, 100, MXData(-1, "foo.bar."))
-    val inputLarge = AddChangeInput("mx.ok.", RecordType.MX, 100, MXData(1000000, "foo.bar."))
+    val inputSmall = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(-1, "foo.bar."))
+    val inputLarge = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(1000000, "foo.bar."))
     val resultSmall = validateAddChangeInput(inputSmall)
     val resultLarge = validateAddChangeInput(inputLarge)
 
@@ -1321,14 +1324,14 @@ class BatchChangeValidationsSpec
   }
 
   property("validateAddChangeInput: should fail for a MX addChangeInput with invalid exchange") {
-    val input = AddChangeInput("mx.ok.", RecordType.MX, 100, MXData(1, "foo$.bar."))
+    val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(1, "foo$.bar."))
     val result = validateAddChangeInput(input)
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))
   }
 
   property(
     "validateAddChangeInput: should fail for a MX addChangeInput with invalid preference and exchange") {
-    val input = AddChangeInput("mx.ok.", RecordType.MX, 100, MXData(-1, "foo$.bar."))
+    val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(-1, "foo$.bar."))
     val result = validateAddChangeInput(input)
     result should haveInvalid[DomainValidationError](InvalidMxPreference(-1))
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))
@@ -1343,7 +1346,7 @@ class BatchChangeValidationsSpec
     val addMX = AddChangeForValidation(
       okZone,
       "name-conflict",
-      AddChangeInput("name-conflict", RecordType.MX, 300, MXData(1, "foo.bar.")))
+      AddChangeInput("name-conflict", RecordType.MX, ttl, MXData(1, "foo.bar.")))
 
     val result =
       validateChangesWithContext(
@@ -1358,11 +1361,11 @@ class BatchChangeValidationsSpec
     val addMx = AddChangeForValidation(
       okZone,
       "name-conflict",
-      AddChangeInput("name-conflict", RecordType.MX, 200, MXData(1, "foo.bar.")))
+      AddChangeInput("name-conflict", RecordType.MX, ttl, MXData(1, "foo.bar.")))
     val addMx2 = AddChangeForValidation(
       okZone,
       "name-conflict",
-      AddChangeInput("name-conflict", RecordType.MX, 200, MXData(2, "foo.bar.")))
+      AddChangeInput("name-conflict", RecordType.MX, ttl, MXData(2, "foo.bar.")))
 
     val result = validateChangesWithContext(
       List(addMx.validNel, addMx2.validNel),
@@ -1385,7 +1388,7 @@ class BatchChangeValidationsSpec
     val addMx = AddChangeForValidation(
       okZone,
       "name-conflict",
-      AddChangeInput("name-conflict", RecordType.MX, 200, MXData(1, "foo.bar.")))
+      AddChangeInput("name-conflict", RecordType.MX, ttl, MXData(1, "foo.bar.")))
 
     val result = validateChangesWithContext(
       List(deleteMx.validNel, addMx.validNel),

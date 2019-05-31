@@ -76,7 +76,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       (
         (js \ "inputName").required[String]("Missing BatchChangeInput.changes.inputName"),
         recordType,
-        (js \ "ttl").required[Long]("Missing BatchChangeInput.changes.ttl"),
+        (js \ "ttl").optional[Long],
         recordType.andThen(extractRecord(_, js \ "record"))).mapN(AddChangeInput.apply)
     }
 
