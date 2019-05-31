@@ -41,7 +41,8 @@ class BatchChangeSpec extends WordSpec with Matchers {
     "userName",
     None,
     DateTime.now,
-    List(pendingChange, failedChange, completeChange))
+    List(pendingChange, failedChange, completeChange),
+    approvalStatus = BatchChangeApprovalStatus.AutoApproved)
 
   "BatchChange" should {
     "calculate Pending status based on SingleChanges" in {

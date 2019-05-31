@@ -321,7 +321,9 @@ class BatchChangeService(
         batchChangeInput.comments,
         DateTime.now,
         changes,
-        batchChangeInput.ownerGroupId).asRight
+        batchChangeInput.ownerGroupId,
+        BatchChangeApprovalStatus.AutoApproved
+      ).asRight
     } else {
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
     }

@@ -29,7 +29,12 @@ import vinyldns.api.domain.dns.DnsProtocol.{NoError, Refused}
 import vinyldns.api.engine.RecordSetChangeHandler.{AlreadyApplied, Failure, ReadyToApply}
 import vinyldns.api.repository.InMemoryBatchChangeRepository
 import vinyldns.api.{CatsHelpers, Interfaces}
-import vinyldns.core.domain.batch.{BatchChange, SingleAddChange, SingleChangeStatus}
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  BatchChangeApprovalStatus,
+  SingleAddChange,
+  SingleChangeStatus
+}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, RecordChangeRepository, RecordSetRepository, _}
 import vinyldns.core.TestRecordSetData._
@@ -86,7 +91,13 @@ class RecordSetChangeHandlerSpec
     None,
     None)
   private val singleChanges = notUpdatedChange :: completeCreateAAAASingleChanges
-  private val batchChange = BatchChange("userId", "userName", None, DateTime.now, singleChanges)
+  private val batchChange = BatchChange(
+    "userId",
+    "userName",
+    None,
+    DateTime.now,
+    singleChanges,
+    approvalStatus = BatchChangeApprovalStatus.AutoApproved)
 
   private val rsChange =
     completeCreateAAAA.copy(singleBatchChangeIds = completeCreateAAAASingleChanges.map(_.id))

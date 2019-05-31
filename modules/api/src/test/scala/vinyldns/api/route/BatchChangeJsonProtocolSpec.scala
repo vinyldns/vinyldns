@@ -373,6 +373,10 @@ class BatchChangeJsonProtocolSpec
         time,
         List(add, delete),
         None,
+        BatchChangeApprovalStatus.AutoApproved,
+        None,
+        None,
+        None,
         "someId")
       val result = BatchChangeSerializer.toJson(batchChange)
 
@@ -422,7 +426,12 @@ class BatchChangeJsonProtocolSpec
         time,
         List(add, delete),
         Some("groupId"),
-        "someId")
+        BatchChangeApprovalStatus.AutoApproved,
+        None,
+        None,
+        None,
+        "someId"
+      )
 
       val batchChangeInfo = BatchChangeInfo(batchChange, Some("groupName"))
 

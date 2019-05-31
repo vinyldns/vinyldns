@@ -27,12 +27,7 @@ import vinyldns.api.repository._
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
-import vinyldns.core.domain.batch.{
-  BatchChange,
-  SingleAddChange,
-  SingleChangeStatus,
-  SingleDeleteChange
-}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType.{RecordType, _}
 import vinyldns.core.domain.record._
@@ -209,7 +204,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
   "convertAndSendBatchForProcessing" should {
     "successfully generate add RecordSetChange and map IDs for all adds" in {
       val batchChange =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, addSingleChangesGood)
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          addSingleChangesGood,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
           .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
@@ -230,7 +231,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "successfully generate delete RecordSetChange and map IDs for all deletes" in {
       val batchChange =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, deleteSingleChangesGood)
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          deleteSingleChangesGood,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
           .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
@@ -261,7 +268,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "successfully generate update RecordSetChange and map IDs for mix of adds/deletes" in {
       val batchChange =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, updateSingleChangesGood)
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          updateSingleChangesGood,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
           .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
@@ -289,7 +302,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     "successfully handle a combination of adds, updates, and deletes" in {
       val changes = addSingleChangesGood ++ deleteSingleChangesGood ++ updateSingleChangesGood
       val batchChange =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, changes)
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          changes,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
           .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
@@ -327,7 +346,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "successfully return for an empty batch" in {
       val batchChange =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, List())
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
           .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, None)
@@ -338,7 +363,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "set status to failure for changes with queueing issues" in {
       val batchWithBadChange =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneBad)
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          singleChangesOneBad,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = rightResultOf(
         underTest
           .sendBatchForProcessing(batchWithBadChange, existingZones, existingRecordSets, None)
@@ -371,7 +402,13 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
     "return error if an unsupported record is received" in {
       val batchChangeUnsupported =
-        BatchChange(okUser.id, okUser.userName, None, DateTime.now, singleChangesOneUnsupported)
+        BatchChange(
+          okUser.id,
+          okUser.userName,
+          None,
+          DateTime.now,
+          singleChangesOneUnsupported,
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       val result = leftResultOf(
         underTest
           .sendBatchForProcessing(batchChangeUnsupported, existingZones, existingRecordSets, None)

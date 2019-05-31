@@ -18,12 +18,15 @@ package vinyldns.mysql.repository
 
 import cats.data._
 import cats.effect._
+import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
+import java.sql.Timestamp
 
 /**
   * MySqlBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
@@ -43,28 +46,32 @@ class MySqlBatchChangeRepository
 
   private final val PUT_BATCH_CHANGE =
     sql"""
-         |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id)
-         |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId})
+         |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
+         |                          approval_status, reviewer_id, review_comment, review_timestamp)
+         |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
+         |              {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
         """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =
     sql"""
          |INSERT INTO single_change(id, seq_num, input_name, change_type, data, status, batch_change_id,
-         |                                record_set_change_id, record_set_id, zone_id)
+         |                          record_set_change_id, record_set_id, zone_id)
          |     VALUES ({id}, {seqNum}, {inputName}, {changeType}, {data}, {status}, {batchChangeId},
-         |                                {recordSetChangeId}, {recordSetId}, {zoneId})
+         |             {recordSetChangeId}, {recordSetId}, {zoneId})
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_METADATA =
     sql"""
-         |SELECT user_id, user_name, created_time, comments, owner_group_id
+         |SELECT user_id, user_name, created_time, comments, owner_group_id,
+         |       approval_status, reviewer_id, review_comment, review_timestamp
          |  FROM batch_change bc
          | WHERE bc.id = ?
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE =
     sql"""
-         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id
+         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
+         |       bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp
          |  FROM batch_change bc
          |  JOIN (SELECT id, batch_change_id from single_change where id = ?) sc
          |    ON sc.batch_change_id = bc.id
@@ -73,6 +80,7 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_SUMMARY =
     sql"""
          |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
+         |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
          |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
          |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
          |              SUM( case sc.status when 'Complete' then 1 else 0 end )  AS complete_count
@@ -197,7 +205,7 @@ class MySqlBatchChangeRepository
         dbCall.map { inDbChanges =>
           val notFound = singleChangeIds.toSet -- inDbChanges.map(_.id).toSet
           if (notFound.nonEmpty) {
-            // log 1st 5; we shouldnt need all, and if theres a ton it could get long
+            // log 1st 5; we shouldn't need all, and if there's a ton it could get long
             logger.error(
               s"!!! Could not find all SingleChangeIds in getSingleChanges call; missing IDs: ${notFound
                 .take(5)} !!!")
@@ -230,7 +238,7 @@ class MySqlBatchChangeRepository
                 pending + failed + complete,
                 BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
                 Option(res.string("owner_group_id")),
-                res.string("id")
+                res.string("id"),
               )
             }
             .list()
@@ -261,10 +269,14 @@ class MySqlBatchChangeRepository
       BatchChange(
         result.string("user_id"),
         result.string("user_name"),
-        Option(result.string("comments")),
+        result.stringOpt("comments"),
         new org.joda.time.DateTime(result.timestamp("created_time")),
         Nil,
         Option(result.string("owner_group_id")),
+        toApprovalStatus(result.intOpt("approval_status")),
+        result.stringOpt("reviewer_id"),
+        result.stringOpt("review_comment"),
+        toReviewTimestamp(result.timestampOpt("review_timestamp")),
         batchChangeId.getOrElse(result.string("id"))
       )
   }
@@ -279,7 +291,11 @@ class MySqlBatchChangeRepository
           'userName -> batchChange.userName,
           'createdTime -> batchChange.createdTimestamp,
           'comments -> batchChange.comments,
-          'ownerGroupId -> batchChange.ownerGroupId
+          'ownerGroupId -> batchChange.ownerGroupId,
+          'approvalStatus -> fromApprovalStatus(batchChange.approvalStatus),
+          'reviewerId -> batchChange.reviewerId,
+          'reviewComment -> batchChange.reviewComment,
+          'reviewTimestamp -> batchChange.reviewTimestamp
         ): _*
       )
       .update()
@@ -330,4 +346,24 @@ class MySqlBatchChangeRepository
       case Left(e) => throw e
     }
   }
+
+  def fromApprovalStatus(typ: BatchChangeApprovalStatus): Int =
+    typ match {
+      case BatchChangeApprovalStatus.AutoApproved => 1
+      case BatchChangeApprovalStatus.PendingApproval => 2
+      case BatchChangeApprovalStatus.ManuallyApproved => 3
+      case BatchChangeApprovalStatus.ManuallyRejected => 4
+    }
+
+  def toApprovalStatus(key: Option[Int]): BatchChangeApprovalStatus =
+    key match {
+      case Some(1) => BatchChangeApprovalStatus.AutoApproved
+      case Some(2) => BatchChangeApprovalStatus.PendingApproval
+      case Some(3) => BatchChangeApprovalStatus.ManuallyApproved
+      case Some(4) => BatchChangeApprovalStatus.ManuallyRejected
+      case _ => BatchChangeApprovalStatus.AutoApproved
+    }
+
+  def toReviewTimestamp(result: Option[Timestamp]): Option[DateTime] =
+    result.map(new org.joda.time.DateTime(_))
 }
