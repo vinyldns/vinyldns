@@ -288,6 +288,23 @@ class BatchChangeServiceSpec
 
       result.changes.length shouldBe 1
     }
+
+    "succeed with excluded TTL" in {
+      val noTtl = AddChangeInput("no-ttl-add.test.com", RecordType.A, None, AData("1.1.1.1"))
+      val withTtl =
+        AddChangeInput("with-ttl-add.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
+      val noTtlDel = DeleteChangeInput("non-apex.test.com.", RecordType.TXT)
+      val noTtlUpdate =
+        AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
+
+      val input = BatchChangeInput(None, List(noTtl, withTtl, noTtlDel, noTtlUpdate))
+      val result = rightResultOf(underTest.applyBatchChange(input, auth).value)
+
+      result.changes.length shouldBe 4
+      result.changes(0).asInstanceOf[SingleAddChange].ttl shouldBe VinylDNSConfig.defaultTtl
+      result.changes(1).asInstanceOf[SingleAddChange].ttl shouldBe 900
+      result.changes(3).asInstanceOf[SingleAddChange].ttl shouldBe existingApex.ttl
+    }
   }
 
   "getBatchChange" should {
