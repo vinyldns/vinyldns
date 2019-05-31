@@ -102,15 +102,15 @@ class BatchChangeJsonProtocolSpec
   val addBatchChangeInputWithOwnerGroupId: JObject = ("ownerGroupId" -> Some("owner-group-id")) ~~
     addBatchChangeInputWithComment
 
-  val addAChangeInput = AddChangeInput("foo.", A, 3600, AData("1.1.1.1"))
+  val addAChangeInput = AddChangeInput("foo.", A, Some(3600), AData("1.1.1.1"))
 
   val deleteAChangeInput = DeleteChangeInput("foo.", A)
 
-  val addAAAAChangeInput = AddChangeInput("bar.", AAAA, 1200, AAAAData("1:2:3:4:5:6:7:8"))
+  val addAAAAChangeInput = AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
 
-  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, 200, CNAMEData("buzz."))
+  val addCNAMEChangeInput = AddChangeInput("bizz.baz.", CNAME, Some(200), CNAMEData("buzz."))
 
-  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, 200, PTRData("test.com."))
+  val addPTRChangeInput = AddChangeInput("4.5.6.7", PTR, Some(200), PTRData("test.com."))
 
   val fooDiscoveryError = ZoneDiscoveryError("foo.")
 
@@ -176,14 +176,14 @@ class BatchChangeJsonProtocolSpec
       result should haveInvalid("Missing BatchChangeInput.changes.type")
     }
 
-    "return an error if the ttl is not specified" in {
+    "succeed if the ttl is not specified for an add change" in {
       val json = buildAddChangeInputJson(
         inputName = Some("foo."),
         typ = Some(A),
         record = Some(AData("1.1.1.1")))
-      val result = ChangeInputSerializer.fromJson(json)
+      val result = ChangeInputSerializer.fromJson(json).value
 
-      result should haveInvalid("Missing BatchChangeInput.changes.ttl")
+      result shouldBe AddChangeInput("foo.", A, None, AData("1.1.1.1"))
     }
 
     "return an error if the record is not specified for add" in {
@@ -273,7 +273,6 @@ class BatchChangeJsonProtocolSpec
 
       result should haveInvalid("Missing BatchChangeInput.changes.inputName")
       result should haveInvalid("Missing BatchChangeInput.changes.type")
-      result should haveInvalid("Missing BatchChangeInput.changes.ttl")
     }
   }
 
@@ -285,7 +284,7 @@ class BatchChangeJsonProtocolSpec
         "recordName",
         "fqdn",
         A,
-        30,
+        Some(30),
         AData("1.1.1.1"),
         Pending,
         Some("systemMessage"),
@@ -358,7 +357,7 @@ class BatchChangeJsonProtocolSpec
         "recordName",
         "fqdn",
         A,
-        30,
+        Some(30),
         AData("1.1.1.1"),
         Pending,
         Some("systemMessage"),
@@ -407,7 +406,7 @@ class BatchChangeJsonProtocolSpec
         "recordName",
         "fqdn",
         A,
-        30,
+        Some(30),
         AData("1.1.1.1"),
         Pending,
         Some("systemMessage"),

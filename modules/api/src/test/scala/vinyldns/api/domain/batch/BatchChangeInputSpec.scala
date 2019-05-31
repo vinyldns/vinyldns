@@ -23,14 +23,16 @@ import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
 class BatchChangeInputSpec extends WordSpec with Matchers {
   "BatchChangeInput" should {
     "ensure trailing dot on A, AAAA, and CNAME fqdn" in {
-      val changeA = AddChangeInput("apex.test.com", A, 100, AData("1.1.1.1"))
-      val changeAAAA = AddChangeInput("aaaa.test.com", AAAA, 3600, AAAAData("1:2:3:4:5:6:7:8"))
-      val changeCname = AddChangeInput("cname.test.com", CNAME, 100, CNAMEData("testing.test.com"))
-      val changeADotted = AddChangeInput("adot.test.com.", A, 100, AData("1.1.1.1"))
+      val changeA = AddChangeInput("apex.test.com", A, Some(100), AData("1.1.1.1"))
+      val changeAAAA =
+        AddChangeInput("aaaa.test.com", AAAA, Some(3600), AAAAData("1:2:3:4:5:6:7:8"))
+      val changeCname =
+        AddChangeInput("cname.test.com", CNAME, Some(100), CNAMEData("testing.test.com"))
+      val changeADotted = AddChangeInput("adot.test.com.", A, Some(100), AData("1.1.1.1"))
       val changeAAAADotted =
-        AddChangeInput("aaaadot.test.com.", AAAA, 3600, AAAAData("1:2:3:4:5:6:7:8"))
+        AddChangeInput("aaaadot.test.com.", AAAA, Some(3600), AAAAData("1:2:3:4:5:6:7:8"))
       val changeCnameDotted =
-        AddChangeInput("cnamedot.test.com.", CNAME, 100, CNAMEData("testing.test.com."))
+        AddChangeInput("cnamedot.test.com.", CNAME, Some(100), CNAMEData("testing.test.com."))
 
       val input = BatchChangeInput(
         None,
