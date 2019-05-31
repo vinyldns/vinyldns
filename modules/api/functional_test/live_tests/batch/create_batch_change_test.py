@@ -502,6 +502,67 @@ def test_create_batch_change_without_owner_group_id_succeeds(shared_zone_test_co
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
+
+def test_create_batch_change_with_missing_ttl_returns_default_or_existing(shared_zone_test_context):
+    """
+    Test creating a batch change without a ttl fails
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone = shared_zone_test_context.ok_zone
+    update_name = "test-ttl-update-existing"
+    rs_update = get_recordset_json(ok_zone, update_name, "CNAME", [{"cname": "old-ttl.cname."}], ttl=300)
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            {
+                "changeType": "DeleteRecordSet",
+                "inputName": update_name + ".ok",
+                "type": "CNAME",
+            },
+            {
+                "changeType": "Add",
+                "inputName": update_name + ".ok",
+                "type": "CNAME",
+                "record": {
+                    "cname": "updated-ttl.cname."
+                }
+            },
+            {
+                "changeType": "Add",
+                "inputName": "test-new-ttl-record.ok",
+                "type": "CNAME",
+                "record": {
+                    "cname": "new-ttl-record.cname."
+                }
+            }
+        ]
+    }
+    to_delete = []
+
+    try:
+        create_rs = client.create_recordset(rs_update, status=202)
+        client.wait_until_recordset_change_status(create_rs, 'Complete')
+        to_delete = [(create_rs['zone']['id'], create_rs['recordSet']['id'])]
+
+        result = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(result)
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        to_delete = set(record_set_list)
+
+        assert_that('ttl' not in result['changes'][0])
+        assert_that(result['changes'][1]['ttl'], is_(300))
+        assert_that('ttl' not in result['changes'][2])
+
+        updated_record = client.get_recordset(record_set_list[0][0], record_set_list[0][1])['recordSet']
+        assert_that(updated_record['ttl'], is_(300))
+
+        new_record = client.get_recordset(record_set_list[0][0], record_set_list[0][1])['recordSet']
+        assert_that(new_record['ttl'], is_(7200))
+
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, client)
+
+
 def test_create_batch_change_partial_failure(shared_zone_test_context):
     """
     Test batch change status with partial failures
@@ -741,29 +802,6 @@ def test_create_batch_change_with_invalid_record_type_fails(shared_zone_test_con
     errors = client.create_batch_change(batch_change_input, status=400)
 
     assert_error(errors, error_messages=["Invalid RecordType"])
-
-
-def test_create_batch_change_with_missing_ttl_fails(shared_zone_test_context):
-    """
-    Test creating a batch change without a ttl fails
-    """
-    client = shared_zone_test_context.ok_vinyldns_client
-    batch_change_input = {
-        "comments": "this is optional",
-        "changes": [
-            {
-                "changeType": "Add",
-                "inputName": "thing.thing.com.",
-                "type": "A",
-                "record": {
-                    "address": "4.5.6.7"
-                }
-            }
-        ]
-    }
-    errors = client.create_batch_change(batch_change_input, status=400)
-
-    assert_error(errors, error_messages=["Missing BatchChangeInput.changes.ttl"])
 
 
 def test_create_batch_change_with_missing_record_fails(shared_zone_test_context):
