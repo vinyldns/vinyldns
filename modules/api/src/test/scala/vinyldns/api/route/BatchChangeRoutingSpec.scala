@@ -91,6 +91,10 @@ class BatchChangeRoutingSpec
             "singleDeleteChangeId")
         ),
         ownerGroupId,
+        BatchChangeApprovalStatus.AutoApproved,
+        None,
+        None,
+        None,
         "batchId"
       )
 

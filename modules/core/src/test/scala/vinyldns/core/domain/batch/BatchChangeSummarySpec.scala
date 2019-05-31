@@ -43,6 +43,10 @@ class BatchChangeSummarySpec extends WordSpec with Matchers {
     DateTime.now,
     List(pendingChange, failedChange, completeChange),
     Some("groupId"),
+    BatchChangeApprovalStatus.AutoApproved,
+    None,
+    None,
+    None,
     "id"
   )
 

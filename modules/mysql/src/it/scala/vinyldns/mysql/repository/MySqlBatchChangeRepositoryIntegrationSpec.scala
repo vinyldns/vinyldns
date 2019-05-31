@@ -86,7 +86,11 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         sc3.copy(id = UUID.randomUUID().toString),
         deleteChange.copy(id = UUID.randomUUID().toString)
       ),
-      Some(UUID.randomUUID().toString)
+      Some(UUID.randomUUID().toString),
+      BatchChangeApprovalStatus.AutoApproved,
+      Some(UUID.randomUUID().toString),
+      Some("review comment"),
+      Some(DateTime.now.plusSeconds(2))
     )
 
     val bcARecords: BatchChange = randomBatchChange
@@ -152,6 +156,13 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.userName shouldBe expected.userId
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
     actual.ownerGroupId shouldBe expected.ownerGroupId
+    actual.approvalStatus shouldBe expected.approvalStatus
+    actual.reviewerId shouldBe expected.reviewerId
+    actual.reviewComment shouldBe expected.reviewComment
+    actual.reviewTimestamp match {
+      case Some(art) => art.getMillis shouldBe expected.reviewTimestamp.get.getMillis +- 2000
+      case None => actual.reviewTimestamp shouldBe expected.reviewTimestamp
+    }
   }
 
   private def areSame(actual: BatchChangeSummary, expected: BatchChangeSummary): Assertion = {
@@ -189,8 +200,42 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), Some(bcARecords))
     }
 
-    "save/get a batch change with empty comments, ownerGroup" in {
-      val testBatch = randomBatchChange.copy(comments = None, ownerGroupId = None)
+    "save/get a batch change with empty comments, ownerGroup, reviewerId, reviewComment, reviewTimeStamp" in {
+      val testBatch = randomBatchChange.copy(comments = None, ownerGroupId = None, reviewerId = None,
+        reviewComment = None, reviewTimestamp = None)
+      val f =
+        for {
+          _ <- repo.save(testBatch)
+          retrieved <- repo.getBatchChange(testBatch.id)
+        } yield retrieved
+
+      areSame(f.unsafeRunSync(), Some(testBatch))
+    }
+
+    "save/get a batch change with BatchChangeApprovalStatus.PendingApproval" in {
+      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      val f =
+        for {
+          _ <- repo.save(testBatch)
+          retrieved <- repo.getBatchChange(testBatch.id)
+        } yield retrieved
+
+      areSame(f.unsafeRunSync(), Some(testBatch))
+    }
+
+    "save/get a batch change with BatchChangeApprovalStatus.ManuallyApproved" in {
+      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+      val f =
+        for {
+          _ <- repo.save(testBatch)
+          retrieved <- repo.getBatchChange(testBatch.id)
+        } yield retrieved
+
+      areSame(f.unsafeRunSync(), Some(testBatch))
+    }
+
+    "save/get a batch change with BatchChangeApprovalStatus.ManuallyRejected" in {
+      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
       val f =
         for {
           _ <- repo.save(testBatch)
