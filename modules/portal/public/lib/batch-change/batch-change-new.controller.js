@@ -111,23 +111,26 @@
             }
 
             $scope.uploadCSV = function(file) {
-                if (file.type == "text/csv"){
-                    $scope.newBatch.changes = [];
-                    var reader = new FileReader();
-                    reader.onload = function(e) {
-                        var rows = e.target.result.split("\n");
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var rows = e.target.result.split("\n");
+                    console.log(rows[0]);
+                    if (rows[0] == "Change Type,Record Type,Input Name,TTL,Record Data") {
+                        $scope.newBatch.changes = [];
                         for(var i = 1; i < rows.length; i++) {
                             var lengthCheck = rows[i].replace(/,+/g, '').trim().length
                             if (lengthCheck == 0) { continue; }
                             parseRow(rows[i])
                         }
                         $scope.$apply();
+                    } else {
+                        invalidCsvFile();
                     }
-                    reader.readAsText(file);
-                    resetForm();
-                } else {
-                    $scope.alerts.push({type: 'danger', content: 'Import failed. Not a valid CSV file.'});
-                };
+                }
+                console.log(reader.error)
+                reader.readAsText(file);
+                $scope.alerts.push({type: 'danger', content: 'Import failed. Not a valid CSV file.'});
+                resetForm();
 
                 function parseRow(row) {
                     var change = {};
@@ -157,6 +160,11 @@
                         }
                     }
                     $scope.newBatch.changes.push(change);
+                }
+
+                function invalidCsvFile(){
+                    console.log("WHERE AM I??")
+                    $scope.alerts.push({type: 'danger', content: 'Import failed. Not a valid CSV file.'});
                 }
 
                 function resetForm() {

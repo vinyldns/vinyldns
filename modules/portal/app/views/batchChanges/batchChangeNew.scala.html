@@ -198,9 +198,8 @@
                                         <span ng-if="csvForm.batchChangeCsv.$pristine || csvForm.batchChangeCsv.$error.filled"><span class="glyphicon glyphicon-import"></span> Import CSV</span>
                                         <span ng-if="csvForm.batchChangeCsv.$dirty && csvForm.batchChangeCsv.$$success.filled"><span class="glyphicon glyphicon-folder-open"></span> Change File</span>
                                     </label>
-                                    <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" filled csv>
+                                    <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" filled>
                                     <button class="btn btn-success" ng-click="uploadCSV(csvForm.batchChangeCsv.$viewValue)" type="button" ng-if="csvForm.batchChangeCsv.$dirty && csvForm.batchChangeCsv.$valid" id="batchChangeCsvUpload"><span class="glyphicon glyphicon-upload"></span> Upload {{csvForm.batchChangeCsv.$viewValue.name}}</button>
-                                    <p ng-show="csvForm.batchChangeCsv.$error.csv && csvForm.batchChangeCsv.$$success.filled" class="batch-change-error-help">{{csvForm.batchChangeCsv.$viewValue.name}} is not a CSV file.</p>
                                     <p><a href="https://www.vinyldns.io/portal/batch-changes#create-a-batch-change" target="_blank" rel="noopener noreferrer">Download sample CSV</a></p>
                                 </ng-form>
                             </div>
