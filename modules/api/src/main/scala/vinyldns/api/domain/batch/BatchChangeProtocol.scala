@@ -30,13 +30,21 @@ sealed trait ChangeInput {
   val typ: RecordType
 }
 
-final case class AddChangeInput(inputName: String, typ: RecordType, ttl: Long, record: RecordData)
+final case class AddChangeInput(
+    inputName: String,
+    typ: RecordType,
+    ttl: Option[Long],
+    record: RecordData)
     extends ChangeInput
 
 final case class DeleteChangeInput(inputName: String, typ: RecordType) extends ChangeInput
 
 object AddChangeInput {
-  def apply(inputName: String, typ: RecordType, ttl: Long, record: RecordData): AddChangeInput = {
+  def apply(
+      inputName: String,
+      typ: RecordType,
+      ttl: Option[Long],
+      record: RecordData): AddChangeInput = {
     val transformName = typ match {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
