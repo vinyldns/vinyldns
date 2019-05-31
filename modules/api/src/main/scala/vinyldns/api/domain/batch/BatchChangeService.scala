@@ -20,6 +20,7 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 import org.joda.time.DateTime
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.ReverseZoneHelpers.ptrIsInZone
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
@@ -60,6 +61,7 @@ class BatchChangeService(
 
   import batchChangeValidations._
 
+  val logger: Logger = LoggerFactory.getLogger(classOf[BatchChangeService])
   def applyBatchChange(
       batchChangeInput: BatchChangeInput,
       auth: AuthPrincipal): BatchResult[BatchChange] =
@@ -70,8 +72,9 @@ class BatchChangeService(
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
+      withTtl = doTtlMapping(changesWithZones, recordSets)
       validatedSingleChanges = validateChangesWithContext(
-        changesWithZones,
+        withTtl,
         recordSets,
         auth,
         batchChangeInput.ownerGroupId)
@@ -177,6 +180,21 @@ class BatchChangeService(
       recordSetsWithExistingZone = allRecordSets.filter(rs => zoneMap.getById(rs.zoneId))
     } yield ExistingRecordSets(recordSetsWithExistingZone)
   }
+
+  def doTtlMapping(
+      changes: ValidatedBatch[ChangeForValidation],
+      existingRecordSets: ExistingRecordSets): ValidatedBatch[ChangeForValidation] =
+    changes.mapValid {
+      case add: AddChangeForValidation =>
+        existingRecordSets
+          .get(add.recordKey)
+          .map { rs =>
+            add.copy(existingRecordTtl = Some(rs.ttl))
+          }
+          .getOrElse(add)
+          .validNel
+      case del: DeleteChangeForValidation => del.validNel
+    }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {
     val ownerGroup = for {
