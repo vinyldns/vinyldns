@@ -28,13 +28,13 @@
                 });
 
             $scope.batch = {};
-            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}]};
+            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}]};
             $scope.alerts = [];
             $scope.batchChangeErrors = false;
             $scope.formStatus = "pendingSubmit";
 
             $scope.addSingleChange = function() {
-                $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR", ttl: 200});
+                $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
                 var changesLength = $scope.newBatch.changes.length;
                 $timeout(function() {document.getElementsByClassName("changeType")[changesLength - 1].focus()});
             };

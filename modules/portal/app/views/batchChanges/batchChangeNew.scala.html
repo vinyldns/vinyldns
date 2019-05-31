@@ -2,7 +2,7 @@
 
 @content = {
 <!-- PAGE CONTENT -->
-<div class="right_col" role="main" ng-init="batchChangeLimit = @meta.batchChangeLimit">
+<div class="right_col" role="main" ng-init="batchChangeLimit = @meta.batchChangeLimit; defaultTtl = @meta.defaultTtl">
 
     <!-- BREADCRUMB -->
     <ul class="breadcrumb">
@@ -67,7 +67,11 @@
                                             <span class="fa fa-question-circle"></span>
                                         </span>
                                     </th>
-                                    <th class="col-md-1">TTL</th>
+                                    <th class="col-md-1">TTL
+                                        <span data-toggle="tooltip" data-placement="top" title="Optional. Default is {{defaultTtl}}.">
+                                            <span class="fa fa-question-circle"></span>
+                                        </span>
+                                    </th>
                                     <th>Record Data</th>
                                     <th></th>
                                 </tr>
@@ -102,9 +106,9 @@
                                     </td>
                                     <!--TTL based on change type-->
                                     <td ng-if="change.changeType=='Add'">
-                                        <input name="ttl_{{$index}}" type="number" ng-model="change.ttl" ng-required="change.changeType=='Add'" required="number" min="30" max="2147483647" class="form-control" ng-disabled="change.changeType=='DeleteRecordSet'">
+                                        <input name="ttl_{{$index}}" type="number" ng-model="change.ttl" min="30" max="2147483647" class="form-control" ng-disabled="change.changeType=='DeleteRecordSet'" placeholder="{{defaultTtl}}">
                                         <p ng-show="createBatchChangeForm.$submitted">
-                                            <span ng-show="createBatchChangeForm.ttl_{{$index}}.$error.required || createBatchChangeForm.ttl_{{$index}}.$error.min || createBatchChangeForm.ttl_{{$index}}.$error.max" class="batch-change-error-help">TTL must be between 30 and 2147483647.</span>
+                                            <span ng-show="createBatchChangeForm.ttl_{{$index}}.$error.number || createBatchChangeForm.ttl_{{$index}}.$error.min || createBatchChangeForm.ttl_{{$index}}.$error.max" class="batch-change-error-help">TTL must be between 30 and 2147483647.</span>
                                         </p>
                                     </td>
                                     <td ng-if="change.changeType=='DeleteRecordSet'">
