@@ -114,7 +114,7 @@ describe('BatchChange', function(){
             it('adds a change to the changes array', function() {
                this.scope.addSingleChange();
 
-               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}, {changeType: "Add", type: "A+PTR", ttl: 200}]})
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}, {changeType: "Add", type: "A+PTR"}]})
             });
         });
 
@@ -212,8 +212,7 @@ describe('BatchChange', function(){
             it('does not import non-CSV format files', function() {
                var newFile = new Blob([], {type: 'any'});
                this.scope.uploadCSV(newFile);
-
-               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}]});
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}]});
             });
         });
 
