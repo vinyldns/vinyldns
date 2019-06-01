@@ -193,15 +193,11 @@
                             </table>
                             <div class="form-group">
                                 <button type="button" id="addChange" class="btn btn-default" ng-click="addSingleChange()" ng-disabled="newBatch.changes.length >= batchChangeLimit"><span class="glyphicon glyphicon-plus"></span> Add a Change</button>
-                                <ng-form name="csvForm" isolate-form>
-                                    <label class="batch-change-csv-label btn btn-default" for="batchChangeCsv" id="batchChangeCsvImportLabel">
-                                        <span ng-if="csvForm.batchChangeCsv.$pristine || csvForm.batchChangeCsv.$error.filled"><span class="glyphicon glyphicon-import"></span> Import CSV</span>
-                                        <span ng-if="csvForm.batchChangeCsv.$dirty && csvForm.batchChangeCsv.$$success.filled"><span class="glyphicon glyphicon-folder-open"></span> Change File</span>
-                                    </label>
-                                    <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" filled>
-                                    <button class="btn btn-success" ng-click="uploadCSV(csvForm.batchChangeCsv.$viewValue)" type="button" ng-if="csvForm.batchChangeCsv.$dirty && csvForm.batchChangeCsv.$valid" id="batchChangeCsvUpload"><span class="glyphicon glyphicon-upload"></span> Upload {{csvForm.batchChangeCsv.$viewValue.name}}</button>
-                                    <p><a href="https://www.vinyldns.io/portal/batch-changes#create-a-batch-change" target="_blank" rel="noopener noreferrer">Download sample CSV</a></p>
-                                </ng-form>
+                                <label class="batch-change-csv-label btn btn-default" for="batchChangeCsv" id="batchChangeCsvImportLabel">
+                                    <span><span class="glyphicon glyphicon-import"></span> Import CSV</span>
+                                </label>
+                                <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" ng-change="uploadCSV(createBatchChangeForm.batchChangeCsv.$viewValue)" batch-change-file>
+                                <p><a href="https://www.vinyldns.io/portal/batch-changes#create-a-batch-change" target="_blank" rel="noopener noreferrer">Download sample CSV</a></p>
                             </div>
                             <p ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</p>
                         </div>

@@ -18,7 +18,7 @@
     'use strict';
 
     angular.module('batch-change')
-        .controller('BatchChangeNewController', function($scope, $log, $location, $timeout, batchChangeService, utilityService, groupsService){
+        .controller('BatchChangeNewController', function($scope, $log, $location, $timeout, $q, batchChangeService, utilityService, groupsService){
             groupsService.getMyGroups()
                 .then(function (results) {
                     $scope.myGroups = results['data']['groups'];
@@ -111,26 +111,33 @@
             }
 
             $scope.uploadCSV = function(file) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var rows = e.target.result.split("\n");
-                    console.log(rows[0]);
-                    if (rows[0] == "Change Type,Record Type,Input Name,TTL,Record Data") {
-                        $scope.newBatch.changes = [];
-                        for(var i = 1; i < rows.length; i++) {
-                            var lengthCheck = rows[i].replace(/,+/g, '').trim().length
-                            if (lengthCheck == 0) { continue; }
-                            parseRow(rows[i])
-                        }
-                        $scope.$apply();
-                    } else {
-                        invalidCsvFile();
-                    }
+                parseFile(file).then(function(dataLength){
+                    $scope.alerts.push({type: 'success', content: 'Successfully imported ' + dataLength + ' changes.' });
+                }, function(error) {
+                    $scope.alerts.push({type: 'danger', content: error});
+                });
+
+                function parseFile(file) {
+                  return $q(function(resolve, reject) {
+                      var reader = new FileReader();
+                      reader.onload = function(e) {
+                          var rows = e.target.result.split("\n");
+                          if (rows[0].trim() == "Change Type,Record Type,Input Name,TTL,Record Data") {
+                            $scope.newBatch.changes = [];
+                            for(var i = 1; i < rows.length; i++) {
+                              var lengthCheck = rows[i].replace(/,+/g, '').trim().length
+                              if (lengthCheck == 0) { continue; }
+                              parseRow(rows[i])
+                            }
+                            $scope.$apply()
+                            resolve($scope.newBatch.changes.length);
+                          } else {
+                            reject("Import failed. Not a valid file.");
+                          }
+                      }
+                      reader.readAsText(file);
+                  });
                 }
-                console.log(reader.error)
-                reader.readAsText(file);
-                $scope.alerts.push({type: 'danger', content: 'Import failed. Not a valid CSV file.'});
-                resetForm();
 
                 function parseRow(row) {
                     var change = {};
@@ -160,18 +167,6 @@
                         }
                     }
                     $scope.newBatch.changes.push(change);
-                }
-
-                function invalidCsvFile(){
-                    console.log("WHERE AM I??")
-                    $scope.alerts.push({type: 'danger', content: 'Import failed. Not a valid CSV file.'});
-                }
-
-                function resetForm() {
-                    document.getElementById("batchChangeCsv").value = null;
-                    $scope.csvInput = null;
-                    $scope.csvForm.$setPristine();
-                    $scope.csvForm.$setUntouched();
                 }
             }
         });

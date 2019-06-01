@@ -72,30 +72,18 @@
         };
     });
 
-    app.directive('filled', function() {
+    app.directive('batchChangeFile', function() {
         return {
             require: 'ngModel',
             link: function(scope, elm, attrs, ctrl) {
+                console.log(elm)
                 elm.on('change', function(e){
                     if (e.target.files.length > 0) {
-                        fileType = e.target.files[0].type;
                         ctrl.$setViewValue(e.target.files[0]);
-                        ctrl.$setValidity('filled', true);
                     } else {
                         ctrl.$setViewValue();
-                        ctrl.$setValidity('filled', false);
                     }
                 })
-            }
-        };
-    });
-
-    app.directive('isolateForm', function() {
-        return {
-            restrict: 'A',
-            require: ['form', '^form'],
-            link: function(scope, elm, attrs, forms) {
-                forms[1].$removeControl(forms[0]);
             }
         };
     });
