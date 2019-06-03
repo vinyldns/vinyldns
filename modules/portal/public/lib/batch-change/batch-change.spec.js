@@ -192,7 +192,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}]});
                     done();
                 }, 1000);
             })
