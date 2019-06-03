@@ -33,7 +33,6 @@ class EmailNotifierProvider extends NotifierProvider {
     } yield new EmailNotifier(emailConfig, session, userRepository)
 
   def createSession(config: EmailNotifierConfig): IO[Session] = IO {
-    println(config.smtp.getProperty("mail.smtp.auth.login.disable"))
     Session.getInstance(config.smtp)
   }
 

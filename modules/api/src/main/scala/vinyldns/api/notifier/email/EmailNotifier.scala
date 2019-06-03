@@ -76,7 +76,8 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       | <b>Id:</b> ${bc.id}<br/>
       | <b>Comments:</b> ${bc.comments.getOrElse("")}</br>
       | <table border = "1">
-      |   <tr><th>#</th><th>Change Type</th><th>Record Type</th><th>Input Name</th><th>TTL</th><th>Record Data</th><th>Status</th><th>Message</th></tr>
+      |   <tr><th>#</th><th>Change Type</th><th>Record Type</th><th>Input Name</th>
+      |       <th>TTL</th><th>Record Data</th><th>Status</th><th>Message</th></tr>
       |   ${bc.changes.zipWithIndex.map((formatSingleChange _).tupled).mkString("\n")}
       | </table>
      """.stripMargin
@@ -95,12 +96,12 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
         _,
         _,
         _) =>
-      s"<tr><td>${index + 1}</td><td>Add</td><td>$typ</td><td>$inputName</td><td>${ttl}</td><td>${formatRecordData(
-        recordData)}</td><td>$status</td><td>${systemMessage
-        .getOrElse("")}</td></tr>"
+      s"""<tr><td>${index + 1}</td><td>Add</td><td>$typ</td><td>$inputName</td>
+        |     <td>${ttl}</td><td>${formatRecordData(recordData)}</td><td>$status</td>
+        |     <td>${systemMessage.getOrElse("")}</td></tr>"""
     case SingleDeleteChange(_, _, _, inputName, typ, status, systemMessage, _, _, _) =>
-      s"<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td><td></td><td></td><td>$status</td><td>${systemMessage
-        .getOrElse("")}</td></tr>"
+      s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>
+        |     <td></td><td></td><td>$status</td><td>${systemMessage.getOrElse("")}</td></tr>"""
   }
 
   def formatRecordData(rd: RecordData): String = rd match {
