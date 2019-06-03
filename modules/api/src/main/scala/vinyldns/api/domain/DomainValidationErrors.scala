@@ -17,7 +17,7 @@
 package vinyldns.api.domain
 
 import vinyldns.api.domain.batch.SupportedBatchChangeRecordTypes
-import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
@@ -148,5 +148,13 @@ final case class MissingOwnerGroupId(recordName: String, zoneName: String)
     extends DomainValidationError {
   def message: String =
     s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record "$recordName"."""
+}
+
+final case class MultipleRecordsInRecordSet(record: RecordSet) extends DomainValidationError {
+  def message: String =
+    s"""RecordSet with name ${record.name} and type ${record.typ.toString} cannot be updated in a single Batch Change
+       |because it contains multiple DNS records (${record.records.length}). If this is expected, issue a
+       |DeleteRecordSet only, and add the record in a new Batch Change.""".stripMargin
+      .replaceAll("\n", " ")
 }
 // $COVERAGE-ON$

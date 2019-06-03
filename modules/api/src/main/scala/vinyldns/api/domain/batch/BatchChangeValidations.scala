@@ -205,7 +205,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
             ownerGroupProvidedIfNeeded(
               change,
               existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
-              batchOwnerGroupId)
+              batchOwnerGroupId) |+|
+            isNotMultiRecordUpdate(rs)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
@@ -415,4 +416,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
           MissingOwnerGroupId(change.recordName, change.zone.name).invalidNel
       }
     }
+
+  def isNotMultiRecordUpdate(recordBeingUpdated: RecordSet): SingleValidation[Unit] =
+    if (recordBeingUpdated.records.length > 1 && !VinylDNSConfig.multiRecordBatchUpdateEnabled)
+      MultipleRecordsInRecordSet(recordBeingUpdated).invalidNel
+    else ().validNel
 }
