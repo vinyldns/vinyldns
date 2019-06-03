@@ -127,16 +127,18 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       userId: String,
       ownerGroupId: Option[String]): List[RecordSetChange] = {
     // TODO: note, this also assumes we are past approval and know the zone/record split at this point
-    val grouped = changes.groupBy(_.recordKey)
+    val changesByKey = for {
+      c <- changes
+      rk <- c.recordKey.toList
+    } yield (rk, c)
 
-    grouped.toList.flatMap {
-      case (_, groupedChanges) =>
-        /* TODO note: the flatmap means if we couldnt get a zone here, we wouldn't be warned
-        that is fine as we will only be passed this change from the service if the zone exists in that map.
-        If we move to getting zones from the DB in the converter, we should report status back on changes
-        where we can no longer find the zone (edge case - means someone submitted batch and then zone was deleted)
-         */
-        combineChanges(groupedChanges, existingZones, existingRecordSets, userId, ownerGroupId)
+    changesByKey.groupBy(_._1).values.toList.flatMap { groupedChanges =>
+      combineChanges(
+        groupedChanges.map(_._2),
+        existingZones,
+        existingRecordSets,
+        userId,
+        ownerGroupId)
     }
   }
 
