@@ -176,12 +176,12 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       ownerGroupId: Option[String]): Option[RecordSetChange] =
     for {
       deleteChange <- Some(deleteChanges.head)
-      zone <- existingZones.getByName(deleteChange.zoneName)
-      existingRecordSet <- existingRecordSets.get(
-        deleteChange.zoneId,
-        deleteChange.recordName,
-        deleteChange.typ)
-      newRecordSet = {
+      zoneName <- deleteChange.zoneName
+      zoneId <- deleteChange.zoneId
+      recordName <- deleteChange.recordName
+      zone <- existingZones.getByName(zoneName)
+      existingRecordSet <- existingRecordSets.get(zoneId, recordName, deleteChange.typ)
+      newRecordSet <- {
         val setOwnerGroupId = if (zone.shared && existingRecordSet.ownerGroupId.isEmpty) {
           ownerGroupId
         } else {
@@ -205,11 +205,11 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       userId: String): Option[RecordSetChange] =
     for {
       deleteChange <- Some(deleteChanges.head)
-      zone <- existingZones.getByName(deleteChange.zoneName)
-      existingRecordSet <- existingRecordSets.get(
-        deleteChange.zoneId,
-        deleteChange.recordName,
-        deleteChange.typ)
+      zoneName <- deleteChange.zoneName
+      zoneId <- deleteChange.zoneId
+      recordName <- deleteChange.recordName
+      zone <- existingZones.getByName(zoneName)
+      existingRecordSet <- existingRecordSets.get(zoneId, recordName, deleteChange.typ)
     } yield
       RecordSetChangeGenerator.forDelete(
         existingRecordSet,
@@ -223,8 +223,9 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       userId: String,
       ownerGroupId: Option[String]): Option[RecordSetChange] =
     for {
-      zone <- existingZones.getByName(addChanges.head.zoneName)
-      newRecordSet = {
+      zoneName <- addChanges.head.zoneName
+      zone <- existingZones.getByName(zoneName)
+      newRecordSet <- {
         val setOwnerGroupId = if (zone.shared) ownerGroupId else None
         combineAddChanges(addChanges, zone, setOwnerGroupId)
       }
@@ -236,20 +237,22 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def combineAddChanges(
       changes: NonEmptyList[SingleAddChange],
       zone: Zone,
-      ownerGroupId: Option[String]): RecordSet = {
+      ownerGroupId: Option[String]): Option[RecordSet] = {
     val combinedData =
       changes.foldLeft(List[RecordData]())((acc, ch) => ch.recordData :: acc).distinct
     // recordName and typ are shared by all changes passed into this function, can pull those from any change
     // TTL choice is arbitrary here; this is taking the 1st
-    record.RecordSet(
-      zone.id,
-      changes.head.recordName,
-      changes.head.typ,
-      changes.head.ttl,
-      RecordSetStatus.Pending,
-      DateTime.now,
-      None,
-      combinedData,
-      ownerGroupId = ownerGroupId)
+    changes.head.recordName.map { recordName =>
+      record.RecordSet(
+        zone.id,
+        recordName,
+        changes.head.typ,
+        changes.head.ttl,
+        RecordSetStatus.Pending,
+        DateTime.now,
+        None,
+        combinedData,
+        ownerGroupId = ownerGroupId)
+    }
   }
 }
