@@ -212,6 +212,7 @@ class LdapAuthenticator(
     * @param domains List of domains in LDAP to lookup user
     * @param userName Username to lookup
     * @param f Function from (username, password) => DirContext
+    * @param allDomainConnectionsUp Connectivity to all LDAP domains via the specified provider are up as expected
     * @return User details or exception encountered (eg. UserDoesNotExistException or LdapServiceException) depending
     *         on cause
     */
@@ -219,10 +220,10 @@ class LdapAuthenticator(
       domains: List[LdapSearchDomain],
       userName: String,
       f: LdapSearchDomain => Either[LdapException, LdapUserDetails],
-      ldapSearchSuccessful: Boolean): Either[LdapException, LdapUserDetails] =
+      allDomainConnectionsUp: Boolean): Either[LdapException, LdapUserDetails] =
     domains match {
       case Nil =>
-        if (ldapSearchSuccessful)
+        if (allDomainConnectionsUp)
           Left(UserDoesNotExistException(s"[$userName] LDAP entity does not exist"))
         else
           Left(
@@ -230,16 +231,16 @@ class LdapAuthenticator(
               "Unable to successfully perform search in at least one LDAP domain"))
       case h :: t =>
         f(h).recoverWith {
-          case _: LdapServiceException => findUserDetails(t, userName, f, ldapSearchSuccessful)
-          case _ => findUserDetails(t, userName, f, true)
+          case _: LdapServiceException => findUserDetails(t, userName, f, false)
+          case _ => findUserDetails(t, userName, f, allDomainConnectionsUp)
         }
     }
 
   def authenticate(username: String, password: String): Either[LdapException, LdapUserDetails] =
-    findUserDetails(searchBase, username, authenticator.authenticate(_, username, password), false)
+    findUserDetails(searchBase, username, authenticator.authenticate(_, username, password), true)
 
   def lookup(username: String): Either[LdapException, LdapUserDetails] =
-    findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount), false)
+    findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount), true)
 
   def healthCheck(): HealthCheck =
     IO {
