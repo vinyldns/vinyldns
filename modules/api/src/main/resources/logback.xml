@@ -1,8 +1,51 @@
 <configuration>
     <!-- Test configuration, log to console so we can get the docker logs -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>%d [test] %-5p | \(%logger{4}:%line\) | %msg %n</pattern>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <message/>
+                <nestedField>
+                    <fieldName>labels</fieldName>
+                    <providers>
+                        <globalCustomFields>
+                            <customFields>{"application": "vinyldns-api", "env": "dev"}</customFields>
+                        </globalCustomFields>
+                    </providers>
+                </nestedField>
+                <nestedField>
+                    <fieldName>ecs</fieldName>
+                    <providers>
+                        <globalCustomFields>
+                            <customFields>{"version": "1.0.0"}</customFields>
+                        </globalCustomFields>
+                    </providers>
+                </nestedField>
+                <arguments/>
+                <nestedField>
+                    <fieldName>log</fieldName>
+                    <providers>
+                        <logLevel/>
+                        <loggerName />
+                        <callerData/>
+                    </providers>
+                </nestedField>
+                <nestedField>
+                    <fieldName>process</fieldName>
+                    <providers>
+                        <nestedField>
+                            <fieldName>thread</fieldName>
+                            <providers>
+                                <threadName>
+                                    <fieldName>name</fieldName>
+                                </threadName>
+                            </providers>
+                        </nestedField>
+                    </providers>
+                </nestedField>
+            </providers>
         </encoder>
     </appender>
 
