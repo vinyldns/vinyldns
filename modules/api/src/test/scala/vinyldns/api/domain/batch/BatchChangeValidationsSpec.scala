@@ -1493,4 +1493,18 @@ class BatchChangeValidationsSpec
 
     result(0) shouldBe valid
   }
+
+  property("validateChangesWithContext: fail for an update to a multi record RecordSet") {
+    val existing = sharedZoneRecord.copy(
+      name = updateSharedAddChange.recordName,
+      records = List(AAAAData("1::1"), AAAAData("2::2")))
+
+    val result = validateChangesWithContext(
+      List(updateSharedAddChange.validNel, updateSharedDeleteChange.validNel),
+      ExistingRecordSets(List(existing)),
+      sharedAuth,
+      Some(okGroup.id))
+
+    result(0) should haveInvalid[DomainValidationError](MultipleRecordsInRecordSet(existing))
+  }
 }
