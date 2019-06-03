@@ -133,7 +133,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         status(result) must beEqualTo(404)
       }
       "return Forbidden if the current user account is locked" in new WithApplication(app) {
-        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
         userAccessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
 
         val result = vinyldnsPortal
@@ -146,7 +146,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         contentAsString(result) must beEqualTo("User account for `frodo` is locked.")
       }
       "return unauthorized (401) if the current user account is locked" in new WithApplication(app) {
-        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
         userAccessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
 
         val result = vinyldnsPortal
@@ -160,7 +160,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
     ".regenerateCreds" should {
       "change the access key and secret for the current user" in new WithApplication(app) {
-        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
         userAccessor.get("fbaggins").returns(IO.pure(Some(frodoUser)))
         userAccessor.update(any[User], any[User]).returns(IO.pure(frodoUser))
 
@@ -180,7 +180,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
       "fail if user is not found" in new WithApplication(app) {
         userAccessor.get("fbaggins").returns(IO.pure(None))
-        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
 
         val result = vinyldnsPortal
           .regenerateCreds()
@@ -191,7 +191,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         hasCacheHeaders(result)
       }
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
-        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
         userAccessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
 
         val result = vinyldnsPortal
@@ -208,7 +208,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         hasCacheHeaders(result)
       }
       "return unauthorized (401) if user account is locked" in new WithApplication(app) {
-        authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+        authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
         userAccessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
 
         val result = vinyldnsPortal
@@ -224,7 +224,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     ".login" should {
       "if login is correct with a valid key" should {
         "call the authenticator and the account accessor" in new WithApplication(app) {
-          authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+          authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val response = vinyldnsPortal
@@ -240,7 +240,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           app) {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
-            .returns(Success(frodoDetails))
+            .returns(Right(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val response = vinyldnsPortal
@@ -255,7 +255,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         }
         "call the user accessor to create the new user account if it is not found" in new WithApplication(
           app) {
-          authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+          authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
@@ -272,7 +272,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           app) {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
-            .returns(Success(frodoDetails))
+            .returns(Right(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
@@ -289,7 +289,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
         "do not call the user accessor to create the new user account if it is found" in new WithApplication(
           app) {
-          authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+          authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(any[String]).returns(IO.pure(Some(frodoUser)))
 
           val response = vinyldnsPortal
@@ -305,7 +305,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         "set the username, and key for the new style membership" in new WithApplication(app) {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
-            .returns(Success(frodoDetails))
+            .returns(Right(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val response = vinyldnsPortal
@@ -323,7 +323,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         "redirect to index using the new style accounts" in new WithApplication(app) {
           authenticator
             .authenticate(frodoDetails.username, "secondbreakfast")
-            .returns(Success(frodoDetails))
+            .returns(Right(frodoDetails))
           userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
           val response = vinyldnsPortal
@@ -340,7 +340,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
       "if login is correct but no account is found" should {
         "call the authenticator and the user account accessor" in new WithApplication(app) {
-          authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+          authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
@@ -354,7 +354,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           there.was(one(userAccessor).get("frodo"))
         }
         "set the username and the key" in new WithApplication(app) {
-          authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+          authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
@@ -368,7 +368,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           session(response).get("accessKey") must beSome(frodoUser.accessKey)
         }
         "redirect to index" in new WithApplication(app) {
-          authenticator.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+          authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(frodoUser))
 
@@ -385,7 +385,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
       "if service account login is correct but no account is found" should {
         "call the authenticator and the user account accessor" in new WithApplication(app) {
-          authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
+          authenticator.authenticate("service", "password").returns(Right(serviceAccountDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
@@ -399,7 +399,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           there.was(one(userAccessor).get("service"))
         }
         "set the username and the key" in new WithApplication(app) {
-          authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
+          authenticator.authenticate("service", "password").returns(Right(serviceAccountDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
@@ -413,7 +413,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           session(response).get("accessKey") must beSome(serviceAccount.accessKey)
         }
         "redirect to index" in new WithApplication(app) {
-          authenticator.authenticate("service", "password").returns(Success(serviceAccountDetails))
+          authenticator.authenticate("service", "password").returns(Right(serviceAccountDetails))
           userAccessor.get(anyString).returns(IO.pure(None))
           userAccessor.create(any[User]).returns(IO.pure(serviceAccount))
 
@@ -432,7 +432,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         "call the authenticator not the account accessor" in new WithApplication(app) {
           authenticator
             .authenticate("frodo", "secondbreakfast")
-            .returns(Failure(new RuntimeException("login failed")))
+            .returns(Left(UserDoesNotExistException("login failed")))
 
           val response = vinyldnsPortal
             .login()
@@ -446,7 +446,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         "do not set the username and key" in new WithApplication(app) {
           authenticator
             .authenticate("frodo", "secondbreakfast")
-            .returns(Failure(new RuntimeException("login failed")))
+            .returns(Left(UserDoesNotExistException("login failed")))
 
           val vinyldnsPortal =
             TestVinylDNS(config, authenticator, mockUserAccessor, ws, components, crypto)
@@ -462,7 +462,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         "redirect to login" in new WithApplication(app) {
           authenticator
             .authenticate("frodo", "secondbreakfast")
-            .returns(Failure(new RuntimeException("login failed")))
+            .returns(Left(UserDoesNotExistException("login failed")))
 
           val response = vinyldnsPortal
             .login()
@@ -476,7 +476,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         "set the flash with an error message" in new WithApplication(app) {
           authenticator
             .authenticate("frodo", "secondbreakfast")
-            .returns(Failure(new RuntimeException("login failed")))
+            .returns(Left(UserDoesNotExistException("login failed")))
 
           val response = vinyldnsPortal
             .login()
@@ -1566,7 +1566,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
       "return a list of users from a list of usernames" in new WithApplication(app) {
         val lookupValue = "someNTID"
-        authenticator.lookup(lookupValue).returns(Success(frodoDetails))
+        authenticator.lookup(lookupValue).returns(Right(frodoDetails))
         userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
 
         val expected = Json.toJson(VinylDNS.UserInfo.fromUser(frodoUser))
@@ -1583,7 +1583,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
         val lookupValue = "someNTID"
-        authenticator.lookup(lookupValue).returns(Success(frodoDetails))
+        authenticator.lookup(lookupValue).returns(Right(frodoDetails))
 
         val vinyldnsPortal =
           TestVinylDNS(config, authenticator, mockLockedUserAccessor, ws, components, crypto)
@@ -1598,7 +1598,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
 
         val lookupValue = "someNTID"
-        authenticator.lookup(lookupValue).returns(Success(frodoDetails))
+        authenticator.lookup(lookupValue).returns(Right(frodoDetails))
 
         val vinyldnsPortal =
           TestVinylDNS(config, authenticator, mockLockedUserAccessor, ws, components, crypto)
@@ -1619,7 +1619,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         userAccessor.get(any[String]).returns(IO.pure(None))
         authenticator
           .lookup(frodoUser.userName)
-          .returns(Failure(new UserDoesNotExistException("not found")))
+          .returns(Left(UserDoesNotExistException("not found")))
 
         val result = vinyldnsPortal
           .getUserDataByUsername(frodoUser.userName)

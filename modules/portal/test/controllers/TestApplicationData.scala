@@ -234,7 +234,7 @@ trait TestApplicationData { this: Mockito =>
   val mockUserRepo: UserRepository = mock[UserRepository]
   val mockUserChangeRepo: UserChangeRepository = mock[UserChangeRepository]
 
-  mockAuth.authenticate("frodo", "secondbreakfast").returns(Success(frodoDetails))
+  mockAuth.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
   mockUserRepo.getUser(anyString).returns(IO.pure(Some(frodoUser)))
   mockUserChangeRepo.save(any[UserChange]).returns(IO.pure(newFrodoLog))
 
