@@ -35,6 +35,7 @@ import vinyldns.api.repository.{
 }
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch.SingleChangeStatus.SingleChangeStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.RecordType._
@@ -100,9 +101,9 @@ class BatchChangeServiceSpec
     ptrV6Add)
 
   private val pendingChange = SingleAddChange(
-    "zoneid",
-    "zonename",
-    "rname",
+    Some("zoneid"),
+    Some("zonename"),
+    Some("rname"),
     "inputname",
     RecordType.A,
     123,
@@ -113,6 +114,34 @@ class BatchChangeServiceSpec
     None)
 
   private val batchChangeRepo = new InMemoryBatchChangeRepository
+
+  private def SingleAddChangeKnownInfo(
+      zoneId: String,
+      zoneName: String,
+      recordName: String,
+      inputName: String,
+      typ: RecordType,
+      ttl: Long,
+      recordData: RecordData,
+      status: SingleChangeStatus,
+      systemMessage: Option[String],
+      recordChangeId: Option[String],
+      recordSetId: Option[String],
+      id: String): SingleAddChange =
+    SingleAddChange(
+      Some(zoneId),
+      Some(zoneName),
+      Some(recordName),
+      inputName,
+      typ,
+      ttl,
+      recordData,
+      status,
+      systemMessage,
+      recordChangeId,
+      recordSetId,
+      id
+    )
 
   object EmptyBatchConverter extends BatchChangeConverterAlgebra {
     def sendBatchForProcessing(
@@ -819,7 +848,7 @@ class BatchChangeServiceSpec
         .get
 
       result shouldBe a[BatchChange]
-      result.changes.head shouldBe SingleAddChange(
+      result.changes.head shouldBe SingleAddChangeKnownInfo(
         apexZone.id,
         apexZone.name,
         "apex.test.com.",
@@ -833,7 +862,7 @@ class BatchChangeServiceSpec
         None,
         result.changes.head.id
       )
-      result.changes(1) shouldBe SingleAddChange(
+      result.changes(1) shouldBe SingleAddChangeKnownInfo(
         onlyBaseZone.id,
         onlyBaseZone.name,
         "have",
@@ -847,7 +876,7 @@ class BatchChangeServiceSpec
         None,
         result.changes(1).id
       )
-      result.changes(2) shouldBe SingleAddChange(
+      result.changes(2) shouldBe SingleAddChangeKnownInfo(
         baseZone.id,
         baseZone.name,
         "cname",

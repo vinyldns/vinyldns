@@ -66,9 +66,9 @@ class BatchChangeRoutingSpec
         DateTime.now,
         List(
           SingleAddChange(
-            "zoneId",
-            "zoneName",
-            "recordName",
+            Some("zoneId"),
+            Some("zoneName"),
+            Some("recordName"),
             "fqdn",
             A,
             3600,
@@ -79,9 +79,9 @@ class BatchChangeRoutingSpec
             None,
             "singleAddChangeId"),
           SingleDeleteChange(
-            "zoneId",
-            "zoneName",
-            "recordName",
+            Some("zoneId"),
+            Some("zoneName"),
+            Some("recordName"),
             "fqdn",
             A,
             Pending,

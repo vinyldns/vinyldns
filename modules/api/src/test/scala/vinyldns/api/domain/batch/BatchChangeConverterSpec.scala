@@ -42,9 +42,9 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       zone: Zone = okZone) = {
     val fqdn = s"$name.${zone.name}"
     SingleAddChange(
-      zone.id,
-      zone.name,
-      name,
+      Some(zone.id),
+      Some(zone.name),
+      Some(name),
       fqdn,
       typ,
       123,
@@ -58,9 +58,9 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
   private def makeSingleDeleteChange(name: String, typ: RecordType, zone: Zone = okZone) = {
     val fqdn = s"$name.${zone.name}"
     SingleDeleteChange(
-      zone.id,
-      zone.name,
-      name,
+      Some(zone.id),
+      Some(zone.name),
+      Some(name),
       fqdn,
       typ,
       SingleChangeStatus.Pending,
@@ -495,8 +495,9 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     "generate record set without updating owner group ID for record set in unshared zone" in {
       val result =
         underTest.generateUpdateChange(
-          NonEmptyList.of(deleteChange.copy(zoneId = okZone.id, zoneName = okZone.name)),
-          NonEmptyList.of(addChange.copy(zoneId = okZone.id, zoneName = okZone.name)),
+          NonEmptyList.of(
+            deleteChange.copy(zoneId = Some(okZone.id), zoneName = Some(okZone.name))),
+          NonEmptyList.of(addChange.copy(zoneId = Some(okZone.id), zoneName = Some(okZone.name))),
           existingZones,
           ExistingRecordSets(List(sharedZoneRecord.copy(ownerGroupId = None, zoneId = okZone.id))),
           okUser.id,
@@ -512,7 +513,12 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       recordSetChanges: List[RecordSetChange],
       batchChange: BatchChange,
       typ: RecordSetChangeType) = {
-    val singleChangesOut = batchChange.changes.filter(_.recordName == name)
+    val singleChangesOut = batchChange.changes.filter { change =>
+      change.recordName match {
+        case Some(rn) if rn == name => true
+        case _ => false
+      }
+    }
     singleChangesOut.length should be > 0
 
     val recordChangeOut = recordSetChanges
@@ -536,7 +542,12 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       name: String,
       recordSetChanges: List[RecordSetChange],
       batchChange: BatchChange) = {
-    val singleChangesOut = batchChange.changes.filter(_.recordName == name)
+    val singleChangesOut = batchChange.changes.filter { change =>
+      change.recordName match {
+        case Some(rn) if rn == name => true
+        case _ => false
+      }
+    }
     val expectedRecords = singleChangesOut.collect {
       case add: SingleAddChange => add.recordData
     }

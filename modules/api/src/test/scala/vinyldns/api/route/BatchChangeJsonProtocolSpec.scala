@@ -274,9 +274,9 @@ class BatchChangeJsonProtocolSpec
   "Serializing SingleAddChange to JSON" should {
     "successfully serialize" in {
       val toJson = SingleAddChange(
-        "zoneId",
-        "zoneName",
-        "recordName",
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
         "fqdn",
         A,
         30,
@@ -307,9 +307,9 @@ class BatchChangeJsonProtocolSpec
   "Serializing SingleDeleteChange to JSON" should {
     "successfully serialize" in {
       val toJson = SingleDeleteChange(
-        "zoneId",
-        "zoneName",
-        "recordName",
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
         "fqdn",
         A,
         Pending,
@@ -336,9 +336,9 @@ class BatchChangeJsonProtocolSpec
   "Serializing BatchChange to JSON" should {
     "successfully serialize" in {
       val delete = SingleDeleteChange(
-        "zoneId",
-        "zoneName",
-        "recordName",
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
         "fqdn",
         A,
         Pending,
@@ -347,9 +347,9 @@ class BatchChangeJsonProtocolSpec
         None,
         "id")
       val add = SingleAddChange(
-        "zoneId",
-        "zoneName",
-        "recordName",
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
         "fqdn",
         A,
         30,
@@ -389,9 +389,9 @@ class BatchChangeJsonProtocolSpec
   "Serializing BatchChangeInfo to JSON" should {
     "successfully serialize" in {
       val delete = SingleDeleteChange(
-        "zoneId",
-        "zoneName",
-        "recordName",
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
         "fqdn",
         A,
         Pending,
@@ -400,9 +400,9 @@ class BatchChangeJsonProtocolSpec
         None,
         "id")
       val add = SingleAddChange(
-        "zoneId",
-        "zoneName",
-        "recordName",
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
         "fqdn",
         A,
         30,

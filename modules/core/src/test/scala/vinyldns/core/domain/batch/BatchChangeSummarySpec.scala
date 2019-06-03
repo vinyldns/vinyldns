@@ -22,9 +22,9 @@ import vinyldns.core.domain.record.{AData, RecordType}
 
 class BatchChangeSummarySpec extends WordSpec with Matchers {
   private val pendingChange = SingleAddChange(
-    "zoneid",
-    "zonename",
-    "rname",
+    Some("zoneid"),
+    Some("zonename"),
+    Some("rname"),
     "inputname",
     RecordType.A,
     123,

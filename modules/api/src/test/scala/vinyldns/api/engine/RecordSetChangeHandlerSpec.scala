@@ -66,9 +66,9 @@ class RecordSetChangeHandlerSpec
 
   private val completeCreateAAAASingleChanges = rs.records.map { rdata =>
     SingleAddChange(
-      rs.zoneId,
-      "zoneName",
-      rs.name,
+      Some(rs.zoneId),
+      Some("zoneName"),
+      Some(rs.name),
       "fqdn",
       rs.typ,
       rs.ttl,
@@ -79,9 +79,9 @@ class RecordSetChangeHandlerSpec
       None)
   }
   private val notUpdatedChange = SingleAddChange(
-    "someId",
-    "someName",
-    "somerecord",
+    Some("someId"),
+    Some("someName"),
+    Some("somerecord"),
     "somerecord.zone.",
     RecordType.A,
     123,

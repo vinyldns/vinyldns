@@ -18,7 +18,7 @@ package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
-import vinyldns.core.domain.batch.SingleChangeStatus
+import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
 class BatchChangeProtobufConversionsSpec
@@ -29,9 +29,9 @@ class BatchChangeProtobufConversionsSpec
     with EitherValues {
 
   private val testAddChange = SingleAddChange(
-    "zoneId",
-    "zoneName",
-    "recordName",
+    Some("zoneId"),
+    Some("zoneName"),
+    Some("recordName"),
     "inputName",
     RecordType.A,
     100,
@@ -43,9 +43,9 @@ class BatchChangeProtobufConversionsSpec
     "id"
   )
   private val testDeleteChange = SingleDeleteChange(
-    "zoneId",
-    "zoneName",
-    "recordName",
+    Some("zoneId"),
+    Some("zoneName"),
+    Some("recordName"),
     "inputName",
     RecordType.A,
     SingleChangeStatus.Pending,
