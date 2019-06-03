@@ -131,8 +131,8 @@ describe('BatchChange', function(){
                 var formInput = $('<ng-form name="createBatchChangeForm">'+
                   '<input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" batch-change-file>' +
                   '</ng-form>');
-                $(document.body).append(form);
-                $compile(form)(this.scope);
+                $(document.body).append(formInput);
+                $compile(formInput)(this.scope);
                 this.scope.$digest();
             }));
 
@@ -184,14 +184,15 @@ describe('BatchChange', function(){
                 }, 1000);
             })
 
-            it('does not include the first line', function(done) {
+            it('fails if the first line is not the header row', function(done) {
                 var fileBlob = new Blob(["Delete,A+PTR,test.example.,,1.1.1.1\nAdd,A+PTR,test.add.,200,1.1.1.1"], { type: 'text/csv' });
                 var batchChange = this.scope.newBatch;
                 this.scope.uploadCSV(fileBlob);
+                var alerts = this.scope.alerts;
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", inputName: "test.add.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}]});
                     done();
                 }, 1000);
             })
@@ -209,11 +210,10 @@ describe('BatchChange', function(){
             })
 
             it('does not import non-CSV format files', function() {
-               var newFile = {name: 'a.pdf', type: 'any'}
+               var newFile = new Blob([], {type: 'any'});
                this.scope.uploadCSV(newFile);
 
                expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}]});
-               expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Import failed. Not a valid CSV file.'}]);
             });
         });
 
