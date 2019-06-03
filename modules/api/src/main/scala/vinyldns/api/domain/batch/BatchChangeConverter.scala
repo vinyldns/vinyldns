@@ -179,10 +179,9 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     for {
       deleteChange <- Some(deleteChanges.head)
       zoneName <- deleteChange.zoneName
-      zoneId <- deleteChange.zoneId
-      recordName <- deleteChange.recordName
+      key <- deleteChange.recordKey
       zone <- existingZones.getByName(zoneName)
-      existingRecordSet <- existingRecordSets.get(zoneId, recordName, deleteChange.typ)
+      existingRecordSet <- existingRecordSets.get(key)
       newRecordSet <- {
         val setOwnerGroupId = if (zone.shared && existingRecordSet.ownerGroupId.isEmpty) {
           ownerGroupId
@@ -208,10 +207,9 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     for {
       deleteChange <- Some(deleteChanges.head)
       zoneName <- deleteChange.zoneName
-      zoneId <- deleteChange.zoneId
-      recordName <- deleteChange.recordName
+      key <- deleteChange.recordKey
       zone <- existingZones.getByName(zoneName)
-      existingRecordSet <- existingRecordSets.get(zoneId, recordName, deleteChange.typ)
+      existingRecordSet <- existingRecordSets.get(key)
     } yield
       RecordSetChangeGenerator.forDelete(
         existingRecordSet,
