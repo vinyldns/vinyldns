@@ -18,6 +18,7 @@ package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
+import vinyldns.core.domain.batch
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
@@ -71,7 +72,20 @@ class BatchChangeProtobufConversionsSpec
     }
 
     "round trip single add changes when optional values are not present" in {
-      val tst = testAddChange.copy(systemMessage = None, recordChangeId = None, recordSetId = None)
+      val tst = SingleAddChange(
+        None,
+        None,
+        None,
+        "testInputName",
+        RecordType.A,
+        100,
+        AData("127.0.0.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        "some-id"
+      )
       val pb = toPB(tst)
 
       val roundTrip = fromPB(pb.right.value)
@@ -80,8 +94,18 @@ class BatchChangeProtobufConversionsSpec
     }
 
     "round trip single delete changes when optional values are not present" in {
-      val tst =
-        testDeleteChange.copy(systemMessage = None, recordChangeId = None, recordSetId = None)
+      val tst = SingleDeleteChange(
+        None,
+        None,
+        None,
+        "testInputName",
+        RecordType.A,
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        "some-id"
+      )
       val pb = toPB(tst)
 
       val roundTrip = fromPB(pb.right.value)
