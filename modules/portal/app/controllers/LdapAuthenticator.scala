@@ -113,8 +113,7 @@ object LdapAuthenticator {
     def searchContext(
         dirContext: DirContext,
         organization: String,
-        lookupUserName: String,
-        lookupFailureMessage: String): Either[LdapException, LdapUserDetails] =
+        lookupUserName: String): Either[LdapException, LdapUserDetails] =
       try {
         val searchControls = new SearchControls()
         searchControls.setSearchScope(2)
@@ -126,7 +125,7 @@ object LdapAuthenticator {
         )
 
         if (result.hasMore) Right(LdapUserDetails(result.next()))
-        else Left(UserDoesNotExistException(lookupFailureMessage))
+        else Left(UserDoesNotExistException(s"[$lookupUserName] LDAP entity does not exist"))
       } catch {
         case unexpectedError: Throwable => Left(LdapServiceException(unexpectedError.getMessage))
       } finally {
@@ -141,8 +140,7 @@ object LdapAuthenticator {
         searchContext(
           context,
           searchDomain.organization,
-          username,
-          s"[$username] can authenticate but LDAP entity does not exist")
+          username)
       }
 
     private[controllers] def lookup(
@@ -154,8 +152,7 @@ object LdapAuthenticator {
           searchContext(
             context,
             searchDomain.organization,
-            user,
-            s"[$user] LDAP entity does not exist")
+            user)
         }
   }
 
@@ -180,17 +177,13 @@ object LdapAuthenticator {
   }
 }
 
-trait LdapException extends Exception {
-  val message: String
-}
+sealed abstract class LdapException(message: String) extends Exception(message)
 
-case class UserDoesNotExistException(message: String) extends LdapException
-case class LdapServiceException(errorMessage: String) extends LdapException {
-  val message: String = s"Encountered error communicating with LDAP service: $errorMessage"
-}
-case class InvalidCredentials(username: String) extends LdapException {
-  val message: String = s"Provided credentials were invalid for user [$username]."
-}
+final case class UserDoesNotExistException(message: String) extends LdapException(message)
+final case class LdapServiceException(errorMessage: String) extends LdapException(
+  s"Encountered error communicating with LDAP service: $errorMessage")
+final case class InvalidCredentials(username: String) extends LdapException(
+  s"Provided credentials were invalid for user [$username].")
 
 /**
   * Top level ldap authenticator that tries authenticating on multiple domains. Authentication is
@@ -206,8 +199,9 @@ class LdapAuthenticator(
 
   /**
     * Attempts to search for user in specified LDAP domains. Attempts all LDAP domains that are specified in order; in
-    * the event that user details are not found in any of the domains, returns an error based on whether at least one
-    * LDAP search was successful (to distinguish between user not existing vs LDAP service being unreachable)
+    * the event that user details are not found in any of the domains, returns an error based on whether all
+    * LDAP search domains had successful connections (to distinguish between user not existing vs LDAP service being
+    * unreachable)
     *
     * @param domains List of domains in LDAP to lookup user
     * @param userName Username to lookup
