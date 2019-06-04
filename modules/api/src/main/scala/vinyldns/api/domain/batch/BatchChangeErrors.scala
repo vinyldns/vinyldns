@@ -26,6 +26,9 @@ sealed trait BatchChangeErrorResponse
 final case class InvalidBatchChangeInput(errors: List[DomainValidationError])
     extends BatchChangeErrorResponse
 
+final case class InvalidBatchChangeReview(errors: List[BatchChangeErrorResponse])
+    extends BatchChangeErrorResponse
+
 // This separates error by change requested
 final case class InvalidBatchChangeResponses(
     changeRequests: List[ChangeInput],
@@ -44,3 +47,8 @@ final case class BatchConversionError(change: SingleChange) extends BatchChangeE
        |and type "${change.typ}"""".stripMargin
 }
 final case class UnknownConversionError(message: String) extends BatchChangeErrorResponse
+
+final case class BatchChangeNotPendingApproval(id: String) extends BatchChangeErrorResponse {
+  def message: String =
+    s"""Batch change $id is not pending approval, so it cannot be rejected."""
+}

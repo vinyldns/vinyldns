@@ -26,7 +26,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
-import vinyldns.core.domain.batch.{BatchChange, RecordKey}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
@@ -47,6 +47,10 @@ trait BatchChangeValidationsAlgebra {
   def canGetBatchChange(
       batchChange: BatchChange,
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+
+  def validateRejectedBatchChange(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): BatchResult[Unit]
 }
 
 class BatchChangeValidations(
@@ -92,6 +96,33 @@ class BatchChangeValidations(
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isGroupMember(groupId) || authPrincipal.isSuper) ().validNel
         else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
+    }
+
+  def validateRejectedBatchChange(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): BatchResult[Unit] = {
+    val validations = validateBatchChangePendingApproval(batchChange) |+|
+      validateAuthorizedReviewer(authPrincipal, batchChange)
+
+    EitherT.fromEither(
+      validations
+        .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeReview(nel.toList))
+        .toEither)
+  }
+
+  def validateBatchChangePendingApproval(batchChange: BatchChange): BatchApproval[Unit] =
+    batchChange.approvalStatus match {
+      case BatchChangeApprovalStatus.PendingApproval => ().validNel
+      case _ => BatchChangeNotPendingApproval(batchChange.id).invalidNel
+    }
+
+  def validateAuthorizedReviewer(
+      auth: AuthPrincipal,
+      batchChange: BatchChange): BatchApproval[Unit] =
+    if (auth.canReadAll) {
+      ().validNel
+    } else {
+      UserNotAuthorizedError(batchChange.id).invalidNel
     }
 
   /* input validations */

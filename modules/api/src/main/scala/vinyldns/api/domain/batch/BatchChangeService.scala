@@ -85,6 +85,15 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId)
     } yield conversionResult.batchChange
 
+  def rejectBatchChange(
+      batchChangeId: String,
+      authPrincipal: AuthPrincipal,
+      rejectionComment: Option[RejectBatchChangeInput]): BatchResult[BatchChange] =
+    for {
+      batchChange <- getExistingBatchChange(batchChangeId)
+      _ <- validateRejectedBatchChange(batchChange, authPrincipal)
+    } yield batchChange
+
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
       batchChange <- getExistingBatchChange(id)

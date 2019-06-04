@@ -68,12 +68,13 @@ trait BatchChangeRoute extends Directives {
       }
 
     val manualBatchReviewRoutes =
-      (post & path("zones" / "batchrecordchanges" / Segment / "reject")) { _ =>
+      (post & path("zones" / "batchrecordchanges" / Segment / "reject")) { id =>
         monitor("Endpoint.rejectBatchChange") {
           entity(as[Option[RejectBatchChangeInput]]) { input =>
-            // TODO: Tie into batch change service with auth validation and rejection process
-            complete(StatusCodes.OK, input)
-            // TODO: Update response entity to return modified batch change
+            execute(batchChangeService.rejectBatchChange(id, authPrincipal, input)) { chg =>
+              complete(StatusCodes.OK, chg)
+            }
+          // TODO: Update response entity to return modified batch change
           }
         }
       }
@@ -99,6 +100,8 @@ trait BatchChangeRoute extends Directives {
       case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
       case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
       case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
+      case Left(bcnpa: BatchChangeNotPendingApproval) => complete(StatusCodes.BadRequest, bcnpa)
+      case Left(ibcr: InvalidBatchChangeReview) => complete(StatusCodes.BadRequest, ibcr)
       case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
     }
 }

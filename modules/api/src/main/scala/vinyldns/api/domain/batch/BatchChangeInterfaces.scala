@@ -27,6 +27,7 @@ object BatchChangeInterfaces {
   type SingleValidation[A] = ValidatedNel[DomainValidationError, A]
   type ValidatedBatch[A] = List[ValidatedNel[DomainValidationError, A]]
   type BatchResult[A] = EitherT[IO, BatchChangeErrorResponse, A]
+  type BatchApproval[A] = ValidatedNel[BatchChangeErrorResponse, A]
 
   implicit class IOBatchResultImprovements[A](theIo: IO[A]) {
     def toBatchResult: BatchResult[A] = EitherT.liftF(theIo)
@@ -70,6 +71,11 @@ object BatchChangeInterfaces {
 
   implicit class SingleValidationImprovements[A](validation: SingleValidation[A]) {
     def asUnit: SingleValidation[Unit] =
+      validation.map(_ => ())
+  }
+
+  implicit class BatchApprovalImprovements[A](validation: BatchApproval[A]) {
+    def asUnit: BatchApproval[Unit] =
       validation.map(_ => ())
   }
 

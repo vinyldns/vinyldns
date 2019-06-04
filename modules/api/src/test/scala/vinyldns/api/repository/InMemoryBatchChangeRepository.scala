@@ -22,6 +22,7 @@ import vinyldns.core.domain.batch._
 import scala.collection.concurrent
 import cats.effect._
 import cats.implicits._
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 
 class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
@@ -34,7 +35,11 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       createdTimestamp: DateTime,
       changes: List[String],
       ownerGroupId: Option[String],
-      id: String)
+      id: String,
+      approvalStatus: BatchChangeApprovalStatus,
+      reviewerId: Option[String],
+      reviewComment: Option[String],
+      reviewTimestamp: Option[DateTime])
   object StoredBatchChange {
     def apply(batchChange: BatchChange): StoredBatchChange =
       new StoredBatchChange(
@@ -44,7 +49,11 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         batchChange.createdTimestamp,
         batchChange.changes.map(_.id),
         batchChange.ownerGroupId,
-        batchChange.id
+        batchChange.id,
+        batchChange.approvalStatus,
+        batchChange.reviewerId,
+        batchChange.reviewComment,
+        batchChange.reviewTimestamp
       )
   }
 
@@ -75,10 +84,10 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
           sc.createdTimestamp,
           singleChangesFromRepo,
           sc.ownerGroupId,
-          BatchChangeApprovalStatus.AutoApproved,
-          None,
-          None,
-          None,
+          sc.approvalStatus,
+          sc.reviewerId,
+          sc.reviewComment,
+          sc.reviewTimestamp,
           sc.id
         )
       }
