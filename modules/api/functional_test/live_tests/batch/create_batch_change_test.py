@@ -451,41 +451,6 @@ def test_create_batch_change_without_comments_succeeds(shared_zone_test_context)
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
-
-def test_update_multi_record_record_set_fails(shared_zone_test_context):
-    """
-    Test that a [delete + add] style update of an existing RecordSet with multiple records fails
-    """
-    client = shared_zone_test_context.dummy_vinyldns_client
-    zone = shared_zone_test_context.dummy_zone
-
-    # existing
-    rs_existing = get_recordset_json(zone, "update", "A", [{"address": "2.2.2.2"}, {"address": "3.3.3.3"}])
-
-    batch_change_input = {
-        "changes": [
-            get_change_A_AAAA_json("update.dummy.", record_type="A", ttl=300, address="1.1.1.1"),
-            get_change_A_AAAA_json("update.dummy.", record_type="A", change_type="DeleteRecordSet")
-        ]
-    }
-
-    to_delete = None
-
-    try:
-        create_rs = client.create_recordset(rs_existing, status=202)
-        to_delete = create_rs['recordSet']
-        client.wait_until_recordset_change_status(create_rs, 'Complete')
-
-        response = client.create_batch_change(batch_change_input, status=400)
-
-        assert_error(response[0], error_messages=['RecordSet with name update and type A cannot be updated in a single Batch Change because it contains multiple DNS records (2). If this is expected, issue a DeleteRecordSet only, and add the record in a new Batch Change.'])
-
-    finally:
-        if to_delete:
-            delete_change = client.delete_recordset(to_delete['zoneId'], to_delete['id'], status=202)
-            client.wait_until_recordset_change_status(delete_change, 'Complete')
-
-
 def test_create_batch_change_with_owner_group_id_succeeds(shared_zone_test_context):
     """
     Test successfully creating a batch change with owner group ID specified
