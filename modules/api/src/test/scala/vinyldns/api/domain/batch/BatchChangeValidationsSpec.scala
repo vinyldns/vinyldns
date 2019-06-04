@@ -1505,23 +1505,32 @@ class BatchChangeValidationsSpec
         records = List(AAAAData("1::1"), AAAAData("2::2"))),
       sharedZoneRecord.copy(
         name = deleteSharedChange.recordName,
-        records = List(AAAAData("1::1"), AAAAData("2::2")))
+        records = List(AAAAData("1::1"), AAAAData("2::2"))),
+      rsOk.copy(name = updatePrivateAddChange.recordName),
+      rsOk.copy(name = deletePrivateChange.recordName)
     )
 
     val result = underTest.validateChangesWithContext(
       List(
         updateSharedAddChange.validNel,
         updateSharedDeleteChange.validNel,
-        deleteSharedChange.validNel
+        deleteSharedChange.validNel,
+        updatePrivateAddChange.validNel,
+        updatePrivateDeleteChange.validNel,
+        deletePrivateChange.validNel
       ),
       ExistingRecordSets(existing),
-      sharedAuth,
+      okAuth,
       Some(okGroup.id)
     )
 
     result(0) shouldBe valid
     result(1) shouldBe valid
     result(2) shouldBe valid
+    // non duplicate
+    result(3) shouldBe valid
+    result(4) shouldBe valid
+    result(5) shouldBe valid
   }
 
   property(
@@ -1532,17 +1541,22 @@ class BatchChangeValidationsSpec
         records = List(AAAAData("1::1"), AAAAData("2::2"))),
       sharedZoneRecord.copy(
         name = deleteSharedChange.recordName,
-        records = List(AAAAData("1::1"), AAAAData("2::2")))
+        records = List(AAAAData("1::1"), AAAAData("2::2"))),
+      rsOk.copy(name = updatePrivateAddChange.recordName),
+      rsOk.copy(name = deletePrivateChange.recordName)
     )
 
     val result = underTestMultiDisabled.validateChangesWithContext(
       List(
         updateSharedAddChange.validNel,
         updateSharedDeleteChange.validNel,
-        deleteSharedChange.validNel
+        deleteSharedChange.validNel,
+        updatePrivateAddChange.validNel,
+        updatePrivateDeleteChange.validNel,
+        deletePrivateChange.validNel
       ),
       ExistingRecordSets(existing),
-      sharedAuth,
+      okAuth,
       Some(okGroup.id)
     )
 
@@ -1552,14 +1566,15 @@ class BatchChangeValidationsSpec
       ExistingMultiRecordError(updateSharedDeleteChange.inputChange.inputName, existing(0)))
     result(2) should haveInvalid[DomainValidationError](
       ExistingMultiRecordError(deleteSharedChange.inputChange.inputName, existing(1)))
+    // non duplicate
+    result(3) shouldBe valid
+    result(4) shouldBe valid
+    result(5) shouldBe valid
   }
 
   property("validateChangesWithContext: succeed on add/update to a multi record if multi enabled") {
     val existing = List(
-      sharedZoneRecord.copy(
-        name = updateSharedAddChange.recordName,
-        records = List(AAAAData("1::1"))
-      )
+      sharedZoneRecord.copy(name = updateSharedAddChange.recordName)
     )
 
     val update1 = updateSharedAddChange.copy(
@@ -1582,10 +1597,11 @@ class BatchChangeValidationsSpec
         update1.validNel,
         update2.validNel,
         add1.validNel,
-        add2.validNel
+        add2.validNel,
+        updatePrivateAddChange.validNel
       ),
       ExistingRecordSets(existing),
-      sharedAuth,
+      okAuth,
       Some(okGroup.id)
     )
 
@@ -1594,6 +1610,8 @@ class BatchChangeValidationsSpec
     result(2) shouldBe valid
     result(3) shouldBe valid
     result(4) shouldBe valid
+    // non duplicate
+    result(5) shouldBe valid
   }
 
   property("validateChangesWithContext: fail on add/update to a multi record if multi disabled") {
@@ -1624,10 +1642,11 @@ class BatchChangeValidationsSpec
         update1.validNel,
         update2.validNel,
         add1.validNel,
-        add2.validNel
+        add2.validNel,
+        updatePrivateAddChange.validNel
       ),
       ExistingRecordSets(existing),
-      sharedAuth,
+      okAuth,
       Some(okGroup.id)
     )
 
@@ -1636,5 +1655,7 @@ class BatchChangeValidationsSpec
     result(2) should haveInvalid[DomainValidationError](NewMultiRecordError(update2))
     result(3) should haveInvalid[DomainValidationError](NewMultiRecordError(add1))
     result(4) should haveInvalid[DomainValidationError](NewMultiRecordError(add2))
+    // non duplicate
+    result(5) shouldBe valid
   }
 }
