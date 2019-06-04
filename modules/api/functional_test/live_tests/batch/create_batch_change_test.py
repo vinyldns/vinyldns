@@ -79,10 +79,8 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         "comments": "this is optional",
         "changes": [
             get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
-            get_change_A_AAAA_json("parent.com", address="4.5.6.7"),
             get_change_A_AAAA_json("ok.", record_type="AAAA", address="fd69:27cc:fe91::60"),
             get_change_A_AAAA_json("relative.parent.com.", address="1.1.1.1"),
-            get_change_A_AAAA_json("relative.parent.com", address="2.2.2.2"),
             get_change_CNAME_json("cname.parent.com", cname="nice.parent.com"),
             get_change_CNAME_json("2cname.parent.com", cname="nice.parent.com"),
             get_change_CNAME_json("4.2.0.192.in-addr.arpa.", cname="4.4/30.2.0.192.in-addr.arpa."),
@@ -94,7 +92,6 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
             get_change_TXT_json("txt-unique-characters.ok.", text='a\\\\`=` =\\"Cat\\"\nattr=val'),
             get_change_TXT_json("txt.2.0.192.in-addr.arpa."),
             get_change_MX_json("mx.ok.", preference=0),
-            get_change_MX_json("mx.ok.", preference=65535),
             get_change_MX_json("ok.", preference=1000, exchange="bar.foo.")
         ]
     }
@@ -115,39 +112,33 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
 
         assert_change_success_response_values(result['changes'], zone=parent_zone, index=0, record_name="parent.com.",
                                               input_name="parent.com.", record_data="4.5.6.7")
-        assert_change_success_response_values(result['changes'], zone=parent_zone, index=1, record_name="parent.com.",
-                                              input_name="parent.com.", record_data="4.5.6.7")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=2, record_name="ok.",
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=1, record_name="ok.",
                                               input_name="ok.", record_data="fd69:27cc:fe91::60", record_type="AAAA")
-        assert_change_success_response_values(result['changes'], zone=parent_zone, index=3, record_name="relative",
+        assert_change_success_response_values(result['changes'], zone=parent_zone, index=2, record_name="relative",
                                               input_name="relative.parent.com.", record_data="1.1.1.1")
-        assert_change_success_response_values(result['changes'], zone=parent_zone, index=4, record_name="relative",
-                                              input_name="relative.parent.com.", record_data="2.2.2.2"),
-        assert_change_success_response_values(result['changes'], zone=parent_zone, index=5, record_name="cname",
+        assert_change_success_response_values(result['changes'], zone=parent_zone, index=3, record_name="cname",
                                               input_name="cname.parent.com.", record_data="nice.parent.com.", record_type="CNAME")
-        assert_change_success_response_values(result['changes'], zone=parent_zone, index=6, record_name="2cname",
+        assert_change_success_response_values(result['changes'], zone=parent_zone, index=4, record_name="2cname",
                                               input_name="2cname.parent.com.", record_data="nice.parent.com.", record_type="CNAME")
-        assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=7, record_name="4",
+        assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=5, record_name="4",
                                               input_name="4.2.0.192.in-addr.arpa.", record_data="4.4/30.2.0.192.in-addr.arpa.", record_type="CNAME")
-        assert_change_success_response_values(result['changes'], zone=classless_delegation_zone, index=8, record_name="193",
+        assert_change_success_response_values(result['changes'], zone=classless_delegation_zone, index=6, record_name="193",
                                               input_name="192.0.2.193", record_data="www.vinyldns.", record_type="PTR")
-        assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=9, record_name="44",
+        assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=7, record_name="44",
                                               input_name="192.0.2.44", record_data="test.com.", record_type="PTR")
-        assert_change_success_response_values(result['changes'], zone=ip6_reverse_zone, index=10, record_name="0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
+        assert_change_success_response_values(result['changes'], zone=ip6_reverse_zone, index=8, record_name="0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
                                               input_name="fd69:27cc:fe91::60", record_data="www.vinyldns.", record_type="PTR")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=11, record_name="txt",
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=9, record_name="txt",
                                               input_name="txt.ok.", record_data="test", record_type="TXT")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=12, record_name="ok.",
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=10, record_name="ok.",
                                               input_name="ok.", record_data="test", record_type="TXT")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=13, record_name="txt-unique-characters",
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=11, record_name="txt-unique-characters",
                                               input_name="txt-unique-characters.ok.", record_data='a\\\\`=` =\\"Cat\\"\nattr=val', record_type="TXT")
-        assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=14, record_name="txt",
+        assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=12, record_name="txt",
                                               input_name="txt.2.0.192.in-addr.arpa.", record_data="test", record_type="TXT")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=15, record_name="mx",
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=13, record_name="mx",
                                               input_name="mx.ok.", record_data={'preference': 0, 'exchange': 'foo.bar.'}, record_type="MX")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=16, record_name="mx",
-                                              input_name="mx.ok.", record_data={'preference': 65535, 'exchange': 'foo.bar.'}, record_type="MX")
-        assert_change_success_response_values(result['changes'], zone=ok_zone, index=17, record_name="ok.",
+        assert_change_success_response_values(result['changes'], zone=ok_zone, index=14, record_name="ok.",
                                               input_name="ok.", record_data={'preference': 1000, 'exchange': 'bar.foo.'}, record_type="MX")
 
         completed_status = [change['status'] == 'Complete' for change in completed_batch['changes']]
@@ -162,10 +153,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                     'records': [{'address': '4.5.6.7'}]}
         verify_recordset(rs1, expected1)
 
-        rs2 = client.get_recordset(record_set_list[1][0], record_set_list[1][1])['recordSet']
-        assert_that(rs2, is_(rs1)) # duplicate entry, should get same thing
-
-        rs3 = client.get_recordset(record_set_list[2][0], record_set_list[2][1])['recordSet']
+        rs3 = client.get_recordset(record_set_list[1][0], record_set_list[1][1])['recordSet']
         expected3 = {'name': 'ok.',
                      'zoneId': ok_zone['id'],
                      'type': 'AAAA',
@@ -173,15 +161,15 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                      'records': [{'address': 'fd69:27cc:fe91::60'}]}
         verify_recordset(rs3, expected3)
 
-        rs4 = client.get_recordset(record_set_list[3][0], record_set_list[3][1])['recordSet']
+        rs4 = client.get_recordset(record_set_list[2][0], record_set_list[2][1])['recordSet']
         expected4 = {'name': 'relative',
                      'zoneId': parent_zone['id'],
                      'type': 'A',
                      'ttl': 200,
-                     'records': [{'address': '1.1.1.1'}, {'address': '2.2.2.2'}]}
+                     'records': [{'address': '1.1.1.1'}]}
         verify_recordset(rs4, expected4)
 
-        rs5 = client.get_recordset(record_set_list[5][0], record_set_list[5][1])['recordSet']
+        rs5 = client.get_recordset(record_set_list[3][0], record_set_list[3][1])['recordSet']
         expected5 = {'name': 'cname',
                      'zoneId': parent_zone['id'],
                      'type': 'CNAME',
@@ -189,7 +177,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                      'records': [{'cname': 'nice.parent.com.'}]}
         verify_recordset(rs5, expected5)
 
-        rs6 = client.get_recordset(record_set_list[6][0], record_set_list[6][1])['recordSet']
+        rs6 = client.get_recordset(record_set_list[4][0], record_set_list[4][1])['recordSet']
         expected6 = {'name': '2cname',
                      'zoneId': parent_zone['id'],
                      'type': 'CNAME',
@@ -197,7 +185,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                      'records': [{'cname': 'nice.parent.com.'}]}
         verify_recordset(rs6, expected6)
 
-        rs7 = client.get_recordset(record_set_list[7][0], record_set_list[7][1])['recordSet']
+        rs7 = client.get_recordset(record_set_list[5][0], record_set_list[5][1])['recordSet']
         expected7 = {'name': '4',
                      'zoneId': classless_base_zone['id'],
                      'type': 'CNAME',
@@ -205,7 +193,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                      'records': [{'cname': '4.4/30.2.0.192.in-addr.arpa.'}]}
         verify_recordset(rs7, expected7)
 
-        rs8 = client.get_recordset(record_set_list[8][0], record_set_list[8][1])['recordSet']
+        rs8 = client.get_recordset(record_set_list[6][0], record_set_list[6][1])['recordSet']
         expected8 = {'name': '193',
                      'zoneId': classless_delegation_zone['id'],
                      'type': 'PTR',
@@ -213,7 +201,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                      'records': [{'ptrdname': 'www.vinyldns.'}]}
         verify_recordset(rs8, expected8)
 
-        rs9 = client.get_recordset(record_set_list[9][0], record_set_list[9][1])['recordSet']
+        rs9 = client.get_recordset(record_set_list[7][0], record_set_list[7][1])['recordSet']
         expected9 = {'name': '44',
                      'zoneId': classless_base_zone['id'],
                      'type': 'PTR',
@@ -221,7 +209,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                      'records': [{'ptrdname': 'test.com.'}]}
         verify_recordset(rs9, expected9)
 
-        rs10 = client.get_recordset(record_set_list[10][0], record_set_list[10][1])['recordSet']
+        rs10 = client.get_recordset(record_set_list[8][0], record_set_list[8][1])['recordSet']
         expected10 = {'name': '0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
                      'zoneId': ip6_reverse_zone['id'],
                      'type': 'PTR',
@@ -229,7 +217,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                      'records': [{'ptrdname': 'www.vinyldns.'}]}
         verify_recordset(rs10, expected10)
 
-        rs11 = client.get_recordset(record_set_list[11][0], record_set_list[11][1])['recordSet']
+        rs11 = client.get_recordset(record_set_list[9][0], record_set_list[9][1])['recordSet']
         expected11 = {'name': 'txt',
                       'zoneId': ok_zone['id'],
                       'type': 'TXT',
@@ -237,7 +225,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                       'records': [{'text': 'test'}]}
         verify_recordset(rs11, expected11)
 
-        rs12 = client.get_recordset(record_set_list[12][0], record_set_list[12][1])['recordSet']
+        rs12 = client.get_recordset(record_set_list[10][0], record_set_list[10][1])['recordSet']
         expected12 = {'name': 'ok.',
                       'zoneId': ok_zone['id'],
                       'type': 'TXT',
@@ -245,7 +233,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                       'records': [{'text': 'test'}]}
         verify_recordset(rs12, expected12)
 
-        rs13 = client.get_recordset(record_set_list[13][0], record_set_list[13][1])['recordSet']
+        rs13 = client.get_recordset(record_set_list[11][0], record_set_list[11][1])['recordSet']
         expected13 = {'name': 'txt-unique-characters',
                       'zoneId': ok_zone['id'],
                       'type': 'TXT',
@@ -253,7 +241,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                       'records': [{'text': 'a\\\\`=` =\\"Cat\\"\nattr=val'}]}
         verify_recordset(rs13, expected13)
 
-        rs14 = client.get_recordset(record_set_list[14][0], record_set_list[14][1])['recordSet']
+        rs14 = client.get_recordset(record_set_list[12][0], record_set_list[12][1])['recordSet']
         expected14 = {'name': 'txt',
                       'zoneId': classless_base_zone['id'],
                       'type': 'TXT',
@@ -261,15 +249,15 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                       'records': [{'text': 'test'}]}
         verify_recordset(rs14, expected14)
 
-        rs15 = client.get_recordset(record_set_list[15][0], record_set_list[15][1])['recordSet']
+        rs15 = client.get_recordset(record_set_list[13][0], record_set_list[13][1])['recordSet']
         expected15 = {'name': 'mx',
                       'zoneId': ok_zone['id'],
                       'type': 'MX',
                       'ttl': 200,
-                      'records': [{'preference': 0, 'exchange': 'foo.bar.'}, {'preference': 65535, 'exchange': 'foo.bar.'}]}
+                      'records': [{'preference': 0, 'exchange': 'foo.bar.'}]}
         verify_recordset(rs15, expected15)
 
-        rs16 = client.get_recordset(record_set_list[17][0], record_set_list[17][1])['recordSet']
+        rs16 = client.get_recordset(record_set_list[14][0], record_set_list[14][1])['recordSet']
         expected16 = {'name': 'ok.',
                       'zoneId': ok_zone['id'],
                       'type': 'MX',
