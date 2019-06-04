@@ -151,7 +151,8 @@ final case class MissingOwnerGroupId(recordName: String, zoneName: String)
     s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record "$recordName"."""
 }
 
-final case class ExistingMultiRecordError(fqdn: String, record: RecordSet) extends DomainValidationError {
+final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
+    extends DomainValidationError {
   def message: String =
     s"""RecordSet with name $fqdn and type ${record.typ.toString} cannot be updated in a single Batch Change
        |because it contains multiple DNS records (${record.records.length}).""".stripMargin

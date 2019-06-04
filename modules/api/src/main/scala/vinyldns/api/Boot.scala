@@ -106,7 +106,10 @@ object Boot extends App {
         .start
     } yield {
       val zoneValidations = new ZoneValidations(syncDelay)
-      val batchChangeValidations = new BatchChangeValidations(batchChangeLimit, AccessValidations)
+      val batchChangeValidations = new BatchChangeValidations(
+        batchChangeLimit,
+        AccessValidations,
+        VinylDNSConfig.multiRecordBatchUpdateEnabled)
       val membershipService = MembershipService(repositories)
       val connectionValidator =
         new ZoneConnectionValidator(connections)

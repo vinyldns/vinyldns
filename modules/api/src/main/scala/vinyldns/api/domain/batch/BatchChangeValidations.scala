@@ -49,7 +49,10 @@ trait BatchChangeValidationsAlgebra {
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 }
 
-class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidationAlgebra)
+class BatchChangeValidations(
+    changeLimit: Int,
+    accessValidation: AccessValidationAlgebra,
+    multiRecordEnabled: Boolean = false)
     extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -172,19 +175,24 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
   }
 
-  def existingRecordSetIsNotMulti(change: ChangeForValidation,
-                                  recordSet: RecordSet): SingleValidation[Unit] = {
-    if (!VinylDNSConfig.multiRecordBatchUpdateEnabled & recordSet.records.length > 1) {
-        ExistingMultiRecordError(change.inputChange.inputName, recordSet).invalidNel
+  def existingRecordSetIsNotMulti(
+      change: ChangeForValidation,
+      recordSet: RecordSet): SingleValidation[Unit] =
+    if (!multiRecordEnabled & recordSet.records.length > 1) {
+      ExistingMultiRecordError(change.inputChange.inputName, recordSet).invalidNel
     } else ().validNel
-  }
 
-  def newRecordSetIsNotMulti(change: AddChangeForValidation,
-                             changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
-    if (!VinylDNSConfig.multiRecordBatchUpdateEnabled && changeGroups.getList(change.recordKey).length > 1)
+  def newRecordSetIsNotMulti(
+      change: AddChangeForValidation,
+      changeGroups: ChangeForValidationMap): SingleValidation[Unit] =
+    if (!multiRecordEnabled && changeGroups
+        .getList(change.recordKey)
+        .collect {
+          case add: AddChangeForValidation => add
+        }
+        .length > 1)
       NewMultiRecordError(change).invalidNel
     else ().validNel
-  }
 
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
@@ -192,8 +200,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
     val validations =
       existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
-        case Some(rs) => userCanDeleteRecordSet(change, auth, rs.ownerGroupId) |+|
-          existingRecordSetIsNotMulti(change, rs)
+        case Some(rs) =>
+          userCanDeleteRecordSet(change, auth, rs.ownerGroupId) |+|
+            existingRecordSetIsNotMulti(change, rs)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
     validations.map(_ => change)
@@ -220,8 +229,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
               change,
               existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
               batchOwnerGroupId) |+|
-          newRecordSetIsNotMulti(change, changeGroups) |+|
-          existingRecordSetIsNotMulti(change, rs)
+            newRecordSetIsNotMulti(change, changeGroups) |+|
+            existingRecordSetIsNotMulti(change, rs)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }

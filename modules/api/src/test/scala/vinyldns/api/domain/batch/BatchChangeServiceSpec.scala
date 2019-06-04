@@ -287,7 +287,7 @@ class BatchChangeServiceSpec
     "succeed with excluded TTL" in {
       val noTtl = AddChangeInput("no-ttl-add.test.com", RecordType.A, None, AData("1.1.1.1"))
       val withTtl =
-        AddChangeInput("with-ttl-add.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
+        AddChangeInput("with-ttl-add-2.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
       val noTtlDel = DeleteChangeInput("non-apex.test.com.", RecordType.TXT)
       val noTtlUpdate =
         AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
