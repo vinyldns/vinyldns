@@ -248,7 +248,10 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           .lookup(testDomain2, "foo", serviceAccount)
           .returns(Left(UserDoesNotExistException("second failed")))
         val authenticator =
-          new LdapAuthenticator(List(testDomain1, testDomain2), byDomainAuthenticator, serviceAccount)
+          new LdapAuthenticator(
+            List(testDomain1, testDomain2),
+            byDomainAuthenticator,
+            serviceAccount)
 
         val response = authenticator.lookup("foo")
 
