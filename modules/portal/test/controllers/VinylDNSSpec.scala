@@ -488,6 +488,26 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           flash(response).get("alertMessage") must beSome("Authentication failed, please try again")
         }
       }
+
+      "if service is down" should {
+        "redirect to login" in new WithApplication(app) {
+          authenticator
+            .authenticate("frodo", "secondbreakfast")
+            .returns(Left(LdapServiceException("some bad exception")))
+
+          val response = vinyldnsPortal
+            .login()
+            .apply(
+              FakeRequest()
+                .withFormUrlEncodedBody("username" -> "frodo", "password" -> "secondbreakfast")
+            )
+
+          flash(response).get("alertType") must beSome("danger")
+          flash(response).get("alertMessage") must beSome(
+            "Authentication failed, please contact your VinylDNS " +
+              "administrators")
+        }
+      }
     }
 
     ".oidcCallback" should {

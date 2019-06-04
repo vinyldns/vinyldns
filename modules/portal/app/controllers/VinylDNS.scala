@@ -326,7 +326,7 @@ class VinylDNS @Inject()(
           case _: UserDoesNotExistException =>
             NotFound(s"User $username was not found")
           case le: LdapException =>
-            InternalServerError(le.message)
+            InternalServerError(le.getMessage)
         }
   }
 

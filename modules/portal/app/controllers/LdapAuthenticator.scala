@@ -137,10 +137,7 @@ object LdapAuthenticator {
         username: String,
         password: String): Either[LdapException, LdapUserDetails] =
       createContext(s"${searchDomain.organization}\\$username", password).flatMap { context =>
-        searchContext(
-          context,
-          searchDomain.organization,
-          username)
+        searchContext(context, searchDomain.organization, username)
       }
 
     private[controllers] def lookup(
@@ -149,10 +146,7 @@ object LdapAuthenticator {
         serviceAccount: ServiceAccount): Either[LdapException, LdapUserDetails] =
       createContext(s"${serviceAccount.domain}\\${serviceAccount.name}", serviceAccount.password)
         .flatMap { context =>
-          searchContext(
-            context,
-            searchDomain.organization,
-            user)
+          searchContext(context, searchDomain.organization, user)
         }
   }
 
@@ -180,10 +174,10 @@ object LdapAuthenticator {
 sealed abstract class LdapException(message: String) extends Exception(message)
 
 final case class UserDoesNotExistException(message: String) extends LdapException(message)
-final case class LdapServiceException(errorMessage: String) extends LdapException(
-  s"Encountered error communicating with LDAP service: $errorMessage")
-final case class InvalidCredentials(username: String) extends LdapException(
-  s"Provided credentials were invalid for user [$username].")
+final case class LdapServiceException(errorMessage: String)
+    extends LdapException(s"Encountered error communicating with LDAP service: $errorMessage")
+final case class InvalidCredentials(username: String)
+    extends LdapException(s"Provided credentials were invalid for user [$username].")
 
 /**
   * Top level ldap authenticator that tries authenticating on multiple domains. Authentication is
