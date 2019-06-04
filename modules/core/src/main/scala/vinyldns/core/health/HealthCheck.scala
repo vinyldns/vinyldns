@@ -17,6 +17,7 @@
 package vinyldns.core.health
 
 import cats.effect.IO
+import org.slf4j.LoggerFactory
 
 object HealthCheck {
 
@@ -24,10 +25,13 @@ object HealthCheck {
 
   case class HealthCheckError(message: String) extends Throwable(message)
 
+  private val logger = LoggerFactory.getLogger("HealthCheck")
+
   implicit class HealthCheckImprovements(io: IO[Either[Throwable, _]]) {
     def asHealthCheck: HealthCheck =
       io.map {
         case Left(err) =>
+          logger.error("HealthCheck Failed", err)
           Left(HealthCheckError(Option(err.getMessage).getOrElse("no message from error")))
         case _ => Right(())
       }
