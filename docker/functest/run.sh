@@ -15,6 +15,13 @@ else
   TEST_PATTERN="-k ${TEST_PATTERN}"
 fi
 
+# Assume manual batch review disabled if not specified
+if [ -z "$MANUAL_BATCH_REVIEW" ]; then
+  MANUAL_BATCH_REVIEW=
+else
+  MANUAL_BATCH_REVIEW="--run-manual-batch-review-tests=true"
+fi
+
 echo "Waiting for API to be ready at ${VINYLDNS_URL} ..."
 DATA=""
 RETRY=60
@@ -46,9 +53,9 @@ cd /app
 # If PROD_ENV is not true, we are in a local docker environment so do not skip anything
 if [ "${PROD_ENV}" = "true" ]; then
     # -m plays havoc with -k, using variables is a headache, so doing this by hand
-    echo "./run-tests.py live_tests -m \"not skip_production\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
-    ./run-tests.py live_tests -v -m "not skip_production" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    echo "./run-tests.py live_tests -m \"not skip_production\" -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${MANUAL_BATCH_REVIEW} ${TEST_PATTERN}"
+    ./run-tests.py live_tests -v -m "not skip_production" --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${MANUAL_BATCH_REVIEW} ${TEST_PATTERN}
 else
-    echo "./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}"
-    ./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${TEST_PATTERN}
+    echo "./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${MANUAL_BATCH_REVIEW} ${TEST_PATTERN}"
+    ./run-tests.py live_tests -v --url=${VINYLDNS_URL} --dns-ip=${DNS_IP} ${MANUAL_BATCH_REVIEW} ${TEST_PATTERN}
 fi

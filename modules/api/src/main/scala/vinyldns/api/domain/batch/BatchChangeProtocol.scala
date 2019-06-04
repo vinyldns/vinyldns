@@ -68,4 +68,4 @@ object ChangeInputType extends Enumeration {
   val Add, DeleteRecordSet = Value
 }
 
-final case class RejectBatchChangeInput(comments: Option[String])
+final case class RejectBatchChangeInput(reviewComment: Option[String])

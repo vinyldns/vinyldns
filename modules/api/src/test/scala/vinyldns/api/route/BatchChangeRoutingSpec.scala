@@ -433,9 +433,10 @@ class BatchChangeRoutingSpec
 
   "POST reject batch change" should {
     "return OK if comments are provided" in {
-      Post("/zones/batchrecordchanges/existingID/reject").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        compact(render("comments" -> "some comments")))) ~>
+      Post("/zones/batchrecordchanges/existingID/reject").withEntity(
+        HttpEntity(
+          ContentTypes.`application/json`,
+          compact(render("reviewComment" -> "some comments")))) ~>
         batchChangeRoute(okAuth) ~> check {
         status shouldBe OK
       }
@@ -452,7 +453,7 @@ class BatchChangeRoutingSpec
     "return BadRequest if comments exceed 1024 characters" in {
       Post("/zones/batchrecordchanges/existingID/reject").withEntity(HttpEntity(
         ContentTypes.`application/json`,
-        compact(render("comments" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute(okAuth)) ~> check {
+        compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute(okAuth)) ~> check {
         status shouldBe BadRequest
 
         responseEntity.toString should include("Comment length must not exceed 1024 characters.")

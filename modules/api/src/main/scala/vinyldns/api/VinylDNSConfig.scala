@@ -130,4 +130,7 @@ object VinylDNSConfig {
   lazy val defaultTtl: Long = vinyldnsConfig.as[Option[Long]](s"default-ttl").getOrElse(7200L)
   lazy val multiRecordBatchUpdateEnabled: Boolean =
     vinyldnsConfig.as[Option[Boolean]]("enable-multi-record-batch-update").getOrElse(false)
+  lazy val manualBatchReviewEnabled: Boolean = vinyldnsConfig
+    .as[Option[Boolean]]("manual-batch-review-enabled")
+    .getOrElse(false)
 }

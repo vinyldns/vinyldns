@@ -187,7 +187,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   case object RejectBatchChangeInputSerializer
       extends ValidationSerializer[RejectBatchChangeInput] {
     override def fromJson(js: JValue): ValidatedNel[String, RejectBatchChangeInput] =
-      (js \ "comments")
+      (js \ "reviewComment")
         .optional[String]
         .check(
           s"Comment length must not exceed $MAX_COMMENT_LENGTH characters." -> checkCommentLength)
