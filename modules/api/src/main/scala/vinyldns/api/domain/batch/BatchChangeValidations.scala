@@ -172,16 +172,30 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
   }
 
+  def existingRecordSetIsNotMulti(change: ChangeForValidation,
+                                  recordSet: RecordSet): SingleValidation[Unit] = {
+    if (!VinylDNSConfig.multiRecordBatchUpdateEnabled & recordSet.records.length > 1) {
+        ExistingMultiRecordError(change.inputChange.inputName, recordSet).invalidNel
+    } else ().validNel
+  }
+
+  def newRecordSetIsNotMulti(change: AddChangeForValidation,
+                             changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
+    if (!VinylDNSConfig.multiRecordBatchUpdateEnabled && changeGroups.getList(change.recordKey).length > 1)
+      NewMultiRecordError(change).invalidNel
+    else ().validNel
+  }
+
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
     val validations =
       existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
-        case Some(rs) => userCanDeleteRecordSet(change, auth, rs.ownerGroupId)
+        case Some(rs) => userCanDeleteRecordSet(change, auth, rs.ownerGroupId) |+|
+          existingRecordSetIsNotMulti(change, rs)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
-
     validations.map(_ => change)
   }
 
@@ -199,15 +213,17 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
 
     val authAndOwnerGroupValidations: SingleValidation[Unit] =
-      existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+      existingRecordSets.get(change.recordKey) match {
         case Some(rs) =>
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
             ownerGroupProvidedIfNeeded(
               change,
               existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
               batchOwnerGroupId) |+|
-            isNotMultiRecordUpdate(rs)
-        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+          newRecordSetIsNotMulti(change, changeGroups) |+|
+          existingRecordSetIsNotMulti(change, rs)
+        case None =>
+          RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
     val validations = typedValidations |+| authAndOwnerGroupValidations
@@ -221,7 +237,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
     val validations =
       existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
-        case Some(rs) => userCanUpdateRecordSet(change, auth, rs.ownerGroupId)
+        case Some(rs) =>
+          userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
+            existingRecordSetIsNotMulti(change, rs)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
@@ -269,7 +287,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
           change.inputChange.inputName,
           change.inputChange.typ,
           existingRecords) |+|
-        ownerGroupProvidedIfNeeded(change, None, ownerGroupId)
+        ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
+        newRecordSetIsNotMulti(change, changeGroups)
 
     validations.map(_ => change)
   }
@@ -292,7 +311,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       change: AddChangeForValidation,
       changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
     val duplicateNameChangeInBatch = changeGroups
-      .getList(RecordKey(change.zone.id, change.recordName, change.inputChange.typ))
+      .getList(change.recordKey)
       .exists(chg => chg.isAddChangeForValidation && chg != change)
 
     if (duplicateNameChangeInBatch) {
@@ -416,9 +435,4 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
           MissingOwnerGroupId(change.recordName, change.zone.name).invalidNel
       }
     }
-
-  def isNotMultiRecordUpdate(recordBeingUpdated: RecordSet): SingleValidation[Unit] =
-    if (recordBeingUpdated.records.length > 1 && !VinylDNSConfig.multiRecordBatchUpdateEnabled)
-      MultipleRecordsInRecordSet(recordBeingUpdated).invalidNel
-    else ().validNel
 }

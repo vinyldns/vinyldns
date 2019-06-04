@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain
 
+import vinyldns.api.domain.batch.BatchTransformations.AddChangeForValidation
 import vinyldns.api.domain.batch.SupportedBatchChangeRecordTypes
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -150,11 +151,18 @@ final case class MissingOwnerGroupId(recordName: String, zoneName: String)
     s"""Zone "$zoneName" is a shared zone, so owner group ID must be specified for record "$recordName"."""
 }
 
-final case class MultipleRecordsInRecordSet(record: RecordSet) extends DomainValidationError {
+final case class ExistingMultiRecordError(fqdn: String, record: RecordSet) extends DomainValidationError {
   def message: String =
-    s"""RecordSet with name ${record.name} and type ${record.typ.toString} cannot be updated in a single Batch Change
-       |because it contains multiple DNS records (${record.records.length}). If this is expected, issue a
-       |DeleteRecordSet only, and add the record in a new Batch Change.""".stripMargin
+    s"""RecordSet with name $fqdn and type ${record.typ.toString} cannot be updated in a single Batch Change
+       |because it contains multiple DNS records (${record.records.length}).""".stripMargin
+      .replaceAll("\n", " ")
+}
+
+final case class NewMultiRecordError(change: AddChangeForValidation) extends DomainValidationError {
+  def message: String =
+    s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
+       |There are duplicate changes with name ${change.inputChange.inputName} and type ${change.inputChange.typ}
+       |in this batch.""".stripMargin
       .replaceAll("\n", " ")
 }
 // $COVERAGE-ON$
