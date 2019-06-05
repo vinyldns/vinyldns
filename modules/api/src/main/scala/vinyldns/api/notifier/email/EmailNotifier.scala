@@ -97,7 +97,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
         _,
         _) =>
       s"""<tr><td>${index + 1}</td><td>Add</td><td>$typ</td><td>$inputName</td>
-        |     <td>${ttl}</td><td>${formatRecordData(recordData)}</td><td>$status</td>
+        |     <td>$ttl</td><td>${formatRecordData(recordData)}</td><td>$status</td>
         |     <td>${systemMessage.getOrElse("")}</td></tr>"""
     case SingleDeleteChange(_, _, _, inputName, typ, status, systemMessage, _, _, _) =>
       s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>

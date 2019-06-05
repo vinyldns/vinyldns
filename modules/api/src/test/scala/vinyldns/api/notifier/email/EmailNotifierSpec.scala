@@ -38,6 +38,10 @@ import vinyldns.core.domain.batch.SingleDeleteChange
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
 import _root_.vinyldns.core.domain.batch.SingleChangeStatus
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import scala.collection.JavaConverters._
+import vinyldns.core.notifier.NotifierConfig
 
 object MockTransport extends MockitoSugar {
   val mockTransport = mock[Transport]
@@ -94,10 +98,15 @@ class EmailNotifierSpec
 
   "Email Notifier" should {
     "do nothing for unsupported Notifications" in {
-      val notifier = new EmailNotifier(
-        EmailNotifierConfig(new InternetAddress("test@test.com"), new Properties),
-        session,
-        mockUserRepository)
+      val emailConfig: Config = ConfigFactory.parseMap(
+        Map[String, Any](
+          "from" -> "Testing <test@test.com>",
+          "smtp.host" -> "wouldfail.mail.com",
+          "smtp.auth.mechanisms" -> "PLAIN"
+        ).asJava)
+      val notifier = new EmailNotifierProvider()
+        .load(NotifierConfig("", emailConfig), mockUserRepository)
+        .unsafeRunSync()
 
       notifier.notify(new Notification("this won't be supported ever")) should be(IO.unit)
     }
@@ -211,6 +220,7 @@ class EmailNotifierSpec
               case AData(address) => row.contains(address) should be(true)
               case _ => row.contains(ac.recordData) should be(true)
             }
+            row.contains(ac.ttl.toString) should be(true)
           case _: SingleDeleteChange =>
             row.contains("Delete") should be(true)
         }

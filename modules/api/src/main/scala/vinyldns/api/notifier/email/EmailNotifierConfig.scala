@@ -24,32 +24,34 @@ import scala.util.Try
 import pureconfig.error.CannotConvert
 import java.util.Properties
 import com.typesafe.config.{ConfigObject, ConfigValue}
+import com.typesafe.config.ConfigValueType
 
 object EmailNotifierConfig {
 
   implicit val smtpPropertiesReader: ConfigReader[Properties] = {
     ConfigReader[ConfigObject].map { config =>
       val props = new Properties()
-      convertToProperties("mail.smtp", config, props)
+
+      def convertToProperties(baseKey: String, config: ConfigObject): Unit =
+        config.keySet().asScala.foreach {
+          case key =>
+            config.get(key) match {
+              case value: ConfigObject =>
+                convertToProperties(s"${baseKey}.${key}", value)
+              case value: ConfigValue if value.valueType != ConfigValueType.NULL =>
+                props.put(s"${baseKey}.${key}", value.unwrapped())
+              case _ =>
+            }
+        }
+
+      convertToProperties("mail.smtp", config)
       props
     }
   }
 
-  def convertToProperties(baseKey: String, config: ConfigObject, props: Properties): Unit =
-    config.keySet().asScala.foreach {
-      case key =>
-        config.get(key) match {
-          case value: ConfigObject =>
-            convertToProperties(s"${baseKey}.${key}", value, props)
-          case value: ConfigValue =>
-            props.put(s"${baseKey}.${key}", value.unwrapped())
-
-        }
-    }
-
   implicit val addressReader: ConfigReader[Address] = ConfigReader[String].emap { s =>
     Try(new InternetAddress(s)).toEither.left.map { exc =>
-      CannotConvert(s, "InternetAddress", exc.getMessage())
+      CannotConvert(s, "InternetAddress", exc.getMessage)
     }
   }
 
