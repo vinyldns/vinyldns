@@ -108,8 +108,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             changesWithUserIds
               .filter { chg =>
                 chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") &&
-                chg.recordSet.typ != RecordType.SRV && chg.recordSet.typ != RecordType.TXT &&
-                chg.recordSet.typ != RecordType.NAPTR
+                  chg.recordSet.typ != RecordType.SRV && chg.recordSet.typ != RecordType.TXT &&
+                  chg.recordSet.typ != RecordType.NAPTR
               }
               .map(_.recordSet.name)
               .grouped(1000)
@@ -120,7 +120,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               }
 
             logger.info(
-              s"zone.sync.changes; zoneName='${zone.name}'; changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'")
+              s"zone.sync.changes; zoneName='${zone.name}'; " +
+                s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'")
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
 
             // we want to make sure we write to both the change repo and record set repo
