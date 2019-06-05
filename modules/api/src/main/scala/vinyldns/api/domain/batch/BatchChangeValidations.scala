@@ -184,15 +184,16 @@ class BatchChangeValidations(
 
   def newRecordSetIsNotMulti(
       change: AddChangeForValidation,
-      changeGroups: ChangeForValidationMap): SingleValidation[Unit] =
-    if (!multiRecordEnabled && changeGroups
-        .getList(change.recordKey)
-        .collect {
-          case add: AddChangeForValidation => add
-        }
-        .length > 1)
+      changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
+    lazy val matchingAddRecords = changeGroups
+      .getList(change.recordKey)
+      .collect {
+        case add: AddChangeForValidation => add
+      }
+    if (!multiRecordEnabled && matchingAddRecords.length > 1)
       NewMultiRecordError(change).invalidNel
     else ().validNel
+  }
 
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
