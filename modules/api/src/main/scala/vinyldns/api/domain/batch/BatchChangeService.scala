@@ -91,7 +91,7 @@ class BatchChangeService(
       rejectionComment: Option[RejectBatchChangeInput]): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
-      _ <- validateRejectedBatchChange(batchChange, authPrincipal)
+      _ <- validateRejectedBatchChange(batchChange, authPrincipal).toBatchResult
     } yield batchChange
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =

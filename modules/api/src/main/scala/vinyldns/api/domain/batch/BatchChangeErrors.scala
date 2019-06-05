@@ -26,9 +26,6 @@ sealed trait BatchChangeErrorResponse
 final case class InvalidBatchChangeInput(errors: List[DomainValidationError])
     extends BatchChangeErrorResponse
 
-final case class InvalidBatchChangeReview(errors: List[BatchChangeErrorResponse])
-    extends BatchChangeErrorResponse
-
 // This separates error by change requested
 final case class InvalidBatchChangeResponses(
     changeRequests: List[ChangeInput],

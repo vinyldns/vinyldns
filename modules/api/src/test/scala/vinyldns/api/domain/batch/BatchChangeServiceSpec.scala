@@ -334,7 +334,7 @@ class BatchChangeServiceSpec
       val result =
         leftResultOf(underTest.rejectBatchChange(batchChange.id, supportUserAuth, None).value)
 
-      result shouldBe InvalidBatchChangeReview(List(BatchChangeNotPendingApproval(batchChange.id)))
+      result shouldBe BatchChangeNotPendingApproval(batchChange.id)
     }
 
     "fail if the batchChange reviewer is not authorized" in {
@@ -351,7 +351,7 @@ class BatchChangeServiceSpec
       val result =
         leftResultOf(underTest.rejectBatchChange(batchChange.id, auth, None).value)
 
-      result shouldBe InvalidBatchChangeReview(List(UserNotAuthorizedError(batchChange.id)))
+      result shouldBe UserNotAuthorizedError(batchChange.id)
     }
 
     "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Approval" in {
@@ -368,8 +368,7 @@ class BatchChangeServiceSpec
       val result =
         leftResultOf(underTest.rejectBatchChange(batchChange.id, auth, None).value)
 
-      result shouldBe InvalidBatchChangeReview(
-        List(BatchChangeNotPendingApproval(batchChange.id), UserNotAuthorizedError(batchChange.id)))
+      result shouldBe UserNotAuthorizedError(batchChange.id)
     }
   }
 

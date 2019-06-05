@@ -250,56 +250,48 @@ class BatchChangeValidationsSpec
   }
 
   property("validateBatchChangePendingApproval: should succeed if batch change is PendingApproval") {
-    validateBatchChangePendingApproval(validPendingBatchChange) should beValid(())
+    validateBatchChangePendingApproval(validPendingBatchChange) should be(right)
   }
 
   property("validateBatchChangePendingApproval: should fail if batch change is not PendingApproval") {
-    validateBatchChangePendingApproval(invalidPendingBatchChange) should
-      haveInvalid[BatchChangeErrorResponse](
-        BatchChangeNotPendingApproval(invalidPendingBatchChange.id))
+    validateBatchChangePendingApproval(invalidPendingBatchChange) shouldBe
+      Left(BatchChangeNotPendingApproval(invalidPendingBatchChange.id))
   }
 
   property("validateAuthorizedReviewer: should succeed if the reviewer is a super user") {
-    validateAuthorizedReviewer(superUserAuth, validPendingBatchChange) should beValid(())
+    validateAuthorizedReviewer(superUserAuth, validPendingBatchChange) should be(right)
   }
 
   property("validateAuthorizedReviewer: should succeed if the reviewer is a support user") {
-    validateAuthorizedReviewer(supportUserAuth, validPendingBatchChange) should beValid(())
+    validateAuthorizedReviewer(supportUserAuth, validPendingBatchChange) should be(right)
   }
 
   property("validateAuthorizedReviewer: should fail if the reviewer is not a super or support user") {
-    validateAuthorizedReviewer(okAuth, validPendingBatchChange) should
-      haveInvalid[BatchChangeErrorResponse](UserNotAuthorizedError(validPendingBatchChange.id))
+    validateAuthorizedReviewer(okAuth, validPendingBatchChange) shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
   property(
     "validateRejectedBatchChange: should succeed if batch change is pending approval and reviewer" +
       "is authorized") {
-    validateRejectedBatchChange(validPendingBatchChange, supportUserAuth).value
-      .unsafeRunSync() should be(right)
+    validateRejectedBatchChange(validPendingBatchChange, supportUserAuth).value should be(right)
   }
 
   property("validateRejectedBatchChange: should fail if batch change is not pending approval") {
-    validateRejectedBatchChange(invalidPendingBatchChange, supportUserAuth).value
-      .unsafeRunSync() shouldBe
-      Left(
-        InvalidBatchChangeReview(List(BatchChangeNotPendingApproval(invalidPendingBatchChange.id))))
+    validateRejectedBatchChange(invalidPendingBatchChange, supportUserAuth).value shouldBe
+      Left(BatchChangeNotPendingApproval(invalidPendingBatchChange.id))
   }
 
   property("validateRejectedBatchChange: should fail if reviewer is not authorized") {
-    validateRejectedBatchChange(validPendingBatchChange, okAuth).value.unsafeRunSync() shouldBe
-      Left(InvalidBatchChangeReview(List(UserNotAuthorizedError(validPendingBatchChange.id))))
+    validateRejectedBatchChange(validPendingBatchChange, okAuth).value shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
   property(
     "validateRejectedBatchChange: should fail if batch change is not pending approval and reviewer is not" +
       "authorized") {
-    validateRejectedBatchChange(invalidPendingBatchChange, okAuth).value.unsafeRunSync() shouldBe
-      Left(
-        InvalidBatchChangeReview(
-          List(
-            BatchChangeNotPendingApproval(invalidPendingBatchChange.id),
-            UserNotAuthorizedError(invalidPendingBatchChange.id))))
+    validateRejectedBatchChange(invalidPendingBatchChange, okAuth).value shouldBe
+      Left(UserNotAuthorizedError(invalidPendingBatchChange.id))
   }
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {

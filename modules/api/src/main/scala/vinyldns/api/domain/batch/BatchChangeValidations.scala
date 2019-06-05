@@ -50,7 +50,7 @@ trait BatchChangeValidationsAlgebra {
 
   def validateRejectedBatchChange(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): BatchResult[Unit]
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 }
 
 class BatchChangeValidations(
@@ -100,29 +100,24 @@ class BatchChangeValidations(
 
   def validateRejectedBatchChange(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): BatchResult[Unit] = {
-    val validations = validateBatchChangePendingApproval(batchChange) |+|
-      validateAuthorizedReviewer(authPrincipal, batchChange)
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingApproval(
+      batchChange)
 
-    EitherT.fromEither(
-      validations
-        .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeReview(nel.toList))
-        .toEither)
-  }
-
-  def validateBatchChangePendingApproval(batchChange: BatchChange): BatchApproval[Unit] =
+  def validateBatchChangePendingApproval(
+      batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
     batchChange.approvalStatus match {
-      case BatchChangeApprovalStatus.PendingApproval => ().validNel
-      case _ => BatchChangeNotPendingApproval(batchChange.id).invalidNel
+      case BatchChangeApprovalStatus.PendingApproval => ().asRight
+      case _ => BatchChangeNotPendingApproval(batchChange.id).asLeft
     }
 
   def validateAuthorizedReviewer(
       auth: AuthPrincipal,
-      batchChange: BatchChange): BatchApproval[Unit] =
+      batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
     if (auth.canReadAll) {
-      ().validNel
+      ().asRight
     } else {
-      UserNotAuthorizedError(batchChange.id).invalidNel
+      UserNotAuthorizedError(batchChange.id).asLeft
     }
 
   /* input validations */
