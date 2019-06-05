@@ -35,8 +35,6 @@ def pytest_addoption(parser):
                      help="CIM_ENV that we are testing against.")
     parser.addoption("--log-level", dest="logging_level",
                      help="logging level should be CRITICAL, ERROR, WARNING, INFO or DEBUG")
-    parser.addoption("--run-manual-batch-review-tests", dest="manual_batch_review_enabled",
-                     help="option to run manual batch review tests")
 
 
 def pytest_configure(config):
