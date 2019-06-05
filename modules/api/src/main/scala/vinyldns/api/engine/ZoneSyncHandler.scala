@@ -87,7 +87,9 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
         val zone = zoneChange.zone
 
         val dnsView =
-          time(s"zone.sync.loadDnsView; zoneName='${zone.name}'")(dnsLoader(zone).load())
+          time(
+            s"zone.sync.loadDnsView; zoneName='${zone.name}'; zoneChange='${zoneChange.id}'"
+          )(dnsLoader(zone).load())
         val vinyldnsView = time(s"zone.sync.loadVinylDNSView; zoneName='${zone.name}'")(
           vinyldnsLoader(zone, recordSetRepository).load())
         val recordSetChanges = (dnsView, vinyldnsView).parTupled.map {
@@ -108,15 +110,17 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
             changesWithUserIds
               .filter { chg =>
                 chg.recordSet.name != zone.name && chg.recordSet.name.contains(".") &&
-                  chg.recordSet.typ != RecordType.SRV && chg.recordSet.typ != RecordType.TXT &&
-                  chg.recordSet.typ != RecordType.NAPTR
+                chg.recordSet.typ != RecordType.SRV && chg.recordSet.typ != RecordType.TXT &&
+                chg.recordSet.typ != RecordType.NAPTR
               }
               .map(_.recordSet.name)
               .grouped(1000)
               .foreach { dottedGroup =>
                 val dottedGroupString = dottedGroup.mkString(", ")
-                logger.info(s"Zone sync for zoneName='${zone.name}'; id='${zone.id}' " +
-                  s"includes the following ${dottedGroup.length} dotted host records: [$dottedGroupString]")
+                logger.info(
+                  s"Zone sync for zoneName='${zone.name}'; zoneId='${zone.id}'; " +
+                    s"zoneChange='${zoneChange.id}' includes the following ${dottedGroup.length} " +
+                    s"dotted host records: [$dottedGroupString]")
               }
 
             logger.info(
@@ -145,7 +149,9 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
     }.attempt
       .map {
         case Left(e: Throwable) =>
-          logger.error(s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'", e)
+          logger.error(
+            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
+            e)
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),
