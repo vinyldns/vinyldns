@@ -18,11 +18,13 @@ package filters
 
 import akka.stream.Materializer
 import javax.inject.Inject
+import net.logstash.logback.argument.StructuredArguments
 import org.slf4j.LoggerFactory
 import play.api.mvc.{Filter, RequestHeader, Result}
 import play.mvc.Http
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.JavaConverters._
 
 class AccessLoggingFilter @Inject()(
     implicit val mat: Materializer,
@@ -36,11 +38,20 @@ class AccessLoggingFilter @Inject()(
 
     resultFuture.foreach(result => {
       if (!request.uri.contains("/public") && !request.uri.contains("/assets")) {
-        val msg = s"Request: method=${request.method}, path=${request.uri}, " +
-          s"remote_address=${request.remoteAddress}, " +
-          s"user_agent=${request.headers.get(Http.HeaderNames.USER_AGENT).getOrElse("unknown")} " +
-          s"| Response: status_code=${result.header.status} "
-        logger.info(msg)
+        val accessInfo = Map(
+          "http" ->
+            Map("url" -> Map("path" -> request.path, "query" -> request.rawQueryString).asJava).asJava,
+          "request" -> Map("method" -> request.method).asJava,
+          "response" -> Map("status_code" -> result.header.status).asJava,
+          "client" -> Map("address" -> request.remoteAddress).asJava,
+          "user_agent" ->
+            Map(
+              "original" -> request.headers
+                .get(Http.HeaderNames.USER_AGENT)
+                .getOrElse("unknown")).asJava
+        ).asJava
+
+        logger.info("", StructuredArguments.entries(accessInfo))
       }
     })
 
