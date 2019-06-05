@@ -2920,7 +2920,7 @@ def test_create_batch_duplicates_add_check(shared_zone_test_context):
     response = client.create_batch_change(batch_change_input, status=400)
     def err(name, type):
         return 'Multi-record recordsets are not enabled for this instance of VinylDNS. ' \
-               'There are duplicate changes with name {} and type {} in this batch.'.format(name, type)
+               'Cannot create a new record set with multiple records for inputName {} and type {}.'.format(name, type)
 
     assert_error(response[0], error_messages=[err("multi.ok.", "A")])
     assert_error(response[1], error_messages=[err("multi.ok.", "A")])
@@ -2978,7 +2978,7 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
                    'Batch Change because it contains multiple DNS records (2).'
         def new_err(name, type):
             return 'Multi-record recordsets are not enabled for this instance of VinylDNS. ' \
-               'There are duplicate changes with name {} and type {} in this batch.'.format(name, type)
+               'Cannot create a new record set with multiple records for inputName {} and type {}.'.format(name, type)
 
         assert_error(response[0], error_messages=[existing_err("multi.ok.", "A")])
         assert_error(response[1], error_messages=[existing_err("multi.ok.", "A"), new_err("multi.ok.", "A")])

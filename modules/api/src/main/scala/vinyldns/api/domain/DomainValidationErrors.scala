@@ -162,8 +162,8 @@ final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
 final case class NewMultiRecordError(change: AddChangeForValidation) extends DomainValidationError {
   def message: String =
     s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
-       |There are duplicate changes with name ${change.inputChange.inputName} and type ${change.inputChange.typ}
-       |in this batch.""".stripMargin
+       |Cannot create a new record set with multiple records for inputName ${change.inputChange.inputName} and
+       |type ${change.inputChange.typ}.""".stripMargin
       .replaceAll("\n", " ")
 }
 // $COVERAGE-ON$
