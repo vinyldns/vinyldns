@@ -1110,8 +1110,6 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
         "changes": [
             # valid changes
             get_change_A_AAAA_json("good-record.parent.com.", address="1.2.3.4"),
-            get_change_A_AAAA_json("summed-record.parent.com.", address="1.2.3.4"),
-            get_change_A_AAAA_json("summed-record.parent.com.", address="5.6.7.8"),
 
             # input validation failures
             get_change_A_AAAA_json("bad-ttl-and-invalid-name$.parent.com.", ttl=29, address="1.2.3.4"),
@@ -1141,34 +1139,32 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="good-record.parent.com.", record_data="1.2.3.4")
-        assert_successful_change_in_error_response(response[1], input_name="summed-record.parent.com.", record_data="1.2.3.4")
-        assert_successful_change_in_error_response(response[2], input_name="summed-record.parent.com.", record_data="5.6.7.8")
 
         # ttl, domain name, reverse zone input validations
-        assert_failed_change_in_error_response(response[3], input_name="bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_data="1.2.3.4",
+        assert_failed_change_in_error_response(response[1], input_name="bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_data="1.2.3.4",
                                             error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                             'Invalid domain name: "bad-ttl-and-invalid-name$.parent.com.", '
                                                             'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[4], input_name="reverse-zone.10.10.in-addr.arpa.", record_data="1.2.3.4",
+        assert_failed_change_in_error_response(response[2], input_name="reverse-zone.10.10.in-addr.arpa.", record_data="1.2.3.4",
                                             error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.10.10.in-addr.arpa.\" and type \"A\" is not allowed in a reverse zone."])
 
         # zone discovery failures
-        assert_failed_change_in_error_response(response[5], input_name="no.subzone.parent.com.", record_data="1.2.3.4",
+        assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_data="1.2.3.4",
                                             error_messages=['Zone Discovery Failed: zone for "no.subzone.parent.com." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
-        assert_failed_change_in_error_response(response[6], input_name="no.zone.at.all.", record_data="1.2.3.4",
+        assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_data="1.2.3.4",
                                             error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
 
         # context validations: duplicate name failure is always on the cname
-        assert_failed_change_in_error_response(response[7], input_name="cname-duplicate.parent.com.", record_type="CNAME", record_data="test.com.",
+        assert_failed_change_in_error_response(response[5], input_name="cname-duplicate.parent.com.", record_type="CNAME", record_data="test.com.",
                                                error_messages=["Record Name \"cname-duplicate.parent.com.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
-        assert_successful_change_in_error_response(response[8], input_name="cname-duplicate.parent.com.", record_data="1.2.3.4")
+        assert_successful_change_in_error_response(response[6], input_name="cname-duplicate.parent.com.", record_data="1.2.3.4")
 
         # context validations: conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[9], input_name="existing-a.parent.com.", record_data="1.2.3.4",
+        assert_failed_change_in_error_response(response[7], input_name="existing-a.parent.com.", record_data="1.2.3.4",
                                             error_messages=["Record \"existing-a.parent.com.\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
-        assert_failed_change_in_error_response(response[10], input_name="existing-cname.parent.com.", record_data="1.2.3.4",
+        assert_failed_change_in_error_response(response[8], input_name="existing-cname.parent.com.", record_data="1.2.3.4",
                                             error_messages=["CNAME Conflict: CNAME record names must be unique. Existing record with name \"existing-cname.parent.com.\" and type \"CNAME\" conflicts with this record."])
-        assert_failed_change_in_error_response(response[11], input_name="user-add-unauthorized.dummy.", record_data="1.2.3.4",
+        assert_failed_change_in_error_response(response[9], input_name="user-add-unauthorized.dummy.", record_data="1.2.3.4",
                                             error_messages=["User \"ok\" is not authorized."])
 
     finally:
@@ -1288,8 +1284,6 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
         "changes": [
             # valid changes
             get_change_A_AAAA_json("good-record.parent.com.", record_type="AAAA", address="1::1"),
-            get_change_A_AAAA_json("summed-record.parent.com.", record_type="AAAA", address="1::1"),
-            get_change_A_AAAA_json("summed-record.parent.com.", record_type="AAAA", address="1::2"),
 
             # input validation failures
             get_change_A_AAAA_json("bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_type="AAAA", address="1::1"),
@@ -1319,32 +1313,30 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="good-record.parent.com.", record_type="AAAA", record_data="1::1")
-        assert_successful_change_in_error_response(response[1], input_name="summed-record.parent.com.", record_type="AAAA", record_data="1::1")
-        assert_successful_change_in_error_response(response[2], input_name="summed-record.parent.com.", record_type="AAAA", record_data="1::2")
 
         # ttl, domain name, reverse zone input validations
-        assert_failed_change_in_error_response(response[3], input_name="bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_type="AAAA", record_data="1::1",
+        assert_failed_change_in_error_response(response[1], input_name="bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_type="AAAA", record_data="1::1",
                                             error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                             'Invalid domain name: "bad-ttl-and-invalid-name$.parent.com.", '
                                                             'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[4], input_name="reverse-zone.1.2.3.ip6.arpa.", record_type="AAAA", record_data="1::1",
+        assert_failed_change_in_error_response(response[2], input_name="reverse-zone.1.2.3.ip6.arpa.", record_type="AAAA", record_data="1::1",
                                             error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.1.2.3.ip6.arpa.\" and type \"AAAA\" is not allowed in a reverse zone."])
 
         # zone discovery failures
-        assert_failed_change_in_error_response(response[5], input_name="no.subzone.parent.com.", record_type="AAAA", record_data="1::1",
+        assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_type="AAAA", record_data="1::1",
                                             error_messages=["Zone Discovery Failed: zone for \"no.subzone.parent.com.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
-        assert_failed_change_in_error_response(response[6], input_name="no.zone.at.all.", record_type="AAAA", record_data="1::1",
+        assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="AAAA", record_data="1::1",
                                             error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
 
         # context validations: duplicate name failure (always on the cname), conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[7], input_name="cname-duplicate.parent.com.", record_type="CNAME", record_data="test.com.",
+        assert_failed_change_in_error_response(response[5], input_name="cname-duplicate.parent.com.", record_type="CNAME", record_data="test.com.",
                                                error_messages=["Record Name \"cname-duplicate.parent.com.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
-        assert_successful_change_in_error_response(response[8], input_name="cname-duplicate.parent.com.", record_type="AAAA", record_data="1::1")
-        assert_failed_change_in_error_response(response[9], input_name="existing-aaaa.parent.com.", record_type="AAAA", record_data="1::1",
+        assert_successful_change_in_error_response(response[6], input_name="cname-duplicate.parent.com.", record_type="AAAA", record_data="1::1")
+        assert_failed_change_in_error_response(response[7], input_name="existing-aaaa.parent.com.", record_type="AAAA", record_data="1::1",
                                             error_messages=["Record \"existing-aaaa.parent.com.\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
-        assert_failed_change_in_error_response(response[10], input_name="existing-cname.parent.com.", record_type="AAAA", record_data="1::1",
+        assert_failed_change_in_error_response(response[8], input_name="existing-cname.parent.com.", record_type="AAAA", record_data="1::1",
                                             error_messages=["CNAME Conflict: CNAME record names must be unique. Existing record with name \"existing-cname.parent.com.\" and type \"CNAME\" conflicts with this record."])
-        assert_failed_change_in_error_response(response[11], input_name="user-add-unauthorized.dummy.", record_type="AAAA", record_data="1::1",
+        assert_failed_change_in_error_response(response[9], input_name="user-add-unauthorized.dummy.", record_type="AAAA", record_data="1::1",
                                             error_messages=["User \"ok\" is not authorized."])
 
     finally:
@@ -1738,8 +1730,6 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
             # valid change
             get_change_PTR_json("192.0.2.44", ptrdname="base.vinyldns"),
             get_change_PTR_json("192.0.2.198", ptrdname="delegated.vinyldns"),
-            get_change_PTR_json("192.0.2.197"),
-            get_change_PTR_json("192.0.2.197", ptrdname="ptrdata."),
 
             # input validation failures
             get_change_PTR_json("invalidip.111."),
@@ -1776,37 +1766,32 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[0], input_name="192.0.2.44", record_type="PTR", record_data="base.vinyldns.")
         assert_successful_change_in_error_response(response[1], input_name="192.0.2.198", record_type="PTR", record_data="delegated.vinyldns.")
 
-
-        # duplicate names succeed for ptr
-        assert_successful_change_in_error_response(response[2], input_name="192.0.2.197", record_type="PTR", record_data="test.com.")
-        assert_successful_change_in_error_response(response[3], input_name="192.0.2.197", record_type="PTR", record_data="ptrdata.")
-
         # input validation failures: invalid ip, ttl, data
-        assert_failed_change_in_error_response(response[4], input_name="invalidip.111.", record_type="PTR", record_data="test.com.",
+        assert_failed_change_in_error_response(response[2], input_name="invalidip.111.", record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid IP address: "invalidip.111.".'])
-        assert_failed_change_in_error_response(response[5], input_name="4.5.6.7", ttl=29, record_type="PTR", record_data="-1.2.3.4.",
+        assert_failed_change_in_error_response(response[3], input_name="4.5.6.7", ttl=29, record_type="PTR", record_data="-1.2.3.4.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "-1.2.3.4.", '
                                                                'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
 
         # delegated and non-delegated PTR duplicate name checks
-        assert_successful_change_in_error_response(response[6], input_name="192.0.2.196", record_type="PTR", record_data="test.com.")
-        assert_successful_change_in_error_response(response[7], input_name="196.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
-        assert_failed_change_in_error_response(response[8], input_name="196.192/30.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.",
+        assert_successful_change_in_error_response(response[4], input_name="192.0.2.196", record_type="PTR", record_data="test.com.")
+        assert_successful_change_in_error_response(response[5], input_name="196.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
+        assert_failed_change_in_error_response(response[6], input_name="196.192/30.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.",
                                                error_messages=['Record Name "196.192/30.2.0.192.in-addr.arpa." Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
-        assert_successful_change_in_error_response(response[9], input_name="192.0.2.55", record_type="PTR", record_data="test.com.")
-        assert_failed_change_in_error_response(response[10], input_name="55.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.",
+        assert_successful_change_in_error_response(response[7], input_name="192.0.2.55", record_type="PTR", record_data="test.com.")
+        assert_failed_change_in_error_response(response[8], input_name="55.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.",
                                                error_messages=['Record Name "55.2.0.192.in-addr.arpa." Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
-        assert_successful_change_in_error_response(response[11], input_name="55.192/30.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
+        assert_successful_change_in_error_response(response[9], input_name="55.192/30.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="test.com.")
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[12], input_name="192.0.1.192", record_type="PTR", record_data="test.com.",
+        assert_failed_change_in_error_response(response[10], input_name="192.0.1.192", record_type="PTR", record_data="test.com.",
                                                error_messages=['Zone Discovery Failed: zone for "192.0.1.192" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
 
         # context validations: existing cname recordset
-        assert_failed_change_in_error_response(response[13], input_name="192.0.2.193", record_type="PTR", record_data="existing-ptr.",
+        assert_failed_change_in_error_response(response[11], input_name="192.0.2.193", record_type="PTR", record_data="existing-ptr.",
                                                error_messages=['Record "192.0.2.193" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add.'])
-        assert_failed_change_in_error_response(response[14], input_name="192.0.2.199", record_type="PTR", record_data="existing-cname.",
+        assert_failed_change_in_error_response(response[12], input_name="192.0.2.199", record_type="PTR", record_data="existing-cname.",
                                                error_messages=['CNAME Conflict: CNAME record names must be unique. Existing record with name "192.0.2.199" and type "CNAME" conflicts with this record.'])
 
     finally:
@@ -1853,7 +1838,6 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
     rs_replace_cname = get_recordset_json(base_zone, "21", "CNAME", [{"cname": "replace.cname."}], 200)
     rs_replace_ptr = get_recordset_json(base_zone, "17", "PTR", [{"ptrdname": "replace.ptr."}], 200)
     rs_update_ipv4_fail = get_recordset_json(base_zone, "9", "PTR", [{"ptrdname": "failed-update.ptr."}], 200)
-    rs_update_ipv4_double_update = get_recordset_json(shared_zone_test_context.classless_base_zone, "50", "PTR", [{"ptrdname": "ptrdname.data."}])
 
     batch_change_input = {
         "comments": "this is optional",
@@ -1881,13 +1865,10 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json("192.0.2.199", change_type="DeleteRecordSet"),
             get_change_PTR_json("192.0.2.200", ttl=300, ptrdname="has-updated.ptr."),
             get_change_PTR_json("192.0.2.200", change_type="DeleteRecordSet"),
-            get_change_PTR_json("192.0.2.50", change_type="DeleteRecordSet"),
-            get_change_PTR_json("192.0.2.50"),
-            get_change_PTR_json("192.0.2.50", ttl=350)
         ]
     }
 
-    to_create = [rs_delete_ipv4, rs_update_ipv4, rs_replace_cname, rs_replace_ptr, rs_update_ipv4_fail, rs_update_ipv4_double_update]
+    to_create = [rs_delete_ipv4, rs_update_ipv4, rs_replace_cname, rs_replace_ptr, rs_update_ipv4_fail]
     to_delete = []
 
     try:
@@ -1907,11 +1888,6 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[4], input_name="192.0.2.21", record_type="PTR", record_data="replace-cname.ptr.")
         assert_successful_change_in_error_response(response[5], input_name="17.2.0.192.in-addr.arpa.", record_type="CNAME", record_data="replace-ptr.cname.")
         assert_successful_change_in_error_response(response[6], input_name="192.0.2.17", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
-
-        #successful changes: record input_name does not have to be unique
-        assert_successful_change_in_error_response(response[14], input_name="192.0.2.50", record_type="PTR", change_type="DeleteRecordSet")
-        assert_successful_change_in_error_response(response[15], input_name="192.0.2.50", record_type="PTR", record_data="test.com.")
-        assert_successful_change_in_error_response(response[16], input_name="192.0.2.50", record_type="PTR", record_data="test.com.", ttl=350)
 
         # input validations failures: invalid IP, ttl, and record data
         assert_failed_change_in_error_response(response[7], input_name="1.1.1", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
@@ -1951,8 +1927,6 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         "changes": [
             # valid change
             get_change_PTR_json("fd69:27cc:fe91::1234"),
-            get_change_PTR_json("fd69:27cc:fe91::abc", ptrdname="duplicate.record1."),
-            get_change_PTR_json("fd69:27cc:fe91::abc", ptrdname="duplicate.record2."),
 
             # input validation failures
             get_change_PTR_json("fd69:27cc:fe91::abe", ttl=29),
@@ -1979,24 +1953,20 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="fd69:27cc:fe91::1234", record_type="PTR", record_data="test.com.")
 
-        # successful changes: input_name does not have to be unique
-        assert_successful_change_in_error_response(response[1], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record1.")
-        assert_successful_change_in_error_response(response[2], input_name="fd69:27cc:fe91::abc", record_type="PTR", record_data="duplicate.record2.")
-
         # independent validations: bad TTL, malformed host name/IP address, duplicate record
-        assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91::abe", ttl=29, record_type="PTR", record_data="test.com.",
+        assert_failed_change_in_error_response(response[1], input_name="fd69:27cc:fe91::abe", ttl=29, record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
-        assert_failed_change_in_error_response(response[4], input_name="fd69:27cc:fe91::bae", record_type="PTR", record_data="$malformed.hostname.",
+        assert_failed_change_in_error_response(response[2], input_name="fd69:27cc:fe91::bae", record_type="PTR", record_data="$malformed.hostname.",
                                                error_messages=['Invalid domain name: "$malformed.hostname.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
-        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data="malformed.ip.address.",
+        assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data="malformed.ip.address.",
                                                error_messages=['Invalid IP address: "fd69:27cc:fe91de::ab".'])
 
         # zone discovery failure
-        assert_failed_change_in_error_response(response[6], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data="zone.discovery.error.",
+        assert_failed_change_in_error_response(response[4], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data="zone.discovery.error.",
                                                error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
 
         # context validations: existing record sets pre-request
-        assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91::aaaa", record_type="PTR", record_data="existing.ptr.",
+        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91::aaaa", record_type="PTR", record_data="existing.ptr.",
                                                    error_messages=["Record \"fd69:27cc:fe91::aaaa\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
 
     finally:
@@ -2013,7 +1983,6 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
     rs_delete_ipv6 = get_recordset_json(ip6_reverse_zone, "a.a.a.a.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "delete.ptr."}], 200)
     rs_update_ipv6 = get_recordset_json(ip6_reverse_zone, "2.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "update.ptr."}], 200)
     rs_update_ipv6_fail = get_recordset_json(ip6_reverse_zone, "8.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "failed-update.ptr."}], 200)
-    rs_doubly_updated = get_recordset_json(shared_zone_test_context.ip6_reverse_zone, "2.2.1.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "test.com."}], 100)
 
     batch_change_input = {
         "comments": "this is optional",
@@ -2034,15 +2003,11 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             # context validation failures
             get_change_PTR_json("fd69:27cc:fe91::60", change_type="DeleteRecordSet"),
             get_change_PTR_json("fd69:27cc:fe91::65", ttl=300, ptrdname="has-updated.ptr."),
-            get_change_PTR_json("fd69:27cc:fe91::65", change_type="DeleteRecordSet"),
-            get_change_PTR_json("fd69:27cc:fe91::1122", change_type="DeleteRecordSet"),
-            get_change_PTR_json("fd69:27cc:fe91::1122"),
-            get_change_PTR_json("fd69:27cc:fe91::1122", ttl=350)
-
+            get_change_PTR_json("fd69:27cc:fe91::65", change_type="DeleteRecordSet")
         ]
     }
 
-    to_create = [rs_delete_ipv6, rs_update_ipv6, rs_update_ipv6_fail, rs_doubly_updated]
+    to_create = [rs_delete_ipv6, rs_update_ipv6, rs_update_ipv6_fail]
     to_delete = []
 
     try:
@@ -2056,10 +2021,6 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[0], input_name="fd69:27cc:fe91::aaaa", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[1], ttl=300, input_name="fd69:27cc:fe91::62", record_type="PTR", record_data="has-updated.ptr.")
         assert_successful_change_in_error_response(response[2], input_name="fd69:27cc:fe91::62", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
-
-        # successful changes: input_name does not have to be unique
-        assert_successful_change_in_error_response(response[11], input_name="fd69:27cc:fe91::1122", record_type="PTR", record_data="test.com.")
-        assert_successful_change_in_error_response(response[12], input_name="fd69:27cc:fe91::1122", record_type="PTR", record_data="test.com.", ttl=350)
 
         # input validations failures: invalid IP, ttl, and record data
         assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
@@ -2082,7 +2043,6 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                    error_messages=["Record \"fd69:27cc:fe91::65\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[9], input_name="fd69:27cc:fe91::65", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"fd69:27cc:fe91::65\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_successful_change_in_error_response(response[10], input_name="fd69:27cc:fe91::1122", record_type="PTR", change_type="DeleteRecordSet")
 
 
     finally:
@@ -2102,8 +2062,6 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
         "changes": [
             # valid change
             get_change_TXT_json("good-record.ok."),
-            get_change_TXT_json("summed.ok."),
-            get_change_TXT_json("summed.ok.", text="test2"),
             get_change_TXT_json("some.dotted.txt.ok.", text="dotted"),
             get_change_TXT_json("ok.", text="apex"),
 
@@ -2133,31 +2091,29 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
 
         # successful changes
         assert_successful_change_in_error_response(response[0], input_name="good-record.ok.", record_type="TXT", record_data="test")
-        assert_successful_change_in_error_response(response[1], input_name="summed.ok.", record_type="TXT", record_data="test")
-        assert_successful_change_in_error_response(response[2], input_name="summed.ok.", record_type="TXT", record_data="test2")
-        assert_successful_change_in_error_response(response[3], input_name="some.dotted.txt.ok.", record_type="TXT", record_data="dotted")
-        assert_successful_change_in_error_response(response[4], input_name="ok.", record_type="TXT", record_data="apex")
+        assert_successful_change_in_error_response(response[1], input_name="some.dotted.txt.ok.", record_type="TXT", record_data="dotted")
+        assert_successful_change_in_error_response(response[2], input_name="ok.", record_type="TXT", record_data="apex")
 
         # ttl, domain name, record data
-        assert_failed_change_in_error_response(response[5], input_name="bad-ttl-and-invalid-name$.ok.", ttl=29, record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[3], input_name="bad-ttl-and-invalid-name$.ok.", ttl=29, record_type="TXT", record_data="test",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "bad-ttl-and-invalid-name$.ok.", '
                                                                'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failures
-        assert_failed_change_in_error_response(response[6], input_name="no.zone.at.all.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="TXT", record_data="test",
                                                error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
 
         # context validations: cname duplicate
-        assert_failed_change_in_error_response(response[7], input_name="cname-duplicate.ok.", record_type="CNAME", record_data="test.com.",
+        assert_failed_change_in_error_response(response[5], input_name="cname-duplicate.ok.", record_type="CNAME", record_data="test.com.",
                                                error_messages=["Record Name \"cname-duplicate.ok.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
-        assert_failed_change_in_error_response(response[9], input_name="existing-txt.ok.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[7], input_name="existing-txt.ok.", record_type="TXT", record_data="test",
                                                error_messages=["Record \"existing-txt.ok.\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
-        assert_failed_change_in_error_response(response[10], input_name="existing-cname.ok.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[8], input_name="existing-cname.ok.", record_type="TXT", record_data="test",
                                                error_messages=["CNAME Conflict: CNAME record names must be unique. Existing record with name \"existing-cname.ok.\" and type \"CNAME\" conflicts with this record."])
-        assert_failed_change_in_error_response(response[11], input_name="user-add-unauthorized.dummy.", record_type="TXT", record_data="test",
+        assert_failed_change_in_error_response(response[9], input_name="user-add-unauthorized.dummy.", record_type="TXT", record_data="test",
                                                error_messages=["User \"ok\" is not authorized."])
 
     finally:

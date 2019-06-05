@@ -218,7 +218,7 @@ class BatchChangeValidations(
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
       case CNAME => recordIsUniqueInBatch(change, changeGroups)
-      case _ => ().validNel
+      case _ => newRecordSetIsNotMulti(change, changeGroups)
     }
 
     val authAndOwnerGroupValidations: SingleValidation[Unit] =
@@ -229,7 +229,6 @@ class BatchChangeValidations(
               change,
               existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
               batchOwnerGroupId) |+|
-            newRecordSetIsNotMulti(change, changeGroups) |+|
             existingRecordSetIsNotMulti(change, rs)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
@@ -268,7 +267,8 @@ class BatchChangeValidations(
           change.recordName,
           change.inputChange.inputName,
           existingRecords,
-          changeGroups)
+          changeGroups) |+|
+          newRecordSetIsNotMulti(change, changeGroups)
       case CNAME =>
         cnameHasUniqueNameInExistingRecords(
           change.zone.id,
@@ -283,7 +283,8 @@ class BatchChangeValidations(
           change.recordName,
           change.inputChange.inputName,
           existingRecords,
-          changeGroups)
+          changeGroups) |+|
+          newRecordSetIsNotMulti(change, changeGroups)
       case other => InvalidBatchRecordType(other.toString).invalidNel
     }
 
@@ -296,8 +297,7 @@ class BatchChangeValidations(
           change.inputChange.inputName,
           change.inputChange.typ,
           existingRecords) |+|
-        ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
-        newRecordSetIsNotMulti(change, changeGroups)
+        ownerGroupProvidedIfNeeded(change, None, ownerGroupId)
 
     validations.map(_ => change)
   }
