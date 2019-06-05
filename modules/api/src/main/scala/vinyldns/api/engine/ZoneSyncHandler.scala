@@ -83,7 +83,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       vinyldnsLoader: (Zone, RecordSetRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply): IO[ZoneChange] =
     monitor("zone.sync") {
-      time(s"zone.sync; zoneName=${zoneChange.zone.name}") {
+      time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
         val zone = zoneChange.zone
 
         val dnsView =
