@@ -369,7 +369,23 @@ User "<user name>" must be a member of group "<group ID>" to apply this group to
 You must be a member of the group you are assigning for record ownership in the batch change. 
 
 
-#### 18. RecordSet has Multiple DNS records <a id="ExistingMultiRecordError"></a>
+
+#### 18. High Value Domain <a id="HighValueDomain"></a>
+
+##### Error Message:
+
+```
+Record Name "<record name>" is configured as a High Value Domain, so it cannot be modified.
+```
+
+##### Details:
+
+You are trying to create a record with a name that is not permitted in VinylDNS.
+The list of high value domains is specific to each VinylDNS instance.
+You should reach out to your VinylDNS administrators for more information.
+
+
+#### 19. RecordSet has Multiple DNS records <a id="ExistingMultiRecordError"></a>
 
 ##### Error Message:
 
@@ -384,7 +400,7 @@ This error means that the recordset you are attempting to update/delete has mult
 Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
 
 
-#### 19. Cannot Create a RecordSet with Multiple Records <a id="NewMultiRecordError"></a>
+#### 20. Cannot Create a RecordSet with Multiple Records <a id="NewMultiRecordError"></a>
 
 ##### Error Message:
 
@@ -478,17 +494,3 @@ If there are issues with the JSON provided in a batch change request, errors wil
    ]
 }
 ```
-
-#### 18. High Value Domain <a id="HighValueDomain"></a>
-
-##### Error Message:
-
-```
-Record Name "<record name>" is configured as a High Value Domain, so it cannot be modified.
-```
-
-##### Details:
-
-You are trying to create a record with a name that is not permitted in VinylDNS.
-The list of high value domains is specific to each VinylDNS instance.
-You should reach out to your VinylDNS administrators for more information.
