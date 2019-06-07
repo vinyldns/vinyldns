@@ -49,7 +49,10 @@ trait BatchChangeValidationsAlgebra {
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 }
 
-class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidationAlgebra)
+class BatchChangeValidations(
+    changeLimit: Int,
+    accessValidation: AccessValidationAlgebra,
+    multiRecordEnabled: Boolean = false)
     extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -172,16 +175,37 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     }
   }
 
+  def existingRecordSetIsNotMulti(
+      change: ChangeForValidation,
+      recordSet: RecordSet): SingleValidation[Unit] =
+    if (!multiRecordEnabled & recordSet.records.length > 1) {
+      ExistingMultiRecordError(change.inputChange.inputName, recordSet).invalidNel
+    } else ().validNel
+
+  def newRecordSetIsNotMulti(
+      change: AddChangeForValidation,
+      changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
+    lazy val matchingAddRecords = changeGroups
+      .getList(change.recordKey)
+      .collect {
+        case add: AddChangeForValidation => add
+      }
+    if (!multiRecordEnabled && matchingAddRecords.length > 1)
+      NewMultiRecordError(change).invalidNel
+    else ().validNel
+  }
+
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
     val validations =
       existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
-        case Some(rs) => userCanDeleteRecordSet(change, auth, rs.ownerGroupId)
+        case Some(rs) =>
+          userCanDeleteRecordSet(change, auth, rs.ownerGroupId) |+|
+            existingRecordSetIsNotMulti(change, rs)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
-
     validations.map(_ => change)
   }
 
@@ -195,18 +219,20 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
     // could potentially be grouped with a single delete
     val typedValidations = change.inputChange.typ match {
       case CNAME => recordIsUniqueInBatch(change, changeGroups)
-      case _ => ().validNel
+      case _ => newRecordSetIsNotMulti(change, changeGroups)
     }
 
     val authAndOwnerGroupValidations: SingleValidation[Unit] =
-      existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ) match {
+      existingRecordSets.get(change.recordKey) match {
         case Some(rs) =>
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
             ownerGroupProvidedIfNeeded(
               change,
               existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
-              batchOwnerGroupId)
-        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+              batchOwnerGroupId) |+|
+            existingRecordSetIsNotMulti(change, rs)
+        case None =>
+          RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
     val validations = typedValidations |+| authAndOwnerGroupValidations
@@ -220,7 +246,9 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
     val validations =
       existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
-        case Some(rs) => userCanUpdateRecordSet(change, auth, rs.ownerGroupId)
+        case Some(rs) =>
+          userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
+            existingRecordSetIsNotMulti(change, rs)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
@@ -240,7 +268,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
           change.recordName,
           change.inputChange.inputName,
           existingRecords,
-          changeGroups)
+          changeGroups) |+|
+          newRecordSetIsNotMulti(change, changeGroups)
       case CNAME =>
         cnameHasUniqueNameInExistingRecords(
           change.zone.id,
@@ -255,7 +284,8 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
           change.recordName,
           change.inputChange.inputName,
           existingRecords,
-          changeGroups)
+          changeGroups) |+|
+          newRecordSetIsNotMulti(change, changeGroups)
       case other => InvalidBatchRecordType(other.toString).invalidNel
     }
 
@@ -291,7 +321,7 @@ class BatchChangeValidations(changeLimit: Int, accessValidation: AccessValidatio
       change: AddChangeForValidation,
       changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
     val duplicateNameChangeInBatch = changeGroups
-      .getList(RecordKey(change.zone.id, change.recordName, change.inputChange.typ))
+      .getList(change.recordKey)
       .exists(chg => chg.isAddChangeForValidation && chg != change)
 
     if (duplicateNameChangeInBatch) {
