@@ -27,11 +27,14 @@ import vinyldns.api._
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, _}
-import vinyldns.api.repository.{EmptyGroupRepo, EmptyRecordSetRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
-import vinyldns.core
+import vinyldns.api.repository.{
+  EmptyGroupRepo,
+  EmptyRecordSetRepo,
+  EmptyZoneRepo,
+  InMemoryBatchChangeRepository
+}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.batch.SingleChangeStatus.SingleChangeStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.RecordType._
