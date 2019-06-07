@@ -91,6 +91,9 @@ Since by-change accumulated errors are collected at different stages, errors at 
 16. [Missing Owner Group Id](#MissingOwnerGroupId)
 17. [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
 18. [High Value Domain](#HighValueDomain)
+19. [RecordSet has Multiple Records](#ExistingMultiRecordError)
+20. [High Value Domain](#NewMultiRecordError)
+
 
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
@@ -364,6 +367,37 @@ User "<user name>" must be a member of group "<group ID>" to apply this group to
 ##### Details:
 
 You must be a member of the group you are assigning for record ownership in the batch change. 
+
+
+#### 18. RecordSet has Multiple DNS records <a id="ExistingMultiRecordError"></a>
+
+##### Error Message:
+
+```
+RecordSet with name <name> and type <type> cannot be updated in a single Batch Change because it contains multiple DNS records (<count>).
+```
+
+##### Details:
+
+This error means that the recordset you are attempting to update/delete has multiple records within it.
+
+Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
+
+
+#### 19. Cannot Create a RecordSet with Multiple Records <a id="NewMultiRecordError"></a>
+
+##### Error Message:
+
+```
+Multi-record recordsets are not enabled for this instance of VinylDNS. Cannot create a new record set with multiple records for inputName <name> and type <type>
+```
+
+##### Details:
+
+This error means that you have multiple Add entries with the same name and type in a batch change.
+
+Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
+
 
 
 ### FULL-REQUEST ERRORS <a id="full-request-errors" />
