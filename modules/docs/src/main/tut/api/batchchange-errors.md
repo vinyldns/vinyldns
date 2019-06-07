@@ -92,7 +92,7 @@ Since by-change accumulated errors are collected at different stages, errors at 
 17. [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
 18. [High Value Domain](#HighValueDomain)
 19. [RecordSet has Multiple Records](#ExistingMultiRecordError)
-20. [High Value Domain](#NewMultiRecordError)
+20. [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
 
 
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
