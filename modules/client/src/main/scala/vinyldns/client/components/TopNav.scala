@@ -16,11 +16,13 @@
 
 package vinyldns.client.components
 
+import japgolly.scalajs.react.Callback
 import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.component.Scala.Unmounted
 import japgolly.scalajs.react.extra.router.{BaseUrl, RouterCtl}
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom
 import vinyldns.client.http.Http
 import vinyldns.client.css.GlobalStyle
 import vinyldns.client.router.{Page, ToApiCredentialsPage}
@@ -73,8 +75,7 @@ object TopNav {
             ^.onMouseEnter ==> mouseEnterItem,
             ^.onMouseLeave ==> mouseLeaveItem,
             <.a(
-              ^.className := "mb-control",
-              ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
+              ^.onClick --> logout(P),
               "Logout"
             )
           ),
@@ -82,13 +83,19 @@ object TopNav {
             ^.onMouseEnter ==> mouseEnterItem,
             ^.onMouseLeave ==> mouseLeaveItem,
             <.a(
-              ^.className := "mb-control",
               P.routerCtl.setOnClick(ToApiCredentialsPage),
               "API Credentials"
             )
           )
         )
       else <.div()
+
+    def logout(P: Props): Callback =
+      P.http.withConfirmation(
+        "Are you sure you want to logout?",
+        Callback.lazily(
+          Callback(dom.window.location.href = (BaseUrl.fromWindowOrigin / "logout").value))
+      )
 
     def mouseEnterDropdown(e: ReactEventFromInput): Callback =
       Callback(e.currentTarget.className = "active") >> bs.modState(_.copy(dropdownOpen = true))
