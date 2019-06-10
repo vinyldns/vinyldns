@@ -44,8 +44,7 @@ object AppRouter {
   private val config = RouterConfigDsl[Page].buildConfig { dsl =>
     import dsl._
     (
-      staticRoute("", ToZoneListPage) ~>
-        renderR(ctl => ZoneListPage(ToZoneListPage, ctl, HttpHelper))
+      staticRedirect("") ~> redirectToPage(ToBatchChangeListPage)(Redirect.Replace)
         | // api credentials
           staticRoute("credentials", ToApiCredentialsPage) ~>
             renderR(ctl => ApiCredentialsPage(ToApiCredentialsPage, ctl, HttpHelper))
@@ -92,9 +91,9 @@ object AppRouter {
   }
 
   private val menu = List(
-    LeftNav.NavItem("Zones", "fa fa-table", ToZoneListPage),
-    LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage),
     LeftNav.NavItem("Batch Changes", "fa fa-list", ToBatchChangeListPage),
+    LeftNav.NavItem("Groups", "fa fa-users", ToGroupListPage),
+    LeftNav.NavItem("Zones", "fa fa-table", ToZoneListPage),
     LeftNav.NavItem("API Credentials", "fa fa-key", ToApiCredentialsPage)
   )
 
