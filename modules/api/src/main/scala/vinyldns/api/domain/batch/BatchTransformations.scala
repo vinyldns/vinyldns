@@ -17,7 +17,6 @@
 package vinyldns.api.domain.batch
 
 import com.aaronbedra.orchard.CIDR
-import com.comcast.ip4s.Cidr
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.dns.DnsConversions.{getIPv4NonDelegatedZoneName, getIPv6FullReverseName}
@@ -50,8 +49,8 @@ object BatchTransformations {
           lazy val cidrMatch = ReverseZoneHelpers.getZoneAsCIDRString(zn).toOption
 
           foundZoneName == baseZoneName ||
-            (foundZoneName.endsWith(s".$baseZoneName")
-              && cidrMatch.exists(CIDR.valueOf(_).contains(ipv4)))
+          (foundZoneName.endsWith(s".$baseZoneName")
+          && cidrMatch.exists(CIDR.valueOf(_).contains(ipv4)))
         }
       }
 
