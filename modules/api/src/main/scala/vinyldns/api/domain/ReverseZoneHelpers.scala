@@ -18,10 +18,9 @@ package vinyldns.api.domain
 
 import cats.implicits._
 import com.aaronbedra.orchard.CIDR
-import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.api.domain.zone.InvalidRequest
 import vinyldns.core.domain.zone.Zone
+import vinyldns.api.domain.dns.DnsConversions._
 
 import scala.util.Try
 
@@ -35,19 +34,26 @@ object ReverseZoneHelpers {
       Try(CIDR.valueOf(mask).contains(ipAddr)).getOrElse(false)
     }
 
-  def ptrIsInZone(zone: Zone, recordName: String, recordType: RecordType): Either[Throwable, Unit] =
-    recordType match {
-      case RecordType.PTR => {
-        if (zone.isIPv4) {
-          handleIpv4RecordValidation(zone: Zone, recordName)
-        } else if (zone.isIPv6) {
-          handleIpv6RecordValidation(zone: Zone, recordName)
-        } else {
-          InvalidRequest(
-            s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
-        }
-      }
-      case _ => ().asRight
+  def ipIsInIpv4ReverseZone(zone: Zone, ipv4: String): Boolean = {
+    val base = getIPv4NonDelegatedZoneName(ipv4)
+
+    base.exists { baseZoneName =>
+      if (zone.name == baseZoneName) true
+      else if (zone.name.endsWith(s".$baseZoneName")) {
+        val recordName = ipv4.split('.').takeRight(1).mkString
+        ptrIsInClasslessDelegatedZone(zone, recordName).isRight
+      } else false
+    }
+  }
+
+  def ptrIsInClasslessDelegatedZone(zone: Zone, recordName: String): Either[Throwable, Unit] =
+    if (zone.isIPv4) {
+      handleIpv4RecordValidation(zone: Zone, recordName)
+    } else if (zone.isIPv6) {
+      handleIpv6RecordValidation(zone: Zone, recordName)
+    } else {
+      InvalidRequest(
+        s"RecordSet $recordName does not specify a valid IP address in zone ${zone.name}").asLeft
     }
 
   def convertPTRtoIPv4(zone: Zone, recordName: String): String = {

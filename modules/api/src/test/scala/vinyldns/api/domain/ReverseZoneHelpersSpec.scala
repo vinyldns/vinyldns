@@ -243,19 +243,21 @@ class ReverseZoneHelpersSpec
     "ptrIsInZone" should {
       "return InvalidRequest if a PTR is being added to a non-ipv4/ipv6 zone" in {
         eventually {
-          val error = leftValue(ReverseZoneHelpers.ptrIsInZone(zoneActive, ptrIp6.name, ptrIp6.typ))
+          val error =
+            leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zoneActive, ptrIp6.name))
           error shouldBe a[InvalidRequest]
         }
       }
       "when testing IPv4" should {
         "return ok if the ptr is for an IP4 reverse zone (octet boundry)" in {
-          ReverseZoneHelpers.ptrIsInZone(zoneIp4, ptrIp4.name, ptrIp4.typ) shouldBe right
+          ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zoneIp4, ptrIp4.name) shouldBe right
         }
 
         "return InvalidRequest if ptr is not valid for an IP4 reverse zone (octet boundry)" in {
           val badPtr = ptrIp4.copy(name = "1.2.3")
 
-          val error = leftValue(ReverseZoneHelpers.ptrIsInZone(zoneIp4, badPtr.name, badPtr.typ))
+          val error =
+            leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zoneIp4, badPtr.name))
           error shouldBe a[InvalidRequest]
         }
         "return ok if the ptr is within CIDR for the zone (classless)" in {
@@ -263,14 +265,14 @@ class ReverseZoneHelpersSpec
           val record =
             RecordSet("id", "44", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
 
-          ReverseZoneHelpers.ptrIsInZone(zone, record.name, record.typ) shouldBe right
+          ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name) shouldBe right
         }
         "return InvalidRequest if the ptr is outside of the CIDR range for the zone (classless)" in {
           val zone = Zone("32/27.1.10.10.in-addr.arpa.", "email")
           val record =
             RecordSet("id", "90", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
 
-          val error = leftValue(ReverseZoneHelpers.ptrIsInZone(zone, record.name, record.typ))
+          val error = leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name))
           error shouldBe a[InvalidRequest]
         }
         "return InvalidRequest if the ptr created is illegal (classless)" in {
@@ -278,7 +280,7 @@ class ReverseZoneHelpersSpec
           val record =
             RecordSet("id", "44.44", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
 
-          val error = leftValue(ReverseZoneHelpers.ptrIsInZone(zone, record.name, record.typ))
+          val error = leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name))
           error shouldBe a[InvalidRequest]
         }
         "return InvalidRequest if the ptr is outside of the CIDR range for the zone (classless - 2 octet)" in {
@@ -286,19 +288,20 @@ class ReverseZoneHelpersSpec
           val record =
             RecordSet("id", "90.90", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
 
-          val error = leftValue(ReverseZoneHelpers.ptrIsInZone(zone, record.name, record.typ))
+          val error = leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, record.name))
           error shouldBe a[InvalidRequest]
         }
       }
 
       "when testing IPv6" should {
         "return ok if the ptr is for an IP6 reverse zone" in {
-          ReverseZoneHelpers.ptrIsInZone(zoneIp6, ptrIp6.name, ptrIp6.typ) shouldBe right
+          ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zoneIp6, ptrIp6.name) shouldBe right
         }
         "return invalid request if ptr is not valid for an IP6 reverse zone" in {
           val badPtr = ptrIp6.copy(name = "1.2.3")
 
-          val error = leftValue(ReverseZoneHelpers.ptrIsInZone(zoneIp6, badPtr.name, badPtr.typ))
+          val error =
+            leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zoneIp6, badPtr.name))
           error shouldBe a[InvalidRequest]
         }
       }

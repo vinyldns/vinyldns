@@ -16,10 +16,9 @@
 
 package vinyldns.api.domain.batch
 
-import com.aaronbedra.orchard.CIDR
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
-import vinyldns.api.domain.dns.DnsConversions.{getIPv4NonDelegatedZoneName, getIPv6FullReverseName}
+import vinyldns.api.domain.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
 import vinyldns.core.domain.record.RecordType._
@@ -43,16 +42,9 @@ object BatchTransformations {
     def getByName(name: String): Option[Zone] = zoneMap.get(name)
 
     def getipv4PTRMatches(ipv4: String): List[Zone] =
-      getIPv4NonDelegatedZoneName(ipv4).toList.flatMap { baseZoneName =>
-        zones.filter { zn =>
-          val foundZoneName = zn.name
-          lazy val cidrMatch = ReverseZoneHelpers.getZoneAsCIDRString(zn).toOption
-
-          foundZoneName == baseZoneName ||
-          (foundZoneName.endsWith(s".$baseZoneName")
-          && cidrMatch.exists(CIDR.valueOf(_).contains(ipv4)))
-        }
-      }
+      zones.filter { zn =>
+        ReverseZoneHelpers.ipIsInIpv4ReverseZone(zn, ipv4)
+      }.toList
 
     def getipv6PTRMatches(ipv6: String): List[Zone] = {
       val fullReverseZone = getIPv6FullReverseName(ipv6)
