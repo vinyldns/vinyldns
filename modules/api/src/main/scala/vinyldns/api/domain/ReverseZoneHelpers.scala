@@ -47,8 +47,9 @@ object ReverseZoneHelpers {
     }
   }
 
-  // NOTE: this function assumes record/zone interface as the record name is strictly the base string within
-  // zone context
+  // NOTE: this function assumes record/zone interface. Unless prior checks have been made, it should not
+  // be used to check if an FQDN is within a reverse zone unless we know the rest of the zone matches the higher
+  // octets
   def ptrIsInClasslessDelegatedZone(zone: Zone, recordName: String): Either[Throwable, Unit] =
     if (zone.isIPv4) {
       handleIpv4RecordValidation(zone: Zone, recordName)
