@@ -34,6 +34,7 @@ object ReverseZoneHelpers {
       Try(CIDR.valueOf(mask).contains(ipAddr)).getOrElse(false)
     }
 
+  // NOTE: this will not work for zones with less than 3 octets
   def ipIsInIpv4ReverseZone(zone: Zone, ipv4: String): Boolean = {
     val base = getIPv4NonDelegatedZoneName(ipv4)
 
@@ -46,6 +47,8 @@ object ReverseZoneHelpers {
     }
   }
 
+  // NOTE: this function assumes record/zone interface as the record name is strictly the base string within
+  // zone context
   def ptrIsInClasslessDelegatedZone(zone: Zone, recordName: String): Either[Throwable, Unit] =
     if (zone.isIPv4) {
       handleIpv4RecordValidation(zone: Zone, recordName)
@@ -102,7 +105,7 @@ object ReverseZoneHelpers {
   private def ipv4ReverseSplitByOctets(string: String): List[String] =
     string.split('.').filter(!_.isEmpty).reverse.toList
 
-  def getZoneAsCIDRString(zone: Zone): Either[Throwable, String] = {
+  private def getZoneAsCIDRString(zone: Zone): Either[Throwable, String] = {
     val zoneName = zone.name.split("in-addr.arpa.")(0)
     val zoneOctets = ipv4ReverseSplitByOctets(zoneName)
     val zoneString = zoneOctets.mkString(".")
