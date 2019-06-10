@@ -240,7 +240,7 @@ class ReverseZoneHelpersSpec
         }
       }
     }
-    "ptrIsInZone" should {
+    "ptrIsInClasslessDelegatedZone" should {
       "return InvalidRequest if a PTR is being added to a non-ipv4/ipv6 zone" in {
         eventually {
           val error =
@@ -304,6 +304,28 @@ class ReverseZoneHelpersSpec
             leftValue(ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zoneIp6, badPtr.name))
           error shouldBe a[InvalidRequest]
         }
+      }
+    }
+    "ipIsInIpv4ReverseZone" should {
+      "return true for the base zone" in {
+        val zone = Zone("1.2.3.in-addr.arpa.", "email")
+        ReverseZoneHelpers.ipIsInIpv4ReverseZone(zone, "3.2.1.10") shouldBe true
+      }
+      "return false for a zone ending in the base zone" in {
+        val zone = Zone("21.2.3.in-addr.arpa.", "email")
+        ReverseZoneHelpers.ipIsInIpv4ReverseZone(zone, "3.2.1.10") shouldBe false
+      }
+      "return true for a valid delegated zone" in {
+        val zone = Zone("0/30.1.2.3.in-addr.arpa.", "email")
+        ReverseZoneHelpers.ipIsInIpv4ReverseZone(zone, "3.2.1.1") shouldBe true
+      }
+      "return false for a delegated zone that does not contain the fqdn" in {
+        val zone = Zone("0/30.1.2.3.in-addr.arpa.", "email")
+        ReverseZoneHelpers.ipIsInIpv4ReverseZone(zone, "3.2.1.10") shouldBe false
+      }
+      "return false for a zone similar to the fqdn" in {
+        val zone = Zone("1.2.3.in-addr.arpa.", "email")
+        ReverseZoneHelpers.ipIsInIpv4ReverseZone(zone, "3.2.21.10") shouldBe false
       }
     }
   }
