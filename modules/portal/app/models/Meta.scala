@@ -18,7 +18,6 @@ package models
 import play.api.Configuration
 import play.api.libs.json._
 
-
 case class Meta(
     version: String,
     sharedDisplayEnabled: Boolean,
