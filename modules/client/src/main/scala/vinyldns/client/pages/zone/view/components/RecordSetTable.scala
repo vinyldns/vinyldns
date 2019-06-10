@@ -127,53 +127,8 @@ object RecordSetTable {
                   if rl.recordSets.nonEmpty || rl.recordNameFilter.isDefined || S.pagination.pageNumber != 1 =>
                 <.div(
                   <.span(
-                    // items per page
-                    <.span(
-                      <.label(
-                        GlobalStyle.Styles.keepWhitespace,
-                        ^.className := "control-label",
-                        "Items per page:  "),
-                      <.select(
-                        ^.onChange ==> { e: ReactEventFromInput =>
-                          val maxItems = Try(e.target.value.toInt).getOrElse(100)
-                          bs.modState(
-                            _.copy(maxItems = maxItems),
-                            resetPageInfo >>
-                              bs.state >>= { s =>
-                              listRecordSets(P, s)
-                            })
-                        },
-                        ^.value := S.maxItems,
-                        List(100, 50, 25, 5, 1).map { o =>
-                          <.option(^.key := o, o)
-                        }.toTagMod
-                      )
-                    ),
-                    <.span(
-                      ^.className := "btn-group pull-right",
-                      // paginate
-                      <.button(
-                        ^.className := "btn btn-round btn-default test-previous-page",
-                        ^.onClick --> previousPage(P),
-                        ^.`type` := "button",
-                        ^.disabled := S.pagination.pageNumber <= 1,
-                        <.span(
-                          ^.className := "fa fa-arrow-left"
-                        ),
-                        if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
-                        else TagMod.empty
-                      ),
-                      <.button(
-                        ^.className := "btn btn-round btn-default test-next-page",
-                        ^.`type` := "button",
-                        ^.onClick --> nextPage(P, S),
-                        ^.disabled := rl.nextId.isEmpty,
-                        s"Page ${S.pagination.pageNumber + 1}  ",
-                        <.span(
-                          ^.className := "fa fa-arrow-right"
-                        )
-                      )
-                    )
+                    itemsPerPage(P, S),
+                    paginationButtons(P, S, rl)
                   ),
                   <.table(
                     ^.className := "table",
@@ -217,6 +172,57 @@ object RecordSetTable {
         ),
         createRecordSetModal(P, S),
         updateRecordSetModal(P, S)
+      )
+
+    def itemsPerPage(P: Props, S: State): TagMod =
+      <.span(
+        <.label(
+          GlobalStyle.Styles.keepWhitespace,
+          ^.className := "control-label",
+          "Items per page:  "),
+        <.select(
+          ^.onChange ==> { e: ReactEventFromInput =>
+            val maxItems = Try(e.target.value.toInt).getOrElse(100)
+            bs.modState(
+              _.copy(maxItems = maxItems),
+              resetPageInfo >>
+                bs.state >>= { s =>
+                listRecordSets(P, s)
+              })
+          },
+          ^.value := S.maxItems,
+          List(100, 50, 25, 5, 1).map { o =>
+            <.option(^.key := o, o)
+          }.toTagMod
+        )
+      )
+
+    def paginationButtons(P: Props, S: State, rl: RecordSetListResponse): TagMod =
+      <.span(
+        ^.className := "btn-group pull-right",
+        // paginate
+        <.button(
+          ^.className := "btn btn-round btn-default test-previous-page",
+          ^.onClick --> previousPage(P),
+          ^.`type` := "button",
+          ^.disabled := S.pagination.pageNumber <= 1,
+          <.span(
+            ^.className := "fa fa-arrow-left"
+          ),
+          if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
+          else TagMod.empty
+        ),
+        <.button(
+          ^.className := "btn btn-round btn-default test-next-page",
+          ^.`type` := "button",
+          ^.onClick --> nextPage(P, S),
+          ^.disabled := rl.nextId.isEmpty,
+          if (rl.nextId.isDefined) s"Page ${S.pagination.pageNumber + 1}  "
+          else TagMod.empty,
+          <.span(
+            ^.className := "fa fa-arrow-right"
+          )
+        )
       )
 
     def toTableRow(P: Props, S: State, recordSet: RecordSetResponse): TagMod =

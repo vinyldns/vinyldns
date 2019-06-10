@@ -60,54 +60,8 @@ object GroupsTable {
             <.div(
               <.div(
                 ^.className := "panel-heading",
-                // items per page
-                <.span(
-                  <.label(
-                    GlobalStyle.Styles.keepWhitespace,
-                    ^.className := "control-label",
-                    "Items per page:  "
-                  ),
-                  <.select(
-                    ^.value := S.maxItems,
-                    ^.onChange ==> { e: ReactEventFromInput =>
-                      val maxItems = Try(e.target.value.toInt).getOrElse(100)
-                      bs.modState(
-                        _.copy(maxItems = maxItems),
-                        resetPageInfo >>
-                          bs.state >>= { s =>
-                          listGroups(P, s)
-                        })
-                    },
-                    List(100, 50, 25, 5, 1).map { o =>
-                      <.option(^.key := o, o)
-                    }.toTagMod
-                  )
-                ),
-                <.span(
-                  // paginate
-                  ^.className := "btn-group pull-right",
-                  <.button(
-                    ^.className := "btn btn-round btn-default test-previous-page",
-                    ^.onClick --> previousPage(P),
-                    ^.`type` := "button",
-                    ^.disabled := S.pagination.pageNumber <= 1,
-                    <.span(
-                      ^.className := "fa fa-arrow-left"
-                    ),
-                    if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
-                    else TagMod.empty
-                  ),
-                  <.button(
-                    ^.className := "btn btn-round btn-default test-next-page",
-                    ^.onClick --> nextPage(P, S),
-                    ^.`type` := "button",
-                    ^.disabled := gl.nextId.isEmpty,
-                    s"Page ${S.pagination.pageNumber + 1}  ",
-                    <.span(
-                      ^.className := "fa fa-arrow-right"
-                    )
-                  )
-                )
+                itemsPerPage(P, S),
+                paginationButtons(P, S, gl)
               ),
               <.div(^.className := "clearfix"),
               <.div(
@@ -132,6 +86,58 @@ object GroupsTable {
           case Some(gl) if gl.groups.isEmpty => <.p("You don't have any groups yet")
           case None => <.p("Loading your groups...")
         }
+      )
+
+    def itemsPerPage(P: Props, S: State): TagMod =
+      <.span(
+        <.label(
+          GlobalStyle.Styles.keepWhitespace,
+          ^.className := "control-label",
+          "Items per page:  "
+        ),
+        <.select(
+          ^.value := S.maxItems,
+          ^.onChange ==> { e: ReactEventFromInput =>
+            val maxItems = Try(e.target.value.toInt).getOrElse(100)
+            bs.modState(
+              _.copy(maxItems = maxItems),
+              resetPageInfo >>
+                bs.state >>= { s =>
+                listGroups(P, s)
+              })
+          },
+          List(100, 50, 25, 5, 1).map { o =>
+            <.option(^.key := o, o)
+          }.toTagMod
+        )
+      )
+
+    def paginationButtons(P: Props, S: State, gl: GroupListResponse): TagMod =
+      <.span(
+        // paginate
+        ^.className := "btn-group pull-right",
+        <.button(
+          ^.className := "btn btn-round btn-default test-previous-page",
+          ^.onClick --> previousPage(P),
+          ^.`type` := "button",
+          ^.disabled := S.pagination.pageNumber <= 1,
+          <.span(
+            ^.className := "fa fa-arrow-left"
+          ),
+          if (S.pagination.pageNumber > 1) s"  Page ${S.pagination.pageNumber - 1}"
+          else TagMod.empty
+        ),
+        <.button(
+          ^.className := "btn btn-round btn-default test-next-page",
+          ^.onClick --> nextPage(P, S),
+          ^.`type` := "button",
+          ^.disabled := gl.nextId.isEmpty,
+          if (gl.nextId.isDefined) s"Page ${S.pagination.pageNumber + 1}  "
+          else TagMod.empty,
+          <.span(
+            ^.className := "fa fa-arrow-right"
+          )
+        )
       )
 
     def updateGroupModal(P: Props, S: State): TagMod =
