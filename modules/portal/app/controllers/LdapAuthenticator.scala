@@ -219,8 +219,9 @@ class LdapAuthenticator(
               "Unable to successfully perform search in at least one LDAP domain"))
       case h :: t =>
         f(h).recoverWith {
-          case _: LdapServiceException => findUserDetails(t, userName, f, false)
-          case _ => findUserDetails(t, userName, f, allDomainConnectionsUp)
+          case _: UserDoesNotExistException =>
+            findUserDetails(t, userName, f, allDomainConnectionsUp)
+          case _ => findUserDetails(t, userName, f, false)
         }
     }
 
