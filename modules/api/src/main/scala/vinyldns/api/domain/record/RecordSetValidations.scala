@@ -206,7 +206,7 @@ object RecordSetValidations {
 
   def ptrValidations(newRecordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
     // TODO we don't check for PTR as dotted...not sure why
-    ReverseZoneHelpers.ptrIsInZone(zone, newRecordSet.name, newRecordSet.typ).map(_ => ())
+    ReverseZoneHelpers.ptrIsInClasslessDelegatedZone(zone, newRecordSet.name).map(_ => ())
 
   private def isNotOrigin(recordSet: RecordSet, zone: Zone, err: String): Either[Throwable, Unit] =
     ensuring(InvalidRequest(err))(
