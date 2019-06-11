@@ -311,7 +311,7 @@ class VinylDNS @Inject()(
     implicit request =>
       {
         for {
-          userDetails <- IO.fromEither(authenticator.lookup(username).toEither)
+          userDetails <- IO.fromEither(authenticator.lookup(username))
           existingAccount <- userAccountAccessor.get(userDetails.username)
           userAccount <- existingAccount match {
             case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
@@ -323,17 +323,28 @@ class VinylDNS @Inject()(
         .map(Json.toJson(_))
         .map(Ok(_).withHeaders(cacheHeaders: _*))
         .recover {
-          case _: UserDoesNotExistException => NotFound(s"User $username was not found")
+          case _: UserDoesNotExistException =>
+            NotFound(s"User $username was not found")
+          case le: LdapException =>
+            InternalServerError(le.getMessage)
         }
   }
 
   def processLogin(username: String, password: String): Result =
     authenticator.authenticate(username, password) match {
-      case Failure(error) =>
+      case Left(error: UserDoesNotExistException) =>
         Logger.error(s"Authentication failed for [$username]", error)
         Redirect("/login").flashing(
           VinylDNS.Alerts.error("Authentication failed, please try again"))
-      case Success(userDetails: LdapUserDetails) =>
+      case Left(error: LdapException) =>
+        Logger.error(
+          "An unexpected error occurred when authenticating, please contact your VinylDNS " +
+            "administrators",
+          error)
+        Redirect("/login").flashing(
+          VinylDNS.Alerts.error(
+            "Authentication failed, please contact your VinylDNS administrators"))
+      case Right(userDetails: LdapUserDetails) =>
         Logger.info(
           s"user [${userDetails.username}] logged in with ldap path [${userDetails.nameInNamespace}]")
         val user = processLoginWithDetails(userDetails).unsafeRunSync()
