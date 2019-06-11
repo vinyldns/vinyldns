@@ -23,10 +23,11 @@ import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 
 import scala.util.{Failure, Success, Try}
 
-class ZoneValidations(syncDelayMillis: Int) {
+class ZoneValidations(syncDelayMillis: Int, syncBannedZones: List[String] = List()) {
 
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
@@ -85,4 +86,9 @@ class ZoneValidations(syncDelayMillis: Int) {
       NotAuthorizedError(
         s"Not authorized to update zone shared status from $currentShared to $updateShared."))(
       currentShared == updateShared || user.isSuper || user.isSupport)
+
+  def isNotSyncBanned(zoneName: String): Either[Throwable, Unit] =
+    ensuring(InvalidRequest(s"Syncs in zone $zoneName are disabled"))(
+      !syncBannedZones.contains(ensureTrailingDot(zoneName.toLowerCase))
+    )
 }

@@ -108,6 +108,7 @@ class ZoneService(
   def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
       zone <- getZoneOrFail(zoneId)
+      _ <- isNotSyncBanned(zone.name).toResult
       _ <- canChangeZone(auth, zone.name, zone.adminGroupId).toResult
       _ <- outsideSyncDelay(zone).toResult
       syncZoneChange <- ZoneChangeGenerator.forSync(zone, auth).toResult

@@ -27,6 +27,7 @@ import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record.RecordType
+import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 
 import scala.collection.JavaConverters._
 import scala.util.matching.Regex
@@ -79,6 +80,9 @@ object VinylDNSConfig {
   lazy val highValueIpList: List[IpAddress] =
     getOptionalStringList("high-value-domains.ip-list").flatMap(ip => IpAddress(ip))
 
+  lazy val syncBannedZones: List[String] =
+    getOptionalStringList("sync-banned-zones").map(zn => ensureTrailingDot(zn.toLowerCase()))
+
   lazy val sharedApprovedTypes: Set[RecordType.Value] =
     vinyldnsConfig.as[Option[Set[RecordType.Value]]]("shared-approved-types").getOrElse(Set())
 
@@ -122,9 +126,7 @@ object VinylDNSConfig {
     loadConfigF[IO, Option[Int]](vinyldnsConfig, "health-check-timeout").map(_.getOrElse(10000))
 
   def getOptionalStringList(key: String): List[String] =
-    if (vinyldnsConfig.hasPath(key)) {
-      vinyldnsConfig.getStringList(key).asScala.toList
-    } else List()
+    pureconfig.loadConfig[List[String]](vinyldnsConfig, key).getOrElse(List())
 
   lazy val maxZoneSize: Int = vinyldnsConfig.as[Option[Int]]("max-zone-size").getOrElse(60000)
   lazy val defaultTtl: Long = vinyldnsConfig.as[Option[Long]](s"default-ttl").getOrElse(7200L)

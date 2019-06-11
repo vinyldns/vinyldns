@@ -105,7 +105,7 @@ object Boot extends App {
         )
         .start
     } yield {
-      val zoneValidations = new ZoneValidations(syncDelay)
+      val zoneValidations = new ZoneValidations(syncDelay, VinylDNSConfig.syncBannedZones)
       val batchChangeValidations = new BatchChangeValidations(
         batchChangeLimit,
         AccessValidations,
