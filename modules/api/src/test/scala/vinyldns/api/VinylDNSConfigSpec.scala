@@ -94,5 +94,8 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
       backends.head.zoneConnection.decrypted(Crypto.instance) shouldBe zc
       backends.head.transferConnection.decrypted(Crypto.instance) shouldBe tc
     }
+    "load the sync blacklist as lowercase, trailing dot" in {
+      VinylDNSConfig.syncBannedZones shouldBe List("can.not.sync.", "to.lower.")
+    }
   }
 }

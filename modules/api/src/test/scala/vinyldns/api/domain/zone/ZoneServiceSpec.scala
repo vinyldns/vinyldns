@@ -73,8 +73,9 @@ class ZoneServiceSpec
     mockZoneChangeRepo,
     TestConnectionValidator,
     mockMessageQueue,
-    new ZoneValidations(1000),
-    AccessValidations)
+    new ZoneValidations(1000, List("can.not.sync.")),
+    AccessValidations
+  )
 
   private val createZoneAuthorized = CreateZoneInput(
     "ok.zone.recordsets.",
@@ -387,6 +388,16 @@ class ZoneServiceSpec
 
       val error = leftResultOf(underTest.syncZone(okZone.id, noAuth).value)
       error shouldBe a[NotAuthorizedError]
+    }
+
+    "return an error if zone is not in the sync-approved list" in {
+      val noSync = okZone.copy(name = "can.not.sync.")
+      doReturn(IO.pure(Some(noSync))).when(mockZoneRepo).getZone(anyString)
+
+      val error =
+        leftResultOf(underTest.syncZone(noSync.id, okAuth).value)
+      error shouldBe an[InvalidRequest]
+      error.getMessage shouldBe "Syncs in zone can.not.sync. are disabled"
     }
   }
 
