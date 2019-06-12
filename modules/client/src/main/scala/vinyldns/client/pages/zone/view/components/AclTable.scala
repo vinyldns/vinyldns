@@ -162,7 +162,10 @@ object AclTable {
 
     def deleteAclRule(P: Props, rule: ACLRule, index: Int): Callback =
       P.http.withConfirmation(
-        s"Are you sure you want to delete zone access rule ${rule.displayName.getOrElse("")}",
+        s"""
+           |Are you sure you want to delete zone access rule for ${rule.displayName.getOrElse("")}
+           |(${rule.description.getOrElse("")})
+         """.stripMargin.replaceAll("\n", " "),
         Callback.lazily {
           val updatedRuleList = P.zone.acl.rules.patch(index, Nil, 1)
           val updatedZone = P.zone.copy(acl = Rules(updatedRuleList))

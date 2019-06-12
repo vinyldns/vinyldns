@@ -97,17 +97,7 @@ object LeftNav {
                       )
                     )
                   else TagMod.empty
-                }.toTagMod,
-                <.li(
-                  ^.key := "logout",
-                  ^.onMouseEnter ==> mouseEnter,
-                  ^.onMouseLeave ==> (e => mouseExit(e, isActive = false)),
-                  <.a(
-                    ^.href := (BaseUrl.fromWindowOrigin / "logout").value,
-                    <.i(^.className := "fa fa-sign-out"),
-                    "Logout"
-                  )
-                )
+                }.toTagMod
               )
             )
           )
