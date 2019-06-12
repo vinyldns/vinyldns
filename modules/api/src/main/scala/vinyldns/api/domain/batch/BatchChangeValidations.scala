@@ -48,7 +48,7 @@ trait BatchChangeValidationsAlgebra {
       batchChange: BatchChange,
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 
-  def validateRejectedBatchChange(
+  def validateBatchChangeRejection(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 }
@@ -98,7 +98,7 @@ class BatchChangeValidations(
         else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
     }
 
-  def validateRejectedBatchChange(
+  def validateBatchChangeRejection(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
     validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingApproval(
