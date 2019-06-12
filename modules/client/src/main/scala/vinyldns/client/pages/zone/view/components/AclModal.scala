@@ -30,6 +30,8 @@ import vinyldns.client.models.zone.ACLRule.AclType
 import vinyldns.client.models.zone.{ACLRule, Rules, ZoneResponse}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.AccessLevel
+import org.scalajs.dom.html
+import org.scalajs.dom.raw.HTMLOptionElement
 
 object AclModal {
   case class Props(
@@ -114,7 +116,8 @@ object AclModal {
           <.select(
             ^.className := "form-control test-recordtypes",
             ^.multiple := true,
-            ^.onChange ==> ((e: ReactEventFromInput) => changeRecordTypes(e.target.value)),
+            ^.onChange ==> ((e: ReactEventFrom[html.Select]) =>
+              changeRecordTypes(e.target.options.toList)),
             List(
               RecordType.A.toString -> RecordType.A.toString,
               RecordType.AAAA.toString -> RecordType.AAAA.toString,
@@ -264,10 +267,10 @@ object AclModal {
     def changeAccessLevel(value: String): Callback =
       bs.modState(s => s.copy(rule = s.rule.copy(accessLevel = AccessLevel.withName(value))))
 
-    def changeRecordTypes(value: String): Callback =
+    def changeRecordTypes(options: List[HTMLOptionElement]): Callback =
       bs.modState { s =>
-        val updatedTypes = s.rule.recordTypes.toSet + RecordType.withName(value)
-        s.copy(rule = s.rule.copy(recordTypes = updatedTypes.toSeq))
+        val selected = options.filter(_.selected).map(s => RecordType.withName(s.value))
+        s.copy(rule = s.rule.copy(recordTypes = selected))
       }
 
     def changeRecordMask(value: String): Callback =
