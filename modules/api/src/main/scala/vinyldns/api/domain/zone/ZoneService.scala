@@ -219,7 +219,9 @@ class ZoneService(
       .getZoneByName(zoneName)
       .map {
         case Some(existingZone) if existingZone.status != ZoneStatus.Deleted =>
-          ZoneAlreadyExistsError(s"Zone with name $zoneName already exists").asLeft
+          ZoneAlreadyExistsError(
+            s"Zone with name $zoneName already exists. " +
+              s"Please contact ${existingZone.email} to request access to the zone.").asLeft
         case _ => ().asRight
       }
       .toResult
