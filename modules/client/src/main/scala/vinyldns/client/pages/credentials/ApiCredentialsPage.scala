@@ -70,8 +70,8 @@ object ApiCredentialsPage extends PropsFromAppRouter {
                     <.p(
                       """
                         |API Credentials can be used to make requests directly to the VinylDNS API
-                        | on behalf of your user. Keep these credentials somewhere safe!
-                      """.stripMargin
+                        |on behalf of your user. Keep these credentials somewhere safe!
+                      """.stripMargin.replaceAll("\n", " ")
                     ),
                     <.button(
                       ^.`type` := "button",
@@ -126,8 +126,8 @@ object ApiCredentialsPage extends PropsFromAppRouter {
     private val regenerateWarning =
       """
         |Warning: changing your API credentials will break any existing tools and scripts using
-        | your current credentials. You must update your credentials anywhere that you use them outside
-        | of this web client.
-      """.stripMargin
+        |your current credentials. You must update your credentials anywhere that you use them outside
+        |of this web client.
+      """.stripMargin.replaceAll("\n", " ")
   }
 }

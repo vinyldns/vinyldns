@@ -89,8 +89,8 @@ object ZonesTable {
                           ^.title :=
                             """
                               |Private Zones are restricted to the Admin Group and ACL Rules.
-                              | Shared Zones allow other Vinyl users to manage DNS records
-                            """.stripMargin
+                              |Shared Zones allow other Vinyl users to manage DNS records
+                            """.stripMargin.replaceAll("\n", " ")
                         )
                       ),
                       <.th("Actions")

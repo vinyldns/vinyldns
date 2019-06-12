@@ -30,6 +30,8 @@ import vinyldns.client.models.zone.ACLRule.AclType
 import vinyldns.client.models.zone.{ACLRule, Rules, ZoneResponse}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.AccessLevel
+import org.scalajs.dom.html
+import org.scalajs.dom.raw.HTMLOptionElement
 
 object AclModal {
   case class Props(
@@ -114,7 +116,8 @@ object AclModal {
           <.select(
             ^.className := "form-control test-recordtypes",
             ^.multiple := true,
-            ^.onChange ==> ((e: ReactEventFromInput) => changeRecordTypes(e.target.value)),
+            ^.onChange ==> ((e: ReactEventFrom[html.Select]) =>
+              changeRecordTypes(e.target.options.toList)),
             List(
               RecordType.A.toString -> RecordType.A.toString,
               RecordType.AAAA.toString -> RecordType.AAAA.toString,
@@ -142,8 +145,7 @@ object AclModal {
             ^.className := "help-block",
             s"""
              |This rule will apply only to the selected record types. If no types are selected then the rule will
-             | apply to all record types.
-                     """.stripMargin
+             |apply to all record types.""".stripMargin.replaceAll("\n", " ")
           ),
           <.div(
             ^.className := "help-block",
@@ -194,8 +196,8 @@ object AclModal {
               label = Some("Target Group"),
               helpText = Some(s"""
                                  |The Vinyl Group that the rule applies to.
-                                 | Search for a group you are in by name or Id
-                              """.stripMargin),
+                                 |Search for a group you are in by name or Id
+                              """.stripMargin.replaceAll("\n", " ")),
               validations = Some(Validations(required = true, matchGroup = true)),
               options = P.groups.map(g => (g.name, s"${g.name} (id: ${g.id})")),
               inputType = InputType.Datalist
@@ -224,9 +226,9 @@ object AclModal {
           label = Some("Record Mask"),
           helpText = Some(s"""
               |Record masks is optional, and further refines the types of records this record applies to.
-              | For non-PTR records, any valid regex will be accepted.
-              | For PTR records, please input a CIDR rule.
-            """.stripMargin),
+              |For non-PTR records, any valid regex will be accepted.
+              |For PTR records, please input a CIDR rule.
+            """.stripMargin.replaceAll("\n", " ")),
           value = S.rule.recordMask
         ),
         ValidatedInput.Props(
@@ -265,10 +267,10 @@ object AclModal {
     def changeAccessLevel(value: String): Callback =
       bs.modState(s => s.copy(rule = s.rule.copy(accessLevel = AccessLevel.withName(value))))
 
-    def changeRecordTypes(value: String): Callback =
+    def changeRecordTypes(options: List[HTMLOptionElement]): Callback =
       bs.modState { s =>
-        val updatedTypes = s.rule.recordTypes.toSet + RecordType.withName(value)
-        s.copy(rule = s.rule.copy(recordTypes = updatedTypes.toSeq))
+        val selected = options.filter(_.selected).map(s => RecordType.withName(s.value))
+        s.copy(rule = s.rule.copy(recordTypes = selected))
       }
 
     def changeRecordMask(value: String): Callback =

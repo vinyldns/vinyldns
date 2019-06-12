@@ -223,7 +223,7 @@ object ZoneViewPage extends PropsFromAppRouter {
           |Are you sure want to Sync this Zone? You will not be able to update DNS records via VinylDNS until the
           |sync is complete. A Zone Sync will compare a Zones actual DNS records with those in VinylDNS to ensure
           |VinylDNS is up to date. It will NOT modify any records in DNS.
-        """.stripMargin,
+        """.stripMargin.replaceAll("\n", " "),
         Callback.lazily {
           val zoneId = P.page.asInstanceOf[ToZoneViewPage].id
           val onFailure = { httpResponse: HttpResponse =>
