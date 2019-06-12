@@ -83,8 +83,9 @@ object BatchChangesTable {
                 )
               )
             )
-          case Some(bcl) if bcl.batchChanges.isEmpty => <.p("You don't have any batch changes yet")
-          case None => <.p("Loading your batch changes...")
+          case Some(bcl) if bcl.batchChanges.isEmpty =>
+            <.div(<.br, <.p("You don't have any batch changes yet"))
+          case None => <.div(<.br, <.p("Loading your batch changes..."))
         }
       )
 

@@ -83,8 +83,8 @@ object GroupsTable {
               ),
               updateGroupModal(P, S)
             )
-          case Some(gl) if gl.groups.isEmpty => <.p("You don't have any groups yet")
-          case None => <.p("Loading your groups...")
+          case Some(gl) if gl.groups.isEmpty => <.div(<.br, <.p("You don't have any groups yet"))
+          case None => <.div(<.br, <.p("Loading your groups..."))
         }
       )
 
