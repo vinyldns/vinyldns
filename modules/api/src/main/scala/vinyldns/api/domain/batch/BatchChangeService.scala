@@ -88,7 +88,7 @@ class BatchChangeService(
   def rejectBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      rejectionComment: Option[RejectBatchChangeInput]): BatchResult[BatchChange] =
+      rejectBatchChangeInput: Option[RejectBatchChangeInput]): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeRejection(batchChange, authPrincipal).toBatchResult

@@ -36,6 +36,6 @@ trait BatchChangeServiceAlgebra {
   def rejectBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      rejectionComment: Option[RejectBatchChangeInput]): BatchResult[BatchChange]
+      rejectBatchChangeInput: Option[RejectBatchChangeInput]): BatchResult[BatchChange]
 }
 // $COVERAGE-ON$
