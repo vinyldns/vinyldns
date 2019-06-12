@@ -166,10 +166,10 @@ object ZoneModal {
                   ^.className := "help-block col-md-6 col-sm-6 col-xs-12",
                   """
                     |Normally updates to DNS records are restricted to the Zone Admin Group and those given
-                    | permissions via Zone Access Rules. A Shared Zone also allows ANY VinylDNS user to
-                    | create/update DNS records and claim them for another Group.
-                    | The Zone Admins will always be able to update all records.
-                  """.stripMargin
+                    |permissions via Zone Access Rules. A Shared Zone also allows ANY VinylDNS user to
+                    |create/update DNS records and claim them for another Group.
+                    |The Zone Admins will always be able to update all records.
+                  """.stripMargin.replaceAll("\n", " ")
                 )
               ),
               // submit and close buttons
@@ -221,10 +221,10 @@ object ZoneModal {
           label = Some("Admin Group"),
           helpText = Some(s"""
                |The Vinyl Group that will be given admin rights to the zone.
-               | All users in the admin group will have the ability to manage
-               | all records in the zone, as well as change zone level information
-               | and access rules. You can create a new group from the Groups page.
-              """.stripMargin),
+               |All users in the admin group will have the ability to manage
+               |all records in the zone, as well as change zone level information
+               |and access rules. You can create a new group from the Groups page.
+              """.stripMargin.replaceAll("\n", " ")),
           validations = Some(Validations(required = true, matchGroup = true)),
           options = toAdminGroupDatalist(P.groupList),
           placeholder =
@@ -256,7 +256,7 @@ object ZoneModal {
                 |The ID for a pre-configured DNS connection configuration. Please contact your DNS admin team
                 |for more information if you believe you need a custom connection. In most cases, the default
                 |connection will suffice.
-              """.stripMargin
+              """.stripMargin.replaceAll("\n", " ")
             ),
             options = List(("", "")) ::: P.backendIds.map(o => (o, o))
           )
@@ -275,9 +275,9 @@ object ZoneModal {
             label = Some(s"${if (isTransfer) "Transfer " else ""}Connection Key Name"),
             helpText = Some("""
                 |The name of the key used to sign requests to the DNS server.
-                | This is set when the zone is setup in the DNS server, and is used to
-                | connect to the DNS server when performing updates and transfers.
-              """.stripMargin),
+                |This is set when the zone is setup in the DNS server, and is used to
+                |connect to the DNS server when performing updates and transfers.
+              """.stripMargin.replaceAll("\n", " ")),
             value = connection.map(_.keyName),
             validations = Some(Validations(required = true))
           ),
@@ -296,10 +296,10 @@ object ZoneModal {
             label = Some(s"${if (isTransfer) "Transfer " else ""}Connection Server"),
             helpText = Some(
               """
-                | The IP Address or host name of the backing DNS server for zone transfers.
-                | This host will be the target for syncing zones with Vinyl. If the port is not specified,
-                | port 53 is assumed.
-              """.stripMargin),
+                |The IP Address or host name of the backing DNS server for zone transfers.
+                |This host will be the target for syncing zones with Vinyl. If the port is not specified,
+                |port 53 is assumed.
+              """.stripMargin.replaceAll("\n", " ")),
             value = connection.map(_.primaryServer),
             validations = Some(Validations(required = true))
           )
@@ -519,8 +519,8 @@ object ZoneModal {
     val createHeader: String =
       """
         |Use this form to connect to an already existing DNS zone. If you need a new zone created in DNS,
-        | please follow guidelines set by your VinylDNS Administrators.
-      """.stripMargin
+        |please follow guidelines set by your VinylDNS Administrators.
+      """.stripMargin.replaceAll("\n", " ")
 
     def toTitle(S: State): String =
       if (S.isUpdate) "Update Zone"

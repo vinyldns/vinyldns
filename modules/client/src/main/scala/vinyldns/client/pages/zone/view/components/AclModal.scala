@@ -142,8 +142,7 @@ object AclModal {
             ^.className := "help-block",
             s"""
              |This rule will apply only to the selected record types. If no types are selected then the rule will
-             | apply to all record types.
-                     """.stripMargin
+             |apply to all record types.""".stripMargin.replaceAll("\n", " ")
           ),
           <.div(
             ^.className := "help-block",
@@ -194,8 +193,8 @@ object AclModal {
               label = Some("Target Group"),
               helpText = Some(s"""
                                  |The Vinyl Group that the rule applies to.
-                                 | Search for a group you are in by name or Id
-                              """.stripMargin),
+                                 |Search for a group you are in by name or Id
+                              """.stripMargin.replaceAll("\n", " ")),
               validations = Some(Validations(required = true, matchGroup = true)),
               options = P.groups.map(g => (g.name, s"${g.name} (id: ${g.id})")),
               inputType = InputType.Datalist
@@ -224,9 +223,9 @@ object AclModal {
           label = Some("Record Mask"),
           helpText = Some(s"""
               |Record masks is optional, and further refines the types of records this record applies to.
-              | For non-PTR records, any valid regex will be accepted.
-              | For PTR records, please input a CIDR rule.
-            """.stripMargin),
+              |For non-PTR records, any valid regex will be accepted.
+              |For PTR records, please input a CIDR rule.
+            """.stripMargin.replaceAll("\n", " ")),
           value = S.rule.recordMask
         ),
         ValidatedInput.Props(

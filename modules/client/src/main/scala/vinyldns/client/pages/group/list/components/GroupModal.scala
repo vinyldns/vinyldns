@@ -217,9 +217,9 @@ object GroupModal {
     private val header =
       """
         |Groups simplify setup and access to resources in Vinyl.
-        | A Group consists of one or more members, who are registered users of Vinyl.
-        | Any member in the group can be designated as a Group Admin, which
-        | allows that member full administrative access to the group, including deleting the group.
-      """.stripMargin
+        |A Group consists of one or more members, who are registered users of Vinyl.
+        |Any member in the group can be designated as a Group Admin, which
+        |allows that member full administrative access to the group, including deleting the group.
+      """.stripMargin.replaceAll("\n", " ")
   }
 }

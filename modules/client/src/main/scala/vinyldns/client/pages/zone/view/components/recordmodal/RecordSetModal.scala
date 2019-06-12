@@ -150,9 +150,9 @@ object RecordSetModal {
           label = Some("Record Owner Group"),
           helpText = Some(s"""
                              |If set and the Zone is SHARED, then this group will own the Record and other
-                             | creates/updates must be made by a member of the Group. The Zone Admin Group will
-                             | always have full access, and other Zone Access Rules will still apply.
-              """.stripMargin),
+                             |creates/updates must be made by a member of the Group. The Zone Admin Group will
+                             |always have full access, and other Zone Access Rules will still apply.
+              """.stripMargin.replaceAll("\n", " ")),
           validations = if (P.readOnly) None else Some(Validations(matchGroup = true)),
           options = P.groupList.groups.map(g => g.name -> s"${g.name} (id: ${g.id})"),
           placeholder = Some("Search for a Group you are in by name or id"),
@@ -360,9 +360,9 @@ object RecordSetModal {
     private val header: String =
       s"""
         |Record set names are combined with the zone name to create a
-        | Fully Qualified Domain Name (FQDN). For example, a record with the name
-        | "www" in the zone "vinyldns.io." will read "www.vinyldns.io.". Use the symbol "@"
-        | to create an apex record that has a FQDN equal to the zone name.
-      """.stripMargin
+        |Fully Qualified Domain Name (FQDN). For example, a record with the name
+        |"www" in the zone "vinyldns.io." will read "www.vinyldns.io.". Use the symbol "@"
+        |to create an apex record that has a FQDN equal to the zone name.
+      """.stripMargin.replaceAll("\n", " ")
   }
 }
