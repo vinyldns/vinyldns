@@ -18,7 +18,7 @@ field         | type        | description |
  ------------ | :---------- | :---------- |
 zoneId        | string      | the id of the zone to which this recordset belongs |
 name          | string      | The name of the RecordSet |
-type          | string      | Type of DNS record, supported records are currently: A, AAAA, CNAME, DS, PTR, MX, NS, SOA, SRV, TXT, SSHFP, and SPF. Unsupported types will be given the type UNKNOWN |
+type          | string      | Type of DNS record, supported records are currently: A, AAAA, CNAME, DS, MX, NAPTR, NS, PTR, SOA, SRV, TXT, SSHFP, and SPF. Unsupported types will be given the type UNKNOWN |
 ttl           | long        |  the TTL in seconds for the recordset |
 status        | string      | *Active* - RecordSet is added is created and ready for use, *Inactive* - RecordSet effects are not applied, *Pending* - RecordSet is queued for creation, *PendingUpdate* - RecordSet is queued for update, *PendingDelete* - RecordSet is queued for delete |
 created       | date-time   | the timestamp GMT when the recordset was created   |
@@ -54,7 +54,7 @@ account       | string      | **DEPRECATED** The account that created the Record
 ```
 
 #### RECORD DATA INFORMATION <a id="record-data"></a>
-Current supported record types are: A, AAAA, CNAME, DS, MX, NS, PTR, SOA, SRV, TXT, SSHFP, and SPF.
+Current supported record types are: A, AAAA, CNAME, DS, MX, NAPTR, NS, PTR, SOA, SRV, TXT, SSHFP, and SPF.
 Each individual record encodes its data in a record data object, in which each record type has different required attributes
 <br><br>
 SOA records and NS origin records (record with the same name as the zone) are currently read-only and cannot be created, updated or deleted.
@@ -75,6 +75,13 @@ DS           | digest      | string      |
 <br>         |             |             |
 MX           | preference  | integer     |
 MX           | exchange    | string      |
+<br>         |             |             |
+NAPTR        | order       | integer     |
+NAPTR        | preference  | integer     |
+NAPTR        | flags       | string      |
+NAPTR        | service     | string      |
+NAPTR        | regexp      | string      |
+NAPTR        | replacement | string      |
 <br>         |             |             |
 NS           | nsdname     | string      |
 <br>         |             |             |
