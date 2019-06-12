@@ -72,7 +72,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
         GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
-        c.outerHtmlScrubbed() shouldBe "<div><p>Loading your groups...</p></div>"
+        c.outerHtmlScrubbed() should include("<p>Loading your groups...</p>")
       }
     }
 
@@ -90,7 +90,7 @@ class GroupsTableSpec extends WordSpec with Matchers with MockFactory with Share
         GroupsTable.Props(mockHttp, mockRouter)
 
       ReactTestUtils.withRenderedIntoDocument(GroupsTable(props)) { c =>
-        c.outerHtmlScrubbed() shouldBe "<div><p>You don't have any groups yet</p></div>"
+        c.outerHtmlScrubbed() should include("<p>You don't have any groups yet</p>")
       }
     }
 

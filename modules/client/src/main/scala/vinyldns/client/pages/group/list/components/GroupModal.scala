@@ -119,44 +119,50 @@ object GroupModal {
     def createGroup(P: Props, S: State): Callback =
       P.http.withConfirmation(
         s"Are you sure you want to create group ${S.group.name}?",
-        Callback.lazily {
-          val user = P.http.getLoggedInUser()
-          val groupWithUserId =
-            S.group
-              .asInstanceOf[GroupCreateInfo]
-              .copy(members = Seq(Id(user.id)), admins = Seq(Id(user.id)))
-          val onFailure = { httpResponse: HttpResponse =>
-            addNotification(P.http.toNotification("creating group", httpResponse))
+        Callback
+          .lazily {
+            val user = P.http.getLoggedInUser()
+            val groupWithUserId =
+              S.group
+                .asInstanceOf[GroupCreateInfo]
+                .copy(members = Seq(Id(user.id)), admins = Seq(Id(user.id)))
+            val onFailure = { httpResponse: HttpResponse =>
+              addNotification(
+                P.http.toNotification(s"creating group ${S.group.name}", httpResponse))
+            }
+            val onSuccess = { (httpResponse: HttpResponse, _: Option[GroupResponse]) =>
+              addNotification(
+                P.http.toNotification(s"creating group ${S.group.name}", httpResponse)) >>
+                P.close(()) >>
+                withDelay(HALF_SECOND_IN_MILLIS, P.refreshGroups(()))
+            }
+            P.http.post(CreateGroupRoute, write(groupWithUserId), onSuccess, onFailure)
           }
-          val onSuccess = { (httpResponse: HttpResponse, _: Option[GroupResponse]) =>
-            addNotification(P.http.toNotification("creating group", httpResponse)) >>
-              P.close(()) >>
-              withDelay(HALF_SECOND_IN_MILLIS, P.refreshGroups(()))
-          }
-          P.http.post(CreateGroupRoute, write(groupWithUserId), onSuccess, onFailure)
-        }
       )
 
     def updateGroup(P: Props, S: State): Callback =
       P.http.withConfirmation(
         s"Are you sure you want to update group ${S.group.asInstanceOf[GroupResponse].id}?",
-        Callback.lazily {
-          val updated = S.group.asInstanceOf[GroupResponse]
-          val onFailure = { httpResponse: HttpResponse =>
-            addNotification(P.http.toNotification("updating group", httpResponse))
+        Callback
+          .lazily {
+            val updated = S.group.asInstanceOf[GroupResponse]
+            val onFailure = { httpResponse: HttpResponse =>
+              addNotification(
+                P.http.toNotification(s"updating group ${S.group.name}", httpResponse))
+            }
+            val onSuccess = { (httpResponse: HttpResponse, _: Option[GroupResponse]) =>
+              addNotification(
+                P.http.toNotification(s"updating group ${S.group.name}", httpResponse)) >>
+                P.close(()) >>
+                withDelay(HALF_SECOND_IN_MILLIS, P.refreshGroups(()))
+            }
+            P.http
+              .put(
+                UpdateGroupRoute(S.group.asInstanceOf[GroupResponse].id),
+                write(updated),
+                onSuccess,
+                onFailure)
           }
-          val onSuccess = { (httpResponse: HttpResponse, _: Option[GroupResponse]) =>
-            addNotification(P.http.toNotification("updating group", httpResponse)) >>
-              P.close(()) >>
-              withDelay(HALF_SECOND_IN_MILLIS, P.refreshGroups(()))
-          }
-          P.http
-            .put(
-              UpdateGroupRoute(S.group.asInstanceOf[GroupResponse].id),
-              write(updated),
-              onSuccess,
-              onFailure)
-        }
       )
 
     def changeName(value: String): Callback =

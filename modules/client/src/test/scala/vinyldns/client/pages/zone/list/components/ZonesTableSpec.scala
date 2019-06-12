@@ -66,7 +66,7 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
         }
 
       ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
-        c.outerHtmlScrubbed() shouldBe "<div><p>Loading your zones...</p></div>"
+        c.outerHtmlScrubbed() should include("<p>Loading your zones...</p>")
       }
     }
 
@@ -82,7 +82,7 @@ class ZonesTableSpec extends WordSpec with Matchers with MockFactory with Shared
         }
 
       ReactTestUtils.withRenderedIntoDocument(ZonesTable(props)) { c =>
-        c.outerHtmlScrubbed() shouldBe "<div><p>You don't have any zones yet</p></div>"
+        c.outerHtmlScrubbed() should include("<p>You don't have any zones yet</p>")
       }
     }
 

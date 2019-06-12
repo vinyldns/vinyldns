@@ -102,9 +102,8 @@ object ZonesTable {
                 )
               )
             )
-          case Some(zl) if zl.zones.isEmpty => <.p("You don't have any zones yet")
-          case None =>
-            <.p("Loading your zones...")
+          case Some(zl) if zl.zones.isEmpty => <.div(<.br, <.p("You don't have any zones yet"))
+          case None => <.div(<.br, <.p("Loading your zones..."))
         }
       )
 
