@@ -221,7 +221,7 @@ class ZoneService(
         case Some(existingZone) if existingZone.status != ZoneStatus.Deleted =>
           ZoneAlreadyExistsError(
             s"Zone with name $zoneName already exists. " +
-              s"Please contact ${existingZone.email} for access to the zone.").asLeft
+              s"Please contact ${existingZone.email} to request access to the zone.").asLeft
         case _ => ().asRight
       }
       .toResult
