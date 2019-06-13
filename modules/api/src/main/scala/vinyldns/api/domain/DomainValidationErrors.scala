@@ -103,7 +103,7 @@ final case class InvalidBatchRecordType(param: String) extends DomainValidationE
 final case class ZoneDiscoveryError(name: String) extends DomainValidationError {
   def message: String =
     s"""Zone Discovery Failed: zone for "$name" does not exist in VinylDNS. """ +
-      "If zone exists, then it must be created in VinylDNS."
+      "If zone exists, then it must be connected to in VinylDNS."
 }
 
 final case class RecordAlreadyExists(name: String) extends DomainValidationError {
