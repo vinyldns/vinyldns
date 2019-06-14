@@ -73,13 +73,13 @@
 
                                     <!-- PAGINATION -->
                                     <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getMyZonesPageTitle() }}</span>
+                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageMyZonesEnabled()" ng-click="prevPageMyZones()">Previous</a>
+                                                <a ng-if="prevPageEnabled('myZones')" ng-click="prevPageMyZones()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageMyZonesEnabled()" ng-click="nextPageMyZones()">Next</a>
+                                                <a ng-if="nextPageEnabled('myZones')" ng-click="nextPageMyZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -124,13 +124,13 @@
 
                                     <!-- PAGINATION -->
                                     <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getMyZonesPageTitle() }}</span>
+                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageMyZonesEnabled()" ng-click="prevPageMyZone()">Previous</a>
+                                                <a ng-if="prevPageEnabled('myZones')" ng-click="prevPageMyZone()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageMyZonesEnabled()" ng-click="nextPageMyZones()">Next</a>
+                                                <a ng-if="nextPageEnabled('myZones')" ng-click="nextPageMyZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -178,13 +178,13 @@
 
                                     <!-- PAGINATION -->
                                     <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getAllZonesPageTitle() }}</span>
+                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageAllZonesEnabled()" ng-click="prevPageAllZones()">Previous</a>
+                                                <a ng-if="prevPageEnabled('allZones')" ng-click="prevPageAllZones()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageAllZonesEnabled()" ng-click="nextPageAllZones()">Next</a>
+                                                <a ng-if="nextPageEnabled('allZones')" ng-click="nextPageAllZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -229,13 +229,13 @@
 
                                     <!-- PAGINATION -->
                                     <div class="dataTables_paginate vinyldns_zones_paginate">
-                                        <span class="vinyldns_zones_page_number">{{ getAllZonesPageTitle() }}</span>
+                                        <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("allZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageAllZonesEnabled()" ng-click="prevPageAllZones()">Previous</a>
+                                                <a ng-if="prevPageEnabled('allZones')" ng-click="prevPageAllZones()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageAllZonesEnabled()" ng-click="nextPageAllZones()">Next</a>
+                                                <a ng-if="nextPageEnabled('allZones')" ng-click="nextPageAllZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>

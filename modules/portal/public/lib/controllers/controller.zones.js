@@ -26,8 +26,8 @@ angular.module('controller.zones', [])
     $scope.query = "";
 
     // Paging status for zone sets
-    var zonesPaging = pagingService.getNewPagingParams(1);
-    var allZonesPaging = pagingService.getNewPagingParams(1);
+    var zonesPaging = pagingService.getNewPagingParams(100);
+    var allZonesPaging = pagingService.getNewPagingParams(100);
 
     profileService.getAuthenticatedUserData().then(function (results) {
         if (results.data) {
@@ -168,29 +168,31 @@ angular.module('controller.zones', [])
     /*
      * Zone set paging
      */
-    $scope.prevPageMyZonesEnabled = function () {
-        return pagingService.prevPageEnabled(zonesPaging);
+    $scope.prevPageEnabled = function(tab) {
+        switch(tab) {
+            case 'myZones':
+                return pagingService.prevPageEnabled(zonesPaging);
+            case 'allZones':
+                return pagingService.prevPageEnabled(allZonesPaging);
+        }
     };
 
-    $scope.nextPageMyZonesEnabled = function () {
-        return pagingService.nextPageEnabled(zonesPaging);
+    $scope.nextPageEnabled = function(tab) {
+        switch(tab) {
+            case 'myZones':
+                return pagingService.nextPageEnabled(zonesPaging);
+            case 'allZones':
+                return pagingService.nextPageEnabled(allZonesPaging);
+        }
     };
 
-
-    $scope.prevPageAllZonesEnabled = function () {
-        return pagingService.prevPageEnabled(allZonesPaging);
-    };
-
-    $scope.nextPageAllZonesEnabled = function () {
-        return pagingService.nextPageEnabled(allZonesPaging);
-    };
-
-    $scope.getMyZonesPageTitle = function () {
-        return pagingService.getPanelTitle(zonesPaging);
-    };
-
-    $scope.getAllZonesPageTitle = function () {
-        return pagingService.getPanelTitle(allZonesPaging);
+    $scope.getZonesPageNumber = function(tab) {
+        switch(tab) {
+            case 'myZones':
+                return pagingService.getPanelTitle(zonesPaging);
+            case 'allZones':
+                return pagingService.getPanelTitle(allZonesPaging);
+        }
     };
 
     $scope.prevPageMyZones = function () {
