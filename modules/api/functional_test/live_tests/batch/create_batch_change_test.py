@@ -1150,9 +1150,9 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_data="1.2.3.4",
-                                            error_messages=['Zone Discovery Failed: zone for "no.subzone.parent.com." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                            error_messages=['Zone Discovery Failed: zone for "no.subzone.parent.com." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_data="1.2.3.4",
-                                            error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                            error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: duplicate name failure is always on the cname
         assert_failed_change_in_error_response(response[5], input_name="cname-duplicate.parent.com.", record_type="CNAME", record_data="test.com.",
@@ -1252,7 +1252,7 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[9], input_name="zone.discovery.error.", change_type="DeleteRecordSet",
-                                               error_messages=['Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                               error_messages=['Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validation failures: record does not exist, not authorized
         assert_failed_change_in_error_response(response[10], input_name="non-existent.ok.", change_type="DeleteRecordSet",
@@ -1324,9 +1324,9 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_type="AAAA", record_data="1::1",
-                                            error_messages=["Zone Discovery Failed: zone for \"no.subzone.parent.com.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                            error_messages=["Zone Discovery Failed: zone for \"no.subzone.parent.com.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="AAAA", record_data="1::1",
-                                            error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                            error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validations: duplicate name failure (always on the cname), conflicting recordsets, unauthorized error
         assert_failed_change_in_error_response(response[5], input_name="cname-duplicate.parent.com.", record_type="CNAME", record_data="test.com.",
@@ -1420,7 +1420,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
         assert_failed_change_in_error_response(response[8], input_name="delete-nonexistent.ok.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
@@ -1520,7 +1520,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                                'joined by dots, and terminated with a dot.'])
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.subzone.parent.com.", record_type="CNAME", record_data="test.com.",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.subzone.parent.com.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                               error_messages=["Zone Discovery Failed: zone for \"no.subzone.parent.com.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # CNAME cant be apex
         assert_failed_change_in_error_response(response[8], input_name="parent.com.", record_type="CNAME", record_data="test.com.",
@@ -1643,7 +1643,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[9], input_name="zone.discovery.error.", record_type="CNAME", change_type="DeleteRecordSet",
-                                               error_messages=['Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                               error_messages=['Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validation failures: record does not exist, not authorized
         assert_failed_change_in_error_response(response[10], input_name="non-existent-delete.ok.", record_type="CNAME", change_type="DeleteRecordSet",
@@ -1786,7 +1786,7 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[10], input_name="192.0.1.192", record_type="PTR", record_data="test.com.",
-                                               error_messages=['Zone Discovery Failed: zone for "192.0.1.192" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                               error_messages=['Zone Discovery Failed: zone for "192.0.1.192" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: existing cname recordset
         assert_failed_change_in_error_response(response[11], input_name="192.0.2.193", record_type="PTR", record_data="existing-ptr.",
@@ -1817,7 +1817,7 @@ def test_ipv4_ptr_record_when_zone_discovery_only_finds_mismatched_delegated_zon
         ok_client.wait_until_zone_deleted(classless_base_zone['id'])
         response = ok_client.create_batch_change(batch_change_input, status=400)
         assert_failed_change_in_error_response(response[0], input_name="192.0.2.1", record_type="PTR", record_data="test.com.",
-                                               error_messages=['Zone Discovery Failed: zone for "192.0.2.1" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                               error_messages=['Zone Discovery Failed: zone for "192.0.2.1" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
     finally:
         # re-create classless base zone and update zone info in shared_zone_test_context for use in future tests
@@ -1901,7 +1901,7 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[10], input_name="192.0.1.25", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"192.0.1.25\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                               error_messages=["Zone Discovery Failed: zone for \"192.0.1.25\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist
         assert_failed_change_in_error_response(response[11], input_name="192.0.2.199", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
@@ -1963,7 +1963,7 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[4], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data="zone.discovery.error.",
-                                               error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                               error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validations: existing record sets pre-request
         assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91::aaaa", record_type="PTR", record_data="existing.ptr.",
@@ -2034,7 +2034,7 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[6], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                               error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, failure on update with double add
         assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91::60", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
@@ -2102,7 +2102,7 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="TXT", record_data="test",
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: cname duplicate
         assert_failed_change_in_error_response(response[5], input_name="cname-duplicate.ok.", record_type="CNAME", record_data="test.com.",
@@ -2190,7 +2190,7 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[5], input_name="no.zone.at.all.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
         assert_failed_change_in_error_response(response[6], input_name="delete-nonexistent.ok.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
@@ -2270,9 +2270,9 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[4], input_name="no.subzone.ok.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=['Zone Discovery Failed: zone for "no.subzone.ok." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                               error_messages=['Zone Discovery Failed: zone for "no.subzone.ok." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[5], input_name="no.zone.at.all.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.'])
+                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: cname duplicate
         assert_failed_change_in_error_response(response[6], input_name="cname-duplicate.ok.", record_type="CNAME", record_data="test.com.",
@@ -2366,7 +2366,7 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="MX", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS."])
+                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
         assert_failed_change_in_error_response(response[8], input_name="delete-nonexistent.ok.", record_type="MX", record_data=None, change_type="DeleteRecordSet",
