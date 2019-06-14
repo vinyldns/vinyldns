@@ -248,7 +248,7 @@ The DNS record type is not currently supported for batch changes.
 ##### Error Message:
 
 ```
-Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.
+Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.
 ```
 
 ##### Details:
