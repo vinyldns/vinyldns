@@ -134,28 +134,15 @@ class ZoneService(
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String] = None,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): Result[ListZonesResponse] = {
+      maxItems: Int = 100,
+      listAll: Boolean = false): Result[ListZonesResponse] = {
     for {
-      listZonesResult <- zoneRepository.listZones(authPrincipal, nameFilter, startFrom, maxItems)
-      zones = listZonesResult.zones
-      groupIds = zones.map(_.adminGroupId).toSet
-      groups <- groupRepository.getGroups(groupIds)
-      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups)
-    } yield
-      ListZonesResponse(
-        zoneSummaryInfos,
-        listZonesResult.zonesFilter,
-        listZonesResult.startFrom,
-        listZonesResult.nextId,
-        listZonesResult.maxItems)
-  }.toResult
-
-  def listAllZones(
-      nameFilter: Option[String] = None,
-      startFrom: Option[String] = None,
-      maxItems: Int = 100): Result[ListZonesResponse] = {
-    for {
-      listZonesResult <- zoneRepository.listAllZones(nameFilter, startFrom, maxItems)
+      listZonesResult <- zoneRepository.listZones(
+        authPrincipal,
+        nameFilter,
+        startFrom,
+        maxItems,
+        listAll)
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
       groups <- groupRepository.getGroups(groupIds)

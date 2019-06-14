@@ -40,12 +40,8 @@ trait ZoneServiceAlgebra {
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String],
       startFrom: Option[String],
-      maxItems: Int): Result[ListZonesResponse]
-
-  def listAllZones(
-      nameFilter: Option[String],
-      startFrom: Option[String],
-      maxItems: Int): Result[ListZonesResponse]
+      maxItems: Int,
+      listAll: Boolean): Result[ListZonesResponse]
 
   def listZoneChanges(
       zoneId: String,

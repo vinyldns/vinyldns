@@ -92,14 +92,14 @@ angular.module('controller.zones', [])
             });
 
         zonesService
-            .getAllZones(zonesPaging.maxItems, undefined, $scope.query)
+            .getZones(zonesPaging.maxItems, undefined, $scope.query, true)
             .then(function (response) {
-                $log.log('zonesService::getAllZones-success (' + response.data.zones.length + ' zones)');
+                $log.log('zonesService::getZones-success (' + response.data.zones.length + ' zones)');
                 allZonesPaging.next = response.data.nextId;
                 updateAllZonesDisplay(response.data.zones);
             })
             .catch(function (error) {
-                handleError(error, 'zonesService::getAllZones-failure');
+                handleError(error, 'zonesService::getZones-failure');
             });
     };
 

@@ -19,29 +19,17 @@
 angular.module('service.zones', [])
     .service('zonesService', function ($http, groupsService, $log, utilityService) {
 
-        this.getZones = function (limit, startFrom, query) {
+        this.getZones = function (limit, startFrom, query, listAll) {
             if (query == "") {
                 query = null;
             }
             var params = {
                 "maxItems": limit,
                 "startFrom": startFrom,
-                "nameFilter": query
+                "nameFilter": query,
+                "listAll": listAll
             };
             var url = groupsService.urlBuilder("/api/zones", params);
-            return $http.get(url);
-        };
-
-        this.getAllZones = function (limit, startFrom, query) {
-            if (query == "") {
-                query = null;
-            }
-            var params = {
-                "maxItems": limit,
-                "startFrom": startFrom,
-                "nameFilter": query
-            };
-            var url = groupsService.urlBuilder("/api/zones/all", params);
             return $http.get(url);
         };
 
