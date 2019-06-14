@@ -13,7 +13,7 @@
 
     <!-- PAGE TITLE -->
     <div class="page-title">
-        <h3><span class="fa fa-table"></span> Zones {{ getZonePageTitle() }}</h3>
+        <h3><span class="fa fa-table"></span> Zones</h3>
     </div>
     <!-- END PAGE TITLE -->
 
@@ -28,12 +28,12 @@
         <!-- START VERTICAL TABS -->
         <div class="panel panel-default panel-tabs">
             <ul class="nav nav-tabs bar_tabs">
-                <li class="active"><a href="#tab1" data-toggle="tab">My Zones</a></li>
-                <li><a id="tab2-button" href="#tab2" data-toggle="tab">All Zones</a></li>
+                <li class="active"><a href="#myZones" data-toggle="tab">My Zones</a></li>
+                <li><a id="tab2-button" href="#allZones" data-toggle="tab">All Zones</a></li>
             </ul>
 
             <div class="panel-body tab-content">
-                <div class="tab-pane active" id="tab1">
+                <div class="tab-pane active" id="myZones">
                     <div class="row">
                         <div class="col-md-12">
 
@@ -72,13 +72,14 @@
                                     <p ng-if="hasZones && zonesLoaded && !zones.length">No zones match the search criteria.</p>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate">
+                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                        <span class="vinyldns_zones_page_number">{{ getMyZonesPageTitle() }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                                                <a ng-if="prevPageMyZonesEnabled()" ng-click="prevPageMyZones()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                                                <a ng-if="nextPageMyZonesEnabled()" ng-click="nextPageMyZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -122,13 +123,14 @@
                                     </table>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate">
+                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                        <span class="vinyldns_zones_page_number">{{ getMyZonesPageTitle() }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                                                <a ng-if="prevPageMyZonesEnabled()" ng-click="prevPageMyZone()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                                                <a ng-if="nextPageMyZonesEnabled()" ng-click="nextPageMyZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -142,7 +144,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="tab-pane" id="tab2">
+                <div class="tab-pane" id="allZones">
                     <div class="row">
                         <div class="col-md-12">
 
@@ -150,10 +152,14 @@
                             <div class="panel panel-default">
                                 <div class="panel-heading">
 
+                                    <button id="zone-refresh-button" class="btn btn-default" ng-click="refreshZones()">
+                                        <span class="fa fa-refresh"></span> Refresh
+                                    </button>
+
                                     <!-- SEARCH BOX -->
-                                    <div class="vinyldns-flex-right">
-                                        <form ng-submit="refreshZones()">
-                                            <div class="input-group vinyldns-no-margin-bottom">
+                                    <div class="pull-right">
+                                        <form class="input-group" ng-submit="refreshZones()">
+                                            <div class="input-group">
                                                 <span class="input-group-btn">
                                                     <button id="all-zones-search-button" type="submit" class="btn btn-primary btn-left-round">
                                                         <span class="fa fa-search"></span>
@@ -171,13 +177,14 @@
                                     <p ng-if="allZonesLoaded && !allZones.length">No zones match the search criteria.</p>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate">
+                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                        <span class="vinyldns_zones_page_number">{{ getAllZonesPageTitle() }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                                                <a ng-if="prevPageAllZonesEnabled()" ng-click="prevPageAllZones()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                                                <a ng-if="nextPageAllZonesEnabled()" ng-click="nextPageAllZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -221,13 +228,14 @@
                                     </table>
 
                                     <!-- PAGINATION -->
-                                    <div class="dataTables_paginate">
+                                    <div class="dataTables_paginate vinyldns_zones_paginate">
+                                        <span class="vinyldns_zones_page_number">{{ getAllZonesPageTitle() }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageEnabled()" ng-click="prevPage()">Previous</a>
+                                                <a ng-if="prevPageAllZonesEnabled()" ng-click="prevPageAllZones()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
-                                                <a ng-if="nextPageEnabled()" ng-click="nextPage()">Next</a>
+                                                <a ng-if="nextPageAllZonesEnabled()" ng-click="nextPageAllZones()">Next</a>
                                             </li>
                                         </ul>
                                     </div>
