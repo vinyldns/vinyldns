@@ -409,3 +409,7 @@ input[type="file"] {
 .record-data-label {
     vertical-align: top;
 }
+
+.vinyldns-no-margin-bottom {
+    margin-bottom: 0;
+}

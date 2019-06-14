@@ -265,6 +265,49 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
+  def listAllZones(
+      zoneNameFilter: Option[String] = None,
+      startFrom: Option[String] = None,
+      maxItems: Int = 100): IO[ListZonesResults] =
+    monitor("repo.ZoneJDBC.listZones") {
+      IO {
+        DB.readOnly { implicit s =>
+          val sb = new StringBuilder
+          sb.append(BASE_ZONE_SEARCH_SQL)
+
+          val filters = List(
+            zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
+            startFrom.map(os => s"z.name > '$os'")
+          ).flatten
+
+          if (filters.nonEmpty) {
+            sb.append(" WHERE ")
+            sb.append(filters.mkString(" AND "))
+          }
+
+          sb.append(s" GROUP BY z.name ")
+          sb.append(s" LIMIT $maxItems")
+
+          val query = sb.toString
+
+          val results: List[Zone] = SQL(query)
+            .map(extractZone(1))
+            .list()
+            .apply()
+
+          val nextId = if (results.size < maxItems) None else results.lastOption.map(_.name)
+
+          ListZonesResults(
+            zones = results,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            zonesFilter = zoneNameFilter
+          )
+        }
+      }
+    }
+
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] =
     monitor("repo.ZoneJDBC.getZonesByAdminGroupId") {
       IO {

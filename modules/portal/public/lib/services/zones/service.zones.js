@@ -32,6 +32,19 @@ angular.module('service.zones', [])
             return $http.get(url);
         };
 
+        this.getAllZones = function (limit, startFrom, query) {
+            if (query == "") {
+                query = null;
+            }
+            var params = {
+                "maxItems": limit,
+                "startFrom": startFrom,
+                "nameFilter": query
+            };
+            var url = groupsService.urlBuilder("/api/zones/all", params);
+            return $http.get(url);
+        };
+
         this.getBackendIds = function() {
             var url = "/api/zones/backendids";
             return $http.get(url);

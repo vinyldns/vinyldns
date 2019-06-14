@@ -150,6 +150,25 @@ class ZoneService(
         listZonesResult.maxItems)
   }.toResult
 
+  def listAllZones(
+      nameFilter: Option[String] = None,
+      startFrom: Option[String] = None,
+      maxItems: Int = 100): Result[ListZonesResponse] = {
+    for {
+      listZonesResult <- zoneRepository.listAllZones(nameFilter, startFrom, maxItems)
+      zones = listZonesResult.zones
+      groupIds = zones.map(_.adminGroupId).toSet
+      groups <- groupRepository.getGroups(groupIds)
+      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups)
+    } yield
+      ListZonesResponse(
+        zoneSummaryInfos,
+        listZonesResult.zonesFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems)
+  }.toResult
+
   def zoneAdminGroupMapping(zones: List[Zone], groups: Set[Group]): List[ZoneSummaryInfo] =
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {

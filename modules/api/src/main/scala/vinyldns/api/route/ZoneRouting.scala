@@ -69,6 +69,25 @@ trait ZoneRoute extends Directives {
             }
         }
       } ~
+      (get & path("zones" / "all") & monitor("Endpoint.listAllZones")) {
+        parameters(
+          "nameFilter".?,
+          "startFrom".as[String].?,
+          "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (nameFilter: Option[String], startFrom: Option[String], maxItems: Int) =>
+            {
+              handleRejections(invalidQueryHandler) {
+                validate(
+                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                  s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT") {
+                  execute(zoneService.listAllZones(nameFilter, startFrom, maxItems)) { result =>
+                    complete(StatusCodes.OK, result)
+                  }
+                }
+              }
+            }
+        }
+      } ~
       (get & path("zones" / "backendids") & monitor("Endpoint.getBackendIds")) {
         execute(zoneService.getBackendIds()) { ids =>
           complete(StatusCodes.OK, ids)

@@ -39,6 +39,11 @@ trait ZoneRepository extends Repository {
       startFrom: Option[String] = None,
       maxItems: Int = 100): IO[ListZonesResults]
 
+  def listAllZones(
+      zoneNameFilter: Option[String] = None,
+      startFrom: Option[String] = None,
+      maxItems: Int = 100): IO[ListZonesResults]
+
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 
   def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]]
