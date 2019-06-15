@@ -16,20 +16,17 @@
 
 package vinyldns.core
 
-import java.util.concurrent.TimeUnit
-
 import com.codahale.metrics._
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet
 import nl.grons.metrics.scala.InstrumentedBuilder
-import org.slf4j.LoggerFactory
 
 object VinylDNSMetrics {
 
   val metricsRegistry: MetricRegistry = new MetricRegistry
-  val memoryRegistry: MetricRegistry = new MetricRegistry
 
-  // Collect memory stats
-  memoryRegistry.register("memory", new MemoryUsageGaugeSet())
+  // Collect memory stats, always exposed via JMX
+  val memoryUsageGaugeSet: MemoryUsageGaugeSet = new MemoryUsageGaugeSet()
+  metricsRegistry.register("memory", new MemoryUsageGaugeSet())
 
   // Output all VinylDNS metrics as jmx under the "vinyldns.core" domain as milliseconds
   JmxReporter
@@ -37,15 +34,6 @@ object VinylDNSMetrics {
     .inDomain("vinyldns.core")
     .build()
     .start()
-
-  // Output all memory metrics to the log
-  Slf4jReporter
-    .forRegistry(memoryRegistry)
-    .outputTo(LoggerFactory.getLogger("VinylDNSJVM"))
-    .convertRatesTo(TimeUnit.SECONDS)
-    .convertDurationsTo(TimeUnit.MILLISECONDS)
-    .build()
-    .start(10, TimeUnit.SECONDS)
 }
 
 /**
