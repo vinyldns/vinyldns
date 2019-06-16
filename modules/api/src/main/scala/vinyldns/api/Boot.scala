@@ -90,7 +90,7 @@ object Boot extends App {
       healthCheckTimeout <- VinylDNSConfig.healthCheckTimeout
       notifierConfigs <- VinylDNSConfig.notifierConfigs
       notifiers <- NotifierLoader.loadAll(notifierConfigs, repositories.userRepository)
-      metricsSettings <- APIMetrics.loadSettings(VinylDNSConfig.config)
+      metricsSettings <- APIMetrics.loadSettings(VinylDNSConfig.vinyldnsConfig.getConfig("metrics"))
       _ <- APIMetrics.initialize(metricsSettings)
       _ <- CommandHandler
         .run(
