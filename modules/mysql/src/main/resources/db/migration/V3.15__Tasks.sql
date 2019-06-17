@@ -7,10 +7,7 @@ CREATE TABLE task (
   in_flight BIT(1) NOT NULL,
   created DATETIME NOT NULL,
   updated DATETIME,
-  PRIMARY KEY (name),
-  INDEX name_index (name),
-  INDEX in_flight_index (in_flight),
-  INDEX updated_index (updated)
+  PRIMARY KEY (name)
 );
 
 INSERT IGNORE INTO task(name, in_flight, created, updated)
