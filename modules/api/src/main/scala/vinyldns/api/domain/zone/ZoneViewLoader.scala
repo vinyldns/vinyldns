@@ -17,6 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.effect._
+import org.slf4j.LoggerFactory
 import org.xbill.DNS
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
@@ -34,6 +35,8 @@ trait ZoneViewLoader {
 }
 
 object DnsZoneViewLoader extends DnsConversions {
+
+  val logger = LoggerFactory.getLogger("DnsZoneViewLoader")
 
   def dnsZoneTransfer(zone: Zone): ZoneTransferIn = {
     val conn =
@@ -80,10 +83,16 @@ case class DnsZoneViewLoader(
           else IO.pure(Unit)
           dnsZoneName <- IO(zoneDnsName(zone.name))
           recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
+          _ <- IO(
+            DnsZoneViewLoader.logger.info(
+              s"dns.loadDnsView zoneName=${zone.name}; rawRsCount=${zoneXfr.size}; rsCount=${recordSets.size}"))
         } yield ZoneView(zone, recordSets)
     }
 }
 
+object VinylDNSZoneViewLoader {
+  val logger = LoggerFactory.getLogger("VinylDNSZoneViewLoader")
+}
 case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepository)
     extends ZoneViewLoader
     with Monitored {
@@ -96,6 +105,10 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
             startFrom = None,
             maxItems = None,
             recordNameFilter = None)
-          .map(result => ZoneView(zone, result.recordSets))
+          .map { result =>
+            VinylDNSZoneViewLoader.logger.info(
+              s"vinyldns.loadZoneView zoneName=${zone.name}; rsCount=${result.recordSets.size}")
+            ZoneView(zone, result.recordSets)
+          }
     }
 }

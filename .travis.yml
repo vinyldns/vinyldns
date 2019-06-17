@@ -19,9 +19,12 @@ cache:
   bundler: true
   npm: true
   directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
-    - $HOME/.m2
+  - $HOME/.sbt/1.0
+  - $HOME/.sbt/boot/scala*
+  - $HOME/.sbt/cache
+  - $HOME/.sbt/launchers
+  - $HOME/.ivy2/cache
+  - $HOME/.coursier
   timeout: 900
 
 before_install:
@@ -31,11 +34,13 @@ install:
   - gem install sass jekyll:3.2.1
 
 before_cache:
-  # Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
-  - sudo chown -R travis:travis $HOME/.sbt
-  - sudo chown -R travis:travis $HOME/.ivy2/cache
-  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt        -name "*.lock"               -print -delete
+# Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
+- du -h -d 1 $HOME/.ivy2/
+- du -h -d 2 $HOME/.sbt/
+- du -h -d 4 $HOME/.coursier/
+- find $HOME/.sbt -name "*.lock" -type f -delete
+- find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
+- find $HOME/.coursier/cache -name "*.lock" -type f -delete
 
 jobs:
   include:

@@ -112,7 +112,7 @@ class CommandHandlerSpec
         .drain
         .unsafeRunSync()
 
-      verify(mq).changeMessageTimeout(msg, 1200.seconds)
+      verify(mq).changeMessageTimeout(msg, 1.hour)
     }
     "update the timeout for zone creates" in {
       doReturn(IO.unit).when(mq).changeMessageTimeout(any[CommandMessage], any[FiniteDuration])
@@ -125,7 +125,7 @@ class CommandHandlerSpec
         .drain
         .unsafeRunSync()
 
-      verify(mq).changeMessageTimeout(msg, 1200.seconds)
+      verify(mq).changeMessageTimeout(msg, 1.hour)
     }
     "not update the timeout for zone deletes" in {
       val del = zoneCreate.copy(changeType = ZoneChangeType.Delete)

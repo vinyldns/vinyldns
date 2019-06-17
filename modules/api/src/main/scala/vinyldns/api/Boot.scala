@@ -32,6 +32,7 @@ import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, Batc
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
+import vinyldns.api.metrics.APIMetrics
 import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
@@ -89,6 +90,8 @@ object Boot extends App {
       healthCheckTimeout <- VinylDNSConfig.healthCheckTimeout
       notifierConfigs <- VinylDNSConfig.notifierConfigs
       notifiers <- NotifierLoader.loadAll(notifierConfigs, repositories.userRepository)
+      metricsSettings <- APIMetrics.loadSettings(VinylDNSConfig.vinyldnsConfig.getConfig("metrics"))
+      _ <- APIMetrics.initialize(metricsSettings)
       _ <- CommandHandler
         .run(
           messageQueue,
