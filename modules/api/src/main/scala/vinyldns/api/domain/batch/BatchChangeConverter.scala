@@ -132,9 +132,10 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       rk <- c.recordKey.toList
     } yield (rk, c)
 
-    changesByKey.groupBy(_._1).values.toList.flatMap { groupedChanges =>
+    val groupedChangeTuples = changesByKey.groupBy { case (recordKey, _) => recordKey }.values.toList
+    groupedChangeTuples.flatMap { gc =>
       combineChanges(
-        groupedChanges.map(_._2),
+        gc.map { case (_, singleChange) => singleChange },
         existingZones,
         existingRecordSets,
         userId,
