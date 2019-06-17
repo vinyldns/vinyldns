@@ -25,7 +25,6 @@ object VinylDNSMetrics {
   val metricsRegistry: MetricRegistry = new MetricRegistry
 
   // Collect memory stats, always exposed via JMX
-  val memoryUsageGaugeSet: MemoryUsageGaugeSet = new MemoryUsageGaugeSet()
   metricsRegistry.register("memory", new MemoryUsageGaugeSet())
 
   // Output all VinylDNS metrics as jmx under the "vinyldns.core" domain as milliseconds

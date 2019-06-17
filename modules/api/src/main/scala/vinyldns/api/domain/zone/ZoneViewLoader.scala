@@ -85,7 +85,7 @@ case class DnsZoneViewLoader(
           recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
           _ <- IO(
             DnsZoneViewLoader.logger.info(
-              s"dns.loadDnsView rawRsCount=${zoneXfr.size} rsCount=${recordSets.size}"))
+              s"dns.loadDnsView zoneName=${zone.name}; rawRsCount=${zoneXfr.size}; rsCount=${recordSets.size}"))
         } yield ZoneView(zone, recordSets)
     }
 }
@@ -107,7 +107,7 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
             recordNameFilter = None)
           .map { result =>
             VinylDNSZoneViewLoader.logger.info(
-              s"vinyldns.loadZoneView rsCount=${result.recordSets.size}")
+              s"vinyldns.loadZoneView zoneName=${zone.name}; rsCount=${result.recordSets.size}")
             ZoneView(zone, result.recordSets)
           }
     }

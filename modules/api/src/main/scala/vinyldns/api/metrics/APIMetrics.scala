@@ -18,6 +18,7 @@ package vinyldns.api.metrics
 import java.util.concurrent.TimeUnit
 
 import cats.effect.IO
+import com.codahale.metrics.Slf4jReporter.LoggingLevel
 import com.codahale.metrics.{Metric, MetricFilter, ScheduledReporter, Slf4jReporter}
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
@@ -33,9 +34,11 @@ object APIMetrics {
   private val logReporter = Slf4jReporter
     .forRegistry(VinylDNSMetrics.metricsRegistry)
     .filter(new MetricFilter {
-      def matches(name: String, metric: Metric): Boolean =
-        metric == VinylDNSMetrics.memoryUsageGaugeSet
+      def matches(name: String, metric: Metric): Boolean = {
+        name.startsWith("memory")
+      }
     })
+    .withLoggingLevel(LoggingLevel.INFO)
     .outputTo(LoggerFactory.getLogger("MemStats"))
     .convertRatesTo(TimeUnit.SECONDS)
     .convertDurationsTo(TimeUnit.MILLISECONDS)
