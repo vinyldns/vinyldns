@@ -27,7 +27,7 @@ import vinyldns.core.domain.record.AData
 import org.joda.time.DateTime
 import vinyldns.core.TestMembershipData._
 import java.nio.file.{Files, Path, Paths}
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import scala.collection.JavaConverters._
 import org.scalatest.BeforeAndAfterEach
 import cats.implicits._
@@ -100,12 +100,10 @@ class EmailNotifierIntegrationSpec
     } yield ()
 
   def retrieveEmailFiles(path: Path): IO[List[Path]] =
-    IO(Files.newDirectoryStream(path, "*.eml")).bracket { s =>
+    Resource.fromAutoCloseable(IO(Files.newDirectoryStream(path, "*.eml"))).use { s =>
       IO {
         s.iterator.asScala.toList
       }
-    } { s =>
-      IO(s.close)
     }
 
 }
