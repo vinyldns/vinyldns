@@ -353,6 +353,11 @@ class DynamoDBUserRepositorySpec
       )
     }
   }
+  "DynamoDBUserRepository.getAllUsers" should {
+    "throw an UnsupportedDynamoDBRepoFunction error" in {
+      assertThrows[UnsupportedDynamoDBRepoFunction](underTest.getAllUsers.unsafeRunSync())
+    }
+  }
   "DynamoDBUserRepository.getUserByAccessKey" should {
     "return the user if the access key is found" in {
       val dynamoResponse = mock[QueryResult]
@@ -398,6 +403,9 @@ class DynamoDBUserRepositorySpec
       val response = underTest.save(okUser).unsafeRunSync()
 
       response shouldBe okUser
+    }
+    "throw an UnsupportedDynamoDBRepoFunction error when batch save is invoked" in {
+      assertThrows[UnsupportedDynamoDBRepoFunction](underTest.save(List(okUser)).unsafeRunSync())
     }
   }
 }

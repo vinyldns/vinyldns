@@ -34,8 +34,15 @@ object DynamoTestConfig {
   lazy val recordChangeStoreConfig: DynamoDBRepositorySettings =
     pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.recordChange.get)
 
+  // Needed for testing DynamoDBUserRepository, but can't include in config directly due to not being implemented
+  lazy val usertableConfig: Config = ConfigFactory.parseString("""
+      |  table-name = "users"
+      |  provisioned-reads = 30
+      |  provisioned-writes = 30
+    """.stripMargin)
+
   lazy val usersStoreConfig: DynamoDBRepositorySettings =
-    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.user.get)
+    pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](usertableConfig)
 
   lazy val groupsStoreConfig: DynamoDBRepositorySettings =
     pureconfig.loadConfigOrThrow[DynamoDBRepositorySettings](baseReposConfigs.group.get)
