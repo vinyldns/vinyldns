@@ -52,7 +52,8 @@ class ApiDataAccessorProviderSpec
       enabled,
       enabled,
       enabled,
-      enabled
+      enabled,
+      None
     )
 
     val user = mock[UserRepository]
@@ -78,7 +79,8 @@ class ApiDataAccessorProviderSpec
         Some(recordChange),
         Some(zoneChange),
         Some(zone),
-        Some(batchChange))
+        Some(batchChange),
+        None) // API doesn't use Task repository
 
       ApiDataAccessorProvider.create(List((enabledConfig, enabledDataStore))) should be(valid)
     }
@@ -115,7 +117,7 @@ class ApiDataAccessorProviderSpec
         Some(recordChange),
         Some(zoneChange),
         None,
-        None)
+        None) // API doesn't use Task repository
 
       ApiDataAccessorProvider.create(List((enabledConfig, store))) should be(invalid)
     }
