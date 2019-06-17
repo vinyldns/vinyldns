@@ -157,7 +157,8 @@ class ZoneService(
         listZonesResult.zonesFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
-        listZonesResult.maxItems)
+        listZonesResult.maxItems,
+        listZonesResult.listAll)
   }.toResult
 
   def getZonesAccess(auth: AuthPrincipal, zones: List[Zone]): List[ZoneSummaryInfo] =
