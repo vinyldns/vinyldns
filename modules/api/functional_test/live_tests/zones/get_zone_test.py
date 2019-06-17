@@ -18,11 +18,12 @@ def test_get_zone_by_id(shared_zone_test_context):
 
     assert_that(retrieved['id'], is_(shared_zone_test_context.system_test_zone['id']))
     assert_that(retrieved['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
+    assert_that(retrieved['accessLevel'], is_('Delete'))
 
 
-def test_get_shared_zone_by_id(shared_zone_test_context):
+def test_get_zone_shared_by_id_as_owner(shared_zone_test_context):
     """
-    Test get an existing shared zone by id
+    Test get an existing shared zone by id as a zone owner
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
 
@@ -32,9 +33,23 @@ def test_get_shared_zone_by_id(shared_zone_test_context):
     assert_that(retrieved['id'], is_(shared_zone_test_context.shared_zone['id']))
     assert_that(retrieved['adminGroupName'], is_('testSharedZoneGroup'))
     assert_that(retrieved['shared'], is_(True))
+    assert_that(retrieved['accessLevel'], is_('Delete'))
 
+def test_get_zone_shared_by_id_non_owner(shared_zone_test_context):
+    """
+    Test get an existing shared zone by id as a zone owner
+    """
+    client = shared_zone_test_context.dummy_vinyldns_client
 
-def test_get_zone_fails_without_access(shared_zone_test_context):
+    result = client.get_zone(shared_zone_test_context.shared_zone['id'], status=200)
+    retrieved = result['zone']
+
+    assert_that(retrieved['id'], is_(shared_zone_test_context.shared_zone['id']))
+    assert_that(retrieved['adminGroupName'], is_('testSharedZoneGroup'))
+    assert_that(retrieved['shared'], is_(True))
+    assert_that(retrieved['accessLevel'], is_('Read'))
+
+def test_get_zone_private__by_id_fails_without_access(shared_zone_test_context):
     """
     Test get an existing zone by id without access
     """
@@ -43,7 +58,7 @@ def test_get_zone_fails_without_access(shared_zone_test_context):
     client.get_zone(shared_zone_test_context.ok_zone['id'], status=403)
 
 
-def test_get_zone_returns_404_when_not_found(shared_zone_test_context):
+def test_get_zone_by_id_returns_404_when_not_found(shared_zone_test_context):
     """
     Test get an existing zone returns a 404 when the zone is not found
     """
@@ -60,7 +75,7 @@ def test_get_zone_by_id_no_authorization(shared_zone_test_context):
     client.get_zone('123456', sign_request=False, status=401)
 
 
-def test_get_zone_includes_acl_display_name(shared_zone_test_context):
+def test_get_zone_by_id_includes_acl_display_name(shared_zone_test_context):
     """
     Test get an existing zone with acl rules
     """
@@ -102,6 +117,7 @@ def test_get_zone_by_name(shared_zone_test_context):
     assert_that(result['id'], is_(shared_zone_test_context.system_test_zone['id']))
     assert_that(result['name'], is_(shared_zone_test_context.system_test_zone['name']))
     assert_that(result['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
+    assert_that(result['accessLevel'], is_("Delete"))
 
 
 def test_get_zone_by_name_without_trailing_dot_succeeds(shared_zone_test_context):
@@ -115,7 +131,20 @@ def test_get_zone_by_name_without_trailing_dot_succeeds(shared_zone_test_context
     assert_that(result['id'], is_(shared_zone_test_context.system_test_zone['id']))
     assert_that(result['name'], is_(shared_zone_test_context.system_test_zone['name']))
     assert_that(result['adminGroupName'], is_(shared_zone_test_context.ok_group['name']))
+    assert_that(result['accessLevel'], is_("Delete"))
 
+def test_get_zone_by_name_shared_zone_succeeds(shared_zone_test_context):
+    """
+    Test get an existing zone by name
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    result = client.get_zone_by_name(shared_zone_test_context.shared_zone['name'], status=200)['zone']
+
+    assert_that(result['id'], is_(shared_zone_test_context.shared_zone['id']))
+    assert_that(result['name'], is_(shared_zone_test_context.shared_zone['name']))
+    assert_that(result['adminGroupName'], is_("testSharedZoneGroup"))
+    assert_that(result['accessLevel'], is_("Read"))
 
 def test_get_zone_by_name_fails_without_access(shared_zone_test_context):
     """

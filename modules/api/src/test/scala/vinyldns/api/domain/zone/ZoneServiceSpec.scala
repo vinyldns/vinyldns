@@ -507,9 +507,26 @@ class ZoneServiceSpec
     }
 
     "return the appropriate zones" in {
-      doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone))))
+      doReturn(IO.pure(ListZonesResults(List(abcZone))))
         .when(mockZoneRepo)
         .listZones(abcAuth, None, None, 100, false)
+      doReturn(IO.pure(Set(abcGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      val result: ListZonesResponse = rightResultOf(underTest.listZones(abcAuth).value)
+      result.zones shouldBe List(abcZoneSummary)
+      result.maxItems shouldBe 100
+      result.startFrom shouldBe None
+      result.nameFilter shouldBe None
+      result.nextId shouldBe None
+      result.listAll shouldBe false
+    }
+
+    "return all zones" in {
+      doReturn(IO.pure(ListZonesResults(List(abcZone, xyzZone))))
+        .when(mockZoneRepo)
+        .listZones(abcAuth, None, None, 100, true)
       doReturn(IO.pure(Set(abcGroup, xyzGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
@@ -520,6 +537,7 @@ class ZoneServiceSpec
       result.startFrom shouldBe None
       result.nameFilter shouldBe None
       result.nextId shouldBe None
+      result.listAll shouldBe true
     }
 
     "return Unknown group name if zone admin group cannot be found" in {

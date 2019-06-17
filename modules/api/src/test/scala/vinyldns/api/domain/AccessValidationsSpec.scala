@@ -103,6 +103,11 @@ class AccessValidationsSpec
         memberGroupIds = Seq.empty)
       accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
+
+    "return true if the zone is shared" in {
+      val supportAuth = okAuth.copy(signedInUser = okAuth.signedInUser, memberGroupIds = Seq.empty)
+      accessValidationTest.canSeeZone(supportAuth, sharedZone) should be(right)
+    }
   }
 
   "canChangeZone" should {
