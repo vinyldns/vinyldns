@@ -248,7 +248,7 @@ class BatchChangeRoutingSpec
         authPrincipal: AuthPrincipal,
         rejectionComment: Option[RejectBatchChangeInput])
       : EitherT[IO, BatchChangeErrorResponse, BatchChange] =
-      (batchChangeId, authPrincipal.canReadAll) match {
+      (batchChangeId, authPrincipal.isSystemAdmin) match {
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))

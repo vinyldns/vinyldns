@@ -114,7 +114,7 @@ class BatchChangeValidations(
   def validateAuthorizedReviewer(
       auth: AuthPrincipal,
       batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
-    if (auth.canReadAll) {
+    if (auth.isSystemAdmin) {
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
@@ -441,7 +441,7 @@ class BatchChangeValidations(
   def canGetBatchChange(
       batchChange: BatchChange,
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    if (auth.canReadAll || auth.userId == batchChange.userId) {
+    if (auth.isSystemAdmin || auth.userId == batchChange.userId) {
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
