@@ -197,7 +197,7 @@
                                     <span><span class="glyphicon glyphicon-import"></span> Import CSV</span>
                                 </label>
                                 <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" ng-change="uploadCSV(createBatchChangeForm.batchChangeCsv.$viewValue)" batch-change-file>
-                                <p><a href="https://www.vinyldns.io/portal/batch-changes#create-a-batch-change" target="_blank" rel="noopener noreferrer">Download sample CSV</a></p>
+                                <p><a href="https://www.vinyldns.io/portal/batch-changes#batch-change-csv-import" target="_blank" rel="noopener noreferrer">See documentation for sample CSV</a></p>
                             </div>
                             <p ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</p>
                         </div>

@@ -34,7 +34,7 @@ This does not apply to zone administrators or users with specific ACL access rul
 1. Add a description.
 1. Add record changes in one of two ways:
  - Select the *Add a Change* button to add additional rows for data entry as needed.
- - Select the *Import CSV* button to choose and upload a CSV file of the record changes. Download a sample CSV [here](../static/batch-csv-sample.csv). **Note** The header row is required. The order of the columns is `Change Type, Record Type, Input Name, TTL, Record Data`.
+ - Select the *Import CSV* button to choose and upload a CSV file of the record changes. See [Batch Change CSV Import](#batch-change-csv-import) for more information.
 1. Select the submit button. Confirm your submission.
  - If your submission was successful you'll redirect to the batch change summary page where you will see the status of the batch change request overall and of the individual records in the batch change.
  - If there are errors in the batch change you will remain on the form with prompts to correct errors before you attempt to submit again.
@@ -42,6 +42,11 @@ This does not apply to zone administrators or users with specific ACL access rul
 [![Batch change main page screenshot](../img/portal/batch-change-main-annotated.png){: .screenshot}](../img/portal/batch-change-main-annotated.png)
 [![New batch change form screenshot](../img/portal/batch-change-new-annotated.png){: .screenshot}](../img/portal/batch-change-new-annotated.png)
 [![Submitted batch change screenshot](../img/portal/batch-change-summary.png){: .screenshot}](../img/portal/batch-change-summary.png)
+
+#### Batch Change CSV Import
+[Download a sample CSV here](../static/batch-csv-sample.csv)
+* The header row is required. The order of the columns is `Change Type, Record Type, Input Name, TTL, Record Data`.
+* The TTL field is optional for each record, but the column is still required. If TTL is empty VinylDNS will use the existing TTL value for record updates or the default TTL value for new records.
 
 ### Review a Batch Change
 You can review your submitted batch change requests by selecting the linked Batch ID or View button for the batch change on the main page of the Batch Change section in the portal.
