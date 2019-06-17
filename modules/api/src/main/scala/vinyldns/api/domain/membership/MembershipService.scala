@@ -137,7 +137,7 @@ class MembershipService(
       maxItems: Int,
       authPrincipal: AuthPrincipal): Result[ListMyGroupsResponse] = {
     val groupsCall =
-      if (authPrincipal.canReadAll) {
+      if (authPrincipal.isSystemAdmin) {
         groupRepo.getAllGroups()
       } else {
         groupRepo.getGroups(authPrincipal.memberGroupIds.toSet)

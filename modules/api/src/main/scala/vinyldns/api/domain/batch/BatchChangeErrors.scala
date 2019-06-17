@@ -44,3 +44,8 @@ final case class BatchConversionError(change: SingleChange) extends BatchChangeE
        |and type "${change.typ}"""".stripMargin
 }
 final case class UnknownConversionError(message: String) extends BatchChangeErrorResponse
+
+final case class BatchChangeNotPendingApproval(id: String) extends BatchChangeErrorResponse {
+  def message: String =
+    s"""Batch change $id is not pending approval, so it cannot be rejected."""
+}

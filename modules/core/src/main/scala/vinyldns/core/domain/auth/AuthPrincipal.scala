@@ -23,7 +23,7 @@ case class AuthPrincipal(signedInUser: User, memberGroupIds: Seq[String]) {
   def isSuper: Boolean =
     signedInUser.isSuper
 
-  def canReadAll: Boolean =
+  def isSystemAdmin: Boolean =
     signedInUser.isSuper || signedInUser.isSupport
 
   def isGroupAdmin(group: Group): Boolean =

@@ -18,6 +18,7 @@ package vinyldns.api.domain.batch
 
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
+import org.joda.time.DateTime
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
@@ -27,6 +28,7 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
@@ -58,6 +60,7 @@ class BatchChangeValidationsSpec
     status = ZoneStatus.Active,
     connection = testConnection,
     adminGroupId = okGroup.id)
+
   private val validIp4ReverseZone = Zone(
     "2.0.192.in-addr.arpa",
     "test@test.com",
@@ -137,6 +140,22 @@ class BatchChangeValidationsSpec
     "shared-delete",
     DeleteChangeInput("shared-delete", RecordType.AAAA)
   )
+
+  private val validPendingBatchChange = BatchChange(
+    okUser.id,
+    okUser.userName,
+    None,
+    DateTime.now,
+    List(),
+    approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+
+  private val invalidPendingBatchChange = BatchChange(
+    okUser.id,
+    okUser.userName,
+    None,
+    DateTime.now,
+    List(),
+    approvalStatus = BatchChangeApprovalStatus.AutoApproved)
 
   property("validateBatchChangeInputSize: should fail if batch has no changes") {
     validateBatchChangeInputSize(BatchChangeInput(None, List())) should
@@ -228,6 +247,51 @@ class BatchChangeValidationsSpec
           InvalidBatchChangeInput(
             List(BatchChangeIsEmpty(maxChanges), GroupDoesNotExist(dummyGroup.id))))
     }
+  }
+
+  property("validateBatchChangePendingApproval: should succeed if batch change is PendingApproval") {
+    validateBatchChangePendingApproval(validPendingBatchChange) should be(right)
+  }
+
+  property("validateBatchChangePendingApproval: should fail if batch change is not PendingApproval") {
+    validateBatchChangePendingApproval(invalidPendingBatchChange) shouldBe
+      Left(BatchChangeNotPendingApproval(invalidPendingBatchChange.id))
+  }
+
+  property("validateAuthorizedReviewer: should succeed if the reviewer is a super user") {
+    validateAuthorizedReviewer(superUserAuth, validPendingBatchChange) should be(right)
+  }
+
+  property("validateAuthorizedReviewer: should succeed if the reviewer is a support user") {
+    validateAuthorizedReviewer(supportUserAuth, validPendingBatchChange) should be(right)
+  }
+
+  property("validateAuthorizedReviewer: should fail if the reviewer is not a super or support user") {
+    validateAuthorizedReviewer(okAuth, validPendingBatchChange) shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
+  }
+
+  property(
+    "validateBatchChangeRejection: should succeed if batch change is pending approval and reviewer" +
+      "is authorized") {
+    validateBatchChangeRejection(validPendingBatchChange, supportUserAuth).value should be(right)
+  }
+
+  property("validateBatchChangeRejection: should fail if batch change is not pending approval") {
+    validateBatchChangeRejection(invalidPendingBatchChange, supportUserAuth).value shouldBe
+      Left(BatchChangeNotPendingApproval(invalidPendingBatchChange.id))
+  }
+
+  property("validateBatchChangeRejection: should fail if reviewer is not authorized") {
+    validateBatchChangeRejection(validPendingBatchChange, okAuth).value shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
+  }
+
+  property(
+    "validateBatchChangeRejection: should fail if batch change is not pending approval and reviewer is not" +
+      "authorized") {
+    validateBatchChangeRejection(invalidPendingBatchChange, okAuth).value shouldBe
+      Left(UserNotAuthorizedError(invalidPendingBatchChange.id))
   }
 
   property("validateInputChanges: should fail with mix of success and failure inputs") {

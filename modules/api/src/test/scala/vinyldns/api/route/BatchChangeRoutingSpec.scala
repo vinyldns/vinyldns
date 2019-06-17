@@ -242,6 +242,18 @@ class BatchChangeRoutingSpec
           case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
         } else
         EitherT.rightT(BatchChangeSummaryList(List()))
+
+    def rejectBatchChange(
+        batchChangeId: String,
+        authPrincipal: AuthPrincipal,
+        rejectionComment: Option[RejectBatchChangeInput])
+      : EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+      (batchChangeId, authPrincipal.isSystemAdmin) match {
+        case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
+        case ("pendingBatchId", false) =>
+          EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
+        case (_, _) => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
+      }
   }
 
   "POST batch change" should {
@@ -432,26 +444,33 @@ class BatchChangeRoutingSpec
   }
 
   "POST reject batch change" should {
-    "return OK if comments are provided" in {
-      Post("/zones/batchrecordchanges/existingID/reject").withEntity(
-        HttpEntity(
-          ContentTypes.`application/json`,
-          compact(render("reviewComment" -> "some comments")))) ~>
-        batchChangeRoute(okAuth) ~> check {
+    "return OK if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
+      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
+        ContentTypes.`application/json`,
+        compact(render("comments" -> "some comments")))) ~>
+        batchChangeRoute(supportUserAuth) ~> check {
         status shouldBe OK
       }
     }
 
-    "return OK if comments are not provided" in {
-      Post("/zones/batchrecordchanges/existingID/reject").withEntity(
+    "return OK if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
+      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        batchChangeRoute(supportUserAuth) ~> check {
+        status shouldBe OK
+      }
+    }
+
+    "return Forbidden if user is not a super or support admin" in {
+      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         batchChangeRoute(okAuth) ~> check {
-        status shouldBe OK
+        status shouldBe Forbidden
       }
     }
 
     "return BadRequest if comments exceed 1024 characters" in {
-      Post("/zones/batchrecordchanges/existingID/reject").withEntity(HttpEntity(
+      Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute(okAuth)) ~> check {
         status shouldBe BadRequest
@@ -461,8 +480,16 @@ class BatchChangeRoutingSpec
     }
 
     "return OK no request entity is provided" in {
-      Post("/zones/batchrecordchanges/existingID/reject") ~> batchChangeRoute(okAuth) ~> check {
+      Post("/zones/batchrecordchanges/pendingBatchId/reject") ~> batchChangeRoute(supportUserAuth) ~> check {
         status shouldBe OK
+      }
+    }
+
+    "return BadRequest if batch change is not pending approval" in {
+      Post("/zones/batchrecordchanges/batchId/reject").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        batchChangeRoute(supportUserAuth) ~> check {
+        status shouldBe BadRequest
       }
     }
   }

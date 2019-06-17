@@ -26,7 +26,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.{AccessValidationAlgebra, _}
-import vinyldns.core.domain.batch.{BatchChange, RecordKey}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {
@@ -47,6 +47,10 @@ trait BatchChangeValidationsAlgebra {
   def canGetBatchChange(
       batchChange: BatchChange,
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+
+  def validateBatchChangeRejection(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 }
 
 class BatchChangeValidations(
@@ -92,6 +96,28 @@ class BatchChangeValidations(
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isGroupMember(groupId) || authPrincipal.isSuper) ().validNel
         else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
+    }
+
+  def validateBatchChangeRejection(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingApproval(
+      batchChange)
+
+  def validateBatchChangePendingApproval(
+      batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
+    batchChange.approvalStatus match {
+      case BatchChangeApprovalStatus.PendingApproval => ().asRight
+      case _ => BatchChangeNotPendingApproval(batchChange.id).asLeft
+    }
+
+  def validateAuthorizedReviewer(
+      auth: AuthPrincipal,
+      batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
+    if (auth.isSystemAdmin) {
+      ().asRight
+    } else {
+      UserNotAuthorizedError(batchChange.id).asLeft
     }
 
   /* input validations */
@@ -415,7 +441,7 @@ class BatchChangeValidations(
   def canGetBatchChange(
       batchChange: BatchChange,
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    if (auth.canReadAll || auth.userId == batchChange.userId) {
+    if (auth.isSystemAdmin || auth.userId == batchChange.userId) {
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
