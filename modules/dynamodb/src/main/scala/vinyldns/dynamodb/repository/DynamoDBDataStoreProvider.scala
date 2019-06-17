@@ -28,12 +28,13 @@ import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName._
 import vinyldns.core.health.HealthCheck._
+import vinyldns.core.task.TaskRepository
 
 class DynamoDBDataStoreProvider extends DataStoreProvider {
 
   private val logger = LoggerFactory.getLogger(classOf[DynamoDBDataStoreProvider])
   private val implementedRepositories =
-    Set(user, group, membership, groupChange, recordChange, zoneChange, userChange)
+    Set(group, membership, groupChange, recordChange, zoneChange, userChange)
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
@@ -113,7 +114,8 @@ class DynamoDBDataStoreProvider extends DataStoreProvider {
       IO.pure[Option[BatchChangeRepository]](None),
       initializeSingleRepo[UserChangeRepository](
         userChange,
-        DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto))
+        DynamoDBUserChangeRepository.apply(_, dynamoConfig, crypto)),
+      IO.pure[Option[TaskRepository]](None)
     ).parMapN {
       DataStore.apply
     }
