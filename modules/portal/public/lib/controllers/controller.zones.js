@@ -203,11 +203,11 @@ angular.module('controller.zones', [])
     };
 
     $scope.prevPageMyZones = function() {
-        var startFrom = pagingService.getPrevStartFrom(zonePaging);
+        var startFrom = pagingService.getPrevStartFrom(zonesPaging);
         return zonesService
-            .getZones(zonePaging.maxItems, startFrom, $scope.query)
+            .getZones(zonesPaging.maxItems, startFrom, $scope.query)
             .then(function(response) {
-                zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonePaging);
+                zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonesPaging);
                 updateZoneDisplay(response.data.zones);
             })
             .catch(function (error) {

@@ -66,7 +66,7 @@ describe('Controller: ZonesController', function () {
         expect(this.scope.myGroups).toEqual([{id: "all my groups"}]);
     });
 
-    it('nextPage should call getZones with the correct parameters', function () {
+    it('nextPageMyZones should call getZones with the correct parameters', function () {
         var getZoneSets = spyOn(this.zonesService, 'getZones')
             .and.stub()
             .and.returnValue(this.zonesService.q.when(mockZone));
@@ -75,14 +75,14 @@ describe('Controller: ZonesController', function () {
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
 
-        this.scope.nextPage();
+        this.scope.nextPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
           [expectedMaxItems, expectedStartFrom, expectedQuery]);
     });
 
-    it('prevPage should call getZones with the correct parameters', function () {
+    it('prevPageMyZones should call getZones with the correct parameters', function () {
         var getZoneSets = spyOn(this.zonesService, 'getZones')
             .and.stub()
             .and.returnValue(this.zonesService.q.when(mockZone));
@@ -91,14 +91,14 @@ describe('Controller: ZonesController', function () {
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
 
-        this.scope.prevPage();
+        this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedQuery]);
 
-        this.scope.nextPage();
-        this.scope.prevPage();
+        this.scope.nextPageMyZones();
+        this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
