@@ -55,6 +55,7 @@ class MySqlDataStoreProvider extends DataStoreProvider {
     val membership = Some(new MySqlMembershipRepository())
     val groupChanges = Some(new MySqlGroupChangeRepository())
     val userChanges = Some(new MySqlUserChangeRepository())
+    val task = Some(new MySqlTaskRepository())
     DataStore(
       zoneRepository = zones,
       batchChangeRepository = batchChanges,
@@ -65,7 +66,8 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       recordChangeRepository = recordChanges,
       membershipRepository = membership,
       groupChangeRepository = groupChanges,
-      userChangeRepository = userChanges
+      userChangeRepository = userChanges,
+      taskRepository = task
     )
   }
 
