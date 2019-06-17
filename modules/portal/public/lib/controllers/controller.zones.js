@@ -68,8 +68,15 @@ angular.module('controller.zones', [])
         return $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
-    $scope.canAccessZone = function(zoneId) {
-        return $scope.myZoneIds.indexOf(zoneId) > -1;
+    $scope.canAccessZone = function(accessLevel) {
+        switch(accessLevel) {
+            case 'noAccess':
+                return false;
+            case 'Read':
+                return true;
+            case 'Delete':
+                return true;
+        }
     };
 
     /* Refreshes zone data set and then re-displays */
@@ -168,6 +175,15 @@ angular.module('controller.zones', [])
     /*
      * Zone set paging
      */
+     $scope.getZonesPageNumber = function(tab) {
+         switch(tab) {
+             case 'myZones':
+                 return pagingService.getPanelTitle(zonesPaging);
+             case 'allZones':
+                 return pagingService.getPanelTitle(allZonesPaging);
+         }
+     };
+
     $scope.prevPageEnabled = function(tab) {
         switch(tab) {
             case 'myZones':
@@ -186,29 +202,20 @@ angular.module('controller.zones', [])
         }
     };
 
-    $scope.getZonesPageNumber = function(tab) {
-        switch(tab) {
-            case 'myZones':
-                return pagingService.getPanelTitle(zonesPaging);
-            case 'allZones':
-                return pagingService.getPanelTitle(allZonesPaging);
-        }
-    };
-
-    $scope.prevPageMyZones = function () {
-        var startFrom = pagingService.getPrevStartFrom(zonesPaging);
+    $scope.prevPageMyZones = function() {
+        var startFrom = pagingService.getPrevStartFrom(zonePaging);
         return zonesService
-            .getZones(zonesPaging.maxItems, startFrom, $scope.query)
+            .getZones(zonePaging.maxItems, startFrom, $scope.query)
             .then(function(response) {
-                zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonesPaging);
+                zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonePaging);
                 updateZoneDisplay(response.data.zones);
             })
             .catch(function (error) {
                 handleError(error,'zonesService::prevPage-failure');
             });
-    };
+    }
 
-    $scope.prevPageAllZones = function () {
+    $scope.prevPageAllZones = function() {
         var startFrom = pagingService.getPrevStartFrom(allZonesPaging);
         return zonesService
             .getZones(allZonesPaging.maxItems, startFrom, $scope.query, true)
@@ -219,17 +226,17 @@ angular.module('controller.zones', [])
             .catch(function (error) {
                 handleError(error,'zonesService::prevPage-failure');
             });
-    };
+    }
 
     $scope.nextPageMyZones = function () {
         return zonesService
-            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query)
+            .getZones(zonesPaging.maxItems, allZonesPaging.next, $scope.query)
             .then(function(response) {
                 var zoneSets = response.data.zones;
                 zonesPaging = pagingService.nextPageUpdate(zoneSets, response.data.nextId, zonesPaging);
 
                 if (zoneSets.length > 0) {
-                    updateZoneDisplay(response.data.zones);
+                    updateZonesDisplay(response.data.zones);
                 }
             })
             .catch(function (error) {

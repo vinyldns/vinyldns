@@ -75,7 +75,7 @@ class ZoneRoutingSpec
 
   private val ok = Zone("ok.", "ok@test.com", acl = zoneAcl, adminGroupId = "test")
   private val aclAsInfo = ZoneACLInfo(zoneAcl.rules.map(ACLRuleInfo(_, Some("name"))))
-  private val okAsZoneInfo = ZoneInfo(ok, aclAsInfo, okGroup.name)
+  private val okAsZoneInfo = ZoneInfo(ok, aclAsInfo, okGroup.name, AccessLevel.Read)
   private val badRegex = Zone("ok.", "bad-regex@test.com", adminGroupId = "test")
   private val trailingDot = Zone("trailing.dot", "trailing-dot@test.com")
   private val connectionOk = Zone(
@@ -93,13 +93,17 @@ class ZoneRoutingSpec
     "zone-validation-failed@test.com",
     connection = Some(ZoneConnection("validation.fail", "keyName", "key", "10.1.1.1")))
   private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
-  private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name)
+  private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name, AccessLevel.NoAccess)
   private val zone2 = Zone("zone2.", "zone2@test.com", ZoneStatus.Active)
-  private val zoneSummaryInfo2 = ZoneSummaryInfo(zone2, okGroup.name)
+  private val zoneSummaryInfo2 = ZoneSummaryInfo(zone2, okGroup.name, AccessLevel.NoAccess)
   private val zone3 = Zone("zone3.", "zone3@test.com", ZoneStatus.Active)
-  private val zoneSummaryInfo3 = ZoneSummaryInfo(zone3, okGroup.name)
-  private val zone4 = Zone("zone4.", "zone4@test.com", ZoneStatus.Active)
-  private val zone5 = Zone("zone5.", "zone5@test.com", ZoneStatus.Active)
+  private val zoneSummaryInfo3 = ZoneSummaryInfo(zone3, okGroup.name, AccessLevel.NoAccess)
+  private val zone4 =
+    Zone("zone4.", "zone4@test.com", ZoneStatus.Active, adminGroupId = xyzGroup.id)
+  private val zoneSummaryInfo4 = ZoneSummaryInfo(zone4, xyzGroup.name, AccessLevel.NoAccess)
+  private val zone5 =
+    Zone("zone5.", "zone5@test.com", ZoneStatus.Active, adminGroupId = xyzGroup.id)
+  private val zoneSummaryInfo5 = ZoneSummaryInfo(zone5, xyzGroup.name, AccessLevel.NoAccess)
   private val error = Zone("error.", "error@test.com")
 
   private val missingFields: JValue =
@@ -220,55 +224,79 @@ class ZoneRoutingSpec
         authPrincipal: AuthPrincipal,
         nameFilter: Option[String],
         startFrom: Option[String],
-        maxItems: Int): Result[ListZonesResponse] = {
+        maxItems: Int,
+        listAll: Boolean = false): Result[ListZonesResponse] = {
 
-      val outcome = (authPrincipal, nameFilter, startFrom, maxItems) match {
-        case (_, None, Some("zone3."), 3) =>
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, listAll) match {
+        case (_, None, Some("zone3."), 3, false) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
               startFrom = Some("zone3."),
               nextId = Some("zone6."),
-              maxItems = 3)
+              maxItems = 3,
+              listAll = false
+            )
           )
-        case (_, None, Some("zone4."), 4) =>
+        case (_, None, Some("zone4."), 4, false) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
               startFrom = Some("zone4."),
               nextId = None,
-              maxItems = 4)
+              maxItems = 4,
+              listAll = false)
           )
 
-        case (_, None, None, 3) =>
+        case (_, None, None, 3, false) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
               startFrom = None,
               nextId = Some("zone3."),
-              maxItems = 3)
+              maxItems = 3,
+              listAll = false)
           )
 
-        case (_, Some(filter), Some("zone4."), 4) =>
+        case (_, None, None, 5, true) =>
+          Right(
+            ListZonesResponse(
+              zones = List(
+                zoneSummaryInfo1,
+                zoneSummaryInfo2,
+                zoneSummaryInfo3,
+                zoneSummaryInfo4,
+                zoneSummaryInfo5),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None,
+              maxItems = 5,
+              listAll = true
+            )
+          )
+
+        case (_, Some(filter), Some("zone4."), 4, false) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = Some(filter),
               startFrom = Some("zone4."),
               nextId = None,
-              maxItems = 4)
+              maxItems = 4,
+              listAll = false)
           )
 
-        case (_, None, None, _) =>
+        case (_, None, None, _, _) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
               nameFilter = None,
               startFrom = None,
-              nextId = None)
+              nextId = None,
+              listAll = false)
           )
 
         case _ => Left(InvalidRequest("shouldnt get here"))
@@ -829,6 +857,7 @@ class ZoneRoutingSpec
         resp.nextId shouldBe None
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
+        resp.listAll shouldBe false
       }
     }
 
@@ -841,6 +870,7 @@ class ZoneRoutingSpec
         resp.nextId shouldBe Some("zone3.")
         resp.maxItems shouldBe 3
         resp.startFrom shouldBe None
+        resp.listAll shouldBe false
       }
     }
 
@@ -854,6 +884,21 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("foo")
+        resp.listAll shouldBe false
+      }
+    }
+
+    "return all zones when list all is true" in {
+      Get(s"/zones?maxItems=5&listAll=true") ~> zoneRoute(okAuth) ~> check {
+        val resp = responseAs[ListZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(zone1.id, zone2.id, zone3.id, zone4.id, zone5.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 5
+        resp.startFrom shouldBe None
+        resp.nameFilter shouldBe None
+        resp.listAll shouldBe true
       }
     }
 

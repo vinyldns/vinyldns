@@ -25,6 +25,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 
 object ZoneService {
   def apply(
@@ -120,7 +121,8 @@ class ZoneService(
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
-    } yield ZoneInfo(zone, aclInfo, groupName)
+      accessLevel <- getZoneAccess(auth, zone)
+    } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
@@ -128,7 +130,8 @@ class ZoneService(
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
-    } yield ZoneInfo(zone, aclInfo, groupName)
+      accessLevel <- getZoneAccess(auth, zone)
+    } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
   def listZones(
       authPrincipal: AuthPrincipal,
@@ -146,7 +149,8 @@ class ZoneService(
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
       groups <- groupRepository.getGroups(groupIds)
-      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups)
+      zonesWithAccess = getZonesAccess(authPrincipal, zones)
+      zoneSummaryInfos = zoneAdminGroupMapping(zonesWithAccess, groups)
     } yield
       ListZonesResponse(
         zoneSummaryInfos,
@@ -156,13 +160,25 @@ class ZoneService(
         listZonesResult.maxItems)
   }.toResult
 
-  def zoneAdminGroupMapping(zones: List[Zone], groups: Set[Group]): List[ZoneSummaryInfo] =
+  def getZonesAccess(auth: AuthPrincipal, zones: List[Zone]): List[ZoneSummaryInfo] =
+    zones.map { zn =>
+      var accessLevel = AccessLevel.NoAccess
+      if (canChangeZone(auth, zn.name, zn.adminGroupId).isRight)
+        accessLevel = AccessLevel.Delete
+      else if (canSeeZone(auth, zn).isRight)
+        accessLevel = AccessLevel.Read
+      ZoneSummaryInfo(zn, "", accessLevel)
+    }
+
+  def zoneAdminGroupMapping(
+      zones: List[ZoneSummaryInfo],
+      groups: Set[Group]): List[ZoneSummaryInfo] =
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {
         case Some(group) => group.name
         case None => "Unknown group name"
       }
-      ZoneSummaryInfo(zn, groupName)
+      zn.copy(adminGroupName = groupName)
     }
 
   def listZoneChanges(
@@ -246,6 +262,15 @@ class ZoneService(
       case Some(group) => group.name
       case None => "Unknown group name"
     }
+  }.toResult
+
+  def getZoneAccess(auth: AuthPrincipal, zone: Zone): Result[AccessLevel] = {
+    var accessLevel = AccessLevel.NoAccess
+    if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
+      accessLevel = AccessLevel.Delete
+    else if (canSeeZone(auth, zone).isRight)
+      accessLevel = AccessLevel.Read
+    accessLevel
   }.toResult
 
   def getZoneOrFail(zoneId: String): Result[Zone] =

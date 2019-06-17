@@ -22,7 +22,7 @@ import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
-import vinyldns.core.domain.zone.{ACLRuleInfo, Zone, ZoneACL, ZoneConnection}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
@@ -43,10 +43,15 @@ case class ZoneInfo(
     adminGroupId: String,
     adminGroupName: String,
     latestSync: Option[DateTime],
-    backendId: Option[String])
+    backendId: Option[String],
+    accessLevel: AccessLevel)
 
 object ZoneInfo {
-  def apply(zone: Zone, aclInfo: ZoneACLInfo, groupName: String): ZoneInfo =
+  def apply(
+      zone: Zone,
+      aclInfo: ZoneACLInfo,
+      groupName: String,
+      accessLevel: AccessLevel): ZoneInfo =
     ZoneInfo(
       name = zone.name,
       email = zone.email,
@@ -62,7 +67,8 @@ object ZoneInfo {
       adminGroupId = zone.adminGroupId,
       adminGroupName = groupName,
       latestSync = zone.latestSync,
-      backendId = zone.backendId
+      backendId = zone.backendId,
+      accessLevel = accessLevel
     )
 }
 
@@ -81,10 +87,11 @@ case class ZoneSummaryInfo(
     adminGroupId: String,
     adminGroupName: String,
     latestSync: Option[DateTime],
-    backendId: Option[String])
+    backendId: Option[String],
+    accessLevel: AccessLevel)
 
 object ZoneSummaryInfo {
-  def apply(zone: Zone, groupName: String): ZoneSummaryInfo =
+  def apply(zone: Zone, groupName: String, accessLevel: AccessLevel): ZoneSummaryInfo =
     ZoneSummaryInfo(
       name = zone.name,
       email = zone.email,
@@ -100,7 +107,8 @@ object ZoneSummaryInfo {
       adminGroupId = zone.adminGroupId,
       adminGroupName = groupName,
       latestSync = zone.latestSync,
-      zone.backendId
+      zone.backendId,
+      accessLevel = accessLevel
     )
 }
 
@@ -203,7 +211,8 @@ case class ListZonesResponse(
     nameFilter: Option[String],
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
-    maxItems: Int = 100)
+    maxItems: Int = 100,
+    listAll: Boolean = false)
 
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)

@@ -127,7 +127,7 @@
                                         <span class="vinyldns_zones_page_number">{{ getZonesPageNumber("myZones") }}</span>
                                         <ul class="pagination">
                                             <li class="paginate_button previous">
-                                                <a ng-if="prevPageEnabled('myZones')" ng-click="prevPageMyZone()">Previous</a>
+                                                <a ng-if="prevPageEnabled('myZones')" ng-click="prevPageMyZones()">Previous</a>
                                             </li>
                                             <li class="paginate_button next">
                                                 <a ng-if="nextPageEnabled('myZones')" ng-click="nextPageMyZones()">Next</a>
@@ -217,7 +217,7 @@
                                             }
                                             <td>
                                                 <div class="table-form-group">
-                                                    <a ng-if="canAccessZone(zone.id)" id="zone-view-{{zone.name}}" type="button" class="btn btn-info btn-rounded"
+                                                    <a ng-if="canAccessZone(zone.accessLevel)" type="button" class="btn btn-info btn-rounded"
                                                        ng-href="/zones/{{ zone.id }}">
                                                         View
                                                     </a>

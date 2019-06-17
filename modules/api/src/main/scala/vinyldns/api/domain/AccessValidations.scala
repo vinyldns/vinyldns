@@ -30,7 +30,7 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      auth.isSystemAdmin || auth.isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
+      zone.shared || auth.isSystemAdmin || auth.isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
 
   def canChangeZone(
       auth: AuthPrincipal,
@@ -116,6 +116,9 @@ object AccessValidations extends AccessValidationAlgebra {
         val accessLevel = {
           if ((aclAccessLevel == AccessLevel.NoAccess) && auth.isSystemAdmin)
             AccessLevel.Read
+          else if (zone.shared && (rs.ownerGroupId == None || auth.isGroupMember(
+              rs.ownerGroupId.getOrElse(""))))
+            AccessLevel.Delete
           else
             aclAccessLevel
         }
