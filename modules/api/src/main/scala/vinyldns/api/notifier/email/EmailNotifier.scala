@@ -35,6 +35,7 @@ import vinyldns.core.domain.record.MXData
 import vinyldns.core.domain.record.TXTData
 import vinyldns.core.domain.record.PTRData
 import vinyldns.core.domain.record.RecordData
+import org.joda.time.format.DateTimeFormat
 
 class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository)
     extends Notifier {
@@ -67,13 +68,21 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
           message.setContent(formatBatchChange(bc), "text/html")
           message
         }
+      case Some(user: User) if user.email.isDefined =>
+        IO {
+          logger.warn(
+            s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}")
+        }
       case None => IO { logger.warn(s"Unable to find user: ${bc.userId}") }
       case _ => IO.unit
     }
 
   def formatBatchChange(bc: BatchChange): String =
     s"""<h1>Batch Change Results</h1>
+      | <b>Submitter:</b> ${bc.userName} <br/>
+      | <b>Created:</b> ${bc.createdTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>
       | <b>Id:</b> ${bc.id}<br/>
+      | <b>Status:</b> Implemented<br/>
       | <b>Comments:</b> ${bc.comments.getOrElse("")}</br>
       | <table border = "1">
       |   <tr><th>#</th><th>Change Type</th><th>Record Type</th><th>Input Name</th>
