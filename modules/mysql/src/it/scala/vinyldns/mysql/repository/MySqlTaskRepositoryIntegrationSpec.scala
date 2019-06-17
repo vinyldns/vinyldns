@@ -103,11 +103,13 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
   }
 
   "claim task" should {
-    "set in-flight flag for task and update time" in {
+    "set in-flight flag for task and update time while acquiring and releasing the table lock" in {
       val f = for {
+        _ <- repo.acquireLock()
         _ <- insertTask(0, startDateTime, startDateTime)
         _ <- repo.claimTask(TASK_NAME)
         taskInfo <- getTaskInfo
+        _ <- repo.releaseLock()
       } yield taskInfo
 
       f.unsafeRunSync().foreach { tuple =>
@@ -119,11 +121,13 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
   }
 
   "release task" should {
-    "unset in-flight flag for task and update time" in {
+    "unset in-flight flag for task and update time while acquiring and releasing the table lock" in {
       val f = for {
+        _ <- repo.acquireLock()
         _ <- insertTask(1, startDateTime, startDateTime)
         _ <- repo.releaseTask(TASK_NAME)
         taskInfo <- getTaskInfo
+        _ <- repo.releaseLock()
       } yield taskInfo
 
       f.unsafeRunSync().foreach { tuple =>

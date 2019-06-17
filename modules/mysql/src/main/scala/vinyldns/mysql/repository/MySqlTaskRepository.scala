@@ -50,6 +50,16 @@ class MySqlTaskRepository extends TaskRepository {
        |   AND name = {taskName}
     """.stripMargin
 
+  private val ACQUIRE_LOCK =
+    sql"""
+       |LOCK TABLES task WRITE;
+    """.stripMargin
+
+  private val RELEASE_LOCK =
+    sql"""
+       |UNLOCK TABLES;
+    """.stripMargin
+
   def unclaimedTaskExists(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
     IO {
       val pollingExpirationHours = pollingInterval.toHours * 2
@@ -64,6 +74,18 @@ class MySqlTaskRepository extends TaskRepository {
           .nonEmpty
       }
     }
+
+  def acquireLock(): IO[Unit] = IO {
+    DB.localTx { implicit s =>
+      ACQUIRE_LOCK.update().apply()
+    }
+  }
+
+  def releaseLock(): IO[Unit] = IO {
+    DB.localTx { implicit s =>
+      RELEASE_LOCK.update().apply()
+    }
+  }
 
   def claimTask(name: String): IO[Unit] = IO {
     DB.localTx { implicit s =>
