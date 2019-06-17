@@ -34,7 +34,8 @@ final case class RepositoriesConfig(
     zoneChange: Option[Config],
     zone: Option[Config],
     batchChange: Option[Config],
-    userChange: Option[Config]) {
+    userChange: Option[Config],
+    task: Option[Config]) {
 
   lazy val configMap: Map[RepositoryName, Config] = List(
     user.map(RepositoryName.user -> _),
@@ -46,7 +47,8 @@ final case class RepositoriesConfig(
     zoneChange.map(RepositoryName.zoneChange -> _),
     zone.map(RepositoryName.zone -> _),
     batchChange.map(RepositoryName.batchChange -> _),
-    userChange.map(RepositoryName.userChange -> _)
+    userChange.map(RepositoryName.userChange -> _),
+    task.map(RepositoryName.task -> _)
   ).flatten.toMap
 
   def hasKey(name: RepositoryName): Boolean = configMap.contains(name)
