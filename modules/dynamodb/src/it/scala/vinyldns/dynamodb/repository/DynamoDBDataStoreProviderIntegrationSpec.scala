@@ -61,7 +61,6 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
 
   "DynamoDBDataStoreProvider" should {
     "properly load configured repos" in {
-      dataStore.get[UserRepository](user) shouldBe defined
       dataStore.get[GroupRepository](group) shouldBe defined
       dataStore.get[MembershipRepository](membership) shouldBe defined
       dataStore.get[GroupChangeRepository](groupChange) shouldBe defined
@@ -74,18 +73,21 @@ class DynamoDBDataStoreProviderIntegrationSpec extends DynamoDBIntegrationSpec {
       dataStore.get[RecordSetRepository](recordSet) shouldBe empty
     }
     "validate a loaded repo works" in {
-      val testUser = User(
-        "provider-load-test-user",
-        "provider-load-test-access",
-        "provider-load-test-secret"
+      val testGroup = Group(
+        "provider-load-test-group-name",
+        "provider-load@test.email",
+        Some("some description"),
+        "testGroupId",
+        adminUserIds = Set("testUserId"),
+        memberIds = Set("testUserId")
       )
-      val userRepo = dataStore.get[UserRepository](user)
+      val groupRepo = dataStore.get[GroupRepository](group)
 
-      val save = userRepo.map(_.save(testUser)).sequence[IO, User]
-      save.unsafeRunSync() shouldBe Some(testUser)
+      val save = groupRepo.map(_.save(testGroup)).sequence[IO, Group]
+      save.unsafeRunSync() shouldBe Some(testGroup)
 
-      val get = userRepo.map(_.getUser(testUser.id)).sequence[IO, Option[User]]
-      get.unsafeRunSync().flatten shouldBe Some(testUser)
+      val get = groupRepo.map(_.getGroup(testGroup.id)).sequence[IO, Option[Group]]
+      get.unsafeRunSync().flatten shouldBe Some(testGroup)
     }
     "include a health check IO" in {
       providerLoad.healthCheck.unsafeRunSync() shouldBe ().asRight
