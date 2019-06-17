@@ -25,7 +25,6 @@ import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserReposi
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
-import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 
 object ZoneService {
   def apply(
@@ -121,7 +120,7 @@ class ZoneService(
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
-      accessLevel <- getZoneAccess(auth, zone)
+      accessLevel = getZoneAccess(auth, zone)
     } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
@@ -130,7 +129,7 @@ class ZoneService(
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
-      accessLevel <- getZoneAccess(auth, zone)
+      accessLevel = getZoneAccess(auth, zone)
     } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
   def listZones(
@@ -160,16 +159,6 @@ class ZoneService(
         listZonesResult.maxItems,
         listZonesResult.listAll)
   }.toResult
-
-  def getZonesAccess(auth: AuthPrincipal, zones: List[Zone]): List[ZoneSummaryInfo] =
-    zones.map { zn =>
-      var accessLevel = AccessLevel.NoAccess
-      if (canChangeZone(auth, zn.name, zn.adminGroupId).isRight)
-        accessLevel = AccessLevel.Delete
-      else if (canSeeZone(auth, zn).isRight)
-        accessLevel = AccessLevel.Read
-      ZoneSummaryInfo(zn, "", accessLevel)
-    }
 
   def zoneAdminGroupMapping(
       zones: List[ZoneSummaryInfo],
@@ -263,15 +252,6 @@ class ZoneService(
       case Some(group) => group.name
       case None => "Unknown group name"
     }
-  }.toResult
-
-  def getZoneAccess(auth: AuthPrincipal, zone: Zone): Result[AccessLevel] = {
-    var accessLevel = AccessLevel.NoAccess
-    if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
-      accessLevel = AccessLevel.Delete
-    else if (canSeeZone(auth, zone).isRight)
-      accessLevel = AccessLevel.Read
-    accessLevel
   }.toResult
 
   def getZoneOrFail(zoneId: String): Result[Zone] =

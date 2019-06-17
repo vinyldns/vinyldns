@@ -21,7 +21,12 @@ import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetListInfo}
+import vinyldns.api.domain.zone.{
+  NotAuthorizedError,
+  RecordSetInfo,
+  RecordSetListInfo,
+  ZoneSummaryInfo
+}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -1018,5 +1023,49 @@ class AccessValidationsSpec
       result shouldBe expected
     }
 
+  }
+
+  "getZonesAccess" should {
+    "return access levels" in {
+      val result = accessValidationTest.getZonesAccess(okAuth, List(okZone, sharedZone, abcZone))
+
+      val expected = List(
+        ZoneSummaryInfo(okZone, "", AccessLevel.Delete),
+        ZoneSummaryInfo(sharedZone, "", AccessLevel.Read),
+        ZoneSummaryInfo(abcZone, "", AccessLevel.NoAccess)
+      )
+
+      result shouldBe expected
+    }
+  }
+
+  "getZoneAccess" should {
+    "return access level Delete if user is a super user" in {
+      accessValidationTest.getZoneAccess(superUserAuth, okZone) should be(AccessLevel.Delete)
+    }
+
+    "return access level Delete if user is a zone admin" in {
+      accessValidationTest.getZoneAccess(okAuth, okZone) should be(AccessLevel.Delete)
+    }
+
+    "return access level Read if user is a support user" in {
+      accessValidationTest.getZoneAccess(supportUserAuth, abcZone) should be(AccessLevel.Read)
+    }
+
+    "return access level Read if zone is shared and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.Read)
+    }
+
+    "return access level Read if zone is private and user is an ACL rule" in {
+      val goodUserRule = baseAclRule.copy(userId = Some(okUser.id), groupId = None)
+      val acl = ZoneACL(Set(goodUserRule))
+      val aclZone = abcZone.copy(acl = acl)
+
+      accessValidationTest.getZoneAccess(okAuth, aclZone) should be(AccessLevel.Read)
+    }
+
+    "return access level NoAccess if zone is private and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, abcZone) should be(AccessLevel.NoAccess)
+    }
   }
 }

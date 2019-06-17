@@ -30,7 +30,8 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      zone.shared || auth.isSystemAdmin || auth.isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
+      zone.shared || auth.isSystemAdmin || auth
+        .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
 
   def canChangeZone(
       auth: AuthPrincipal,
@@ -116,8 +117,7 @@ object AccessValidations extends AccessValidationAlgebra {
         val accessLevel = {
           if ((aclAccessLevel == AccessLevel.NoAccess) && auth.isSystemAdmin)
             AccessLevel.Read
-          else if (zone.shared && (rs.ownerGroupId == None || auth.isGroupMember(
-              rs.ownerGroupId.getOrElse(""))))
+          else if (zone.shared && rs.ownerGroupId.forall(auth.isGroupMember))
             AccessLevel.Delete
           else
             aclAccessLevel
@@ -125,6 +125,21 @@ object AccessValidations extends AccessValidationAlgebra {
         RecordSetListInfo(rs, accessLevel)
       }
     }
+
+  def getZonesAccess(auth: AuthPrincipal, zones: List[Zone]): List[ZoneSummaryInfo] =
+    zones.map { zn =>
+      val accessLevel = getZoneAccess(auth, zn)
+      ZoneSummaryInfo(zn, "", accessLevel)
+    }
+
+  def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel = {
+    var accessLevel = AccessLevel.NoAccess
+    if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
+      accessLevel = AccessLevel.Delete
+    else if (canSeeZone(auth, zone).isRight)
+      accessLevel = AccessLevel.Read
+    accessLevel
+  }
 
   /* Non-algebra methods */
   def getAccessFromAcl(
