@@ -370,8 +370,8 @@ object MySqlRecordSetRepository extends ProtobufConversions {
   case class PagingKey(recordName: String, recordType: Int)
 
   object PagingKey {
-    val delimiterRegex = "\\.\\.\\.\\."
-    val delimiter = "...."
+    val delimiterRegex = "<\\.\\.\\.\\.>"
+    val delimiter = "<....>"
 
     def apply(startFrom: Option[String]): Option[PagingKey] =
       for {
