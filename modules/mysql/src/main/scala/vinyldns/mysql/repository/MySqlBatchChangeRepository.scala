@@ -49,7 +49,9 @@ class MySqlBatchChangeRepository
          |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
          |                          approval_status, reviewer_id, review_comment, review_timestamp)
          |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
-         |              {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
+         |            {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp}) ON DUPLICATE KEY
+         |     UPDATE comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus},
+         |            reviewer_id={reviewerId}, review_comment={reviewComment}, review_timestamp={reviewTimestamp}
         """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =

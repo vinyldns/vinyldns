@@ -98,7 +98,9 @@ class BatchChangeService(
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeRejection(batchChange, authPrincipal).toBatchResult
-    } yield batchChange
+      rejectedBatchChange <- rejectBatchChange(batchChange, rejectBatchChangeInput.flatMap(_.reviewComment),
+        authPrincipal.signedInUser.id)
+    } yield rejectedBatchChange
 
   def approveBatchChange(
       batchChangeId: String,
@@ -391,5 +393,19 @@ class BatchChangeService(
         ignoreAccess = ignoreAccess,
         approvalStatus = approvalStatus)
     } yield listWithGroupNames
+  }
+
+  def rejectBatchChange(batchChange: BatchChange, reviewComment: Option[String], reviewerId: String):
+    BatchResult[BatchChange] = {
+    val rejectedSingleChanges = batchChange.changes.map {
+      case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
+      case sdc: SingleDeleteChange => sdc.copy(status = SingleChangeStatus.Rejected)
+    }
+    
+    val rejectedBatch = batchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
+      reviewerId = Some(reviewerId), reviewComment = reviewComment, reviewTimestamp = Some(DateTime.now),
+      changes = rejectedSingleChanges)
+
+    batchChangeRepo.save(rejectedBatch).toBatchResult
   }
 }
