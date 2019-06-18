@@ -49,7 +49,9 @@ class MySqlBatchChangeRepository
          |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
          |                          approval_status, reviewer_id, review_comment, review_timestamp)
          |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
-         |              {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
+         |            {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp}) ON DUPLICATE KEY
+         |     UPDATE comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus},
+         |            reviewer_id={reviewerId}, review_comment={reviewComment}, review_timestamp={reviewTimestamp}
         """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =
@@ -79,19 +81,19 @@ class MySqlBatchChangeRepository
 
   private final val GET_BATCH_CHANGE_SUMMARY =
     sql"""
-         |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
-         |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
-         |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
-         |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
-         |              SUM( case sc.status when 'Complete' then 1 else 0 end )  AS complete_count
-         |         FROM single_change sc
-         |         JOIN batch_change bc
-         |           ON sc.batch_change_id = bc.id
-         |        WHERE bc.user_id={userId}
-         |        GROUP BY bc.id
-         |        ORDER BY bc.created_time DESC
-         |        LIMIT {maxItems}
-         |        OFFSET {startFrom}
+         |  SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
+         |         bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
+         |         SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
+         |         SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
+         |         SUM( case sc.status when 'Complete' then 1 else 0 end )  AS complete_count
+         |    FROM single_change sc
+         |    JOIN batch_change bc
+         |      ON sc.batch_change_id = bc.id
+         |   WHERE bc.user_id={userId}
+         |GROUP BY bc.id
+         |ORDER BY bc.created_time DESC
+         |   LIMIT {maxItems}
+         |  OFFSET {startFrom}
         """.stripMargin
 
   private final val GET_SINGLE_CHANGES_BY_BCID =
