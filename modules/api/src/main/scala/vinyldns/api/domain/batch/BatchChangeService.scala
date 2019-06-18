@@ -22,7 +22,6 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.DomainValidations._
-import vinyldns.api.domain.ReverseZoneHelpers.ptrIsInZone
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
@@ -85,6 +84,15 @@ class BatchChangeService(
         recordSets,
         batchChangeInput.ownerGroupId)
     } yield conversionResult.batchChange
+
+  def rejectBatchChange(
+      batchChangeId: String,
+      authPrincipal: AuthPrincipal,
+      rejectBatchChangeInput: Option[RejectBatchChangeInput]): BatchResult[BatchChange] =
+    for {
+      batchChange <- getExistingBatchChange(batchChangeId)
+      _ <- validateBatchChangeRejection(batchChange, authPrincipal).toBatchResult
+    } yield batchChange
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
@@ -269,8 +277,7 @@ class BatchChangeService(
       change: ChangeInput,
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
     val recordName = change.inputName.split('.').takeRight(1).mkString
-    val validZones =
-      zoneMap.getipv4PTRMatches(change.inputName).filter(ptrIsInZone(_, recordName, PTR).isRight)
+    val validZones = zoneMap.getipv4PTRMatches(change.inputName)
 
     val zone = {
       if (validZones.size > 1) validZones.find(zn => zn.name.contains("/"))

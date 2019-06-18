@@ -16,12 +16,16 @@
 
 package vinyldns.core
 
-import com.codahale.metrics.{JmxReporter, MetricRegistry}
+import com.codahale.metrics._
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet
 import nl.grons.metrics.scala.InstrumentedBuilder
 
 object VinylDNSMetrics {
 
   val metricsRegistry: MetricRegistry = new MetricRegistry
+
+  // Collect memory stats, always exposed via JMX
+  metricsRegistry.register("memory", new MemoryUsageGaugeSet())
 
   // Output all VinylDNS metrics as jmx under the "vinyldns.core" domain as milliseconds
   JmxReporter

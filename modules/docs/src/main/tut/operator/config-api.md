@@ -429,6 +429,16 @@ _that_ zone.
 sync-delay = 10000
 ```
 
+### Batch Multi-RecordSet Enabled
+In the Batch Interface, Add creates a single record, but deleteRecordSet deletes a whole recordset. Setting 
+this config value to false, create batch will fail if the changes update/delete an existing recordset that
+has multiple records. Create batch will also fail if the user is attempting to make a new multi-record recordset.
+
+```yaml
+enable-multi-record-batch-update = true
+```
+
+
 ### Full Example Config
 ```yaml
 # The default application.conf is not intended to be used in production.  It assumes a docker-compose
@@ -576,6 +586,9 @@ vinyldns {
   # the max number of changes in a single batch change.  Change carefully as this has performance
   # implications
   batch-change-limit = 1000
+  
+  # true if you want to allow batch changes to update/delete multi-record recordsets, false if not.
+  enable-multi-record-batch-update = true
 }
 
 # Akka settings, these should not need to be modified unless you know akka http really well.

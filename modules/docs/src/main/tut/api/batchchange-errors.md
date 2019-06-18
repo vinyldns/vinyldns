@@ -91,6 +91,9 @@ Since by-change accumulated errors are collected at different stages, errors at 
 16. [Missing Owner Group Id](#MissingOwnerGroupId)
 17. [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
 18. [High Value Domain](#HighValueDomain)
+19. [RecordSet has Multiple Records](#ExistingMultiRecordError)
+20. [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
+
 
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
@@ -245,7 +248,7 @@ The DNS record type is not currently supported for batch changes.
 ##### Error Message:
 
 ```
-Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone exists, then it must be created in VinylDNS.
+Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.
 ```
 
 ##### Details:
@@ -366,6 +369,53 @@ User "<user name>" must be a member of group "<group ID>" to apply this group to
 You must be a member of the group you are assigning for record ownership in the batch change. 
 
 
+
+#### 18. High Value Domain <a id="HighValueDomain"></a>
+
+##### Error Message:
+
+```
+Record Name "<record name>" is configured as a High Value Domain, so it cannot be modified.
+```
+
+##### Details:
+
+You are trying to create a record with a name that is not permitted in VinylDNS.
+The list of high value domains is specific to each VinylDNS instance.
+You should reach out to your VinylDNS administrators for more information.
+
+
+#### 19. RecordSet has Multiple DNS records <a id="ExistingMultiRecordError"></a>
+
+##### Error Message:
+
+```
+RecordSet with name <name> and type <type> cannot be updated in a single Batch Change because it contains multiple DNS records (<count>).
+```
+
+##### Details:
+
+This error means that the recordset you are attempting to update/delete has multiple records within it.
+
+Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
+
+
+#### 20. Cannot Create a RecordSet with Multiple Records <a id="NewMultiRecordError"></a>
+
+##### Error Message:
+
+```
+Multi-record recordsets are not enabled for this instance of VinylDNS. Cannot create a new record set with multiple records for inputName <name> and type <type>
+```
+
+##### Details:
+
+This error means that you have multiple Add entries with the same name and type in a batch change.
+
+Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
+
+
+
 ### FULL-REQUEST ERRORS <a id="full-request-errors" />
 
 Fail-request errors cause the batch change processing to abort immediately upon encounter.
@@ -444,17 +494,3 @@ If there are issues with the JSON provided in a batch change request, errors wil
    ]
 }
 ```
-
-#### 18. High Value Domain <a id="HighValueDomain"></a>
-
-##### Error Message:
-
-```
-Record Name "<record name>" is configured as a High Value Domain, so it cannot be modified.
-```
-
-##### Details:
-
-You are trying to create a record with a name that is not permitted in VinylDNS.
-The list of high value domains is specific to each VinylDNS instance.
-You should reach out to your VinylDNS administrators for more information.

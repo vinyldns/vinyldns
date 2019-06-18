@@ -287,7 +287,7 @@ class BatchChangeServiceSpec
     "succeed with excluded TTL" in {
       val noTtl = AddChangeInput("no-ttl-add.test.com", RecordType.A, None, AData("1.1.1.1"))
       val withTtl =
-        AddChangeInput("with-ttl-add.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
+        AddChangeInput("with-ttl-add-2.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
       val noTtlDel = DeleteChangeInput("non-apex.test.com.", RecordType.TXT)
       val noTtlUpdate =
         AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
@@ -299,6 +299,76 @@ class BatchChangeServiceSpec
       result.changes(0).asInstanceOf[SingleAddChange].ttl shouldBe VinylDNSConfig.defaultTtl
       result.changes(1).asInstanceOf[SingleAddChange].ttl shouldBe 900
       result.changes(3).asInstanceOf[SingleAddChange].ttl shouldBe existingApex.ttl
+    }
+  }
+
+  "rejectBatchChange" should {
+    "succeed if the batchChange is PendingApproval and reviewer is authorized" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        rightResultOf(underTest.rejectBatchChange(batchChange.id, supportUserAuth, None).value)
+
+      result shouldBe batchChange
+    }
+
+    "fail if the batchChange is not PendingApproval" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.rejectBatchChange(batchChange.id, supportUserAuth, None).value)
+
+      result shouldBe BatchChangeNotPendingApproval(batchChange.id)
+    }
+
+    "fail if the batchChange reviewer is not authorized" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.rejectBatchChange(batchChange.id, auth, None).value)
+
+      result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
+
+    "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Approval" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.rejectBatchChange(batchChange.id, auth, None).value)
+
+      result shouldBe UserNotAuthorizedError(batchChange.id)
     }
   }
 

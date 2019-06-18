@@ -114,7 +114,7 @@ describe('BatchChange', function(){
             it('adds a change to the changes array', function() {
                this.scope.addSingleChange();
 
-               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}, {changeType: "Add", type: "A+PTR", ttl: 200}]})
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}, {changeType: "Add", type: "A+PTR"}]})
             });
         });
 
@@ -128,11 +128,11 @@ describe('BatchChange', function(){
 
         describe('$scope.uploadCSV', function() {
             beforeEach(inject(function($compile) {
-                var form = $('<ng-form name="csvForm" isolate-form>'+
-                  '<input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" filled csv>' +
+                var formInput = $('<ng-form name="createBatchChangeForm">'+
+                  '<input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" batch-change-file>' +
                   '</ng-form>');
-                $(document.body).append(form);
-                $compile(form)(this.scope);
+                $(document.body).append(formInput);
+                $compile(formInput)(this.scope);
                 this.scope.$digest();
             }));
 
@@ -184,14 +184,15 @@ describe('BatchChange', function(){
                 }, 1000);
             })
 
-            it('does not include the first line', function(done) {
+            it('fails if the first line is not the header row', function(done) {
                 var fileBlob = new Blob(["Delete,A+PTR,test.example.,,1.1.1.1\nAdd,A+PTR,test.add.,200,1.1.1.1"], { type: 'text/csv' });
                 var batchChange = this.scope.newBatch;
                 this.scope.uploadCSV(fileBlob);
+                var alerts = this.scope.alerts;
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", inputName: "test.add.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}]});
                     done();
                 }, 1000);
             })
@@ -209,11 +210,9 @@ describe('BatchChange', function(){
             })
 
             it('does not import non-CSV format files', function() {
-               var newFile = {name: 'a.pdf', type: 'any'}
+               var newFile = new Blob([], {type: 'any'});
                this.scope.uploadCSV(newFile);
-
-               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", ttl: 200}]});
-               expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Import failed. Not a valid CSV file.'}]);
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}]});
             });
         });
 
@@ -429,114 +428,6 @@ describe('BatchChange', function(){
             this.scope.$digest();
             expect(this.scope.change.address).toBeUndefined();
             expect(form.address.$valid).toBe(false);
-        });
-    });
-
-    describe('Directive: csv validation', function(){
-        var form, scope, elm;
-        beforeEach(inject(function($compile, $rootScope) {
-            this.rootScope = $rootScope;
-            scope = $rootScope.$new();
-            elm = angular.element(
-                '<form name="form">' +
-                    '<input type="file" ng-model="batchChangeCsv" name="csvInput" csv />' +
-                '</form>'
-            );
-            $compile(elm)(scope);
-            form = scope.form;
-        }));
-
-        it('succeeds when given file is a CSV type', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: [{name: 'CSV', type: 'text/csv'}]}});
-            expect(form.csvInput.$valid).toBe(true);
-        });
-
-        it('fails when given file is not a CSV type', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: [{name: 'plain', type: 'text/plain'}]}});
-            expect(form.csvInput.$valid).toBe(false);
-        });
-
-        it('fails when no file is given', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: []}});
-            expect(form.csvInput.$valid).toBe(false);
-        });
-
-        it('sets the view value to the file', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: [{name: 'CSV', type: 'text/csv'}]}});
-            expect(form.csvInput.$viewValue).toEqual({name: 'CSV', type: 'text/csv'});
-        });
-
-        it('sets the view value to the given file regardless of file type', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: [{name: 'a.pdf', type: 'text/pdf'}]}});
-            expect(form.csvInput.$viewValue).toEqual({name: 'a.pdf', type: 'text/pdf'});
-        });
-
-        it('sets the view value to undefined when no file is given', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: []}});
-            expect(form.csvInput.$viewValue).toEqual(undefined);
-        });
-    });
-
-    describe('Directive: filled validation', function(){
-        var form, scope, elm;
-        beforeEach(inject(function($compile, $rootScope) {
-            this.rootScope = $rootScope;
-            scope = $rootScope.$new();
-            elm = angular.element(
-                '<form name="form">' +
-                    '<input type="file" ng-model="batchChangeCsv" name="csvInput" filled />' +
-                '</form>'
-            );
-            $compile(elm)(scope);
-            form = scope.form;
-        }));
-
-        it('passes when a file is given', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: [{name: 'a.pdf', type: 'any'}]}});
-            expect(form.csvInput.$valid).toBe(true);
-        });
-
-        it('fails when no file is given', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: []}});
-            expect(form.csvInput.$valid).toBe(false);
-        });
-    });
-
-    describe('Directive: form isolation', function(){
-        var form, scope, elm;
-        beforeEach(inject(function($compile, $rootScope) {
-            this.rootScope = $rootScope;
-            scope = $rootScope.$new();
-            elm = angular.element(
-                '<form name="form">' +
-                    '<ng-form name="csvForm" isolate-form>' +
-                        '<input type="file" ng-model="batchChangeCsv" name="csvInput" filled />' +
-                    '</ng-form>' +
-                '</form>'
-            );
-            $compile(elm)(scope);
-            form = scope.form;
-            csvForm = scope.csvForm;
-        }));
-
-        it('does validate the nested form', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: []}});
-            expect(csvForm.$valid).toBe(false);
-        });
-
-        it('does not validate the parent form', function(){
-            scope.$digest();
-            elm.find('input').triggerHandler({type: 'change', target: {files: []}});
-            expect(form.$valid).toBe(true);
         });
     });
 });

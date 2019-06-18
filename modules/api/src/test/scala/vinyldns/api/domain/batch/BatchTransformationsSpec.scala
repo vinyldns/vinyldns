@@ -24,6 +24,7 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
 
   "ExistingZones" should {
     val ip4base1 = Zone("1.2.3.in-addr.arpa.", "test")
+    val ip4nonMatch = Zone("21.2.3.in-addr.arpa.", "test")
     val ip4del1 = Zone("0/30.1.2.3.in-addr.arpa.", "test")
     val ip4base2 = Zone("10.2.3.in-addr.arpa.", "test")
     val ip4del2 = Zone("0/30.10.2.3.in-addr.arpa.", "test")
@@ -37,6 +38,7 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
     val existingZones = ExistingZones(
       Set(
         ip4base1,
+        ip4nonMatch,
         ip4del1,
         ip4base2,
         ip4del2,
@@ -48,10 +50,13 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
         ipv6nonMatch3))
 
     "getipv4PTRMatches" should {
-      "return all possible matches" in {
-        existingZones.getipv4PTRMatches("3.2.1.55") should contain theSameElementsAs List(
+      "return all possible matches including proper delegations" in {
+        existingZones.getipv4PTRMatches("3.2.1.2") should contain theSameElementsAs List(
           ip4base1,
           ip4del1)
+      }
+      "return all possible matches excluding similar delegations" in {
+        existingZones.getipv4PTRMatches("3.2.1.55") should contain theSameElementsAs List(ip4base1)
       }
       "return empty if there are no matches" in {
         existingZones.getipv4PTRMatches("55.55.55.55") shouldBe List()

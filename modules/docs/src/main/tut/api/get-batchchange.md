@@ -38,7 +38,7 @@ userId        | string      | The unique identifier of the user that created the
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Optional comments about the batch change. |
 createdTimestamp | date-time      | The timestamp (in GMT) when the batch change was created. |
-changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-info) or a [SingleDeleteChange](../api/batchchange-model/#singledeletechange-info). |
+changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteChange](../api/batchchange-model/#singledeletechange-). |
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
 

@@ -21,6 +21,7 @@ import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
 import cats.data.EitherT
 import cats.effect._
+import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
 
@@ -32,7 +33,7 @@ trait BatchChangeRoute extends Directives {
   final private val MAX_ITEMS_LIMIT: Int = 100
 
   val batchChangeRoute: AuthPrincipal => server.Route = { authPrincipal: AuthPrincipal =>
-    (post & path("zones" / "batchrecordchanges")) {
+    val standardBatchChangeRoutes = (post & path("zones" / "batchrecordchanges")) {
       monitor("Endpoint.postBatchChange") {
         entity(as[BatchChangeInput]) { batchChangeInput =>
           execute(batchChangeService.applyBatchChange(batchChangeInput, authPrincipal)) { chg =>
@@ -65,6 +66,21 @@ trait BatchChangeRoute extends Directives {
             }
         }
       }
+
+    val manualBatchReviewRoutes =
+      (post & path("zones" / "batchrecordchanges" / Segment / "reject")) { id =>
+        monitor("Endpoint.rejectBatchChange") {
+          entity(as[Option[RejectBatchChangeInput]]) { input =>
+            execute(batchChangeService.rejectBatchChange(id, authPrincipal, input)) { chg =>
+              complete(StatusCodes.OK, chg)
+            }
+          // TODO: Update response entity to return modified batch change
+          }
+        }
+      }
+
+    if (VinylDNSConfig.manualBatchReviewEnabled) standardBatchChangeRoutes ~ manualBatchReviewRoutes
+    else standardBatchChangeRoutes
   }
 
   // TODO: This is duplicated across routes.  Leaving duplicated until we upgrade our json serialization
@@ -84,6 +100,8 @@ trait BatchChangeRoute extends Directives {
       case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
       case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
       case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
+      case Left(bcnpa: BatchChangeNotPendingApproval) =>
+        complete(StatusCodes.BadRequest, bcnpa.message)
       case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
     }
 }

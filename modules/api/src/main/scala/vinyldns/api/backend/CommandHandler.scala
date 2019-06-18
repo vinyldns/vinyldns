@@ -117,7 +117,7 @@ object CommandHandler {
         case sync: ZoneChange
             if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
           logger.info(s"Updating visibility timeout for zone change; changeId=${sync.id}")
-          mq.changeMessageTimeout(message, 1200.seconds)
+          mq.changeMessageTimeout(message, 1.hour)
 
         case _ =>
           // do not change visibility for all other change types

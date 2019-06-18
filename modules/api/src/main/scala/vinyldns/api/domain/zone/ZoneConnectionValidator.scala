@@ -75,7 +75,8 @@ class ZoneConnectionValidator(connections: ConfiguredDnsConnections)
   import ZoneConnectionValidator._
   import ZoneRecordValidations._
 
-  val opTimeout: FiniteDuration = 6.seconds
+  // Takes a long time to load large zones
+  val opTimeout: FiniteDuration = 60.seconds
 
   val (healthCheckAddress, healthCheckPort) =
     DnsConnection.parseHostAndPort(connections.defaultZoneConnection.primaryServer)

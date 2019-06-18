@@ -41,5 +41,13 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("vinyldns.version" -> "foo-bar")
       Meta(Configuration.from(config)).batchChangeLimit must beEqualTo(1000)
     }
+    "get the default-ttl value in config" in {
+      val config = Map("default-ttl" -> 7210)
+      Meta(Configuration.from(config)).defaultTtl must beEqualTo(7210)
+    }
+    "default to 7200 if default-ttl is not found" in {
+      val config = Map("vinyldns.version" -> "foo-bar")
+      Meta(Configuration.from(config)).defaultTtl must beEqualTo(7200)
+    }
   }
 }

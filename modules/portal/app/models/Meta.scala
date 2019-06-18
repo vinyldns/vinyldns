@@ -17,12 +17,17 @@
 package models
 import play.api.Configuration
 
-case class Meta(version: String, sharedDisplayEnabled: Boolean, batchChangeLimit: Int)
+case class Meta(
+    version: String,
+    sharedDisplayEnabled: Boolean,
+    batchChangeLimit: Int,
+    defaultTtl: Long)
 object Meta {
   def apply(config: Configuration): Meta =
     Meta(
       config.getOptional[String]("vinyldns.version").getOrElse("unknown"),
       config.getOptional[Boolean]("shared-display-enabled").getOrElse(false),
-      config.getOptional[Int]("batch-change-limit").getOrElse(1000)
+      config.getOptional[Int]("batch-change-limit").getOrElse(1000),
+      config.getOptional[Long]("default-ttl").getOrElse(7200L)
     )
 }
