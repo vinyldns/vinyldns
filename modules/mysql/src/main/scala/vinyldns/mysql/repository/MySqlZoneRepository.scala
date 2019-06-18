@@ -239,7 +239,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           }
 
           sb.append(s" GROUP BY z.name ")
-          sb.append(s" LIMIT $maxItems")
+          sb.append(s" LIMIT ${maxItems + 1}")
 
           val query = sb.toString
 
@@ -249,10 +249,13 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             .list()
             .apply()
 
-          val nextId = if (results.size < maxItems) None else results.lastOption.map(_.name)
+          val newResults =
+            if (results.size > maxItems) results.init else results
+
+          val nextId = if (results.size <= maxItems) None else newResults.lastOption.map(_.name)
 
           ListZonesResults(
-            zones = results,
+            zones = newResults,
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
