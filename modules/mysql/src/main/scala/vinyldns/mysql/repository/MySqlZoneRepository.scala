@@ -260,7 +260,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            zonesFilter = zoneNameFilter
+            zonesFilter = zoneNameFilter,
+            listAll = listAll
           )
         }
       }
