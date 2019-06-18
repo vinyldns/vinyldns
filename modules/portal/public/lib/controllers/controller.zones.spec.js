@@ -74,12 +74,13 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedListAll = false;
 
         this.scope.nextPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-          [expectedMaxItems, expectedStartFrom, expectedQuery]);
+          [expectedMaxItems, expectedStartFrom, expectedQuery, expectedListAll]);
     });
 
     it('prevPageMyZones should call getZones with the correct parameters', function () {
@@ -90,18 +91,19 @@ describe('Controller: ZonesController', function () {
         var expectedMaxItems = 100;
         var expectedStartFrom = undefined;
         var expectedQuery = this.scope.query;
+        var expectedListAll = false;
 
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(1);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedListAll]);
 
         this.scope.nextPageMyZones();
         this.scope.prevPageMyZones();
 
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
-            [expectedMaxItems, expectedStartFrom, expectedQuery]);
+            [expectedMaxItems, expectedStartFrom, expectedQuery, expectedListAll]);
     });
 });
