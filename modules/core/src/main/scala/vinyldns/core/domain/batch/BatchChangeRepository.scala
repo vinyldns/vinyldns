@@ -25,6 +25,8 @@ trait BatchChangeRepository extends Repository {
 
   def save(batch: BatchChange): IO[BatchChange]
 
+  def updateBatch(batchChange: BatchChange): IO[BatchChange]
+
   def getBatchChange(batchChangeId: String): IO[Option[BatchChange]]
 
   def getBatchChangeSummaries(

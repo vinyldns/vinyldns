@@ -98,7 +98,9 @@ class BatchChangeService(
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeRejection(batchChange, authPrincipal).toBatchResult
-      rejectedBatchChange <- rejectBatchChange(batchChange, rejectBatchChangeInput.flatMap(_.reviewComment),
+      rejectedBatchChange <- rejectBatchChange(
+        batchChange,
+        rejectBatchChangeInput.flatMap(_.reviewComment),
         authPrincipal.signedInUser.id)
     } yield rejectedBatchChange
 
@@ -401,11 +403,21 @@ class BatchChangeService(
       case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
       case sdc: SingleDeleteChange => sdc.copy(status = SingleChangeStatus.Rejected)
     }
-    
-    val rejectedBatch = batchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
-      reviewerId = Some(reviewerId), reviewComment = reviewComment, reviewTimestamp = Some(DateTime.now),
-      changes = rejectedSingleChanges)
 
-    batchChangeRepo.save(rejectedBatch).toBatchResult
+    // Update rejection attributes and single changes for batch change
+    val rejectedBatch = batchChange.copy(
+      approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
+      reviewerId = Some(reviewerId),
+      reviewComment = reviewComment,
+      reviewTimestamp = Some(DateTime.now),
+      changes = rejectedSingleChanges
+    )
+
+    val saveChanges = for {
+      _ <- batchChangeRepo.updateBatch(rejectedBatch)
+      _ <- batchChangeRepo.updateSingleChanges(rejectedSingleChanges)
+    } yield rejectedBatch
+
+    saveChanges.toBatchResult
   }
 }
