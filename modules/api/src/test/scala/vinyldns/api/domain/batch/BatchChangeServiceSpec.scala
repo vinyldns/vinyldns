@@ -310,14 +310,25 @@ class BatchChangeServiceSpec
           auth.signedInUser.userName,
           None,
           DateTime.now,
-          List(),
+          List(pendingChange),
           approvalStatus = BatchChangeApprovalStatus.PendingApproval)
       batchChangeRepo.save(batchChange)
 
       val result =
-        rightResultOf(underTest.rejectBatchChange(batchChange.id, supportUserAuth, None).value)
+        rightResultOf(
+          underTest
+            .rejectBatchChange(
+              batchChange.id,
+              supportUserAuth,
+              Some(RejectBatchChangeInput(Some("review comment"))))
+            .value)
 
-      result shouldBe batchChange
+      result.status shouldBe BatchChangeStatus.Failed
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyRejected
+      result.changes.foreach(_.status shouldBe SingleChangeStatus.Failed)
+      result.reviewComment shouldBe Some("review comment")
+      result.reviewerId shouldBe Some(supportUserAuth.userId)
+      result.reviewTimestamp should not be None
     }
 
     "fail if the batchChange is not PendingApproval" in {

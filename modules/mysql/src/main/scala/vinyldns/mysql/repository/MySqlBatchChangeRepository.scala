@@ -47,7 +47,7 @@ class MySqlBatchChangeRepository
   private final val PUT_BATCH_CHANGE =
     sql"""
          |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
-         |                          approval_status, reviewer_id, review_comment, review_timestamp)
+         |                         approval_status, reviewer_id, review_comment, review_timestamp)
          |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
          |            {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
         """.stripMargin
