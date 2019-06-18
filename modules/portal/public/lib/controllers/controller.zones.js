@@ -205,7 +205,7 @@ angular.module('controller.zones', [])
     $scope.prevPageMyZones = function() {
         var startFrom = pagingService.getPrevStartFrom(zonesPaging);
         return zonesService
-            .getZones(zonesPaging.maxItems, startFrom, $scope.query)
+            .getZones(zonesPaging.maxItems, startFrom, $scope.query, false)
             .then(function(response) {
                 zonesPaging = pagingService.prevPageUpdate(response.data.nextId, zonesPaging);
                 updateZoneDisplay(response.data.zones);
@@ -230,13 +230,13 @@ angular.module('controller.zones', [])
 
     $scope.nextPageMyZones = function () {
         return zonesService
-            .getZones(zonesPaging.maxItems, allZonesPaging.next, $scope.query)
+            .getZones(zonesPaging.maxItems, zonesPaging.next, $scope.query, false)
             .then(function(response) {
                 var zoneSets = response.data.zones;
                 zonesPaging = pagingService.nextPageUpdate(zoneSets, response.data.nextId, zonesPaging);
 
                 if (zoneSets.length > 0) {
-                    updateZonesDisplay(response.data.zones);
+                    updateZoneDisplay(response.data.zones);
                 }
             })
             .catch(function (error) {
