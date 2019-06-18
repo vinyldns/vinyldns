@@ -38,4 +38,4 @@ services:
     ports:
       - "19025:25"
     volumes:
-      - ../target:/var/lib/mock-smtp
+      - ./email:/var/lib/mock-smtp
