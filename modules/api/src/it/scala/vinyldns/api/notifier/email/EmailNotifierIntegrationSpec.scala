@@ -43,7 +43,7 @@ class EmailNotifierIntegrationSpec
 
   val emailConfig: Config = ConfigFactory.load().getConfig("vinyldns.email.settings")
 
-  val targetDirectory = Paths.get("../../target")
+  val targetDirectory = Paths.get("../../docker/email")
 
   override def beforeEach: Unit =
     deleteEmailFiles(targetDirectory).unsafeRunSync()
