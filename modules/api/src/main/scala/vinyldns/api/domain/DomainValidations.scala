@@ -25,7 +25,7 @@ import scala.util.matching.Regex
  */
 object DomainValidations {
   val validFQDNRegex: Regex =
-    """^(?:([0-9a-zA-Z]{1,63}|[0-9a-zA-Z]{1}[0-9a-zA-Z\-\/]{0,61}[0-9a-zA-Z]{1})\.)*$""".r
+    """^(?:([0-9a-zA-Z]{1,63}|[0-9a-zA-Z]{1}[0-9a-zA-Z\-]{0,61}[0-9a-zA-Z]{1})\.)*$""".r
   val validIpv4Regex: Regex =
     """^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$""".r
   val validIpv6Regex: Regex =
