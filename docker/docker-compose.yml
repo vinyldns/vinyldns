@@ -32,3 +32,10 @@ services:
       - "9324:9324"
     volumes:
       - ./elasticmq/custom.conf:/etc/elasticmq/elasticmq.conf
+
+  mail:
+    image: flaviovs/mock-smtp
+    ports:
+      - "19025:25"
+    volumes:
+      - ../target:/var/lib/mock-smtp

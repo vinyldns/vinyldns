@@ -49,7 +49,9 @@ object Dependencies {
     "com.47deg"                 %% "github4s"                       % "0.18.6",
     "com.comcast"               %% "ip4s-core"                      % ip4sV,
     "com.comcast"               %% "ip4s-cats"                      % ip4sV,
-    "com.iheart"                %% "ficus"                          % "1.4.3"
+    "com.iheart"                %% "ficus"                          % "1.4.3",
+    "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
+    "javax.mail"                %  "javax.mail-api"                 % "1.6.2"
   )
 
   lazy val coreDependencies = Seq(
