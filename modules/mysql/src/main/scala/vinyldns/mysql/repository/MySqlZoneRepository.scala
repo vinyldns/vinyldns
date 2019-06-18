@@ -250,7 +250,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             .apply()
 
           val newResults =
-            if (results.size > maxItems) results.init else results
+            if (results.size > maxItems) results.dropRight(1) else results
 
           val nextId = if (results.size <= maxItems) None else newResults.lastOption.map(_.name)
 
