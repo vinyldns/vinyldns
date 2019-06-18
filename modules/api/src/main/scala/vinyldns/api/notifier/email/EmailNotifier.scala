@@ -36,6 +36,8 @@ import vinyldns.core.domain.record.TXTData
 import vinyldns.core.domain.record.PTRData
 import vinyldns.core.domain.record.RecordData
 import org.joda.time.format.DateTimeFormat
+import vinyldns.core.domain.batch.BatchChangeStatus._
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 
 class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository)
     extends Notifier {
@@ -80,16 +82,24 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def formatBatchChange(bc: BatchChange): String =
     s"""<h1>Batch Change Results</h1>
       | <b>Submitter:</b> ${bc.userName} <br/>
+      | ${bc.comments.map(comments => s"<b>Description:</b> ${comments}</br>").getOrElse("")}
       | <b>Created:</b> ${bc.createdTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>
       | <b>Id:</b> ${bc.id}<br/>
-      | <b>Status:</b> Implemented<br/>
-      | <b>Comments:</b> ${bc.comments.getOrElse("")}</br>
+      | <b>Status:</b> ${formatStatus(bc.approvalStatus, bc.status)}<br/>
       | <table border = "1">
       |   <tr><th>#</th><th>Change Type</th><th>Record Type</th><th>Input Name</th>
       |       <th>TTL</th><th>Record Data</th><th>Status</th><th>Message</th></tr>
       |   ${bc.changes.zipWithIndex.map((formatSingleChange _).tupled).mkString("\n")}
       | </table>
      """.stripMargin
+
+  def formatStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
+    (approval, status) match {
+      case (ManuallyRejected, _) => "Rejected"
+      case (PendingApproval, _) => "Pending Approval"
+      case (_, PartialFailure) => "Partially Failed"
+      case (_, status) => status.toString
+    }
 
   def formatSingleChange(sc: SingleChange, index: Int): String = sc match {
     case SingleAddChange(

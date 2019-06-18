@@ -36,6 +36,6 @@ services:
   mail:
     image: flaviovs/mock-smtp
     ports:
-      - "25:25"
+      - "19025:25"
     volumes:
       - ../target:/var/lib/mock-smtp
