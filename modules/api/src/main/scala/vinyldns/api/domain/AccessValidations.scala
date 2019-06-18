@@ -133,12 +133,11 @@ object AccessValidations extends AccessValidationAlgebra {
     }
 
   def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel = {
-    var accessLevel = AccessLevel.NoAccess
     if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
-      accessLevel = AccessLevel.Delete
+      AccessLevel.Delete
     else if (canSeeZone(auth, zone).isRight)
-      accessLevel = AccessLevel.Read
-    accessLevel
+      AccessLevel.Read
+    else AccessLevel.NoAccess
   }
 
   /* Non-algebra methods */
