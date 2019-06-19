@@ -259,4 +259,4 @@ def test_list_zones_list_all_success(list_zones_context):
     assert_that(retrieved, has_item(has_entry('name', 'list-zones-test-searched-1.')))
     assert_that(retrieved, has_item(has_entry('adminGroupName', 'list-zones-group')))
     assert_that(retrieved, has_item(has_entry('backendId', 'func-test-backend')))
-    assert_that(retrieved, has_item(has_entry('accessLevel', 'Read')))
+    assert_that(retrieved, has_item(has_entry('accessLevel', 'NoAccess')))

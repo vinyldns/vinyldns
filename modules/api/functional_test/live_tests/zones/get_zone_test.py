@@ -41,15 +41,9 @@ def test_get_zone_shared_by_id_non_owner(shared_zone_test_context):
     """
     client = shared_zone_test_context.dummy_vinyldns_client
 
-    result = client.get_zone(shared_zone_test_context.shared_zone['id'], status=200)
-    retrieved = result['zone']
+    client.get_zone(shared_zone_test_context.shared_zone['id'], status=403)
 
-    assert_that(retrieved['id'], is_(shared_zone_test_context.shared_zone['id']))
-    assert_that(retrieved['adminGroupName'], is_('testSharedZoneGroup'))
-    assert_that(retrieved['shared'], is_(True))
-    assert_that(retrieved['accessLevel'], is_('Read'))
-
-def test_get_zone_private__by_id_fails_without_access(shared_zone_test_context):
+def test_get_zone_private_by_id_fails_without_access(shared_zone_test_context):
     """
     Test get an existing zone by id without access
     """
@@ -139,12 +133,7 @@ def test_get_zone_by_name_shared_zone_succeeds(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    result = client.get_zone_by_name(shared_zone_test_context.shared_zone['name'], status=200)['zone']
-
-    assert_that(result['id'], is_(shared_zone_test_context.shared_zone['id']))
-    assert_that(result['name'], is_(shared_zone_test_context.shared_zone['name']))
-    assert_that(result['adminGroupName'], is_("testSharedZoneGroup"))
-    assert_that(result['accessLevel'], is_("Read"))
+    client.get_zone_by_name(shared_zone_test_context.shared_zone['name'], status=403)
 
 def test_get_zone_by_name_fails_without_access(shared_zone_test_context):
     """
