@@ -109,9 +109,9 @@ class AccessValidationsSpec
       accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
 
-    "return true if the zone is shared" in {
-      val supportAuth = okAuth.copy(signedInUser = okAuth.signedInUser, memberGroupIds = Seq.empty)
-      accessValidationTest.canSeeZone(supportAuth, sharedZone) should be(right)
+    "return false if the zone is shared and user does not have other access" in {
+      val error = leftValue(accessValidationTest.canSeeZone(okAuth, sharedZone))
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
@@ -1027,12 +1027,17 @@ class AccessValidationsSpec
 
   "getZonesAccess" should {
     "return access levels" in {
-      val result = accessValidationTest.getZonesAccess(okAuth, List(okZone, sharedZone, abcZone))
+      val goodUserRule = baseAclRule.copy(userId = Some(okUser.id), groupId = None)
+      val acl = ZoneACL(Set(goodUserRule))
+      val aclZone = abcZone.copy(acl = acl)
+      val result =
+        accessValidationTest.getZonesAccess(okAuth, List(okZone, sharedZone, abcZone, aclZone))
 
       val expected = List(
         ZoneSummaryInfo(okZone, "", AccessLevel.Delete),
-        ZoneSummaryInfo(sharedZone, "", AccessLevel.Read),
-        ZoneSummaryInfo(abcZone, "", AccessLevel.NoAccess)
+        ZoneSummaryInfo(sharedZone, "", AccessLevel.NoAccess),
+        ZoneSummaryInfo(abcZone, "", AccessLevel.NoAccess),
+        ZoneSummaryInfo(aclZone, "", AccessLevel.Read)
       )
 
       result shouldBe expected
@@ -1052,8 +1057,8 @@ class AccessValidationsSpec
       accessValidationTest.getZoneAccess(supportUserAuth, abcZone) should be(AccessLevel.Read)
     }
 
-    "return access level Read if zone is shared and user is not an admin" in {
-      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.Read)
+    "return access level NoAccess if zone is shared and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.NoAccess)
     }
 
     "return access level Read if zone is private and user is an ACL rule" in {

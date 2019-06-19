@@ -30,7 +30,7 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      zone.shared || auth.isSystemAdmin || auth
+      auth.isSystemAdmin || auth
         .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
 
   def canChangeZone(
@@ -132,13 +132,12 @@ object AccessValidations extends AccessValidationAlgebra {
       ZoneSummaryInfo(zn, "", accessLevel)
     }
 
-  def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel = {
+  def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel =
     if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
       AccessLevel.Delete
     else if (canSeeZone(auth, zone).isRight)
       AccessLevel.Read
     else AccessLevel.NoAccess
-  }
 
   /* Non-algebra methods */
   def getAccessFromAcl(
