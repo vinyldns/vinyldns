@@ -490,6 +490,9 @@ class MySqlZoneRepositoryIntegrationSpec
 
       repo.listZones(superUserAuth, None, Some(sorted(7).name), 4)
         .unsafeRunSync().zones should contain theSameElementsInOrderAs expectedThirdPage
+
+      repo.listZones(superUserAuth, None, Some(sorted(7).name), 4)
+        .unsafeRunSync().nextId shouldBe None
     }
 
     "apply paging when doing an authorized zone search" in {
