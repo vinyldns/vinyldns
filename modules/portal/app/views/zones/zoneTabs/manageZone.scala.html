@@ -51,7 +51,14 @@
                                     <label class="col-md-3 control-label">Access</label>
                                     <div class="col-md-9">
                                         <div>
-                                            <p class="form-control-static">{{ updateZoneInfo.shared ? "Shared" : "Private" }}</p>
+                                            <select class="form-control" ng-model="updateZoneInfo.shared">
+                                                <option ng-value="true" ng-model="updateZoneInfo.shared"
+                                                        ng-selected="updateZoneInfo.shared == true">
+                                                    Shared</option>
+                                                <option ng-value="false" ng-model="updateZoneInfo.shared"
+                                                        ng-selected="updateZoneInfo.shared == false">
+                                                    Private</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -213,7 +220,7 @@
                             ng-click="clickUpdateZone()">
                         Update Zone
                     </button>
-                    <button id="zone-delete-{{zone.name}}" class="btn btn-danger btn-rounded mb-control"
+                    <button ng-if="currentManageZoneState == manageZoneState.UPDATE" id="zone-delete-{{zone.name}}" class="btn btn-danger btn-rounded mb-control"
                             ng-click="confirmDeleteZone();">
                         Abandon Zone
                     </button>

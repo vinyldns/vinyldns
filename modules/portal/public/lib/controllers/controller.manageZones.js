@@ -173,6 +173,7 @@ angular.module('controller.manageZones', [])
         zone = zonesService.normalizeZoneDates(zone);
         zone = zonesService.setConnectionKeys(zone);
         zone = zonesService.checkBackendId(zone);
+        zone.shared = (String(zone.shared).toLowerCase() == 'true');
         $scope.currentManageZoneState = $scope.manageZoneState.UPDATE;
         $scope.updateZone(zone, 'Zone Update');
     };
