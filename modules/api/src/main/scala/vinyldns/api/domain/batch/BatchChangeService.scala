@@ -414,9 +414,9 @@ class BatchChangeService(
     )
 
     val saveChanges = for {
-      _ <- batchChangeRepo.updateBatch(rejectedBatch)
       _ <- batchChangeRepo.updateSingleChanges(rejectedSingleChanges)
-    } yield rejectedBatch
+      savedBatchChange <- batchChangeRepo.updateBatch(rejectedBatch)
+    } yield savedBatchChange
 
     saveChanges.toBatchResult
   }
