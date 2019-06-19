@@ -71,6 +71,7 @@ describe('Controller: ManageZonesController', function () {
             .and.stub();
         var checkBackendId = spyOn(this.zonesService, 'checkBackendId')
                     .and.stub();
+        var checkSharedStatus = spyOn(this.zonesService, 'checkSharedStatus').and.stub();
         var updateZone = spyOn(this.scope, 'updateZone')
             .and.stub();
 
