@@ -35,42 +35,42 @@ class MySqlTaskRepository extends TaskRepository {
 
   private val START_TRANSACTION =
     sql"""
-       |START TRANSACTION;
-       """.stripMargin
+      |START TRANSACTION;
+      """.stripMargin
 
   private val FETCH_UNCLAIMED_TASK =
     sql"""
-       |SELECT *
-       |  FROM task
-       | WHERE (in_flight = 0
-       |    OR updated IS NULL
-       |    OR updated < {updatedTimeComparison})
-       |   AND name = {taskName} FOR UPDATE;
-       """.stripMargin
+      |SELECT *
+      |  FROM task
+      | WHERE (in_flight = 0
+      |    OR updated IS NULL
+      |    OR updated < {updatedTimeComparison})
+      |   AND name = {taskName} FOR UPDATE;
+      """.stripMargin
 
   private val CLAIM_UNCLAIMED_TASK =
     sql"""
-       |UPDATE task
-       |   SET in_flight = 1, updated = {currentTime}
-       | WHERE (in_flight = 0
-       |    OR updated IS NULL
-       |    OR updated < {updatedTimeComparison})
-       |   AND name = {taskName};
-       """.stripMargin
+      |UPDATE task
+      |   SET in_flight = 1, updated = {currentTime}
+      | WHERE (in_flight = 0
+      |    OR updated IS NULL
+      |    OR updated < {updatedTimeComparison})
+      |   AND name = {taskName};
+      """.stripMargin
 
   private val COMMIT =
     sql"""
-       |COMMIT;
-       """.stripMargin
+      |COMMIT;
+      """.stripMargin
 
   private val UNCLAIM_TASK =
     sql"""
-         |UPDATE task
-         |   SET in_flight = 0, updated = {currentTime}
-         | WHERE name = {name}
-    """.stripMargin
+      |UPDATE task
+      |   SET in_flight = 0, updated = {currentTime}
+      | WHERE name = {name}
+      """.stripMargin
 
-  def fetchAndClaimTask(name: String, pollingInterval: FiniteDuration): IO[Int] =
+  def fetchAndClaimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
     IO {
       val pollingExpirationHours = pollingInterval.toHours * 2
       val currentTime = DateTime.now
@@ -85,8 +85,6 @@ class MySqlTaskRepository extends TaskRepository {
           .first()
           .apply()
 
-        sql"""SELECT SLEEP(10)""".execute()
-
         val updateResult = CLAIM_UNCLAIMED_TASK
           .bindByName(
             'updatedTimeComparison -> currentTime.minusHours(pollingExpirationHours.toInt),
@@ -98,7 +96,7 @@ class MySqlTaskRepository extends TaskRepository {
 
         COMMIT.execute()
 
-        updateResult
+        updateResult == 1
       }
     }
 
