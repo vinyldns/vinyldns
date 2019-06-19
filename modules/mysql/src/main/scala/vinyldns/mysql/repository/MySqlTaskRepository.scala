@@ -24,12 +24,44 @@ import vinyldns.core.task.TaskRepository
 import scala.concurrent.duration.FiniteDuration
 
 class MySqlTaskRepository extends TaskRepository {
-  private val CLAIM_TASK =
+  /*
+   * Transaction that performs the following steps:
+   * - Acquires an exclusive row lock for unclaimed and/or expired tasks
+   * - Updates in_flight flag, marking that a task is claimed
+   * - Commits transaction, releasing row lock
+   *
+   * `updated IS NULL` case is for the first run where the seeded data does not have an updated time set
+   */
+
+  private val START_TRANSACTION =
     sql"""
-         |UPDATE task
-         |   SET in_flight = 1, updated = {currentTime}
-         | WHERE name = {name}
-    """.stripMargin
+       |START TRANSACTION;
+       """.stripMargin
+
+  private val FETCH_UNCLAIMED_TASK =
+    sql"""
+       |SELECT *
+       |  FROM task
+       | WHERE (in_flight = 0
+       |    OR updated IS NULL
+       |    OR updated < {updatedTimeComparison})
+       |   AND name = {taskName} FOR UPDATE;
+       """.stripMargin
+
+  private val CLAIM_UNCLAIMED_TASK =
+    sql"""
+       |UPDATE task
+       |   SET in_flight = 1, updated = {currentTime}
+       | WHERE (in_flight = 0
+       |    OR updated IS NULL
+       |    OR updated < {updatedTimeComparison})
+       |   AND name = {taskName};
+       """.stripMargin
+
+  private val COMMIT =
+    sql"""
+       |COMMIT;
+       """.stripMargin
 
   private val UNCLAIM_TASK =
     sql"""
@@ -38,38 +70,37 @@ class MySqlTaskRepository extends TaskRepository {
          | WHERE name = {name}
     """.stripMargin
 
-  // Fetch unclaimed task, with the exception of the expiration interval is exceeded
-  // `updated IS NULL` case is for the first run where the seeded data does not have an updated time set
-  private val FETCH_UNCLAIMED =
-    sql"""
-       |SELECT *
-       |  FROM task
-       | WHERE (in_flight = 0
-       |    OR updated IS NULL
-       |    OR updated < {updatedTimeComparison})
-       |   AND name = {taskName}
-    """.stripMargin
-
-  def unclaimedTaskExists(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
+  def fetchAndClaimTask(name: String, pollingInterval: FiniteDuration): IO[Int] =
     IO {
       val pollingExpirationHours = pollingInterval.toHours * 2
-      DB.readOnly { implicit s =>
-        FETCH_UNCLAIMED
+      val currentTime = DateTime.now
+      DB.localTx { implicit s =>
+        START_TRANSACTION.execute()
+
+        FETCH_UNCLAIMED_TASK
           .bindByName(
-            'updatedTimeComparison -> DateTime.now.minusHours(pollingExpirationHours.toInt),
+            'updatedTimeComparison -> currentTime.minusHours(pollingExpirationHours.toInt),
             'taskName -> name)
           .map(_.string(1))
           .first()
           .apply()
-          .nonEmpty
+
+        sql"""SELECT SLEEP(10)""".execute()
+
+        val updateResult = CLAIM_UNCLAIMED_TASK
+          .bindByName(
+            'updatedTimeComparison -> currentTime.minusHours(pollingExpirationHours.toInt),
+            'taskName -> name,
+            'currentTime -> currentTime)
+          .first()
+          .update()
+          .apply()
+
+        COMMIT.execute()
+
+        updateResult
       }
     }
-
-  def claimTask(name: String): IO[Unit] = IO {
-    DB.localTx { implicit s =>
-      CLAIM_TASK.bindByName('currentTime -> DateTime.now, 'name -> name).update().apply()
-    }
-  }
 
   def releaseTask(name: String): IO[Unit] = IO {
     DB.localTx { implicit s =>

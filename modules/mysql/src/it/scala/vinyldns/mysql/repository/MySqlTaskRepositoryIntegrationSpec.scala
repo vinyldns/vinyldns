@@ -68,53 +68,37 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
     }
   }
 
-  "unclaimedTaskExists" should {
-    "return true if non-in-flight task exists and updated time is null" in {
+  "fetchAndClaimTask" should {
+    "return q if non-in-flight task exists and updated time is null" in {
       val f = for {
         _ <- insertTask(0, startDateTime, startDateTime)
-        unclaimedTaskExists <- repo.unclaimedTaskExists(TASK_NAME, 1.hour)
+        unclaimedTaskExists <- repo.fetchAndClaimTask(TASK_NAME, 1.hour)
       } yield unclaimedTaskExists
 
-      f.unsafeRunSync() shouldBe true
+      f.unsafeRunSync() shouldBe 1
     }
-    "return true if non-in-flight task exists and expiration time has elapsed" in {
+    "return q if non-in-flight task exists and expiration time has elapsed" in {
       val f = for {
         _ <- insertTask(0, startDateTime, startDateTime.minusHours(2))
-        unclaimedTaskExists <- repo.unclaimedTaskExists(TASK_NAME, 1.hour)
+        unclaimedTaskExists <- repo.fetchAndClaimTask(TASK_NAME, 1.hour)
       } yield unclaimedTaskExists
 
-      f.unsafeRunSync() shouldBe true
+      f.unsafeRunSync() shouldBe 1
     }
-    "return false if in-flight task exists and expiration time has not elapsed" in {
+    "return 0 if in-flight task exists and expiration time has not elapsed" in {
       val f = for {
         _ <- insertTask(1, startDateTime, startDateTime)
-        unclaimedTaskExists <- repo.unclaimedTaskExists(TASK_NAME, 1.hour)
+        unclaimedTaskExists <- repo.fetchAndClaimTask(TASK_NAME, 1.hour)
       } yield unclaimedTaskExists
 
-      f.unsafeRunSync() shouldBe false
+      f.unsafeRunSync() shouldBe 0
     }
-    "return false if task does not exist" in {
+    "return 0 if task does not exist" in {
       val f = for {
-        unclaimedTaskExists <- repo.unclaimedTaskExists(TASK_NAME, 1.hour)
+        unclaimedTaskExists <- repo.fetchAndClaimTask(TASK_NAME, 1.hour)
       } yield unclaimedTaskExists
 
-      f.unsafeRunSync() shouldBe false
-    }
-  }
-
-  "claim task" should {
-    "set in-flight flag for task and update time" in {
-      val f = for {
-        _ <- insertTask(0, startDateTime, startDateTime)
-        _ <- repo.claimTask(TASK_NAME)
-        taskInfo <- getTaskInfo
-      } yield taskInfo
-
-      f.unsafeRunSync().foreach { tuple =>
-        val (inFlight, updateTime) = tuple
-        inFlight shouldBe true
-        updateTime should not be startDateTime
-      }
+      f.unsafeRunSync() shouldBe 0
     }
   }
 
