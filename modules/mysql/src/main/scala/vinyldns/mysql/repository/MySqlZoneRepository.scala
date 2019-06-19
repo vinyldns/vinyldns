@@ -249,10 +249,10 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             .list()
             .apply()
 
-          val newResults =
-            if (results.size > maxItems) results.dropRight(1) else results
-
-          val nextId = if (results.size <= maxItems) None else newResults.lastOption.map(_.name)
+          val (newResults, nextId) =
+            if (results.size > maxItems)
+              (results.dropRight(1), results.dropRight(1).lastOption.map(_.name))
+            else (results, None)
 
           ListZonesResults(
             zones = newResults,
