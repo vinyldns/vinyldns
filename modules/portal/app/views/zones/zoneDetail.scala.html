@@ -40,7 +40,7 @@
             <div class="panel panel-default panel-tabs">
                 <ul class="nav nav-tabs bar_tabs">
                     <li class="active"><a href="#tab1" data-toggle="tab">Manage Records</a></li>
-                    <li><a ng-if="zoneInfo.accessLevel=='Delete'" id="tab2-button" href="#tab2" data-toggle="tab">Manage Zone</a></li>
+                    <li><a id="tab2-button" href="#tab2" data-toggle="tab">Manage Zone</a></li>
                     <li><a href="#tab3" data-toggle="tab">Change History</a></li>
                 </ul>
                 <div class="panel-body tab-content">
@@ -48,7 +48,7 @@
                     <div class="tab-pane active" id="tab1">
                         @manageRecords(request, meta)
                     </div>
-                    <div ng-if="zoneInfo.accessLevel=='Delete'" class="tab-pane" id="tab2" ng-controller="ManageZonesController">
+                    <div class="tab-pane" id="tab2" ng-controller="ManageZonesController">
                         @manageZone(request, meta)
                     </div>
                     <div class="tab-pane" id="tab3">
