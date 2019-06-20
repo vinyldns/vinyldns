@@ -24,7 +24,7 @@ angular.module('controller.records', [])
     $scope.query = "";
     $scope.alerts = [];
 
-    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SPF', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
+    $scope.recordTypes = ['A', 'AAAA', 'CNAME', 'DS', 'MX', 'NS', 'PTR', 'SRV', 'NAPTR', 'SSHFP', 'TXT'];
     $scope.sshfpAlgorithms = [{name: '(1) RSA', number: 1}, {name: '(2) DSA', number: 2}, {name: '(3) ECDSA', number: 3},
         {name: '(4) Ed25519', number: 4}];
     $scope.sshfpTypes = [{name: '(1) SHA-1', number: 1}, {name: '(2) SHA-256', number: 2}];
