@@ -32,20 +32,28 @@ package modules
  * limitations under the License.
  */
 
+import cats.effect.{ContextShift, IO, Timer}
 import com.google.inject.AbstractModule
 import controllers._
 import controllers.repository.{PortalDataAccessor, PortalDataAccessorProvider}
+import org.slf4j.LoggerFactory
 import play.api.{Configuration, Environment}
+import tasks.TaskHandler
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.health.HealthService
 import vinyldns.core.repository.DataStoreLoader
+import vinyldns.core.task.TaskRepository
 
 // $COVERAGE-OFF$
 class VinylDNSModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
   val settings = new Settings(configuration)
+  implicit val t: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
+  implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.Implicits.global)
+  private val logger = LoggerFactory.getLogger("vinyldns.portal.modules.VinylDNSModule")
 
   def configure(): Unit = {
     val startApp = for {
@@ -56,12 +64,21 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
         .loadAll[PortalDataAccessor](repoConfigs, crypto, PortalDataAccessorProvider)
       auth = authenticator()
       healthService = new HealthService(auth.healthCheck() :: loaderResponse.healthChecks)
+      repositories = loaderResponse.accessor
+      _ <- if (settings.ldapSyncEnabled) {
+        new TaskHandler(repositories.taskRepository)
+          .run(
+            settings,
+            new UserAccountAccessor(repositories.userRepository, repositories.userChangeRepository),
+            auth)
+          .start
+      } else IO.pure(()).start
     } yield {
-      val repositories = loaderResponse.accessor
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
       bind(classOf[Authenticator]).toInstance(auth)
       bind(classOf[UserRepository]).toInstance(repositories.userRepository)
       bind(classOf[UserChangeRepository]).toInstance(repositories.userChangeRepository)
+      bind(classOf[TaskRepository]).toInstance(repositories.taskRepository)
       bind(classOf[HealthService]).toInstance(healthService)
     }
 

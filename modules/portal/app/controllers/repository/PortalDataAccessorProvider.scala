@@ -22,6 +22,7 @@ import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.repository.DataStoreLoader.getRepoOf
 import vinyldns.core.repository.RepositoryName._
 import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfig}
+import vinyldns.core.task.TaskRepository
 
 // $COVERAGE-OFF$
 object PortalDataAccessorProvider extends DataAccessorProvider[PortalDataAccessor] {
@@ -32,7 +33,8 @@ object PortalDataAccessorProvider extends DataAccessorProvider[PortalDataAccesso
       dataStores: List[(DataStoreConfig, DataStore)]): ValidatedNel[String, PortalDataAccessor] =
     (
       getRepoOf[UserRepository](dataStores, user),
-      getRepoOf[UserChangeRepository](dataStores, userChange)
+      getRepoOf[UserChangeRepository](dataStores, userChange),
+      getRepoOf[TaskRepository](dataStores, task)
     ).mapN(PortalDataAccessor)
 }
 // $COVERAGE-ON$

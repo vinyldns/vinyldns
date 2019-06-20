@@ -18,8 +18,10 @@ package controllers.repository
 
 import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.repository.DataAccessor
+import vinyldns.core.task.TaskRepository
 
 final case class PortalDataAccessor(
     userRepository: UserRepository,
-    userChangeRepository: UserChangeRepository)
+    userChangeRepository: UserChangeRepository,
+    taskRepository: TaskRepository)
     extends DataAccessor

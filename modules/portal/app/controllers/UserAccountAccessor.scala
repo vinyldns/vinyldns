@@ -16,13 +16,16 @@
 
 package controllers
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
+import cats.implicits._
 import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
-import vinyldns.core.domain.membership.{User, UserChange, UserChangeRepository, UserRepository}
+import vinyldns.core.domain.membership._
 
 @Singleton
 class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRepository) {
+
+  implicit val cs: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   /**
     * Lookup a user in the store. Using identifier as the user id and/or name
@@ -53,4 +56,18 @@ class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRe
 
   def getUserByKey(key: String): IO[Option[User]] =
     users.getUserByAccessKey(key)
+
+  def getAllUsers: IO[List[User]] =
+    users.getAllUsers
+
+  def lockUsers(usersToLock: List[User]): IO[List[User]] =
+    for {
+      lockedUsers <- users.save(usersToLock.map(_.copy(lockStatus = LockStatus.Locked)))
+      _ <- usersToLock
+        .map(
+          u =>
+            changes.save(UserChange
+              .UpdateUser(u.copy(lockStatus = LockStatus.Locked), "system", DateTime.now, u)))
+        .parSequence
+    } yield lockedUsers
 }
