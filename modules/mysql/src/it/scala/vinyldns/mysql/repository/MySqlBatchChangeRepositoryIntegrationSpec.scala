@@ -120,8 +120,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val change_one: BatchChange = pendingBatchChange.copy(createdTimestamp = timeBase)
     val change_two: BatchChange =
       completeBatchChange.copy(createdTimestamp = timeBase.plus(1000), ownerGroupId = None)
-    val otherUserBatchChange: BatchChange =
-      randomBatchChange.copy(userId = "Other", createdTimestamp = timeBase.plus(50000))
+    val otherUserBatchChange: BatchChange = randomBatchChange.copy(userId = "Other",
+        createdTimestamp = timeBase.plus(50000))
     val change_three: BatchChange = failedBatchChange.copy(createdTimestamp = timeBase.plus(100000))
     val change_four: BatchChange = partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
   }
@@ -171,7 +171,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.id shouldBe expected.id
     actual.status shouldBe expected.status
     actual.userId shouldBe expected.userId
-    actual.userName shouldBe expected.userId
+    actual.userName shouldBe expected.userName
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
     actual.ownerGroupId shouldBe expected.ownerGroupId
   }
@@ -335,7 +335,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       f.unsafeRunSync shouldBe None
     }
 
-    "get batch change summary by user ID" in {
+    "get all batch change summaries" in {
       val f =
         for {
           _ <- repo.save(change_one)
@@ -344,7 +344,32 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(change_four)
           _ <- repo.save(otherUserBatchChange)
 
-          retrieved <- repo.getBatchChangeSummariesByUserId(pendingBatchChange.userId)
+          retrieved <- repo.getBatchChangeSummaries(None)
+        } yield retrieved
+
+      // from most recent descending
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(change_four),
+          BatchChangeSummary(change_three),
+          BatchChangeSummary(otherUserBatchChange),
+          BatchChangeSummary(change_two),
+          BatchChangeSummary(change_one))
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by user ID" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          retrieved <- repo.getBatchChangeSummaries(Some(pendingBatchChange.userId))
         } yield retrieved
 
       // from most recent descending
@@ -359,7 +384,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), expectedChanges)
     }
 
-    "get batch change summary by user ID with maxItems" in {
+    "get batch change summaries by user ID with maxItems" in {
       val f =
         for {
           _ <- repo.save(change_one)
@@ -368,7 +393,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(change_four)
           _ <- repo.save(otherUserBatchChange)
 
-          retrieved <- repo.getBatchChangeSummariesByUserId(pendingBatchChange.userId, maxItems = 3)
+          retrieved <- repo.getBatchChangeSummaries(Some(pendingBatchChange.userId), maxItems = 3)
         } yield retrieved
 
       // from most recent descending
@@ -385,7 +410,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), expectedChanges)
     }
 
-    "get batch change summary by user ID with explicit startFrom" in {
+    "get batch change summaries by user ID with explicit startFrom" in {
       val f =
         for {
           _ <- repo.save(change_one)
@@ -394,8 +419,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(change_four)
           _ <- repo.save(otherUserBatchChange)
 
-          retrieved <- repo.getBatchChangeSummariesByUserId(
-            pendingBatchChange.userId,
+          retrieved <- repo.getBatchChangeSummaries(
+            Some(pendingBatchChange.userId),
             startFrom = Some(1),
             maxItems = 3)
         } yield retrieved
@@ -416,7 +441,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), expectedChanges)
     }
 
-    "get batch change summary by user ID with explicit startFrom and maxItems" in {
+    "get batch change summaries by user ID with explicit startFrom and maxItems" in {
       val f =
         for {
           _ <- repo.save(change_one)
@@ -425,8 +450,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(change_four)
           _ <- repo.save(otherUserBatchChange)
 
-          retrieved <- repo.getBatchChangeSummariesByUserId(
-            pendingBatchChange.userId,
+          retrieved <- repo.getBatchChangeSummaries(
+            Some(pendingBatchChange.userId),
             startFrom = Some(1),
             maxItems = 1)
         } yield retrieved
@@ -449,11 +474,11 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(change_four)
           _ <- repo.save(otherUserBatchChange)
 
-          retrieved1 <- repo.getBatchChangeSummariesByUserId(
-            pendingBatchChange.userId,
+          retrieved1 <- repo.getBatchChangeSummaries(
+            Some(pendingBatchChange.userId),
             maxItems = 1)
-          retrieved2 <- repo.getBatchChangeSummariesByUserId(
-            pendingBatchChange.userId,
+          retrieved2 <- repo.getBatchChangeSummaries(
+            Some(pendingBatchChange.userId),
             startFrom = retrieved1.nextId)
         } yield (retrieved1, retrieved2)
 
@@ -474,7 +499,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "return empty list if a batch change summary is not found by user ID" in {
-      val batchChangeSummaries = repo.getBatchChangeSummariesByUserId("doesnotexist").unsafeRunSync()
+      val batchChangeSummaries = repo.getBatchChangeSummaries(Some("doesnotexist")).unsafeRunSync()
       batchChangeSummaries.batchChanges shouldBe empty
     }
   }

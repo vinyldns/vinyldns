@@ -87,7 +87,7 @@ class MySqlBatchChangeRepository
          |         FROM single_change sc
          |         JOIN batch_change bc
          |           ON sc.batch_change_id = bc.id
-         |        WHERE bc.user_id={userId}
+         |        WHERE bc.user_id LIKE {userId}
          |        GROUP BY bc.id
          |        ORDER BY bc.created_time DESC
          |        LIMIT {maxItems}
@@ -215,23 +215,26 @@ class MySqlBatchChangeRepository
       }
     }
 
-  def getBatchChangeSummariesByUserId(
-      userId: String,
+  def getBatchChangeSummaries(
+      userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100): IO[BatchChangeSummaryList] =
-    monitor("repo.BatchChangeJDBC.getBatchChangeSummariesByUserId") {
+    monitor("repo.BatchChangeJDBC.getBatchChangeSummaries") {
       IO {
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(0)
           // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId
           val queryResult = GET_BATCH_CHANGE_SUMMARY
-            .bindByName('userId -> userId, 'startFrom -> startValue, 'maxItems -> (maxItems + 1))
+            .bindByName(
+              'userId -> userId.getOrElse("%"),
+              'startFrom -> startValue,
+              'maxItems -> (maxItems + 1))
             .map { res =>
               val pending = res.int("pending_count")
               val failed = res.int("fail_count")
               val complete = res.int("complete_count")
               BatchChangeSummary(
-                userId,
+                res.string("user_id"),
                 res.string("user_name"),
                 Option(res.string("comments")),
                 new org.joda.time.DateTime(res.timestamp("created_time")),

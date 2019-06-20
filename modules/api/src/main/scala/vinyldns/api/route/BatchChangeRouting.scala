@@ -50,16 +50,20 @@ trait BatchChangeRoute extends Directives {
         }
       } ~
       (get & path("zones" / "batchrecordchanges") & monitor("Endpoint.listBatchChangeSummaries")) {
-        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(MAX_ITEMS_LIMIT)) {
-          (startFrom: Option[Int], maxItems: Int) =>
+        parameters(
+          "startFrom".as[Int].?,
+          "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
+          "listAll".as[Boolean].?(false)) {
+          (startFrom: Option[Int], maxItems: Int, listAll: Boolean) =>
             {
               handleRejections(invalidQueryHandler) {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
                   s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
                   execute(batchChangeService
-                    .listBatchChangeSummaries(authPrincipal, startFrom, maxItems)) { summaries =>
-                    complete(StatusCodes.OK, summaries)
+                    .listBatchChangeSummaries(authPrincipal, startFrom, maxItems, listAll)) {
+                    summaries =>
+                      complete(StatusCodes.OK, summaries)
                   }
                 }
               }

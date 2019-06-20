@@ -26,8 +26,8 @@ trait BatchChangeRepository extends Repository {
 
   def getBatchChange(batchChangeId: String): IO[Option[BatchChange]]
 
-  def getBatchChangeSummariesByUserId(
-      userId: String,
+  def getBatchChangeSummaries(
+      userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100): IO[BatchChangeSummaryList]
 
