@@ -33,21 +33,6 @@ class MySqlTaskRepository extends TaskRepository {
    * `updated IS NULL` case is for the first run where the seeded data does not have an updated time set
    */
 
-  private val START_TRANSACTION =
-    sql"""
-      |START TRANSACTION;
-      """.stripMargin
-
-  private val FETCH_UNCLAIMED_TASK =
-    sql"""
-      |SELECT *
-      |  FROM task
-      | WHERE (in_flight = 0
-      |    OR updated IS NULL
-      |    OR updated < {updatedTimeComparison})
-      |   AND name = {taskName} FOR UPDATE;
-      """.stripMargin
-
   private val CLAIM_UNCLAIMED_TASK =
     sql"""
       |UPDATE task
@@ -58,11 +43,6 @@ class MySqlTaskRepository extends TaskRepository {
       |   AND name = {taskName};
       """.stripMargin
 
-  private val COMMIT =
-    sql"""
-      |COMMIT;
-      """.stripMargin
-
   private val UNCLAIM_TASK =
     sql"""
       |UPDATE task
@@ -70,21 +50,11 @@ class MySqlTaskRepository extends TaskRepository {
       | WHERE name = {name}
       """.stripMargin
 
-  def fetchAndClaimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
+  def claimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
     IO {
       val pollingExpirationHours = pollingInterval.toHours * 2
       val currentTime = DateTime.now
       DB.localTx { implicit s =>
-        START_TRANSACTION.execute()
-
-        FETCH_UNCLAIMED_TASK
-          .bindByName(
-            'updatedTimeComparison -> currentTime.minusHours(pollingExpirationHours.toInt),
-            'taskName -> name)
-          .map(_.string(1))
-          .first()
-          .apply()
-
         val updateResult = CLAIM_UNCLAIMED_TASK
           .bindByName(
             'updatedTimeComparison -> currentTime.minusHours(pollingExpirationHours.toInt),
@@ -93,8 +63,6 @@ class MySqlTaskRepository extends TaskRepository {
           .first()
           .update()
           .apply()
-
-        COMMIT.execute()
 
         updateResult == 1
       }

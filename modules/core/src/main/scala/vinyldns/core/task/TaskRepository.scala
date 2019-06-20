@@ -23,7 +23,7 @@ import scala.concurrent.duration.FiniteDuration
 
 trait TaskRepository extends Repository {
 
-  def fetchAndClaimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean]
+  def claimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean]
 
   def releaseTask(name: String): IO[Unit]
 }
