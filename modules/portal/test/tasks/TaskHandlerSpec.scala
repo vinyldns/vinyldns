@@ -25,7 +25,7 @@ import vinyldns.core.task.TaskRepository
 
 import scala.concurrent.duration._
 
-class UserSyncTaskHandlerSpec extends Specification with Mockito {
+class TaskHandlerSpec extends Specification with Mockito {
   implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.Implicits.global)
 
@@ -81,7 +81,7 @@ class UserSyncTaskHandlerSpec extends Specification with Mockito {
     }
   }
 
-  "doTask" should {
+  "runSyncTask" should {
     "process entire flow if fetchAndClaimTask succeeds" in {
       taskHandler
         .runSyncTask(
@@ -99,6 +99,14 @@ class UserSyncTaskHandlerSpec extends Specification with Mockito {
           mockUserAccountAccessor,
           mockAuthenticator)
         .unsafeRunSync() must throwA[NoTaskToClaim]
+    }
+  }
+
+  "run" should {
+    "run the task stream" in {
+      taskHandler
+        .run(mockSettings, mockUserAccountAccessor, mockAuthenticator)
+        .unsafeRunTimed(mockSettings.ldapSyncPollingInterval * 2) must beNone
     }
   }
 }

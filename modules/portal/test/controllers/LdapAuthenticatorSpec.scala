@@ -167,6 +167,13 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           response must beLeft
         }
       }
+
+      "return an error if no LDAP search domains are provided" in {
+        val noDomainsLdapAuthenticator =
+          new LdapAuthenticator(List(), mock[LdapByDomainAuthenticator], mock[ServiceAccount])
+
+        noDomainsLdapAuthenticator.authenticate("someUserName", "somePassword") must beLeft
+      }
     }
     ".lookup" should {
       "lookup first with 1st domain" in {
@@ -188,6 +195,13 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
 
         "and return details if authenticated" in {
           response must beRight
+        }
+
+        "return an error if no LDAP search domains are provided" in {
+          val noDomainsLdapAuthenticator =
+            new LdapAuthenticator(List(), mock[LdapByDomainAuthenticator], mock[ServiceAccount])
+
+          noDomainsLdapAuthenticator.lookup("someUserName") must beLeft
         }
       }
 
