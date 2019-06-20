@@ -42,29 +42,28 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
   private final val GET_USER_BY_ID =
     sql"""
          | SELECT data
-         |  FROM user
+         |   FROM user
          |  WHERE id = ?
        """.stripMargin
 
   private final val GET_USER_BY_ACCESS_KEY =
     sql"""
          | SELECT data
-         |  FROM user
+         |   FROM user
          |  WHERE access_key = ?
        """.stripMargin
 
   private final val GET_USER_BY_USER_NAME =
     sql"""
          | SELECT data
-         |  FROM user
+         |   FROM user
          |  WHERE user_name = ?
        """.stripMargin
 
-  final val BASE_GET_USERS: String =
+  private final val BASE_GET_USERS: String =
     """
       | SELECT data
       |  FROM user
-      |  WHERE id
       """.stripMargin
 
   def getUser(userId: String): IO[Option[User]] =
@@ -94,7 +93,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
           val users = DB.readOnly { implicit s =>
             val sb = new StringBuilder
             sb.append(BASE_GET_USERS)
-            sb.append(" IN (" + userIds.toList.as("?").mkString(",") + ")")
+            sb.append("WHERE ID IN (" + userIds.toList.as("?").mkString(",") + ")")
             startFrom.foreach(start => sb.append(s" AND id > '$start'"))
             sb.append(" ORDER BY id ASC")
             // Grab one more than the maxItem limit, if provided, to determine whether nextId should be returned
@@ -114,6 +113,18 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
               else ListUsersResults(returnUsers, None)
             case None => ListUsersResults(users, None)
           }
+        }
+      }
+    }
+
+  def getAllUsers: IO[List[User]] =
+    monitor("repo.User.getAllUsers") {
+      IO {
+        DB.readOnly { implicit s =>
+          SQL(BASE_GET_USERS)
+            .map(toUser(1))
+            .list()
+            .apply()
         }
       }
     }
@@ -162,6 +173,30 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
             .apply()
         }
         user
+      }
+    }
+
+  def save(users: List[User]): IO[List[User]] =
+    monitor("repo.User.save") {
+      IO {
+        logger.info(s"Saving users with ids: ${users.map(_.id).mkString(", ")}")
+
+        val updates = users.map { u =>
+          Seq(
+            'id -> u.id,
+            'userName -> u.userName,
+            'accessKey -> u.accessKey,
+            'data -> toPB(u.withEncryptedSecretKey(cryptoAlgebra)).toByteArray
+          )
+        }
+
+        DB.localTx { implicit s =>
+          updates.grouped(1000).foreach { group =>
+            PUT_USER.batchByName(group: _*).apply()
+          }
+        }
+
+        users
       }
     }
 

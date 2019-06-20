@@ -36,12 +36,12 @@ class MySqlUserRepositoryIntegrationSpec
     User(id = id, userName = "name" + id, accessKey = s"abc$id", secretKey = "123")
   }
 
-  private val case_insensitive_user1 =
-    User(id = "case_insensitive_user1", userName = "Name1", accessKey = "a1", secretKey = "s1")
-  private val case_insensitive_user2 =
-    User(id = "case_insensitive_user2", userName = "namE2", accessKey = "a2", secretKey = "s2")
-  private val case_insensitive_user3 =
-    User(id = "case_insensitive_user3", userName = "name3", accessKey = "a3", secretKey = "s3")
+  private val caseInsensitiveUser1 =
+    User(id = "caseInsensitiveUser1", userName = "Name1", accessKey = "a1", secretKey = "s1")
+  private val caseInsensitiveUser2 =
+    User(id = "caseInsensitiveUser2", userName = "namE2", accessKey = "a2", secretKey = "s2")
+  private val caseInsensitiveUser3 =
+    User(id = "caseInsensitiveUser3", userName = "name3", accessKey = "a3", secretKey = "s3")
 
   override protected def beforeAll(): Unit = {
     repo = TestMySqlInstance.userRepository
@@ -54,9 +54,9 @@ class MySqlUserRepositoryIntegrationSpec
       repo.save(user).unsafeRunSync()
     }
 
-    repo.save(case_insensitive_user1).unsafeRunSync()
-    repo.save(case_insensitive_user2).unsafeRunSync()
-    repo.save(case_insensitive_user3).unsafeRunSync()
+    repo.save(caseInsensitiveUser1).unsafeRunSync()
+    repo.save(caseInsensitiveUser2).unsafeRunSync()
+    repo.save(caseInsensitiveUser3).unsafeRunSync()
   }
 
   override protected def afterAll(): Unit = {
@@ -64,6 +64,13 @@ class MySqlUserRepositoryIntegrationSpec
       s.executeUpdate("DELETE FROM user")
     }
     super.afterAll()
+  }
+
+  "MySqlUserRepository.getAllUsers" should {
+    "return all users" in {
+      repo.getAllUsers.unsafeRunSync() should contain theSameElementsAs
+        users ++ List(caseInsensitiveUser1, caseInsensitiveUser2, caseInsensitiveUser3)
+    }
   }
 
   "MySqlUserRepository.save" should {
@@ -112,11 +119,19 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "save non-support user with non-support status" in {
-      val nonSupportdUser = User("unlockedName", "unlockedAccess", "unlockedSecret")
-      repo.save(nonSupportdUser).unsafeRunSync() shouldBe nonSupportdUser
-      val result = repo.getUser(nonSupportdUser.id).unsafeRunSync()
-      result shouldBe Some(nonSupportdUser)
+      val nonSupportUser = User("unlockedName", "unlockedAccess", "unlockedSecret")
+      repo.save(nonSupportUser).unsafeRunSync() shouldBe nonSupportUser
+      val result = repo.getUser(nonSupportUser.id).unsafeRunSync()
+      result shouldBe Some(nonSupportUser)
       result.get.isSupport shouldBe false
+    }
+
+    "save a list of users" in {
+      val userList = (0 to 10).toList.map { i =>
+        User(userName = s"batch-save-user-$i", "accessKey", "secretKey")
+      }
+
+      repo.save(userList).unsafeRunSync() shouldBe userList
     }
   }
 
@@ -150,14 +165,14 @@ class MySqlUserRepositoryIntegrationSpec
     }
 
     "be case insensitive" in {
-      repo.getUserByName("name1").unsafeRunSync() shouldBe Some(case_insensitive_user1)
-      repo.getUserByName("NAME1").unsafeRunSync() shouldBe Some(case_insensitive_user1)
+      repo.getUserByName("name1").unsafeRunSync() shouldBe Some(caseInsensitiveUser1)
+      repo.getUserByName("NAME1").unsafeRunSync() shouldBe Some(caseInsensitiveUser1)
 
-      repo.getUserByName("name2").unsafeRunSync() shouldBe Some(case_insensitive_user2)
-      repo.getUserByName("NAME2").unsafeRunSync() shouldBe Some(case_insensitive_user2)
+      repo.getUserByName("name2").unsafeRunSync() shouldBe Some(caseInsensitiveUser2)
+      repo.getUserByName("NAME2").unsafeRunSync() shouldBe Some(caseInsensitiveUser2)
 
-      repo.getUserByName("name3").unsafeRunSync() shouldBe Some(case_insensitive_user3)
-      repo.getUserByName("NAME3").unsafeRunSync() shouldBe Some(case_insensitive_user3)
+      repo.getUserByName("name3").unsafeRunSync() shouldBe Some(caseInsensitiveUser3)
+      repo.getUserByName("NAME3").unsafeRunSync() shouldBe Some(caseInsensitiveUser3)
     }
   }
 

@@ -29,9 +29,13 @@ trait UserRepository extends Repository {
       startFrom: Option[String],
       maxItems: Option[Int]): IO[ListUsersResults]
 
+  def getAllUsers: IO[List[User]]
+
   def getUserByAccessKey(accessKey: String): IO[Option[User]]
 
   def getUserByName(userName: String): IO[Option[User]]
 
   def save(user: User): IO[User]
+
+  def save(users: List[User]): IO[List[User]]
 }

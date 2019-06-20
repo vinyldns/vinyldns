@@ -270,6 +270,14 @@ class DynamoDBUserRepository private[repository] (
     }
   }
 
+  def getAllUsers: IO[List[User]] =
+    monitor("repo.User.getAllUsers") {
+      IO.raiseError(
+        UnsupportedDynamoDBRepoFunction(
+          "getAllUsers is not supported by VinylDNS DynamoDB UserRepository")
+      )
+    }
+
   def getUserByAccessKey(accessKey: String): IO[Option[User]] =
     monitor("repo.User.getUserByAccessKey") {
       log.info(s"Getting user by access key $accessKey")
@@ -298,5 +306,13 @@ class DynamoDBUserRepository private[repository] (
       log.info(s"Saving user id: ${user.id} name: ${user.userName}.")
       val request = new PutItemRequest().withTableName(userTableName).withItem(serialize(user))
       dynamoDBHelper.putItem(request).map(_ => user)
+    }
+
+  def save(users: List[User]): IO[List[User]] =
+    monitor("repo.User.save") {
+      IO.raiseError(
+        UnsupportedDynamoDBRepoFunction(
+          "batch save is not supported by VinylDNS DynamoDb UserRepository")
+      )
     }
 }

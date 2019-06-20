@@ -23,6 +23,7 @@ import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName.RepositoryName
 import vinyldns.core.health.HealthCheck.HealthCheck
+import vinyldns.core.task.TaskRepository
 
 import scala.reflect.ClassTag
 
@@ -42,7 +43,8 @@ object DataStore {
       zoneChangeRepository: Option[ZoneChangeRepository] = None,
       zoneRepository: Option[ZoneRepository] = None,
       batchChangeRepository: Option[BatchChangeRepository] = None,
-      userChangeRepository: Option[UserChangeRepository] = None
+      userChangeRepository: Option[UserChangeRepository] = None,
+      taskRepository: Option[TaskRepository] = None
   ): DataStore =
     new DataStore(
       userRepository,
@@ -54,7 +56,8 @@ object DataStore {
       zoneChangeRepository,
       zoneRepository,
       batchChangeRepository,
-      userChangeRepository
+      userChangeRepository,
+      taskRepository
     )
 }
 
@@ -68,7 +71,8 @@ class DataStore(
     zoneChangeRepository: Option[ZoneChangeRepository] = None,
     zoneRepository: Option[ZoneRepository] = None,
     batchChangeRepository: Option[BatchChangeRepository] = None,
-    userChangeRepository: Option[UserChangeRepository] = None
+    userChangeRepository: Option[UserChangeRepository] = None,
+    taskRepository: Option[TaskRepository] = None
 ) {
 
   lazy val dataStoreMap: Map[RepositoryName, Repository] =
@@ -82,7 +86,8 @@ class DataStore(
       zoneChangeRepository.map(RepositoryName.zoneChange -> _),
       zoneRepository.map(RepositoryName.zone -> _),
       batchChangeRepository.map(RepositoryName.batchChange -> _),
-      userChangeRepository.map(RepositoryName.userChange -> _)
+      userChangeRepository.map(RepositoryName.userChange -> _),
+      taskRepository.map(RepositoryName.task -> _)
     ).flatten.toMap
 
   def keys: Set[RepositoryName] = dataStoreMap.keySet

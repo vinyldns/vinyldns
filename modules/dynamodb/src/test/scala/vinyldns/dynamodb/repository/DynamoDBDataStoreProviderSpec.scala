@@ -98,6 +98,7 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
           None,
           None,
           None,
+          None,
           None)
       val response = underTest
         .loadRepoConfigs(repoSettings)
@@ -117,6 +118,7 @@ class DynamoDBDataStoreProviderSpec extends WordSpec with Matchers {
         RepositoriesConfig(
           Some(badRepoConf),
           Some(badRepoConf),
+          None,
           None,
           None,
           None,

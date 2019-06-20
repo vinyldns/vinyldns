@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package vinyldns.core.repository
+package vinyldns.core.task
 
-trait Repository
+import cats.effect.IO
+import vinyldns.core.repository.Repository
 
-object RepositoryName extends Enumeration {
-  type RepositoryName = Value
-  val user, group, membership, groupChange, recordSet, recordChange, zoneChange, zone, batchChange,
-  userChange, task =
-    Value
+import scala.concurrent.duration.FiniteDuration
+
+trait TaskRepository extends Repository {
+
+  def claimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean]
+
+  def releaseTask(name: String): IO[Unit]
 }

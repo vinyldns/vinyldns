@@ -23,6 +23,7 @@ import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore, RepositoryName}
+import vinyldns.core.task.TaskRepository
 import vinyldns.mysql.repository.MySqlDataStoreProvider
 
 trait MySqlIntegrationSpec {
@@ -55,6 +56,8 @@ trait MySqlIntegrationSpec {
     instance.get[GroupChangeRepository](RepositoryName.groupChange).get
   lazy val userChangeRepository: UserChangeRepository =
     instance.get[UserChangeRepository](RepositoryName.userChange).get
+  lazy val taskRepository: TaskRepository =
+    instance.get[TaskRepository](RepositoryName.task).get
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {
