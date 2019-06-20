@@ -581,7 +581,7 @@ class VinylDNSClient(object):
         _, data = self.make_request(url, u'POST', self.headers, json.dumps(reject_batch_change_input), **kwargs)
         return data
 
-    def list_batch_change_summaries(self, start_from=None, max_items=None, **kwargs):
+    def list_batch_change_summaries(self, start_from=None, max_items=None, list_all=False, **kwargs):
         """
         Gets list of user's batch change summaries
         :return: the content of the response
@@ -591,6 +591,8 @@ class VinylDNSClient(object):
             args.append(u'startFrom={0}'.format(start_from))
         if max_items is not None:
             args.append(u'maxItems={0}'.format(max_items))
+        if list_all:
+            args.append(u'listAll={0}'.format(list_all))
 
         url = urljoin(self.index_url, u'/zones/batchrecordchanges') + u'?' + u'&'.join(args)
 

@@ -250,3 +250,64 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
         for result_rs in record_to_delete:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
+
+
+def test_list_batch_change_summaries_with_list_all_true_only_shows_requesting_users_records(shared_zone_test_context):
+    """
+    Test that getting a batch change summary with list all set to true only returns the requesting user's batch changes
+    if they are not a super user
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    group = shared_zone_test_context.shared_record_group
+
+    batch_change_input = {
+        "comments": '',
+        "changes": [
+            get_change_A_AAAA_json("listing-batch-with-owner-group.shared.", address="1.1.1.1")
+        ],
+        "ownerGroupId": group['id']
+    }
+
+    ok_batch_change_input = {
+        "comments": '',
+        "changes": [
+            get_change_A_AAAA_json("ok-batch-with-owner-group.shared.", address="1.1.1.1")
+        ],
+        "ownerGroupId": group['id']
+    }
+
+    record_to_delete = []
+    ok_record_to_delete = []
+
+    try:
+        batch_change = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(batch_change)
+
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        record_to_delete = set(record_set_list)
+
+        batch_change_summaries_result = client.list_batch_change_summaries(list_all=True, status=200)["batchChanges"]
+
+        under_test = [item for item in batch_change_summaries_result if item['id'] == completed_batch['id']]
+        assert_that(under_test, has_length(1))
+
+        # Make OK user batch change, then list batch changes. Should not see the Shared user batch change.
+        ok_batch_change = ok_client.create_batch_change(ok_batch_change_input, status=202)
+        ok_completed_batch = ok_client.wait_until_batch_change_completed(ok_batch_change)
+
+        ok_record_set_list = [(change['zoneId'], change['recordSetId']) for change in ok_completed_batch['changes']]
+        ok_record_to_delete = set(ok_record_set_list)
+
+        ok_batch_change_summaries_result = ok_client.list_batch_change_summaries(list_all=True, status=200)["batchChanges"]
+
+        ok_under_test = [item for item in ok_batch_change_summaries_result if (item['id'] == ok_completed_batch['id'] or item['id'] == completed_batch['id']) ]
+        assert_that(ok_under_test, has_length(1))
+
+    finally:
+        for result_rs in record_to_delete:
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
+        for result_rs in ok_record_to_delete:
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            client.wait_until_recordset_change_status(delete_result, 'Complete')
