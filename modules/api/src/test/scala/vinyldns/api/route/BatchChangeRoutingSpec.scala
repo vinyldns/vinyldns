@@ -78,35 +78,11 @@ class BatchChangeRoutingSpec
             None,
             None,
             "singleAddChangeId"),
-          SingleAddChange(
-            None,
-            None,
-            None,
-            "fqdn.two",
-            A,
-            3600,
-            AData("1.1.1.1"),
-            Pending,
-            Some("systemMessage"),
-            None,
-            None,
-            "singleAddChangeId"),
           SingleDeleteChange(
             Some("zoneId"),
             Some("zoneName"),
             Some("recordName"),
             "fqdn",
-            A,
-            Pending,
-            Some("systemMessage"),
-            None,
-            None,
-            "singleDeleteChangeId"),
-          SingleDeleteChange(
-            None,
-            None,
-            None,
-            "fqdn.two",
             A,
             Pending,
             Some("systemMessage"),
@@ -172,6 +148,34 @@ class BatchChangeRoutingSpec
       createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
     val genericValidResponse: BatchChange = createBatchChangeResponse(
       Some("generic valid response"))
+
+    val backwardsCompatibleDel = SingleDeleteChange(
+      None,
+      None,
+      None,
+      "fqdn.two",
+      A,
+      Pending,
+      Some("systemMessage"),
+      None,
+      None,
+      "singleDeleteChangeId")
+    val backwardsCompatibleAdd = SingleDeleteChange(
+      None,
+      None,
+      None,
+      "fqdn.two",
+      A,
+      Pending,
+      Some("systemMessage"),
+      None,
+      None,
+      "singleDeleteChangeId")
+
+    val backwardsCompatable: BatchChange = genericValidResponse.copy(
+      id = "testBwComp",
+      changes = List(backwardsCompatibleAdd, backwardsCompatibleDel))
+
     val validListBatchChangeSummariesResponse: BatchChangeSummaryList = BatchChangeSummaryList(
       List(BatchChangeSummary(createBatchChangeResponse(None))))
   }
@@ -214,6 +218,8 @@ class BatchChangeRoutingSpec
           EitherT(IO.pure(BatchChangeNotFound("nonexistentID").asLeft))
         case "notAuthedID" =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
+        case backwardsCompatable.id =>
+          EitherT(IO.pure(createBatchChangeInfoResponse(backwardsCompatable).asRight))
       }
 
     def listBatchChangeSummaries(
@@ -379,14 +385,17 @@ class BatchChangeRoutingSpec
       }
     }
 
-    "maintain backwards compatability for unknow" in {
-      Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute(okAuth) ~> check {
+    "maintain backwards compatability for zoneName/recordName/zoneId" in {
+      Get(s"/zones/batchrecordchanges/${backwardsCompatable.id}") ~> batchChangeRoute(okAuth) ~> check {
 
         status shouldBe OK
 
         val resp = responseAs[JValue]
-        compact(resp) shouldBe compact(
-          Extraction.decompose(createBatchChangeInfoResponse(genericValidResponse)))
+        val asString = compact(resp)
+
+        asString should include("zoneName\":\"\"")
+        asString should include("recordName\":\"\"")
+        asString should include("zoneId\":\"\"")
       }
     }
 
