@@ -93,8 +93,6 @@ object LdapAuthenticator {
   private[controllers] object LdapByDomainAuthenticator {
     def apply(settings: Settings): LdapByDomainAuthenticator =
       new LdapByDomainAuthenticator(settings, createContext(settings))
-
-    def apply(): LdapByDomainAuthenticator = LdapByDomainAuthenticator(Settings)
   }
 
   /**
