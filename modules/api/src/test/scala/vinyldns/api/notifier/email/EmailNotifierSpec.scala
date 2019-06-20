@@ -168,9 +168,9 @@ class EmailNotifierSpec
       val description = "notes"
       val singleChanges: List[SingleChange] = List(
         SingleAddChange(
-          "",
-          "",
-          "",
+          Some(""),
+          Some(""),
+          Some(""),
           "www.test.com",
           RecordType.A,
           200,
@@ -180,9 +180,9 @@ class EmailNotifierSpec
           None,
           None),
         SingleDeleteChange(
-          "",
-          "",
-          "",
+          Some(""),
+          Some(""),
+          Some(""),
           "deleteme.test.com",
           RecordType.A,
           SingleChangeStatus.Failed,
