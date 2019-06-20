@@ -83,9 +83,8 @@ case class DnsZoneViewLoader(
           else IO.pure(Unit)
           dnsZoneName <- IO(zoneDnsName(zone.name))
           recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
-          _ <- IO(
-            DnsZoneViewLoader.logger.info(
-              s"dns.loadDnsView zoneName=${zone.name}; rawRsCount=${zoneXfr.size}; rsCount=${recordSets.size}"))
+          _ <- IO(DnsZoneViewLoader.logger.info(
+            s"dns.loadDnsView zoneName=${zone.name}; rawRsCount=${zoneXfr.size}; rsCount=${recordSets.size}"))
         } yield ZoneView(zone, recordSets)
     }
 }

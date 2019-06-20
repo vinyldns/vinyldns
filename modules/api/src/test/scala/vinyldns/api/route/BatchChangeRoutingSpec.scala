@@ -78,11 +78,35 @@ class BatchChangeRoutingSpec
             None,
             None,
             "singleAddChangeId"),
+          SingleAddChange(
+            None,
+            None,
+            None,
+            "fqdn.two",
+            A,
+            3600,
+            AData("1.1.1.1"),
+            Pending,
+            Some("systemMessage"),
+            None,
+            None,
+            "singleAddChangeId"),
           SingleDeleteChange(
             Some("zoneId"),
             Some("zoneName"),
             Some("recordName"),
             "fqdn",
+            A,
+            Pending,
+            Some("systemMessage"),
+            None,
+            None,
+            "singleDeleteChangeId"),
+          SingleDeleteChange(
+            None,
+            None,
+            None,
+            "fqdn.two",
             A,
             Pending,
             Some("systemMessage"),
@@ -345,6 +369,17 @@ class BatchChangeRoutingSpec
 
   "GET Batch Change Info" should {
     "return the batch change info given a valid batch change id" in {
+      Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute(okAuth) ~> check {
+
+        status shouldBe OK
+
+        val resp = responseAs[JValue]
+        compact(resp) shouldBe compact(
+          Extraction.decompose(createBatchChangeInfoResponse(genericValidResponse)))
+      }
+    }
+
+    "maintain backwards compatability for unknow" in {
       Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute(okAuth) ~> check {
 
         status shouldBe OK
