@@ -25,6 +25,8 @@ import org.specs2.mock.mockito.ArgumentCapture
 import org.specs2.mutable.Specification
 import play.api.{Configuration, Environment}
 import vinyldns.core.health.HealthCheck._
+import vinyldns.core.domain.membership.User
+import vinyldns.core.health.HealthCheck.HealthCheckError
 
 class LdapAuthenticatorSpec extends Specification with Mockito {
 
@@ -62,6 +64,7 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
 
   val testDomain1 = LdapSearchDomain("someDomain", "DC=test,DC=test,DC=com")
   val testDomain2 = LdapSearchDomain("anotherDomain", "DC=test,DC=com")
+  val nonexistentUser = User("does-not-exist", "accessKey", "secretKey")
 
   "LdapAuthenticator" should {
     "apply method must create an LDAP Authenticator" in {
@@ -316,6 +319,45 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         response should beRight[Unit]
       }
     }
+    ".getUsersNotInLdap" should {
+      "return a list of users not found in LDAP" in {
+        val byDomainAuthenticator = mock[LdapByDomainAuthenticator]
+        val serviceAccount = mock[ServiceAccount]
+        byDomainAuthenticator
+          .lookup(testDomain1, "does-not-exist", serviceAccount)
+          .returns(Left(UserDoesNotExistException("does not exist")))
+        byDomainAuthenticator
+          .lookup(testDomain2, "does-not-exist", serviceAccount)
+          .returns(Left(UserDoesNotExistException("does not exist")))
+        byDomainAuthenticator
+          .lookup(testDomain1, "existing-user", serviceAccount)
+          .returns(Right(LdapUserDetails("", "", None, None, None)))
+        byDomainAuthenticator
+          .lookup(testDomain1, "another-existing-user", serviceAccount)
+          .returns(Left(UserDoesNotExistException("does not exist")))
+        byDomainAuthenticator
+          .lookup(testDomain2, "another-existing-user", serviceAccount)
+          .returns(Right(LdapUserDetails("", "", None, None, None)))
+        byDomainAuthenticator
+          .lookup(testDomain1, serviceAccount.name, serviceAccount)
+          .returns(Right(LdapUserDetails("", "", None, None, None)))
+        val authenticator =
+          new LdapAuthenticator(
+            List(testDomain1, testDomain2),
+            byDomainAuthenticator,
+            serviceAccount
+          )
+
+        authenticator
+          .getUsersNotInLdap(
+            List(
+              nonexistentUser,
+              nonexistentUser.copy(userName = "existing-user"),
+              nonexistentUser.copy(userName = "another-existing-user")))
+          .unsafeRunSync() must
+          beEqualTo(List(nonexistentUser))
+      }
+    }
   }
 
   "LdapByDomainAuthenticator" should {
@@ -481,12 +523,22 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         .returns(Left(UserDoesNotExistException("should not be here")))
 
       val underTest = new TestAuthenticator(mockLdapAuth)
-      val result = underTest.authenticate("testuser", "testpassword")
+      val testUserLookup = underTest.authenticate("testuser", "testpassword")
 
-      result must beRight(
+      testUserLookup must beRight(
         LdapUserDetails(
           "O=test,OU=testdata,CN=testuser",
           "testuser",
+          Some("test@test.test"),
+          Some("Test"),
+          Some("User")))
+
+      val recordPagingUserLookup = underTest.lookup("recordPagingTestUser")
+
+      recordPagingUserLookup must beRight(
+        LdapUserDetails(
+          "O=test,OU=testdata,CN=recordPagingTestUser",
+          "recordPagingTestUser",
           Some("test@test.test"),
           Some("Test"),
           Some("User")))
@@ -529,15 +581,26 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         .returns(Left(UserDoesNotExistException("should not be here")))
 
       val underTest = new TestAuthenticator(mockLdapAuth)
-      val result = underTest.lookup("testuser")
+      val testUserLookup = underTest.lookup("testuser")
 
-      result must beRight(
+      testUserLookup must beRight(
         LdapUserDetails(
           "O=test,OU=testdata,CN=testuser",
           "testuser",
           Some("test@test.test"),
           Some("Test"),
           Some("User")))
+
+      val recordPagingUserLookup = underTest.lookup("recordPagingTestUser")
+
+      recordPagingUserLookup must beRight(
+        LdapUserDetails(
+          "O=test,OU=testdata,CN=recordPagingTestUser",
+          "recordPagingTestUser",
+          Some("test@test.test"),
+          Some("Test"),
+          Some("User")))
+
       there.were(noCallsTo(mockLdapAuth))
     }
     "lookup the record paging test user" in {
@@ -569,6 +632,23 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
 
       result must beRight(userDetails)
       there.was(one(mockLdapAuth).lookup("foo"))
+    }
+    "find non-existent users" in {
+      val mockLdapAuth = mock[LdapAuthenticator]
+      mockLdapAuth
+        .getUsersNotInLdap(List(nonexistentUser))
+        .returns(IO(List(nonexistentUser)))
+
+      val underTest = new TestAuthenticator(mockLdapAuth)
+      underTest.getUsersNotInLdap(List(nonexistentUser)).unsafeRunSync() must beEqualTo(
+        List(nonexistentUser))
+    }
+    "perform a health check" in {
+      val mockLdapAuth = mock[LdapAuthenticator]
+      mockLdapAuth.healthCheck().returns(IO(Right(())))
+      val underTest = new TestAuthenticator(mockLdapAuth)
+
+      underTest.healthCheck().unsafeRunSync() must beRight(())
     }
   }
   "return a successful health check" in {
