@@ -51,15 +51,15 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
   protected def before: Any =
     org.mockito.Mockito.reset(mockRepo, mockChangeRepo)
 
-  "User Account Accessor" should {
-    "Return the user when storing a user that does not exist already" in {
+  "UserAccountAccessor" should {
+    "return the user when storing a user that does not exist already" in {
       mockRepo.save(any[User]).returns(IO.pure(user))
       mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
       underTest.create(user).unsafeRunSync() must beEqualTo(user)
       there.was(one(mockChangeRepo).save(any[UserChange]))
     }
 
-    "Return the new user when storing a user that already exists in the store" in {
+    "return the new user when storing a user that already exists in the store" in {
       val newUser = user.copy(accessKey = "new-key", secretKey = "new-secret")
       mockRepo.save(any[User]).returns(IO.pure(newUser))
       mockChangeRepo.save(any[UserChange]).returns(IO.pure(userLog))
@@ -67,27 +67,45 @@ class UserAccountAccessorSpec extends Specification with Mockito with BeforeEach
       there.was(one(mockChangeRepo).save(any[UserChange]))
     }
 
-    "Return the user when retrieving a user that exists by name" in {
+    "return the user when retrieving a user that exists by name" in {
       mockRepo.getUserByName(user.userName).returns(IO.pure(Some(user)))
       mockRepo.getUser(user.userName).returns(IO.pure(None))
       underTest.get("fbaggins").unsafeRunSync() must beSome(user)
     }
 
-    "Return the user when retrieving a user that exists by user id" in {
+    "return the user when retrieving a user that exists by user ID" in {
       mockRepo.getUserByName(user.id).returns(IO.pure(None))
       mockRepo.getUser(user.id).returns(IO.pure(Some(user)))
       underTest.get(user.id).unsafeRunSync() must beSome(user)
     }
 
-    "Return None when the user to be retrieved does not exist" in {
+    "return None when the user to be retrieved does not exist" in {
       mockRepo.getUserByName(any[String]).returns(IO.pure(None))
       mockRepo.getUser(any[String]).returns(IO.pure(None))
       underTest.get("fbaggins").unsafeRunSync() must beNone
     }
 
-    "Return the user by access key" in {
+    "return the user by access key" in {
       mockRepo.getUserByAccessKey(user.id).returns(IO.pure(Some(user)))
       underTest.getUserByKey(user.id).unsafeRunSync() must beSome(user)
+    }
+
+    "return all users" in {
+      val userList = List(user, user.copy(id = "user2", userName = "user2"))
+      mockRepo.getAllUsers.returns(IO.pure(userList))
+      underTest.getAllUsers.unsafeRunSync() must beEqualTo(userList)
+    }
+
+    "lock specified users" in {
+      val lockedUser = user.copy(lockStatus = LockStatus.Locked)
+      val lockedUserChange = UserChange.UpdateUser(
+        user.copy(lockStatus = LockStatus.Locked),
+        "system",
+        DateTime.now,
+        user)
+      mockRepo.save(List(lockedUser)).returns(IO(List(lockedUser)))
+      mockChangeRepo.save(any[UserChange]).returns(IO(lockedUserChange))
+      underTest.lockUsers(List(user)).unsafeRunSync() must beEqualTo(List(lockedUser))
     }
   }
 }
