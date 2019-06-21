@@ -136,7 +136,7 @@ class BatchChangeService(
 
     nonPtr
       .map {
-        case record if List(A, AAAA, MX, TXT).contains(record.typ) =>
+        case record if List(A, AAAA, MX, PTR, TXT).contains(record.typ) =>
           getAllPossibleZones(record.inputName).toSet
         case otherForward => getZonesForNonDottedTypes(otherForward)
       }
