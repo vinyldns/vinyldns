@@ -98,22 +98,8 @@ object AccessValidations extends AccessValidationAlgebra {
     if (auth.isSuper || auth.isGroupMember(zone.adminGroupId))
       recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))
     else {
-      val rulesForUser = zone.acl.rules.filter(ruleAppliesToUser(auth, _))
-
-      def getAccessFromUserAcls(recordName: String, recordType: RecordType): AccessLevel = {
-        // user filter has already been applied
-        val validRules = rulesForUser.filter { rule =>
-          ruleAppliesToRecordType(recordType, rule) && ruleAppliesToRecordName(
-            recordName,
-            recordType,
-            zone,
-            rule)
-        }
-        getPrioritizedAccessLevel(recordType, validRules)
-      }
-
       recordSets.map { rs =>
-        val aclAccessLevel = getAccessFromUserAcls(rs.name, rs.typ)
+        val aclAccessLevel = getAccessFromAcl(auth, rs.name, rs.typ, zone)
         val accessLevel = {
           if ((aclAccessLevel == AccessLevel.NoAccess) && auth.isSystemAdmin)
             AccessLevel.Read
