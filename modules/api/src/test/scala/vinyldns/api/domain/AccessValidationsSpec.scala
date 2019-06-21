@@ -21,12 +21,7 @@ import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone.{
-  NotAuthorizedError,
-  RecordSetInfo,
-  RecordSetListInfo,
-  ZoneSummaryInfo
-}
+import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetListInfo}
 import vinyldns.api.ResultHelpers
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -1023,25 +1018,6 @@ class AccessValidationsSpec
       result shouldBe expected
     }
 
-  }
-
-  "getZonesAccess" should {
-    "return access levels" in {
-      val goodUserRule = baseAclRule.copy(userId = Some(okUser.id), groupId = None)
-      val acl = ZoneACL(Set(goodUserRule))
-      val aclZone = abcZone.copy(acl = acl)
-      val result =
-        accessValidationTest.getZonesAccess(okAuth, List(okZone, sharedZone, abcZone, aclZone))
-
-      val expected = List(
-        ZoneSummaryInfo(okZone, "", AccessLevel.Delete),
-        ZoneSummaryInfo(sharedZone, "", AccessLevel.NoAccess),
-        ZoneSummaryInfo(abcZone, "", AccessLevel.NoAccess),
-        ZoneSummaryInfo(aclZone, "", AccessLevel.Read)
-      )
-
-      result shouldBe expected
-    }
   }
 
   "getZoneAccess" should {

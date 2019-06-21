@@ -126,12 +126,6 @@ object AccessValidations extends AccessValidationAlgebra {
       }
     }
 
-  def getZonesAccess(auth: AuthPrincipal, zones: List[Zone]): List[ZoneSummaryInfo] =
-    zones.map { zn =>
-      val accessLevel = getZoneAccess(auth, zn)
-      ZoneSummaryInfo(zn, "", accessLevel)
-    }
-
   def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel =
     if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
       AccessLevel.Delete

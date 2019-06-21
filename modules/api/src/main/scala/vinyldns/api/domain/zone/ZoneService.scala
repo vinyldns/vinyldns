@@ -148,8 +148,7 @@ class ZoneService(
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
       groups <- groupRepository.getGroups(groupIds)
-      zonesWithAccess = getZonesAccess(authPrincipal, zones)
-      zoneSummaryInfos = zoneAdminGroupMapping(zonesWithAccess, groups)
+      zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
     } yield
       ListZonesResponse(
         zoneSummaryInfos,
@@ -160,15 +159,17 @@ class ZoneService(
         listZonesResult.listAll)
   }.toResult
 
-  def zoneAdminGroupMapping(
-      zones: List[ZoneSummaryInfo],
+  def zoneSummaryInfoMapping(
+      zones: List[Zone],
+      auth: AuthPrincipal,
       groups: Set[Group]): List[ZoneSummaryInfo] =
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {
         case Some(group) => group.name
         case None => "Unknown group name"
       }
-      zn.copy(adminGroupName = groupName)
+      val zoneAccess = getZoneAccess(auth, zn)
+      ZoneSummaryInfo(zn, groupName, zoneAccess)
     }
 
   def listZoneChanges(
