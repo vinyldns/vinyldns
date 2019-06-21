@@ -126,16 +126,21 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       existingRecordSets: ExistingRecordSets,
       userId: String,
       ownerGroupId: Option[String]): List[RecordSetChange] = {
-    val grouped = changes.groupBy(_.recordKey)
+    // NOTE: this also assumes we are past approval and know the zone/record split at this point
+    val changesByKey = for {
+      c <- changes
+      rk <- c.recordKey.toList
+    } yield (rk, c)
 
-    grouped.toList.flatMap {
-      case (_, groupedChanges) =>
-        /* TODO note: the flatmap means if we couldnt get a zone here, we wouldn't be warned
-        that is fine as we will only be passed this change from the service if the zone exists in that map.
-        If we move to getting zones from the DB in the converter, we should report status back on changes
-        where we can no longer find the zone (edge case - means someone submitted batch and then zone was deleted)
-         */
-        combineChanges(groupedChanges, existingZones, existingRecordSets, userId, ownerGroupId)
+    val groupedChangeTuples =
+      changesByKey.groupBy { case (recordKey, _) => recordKey }.values.toList
+    groupedChangeTuples.flatMap { gc =>
+      combineChanges(
+        gc.map { case (_, singleChange) => singleChange },
+        existingZones,
+        existingRecordSets,
+        userId,
+        ownerGroupId)
     }
   }
 
@@ -175,12 +180,11 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       ownerGroupId: Option[String]): Option[RecordSetChange] =
     for {
       deleteChange <- Some(deleteChanges.head)
-      zone <- existingZones.getByName(deleteChange.zoneName)
-      existingRecordSet <- existingRecordSets.get(
-        deleteChange.zoneId,
-        deleteChange.recordName,
-        deleteChange.typ)
-      newRecordSet = {
+      zoneName <- deleteChange.zoneName
+      key <- deleteChange.recordKey
+      zone <- existingZones.getByName(zoneName)
+      existingRecordSet <- existingRecordSets.get(key)
+      newRecordSet <- {
         val setOwnerGroupId = if (zone.shared && existingRecordSet.ownerGroupId.isEmpty) {
           ownerGroupId
         } else {
@@ -204,11 +208,10 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       userId: String): Option[RecordSetChange] =
     for {
       deleteChange <- Some(deleteChanges.head)
-      zone <- existingZones.getByName(deleteChange.zoneName)
-      existingRecordSet <- existingRecordSets.get(
-        deleteChange.zoneId,
-        deleteChange.recordName,
-        deleteChange.typ)
+      zoneName <- deleteChange.zoneName
+      key <- deleteChange.recordKey
+      zone <- existingZones.getByName(zoneName)
+      existingRecordSet <- existingRecordSets.get(key)
     } yield
       RecordSetChangeGenerator.forDelete(
         existingRecordSet,
@@ -222,8 +225,9 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       userId: String,
       ownerGroupId: Option[String]): Option[RecordSetChange] =
     for {
-      zone <- existingZones.getByName(addChanges.head.zoneName)
-      newRecordSet = {
+      zoneName <- addChanges.head.zoneName
+      zone <- existingZones.getByName(zoneName)
+      newRecordSet <- {
         val setOwnerGroupId = if (zone.shared) ownerGroupId else None
         combineAddChanges(addChanges, zone, setOwnerGroupId)
       }
@@ -235,20 +239,22 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def combineAddChanges(
       changes: NonEmptyList[SingleAddChange],
       zone: Zone,
-      ownerGroupId: Option[String]): RecordSet = {
+      ownerGroupId: Option[String]): Option[RecordSet] = {
     val combinedData =
       changes.foldLeft(List[RecordData]())((acc, ch) => ch.recordData :: acc).distinct
     // recordName and typ are shared by all changes passed into this function, can pull those from any change
     // TTL choice is arbitrary here; this is taking the 1st
-    record.RecordSet(
-      zone.id,
-      changes.head.recordName,
-      changes.head.typ,
-      changes.head.ttl,
-      RecordSetStatus.Pending,
-      DateTime.now,
-      None,
-      combinedData,
-      ownerGroupId = ownerGroupId)
+    changes.head.recordName.map { recordName =>
+      record.RecordSet(
+        zone.id,
+        recordName,
+        changes.head.typ,
+        changes.head.ttl,
+        RecordSetStatus.Pending,
+        DateTime.now,
+        None,
+        combinedData,
+        ownerGroupId = ownerGroupId)
+    }
   }
 }

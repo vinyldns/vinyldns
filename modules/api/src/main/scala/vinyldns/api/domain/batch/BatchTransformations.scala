@@ -100,9 +100,9 @@ object BatchTransformations {
       val ttl = inputChange.ttl.orElse(existingRecordTtl).getOrElse(VinylDNSConfig.defaultTtl)
 
       SingleAddChange(
-        zone.id,
-        zone.name,
-        recordName,
+        Some(zone.id),
+        Some(zone.name),
+        Some(recordName),
         inputChange.inputName,
         inputChange.typ,
         ttl,
@@ -125,9 +125,9 @@ object BatchTransformations {
       extends ChangeForValidation {
     def asNewStoredChange: SingleChange =
       SingleDeleteChange(
-        zone.id,
-        zone.name,
-        recordName,
+        Some(zone.id),
+        Some(zone.name),
+        Some(recordName),
         inputChange.inputName,
         inputChange.typ,
         SingleChangeStatus.Pending,

@@ -61,9 +61,9 @@ class EmailNotifierIntegrationSpec
         DateTime.now,
         List(
           SingleAddChange(
-            "some-zone-id",
-            "zone-name",
-            "record-name",
+            Some("some-zone-id"),
+            Some("zone-name"),
+            Some("record-name"),
             "a" * HOST_MAX_LENGTH,
             RecordType.A,
             300,

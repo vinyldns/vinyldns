@@ -46,9 +46,9 @@ class BatchChangeRepositoryIntegrationSpec
         DateTime.now,
         List(
           SingleAddChange(
-            "some-zone-id",
-            "zone-name",
-            "record-name",
+            Some("some-zone-id"),
+            Some("zone-name"),
+            Some("record-name"),
             "a" * HOST_MAX_LENGTH,
             RecordType.A,
             300,
@@ -56,7 +56,8 @@ class BatchChangeRepositoryIntegrationSpec
             SingleChangeStatus.Pending,
             None,
             None,
-            None)),
+            None
+          )),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
 
