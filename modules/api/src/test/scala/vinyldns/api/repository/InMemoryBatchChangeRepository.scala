@@ -113,9 +113,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100): IO[BatchChangeSummaryList] = {
-    val userBatchChanges =
-      if (userId.isDefined) batches.values.toList.filter(_.userId == userId.get)
-      else batches.values.toList
+    val userBatchChanges = batches.values.toList.filter(b => userId.forall(_ == b.userId))
     val batchChangeSummaries = for {
       sc <- userBatchChanges
       ids = sc.changes
