@@ -49,14 +49,19 @@ class TaskHandler @Inject()(taskRepository: TaskRepository) {
       taskName: String,
       pollingInterval: FiniteDuration,
       userAccountAccessor: UserAccountAccessor,
-      authenticator: Authenticator): IO[Unit] =
-    for {
+      authenticator: Authenticator): IO[Unit] = {
+    val syncRun = for {
       _ <- fetchAndClaimTask(taskName, pollingInterval)
       _ <- IO(logger.info(s"Fetched and claimed task [$taskName]."))
       _ <- UserSyncTask.syncUsers(userAccountAccessor, authenticator).handleError(_ => ())
       _ <- taskRepository.releaseTask(taskName)
       _ <- IO(logger.info(s"Released task [$taskName]."))
     } yield ()
+
+    syncRun.handleErrorWith { err =>
+      IO(logger.error(s"Encountered task error for [$taskName]", err))
+    }
+  }
 
   def startTaskStream(
       settings: Settings,
@@ -65,22 +70,15 @@ class TaskHandler @Inject()(taskRepository: TaskRepository) {
     import UserSyncTask._
     import settings._
 
-    def runTaskStream(): Stream[IO, Unit] =
-      Stream
-        .awakeEvery[IO](ldapSyncPollingInterval)
-        .evalMap[IO, Unit](
-          _ =>
-            runSyncTask(
-              SYNC_USER_TASK_NAME,
-              ldapSyncPollingInterval,
-              userAccountAccessor,
-              authenticator))
-        .handleErrorWith { error =>
-          logger.error("Encountered error sending sync job", error)
-          runTaskStream()
-        }
-
-    runTaskStream()
+    Stream
+      .awakeEvery[IO](ldapSyncPollingInterval)
+      .evalMap[IO, Unit](
+        _ =>
+          runSyncTask(
+            SYNC_USER_TASK_NAME,
+            ldapSyncPollingInterval,
+            userAccountAccessor,
+            authenticator))
   }
 
   def run(
