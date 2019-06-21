@@ -100,9 +100,9 @@ class BatchChangeServiceSpec
     ptrV6Add)
 
   private val pendingChange = SingleAddChange(
-    "zoneid",
-    "zonename",
-    "rname",
+    Some("zoneid"),
+    Some("zonename"),
+    Some("rname"),
     "inputname",
     RecordType.A,
     123,
@@ -820,9 +820,9 @@ class BatchChangeServiceSpec
 
       result shouldBe a[BatchChange]
       result.changes.head shouldBe SingleAddChange(
-        apexZone.id,
-        apexZone.name,
-        "apex.test.com.",
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
         "apex.test.com.",
         A,
         ttl.get,
@@ -834,9 +834,9 @@ class BatchChangeServiceSpec
         result.changes.head.id
       )
       result.changes(1) shouldBe SingleAddChange(
-        onlyBaseZone.id,
-        onlyBaseZone.name,
-        "have",
+        Some(onlyBaseZone.id),
+        Some(onlyBaseZone.name),
+        Some("have"),
         "have.only.base.",
         AAAA,
         ttl.get,
@@ -848,9 +848,9 @@ class BatchChangeServiceSpec
         result.changes(1).id
       )
       result.changes(2) shouldBe SingleAddChange(
-        baseZone.id,
-        baseZone.name,
-        "cname",
+        Some(baseZone.id),
+        Some(baseZone.name),
+        Some("cname"),
         "cname.test.com.",
         CNAME,
         ttl.get,

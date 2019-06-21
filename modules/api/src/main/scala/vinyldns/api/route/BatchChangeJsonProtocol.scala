@@ -106,7 +106,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("type" -> Extraction.decompose(aci.typ))
   }
 
-  // necessary because "type" != "typ"
+  // recordName, zoneName, zoneId used to be required; getOrElse to maintain backwards compatability with clients
   case object SingleAddChangeSerializer extends ValidationSerializer[SingleAddChange] {
     override def toJson(sac: SingleAddChange): JValue =
       ("changeType" -> "Add") ~
@@ -115,24 +115,25 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("ttl" -> sac.ttl) ~
         ("record" -> Extraction.decompose(sac.recordData)) ~
         ("status" -> sac.status.toString) ~
-        ("recordName" -> sac.recordName) ~
-        ("zoneName" -> sac.zoneName) ~
-        ("zoneId" -> sac.zoneId) ~
+        ("recordName" -> sac.recordName.getOrElse("")) ~
+        ("zoneName" -> sac.zoneName.getOrElse("")) ~
+        ("zoneId" -> sac.zoneId.getOrElse("")) ~
         ("systemMessage" -> sac.systemMessage) ~
         ("recordChangeId" -> sac.recordChangeId) ~
         ("recordSetId" -> sac.recordSetId) ~
         ("id" -> sac.id)
   }
 
+  // recordName, zoneName, zoneId used to be required; getOrElse to maintain backwards compatability with clients
   case object SingleDeleteChangeSerializer extends ValidationSerializer[SingleDeleteChange] {
     override def toJson(sac: SingleDeleteChange): JValue =
       ("changeType" -> "DeleteRecordSet") ~
         ("inputName" -> sac.inputName) ~
         ("type" -> Extraction.decompose(sac.typ)) ~
         ("status" -> sac.status.toString) ~
-        ("recordName" -> sac.recordName) ~
-        ("zoneName" -> sac.zoneName) ~
-        ("zoneId" -> sac.zoneId) ~
+        ("recordName" -> sac.recordName.getOrElse("")) ~
+        ("zoneName" -> sac.zoneName.getOrElse("")) ~
+        ("zoneId" -> sac.zoneId.getOrElse("")) ~
         ("systemMessage" -> sac.systemMessage) ~
         ("recordChangeId" -> sac.recordChangeId) ~
         ("recordSetId" -> sac.recordSetId) ~

@@ -34,9 +34,8 @@ object APIMetrics {
   private val logReporter = Slf4jReporter
     .forRegistry(VinylDNSMetrics.metricsRegistry)
     .filter(new MetricFilter {
-      def matches(name: String, metric: Metric): Boolean = {
+      def matches(name: String, metric: Metric): Boolean =
         name.startsWith("memory")
-      }
     })
     .withLoggingLevel(LoggingLevel.INFO)
     .outputTo(LoggerFactory.getLogger("MemStats"))

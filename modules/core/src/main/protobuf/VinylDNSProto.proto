@@ -187,11 +187,11 @@ message SingleChangeData {
 message SingleChange {
   required string id = 1;
   required string status = 2;
-  required string zoneId = 3;
-  required string recordName = 4;
+  optional string zoneId = 3;
+  optional string recordName = 4;
   required string changeType = 5;
   required string inputName = 6;
-  required string zoneName = 7;
+  optional string zoneName = 7;
   required string recordType = 8;
   optional string systemMessage = 9;
   optional string recordChangeId = 10;

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package vinyldns.api.protobuf
+package vinyldns.core.protobuf
 
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType}
-import vinyldns.core.protobuf.GroupProtobufConversions
 
 class GroupProtobufConversionsSpec extends WordSpec with Matchers with GroupProtobufConversions {
 

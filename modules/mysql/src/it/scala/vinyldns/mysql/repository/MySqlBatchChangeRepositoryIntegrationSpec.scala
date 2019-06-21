@@ -43,9 +43,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
   object TestData {
     def generateSingleAddChange(recordType: RecordType, recordData: RecordData): SingleAddChange =
-      SingleAddChange(okZone.id,
-        okZone.name,
-        "test",
+      SingleAddChange(
+        Some(okZone.id),
+        Some(okZone.name),
+        Some("test"),
         "test.somezone.com.",
         recordType, 3600,
         recordData,
@@ -65,9 +66,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
     val deleteChange: SingleDeleteChange =
       SingleDeleteChange(
-        okZone.id,
-        okZone.name,
-        "delete",
+        Some(okZone.id),
+        Some(okZone.name),
+        Some("delete"),
         "delete.somezone.com.",
         A,
         Pending,
