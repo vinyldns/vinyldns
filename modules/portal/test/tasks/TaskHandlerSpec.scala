@@ -91,19 +91,23 @@ class TaskHandlerSpec extends Specification with Mockito {
           mockAuthenticator)
         .unsafeRunSync() must beEqualTo(())
     }
-    "stop process flow if task cannot be claimed" in {
+    "catch error and return unit if there is no task to claim" in {
       taskHandler
         .runSyncTask(
           badTaskName,
           mockSettings.ldapSyncPollingInterval,
           mockUserAccountAccessor,
           mockAuthenticator)
-        .unsafeRunSync() must throwA[NoTaskToClaim]
+        .unsafeRunSync() must beEqualTo(())
     }
   }
 
   "run" should {
     "run the task stream" in {
+      mockTaskRepository
+        .claimTask("user_sync", 50.millis)
+        .returns(IO.pure(true))
+
       taskHandler
         .run(mockSettings, mockUserAccountAccessor, mockAuthenticator)
         .unsafeRunTimed(mockSettings.ldapSyncPollingInterval * 2) must beNone
