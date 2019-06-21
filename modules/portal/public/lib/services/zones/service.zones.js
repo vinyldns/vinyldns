@@ -108,6 +108,11 @@ angular.module('service.zones', [])
             return zone;
         };
 
+        this.checkSharedStatus = function(zone) {
+            zone.shared = (String(zone.shared).toLowerCase() == 'true');
+            return zone;
+        }
+
         this.toApiIso = function(date) {
             /* when we parse the DateTimes from the api it gets turned into javascript readable format
              * instead of just staying the way it is, so for now converting it back to ISO format on the fly,
