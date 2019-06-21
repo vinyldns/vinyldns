@@ -136,7 +136,8 @@ class BatchChangeService(
 
     nonPtr
       .map {
-        case txt if txt.typ == TXT => getAllPossibleZones(txt.inputName).toSet
+        case record if List(A, AAAA, MX, TXT).contains(record.typ) =>
+          getAllPossibleZones(record.inputName).toSet
         case otherForward => getZonesForNonDottedTypes(otherForward)
       }
       .toSet
@@ -231,7 +232,7 @@ class BatchChangeService(
       zoneMap: ExistingZones): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | MX => standardZoneDiscovery(change, zoneMap)
+        case A | AAAA | MX => dottedZoneDiscovery(change, zoneMap)
         case TXT => dottedZoneDiscovery(change, zoneMap)
         case CNAME => cnameZoneDiscovery(change, zoneMap)
         case PTR if validateIpv4Address(change.inputName).isValid =>

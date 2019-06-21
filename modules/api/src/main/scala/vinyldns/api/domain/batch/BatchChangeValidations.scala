@@ -231,6 +231,13 @@ class BatchChangeValidations(
     else ().validNel
   }
 
+  def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
+    if (change.inputChange.typ != RecordType.TXT &&
+      (change.recordName == change.zone.name || !change.recordName.contains(".")))
+      ().validNel
+    else
+      CreateDottedHostError(change.recordName, change.zone.name).invalidNel
+
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
@@ -305,7 +312,8 @@ class BatchChangeValidations(
           change.inputChange.inputName,
           existingRecords,
           changeGroups) |+|
-          newRecordSetIsNotMulti(change, changeGroups)
+          newRecordSetIsNotMulti(change, changeGroups) |+|
+          newRecordSetIsNotDotted(change)
       case CNAME =>
         cnameHasUniqueNameInExistingRecords(
           change.zone.id,

@@ -167,4 +167,9 @@ final case class NewMultiRecordError(change: AddChangeForValidation) extends Dom
       .replaceAll("\n", " ")
 }
 
+final case class CreateDottedHostError(recordSetName: String, zoneName: String)
+    extends DomainValidationError {
+  def message: String =
+    s"Record with name $recordSetName is a dotted host which is illegal in the zone: $zoneName"
+}
 // $COVERAGE-ON$
