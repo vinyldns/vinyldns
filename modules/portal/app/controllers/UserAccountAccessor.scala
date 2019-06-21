@@ -60,14 +60,17 @@ class UserAccountAccessor @Inject()(users: UserRepository, changes: UserChangeRe
   def getAllUsers: IO[List[User]] =
     users.getAllUsers
 
-  def lockUsers(usersToLock: List[User]): IO[List[User]] =
+  def lockUsers(usersToLock: List[User]): IO[List[User]] = {
+    val currentTime = DateTime.now
     for {
       lockedUsers <- users.save(usersToLock.map(_.copy(lockStatus = LockStatus.Locked)))
       _ <- usersToLock
-        .map(
-          u =>
-            changes.save(UserChange
-              .UpdateUser(u.copy(lockStatus = LockStatus.Locked), "system", DateTime.now, u)))
+        .zip(lockedUsers)
+        .map {
+          case (oldUser, newUser) =>
+            changes.save(UserChange.UpdateUser(newUser, "system", currentTime, oldUser))
+        }
         .parSequence
     } yield lockedUsers
+  }
 }

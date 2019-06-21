@@ -72,7 +72,7 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
             new UserAccountAccessor(repositories.userRepository, repositories.userChangeRepository),
             auth)
           .start
-      } else IO.pure(()).start
+      } else IO.unit
     } yield {
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
       bind(classOf[Authenticator]).toInstance(auth)
