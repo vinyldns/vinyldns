@@ -69,13 +69,10 @@ angular.module('controller.zones', [])
     };
 
     $scope.canAccessZone = function(accessLevel) {
-        switch(accessLevel) {
-            case 'noAccess':
-                return false;
-            case 'Read':
-                return true;
-            case 'Delete':
-                return true;
+        if (accessLevel == 'Read' || accessLevel == 'Delete') {
+            return true;
+        } else {
+            return false;
         }
     };
 
