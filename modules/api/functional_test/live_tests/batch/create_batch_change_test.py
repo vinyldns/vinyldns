@@ -1481,7 +1481,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
             get_change_CNAME_json("bad-ttl-and-invalid-name$.parent.com.", ttl=29, cname="also$bad.name"),
 
             # zone discovery failure
-            get_change_CNAME_json("no.subzone.parent.com."),
+            get_change_CNAME_json("no.zone.com."),
 
             # cant be apex
             get_change_CNAME_json("parent.com."),
@@ -1527,8 +1527,8 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                                'valid domain names must be letters, numbers, and hyphens, '
                                                                'joined by dots, and terminated with a dot.'])
         # zone discovery failure
-        assert_failed_change_in_error_response(response[7], input_name="no.subzone.parent.com.", record_type="CNAME", record_data="test.com.",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.subzone.parent.com.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
+        assert_failed_change_in_error_response(response[7], input_name="no.zone.com.", record_type="CNAME", record_data="test.com.",
+                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.com.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # CNAME cant be apex
         assert_failed_change_in_error_response(response[8], input_name="parent.com.", record_type="CNAME", record_data="test.com.",

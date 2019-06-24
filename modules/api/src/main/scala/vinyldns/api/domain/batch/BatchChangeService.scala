@@ -232,8 +232,8 @@ class BatchChangeService(
       zoneMap: ExistingZones): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | MX => dottedZoneDiscovery(change, zoneMap)
-        case TXT => dottedZoneDiscovery(change, zoneMap)
+        case A | AAAA | MX => standardZoneDiscovery(change, zoneMap)
+        case TXT => standardZoneDiscovery(change, zoneMap)
         case CNAME => cnameZoneDiscovery(change, zoneMap)
         case PTR if validateIpv4Address(change.inputName).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
@@ -244,20 +244,6 @@ class BatchChangeService(
     }
 
   def standardZoneDiscovery(
-      change: ChangeInput,
-      zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
-    val nonApexName = getZoneFromNonApexFqdn(change.inputName)
-    val apexZone = zoneMap.getByName(change.inputName)
-    val nonApexZone = zoneMap.getByName(nonApexName)
-
-    apexZone.orElse(nonApexZone) match {
-      case Some(zn) =>
-        ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
-      case None => ZoneDiscoveryError(change.inputName).invalidNel
-    }
-  }
-
-  def dottedZoneDiscovery(
       change: ChangeInput,
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
 
@@ -276,15 +262,16 @@ class BatchChangeService(
   def cnameZoneDiscovery(
       change: ChangeInput,
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
-    val nonApexName = getZoneFromNonApexFqdn(change.inputName)
-    val apexZone = zoneMap.getByName(change.inputName)
-    val nonApexZone = zoneMap.getByName(nonApexName)
+    val zone = getAllPossibleZones(change.inputName).map(zoneMap.getByName).collectFirst {
+      case Some(zn) => zn
+    }
 
-    (apexZone, nonApexZone) match {
-      case (None, Some(zn)) =>
+    zone match {
+      case Some(zn) if zn.name == change.inputName =>
+        RecordAlreadyExists(change.inputName).invalidNel
+      case Some(zn) =>
         ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
-      case (Some(_), _) => RecordAlreadyExists(change.inputName).invalidNel
-      case (None, None) => ZoneDiscoveryError(change.inputName).invalidNel
+      case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
 
