@@ -69,3 +69,5 @@ object ChangeInputType extends Enumeration {
 }
 
 final case class RejectBatchChangeInput(reviewComment: Option[String])
+
+final case class ApproveBatchChangeInput(reviewComment: Option[String])
