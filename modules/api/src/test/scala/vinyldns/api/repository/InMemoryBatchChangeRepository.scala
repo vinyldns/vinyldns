@@ -67,12 +67,6 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
       }
       .map(_ => batch)
 
-  def updateBatch(batchChange: BatchChange): IO[BatchChange] =
-    IO.pure {
-        batches.put(batchChange.id, StoredBatchChange(batchChange))
-      }
-      .map(_ => batchChange)
-
   def getBatchChange(batchChangeId: String): IO[Option[BatchChange]] =
     IO.pure {
       val storedChange = batches.get(batchChangeId)

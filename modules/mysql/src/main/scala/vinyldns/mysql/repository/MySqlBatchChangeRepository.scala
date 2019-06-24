@@ -46,27 +46,24 @@ class MySqlBatchChangeRepository
 
   private final val PUT_BATCH_CHANGE =
     sql"""
-         |INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
-         |                         approval_status, reviewer_id, review_comment, review_timestamp)
-         |     VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
-         |            {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
-        """.stripMargin
-
-  private final val UPDATE_BATCH_CHANGE =
-    sql"""
-       |UPDATE batch_change
-       |   SET comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus},
-       |       reviewer_id={reviewerId}, review_comment={reviewComment}, review_timestamp={reviewTimestamp}
-       | WHERE id={id}
+       |            INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
+       |                                     approval_status, reviewer_id, review_comment, review_timestamp)
+       |                 VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
+       |                        {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
+       |ON DUPLICATE KEY UPDATE comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus},
+       |                        reviewer_id={reviewerId}, review_comment={reviewComment},
+       |                        review_timestamp={reviewTimestamp}
        """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =
     sql"""
-         |INSERT INTO single_change(id, seq_num, input_name, change_type, data, status, batch_change_id,
-         |                          record_set_change_id, record_set_id, zone_id)
-         |     VALUES ({id}, {seqNum}, {inputName}, {changeType}, {data}, {status}, {batchChangeId},
-         |             {recordSetChangeId}, {recordSetId}, {zoneId})
-        """.stripMargin
+       |            INSERT INTO single_change(id, seq_num, input_name, change_type, data, status, batch_change_id,
+       |                        record_set_change_id, record_set_id, zone_id)
+       |                 VALUES ({id}, {seqNum}, {inputName}, {changeType}, {data}, {status}, {batchChangeId},
+       |                        {recordSetChangeId}, {recordSetId}, {zoneId})
+       |ON DUPLICATE KEY UPDATE input_name={inputName}, change_type={changeType}, data={data}, status={status},
+       |                        record_set_change_id={recordSetChangeId}, record_set_id={recordSetId}, zone_id={zoneId}
+       """.stripMargin
 
   private final val GET_BATCH_CHANGE_METADATA =
     sql"""
@@ -125,28 +122,6 @@ class MySqlBatchChangeRepository
       IO {
         DB.localTx { implicit s =>
           saveBatchChange(batch)
-        }
-      }
-    }
-
-  def updateBatch(batchChange: BatchChange): IO[BatchChange] =
-    monitor("repo.BatchChangeJDBC.update") {
-      IO {
-        DB.localTx { implicit s =>
-          UPDATE_BATCH_CHANGE
-            .bindByName(
-              'id -> batchChange.id,
-              'comments -> batchChange.comments,
-              'ownerGroupId -> batchChange.ownerGroupId,
-              'approvalStatus -> fromApprovalStatus(batchChange.approvalStatus),
-              'reviewerId -> batchChange.reviewerId,
-              'reviewComment -> batchChange.reviewComment,
-              'reviewTimestamp -> batchChange.reviewTimestamp
-            )
-            .update()
-            .apply()
-
-          batchChange
         }
       }
     }
