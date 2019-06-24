@@ -233,7 +233,6 @@ class BatchChangeValidations(
 
   def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
     change.inputChange.typ match {
-      case TXT | PTR => ().validNel
       case A | AAAA | CNAME | MX
           if change.recordName == change.zone.name || !change.recordName.contains(".") =>
         ().validNel
@@ -308,7 +307,7 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
-      case A | AAAA | MX | PTR =>
+      case A | AAAA | MX =>
         noCnameWithRecordNameInExistingRecords(
           change.zone.id,
           change.recordName,
@@ -325,7 +324,7 @@ class BatchChangeValidations(
           existingRecords,
           changeGroups) |+|
           cnameHasUniqueNameInBatch(change, changeGroups)
-      case TXT =>
+      case TXT | PTR =>
         noCnameWithRecordNameInExistingRecords(
           change.zone.id,
           change.recordName,
