@@ -54,7 +54,7 @@ class TaskHandler @Inject()(taskRepository: TaskRepository) {
       _ <- IO(logger.info(s"Fetched and claimed task [$taskName]."))
       _ <- UserSyncTask
         .syncUsers(userAccountAccessor, authenticator)
-        .handleError(e => IO(logger.error("Encountered error syncing task", e)))
+        .handleErrorWith(e => IO(logger.error("Encountered error syncing task", e)))
       _ <- taskRepository.releaseTask(taskName)
       _ <- IO(logger.info(s"Released task [$taskName]."))
     } yield ()
