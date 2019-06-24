@@ -232,8 +232,7 @@ class BatchChangeService(
       zoneMap: ExistingZones): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | MX => standardZoneDiscovery(change, zoneMap)
-        case TXT => standardZoneDiscovery(change, zoneMap)
+        case A | AAAA | MX | TXT => standardZoneDiscovery(change, zoneMap)
         case CNAME => cnameZoneDiscovery(change, zoneMap)
         case PTR if validateIpv4Address(change.inputName).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
