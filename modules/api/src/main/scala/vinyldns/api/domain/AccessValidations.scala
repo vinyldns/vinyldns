@@ -30,7 +30,8 @@ object AccessValidations extends AccessValidationAlgebra {
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}'"))(
-      auth.isSystemAdmin || auth.isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
+      auth.isSystemAdmin || auth
+        .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone))
 
   def canChangeZone(
       auth: AuthPrincipal,
@@ -97,31 +98,26 @@ object AccessValidations extends AccessValidationAlgebra {
     if (auth.isSuper || auth.isGroupMember(zone.adminGroupId))
       recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))
     else {
-      val rulesForUser = zone.acl.rules.filter(ruleAppliesToUser(auth, _))
-
-      def getAccessFromUserAcls(recordName: String, recordType: RecordType): AccessLevel = {
-        // user filter has already been applied
-        val validRules = rulesForUser.filter { rule =>
-          ruleAppliesToRecordType(recordType, rule) && ruleAppliesToRecordName(
-            recordName,
-            recordType,
-            zone,
-            rule)
-        }
-        getPrioritizedAccessLevel(recordType, validRules)
-      }
-
       recordSets.map { rs =>
-        val aclAccessLevel = getAccessFromUserAcls(rs.name, rs.typ)
+        val aclAccessLevel = getAccessFromAcl(auth, rs.name, rs.typ, zone)
         val accessLevel = {
           if ((aclAccessLevel == AccessLevel.NoAccess) && auth.isSystemAdmin)
             AccessLevel.Read
+          else if (zone.shared && rs.ownerGroupId.forall(auth.isGroupMember))
+            AccessLevel.Delete
           else
             aclAccessLevel
         }
         RecordSetListInfo(rs, accessLevel)
       }
     }
+
+  def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel =
+    if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
+      AccessLevel.Delete
+    else if (canSeeZone(auth, zone).isRight)
+      AccessLevel.Read
+    else AccessLevel.NoAccess
 
   /* Non-algebra methods */
   def getAccessFromAcl(

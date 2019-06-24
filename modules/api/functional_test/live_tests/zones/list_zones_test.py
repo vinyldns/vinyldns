@@ -109,7 +109,7 @@ def list_zones_context(request):
 
 def test_list_zones_success(list_zones_context):
     """
-    Test that we can retrieve a list of zones
+    Test that we can retrieve a list of the user's zones
     """
     result = list_zones_context.client.list_zones(status=200)
     retrieved = result['zones']
@@ -127,6 +127,12 @@ def test_list_zones_max_items_100(list_zones_context):
     result = list_zones_context.client.list_zones(status=200)
     assert_that(result['maxItems'], is_(100))
 
+def test_list_zones_list_all_default_false(list_zones_context):
+    """
+    Test that the default list all value for a list zones request is false
+    """
+    result = list_zones_context.client.list_zones(status=200)
+    assert_that(result['listAll'], is_(False))
 
 def test_list_zones_invalid_max_items_fails(list_zones_context):
     """
@@ -241,3 +247,16 @@ def test_list_zones_with_search_last_page(list_zones_context):
     assert_that(result['maxItems'], is_(2))
     assert_that(result['nameFilter'], is_('*test-searched-3'))
     assert_that(result['startFrom'], is_('list-zones-test-searched-2.'))
+
+def test_list_zones_list_all_success(list_zones_context):
+    """
+    Test that we can retrieve a list of all zones
+    """
+    result = list_zones_context.client.list_zones(list_all=True, status=200)
+    retrieved = result['zones']
+
+    assert_that(retrieved, has_length(17))
+    assert_that(retrieved, has_item(has_entry('name', 'list-zones-test-searched-1.')))
+    assert_that(retrieved, has_item(has_entry('adminGroupName', 'list-zones-group')))
+    assert_that(retrieved, has_item(has_entry('backendId', 'func-test-backend')))
+    assert_that(retrieved, has_item(has_entry('accessLevel', 'NoAccess')))

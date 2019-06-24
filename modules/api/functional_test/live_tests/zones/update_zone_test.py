@@ -560,7 +560,7 @@ def test_delete_acl_idempotent(shared_zone_test_context):
 
 def test_delete_acl_removes_permissions(shared_zone_test_context):
     """
-    Test that a user (who previously had permissions to view a zone via acl rules) can not view the zone once
+    Test that a user (who previously had permissions to view a zone via acl rules) can still view the zone once
     the acl rule is deleted
     """
 
@@ -592,7 +592,8 @@ def test_delete_acl_removes_permissions(shared_zone_test_context):
 
     # verify dummy can see ok_zone
     dummy_view = dummy_client.list_zones()['zones']
-    assert_that(dummy_view, has_item(ok_zone)) # can view zone
+    ok_zone_dummy_view = dummy_client.list_zones(name_filter=ok_zone['name'])['zones'][0]
+    assert_that(dummy_view, has_item(has_entries(ok_zone_dummy_view))) # can view zone
 
     # delete acl rule
     result = ok_client.delete_zone_acl_rule_with_wait(shared_zone_test_context.ok_zone['id'], acl_rule, status=202)
@@ -604,7 +605,7 @@ def test_delete_acl_removes_permissions(shared_zone_test_context):
 
     # verify dummy can not see ok_zone
     dummy_view = dummy_client.list_zones()['zones']
-    assert_that(dummy_view, is_not(has_item(ok_zone))) # cannot view zone
+    assert_that(dummy_view, is_not(has_item(ok_zone_dummy_view))) # can still view zone
 
 
 def test_update_reverse_v4_zone(shared_zone_test_context):
