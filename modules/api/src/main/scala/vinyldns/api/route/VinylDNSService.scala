@@ -16,15 +16,18 @@
 
 package vinyldns.api.route
 
-import akka.event.Logging._
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
-import akka.http.scaladsl.server.directives.LogEntry
+import akka.http.scaladsl.server.directives.LoggingMagnet
+import akka.http.scaladsl.server.{Route, RouteResult}
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
+import net.logstash.logback.argument.StructuredArguments
+import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
@@ -33,38 +36,19 @@ import vinyldns.api.domain.zone.ZoneServiceAlgebra
 import vinyldns.core.domain.membership.{MembershipRepository, UserRepository}
 import vinyldns.core.health.HealthService
 
+import scala.collection.JavaConverters._
 import scala.util.matching.Regex
 
 object VinylDNSService {
+
+  val logger: Logger = LoggerFactory.getLogger(classOf[VinylDNSService])
+
   val ZoneIdRegex: Regex = "(?i)(/?zones/)(?:[0-9a-f]-?)+(.*)".r
   val ZoneAndRecordIdRegex: Regex =
     "(?i)(/?zones/)(?:[0-9a-f]-?)+(/recordsets/)(?:[0-9a-f]-?)+(.*)".r
   val ZoneRecordAndChangesRegex: Regex =
     "(?i)(/?zones/)(?:[0-9a-f]-?)+(/recordsets/)(?:[0-9a-f]-?)+(/changes/)(?:[0-9a-f]-?)+(.*)".r
   val TsigKeyRegex: Regex = """(?is)(.*?\"key\"\s*:\s*\")(?:.+?)(\".*)""".r
-
-  def logMessage(req: HttpRequest, resOption: Option[HttpResponse], duration: Long): String = {
-    val requestHeadersNoAuth = req.headers
-      .filter(_.name.toLowerCase != "authorization")
-      .map(h => s"${h.name}='${h.value}'")
-      .mkString(", ")
-    // rejections have their response entity discarded by default
-    val response =
-      resOption match {
-        case Some(res) =>
-          val errorResponse = if (res.status.intValue() > 202) {
-            s", entity=${res.entity}"
-          } else ""
-          s"Response: status_code=${res.status.intValue}$errorResponse"
-        case None => ""
-      }
-    Seq(
-      s"Headers: [$requestHeadersNoAuth]",
-      s"Request: protocol=${req.protocol.value}, method=${req.method.value}, path=${sanitizePath(req.uri)}",
-      s"$response",
-      s"Duration: request_duration=$duration"
-    ).mkString(" | ")
-  }
 
   def sanitizePath(uri: Uri): String = {
     val p = uri.path.toString()
@@ -77,38 +61,95 @@ object VinylDNSService {
     }
   }
 
-  def buildLogEntry(doNotLog: Seq[Uri.Path]): HttpRequest => Any => Option[LogEntry] = {
+  def logMessage(
+      req: HttpRequest,
+      resOption: Option[HttpResponse],
+      duration: Long): Map[String, Any] = {
+
+    val headers = Map(
+      "headers" ->
+        req.headers
+          .filter(_.name.toLowerCase != "authorization")
+          .foldLeft(Map.empty[String, String])((z, h) => z + (h.name() -> h.value())))
+
+    val ua = req.header[`User-Agent`].fold("-")(_.value())
+
+    val emptyMap = Map.empty[String, Any]
+
+    val resp = resOption match {
+      case Some(res) if res.status.isSuccess() =>
+        Map("status_code" -> res.status.intValue())
+      case Some(res) =>
+        val errResp: Map[String, Any] = Map(
+          "body" -> Map("content" -> res.entity.withSizeLimit(1000L).toString),
+          "status_code" -> res.status.intValue())
+        errResp
+      case None =>
+        emptyMap
+    }
+
+    val url = Map("path" -> sanitizePath(req.uri)) ++
+      req.uri.rawQueryString.fold(emptyMap)(q => Map("query" -> q))
+
+    Map(
+      "http" ->
+        Map(
+          "url" -> url,
+          "request" -> (Map("method" -> req.method.value) ++ headers),
+          "response" -> (Map("duration" -> duration) ++ resp),
+          "user_agent" -> Map("original" -> ua),
+          "version" -> req.protocol.value
+        ))
+  }
+
+  def captureAccessLog(doNotLog: Seq[Uri.Path]): HttpRequest => RouteResult => Unit = {
     req: HttpRequest =>
       {
         val startTime = System.currentTimeMillis()
-        r: Any =>
+        result: RouteResult =>
           {
-            val endTime = System.currentTimeMillis()
-            val duration = endTime - startTime
-            doNotLog.contains(req.uri.path) match {
-              case false => {
-                r match {
-                  case res: HttpResponse =>
-                    Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), InfoLevel))
-                  case res: Complete =>
-                    Some(
-                      LogEntry(
-                        VinylDNSService.logMessage(req, Some(res.response), duration),
-                        InfoLevel))
-                  case _: Rejected =>
-                    Some(LogEntry(VinylDNSService.logMessage(req, None, duration), ErrorLevel))
-                  case x => // this can happen if sealRoute below cannot convert into a response.
-                    val res = HttpResponse(
+            if (!doNotLog.contains(req.uri.path)) {
+              val endTime = System.currentTimeMillis()
+              val duration = endTime - startTime
+              val response = result match {
+                case res: Complete =>
+                  Some(res.response)
+                case _: Rejected =>
+                  Option.empty[HttpResponse]
+                case x => // this can happen if sealRoute below cannot convert into a response.
+                  Some(
+                    HttpResponse(
                       status = StatusCodes.InternalServerError,
-                      entity = HttpEntity(x.toString))
-                    Some(LogEntry(VinylDNSService.logMessage(req, Some(res), duration), ErrorLevel))
-                }
+                      entity = HttpEntity(x.toString)))
               }
-              case true => None
+
+              val logEntries = logMessage(req, response, duration)
+              response match {
+                case Some(r) if r.status.isSuccess() =>
+                  logger.info("request processed", StructuredArguments.entries(convert(logEntries)))
+                case _ =>
+                  logger.error("request failed", StructuredArguments.entries(convert(logEntries)))
+              }
+            } else {
+              ()
             }
           }
       }
   }
+
+  /**
+    * Converts scala Map to Java Map required for structured logging library.
+    *
+    * @param m scala map
+    * @return a java map
+    */
+  def convert(m: Map[_, _]): java.util.Map[_, _] =
+    m.map { e =>
+      e._2 match {
+        case mm: Map[_, _] => e._1 -> convert(mm)
+        case _ => e
+      }
+    }.asJava
 }
 
 // $COVERAGE-OFF$
@@ -150,17 +191,19 @@ class VinylDNSService(
         membershipRoute(authPrincipal)
     })
 
-  val unloggedUris = Seq(
+  val unloggedUris: Seq[Path] = Seq(
     Uri.Path("/health"),
     Uri.Path("/color"),
     Uri.Path("/ping"),
     Uri.Path("/status"),
     Uri.Path("/metrics/prometheus"))
+
   val unloggedRoutes
     : Route = healthCheckRoute ~ pingRoute ~ colorRoute ~ statusRoute ~ prometheusRoute
-  val vinyldnsRoutes: Route =
-    logRequestResult(VinylDNSService.buildLogEntry(unloggedUris))(
-      unloggedRoutes ~ authenticatedRoutes)
-  val routes = vinyldnsRoutes
+
+  val vinyldnsRoutes: Route = logRequestResult(LoggingMagnet(_ =>
+    VinylDNSService.captureAccessLog(unloggedUris)))(unloggedRoutes ~ authenticatedRoutes)
+
+  val routes: Route = vinyldnsRoutes
 }
 // $COVERAGE-ON$
