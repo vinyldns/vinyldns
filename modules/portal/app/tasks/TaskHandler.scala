@@ -35,17 +35,14 @@ class TaskHandler @Inject()(taskRepository: TaskRepository) {
   private val logger: Logger = LoggerFactory.getLogger("TaskHandler")
   private implicit val t: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
 
-  def fetchAndClaimTask(taskName: String, pollingInterval: FiniteDuration): IO[Unit] = {
-    print(s"task name: $taskName; polling interval: $pollingInterval\n\n")
+  def fetchAndClaimTask(taskName: String, pollingInterval: FiniteDuration): IO[Unit] =
     taskRepository.claimTask(taskName, pollingInterval).flatMap {
       case true =>
         IO(logger.info(s"Successfully found and claimed task [$taskName]."))
       case false =>
         val claimError = NoTaskToClaim(taskName)
-        logger.info(claimError.message)
         IO.raiseError(claimError)
     }
-  }
 
   def runSyncTask(
       taskName: String,
@@ -61,7 +58,7 @@ class TaskHandler @Inject()(taskRepository: TaskRepository) {
     } yield ()
 
     syncRun.handleErrorWith { err =>
-      IO(logger.error(s"Encountered task error for [$taskName]", err))
+      IO(logger.info(s"Encountered task error for [$taskName]", err))
     }
   }
 
