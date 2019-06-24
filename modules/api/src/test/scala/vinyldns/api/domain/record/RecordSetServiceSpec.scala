@@ -282,7 +282,7 @@ class RecordSetServiceSpec
         underTest.updateRecordSet(aaaa.copy(zoneId = zoneNotAuthorized.id), okAuth).value)
       result shouldBe a[NotAuthorizedError]
     }
-    "fail if the record is dotted" in {
+    "fail if the new record name is dotted" in {
       val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
       val newRecord = oldRecord.copy(name = "new.name")
 

@@ -337,22 +337,22 @@ class RecordSetValidationsSpec
       }
     }
 
-    "CnameValidations" should {
+    "CnameAddValidations" should {
       val invalidCnameApexRs: RecordSet = cname.copy(name = "@")
       "return a RecordSetAlreadyExistsError if a record with the same name exists and creating a cname" in {
-        val error = leftValue(cnameValidations(cname, List(aaaa), okZone))
+        val error = leftValue(cnameAddValidations(cname, List(aaaa), okZone))
         error shouldBe a[RecordSetAlreadyExists]
       }
       "return ok if name is not '@'" in {
-        cnameValidations(cname, List(), okZone) should be(right)
+        cnameAddValidations(cname, List(), okZone) should be(right)
       }
       "return an InvalidRequest if a cname record set name is '@'" in {
-        val error = leftValue(cnameValidations(invalidCnameApexRs, List(), okZone))
+        val error = leftValue(cnameAddValidations(invalidCnameApexRs, List(), okZone))
         error shouldBe an[InvalidRequest]
       }
       "return an InvalidRequest if a cname record set name is same as zone" in {
         val invalid = invalidCnameApexRs.copy(name = okZone.name)
-        val error = leftValue(cnameValidations(invalid, List(), okZone))
+        val error = leftValue(cnameAddValidations(invalid, List(), okZone))
         error shouldBe an[InvalidRequest]
       }
     }

@@ -1762,8 +1762,8 @@ def test_update_dotted_a_record_not_apex_fails(shared_zone_test_context):
 
     try:
         error = client.update_recordset(create_rs, status=422)
-        assert_that(error, is_("Record with name " + create_rs['name'] + " is a dotted host which is illegal "
-                                "in this zone " + zone['name']))
+        assert_that(error, is_("Record with name " + create_rs['name'] + " and type A is a dotted host which is "
+                                "not allowed in zone " + zone['name']))
 
     finally:
         delete_result = client.delete_recordset(zone['id'], create_rs['id'], status=202)
