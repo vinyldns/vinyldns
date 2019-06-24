@@ -456,7 +456,7 @@ lazy val setDockerReleaseSettings = ReleaseStep(action = oldState => {
   val snap = v.endsWith("SNAPSHOT")
   if (!snap) {
     extracted
-      .appendWithSession(Seq(dockerUpdateLatest in api := true, dockerUpdateLatest in portal := true), oldState)
+      .appendWithSession(Seq(dockerUpdateLatest := true), oldState)
   } else oldState
 })
 
