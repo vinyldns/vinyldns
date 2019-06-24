@@ -23,19 +23,19 @@ import vinyldns.core.domain.membership.LockStatus
 
 object UserSyncTask {
   val SYNC_USER_TASK_NAME = "user_sync"
-  private val log: Logger = LoggerFactory.getLogger("Task")
+  private val log: Logger = LoggerFactory.getLogger("UserSyncTask")
 
   def syncUsers(
       userAccountAccessor: UserAccountAccessor,
       authenticator: Authenticator): IO[Unit] = {
-    log.info("Initiating user sync")
+    log.error("Initiating user sync")
     for {
       allUsers <- userAccountAccessor.getAllUsers
       activeUsers = allUsers.filter(u => u.lockStatus != LockStatus.Locked && !u.isTest)
       nonActiveUsers <- authenticator.getUsersNotInLdap(activeUsers)
       lockedUsers <- userAccountAccessor.lockUsers(nonActiveUsers)
       _ <- IO(
-        log.info(
+        log.error(
           s"Users locked: ${lockedUsers.map(_.userName)}. Total locked: ${lockedUsers.size}"))
     } yield ()
   }
