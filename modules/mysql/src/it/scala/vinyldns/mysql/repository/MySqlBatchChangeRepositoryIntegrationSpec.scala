@@ -189,14 +189,18 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
     "update batch change" in {
       val batchChange = randomBatchChange
+      val singleChanges = batchChange.changes.map {
+        case sad: SingleAddChange => sad.copy(recordName = s"updated-${sad.recordName}")
+        case sdc: SingleDeleteChange => sdc.copy(recordName = s"updated-${sdc.recordName}")
+      }
       val updatedBatch = batchChange.copy(comments = Some("updated comments"),
         ownerGroupId = Some("new-owner-group-id"), approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
         reviewerId = Some("reviewer-id"), reviewComment = Some("updated reviewer comment"),
-        reviewTimestamp = Some(DateTime.now))
+        reviewTimestamp = Some(DateTime.now), changes = singleChanges)
 
       val f = for {
         _ <- repo.save(batchChange)
-        _ <- repo.updateBatch(updatedBatch)
+        _ <- repo.save(updatedBatch)
         getBatch <- repo.getBatchChange(batchChange.id)
       } yield getBatch
 
