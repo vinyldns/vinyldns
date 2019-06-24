@@ -1152,7 +1152,7 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
 
         # dotted host failure
         assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_data="1.2.3.4",
-                                            error_messages=['Record with name no.subzone is a dotted host which is illegal in the zone: parent.com.'])
+                                            error_messages=['Cannot create dotted host "no.subzone" with record type A in the zone parent.com.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_data="1.2.3.4",
@@ -1330,7 +1330,7 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
 
         # dotted host failure
         assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_type="AAAA", record_data="1::1",
-                                            error_messages=["Record with name no.subzone is a dotted host which is illegal in the zone: parent.com."])
+                                            error_messages=['Cannot create dotted host "no.subzone" with record type AAAA in the zone parent.com.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="AAAA", record_data="1::1",
@@ -1866,7 +1866,7 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json("192.0.2.", change_type="DeleteRecordSet"),
             get_change_PTR_json("192.0.2.", ttl=29, ptrdname="failed-update$.ptr"),
 
-            # zone discovery failures
+            # zone discovery failure
             get_change_PTR_json("192.0.1.25", change_type="DeleteRecordSet"),
 
             # context validation failures
@@ -2278,7 +2278,7 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
 
         # dotted host failure
         assert_failed_change_in_error_response(response[4], input_name="no.subzone.ok.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=['Record with name no.subzone is a dotted host which is illegal in the zone: ok.'])
+                                               error_messages=['Cannot create dotted host "no.subzone" with record type MX in the zone ok.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[5], input_name="no.zone.at.all.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
