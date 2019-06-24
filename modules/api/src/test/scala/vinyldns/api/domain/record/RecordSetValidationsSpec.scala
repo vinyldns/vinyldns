@@ -355,6 +355,34 @@ class RecordSetValidationsSpec
         val error = leftValue(cnameAddValidations(invalid, List(), okZone))
         error shouldBe an[InvalidRequest]
       }
+      "return an InvalidRequest if a cname record set name is dotted" in {
+        val error = leftValue(cnameAddValidations(cname.copy(name = "dot.ted"), List(), okZone))
+        error shouldBe an[InvalidRequest]
+      }
+    }
+
+    "CnameEditValidations" should {
+      val invalidCnameApexRs: RecordSet = cname.copy(name = "@")
+      "return a RecordSetAlreadyExistsError if a record with the same name exists as updated cname" in {
+        val error = leftValue(cnameEditValidations(cname, List(aaaa), okZone, cname.name))
+        error shouldBe a[RecordSetAlreadyExists]
+      }
+      "return ok if new name does not contain dot" in {
+        cnameEditValidations(cname, List(), okZone, "dot.ted") should be(right)
+      }
+      "return ok if dotted host name doesn't change" in {
+        val updatedRecord = cname.copy(name = "dot.ted", ttl = 500)
+        cnameEditValidations(updatedRecord, List(), okZone, "dot.ted") should be(right)
+      }
+      "return an InvalidRequest if a cname record set name is '@'" in {
+        val error = leftValue(cnameEditValidations(invalidCnameApexRs, List(), okZone, "old-name"))
+        error shouldBe an[InvalidRequest]
+      }
+      "return an InvalidRequest if a cname record set name is same as zone" in {
+        val invalid = invalidCnameApexRs.copy(name = okZone.name)
+        val error = leftValue(cnameEditValidations(invalid, List(), okZone, okZone.name))
+        error shouldBe an[InvalidRequest]
+      }
     }
 
     "isNotHighValueDomain" should {
