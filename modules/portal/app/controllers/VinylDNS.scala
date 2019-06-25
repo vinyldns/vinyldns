@@ -379,7 +379,6 @@ class VinylDNS @Inject()(
     })
     // $COVERAGE-ON$
   }
-
   def getZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$
     val vinyldnsRequest = new VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/$id")

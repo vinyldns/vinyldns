@@ -76,7 +76,6 @@
         return {
             require: 'ngModel',
             link: function(scope, elm, attrs, ctrl) {
-                console.log(elm)
                 elm.on('change', function(e){
                     if (e.target.files.length > 0) {
                         ctrl.$setViewValue(e.target.files[0]);

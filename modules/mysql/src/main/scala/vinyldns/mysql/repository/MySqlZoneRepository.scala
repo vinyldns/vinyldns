@@ -219,12 +219,13 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       authPrincipal: AuthPrincipal,
       zoneNameFilter: Option[String] = None,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): IO[ListZonesResults] =
+      maxItems: Int = 100,
+      listAll: Boolean = false): IO[ListZonesResults] =
     monitor("repo.ZoneJDBC.listZones") {
       IO {
         DB.readOnly { implicit s =>
           val (withAccessorCheck, accessors) =
-            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds)
+            withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, listAll)
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
@@ -259,7 +260,8 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            zonesFilter = zoneNameFilter
+            zonesFilter = zoneNameFilter,
+            listAll = listAll
           )
         }
       }
@@ -287,9 +289,12 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
       }
     }
 
-  private def withAccessors(user: User, groupIds: Seq[String]): (String, Seq[Any]) =
+  private def withAccessors(
+      user: User,
+      groupIds: Seq[String],
+      listAllZones: Boolean): (String, Seq[Any]) =
     // Super users do not need to join across to check zone access as they have access to all of the zones
-    if (user.isSuper || user.isSupport) {
+    if (listAllZones || user.isSuper || user.isSupport) {
       (BASE_ZONE_SEARCH_SQL, Seq.empty)
     } else {
       // User is not super or support,

@@ -19,6 +19,7 @@ package vinyldns.api.domain
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.Zone
 
 trait AccessValidationAlgebra {
@@ -61,4 +62,6 @@ trait AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordSets: List[RecordSetInfo],
       zone: Zone): List[RecordSetListInfo]
+
+  def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel
 }

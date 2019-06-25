@@ -103,6 +103,11 @@ class AccessValidationsSpec
         memberGroupIds = Seq.empty)
       accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
     }
+
+    "return false if the zone is shared and user does not have other access" in {
+      val error = leftValue(accessValidationTest.canSeeZone(okAuth, sharedZone))
+      error shouldBe a[NotAuthorizedError]
+    }
   }
 
   "canChangeZone" should {
@@ -1013,5 +1018,35 @@ class AccessValidationsSpec
       result shouldBe expected
     }
 
+  }
+
+  "getZoneAccess" should {
+    "return access level Delete if user is a super user" in {
+      accessValidationTest.getZoneAccess(superUserAuth, okZone) should be(AccessLevel.Delete)
+    }
+
+    "return access level Delete if user is a zone admin" in {
+      accessValidationTest.getZoneAccess(okAuth, okZone) should be(AccessLevel.Delete)
+    }
+
+    "return access level Read if user is a support user" in {
+      accessValidationTest.getZoneAccess(supportUserAuth, abcZone) should be(AccessLevel.Read)
+    }
+
+    "return access level NoAccess if zone is shared and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, sharedZone) should be(AccessLevel.NoAccess)
+    }
+
+    "return access level Read if zone is private and user is an ACL rule" in {
+      val goodUserRule = baseAclRule.copy(userId = Some(okUser.id), groupId = None)
+      val acl = ZoneACL(Set(goodUserRule))
+      val aclZone = abcZone.copy(acl = acl)
+
+      accessValidationTest.getZoneAccess(okAuth, aclZone) should be(AccessLevel.Read)
+    }
+
+    "return access level NoAccess if zone is private and user is not an admin" in {
+      accessValidationTest.getZoneAccess(okAuth, abcZone) should be(AccessLevel.NoAccess)
+    }
   }
 }
