@@ -52,6 +52,8 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
     "Convert an AddChangeInput into SingleAddChange" in {
       val changeA = AddChangeInput("some.test.com", A, None, AData("1.1.1.1"))
       val converted = changeA.asNewStoredChange(List())
+
+      converted shouldBe a[SingleAddChange]
       val asAdd = converted.asInstanceOf[SingleAddChange]
 
       asAdd.zoneId shouldBe None
@@ -70,6 +72,8 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
     "Convert a DeleteChangeInput into SingleDeleteChange" in {
       val changeA = DeleteChangeInput("some.test.com", A)
       val converted = changeA.asNewStoredChange(List())
+
+      converted shouldBe a[SingleDeleteChange]
       val asDelete = converted.asInstanceOf[SingleDeleteChange]
 
       asDelete.zoneId shouldBe None

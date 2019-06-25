@@ -380,13 +380,14 @@ class BatchChangeService(
         batchChangeConverter
           .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
           .map(_.batchChange)
-      case PendingApproval =>
+      case PendingApproval if manualReviewEnabled =>
         // save the change, will need to return to it later on approval
         batchChangeRepo.save(batchChange).toBatchResult
-      case ManuallyRejected =>
-        // this should not be called with a rejected change!
+      case _ =>
+        // this should not be called with a rejected change (or if manual review is off)!
         logger.error(
-          s"convertOrSave called with a rejected batch change; batchChangeId='${batchChange.id}'")
+          s"convertOrSave called with a rejected batch change;" +
+            s"batchChangeId='${batchChange.id}; manualReviewEnabled=$manualReviewEnabled'")
         UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
     }
 

@@ -21,6 +21,8 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
+import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
 import vinyldns.api._
@@ -33,6 +35,7 @@ import vinyldns.api.repository.{
   EmptyZoneRepo,
   InMemoryBatchChangeRepository
 }
+import vinyldns.core
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
@@ -48,7 +51,11 @@ class BatchChangeServiceSpec
     with BeforeAndAfterEach
     with EitherMatchers
     with EitherValues
-    with ValidatedMatchers {
+    with ValidatedMatchers
+    with MockitoSugar {
+
+  val softError = mock[SoftBatchError]
+  doReturn(true).when(softError).isSoftFailure
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
   private val ttl = Some(200L)
@@ -231,6 +238,15 @@ class BatchChangeServiceSpec
     batchChangeRepo,
     EmptyBatchConverter,
     false)
+
+  private val underTestManualEnabled = new BatchChangeService(
+    TestZoneRepo,
+    TestRecordSetRepo,
+    TestGroupRepo,
+    validations,
+    batchChangeRepo,
+    EmptyBatchConverter,
+    true)
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -865,7 +881,80 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
+    "return an error if all data inputs are valid or have soft failures and manual review is disabled" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTest
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            softError.invalidNel,
+            softError.invalidNel
+          ),
+          okAuth
+        )
+        .left
+        .value
 
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
+    "return a BatchChange if all data inputs are valid or have soft failures and manual review is enabled" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTestManualEnabled
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            softError.invalidNel,
+            softError.invalidNel
+          ),
+          okAuth
+        )
+        .toOption
+        .get
+
+      result shouldBe a[BatchChange]
+      result.changes.head shouldBe SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        result.changes.head.id
+      )
+      result.changes(1) shouldBe SingleAddChange(
+        None,
+        None,
+        None,
+        "have.only.base.",
+        AAAA,
+        ttl.get,
+        AAAAData("1:2:3:4:5:6:7:8"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        result.changes(1).id
+      )
+      result.changes(2) shouldBe core.domain.batch.SingleDeleteChange(
+        None,
+        None,
+        None,
+        "some.test.delete.",
+        TXT,
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        result.changes(2).id
+      )
+    }
     "return a BatchChangeErrorList if any data inputs are invalid" in {
       val result = underTest
         .buildResponse(
@@ -1161,4 +1250,5 @@ class BatchChangeServiceSpec
       rightResultOf(underTest.getOwnerGroup(Some(okGroup.id)).value) shouldBe Some(okGroup)
     }
   }
+
 }
