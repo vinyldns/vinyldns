@@ -39,8 +39,9 @@ case class BatchChange(
     val hasPending = singleStatuses.contains(SingleChangeStatus.Pending)
     val hasFailed = singleStatuses.contains(SingleChangeStatus.Failed)
     val hasComplete = singleStatuses.contains(SingleChangeStatus.Complete)
+    val hasNeedsReview = singleStatuses.contains(SingleChangeStatus.NeedsReview)
 
-    BatchChangeStatus.fromSingleStatuses(hasPending, hasFailed, hasComplete)
+    BatchChangeStatus.fromSingleStatuses(hasPending, hasFailed, hasComplete, hasNeedsReview)
   }
 }
 
@@ -57,11 +58,13 @@ object BatchChangeStatus extends Enumeration {
   def fromSingleStatuses(
       hasPending: Boolean,
       hasFailed: Boolean,
-      hasComplete: Boolean): BatchChangeStatus =
-    (hasPending, hasFailed, hasComplete) match {
-      case (true, _, _) => BatchChangeStatus.Pending
-      case (_, true, true) => BatchChangeStatus.PartialFailure
-      case (_, true, false) => BatchChangeStatus.Failed
+      hasComplete: Boolean,
+      hasNeedsReview: Boolean): BatchChangeStatus =
+    (hasPending, hasFailed, hasComplete, hasNeedsReview) match {
+      case (true, _, _, _) => BatchChangeStatus.Pending
+      case (_, _, _, true) => BatchChangeStatus.Pending
+      case (_, true, true, _) => BatchChangeStatus.PartialFailure
+      case (_, true, false, _) => BatchChangeStatus.Failed
       case _ => BatchChangeStatus.Complete
     }
 }

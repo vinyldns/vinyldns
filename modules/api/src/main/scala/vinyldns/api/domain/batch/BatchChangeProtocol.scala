@@ -51,7 +51,7 @@ final case class AddChangeInput(
       typ,
       knownTtl,
       record,
-      SingleChangeStatus.UnValidated,
+      SingleChangeStatus.NeedsReview,
       None,
       None,
       None)
@@ -66,7 +66,7 @@ final case class DeleteChangeInput(inputName: String, typ: RecordType) extends C
       None,
       inputName,
       typ,
-      SingleChangeStatus.UnValidated,
+      SingleChangeStatus.NeedsReview,
       None,
       None,
       None)
