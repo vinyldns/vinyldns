@@ -128,8 +128,8 @@ object Boot extends App {
           loaderResponse.healthChecks)
       val batchChangeConverter =
         new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
-      val batchChangeService =
-        BatchChangeService(repositories, batchChangeValidations, batchChangeConverter)
+      val batchChangeService = BatchChangeService(repositories, batchChangeValidations, batchChangeConverter,
+          VinylDNSConfig.manualBatchReviewEnabled)
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
         membershipService,

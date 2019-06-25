@@ -22,7 +22,6 @@ import cats.effect._
 import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
@@ -41,14 +40,16 @@ object BatchChangeService {
   def apply(
       dataAccessor: ApiDataAccessor,
       batchChangeValidations: BatchChangeValidationsAlgebra,
-      batchChangeConverter: BatchChangeConverterAlgebra): BatchChangeService =
+      batchChangeConverter: BatchChangeConverterAlgebra,
+      manualReviewEnabled: Boolean): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
       dataAccessor.groupRepository,
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
-      batchChangeConverter
+      batchChangeConverter,
+      manualReviewEnabled
     )
 }
 
@@ -58,7 +59,8 @@ class BatchChangeService(
     groupRepository: GroupRepository,
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
-    batchChangeConverter: BatchChangeConverterAlgebra)
+    batchChangeConverter: BatchChangeConverterAlgebra,
+    manualReviewEnabled: Boolean)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -341,7 +343,7 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved
       ).asRight
-    } else if (VinylDNSConfig.manualBatchReviewEnabled && allErrors.forall(_.isSoftFailure)) {
+    } else if (manualReviewEnabled && allErrors.forall(_.isSoftFailure)) {
       // only soft failures, can go to pending state
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
