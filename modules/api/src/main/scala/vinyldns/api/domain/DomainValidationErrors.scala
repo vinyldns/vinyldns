@@ -24,6 +24,13 @@ import vinyldns.core.domain.record.RecordType.RecordType
 // $COVERAGE-OFF$
 sealed trait DomainValidationError {
   def message: String
+
+  val isSoftFailure: Boolean = false
+}
+
+sealed trait SoftBatchError extends DomainValidationError {
+  override val isSoftFailure: Boolean = true
+  // TODO envisioning error codes, display options in here
 }
 
 // The request itself is invalid in this case, so we fail fast
