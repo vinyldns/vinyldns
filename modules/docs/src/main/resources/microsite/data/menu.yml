@@ -30,6 +30,8 @@ options:
       menu_section: portal_section
     - title: Understand Connections
       url: portal/connections
+    - title: Search Zones
+      url: portal/search-zones
 
   - title: Groups
     url: portal/groups
