@@ -19,7 +19,7 @@ name          | type          | required?   | description |
 nameFilter    | string        | no          | Characters that are part of the zone name to search for.  The wildcard character `*` is supported, for example `www*`.  Omit the wildcard character when searching for an exact zone name. |
 startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | int           | no          | The number of items to return in the page.  Valid values are 1 - 100. Defaults to 100 if not provided. |
-listAll       | boolean       | no          | Returns all zones, regardless of requesting user's zone ownership or access. Defaults to false if not provided. |
+listAll       | boolean       | no          | If false, returns only zones the requesting user owns or has ACL access to. If true, returns all zones in the system, regardless of ownership (still paginated based on maxItems). Defaults to false if not provided. |
 
 #### HTTP RESPONSE TYPES
 
