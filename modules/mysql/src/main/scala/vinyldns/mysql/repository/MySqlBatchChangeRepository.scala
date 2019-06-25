@@ -77,8 +77,8 @@ class MySqlBatchChangeRepository
          |    ON sc.batch_change_id = bc.id
         """.stripMargin
 
-  private final val GET_BATCH_CHANGE_SUMMARY =
-    sql"""
+  private final val GET_BATCH_CHANGE_SUMMARY_BASE =
+    """
          |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
          |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
          |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
@@ -87,7 +87,10 @@ class MySqlBatchChangeRepository
          |         FROM single_change sc
          |         JOIN batch_change bc
          |           ON sc.batch_change_id = bc.id
-         |        WHERE bc.user_id={userId}
+        """.stripMargin
+
+  private final val GET_BATCH_CHANGE_SUMMARY_END =
+    """
          |        GROUP BY bc.id
          |        ORDER BY bc.created_time DESC
          |        LIMIT {maxItems}
@@ -215,34 +218,41 @@ class MySqlBatchChangeRepository
       }
     }
 
-  def getBatchChangeSummariesByUserId(
-      userId: String,
+  def getBatchChangeSummaries(
+      userId: Option[String],
       startFrom: Option[Int] = None,
       maxItems: Int = 100): IO[BatchChangeSummaryList] =
-    monitor("repo.BatchChangeJDBC.getBatchChangeSummariesByUserId") {
+    monitor("repo.BatchChangeJDBC.getBatchChangeSummaries") {
       IO {
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(0)
-          // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId
-          val queryResult = GET_BATCH_CHANGE_SUMMARY
-            .bindByName('userId -> userId, 'startFrom -> startValue, 'maxItems -> (maxItems + 1))
-            .map { res =>
-              val pending = res.int("pending_count")
-              val failed = res.int("fail_count")
-              val complete = res.int("complete_count")
-              BatchChangeSummary(
-                userId,
-                res.string("user_name"),
-                Option(res.string("comments")),
-                new org.joda.time.DateTime(res.timestamp("created_time")),
-                pending + failed + complete,
-                BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
-                Option(res.string("owner_group_id")),
-                res.string("id"),
-              )
-            }
-            .list()
-            .apply()
+
+          val sb = new StringBuilder
+          sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
+          userId.foreach(uid => sb.append(s"WHERE bc.user_id = '$uid' "))
+          sb.append(GET_BATCH_CHANGE_SUMMARY_END)
+          val query = sb.toString()
+
+          val queryResult =
+            SQL(query)
+              .bindByName('startFrom -> startValue, 'maxItems -> (maxItems + 1))
+              .map { res =>
+                val pending = res.int("pending_count")
+                val failed = res.int("fail_count")
+                val complete = res.int("complete_count")
+                BatchChangeSummary(
+                  res.string("user_id"),
+                  res.string("user_name"),
+                  Option(res.string("comments")),
+                  new org.joda.time.DateTime(res.timestamp("created_time")),
+                  pending + failed + complete,
+                  BatchChangeStatus.fromSingleStatuses(pending > 0, failed > 0, complete > 0),
+                  Option(res.string("owner_group_id")),
+                  res.string("id"),
+                )
+              }
+              .list()
+              .apply()
           val maxQueries = queryResult.take(maxItems)
           val nextId = if (queryResult.size <= maxItems) None else Some(startValue + maxItems)
           BatchChangeSummaryList(maxQueries, startFrom, nextId, maxItems)

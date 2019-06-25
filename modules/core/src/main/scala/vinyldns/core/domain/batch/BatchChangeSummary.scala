@@ -65,4 +65,5 @@ case class BatchChangeSummaryList(
     batchChanges: List[BatchChangeSummary],
     startFrom: Option[Int] = None,
     nextId: Option[Int] = None,
-    maxItems: Int = 100)
+    maxItems: Int = 100,
+    listAll: Boolean = false)

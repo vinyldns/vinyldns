@@ -58,10 +58,11 @@ class BatchChangeRoutingSpec
     /* Builds BatchChange response */
     def createBatchChangeResponse(
         comments: Option[String] = None,
-        ownerGroupId: Option[String] = None): BatchChange =
+        ownerGroupId: Option[String] = None,
+        auth: AuthPrincipal = okAuth): BatchChange =
       BatchChange(
-        okAuth.userId,
-        okAuth.signedInUser.userName,
+        auth.userId,
+        auth.signedInUser.userName,
         comments,
         DateTime.now,
         List(
@@ -140,6 +141,8 @@ class BatchChangeRoutingSpec
     val batchChangeSummaryInfo1 = BatchChangeSummary(createBatchChangeResponse(Some("first")))
     val batchChangeSummaryInfo2 = BatchChangeSummary(createBatchChangeResponse(Some("second")))
     val batchChangeSummaryInfo3 = BatchChangeSummary(createBatchChangeResponse(Some("third")))
+    val batchChangeSummaryInfo4 = BatchChangeSummary(
+      createBatchChangeResponse(Some("fourth"), auth = dummyAuth))
 
     val validResponseWithComments: BatchChange = createBatchChangeResponse(
       Some("validChangeWithComments"))
@@ -225,21 +228,21 @@ class BatchChangeRoutingSpec
     def listBatchChangeSummaries(
         auth: AuthPrincipal,
         startFrom: Option[Int],
-        maxItems: Int): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
+        maxItems: Int,
+        listAll: Boolean = false): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
-        (auth, startFrom, maxItems) match {
-          case (_, None, 100) =>
+        (auth, startFrom, maxItems, listAll) match {
+          case (_, None, 100, false) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges =
                   List(batchChangeSummaryInfo1, batchChangeSummaryInfo2, batchChangeSummaryInfo3),
                 startFrom = None,
-                nextId = None,
-                maxItems = 100
+                nextId = None
               )
             )
 
-          case (_, None, 1) =>
+          case (_, None, 1, false) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo1),
@@ -249,17 +252,16 @@ class BatchChangeRoutingSpec
               )
             )
 
-          case (_, Some(1), 100) =>
+          case (_, Some(1), 100, false) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
                 startFrom = Some(1),
-                nextId = None,
-                maxItems = 100
+                nextId = None
               )
             )
 
-          case (_, Some(1), 1) =>
+          case (_, Some(1), 1, false) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -269,6 +271,22 @@ class BatchChangeRoutingSpec
               )
             )
 
+          case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
+        } else if (auth.userId == superUserAuth.userId)
+        (auth, startFrom, maxItems, listAll) match {
+          case (_, None, 100, true) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(
+                  batchChangeSummaryInfo1,
+                  batchChangeSummaryInfo2,
+                  batchChangeSummaryInfo3,
+                  batchChangeSummaryInfo4),
+                startFrom = None,
+                nextId = None,
+                listAll = true
+              )
+            )
           case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
         } else
         EitherT.rightT(BatchChangeSummaryList(List()))
@@ -483,6 +501,19 @@ class BatchChangeRoutingSpec
         val resp = responseAs[JValue]
         compact(resp) shouldBe compact(
           Extraction.decompose(BatchChangeSummaryList(List(), maxItems = 100)))
+      }
+    }
+
+    "return all batch changes if listAll is true" in {
+      Get("/zones/batchrecordchanges?listAll=true") ~> batchChangeRoute(superUserAuth) ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeSummaryList]
+
+        resp.batchChanges.length shouldBe 4
+        resp.maxItems shouldBe 100
+        resp.startFrom shouldBe None
+        resp.nextId shouldBe None
       }
     }
   }
