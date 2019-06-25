@@ -105,10 +105,11 @@ final case class SingleDeleteChange(
  - Pending has not yet been processed
  - Complete has been processed - must have recordChangeId
  - Failed had some error (see systemMessage) - may have recordChangeId, not required
+ - UnValidated means there was a validation error and it needs manual review
  */
 object SingleChangeStatus extends Enumeration {
   type SingleChangeStatus = Value
-  val Pending, Complete, Failed = Value
+  val Pending, Complete, Failed, UnValidated = Value
 }
 
 case class RecordKey(zoneId: String, recordName: String, recordType: RecordType)

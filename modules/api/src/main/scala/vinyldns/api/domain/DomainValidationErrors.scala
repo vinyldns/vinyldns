@@ -24,6 +24,13 @@ import vinyldns.core.domain.record.RecordType.RecordType
 // $COVERAGE-OFF$
 sealed trait DomainValidationError {
   def message: String
+
+  val isSoftFailure: Boolean = false
+}
+
+sealed trait SoftBatchError extends DomainValidationError {
+  override val isSoftFailure: Boolean = true
+  // TODO envisioning error codes, display options in here
 }
 
 // The request itself is invalid in this case, so we fail fast
@@ -100,7 +107,7 @@ final case class InvalidBatchRecordType(param: String) extends DomainValidationE
       s"${SupportedBatchChangeRecordTypes.get}."
 }
 
-final case class ZoneDiscoveryError(name: String) extends DomainValidationError {
+final case class ZoneDiscoveryError(name: String) extends SoftBatchError {
   def message: String =
     s"""Zone Discovery Failed: zone for "$name" does not exist in VinylDNS. """ +
       "If zone exists, then it must be connected to in VinylDNS."

@@ -16,7 +16,10 @@
 
 package vinyldns.api.domain.batch
 
+import vinyldns.api.VinylDNSConfig
+import vinyldns.api.domain.SoftBatchError
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType._
 
@@ -28,6 +31,7 @@ final case class BatchChangeInput(
 sealed trait ChangeInput {
   val inputName: String
   val typ: RecordType
+  def asNewStoredChange(errors: List[SoftBatchError]): SingleChange
 }
 
 final case class AddChangeInput(
@@ -35,9 +39,38 @@ final case class AddChangeInput(
     typ: RecordType,
     ttl: Option[Long],
     record: RecordData)
-    extends ChangeInput
+    extends ChangeInput {
 
-final case class DeleteChangeInput(inputName: String, typ: RecordType) extends ChangeInput
+  def asNewStoredChange(errors: List[SoftBatchError]): SingleChange = {
+    val knownTtl = ttl.getOrElse(VinylDNSConfig.defaultTtl)
+    SingleAddChange(
+      None,
+      None,
+      None,
+      inputName,
+      typ,
+      knownTtl,
+      record,
+      SingleChangeStatus.UnValidated,
+      None,
+      None,
+      None)
+  }
+}
+
+final case class DeleteChangeInput(inputName: String, typ: RecordType) extends ChangeInput {
+  def asNewStoredChange(errors: List[SoftBatchError]): SingleChange =
+    SingleDeleteChange(
+      None,
+      None,
+      None,
+      inputName,
+      typ,
+      SingleChangeStatus.UnValidated,
+      None,
+      None,
+      None)
+}
 
 object AddChangeInput {
   def apply(
