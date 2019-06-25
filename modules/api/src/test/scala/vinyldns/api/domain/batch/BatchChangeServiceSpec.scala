@@ -229,7 +229,8 @@ class BatchChangeServiceSpec
     TestGroupRepo,
     validations,
     batchChangeRepo,
-    EmptyBatchConverter)
+    EmptyBatchConverter,
+    false)
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -565,7 +566,8 @@ class BatchChangeServiceSpec
         TestGroupRepo,
         validations,
         batchChangeRepo,
-        EmptyBatchConverter)
+        EmptyBatchConverter,
+        false)
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val possibleZones = List(
@@ -598,7 +600,8 @@ class BatchChangeServiceSpec
         TestGroupRepo,
         validations,
         batchChangeRepo,
-        EmptyBatchConverter)
+        EmptyBatchConverter,
+        false)
 
       val ip1 = "::1"
       val possibleZones1 = (5 to 16).map(num0s => ("0." * num0s) + "ip6.arpa.")
