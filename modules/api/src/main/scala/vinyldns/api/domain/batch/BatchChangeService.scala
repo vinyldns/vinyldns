@@ -372,33 +372,21 @@ class BatchChangeService(
       batchChange: BatchChange,
       existingZones: ExistingZones,
       existingRecordSets: ExistingRecordSets,
-      ownerGroupId: Option[String]): BatchResult[BatchChange] = {
-
-    batchChange.approvalStatus match {
-      case AutoApproved | ManuallyApproved =>
-        // send on to the converter, it will be saved there
-        batchChangeConverter
-          .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
-          .map(_.batchChange)
-      case PendingApproval if manualReviewEnabled =>
-        // save the change, will need to return to it later on approval
-        batchChangeRepo.save(batchChange).toBatchResult
-      case _ =>
-        // this should not be called with a rejected change (or if manual review is off)!
-        logger.error(
-          s"convertOrSave called with a rejected batch change;" +
-            s"batchChangeId='${batchChange.id}; manualReviewEnabled=$manualReviewEnabled'")
-        UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
-    }
-
-    if (batchChange.approvalStatus == AutoApproved || batchChange.approvalStatus == ManuallyApproved) {
+      ownerGroupId: Option[String]): BatchResult[BatchChange] = batchChange.approvalStatus match {
+    case AutoApproved | ManuallyApproved =>
+      // send on to the converter, it will be saved there
       batchChangeConverter
         .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
         .map(_.batchChange)
-    } else {
-      logger.info("Batch change")
-      batchChange.toRightBatchResult
-    }
+    case PendingApproval if manualReviewEnabled =>
+      // save the change, will need to return to it later on approval
+      batchChangeRepo.save(batchChange).toBatchResult
+    case _ =>
+      // this should not be called with a rejected change (or if manual review is off)!
+      logger.error(
+        s"convertOrSave called with a rejected batch change;" +
+          s"batchChangeId='${batchChange.id}; manualReviewEnabled=$manualReviewEnabled'")
+      UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
   }
 
   def addOwnerGroupNamesToSummaries(
