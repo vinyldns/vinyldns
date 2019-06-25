@@ -255,8 +255,17 @@ def test_list_zones_list_all_success(list_zones_context):
     result = list_zones_context.client.list_zones(list_all=True, status=200)
     retrieved = result['zones']
 
-    assert_that(retrieved, has_length(17))
-    assert_that(retrieved, has_item(has_entry('name', 'list-zones-test-searched-1.')))
-    assert_that(retrieved, has_item(has_entry('adminGroupName', 'list-zones-group')))
-    assert_that(retrieved, has_item(has_entry('backendId', 'func-test-backend')))
+    assert_that(result['listAll'], is_(True))
+    assert_that(len(retrieved), greater_than(5))
+
+
+def test_list_zones_list_all_success_with_name_filter(list_zones_context):
+    """
+    Test that we can retrieve a list of all zones with a name filter
+    """
+    result = list_zones_context.client.list_zones(name_filter='shared', list_all=True, status=200)
+    retrieved = result['zones']
+
+    assert_that(result['listAll'], is_(True))
+    assert_that(retrieved, has_item(has_entry('name', 'shared.')))
     assert_that(retrieved, has_item(has_entry('accessLevel', 'NoAccess')))
