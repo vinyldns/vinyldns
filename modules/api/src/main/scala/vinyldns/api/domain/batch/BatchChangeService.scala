@@ -81,12 +81,12 @@ class BatchChangeService(
         auth,
         batchChangeInput.ownerGroupId)
       changeForConversion <- buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
-      conversionResult <- batchChangeConverter.sendBatchForProcessing(
+      serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         zoneMap,
         recordSets,
         batchChangeInput.ownerGroupId)
-    } yield conversionResult.batchChange
+    } yield serviceCompleteBatch
 
   def rejectBatchChange(
       batchChangeId: String,
