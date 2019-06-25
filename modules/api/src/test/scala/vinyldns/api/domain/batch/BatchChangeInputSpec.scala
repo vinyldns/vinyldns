@@ -17,6 +17,8 @@
 package vinyldns.api.domain.batch
 
 import org.scalatest.{Matchers, WordSpec}
+import vinyldns.api.VinylDNSConfig
+import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
 
@@ -44,6 +46,42 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       input.changes(3).inputName shouldBe "adot.test.com."
       input.changes(4).inputName shouldBe "aaaadot.test.com."
       input.changes(5).inputName shouldBe "cnamedot.test.com."
+    }
+  }
+  "asNewStoredChange" should {
+    "Convert an AddChangeInput into SingleAddChange" in {
+      val changeA = AddChangeInput("some.test.com", A, None, AData("1.1.1.1"))
+      val converted = changeA.asNewStoredChange(List())
+      val asAdd = converted.asInstanceOf[SingleAddChange]
+
+      asAdd.zoneId shouldBe None
+      asAdd.zoneName shouldBe None
+      asAdd.recordName shouldBe None
+      asAdd.inputName shouldBe "some.test.com."
+      asAdd.typ shouldBe A
+      asAdd.ttl shouldBe VinylDNSConfig.defaultTtl
+      asAdd.recordData shouldBe AData("1.1.1.1")
+      // TODO this should change to NeedsApproval
+      asAdd.status shouldBe SingleChangeStatus.Pending
+      asAdd.systemMessage shouldBe None
+      asAdd.recordChangeId shouldBe None
+      asAdd.recordSetId shouldBe None
+    }
+    "Convert a DeleteChangeInput into SingleDeleteChange" in {
+      val changeA = DeleteChangeInput("some.test.com", A)
+      val converted = changeA.asNewStoredChange(List())
+      val asDelete = converted.asInstanceOf[SingleDeleteChange]
+
+      asDelete.zoneId shouldBe None
+      asDelete.zoneName shouldBe None
+      asDelete.recordName shouldBe None
+      asDelete.inputName shouldBe "some.test.com."
+      asDelete.typ shouldBe A
+      // TODO this should change to NeedsApproval
+      asDelete.status shouldBe SingleChangeStatus.Pending
+      asDelete.systemMessage shouldBe None
+      asDelete.recordChangeId shouldBe None
+      asDelete.recordSetId shouldBe None
     }
   }
 }
