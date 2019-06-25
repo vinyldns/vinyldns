@@ -373,7 +373,12 @@ class BatchChangeService(
       existingZones: ExistingZones,
       existingRecordSets: ExistingRecordSets,
       ownerGroupId: Option[String]): BatchResult[BatchChange] = batchChange.approvalStatus match {
-    case AutoApproved | ManuallyApproved =>
+    case AutoApproved =>
+      // send on to the converter, it will be saved there
+      batchChangeConverter
+        .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
+        .map(_.batchChange)
+    case ManuallyApproved if manualReviewEnabled =>
       // send on to the converter, it will be saved there
       batchChangeConverter
         .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)

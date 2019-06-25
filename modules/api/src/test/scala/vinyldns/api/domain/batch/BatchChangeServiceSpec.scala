@@ -129,6 +129,11 @@ class BatchChangeServiceSpec
         ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] =
       batchChange.comments match {
         case Some("conversionError") => BatchConversionError(pendingChange).toLeftBatchResult
+        case Some("checkConverter") =>
+          // hacking reviewComment to determine if things were sent to the converter
+          BatchConversionOutput(
+            batchChange.copy(reviewComment = Some("batchSentToConverter")),
+            List()).toRightBatchResult
         case _ => BatchConversionOutput(batchChange, List()).toRightBatchResult
       }
   }
@@ -1248,6 +1253,78 @@ class BatchChangeServiceSpec
 
     "return the group if the group exists for the owner group ID" in {
       rightResultOf(underTest.getOwnerGroup(Some(okGroup.id)).value) shouldBe Some(okGroup)
+    }
+  }
+
+  "convertOrSave" should {
+    "send to the converter if approved" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+
+      val result = rightResultOf(
+        underTestManualEnabled
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+      result.reviewComment shouldBe Some("batchSentToConverter")
+    }
+    "not send to the converter, save the change if PendingApproval and MA enabled" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+
+      val result = rightResultOf(
+        underTestManualEnabled
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+
+      // not sent to converter
+      result.reviewComment shouldBe None
+      // saved in DB
+      batchChangeRepo.getBatchChange(batchChange.id).unsafeRunSync() shouldBe defined
+    }
+    "error if PendingApproval but MA disabled" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+
+      val result = leftResultOf(
+        underTest
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+
+      result shouldBe an[UnknownConversionError]
+    }
+    "error if ManuallyApproved but MA disabled" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+
+      val result = leftResultOf(
+        underTest
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+      result shouldBe an[UnknownConversionError]
     }
   }
 
