@@ -332,6 +332,11 @@ class BatchChangeService(
       }
       .flatMap(_.toList)
 
+    val allSoftFailure = allErrors.forall {
+      case _: SoftBatchError => true
+      case _ => false
+    }
+
     if (allErrors.isEmpty) {
       val changes = transformed.getValid.map(_.asNewStoredChange)
       BatchChange(
@@ -343,7 +348,7 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved
       ).asRight
-    } else if (manualReviewEnabled && allErrors.forall(_.isSoftFailure)) {
+    } else if (manualReviewEnabled && allSoftFailure) {
       // only soft failures, can go to pending state
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>

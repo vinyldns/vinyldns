@@ -21,7 +21,6 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
-import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
@@ -54,8 +53,7 @@ class BatchChangeServiceSpec
     with ValidatedMatchers
     with MockitoSugar {
 
-  val softError = mock[SoftBatchError]
-  doReturn(true).when(softError).isSoftFailure
+  private val softError = mock[SoftBatchError]
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
   private val ttl = Some(200L)
