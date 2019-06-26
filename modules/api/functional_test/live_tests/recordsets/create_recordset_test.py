@@ -602,8 +602,8 @@ def test_create_dotted_a_record_not_apex_fails(shared_zone_test_context):
     }
 
     error = client.create_recordset(dotted_host_a_record, status=422)
-    assert_that(error, is_("Record with name " + dotted_host_a_record['name'] + " is a dotted host which "
-                              "is illegal in this zone " + zone['name']))
+    assert_that(error, is_("Record with name " + dotted_host_a_record['name'] + " and type A is a dotted host which "
+                              "is not allowed in zone " + zone['name']))
 
 def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):
     """
@@ -2189,4 +2189,4 @@ def test_create_dotted_ds_fails(shared_zone_test_context):
     record_data = [{'keytag': 60485, 'algorithm': 5, 'digesttype': 1, 'digest': '2BB183AF5F22588179A53B0A98631FAD1A292118'}]
     record_json = get_recordset_json(zone, 'dotted.ds', 'DS', record_data, ttl=100)
     error = client.create_recordset(record_json, status=422)
-    assert_that(error, is_("Record with name dotted.ds is a dotted host which is illegal in this zone example.com."))
+    assert_that(error, is_("Record with name dotted.ds and type DS is a dotted host which is not allowed in zone example.com."))
