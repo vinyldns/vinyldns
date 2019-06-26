@@ -203,6 +203,38 @@ class MySqlZoneRepositoryIntegrationSpec
       repo.listZones(dummyAuth).unsafeRunSync().zones should contain only testZones.head
     }
 
+    "get all zones" in {
+      // store all of the zones
+      val privateZone = okZone.copy(
+        name = "private-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL()
+      )
+
+      val sharedZone = okZone.copy(
+        name = "shared-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(),
+        shared = true
+      )
+
+      val testZones = Seq(privateZone,sharedZone)
+
+      val f = saveZones(testZones)
+
+      // query for all zones for the ok user, should have all of the zones returned
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      f.unsafeRunSync()
+      repo.listZones(okUserAuth, listAll=true).unsafeRunSync().zones should contain theSameElementsAs testZones
+
+      // dummy user only have all of the zones returned
+      repo.listZones(dummyAuth, listAll=true).unsafeRunSync().zones should contain theSameElementsAs testZones
+    }
+
     "get zones that are accessible by everyone" in {
 
       //user and group id being set to None implies EVERYONE access

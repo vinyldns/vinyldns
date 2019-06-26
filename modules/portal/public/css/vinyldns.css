@@ -409,3 +409,12 @@ input[type="file"] {
 .record-data-label {
     vertical-align: top;
 }
+
+.vinyldns_zones_paginate {
+    display: flex;
+    align-items: center;
+}
+
+.vinyldns_zones_page_number {
+    margin-right: 10px;
+}

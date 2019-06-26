@@ -120,7 +120,8 @@ class ZoneService(
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
-    } yield ZoneInfo(zone, aclInfo, groupName)
+      accessLevel = getZoneAccess(auth, zone)
+    } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
   def getZoneByName(zoneName: String, auth: AuthPrincipal): Result[ZoneInfo] =
     for {
@@ -128,35 +129,47 @@ class ZoneService(
       _ <- canSeeZone(auth, zone).toResult
       aclInfo <- getZoneAclDisplay(zone.acl)
       groupName <- getGroupName(zone.adminGroupId)
-    } yield ZoneInfo(zone, aclInfo, groupName)
+      accessLevel = getZoneAccess(auth, zone)
+    } yield ZoneInfo(zone, aclInfo, groupName, accessLevel)
 
   def listZones(
       authPrincipal: AuthPrincipal,
       nameFilter: Option[String] = None,
       startFrom: Option[String] = None,
-      maxItems: Int = 100): Result[ListZonesResponse] = {
+      maxItems: Int = 100,
+      listAll: Boolean = false): Result[ListZonesResponse] = {
     for {
-      listZonesResult <- zoneRepository.listZones(authPrincipal, nameFilter, startFrom, maxItems)
+      listZonesResult <- zoneRepository.listZones(
+        authPrincipal,
+        nameFilter,
+        startFrom,
+        maxItems,
+        listAll)
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
       groups <- groupRepository.getGroups(groupIds)
-      zoneSummaryInfos = zoneAdminGroupMapping(zones, groups)
+      zoneSummaryInfos = zoneSummaryInfoMapping(zones, authPrincipal, groups)
     } yield
       ListZonesResponse(
         zoneSummaryInfos,
         listZonesResult.zonesFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
-        listZonesResult.maxItems)
+        listZonesResult.maxItems,
+        listZonesResult.listAll)
   }.toResult
 
-  def zoneAdminGroupMapping(zones: List[Zone], groups: Set[Group]): List[ZoneSummaryInfo] =
+  def zoneSummaryInfoMapping(
+      zones: List[Zone],
+      auth: AuthPrincipal,
+      groups: Set[Group]): List[ZoneSummaryInfo] =
     zones.map { zn =>
       val groupName = groups.find(_.id == zn.adminGroupId) match {
         case Some(group) => group.name
         case None => "Unknown group name"
       }
-      ZoneSummaryInfo(zn, groupName)
+      val zoneAccess = getZoneAccess(auth, zn)
+      ZoneSummaryInfo(zn, groupName, zoneAccess)
     }
 
   def listZoneChanges(

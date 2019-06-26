@@ -901,6 +901,7 @@ class BatchChangeServiceSpec
       result.maxItems shouldBe 100
       result.nextId shouldBe None
       result.startFrom shouldBe None
+      result.listAll shouldBe false
 
       result.batchChanges.length shouldBe 1
       result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
@@ -931,6 +932,7 @@ class BatchChangeServiceSpec
       result.maxItems shouldBe 100
       result.nextId shouldBe None
       result.startFrom shouldBe None
+      result.listAll shouldBe false
 
       result.batchChanges.length shouldBe 2
       result.batchChanges(0).createdTimestamp shouldBe batchChangeTwo.createdTimestamp
@@ -962,6 +964,7 @@ class BatchChangeServiceSpec
       result.maxItems shouldBe 1
       result.nextId shouldBe Some(1)
       result.startFrom shouldBe None
+      result.listAll shouldBe false
 
       result.batchChanges.length shouldBe 1
       result.batchChanges(0).createdTimestamp shouldBe batchChangeTwo.createdTimestamp
@@ -993,6 +996,7 @@ class BatchChangeServiceSpec
       result.maxItems shouldBe 100
       result.nextId shouldBe None
       result.startFrom shouldBe Some(1)
+      result.listAll shouldBe false
 
       result.batchChanges.length shouldBe 1
       result.batchChanges(0).createdTimestamp shouldBe batchChangeOne.createdTimestamp
@@ -1023,6 +1027,66 @@ class BatchChangeServiceSpec
 
       result.length shouldBe 1
       result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
+    }
+
+    "only return summaries associated with user who called even if listAll is true if user is not super" in {
+      val batchChangeUserOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChangeUserOne)
+
+      val batchChangeUserTwo = BatchChange(
+        notAuth.userId,
+        auth.signedInUser.userName,
+        None,
+        new DateTime(DateTime.now.getMillis + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChangeUserTwo)
+
+      val result =
+        rightResultOf(underTest.listBatchChangeSummaries(auth, listAll = true).value).batchChanges
+
+      result.length shouldBe 1
+      result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
+    }
+
+    "return all summaries if user is super and requests all" in {
+      val batchChangeUserOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChangeUserOne)
+
+      val batchChangeUserTwo = BatchChange(
+        notAuth.userId,
+        auth.signedInUser.userName,
+        None,
+        new DateTime(DateTime.now.getMillis + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChangeUserTwo)
+
+      val result =
+        rightResultOf(underTest.listBatchChangeSummaries(superUserAuth, listAll = true).value)
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.listAll shouldBe true
+
+      result.batchChanges.length shouldBe 2
+      result.batchChanges(0).createdTimestamp shouldBe batchChangeUserTwo.createdTimestamp
+      result.batchChanges(1).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
     }
 
     "return an empty list of batchChangeSummaries if none exist" in {

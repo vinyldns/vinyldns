@@ -31,7 +31,8 @@ trait BatchChangeServiceAlgebra {
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       startFrom: Option[Int],
-      maxItems: Int): BatchResult[BatchChangeSummaryList]
+      maxItems: Int,
+      listAll: Boolean): BatchResult[BatchChangeSummaryList]
 
   def rejectBatchChange(
       batchChangeId: String,
