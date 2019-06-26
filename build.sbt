@@ -455,14 +455,14 @@ lazy val setDockerReleaseSettings = ReleaseStep(action = oldState => {
   val v = extracted.get(Keys.version)
   val snap = v.endsWith("SNAPSHOT")
   if (snap) extracted
-      .appendWithSession(Seq(dockerUpdateLatest in ThisScope := true), oldState)
+      .appendWithSession(Seq(dockerUpdateLatest in api := true, dockerUpdateLatest in portal := true), oldState)
   else oldState
 })
 
 lazy val initReleaseStage = Seq[ReleaseStep](
-  releaseStepCommand(";project root"), // use version.sbt file from root
   inquireVersions, // have a developer confirm versions
   setReleaseVersion,
+  releaseStepCommandAndRemaining(";project api;compile;project portal;compile;project root"),
   setDockerReleaseSettings,
   setSonatypeReleaseSettings
 )
