@@ -75,6 +75,19 @@ object BatchChangeStatus extends Enumeration {
 object BatchChangeApprovalStatus extends Enumeration {
   type BatchChangeApprovalStatus = Value
   val AutoApproved, PendingApproval, ManuallyApproved, ManuallyRejected = Value
+
+  def fromString(status: Option[String]): Option[BatchChangeApprovalStatus] =
+    status match {
+      case Some(p) if p.toLowerCase().contains("pending") =>
+        Some(BatchChangeApprovalStatus.PendingApproval)
+      case Some(aa) if aa.toLowerCase.contains("autoapproved") =>
+        Some(BatchChangeApprovalStatus.AutoApproved)
+      case Some(ma) if ma.toLowerCase.contains("manuallyapproved") =>
+        Some(BatchChangeApprovalStatus.ManuallyApproved)
+      case Some(r) if r.toLowerCase.contains("rejected") =>
+        Some(BatchChangeApprovalStatus.ManuallyRejected)
+      case _ => None
+    }
 }
 
 case class BatchChangeInfo(

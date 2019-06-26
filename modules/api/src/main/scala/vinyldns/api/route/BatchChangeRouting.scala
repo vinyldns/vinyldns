@@ -24,6 +24,7 @@ import cats.effect._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch._
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus
 
 trait BatchChangeRoute extends Directives {
   this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
@@ -32,6 +33,7 @@ trait BatchChangeRoute extends Directives {
 
   final private val MAX_ITEMS_LIMIT: Int = 100
 
+  case class BatchChangeApproval(approvalType: String) {}
   val batchChangeRoute: AuthPrincipal => server.Route = { authPrincipal: AuthPrincipal =>
     val standardBatchChangeRoutes = (post & path("zones" / "batchrecordchanges")) {
       monitor("Endpoint.postBatchChange") {
@@ -53,17 +55,27 @@ trait BatchChangeRoute extends Directives {
         parameters(
           "startFrom".as[Int].?,
           "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
-          "ignoreAccess".as[Boolean].?(false)) {
-          (startFrom: Option[Int], maxItems: Int, ignoreAccess: Boolean) =>
+          "ignoreAccess".as[Boolean].?(false),
+          "approvalStatus".as[String].?) {
+          (
+              startFrom: Option[Int],
+              maxItems: Int,
+              ignoreAccess: Boolean,
+              approvalStatus: Option[String]) =>
             {
+              val convertApprovalStatus = BatchChangeApprovalStatus.fromString(approvalStatus)
               handleRejections(invalidQueryHandler) {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
                   s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
-                  execute(batchChangeService
-                    .listBatchChangeSummaries(authPrincipal, startFrom, maxItems, ignoreAccess)) {
-                    summaries =>
-                      complete(StatusCodes.OK, summaries)
+                  execute(
+                    batchChangeService.listBatchChangeSummaries(
+                      authPrincipal,
+                      startFrom,
+                      maxItems,
+                      ignoreAccess,
+                      convertApprovalStatus)) { summaries =>
+                    complete(StatusCodes.OK, summaries)
                   }
                 }
               }

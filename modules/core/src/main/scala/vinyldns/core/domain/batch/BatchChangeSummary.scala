@@ -19,6 +19,7 @@ package vinyldns.core.domain.batch
 import java.util.UUID
 
 import org.joda.time.DateTime
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 
 case class BatchChangeSummary(
@@ -66,4 +67,5 @@ case class BatchChangeSummaryList(
     startFrom: Option[Int] = None,
     nextId: Option[Int] = None,
     maxItems: Int = 100,
-    ignoreAccess: Boolean = false)
+    ignoreAccess: Boolean = false,
+    approvalStatus: Option[BatchChangeApprovalStatus] = None)

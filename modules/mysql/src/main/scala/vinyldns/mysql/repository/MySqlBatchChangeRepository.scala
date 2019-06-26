@@ -221,14 +221,24 @@ class MySqlBatchChangeRepository
   def getBatchChangeSummaries(
       userId: Option[String],
       startFrom: Option[Int] = None,
-      maxItems: Int = 100): IO[BatchChangeSummaryList] =
+      maxItems: Int = 100,
+      approvalStatus: Option[BatchChangeApprovalStatus]): IO[BatchChangeSummaryList] =
     monitor("repo.BatchChangeJDBC.getBatchChangeSummaries") {
       IO {
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(0)
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
-          userId.foreach(uid => sb.append(s"WHERE bc.user_id = '$uid' "))
+          (userId, approvalStatus) match {
+            case (Some(uid), Some(status)) =>
+              sb.append(
+                s"WHERE bc.user_id = '$uid' AND bc.approval_status = '${fromApprovalStatus(status)}'")
+            case (Some(uid), None) => sb.append(s"WHERE bc.user_id = '$uid'")
+            case (None, Some(status)) =>
+              sb.append(s"WHERE bc.approval_status = '${fromApprovalStatus(status)}'")
+            case _ => ()
+          }
+
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
 
@@ -256,7 +266,14 @@ class MySqlBatchChangeRepository
               .apply()
           val maxQueries = queryResult.take(maxItems)
           val nextId = if (queryResult.size <= maxItems) None else Some(startValue + maxItems)
-          BatchChangeSummaryList(maxQueries, startFrom, nextId, maxItems)
+          val ignoreAccess = userId.isDefined
+          BatchChangeSummaryList(
+            maxQueries,
+            startFrom,
+            nextId,
+            maxItems,
+            ignoreAccess,
+            approvalStatus)
         }
       }
     }
