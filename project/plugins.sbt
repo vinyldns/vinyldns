@@ -14,7 +14,7 @@ addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.0.0")
 
 addSbtPlugin("org.wartremover" % "sbt-wartremover" % "2.3.7")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.5")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.23")
 
 addSbtPlugin("com.tapad" % "sbt-docker-compose" % "1.0.34")
 
