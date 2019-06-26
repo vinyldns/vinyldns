@@ -903,7 +903,7 @@ class BatchChangeServiceSpec
 
       result shouldBe an[InvalidBatchChangeResponses]
     }
-    "return a BatchChange if all data inputs are valid or have soft failures and manual review is enabled" in {
+    "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled" in {
       val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTestManualEnabled
         .buildResponse(
@@ -960,13 +960,31 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
+    "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTest
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            softError.invalidNel,
+            softError.invalidNel
+          ),
+          okAuth
+        )
+        .left
+        .value
+
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
     "return a BatchChangeErrorList if any data inputs are invalid" in {
       val result = underTest
         .buildResponse(
           BatchChangeInput(None, List(noZoneAddA, nonApexAddA)),
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
-            AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel),
+            AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel,
+            softError.invalidNel),
           okAuth
         )
         .left
@@ -978,6 +996,7 @@ class BatchChangeServiceSpec
         ZoneDiscoveryError("no.zone.match."))
       ibcr.changeRequestResponses(1) shouldBe Valid(
         AddChangeForValidation(baseZone, "non-apex", nonApexAddA))
+      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](softError)
     }
   }
 
