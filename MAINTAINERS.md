@@ -99,12 +99,11 @@ This expects you to have the root keys and passphrases for the Docker repositori
 Add their key ID to the table below, it can be viewed with `notary -s https://notary.docker.io -d ~/.docker/trust delegation list docker.io/vinyldns/api`.
 It will be the one that didn't show up when you ran step one of this section
 
-| Key ID | Name |
-|------------------------------------------------------------------|----------------|
-| 66027c822d68133da859f6639983d6d3d9643226b3f7259fc6420964993b499a | Nima Eskandary |
-| 04285e24d3b9a8b614b34da229669de1f75c9faa471057e8b4a7d60aac0d5bf5 | Rebecca Star   |
-| dd3a5938fc927de087ad4b59d6ac8f62b6502d05b2cc9b0623276cbac7dbf05b | Michael Ly     |
-| | |
+| Name | Key ID |
+|----------------|------------------------------------------------------------------
+| Nima Eskandary | 66027c822d68133da859f6639983d6d3d9643226b3f7259fc6420964993b499a, cdca33de91c54f801d89240d18b5037e274461ba1c88c10451070c97e9f665b4 |
+| Rebecca Star | 04285e24d3b9a8b614b34da229669de1f75c9faa471057e8b4a7d60aac0d5bf5 |
+| Michael Ly |dd3a5938fc927de087ad4b59d6ac8f62b6502d05b2cc9b0623276cbac7dbf05b |
 
 #### Pushing a Signed Image with your Delegation Key
 1. Run `notary key import <path to private delegation key> --role user`
