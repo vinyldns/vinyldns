@@ -301,7 +301,7 @@ class BatchChangeRoutingSpec
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
-        case (_, _) => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
+        case (_) => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
       }
 
     def approveBatchChange(
