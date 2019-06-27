@@ -16,8 +16,12 @@
 
 package vinyldns.api.route
 
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.server.Rejection
+import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -27,7 +31,8 @@ class VinylDNSServiceSpec
     with Matchers
     with MockitoSugar
     with OneInstancePerTest
-    with VinylDNSDirectives {
+    with VinylDNSDirectives
+    with ScalatestRouteTest {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
     mock[AuthPrincipal])
@@ -185,6 +190,49 @@ class VinylDNSServiceSpec
         ))
 
       actual should be(expected)
+    }
+  }
+
+  ".captureAccessLog" should {
+    "exclude capture access logs for doNotLog URIs" in {
+
+      val path = "/health"
+      val mockRequest = buildMockRequest(path = path)
+      val mockResponse = buildMockResponse()
+
+      val unloggedUris: Seq[Path] = Seq(Uri.Path(path), Uri.Path("/ping"))
+
+      VinylDNSService.captureAccessLog(unloggedUris)(mockRequest)(Complete(mockResponse))
+    }
+
+    "capture access logs for all request URIs" in {
+
+      val mockRequest = buildMockRequest("/zone/zoneId")
+      val mockResponse = buildMockResponse()
+
+      val unloggedUris: Seq[Path] = Seq(Uri.Path("/health"), Uri.Path("/ping"))
+
+      VinylDNSService.captureAccessLog(unloggedUris)(mockRequest)(Complete(mockResponse))
+    }
+
+    "capture access logs for rejected request" in {
+
+      val mockRequest = buildMockRequest("/zone/zoneId")
+
+      val unloggedUris: Seq[Path] = Seq(Uri.Path("/health"), Uri.Path("/ping"))
+
+      VinylDNSService.captureAccessLog(unloggedUris)(mockRequest)(
+        Rejected(scala.collection.immutable.Seq.empty[Rejection]))
+    }
+
+    "capture access logs for failed request" in {
+
+      val mockRequest = buildMockRequest("/zone/zoneId")
+      val mockResponse = buildMockResponse(status = StatusCodes.BadRequest)
+
+      val unloggedUris: Seq[Path] = Seq(Uri.Path("/health"), Uri.Path("/ping"))
+
+      VinylDNSService.captureAccessLog(unloggedUris)(mockRequest)(Complete(mockResponse))
     }
   }
 }
