@@ -22,11 +22,10 @@ import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
-sealed trait DomainValidationError {
+sealed abstract class DomainValidationError(isFatalError: Boolean = true) {
   def message: String
+  def isFatal: Boolean = isFatalError
 }
-
-sealed trait SoftBatchError extends DomainValidationError
 
 // The request itself is invalid in this case, so we fail fast
 final case class ChangeLimitExceeded(limit: Int) extends DomainValidationError {

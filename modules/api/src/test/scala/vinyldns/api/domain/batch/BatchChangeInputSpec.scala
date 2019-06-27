@@ -16,8 +16,10 @@
 
 package vinyldns.api.domain.batch
 
+import cats.data.NonEmptyList
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSConfig
+import vinyldns.api.domain.ZoneDiscoveryError
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
@@ -51,7 +53,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
   "asNewStoredChange" should {
     "Convert an AddChangeInput into SingleAddChange" in {
       val changeA = AddChangeInput("some.test.com", A, None, AData("1.1.1.1"))
-      val converted = changeA.asNewStoredChange(List())
+      val converted = changeA.asNewStoredChange(NonEmptyList.of(ZoneDiscoveryError("test")))
 
       converted shouldBe a[SingleAddChange]
       val asAdd = converted.asInstanceOf[SingleAddChange]
@@ -71,7 +73,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
     }
     "Convert a DeleteChangeInput into SingleDeleteChange" in {
       val changeA = DeleteChangeInput("some.test.com", A)
-      val converted = changeA.asNewStoredChange(List())
+      val converted = changeA.asNewStoredChange(NonEmptyList.of(ZoneDiscoveryError("test")))
 
       converted shouldBe a[SingleDeleteChange]
       val asDelete = converted.asInstanceOf[SingleDeleteChange]

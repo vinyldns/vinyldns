@@ -21,6 +21,7 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
+import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
@@ -53,7 +54,8 @@ class BatchChangeServiceSpec
     with ValidatedMatchers
     with MockitoSugar {
 
-  private val softError = mock[SoftBatchError]
+  private val nonFatalError = mock[DomainValidationError]
+  doReturn(false).when(nonFatalError).isFatal
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
   private val ttl = Some(200L)
@@ -891,8 +893,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            softError.invalidNel,
-            softError.invalidNel
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
           ),
           okAuth
         )
@@ -908,8 +910,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            softError.invalidNel,
-            softError.invalidNel
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
           ),
           okAuth
         )
@@ -965,8 +967,8 @@ class BatchChangeServiceSpec
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            softError.invalidNel,
-            softError.invalidNel
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
           ),
           okAuth
         )
@@ -982,7 +984,7 @@ class BatchChangeServiceSpec
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel,
-            softError.invalidNel),
+            nonFatalError.invalidNel),
           okAuth
         )
         .left
@@ -994,7 +996,7 @@ class BatchChangeServiceSpec
         ZoneDiscoveryError("no.zone.match."))
       ibcr.changeRequestResponses(1) shouldBe Valid(
         AddChangeForValidation(baseZone, "non-apex", nonApexAddA))
-      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](softError)
+      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
     }
   }
 

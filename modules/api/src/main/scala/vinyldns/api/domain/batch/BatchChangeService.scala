@@ -26,7 +26,7 @@ import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
-import vinyldns.api.domain.{RecordAlreadyExists, SoftBatchError, ZoneDiscoveryError}
+import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
@@ -332,10 +332,7 @@ class BatchChangeService(
       }
       .flatMap(_.toList)
 
-    val allSoftFailure = allErrors.forall {
-      case _: SoftBatchError => true
-      case _ => false
-    }
+    val allNonFatal = allErrors.forall(!_.isFatal)
 
     if (allErrors.isEmpty) {
       val changes = transformed.getValid.map(_.asNewStoredChange)
@@ -348,15 +345,13 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved
       ).asRight
-    } else if (manualReviewEnabled && allSoftFailure) {
+    } else if (manualReviewEnabled && allNonFatal) {
       // only soft failures, can go to pending state
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
             case Valid(v) => v.asNewStoredChange
-            case Invalid(e) =>
-              val asSoftFailures = e.collect { case s: SoftBatchError => s }
-              input.asNewStoredChange(asSoftFailures)
+            case Invalid(e) => input.asNewStoredChange(e)
           }
       }
       BatchChange(
