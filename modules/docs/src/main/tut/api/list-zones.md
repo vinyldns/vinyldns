@@ -10,7 +10,7 @@ Retrieves the list of zones a user has access to.  The zone name is only sorted 
 
 #### HTTP REQUEST
 
-> GET /zones?nameFilter={yoursearchhere}&startFrom={response.nextId}&maxItems={1 - 100}&listAll={true|false}
+> GET /zones?nameFilter={yoursearchhere}&startFrom={response.nextId}&maxItems={1 - 100}&ignoreAccess={true|false}
 
 #### HTTP REQUEST PARAMS
 
@@ -19,7 +19,7 @@ name          | type          | required?   | description |
 nameFilter    | string        | no          | Characters that are part of the zone name to search for.  The wildcard character `*` is supported, for example `www*`.  Omit the wildcard character when searching for an exact zone name. |
 startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | int           | no          | The number of items to return in the page.  Valid values are 1 - 100. Defaults to 100 if not provided. |
-listAll       | boolean       | no          | If false, returns only zones the requesting user owns or has ACL access to. If true, returns all zones in the system, regardless of ownership (still paginated based on maxItems). Defaults to false if not provided. |
+ignoreAccess       | boolean       | no          | If false, returns only zones the requesting user owns or has ACL access to. If true, returns zones in the system, regardless of ownership. Defaults to false if not provided. |
 
 #### HTTP RESPONSE TYPES
 
@@ -37,7 +37,7 @@ zones         | Array of [Zones](../api/zone-model#zone-attributes) | An array o
 startFrom     | *any*         | (optional) The startFrom parameter that was sent in on the HTTP request.  Will not be present if the startFrom parameter was not sent |
 nextId        | *any*         | (optional) The identifier to be passed in as the *startFrom* parameter to retrieve the next page of results.  If there are no results left, this field will not be present.|
 maxItems      | int           | The maxItems parameter that was sent in the HTTP request.  This will be 100 if not sent. |
-listAll       | boolean       | The listAll parameter that was sent in the HTTP request. This will be false if not sent. |
+ignoreAccess       | boolean  | The ignoreAccess parameter that was sent in the HTTP request. This will be false if not sent. |
 
 #### EXAMPLE RESPONSE
 
@@ -121,6 +121,6 @@ listAll       | boolean       | The listAll parameter that was sent in the HTTP 
     }
   ],
   "maxItems": 100,
-  "listAll": true
+  "ignoreAccess": true
 }
 ```
