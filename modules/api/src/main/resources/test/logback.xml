@@ -1,4 +1,4 @@
-<configuration>
+<configuration debug="true">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
@@ -48,15 +48,15 @@
         </encoder>
     </appender>
 
-    <logger name="org.flywaydb" level="DEBUG">
+    <logger name="org.flywaydb" level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG">
+    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG">
+    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
@@ -64,7 +64,7 @@
         <appender-ref ref="CONSOLE" />
     </logger>
 
-    <root level="INFO">
+    <root level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

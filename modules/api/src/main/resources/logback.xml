@@ -49,15 +49,15 @@
         </encoder>
     </appender>
 
-    <logger name="org.flywaydb" level="DEBUG">
+    <logger name="org.flywaydb" level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="DEBUG">
+    <logger name="org.flywaydb.core.internal.dbsupport.SqlScript" level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="DEBUG">
+    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="ERROR">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
