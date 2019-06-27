@@ -32,7 +32,7 @@ trait BatchChangeServiceAlgebra {
       auth: AuthPrincipal,
       startFrom: Option[Int],
       maxItems: Int,
-      listAll: Boolean): BatchResult[BatchChangeSummaryList]
+      ignoreAccess: Boolean): BatchResult[BatchChangeSummaryList]
 
   def rejectBatchChange(
       batchChangeId: String,

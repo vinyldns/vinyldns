@@ -21,5 +21,5 @@ case class ListZonesResults(
     nextId: Option[String] = None,
     startFrom: Option[String] = None,
     maxItems: Int = 100,
-    listAll: Boolean = false,
+    ignoreAccess: Boolean = false,
     zonesFilter: Option[String] = None)

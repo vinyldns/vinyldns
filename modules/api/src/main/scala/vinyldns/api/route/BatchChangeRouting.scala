@@ -53,15 +53,15 @@ trait BatchChangeRoute extends Directives {
         parameters(
           "startFrom".as[Int].?,
           "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
-          "listAll".as[Boolean].?(false)) {
-          (startFrom: Option[Int], maxItems: Int, listAll: Boolean) =>
+          "ignoreAccess".as[Boolean].?(false)) {
+          (startFrom: Option[Int], maxItems: Int, ignoreAccess: Boolean) =>
             {
               handleRejections(invalidQueryHandler) {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
                   s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
                   execute(batchChangeService
-                    .listBatchChangeSummaries(authPrincipal, startFrom, maxItems, listAll)) {
+                    .listBatchChangeSummaries(authPrincipal, startFrom, maxItems, ignoreAccess)) {
                     summaries =>
                       complete(StatusCodes.OK, summaries)
                   }

@@ -66,4 +66,4 @@ case class BatchChangeSummaryList(
     startFrom: Option[Int] = None,
     nextId: Option[Int] = None,
     maxItems: Int = 100,
-    listAll: Boolean = false)
+    ignoreAccess: Boolean = false)

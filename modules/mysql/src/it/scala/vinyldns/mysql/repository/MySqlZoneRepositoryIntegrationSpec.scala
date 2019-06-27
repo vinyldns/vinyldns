@@ -229,10 +229,10 @@ class MySqlZoneRepositoryIntegrationSpec
       )
 
       f.unsafeRunSync()
-      repo.listZones(okUserAuth, listAll=true).unsafeRunSync().zones should contain theSameElementsAs testZones
+      repo.listZones(okUserAuth, ignoreAccess=true).unsafeRunSync().zones should contain theSameElementsAs testZones
 
       // dummy user only have all of the zones returned
-      repo.listZones(dummyAuth, listAll=true).unsafeRunSync().zones should contain theSameElementsAs testZones
+      repo.listZones(dummyAuth, ignoreAccess=true).unsafeRunSync().zones should contain theSameElementsAs testZones
     }
 
     "get zones that are accessible by everyone" in {
