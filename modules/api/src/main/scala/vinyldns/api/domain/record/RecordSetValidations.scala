@@ -95,7 +95,7 @@ object RecordSetValidations {
       existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] =
     newRecordSet.typ match {
       case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone)
-      case NS => nsValidations(newRecordSet, zone)
+      case NS => nsValidations(newRecordSet, zone, existingRecordSet)
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
