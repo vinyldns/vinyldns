@@ -77,39 +77,30 @@ object RecordSetValidations {
       !existingRecordsWithName.exists(rs => rs.id != newRecordSet.id && rs.typ == newRecordSet.typ)
     )
 
-  def isNotDotted(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
+  def isNotDotted(
+      newRecordSet: RecordSet,
+      zone: Zone,
+      existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] =
     ensuring(InvalidRequest(
-      s"Record with name ${recordSet.name} is a dotted host which is illegal in this zone ${zone.name}"))(
-      recordSet.name == zone.name || !recordSet.name.contains(".")
+      s"Record with name ${newRecordSet.name} and type ${newRecordSet.typ} is a dotted host which" +
+        s" is not allowed in zone ${zone.name}"))(
+      newRecordSet.name == zone.name || !newRecordSet.name.contains(".") ||
+        existingRecordSet.exists(_.name == newRecordSet.name)
     )
 
-  def typeSpecificAddValidations(
+  def typeSpecificValidations(
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
-      zone: Zone): Either[Throwable, Unit] =
+      zone: Zone,
+      existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] =
     newRecordSet.typ match {
       case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone)
-      case NS => nsValidations(newRecordSet, zone)
+      case NS => nsValidations(newRecordSet, zone, existingRecordSet)
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
       case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
       case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
-      case _ => isNotDotted(newRecordSet, zone)
-    }
-
-  def typeSpecificEditValidations(
-      newRecordSet: RecordSet,
-      oldRecordSet: RecordSet,
-      existingRecordsWithName: List[RecordSet],
-      zone: Zone): Either[Throwable, Unit] =
-    newRecordSet.typ match {
-      case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone)
-      case NS => nsValidations(newRecordSet, zone, Some(oldRecordSet))
-      case SOA => soaValidations(newRecordSet, zone)
-      case PTR => ptrValidations(newRecordSet, zone)
-      case SRV | TXT | NAPTR => ().asRight // SRV, TXT and NAPTR do not go through dotted host check
-      case DS => dsValidations(newRecordSet, existingRecordsWithName, zone)
-      case _ => isNotDotted(newRecordSet, zone)
+      case _ => isNotDotted(newRecordSet, zone, existingRecordSet)
     }
 
   def typeSpecificDeleteValidations(recordSet: RecordSet, zone: Zone): Either[Throwable, Unit] =
@@ -128,7 +119,8 @@ object RecordSetValidations {
   def cnameValidations(
       newRecordSet: RecordSet,
       existingRecordsWithName: List[RecordSet],
-      zone: Zone): Either[Throwable, Unit] = {
+      zone: Zone,
+      existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] = {
     // cannot create a cname record if a record with the same exists
     val noRecordWithName = {
       ensuring(
@@ -144,7 +136,7 @@ object RecordSetValidations {
         zone,
         "CNAME RecordSet cannot have name '@' because it points to zone origin")
       _ <- noRecordWithName
-      _ <- isNotDotted(newRecordSet, zone)
+      _ <- isNotDotted(newRecordSet, zone, existingRecordSet)
     } yield ()
 
   }

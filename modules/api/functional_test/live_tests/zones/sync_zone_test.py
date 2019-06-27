@@ -84,6 +84,9 @@ records_post_update = [
      'records': [{u'address': u'9.9.9.9'}]},
     {'name': u'dott.ed',
      'type': u'A',
+     'records': [{u'address': u'6.7.8.9'}]},
+    {'name': u'dott.ed-two',
+     'type': u'A',
      'records': [{u'address': u'6.7.8.9'}]}]
 
 
@@ -158,8 +161,9 @@ def test_sync_zone_success(shared_zone_test_context):
         # add unknown this should not be synced
         dns_add(zone, 'dnametest', 38400, 'DNAME', 'test.com.')
 
-        # add a dotted host, this should be synced, so we will have 10 records ( +1 )
+        # add dotted hosts, this should be synced, so we will have 10 records ( +2 )
         dns_add(zone, 'dott.ed', 38400, 'A', '6.7.8.9')
+        dns_add(zone, 'dott.ed-two', 38400, 'A', '6.7.8.9')
 
         # wait for next sync
         time.sleep(10)
@@ -180,7 +184,7 @@ def test_sync_zone_success(shared_zone_test_context):
 
         # confirm that the updated recordsets in DNS have been saved in vinyldns
         recordsets = client.list_recordsets(zone['id'])['recordSets']
-        assert_that(len(recordsets), is_(11))
+        assert_that(len(recordsets), is_(12))
         for rs in recordsets:
             small_rs = dict((k, rs[k]) for k in ['name', 'type', 'records'])
             small_rs['records'] = sorted(small_rs['records'])
@@ -198,17 +202,30 @@ def test_sync_zone_success(shared_zone_test_context):
         assert_that(check_rs['ownerGroupId'], is_(shared_zone_test_context.ok_group['id']))
 
         for rs in recordsets:
-            # confirm that we cannot update the dotted host if the name is the same
+            # confirm that we can update the dotted host if the name is the same
             if rs['name'] == 'dott.ed':
                 attempt_update = rs
                 attempt_update['ttl'] = attempt_update['ttl'] + 100
-                errors = client.update_recordset(attempt_update, status=422)
-                assert_that(errors, is_("Record with name " + rs['name'] + " is a dotted host which is illegal "
-                                        "in this zone " + zone_name + "."))
+                change = client.update_recordset(attempt_update, status=202)
+                client.wait_until_recordset_change_status(change, 'Complete')
 
                 # we should be able to delete the record
                 client.delete_recordset(rs['zoneId'], rs['id'], status=202)
                 client.wait_until_recordset_deleted(rs['zoneId'], rs['id'])
+
+            # confirm that we cannot update the dotted host if the name changes and still includes a dot
+            if rs['name'] == 'dott.ed-two':
+                attempt_update = rs
+                attempt_update['name'] = 'new.dotted'
+                errors = client.update_recordset(attempt_update, status=422)
+                assert_that(errors, is_("Record with name " + rs['name'] + " and type A is a dotted host which is "
+                                        "not allowed in zone " + zone_name + "."))
+
+
+                # we should be able to delete the record
+                client.delete_recordset(rs['zoneId'], rs['id'], status=202)
+                client.wait_until_recordset_deleted(rs['zoneId'], rs['id'])
+
             if rs['name'] == "example.dotted":
                 # confirm that we can modify the example dotted
                 good_update = rs
