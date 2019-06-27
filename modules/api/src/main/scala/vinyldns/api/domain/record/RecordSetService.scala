@@ -75,7 +75,7 @@ class RecordSetService(
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
       _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      _ <- typeSpecificAddValidations(rsForValidations, existingRecordsWithName, zone).toResult
+      _ <- typeSpecificValidations(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
@@ -99,7 +99,7 @@ class RecordSetService(
         .toResult[List[RecordSet]]
       _ <- isUniqueUpdate(rsForValidations, existingRecordsWithName, zone).toResult
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
-      _ <- typeSpecificEditValidations(rsForValidations, existing, existingRecordsWithName, zone).toResult
+      _ <- typeSpecificValidations(rsForValidations, existingRecordsWithName, zone, Some(existing)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
