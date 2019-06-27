@@ -1115,10 +1115,8 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
             get_change_A_AAAA_json("bad-ttl-and-invalid-name$.parent.com.", ttl=29, address="1.2.3.4"),
             get_change_A_AAAA_json("reverse-zone.10.10.in-addr.arpa.", address="1.2.3.4"),
 
-            # dotted host failure
-            get_change_A_AAAA_json("no.subzone.parent.com.", address="1.2.3.4"),
-
             # zone discovery failures
+            get_change_A_AAAA_json("no.subzone.parent.com.", address="1.2.3.4"),
             get_change_A_AAAA_json("no.zone.at.all.", address="1.2.3.4"),
 
             # context validation failures
@@ -1150,11 +1148,9 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[2], input_name="reverse-zone.10.10.in-addr.arpa.", record_data="1.2.3.4",
                                             error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.10.10.in-addr.arpa.\" and type \"A\" is not allowed in a reverse zone."])
 
-        # dotted host failure
-        assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_data="1.2.3.4",
-                                            error_messages=['Cannot create dotted host "no.subzone" with record type A in the zone parent.com.'])
-
         # zone discovery failure
+        assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_data="1.2.3.4",
+                                            error_messages=['Zone Discovery Failed: zone for "no.subzone.parent.com." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_data="1.2.3.4",
                                             error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
@@ -1293,10 +1289,8 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
             get_change_A_AAAA_json("bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_type="AAAA", address="1::1"),
             get_change_A_AAAA_json("reverse-zone.1.2.3.ip6.arpa.", record_type="AAAA", address="1::1"),
 
-            # dotted host failure
+            # zone discovery failures
             get_change_A_AAAA_json("no.subzone.parent.com.", record_type="AAAA", address="1::1"),
-
-            # zone discovery failure
             get_change_A_AAAA_json("no.zone.at.all.", record_type="AAAA", address="1::1"),
 
             # context validation failures
@@ -1328,11 +1322,9 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[2], input_name="reverse-zone.1.2.3.ip6.arpa.", record_type="AAAA", record_data="1::1",
                                             error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.1.2.3.ip6.arpa.\" and type \"AAAA\" is not allowed in a reverse zone."])
 
-        # dotted host failure
+        # zone discovery failures
         assert_failed_change_in_error_response(response[3], input_name="no.subzone.parent.com.", record_type="AAAA", record_data="1::1",
-                                            error_messages=['Cannot create dotted host "no.subzone" with record type AAAA in the zone parent.com.'])
-
-        # zone discovery failure
+                                            error_messages=['Zone Discovery Failed: zone for \"no.subzone.parent.com.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="AAAA", record_data="1::1",
                                             error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
@@ -2276,11 +2268,9 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[3], input_name="mx.2.0.192.in-addr.arpa.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
                                        error_messages=['Invalid Record Type In Reverse Zone: record with name "mx.2.0.192.in-addr.arpa." and type "MX" is not allowed in a reverse zone.'])
 
-        # dotted host failure
+        # zone discovery failures
         assert_failed_change_in_error_response(response[4], input_name="no.subzone.ok.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=['Cannot create dotted host "no.subzone" with record type MX in the zone ok.'])
-
-        # zone discovery failure
+                                               error_messages=['Zone Discovery Failed: zone for "no.subzone.ok." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[5], input_name="no.zone.at.all.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 

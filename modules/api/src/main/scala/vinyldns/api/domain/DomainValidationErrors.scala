@@ -166,13 +166,4 @@ final case class NewMultiRecordError(change: AddChangeForValidation) extends Dom
        |type ${change.inputChange.typ}.""".stripMargin
       .replaceAll("\n", " ")
 }
-
-final case class CreateDottedHostError(
-    recordSetName: String,
-    zoneName: String,
-    recordType: RecordType)
-    extends DomainValidationError {
-  def message: String =
-    s"""Cannot create dotted host "$recordSetName" with record type $recordType in the zone $zoneName"""
-}
 // $COVERAGE-ON$

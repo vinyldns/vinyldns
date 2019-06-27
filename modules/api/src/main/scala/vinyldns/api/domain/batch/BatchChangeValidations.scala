@@ -237,7 +237,7 @@ class BatchChangeValidations(
           if change.recordName == change.zone.name || !change.recordName.contains(".") =>
         ().validNel
       case _ =>
-        CreateDottedHostError(change.recordName, change.zone.name, change.inputChange.typ).invalidNel
+        ZoneDiscoveryError(change.inputChange.inputName).invalidNel
     }
 
   def validateDeleteWithContext(
