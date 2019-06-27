@@ -33,6 +33,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   val batchChangeSerializers = Seq(
     JsonEnumV(ChangeInputType),
     JsonEnumV(SingleChangeStatus),
+    JsonEnumV(BatchChangeApprovalStatus),
     BatchChangeInputSerializer,
     ChangeInputSerializer,
     AddChangeInputSerializer,
