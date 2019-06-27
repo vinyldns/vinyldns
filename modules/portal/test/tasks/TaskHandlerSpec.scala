@@ -71,12 +71,12 @@ class TaskHandlerSpec extends Specification with Mockito {
   "fetchAndClaimTask" should {
     "fetch and claim the task if it is unclaimed" in {
       taskHandler
-        .fetchAndClaimTask(goodTaskName, mockSettings.ldapSyncPollingInterval)
+        .claimTask(goodTaskName, mockSettings.ldapSyncPollingInterval)
         .unsafeRunSync() must beEqualTo(())
     }
     "return a NoTaskToClaim error is there are issues" in {
       taskHandler
-        .fetchAndClaimTask(badTaskName, mockSettings.ldapSyncPollingInterval)
+        .claimTask(badTaskName, mockSettings.ldapSyncPollingInterval)
         .unsafeRunSync() must throwA[NoTaskToClaim]
     }
   }

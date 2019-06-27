@@ -16,10 +16,10 @@
 
 package tasks
 
-import cats.effect.{IO, Timer}
+import cats.data.EitherT
+import cats.effect.{IO, Resource, Timer}
 import cats.implicits._
 import controllers.{Authenticator, Settings, UserAccountAccessor}
-import fs2.Stream
 import javax.inject.{Inject, Singleton}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.task._
@@ -30,28 +30,47 @@ final case class NoTaskToClaim(taskName: String) extends Throwable {
   def message: String = s"No available task [$taskName] to claim."
 }
 
+trait Task {
+  def name: String
+  def run(): IO[Unit]
+}
+
 @Singleton
 class TaskHandler @Inject()(taskRepository: TaskRepository) {
   private val logger: Logger = LoggerFactory.getLogger("TaskHandler")
   private implicit val t: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
 
-  def fetchAndClaimTask(taskName: String, pollingInterval: FiniteDuration): IO[Unit] =
-    taskRepository.claimTask(taskName, pollingInterval).flatMap {
+  def claimTask(task: Task, pollingInterval: FiniteDuration): IO[Either[NoTaskToClaim, Unit]] =
+    taskRepository.claimTask(task.name, pollingInterval).flatMap {
       case true =>
-        IO(logger.info(s"Successfully found and claimed task [$taskName]."))
+        IO(logger.info(s"Successfully found and claimed task [${task.name}].").asRight)
       case false =>
-        val claimError = NoTaskToClaim(taskName)
-        IO.raiseError(claimError)
+        IO(Left(NoTaskToClaim(task.name)))
     }
 
   def runSyncTask(
-      taskName: String,
+      task: Task,
       pollingInterval: FiniteDuration,
       userAccountAccessor: UserAccountAccessor,
       authenticator: Authenticator): IO[Unit] = {
+
+    // TODO: We have hard coded this flow to the sync task, so the task name cannot be anything, it must also
+    // be hard-coded.  Imagine if someone passed in a different task name!  We are combining a generic process
+    // with a specific hard-coded version here.  Probably shouldn't have stringly typed taskName
+    val res = Resource.make { claimTask(task, pollingInterval) } {
+      case Right(_) =>
+        taskRepository
+          .releaseTask(task.name)
+          .as(logger.info(s"Released task [${task.name}]"))
+      case Left(NoTaskToClaim(_)) => IO.unit
+    }
+
+
+
+    val y = Resource.liftF(UserSyncTask.syncUsers(userAccountAccessor, authenticator))
     val syncRun = for {
-      _ <- fetchAndClaimTask(taskName, pollingInterval)
-      _ <- IO(logger.info(s"Fetched and claimed task [$taskName]."))
+      _ <- EitherT.liftF(claimTask(taskName, pollingInterval))
+      _ <- EitherT.right(IO(logger.info(s"Fetched and claimed task [$taskName].")))
       _ <- UserSyncTask
         .syncUsers(userAccountAccessor, authenticator)
         .handleErrorWith(e => IO(logger.error("Encountered error syncing task", e)))
