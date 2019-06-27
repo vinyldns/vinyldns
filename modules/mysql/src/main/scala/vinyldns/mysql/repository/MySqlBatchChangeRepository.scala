@@ -83,7 +83,8 @@ class MySqlBatchChangeRepository
          |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
          |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
          |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
-         |              SUM( case sc.status when 'Complete' then 1 else 0 end )  AS complete_count
+         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count
+         |              SUM( case sc.status when 'NeedsReview' then 1 else 0 end ) AS needs_review_count
          |         FROM single_change sc
          |         JOIN batch_change bc
          |           ON sc.batch_change_id = bc.id
@@ -226,7 +227,6 @@ class MySqlBatchChangeRepository
       IO {
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(0)
-
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
           userId.foreach(uid => sb.append(s"WHERE bc.user_id = '$uid' "))
@@ -240,6 +240,7 @@ class MySqlBatchChangeRepository
                 val pending = res.int("pending_count")
                 val failed = res.int("fail_count")
                 val complete = res.int("complete_count")
+                val needsReview = res.int("needs_review_count")
                 BatchChangeSummary(
                   res.string("user_id"),
                   res.string("user_name"),
