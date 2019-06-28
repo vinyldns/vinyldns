@@ -58,6 +58,8 @@ class UserSyncTaskSpec extends Specification with Mockito {
         .lockUsers(Nil)
         .returns(IO(Nil))
 
+      mockUsers.getAllUsers.returns(IO(List(notAuthUser)))
+
       new UserSyncTask(mockUsers, mockAuth)
         .run()
         .unsafeRunSync() must beEqualTo(())

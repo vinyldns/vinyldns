@@ -40,9 +40,8 @@ class UserSyncTask(
       activeUsers = allUsers.filter(u => u.lockStatus != LockStatus.Locked && !u.isTest)
       nonActiveUsers <- authenticator.getUsersNotInLdap(activeUsers)
       lockedUsers <- userAccountAccessor.lockUsers(nonActiveUsers)
-      _ <- IO(
-        logger.error(
-          s"""usersLocked="${lockedUsers.map(_.userName)}"; userLockCount="${lockedUsers.size}" """))
+      _ <- IO(logger.error(s"""usersLocked="${lockedUsers
+        .map(_.userName)}"; userLockCount="${lockedUsers.size}" """))
     } yield ()
   }
 }
