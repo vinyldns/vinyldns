@@ -52,13 +52,13 @@ class MySqlTaskRepository extends TaskRepository {
       | WHERE name = {name}
       """.stripMargin
 
-  def claimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
+  def claimTask(name: String, taskTimeout: FiniteDuration): IO[Boolean] =
     IO {
       val currentTime = Instant.now
       DB.localTx { implicit s =>
         val updateResult = CLAIM_UNCLAIMED_TASK
           .bindByName(
-            'updatedTimeComparison -> currentTime.minusMillis(pollingInterval.toMillis),
+            'updatedTimeComparison -> currentTime.minusMillis(taskTimeout.toMillis),
             'taskName -> name,
             'currentTime -> currentTime)
           .first()
