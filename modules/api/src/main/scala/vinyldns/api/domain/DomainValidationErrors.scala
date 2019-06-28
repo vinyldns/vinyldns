@@ -22,7 +22,7 @@ import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
-sealed trait DomainValidationError {
+sealed abstract class DomainValidationError(val isFatal: Boolean = true) {
   def message: String
 }
 
@@ -166,4 +166,5 @@ final case class NewMultiRecordError(change: AddChangeForValidation) extends Dom
        |type ${change.inputChange.typ}.""".stripMargin
       .replaceAll("\n", " ")
 }
+
 // $COVERAGE-ON$
