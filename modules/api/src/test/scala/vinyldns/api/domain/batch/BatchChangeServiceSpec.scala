@@ -886,23 +886,6 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
-    "return an error if all data inputs are valid or have soft failures and manual review is disabled" in {
-      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
-      val result = underTest
-        .buildResponse(
-          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
-          List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
-          ),
-          okAuth
-        )
-        .left
-        .value
-
-      result shouldBe an[InvalidBatchChangeResponses]
-    }
     "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled" in {
       val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTestManualEnabled

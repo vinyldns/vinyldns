@@ -65,7 +65,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       asAdd.typ shouldBe A
       asAdd.ttl shouldBe VinylDNSConfig.defaultTtl
       asAdd.recordData shouldBe AData("1.1.1.1")
-      // TODO this should change to NeedsApproval
+      // TODO this should change to NeedsReview
       asAdd.status shouldBe SingleChangeStatus.Pending
       asAdd.systemMessage shouldBe None
       asAdd.recordChangeId shouldBe None
@@ -83,7 +83,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       asDelete.recordName shouldBe None
       asDelete.inputName shouldBe "some.test.com."
       asDelete.typ shouldBe A
-      // TODO this should change to NeedsApproval
+      // TODO this should change to NeedsReview
       asDelete.status shouldBe SingleChangeStatus.Pending
       asDelete.systemMessage shouldBe None
       asDelete.recordChangeId shouldBe None
