@@ -17,22 +17,68 @@
 package tasks
 
 import cats.data.EitherT
-import cats.effect.{IO, Resource, Timer}
+import cats.effect._
 import cats.implicits._
 import controllers.{Authenticator, Settings, UserAccountAccessor}
+import fs2._
 import javax.inject.{Inject, Singleton}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.task._
 
 import scala.concurrent.duration.FiniteDuration
 
-final case class NoTaskToClaim(taskName: String) extends Throwable {
-  def message: String = s"No available task [$taskName] to claim."
-}
-
 trait Task {
   def name: String
   def run(): IO[Unit]
+}
+
+object TaskScheduler {
+  private val logger = LoggerFactory.getLogger("TaskScheduler")
+
+  // Starts a task on a schedule, returns a Fiber that can be used to cancel the task
+  def schedule(task: Task, runEvery: FiniteDuration, taskRepository: TaskRepository)(
+      implicit t: Timer[IO],
+      cs: ContextShift[IO]): IO[Fiber[IO, Unit]] = {
+
+    def claimTask(): IO[Option[Task]] =
+      taskRepository.claimTask(task.name, runEvery).map {
+        case true =>
+          logger.info(s"""Successfully found and claimed task; taskName="${task.name}" """)
+          Some(task)
+        case false =>
+          logger.info(s"""No task claimed; taskName="${task.name}" """)
+          None
+      }
+
+    def releaseTask(maybeTask: Option[Task]): IO[Unit] =
+      maybeTask
+        .map(
+          t =>
+            taskRepository
+              .releaseTask(t.name)
+              .as(logger.info(s"""Released task; taskName="${task.name}" """)))
+        .getOrElse(IO.unit)
+
+    def scheduledTaskStream(): Stream[IO, Unit] =
+      // Awake on the interval provided
+      Stream
+        .awakeEvery[IO](runEvery)
+        .flatMap { _ =>
+          // We bracket to make sure that no matter what happens, we ALWAYS release the task
+          Stream.bracket[IO, Option[Task]](claimTask())(releaseTask).evalMap { maybeTask =>
+            // If the Option[Task] is Some, then we will run the task provided; otherwise we do nothing
+            maybeTask.map(_.run()).getOrElse(IO.unit)
+          }
+        }
+        .handleErrorWith { error =>
+          // Make sure that we restart our stream on failure
+          logger.error(s"""Unexpected error is task; taskName="${task.name}" """, error)
+          scheduledTaskStream()
+        }
+
+    // Return the Fiber so the caller can eventually cancel it
+    scheduledTaskStream().compile.drain.start
+  }
 }
 
 @Singleton
@@ -65,8 +111,6 @@ class TaskHandler @Inject()(taskRepository: TaskRepository) {
       case Left(NoTaskToClaim(_)) => IO.unit
     }
 
-
-
     val y = Resource.liftF(UserSyncTask.syncUsers(userAccountAccessor, authenticator))
     val syncRun = for {
       _ <- EitherT.liftF(claimTask(taskName, pollingInterval))
@@ -78,8 +122,7 @@ class TaskHandler @Inject()(taskRepository: TaskRepository) {
       _ <- IO(logger.info(s"Released task [$taskName]."))
     } yield ()
 
-    syncRun.handleErrorWith { err =>
-      IO(logger.info(s"Encountered task error for [$taskName]", err))
+    syncRun.handleErrorWith { err => IO(logger.info(s"Encountered task error for [$taskName]", err))
     }
   }
 
