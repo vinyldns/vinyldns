@@ -462,7 +462,7 @@ class VinylDNSClient(object):
             query.append(u'maxItems=' + str(max_items))
 
         if list_all:
-            query.append(u'listAll=' + str(list_all))
+            query.append(u'ignoreAccess=' + str(list_all))
 
         if query:
             url = url + u'?' + u'&'.join(query)
@@ -595,7 +595,7 @@ class VinylDNSClient(object):
         if max_items is not None:
             args.append(u'maxItems={0}'.format(max_items))
         if list_all:
-            args.append(u'listAll={0}'.format(list_all))
+            args.append(u'ignoreAccess={0}'.format(list_all))
 
         url = urljoin(self.index_url, u'/zones/batchrecordchanges') + u'?' + u'&'.join(args)
 

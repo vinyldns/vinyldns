@@ -41,7 +41,7 @@ trait ZoneServiceAlgebra {
       nameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      listAll: Boolean): Result[ListZonesResponse]
+      ignoreAccess: Boolean): Result[ListZonesResponse]
 
   def listZoneChanges(
       zoneId: String,

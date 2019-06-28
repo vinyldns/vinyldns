@@ -212,7 +212,7 @@ case class ListZonesResponse(
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
     maxItems: Int = 100,
-    listAll: Boolean = false)
+    ignoreAccess: Boolean = false)
 
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)
