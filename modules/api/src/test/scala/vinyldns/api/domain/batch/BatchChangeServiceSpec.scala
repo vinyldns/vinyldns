@@ -1169,7 +1169,7 @@ class BatchChangeServiceSpec
       result.maxItems shouldBe 100
       result.nextId shouldBe None
       result.startFrom shouldBe None
-      result.listAll shouldBe false
+      result.ignoreAccess shouldBe false
       result.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingApproval)
 
       result.batchChanges.length shouldBe 1

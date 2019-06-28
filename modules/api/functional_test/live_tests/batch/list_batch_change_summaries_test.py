@@ -63,7 +63,8 @@ class ListBatchChangeSummariesFixture():
             shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
         clear_ok_acl_rules(shared_zone_test_context)
 
-    def check_batch_change_summaries_page_accuracy(self, summaries_page, size, next_id=False, start_from=False, max_items=100):
+    def check_batch_change_summaries_page_accuracy(self, summaries_page, size, next_id=False, start_from=False,
+                                                   max_items=100, approval_status=False):
         # validate fields
         if next_id:
             assert_that(summaries_page, has_key('nextId'))
@@ -73,6 +74,10 @@ class ListBatchChangeSummariesFixture():
             assert_that(summaries_page['startFrom'], is_(start_from))
         else:
             assert_that(summaries_page, is_not(has_key('startFrom')))
+        if approval_status:
+            assert_that(summaries_page, has_key('approvalStatus'))
+        else:
+            assert_that(summaries_page, is_not(has_key('approvalStatus')))
         assert_that(summaries_page['maxItems'], is_(max_items))
 
 
