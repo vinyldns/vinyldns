@@ -71,7 +71,8 @@ class EmailNotifierIntegrationSpec
             SingleChangeStatus.Complete,
             None,
             None,
-            None)),
+            None
+          )),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
 

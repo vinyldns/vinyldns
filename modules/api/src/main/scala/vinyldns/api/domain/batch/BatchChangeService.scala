@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
 import cats.implicits._
@@ -29,6 +30,7 @@ import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
@@ -38,14 +40,16 @@ object BatchChangeService {
   def apply(
       dataAccessor: ApiDataAccessor,
       batchChangeValidations: BatchChangeValidationsAlgebra,
-      batchChangeConverter: BatchChangeConverterAlgebra): BatchChangeService =
+      batchChangeConverter: BatchChangeConverterAlgebra,
+      manualReviewEnabled: Boolean): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
       dataAccessor.groupRepository,
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
-      batchChangeConverter
+      batchChangeConverter,
+      manualReviewEnabled
     )
 }
 
@@ -55,7 +59,8 @@ class BatchChangeService(
     groupRepository: GroupRepository,
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
-    batchChangeConverter: BatchChangeConverterAlgebra)
+    batchChangeConverter: BatchChangeConverterAlgebra,
+    manualReviewEnabled: Boolean)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -78,12 +83,12 @@ class BatchChangeService(
         auth,
         batchChangeInput.ownerGroupId)
       changeForConversion <- buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
-      conversionResult <- batchChangeConverter.sendBatchForProcessing(
+      serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         zoneMap,
         recordSets,
         batchChangeInput.ownerGroupId)
-    } yield conversionResult.batchChange
+    } yield serviceCompleteBatch
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -319,8 +324,17 @@ class BatchChangeService(
   def buildResponse(
       batchChangeInput: BatchChangeInput,
       transformed: ValidatedBatch[ChangeForValidation],
-      auth: AuthPrincipal): Either[BatchChangeErrorResponse, BatchChange] =
-    if (transformed.forall(_.isValid)) {
+      auth: AuthPrincipal): Either[BatchChangeErrorResponse, BatchChange] = {
+
+    val allErrors = transformed
+      .collect {
+        case Invalid(e) => e
+      }
+      .flatMap(_.toList)
+
+    val allNonFatal = allErrors.forall(!_.isFatal)
+
+    if (allErrors.isEmpty) {
       val changes = transformed.getValid.map(_.asNewStoredChange)
       BatchChange(
         auth.userId,
@@ -331,9 +345,54 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved
       ).asRight
+    } else if (manualReviewEnabled && allNonFatal) {
+      // only soft failures, can go to pending state
+      val changes = transformed.zip(batchChangeInput.changes).map {
+        case (validated, input) =>
+          validated match {
+            case Valid(v) => v.asNewStoredChange
+            case Invalid(e) => input.asNewStoredChange(e)
+          }
+      }
+      BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        batchChangeInput.comments,
+        DateTime.now,
+        changes,
+        batchChangeInput.ownerGroupId,
+        BatchChangeApprovalStatus.PendingApproval
+      ).asRight
     } else {
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
     }
+  }
+
+  def convertOrSave(
+      batchChange: BatchChange,
+      existingZones: ExistingZones,
+      existingRecordSets: ExistingRecordSets,
+      ownerGroupId: Option[String]): BatchResult[BatchChange] = batchChange.approvalStatus match {
+    case AutoApproved =>
+      // send on to the converter, it will be saved there
+      batchChangeConverter
+        .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
+        .map(_.batchChange)
+    case ManuallyApproved if manualReviewEnabled =>
+      // send on to the converter, it will be saved there
+      batchChangeConverter
+        .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
+        .map(_.batchChange)
+    case PendingApproval if manualReviewEnabled =>
+      // save the change, will need to return to it later on approval
+      batchChangeRepo.save(batchChange).toBatchResult
+    case _ =>
+      // this should not be called with a rejected change (or if manual review is off)!
+      logger.error(
+        s"convertOrSave called with a rejected batch change; " +
+          s"batchChangeId=${batchChange.id}; manualReviewEnabled=$manualReviewEnabled")
+      UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
+  }
 
   def addOwnerGroupNamesToSummaries(
       summaries: List[BatchChangeSummary],

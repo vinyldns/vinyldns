@@ -21,6 +21,8 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
+import org.mockito.Mockito._
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
 import vinyldns.api._
@@ -33,6 +35,7 @@ import vinyldns.api.repository.{
   EmptyZoneRepo,
   InMemoryBatchChangeRepository
 }
+import vinyldns.core
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
@@ -48,7 +51,11 @@ class BatchChangeServiceSpec
     with BeforeAndAfterEach
     with EitherMatchers
     with EitherValues
-    with ValidatedMatchers {
+    with ValidatedMatchers
+    with MockitoSugar {
+
+  private val nonFatalError = mock[DomainValidationError]
+  doReturn(false).when(nonFatalError).isFatal
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
   private val ttl = Some(200L)
@@ -122,6 +129,11 @@ class BatchChangeServiceSpec
         ownerGroupId: Option[String]): BatchResult[BatchConversionOutput] =
       batchChange.comments match {
         case Some("conversionError") => BatchConversionError(pendingChange).toLeftBatchResult
+        case Some("checkConverter") =>
+          // hacking reviewComment to determine if things were sent to the converter
+          BatchConversionOutput(
+            batchChange.copy(reviewComment = Some("batchSentToConverter")),
+            List()).toRightBatchResult
         case _ => BatchConversionOutput(batchChange, List()).toRightBatchResult
       }
   }
@@ -229,7 +241,17 @@ class BatchChangeServiceSpec
     TestGroupRepo,
     validations,
     batchChangeRepo,
-    EmptyBatchConverter)
+    EmptyBatchConverter,
+    false)
+
+  private val underTestManualEnabled = new BatchChangeService(
+    TestZoneRepo,
+    TestRecordSetRepo,
+    TestGroupRepo,
+    validations,
+    batchChangeRepo,
+    EmptyBatchConverter,
+    true)
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -565,7 +587,8 @@ class BatchChangeServiceSpec
         TestGroupRepo,
         validations,
         batchChangeRepo,
-        EmptyBatchConverter)
+        EmptyBatchConverter,
+        false)
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val possibleZones = List(
@@ -598,7 +621,8 @@ class BatchChangeServiceSpec
         TestGroupRepo,
         validations,
         batchChangeRepo,
-        EmptyBatchConverter)
+        EmptyBatchConverter,
+        false)
 
       val ip1 = "::1"
       val possibleZones1 = (5 to 16).map(num0s => ("0." * num0s) + "ip6.arpa.")
@@ -862,14 +886,88 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
+    "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTestManualEnabled
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth
+        )
+        .toOption
+        .get
 
+      result shouldBe a[BatchChange]
+      result.changes.head shouldBe SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        result.changes.head.id
+      )
+      result.changes(1) shouldBe SingleAddChange(
+        None,
+        None,
+        None,
+        "have.only.base.",
+        AAAA,
+        ttl.get,
+        AAAAData("1:2:3:4:5:6:7:8"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        result.changes(1).id
+      )
+      result.changes(2) shouldBe core.domain.batch.SingleDeleteChange(
+        None,
+        None,
+        None,
+        "some.test.delete.",
+        TXT,
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        result.changes(2).id
+      )
+    }
+    "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTest
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth
+        )
+        .left
+        .value
+
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
     "return a BatchChangeErrorList if any data inputs are invalid" in {
       val result = underTest
         .buildResponse(
           BatchChangeInput(None, List(noZoneAddA, nonApexAddA)),
           List(
             ZoneDiscoveryError("no.zone.match.").invalidNel,
-            AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel),
+            AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel,
+            nonFatalError.invalidNel),
           okAuth
         )
         .left
@@ -881,6 +979,7 @@ class BatchChangeServiceSpec
         ZoneDiscoveryError("no.zone.match."))
       ibcr.changeRequestResponses(1) shouldBe Valid(
         AddChangeForValidation(baseZone, "non-apex", nonApexAddA))
+      ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
     }
   }
 
@@ -1158,4 +1257,77 @@ class BatchChangeServiceSpec
       rightResultOf(underTest.getOwnerGroup(Some(okGroup.id)).value) shouldBe Some(okGroup)
     }
   }
+
+  "convertOrSave" should {
+    "send to the converter if approved" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+
+      val result = rightResultOf(
+        underTestManualEnabled
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+      result.reviewComment shouldBe Some("batchSentToConverter")
+    }
+    "not send to the converter, save the change if PendingApproval and MA enabled" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+
+      val result = rightResultOf(
+        underTestManualEnabled
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+
+      // not sent to converter
+      result.reviewComment shouldBe None
+      // saved in DB
+      batchChangeRepo.getBatchChange(batchChange.id).unsafeRunSync() shouldBe defined
+    }
+    "error if PendingApproval but MA disabled" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+
+      val result = leftResultOf(
+        underTest
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+
+      result shouldBe an[UnknownConversionError]
+    }
+    "error if ManuallyApproved but MA disabled" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          Some("checkConverter"),
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+
+      val result = leftResultOf(
+        underTest
+          .convertOrSave(batchChange, ExistingZones(Set()), ExistingRecordSets(List()), None)
+          .value)
+      result shouldBe an[UnknownConversionError]
+    }
+  }
+
 }
