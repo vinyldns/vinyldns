@@ -22,9 +22,8 @@ import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
-sealed abstract class DomainValidationError(isFatalError: Boolean = true) {
+sealed abstract class DomainValidationError(val isFatal: Boolean = true) {
   def message: String
-  def isFatal: Boolean = isFatalError
 }
 
 // The request itself is invalid in this case, so we fail fast
