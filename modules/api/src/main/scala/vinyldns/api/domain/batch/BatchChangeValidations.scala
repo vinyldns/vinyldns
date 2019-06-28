@@ -233,8 +233,10 @@ class BatchChangeValidations(
 
   def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
     change.inputChange.typ match {
-      case A | AAAA | CNAME | MX
+      case A | AAAA | MX
           if change.recordName == change.zone.name || !change.recordName.contains(".") =>
+        ().validNel
+      case CNAME if !change.recordName.contains(".") =>
         ().validNel
       case _ =>
         ZoneDiscoveryError(change.inputChange.inputName).invalidNel
@@ -323,7 +325,8 @@ class BatchChangeValidations(
           change.inputChange.inputName,
           existingRecords,
           changeGroups) |+|
-          cnameHasUniqueNameInBatch(change, changeGroups)
+          cnameHasUniqueNameInBatch(change, changeGroups) |+|
+          newRecordSetIsNotDotted(change)
       case TXT | PTR =>
         noCnameWithRecordNameInExistingRecords(
           change.zone.id,
