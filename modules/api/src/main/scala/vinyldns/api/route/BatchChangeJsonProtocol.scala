@@ -42,7 +42,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     BatchChangeSerializer,
     BatchChangeErrorListSerializer,
     BatchChangeErrorSerializer,
-    RejectBatchChangeInputSerializer
+    RejectBatchChangeInputSerializer,
+    ApproveBatchChangeInputSerializer
   )
 
   final val MAX_COMMENT_LENGTH: Int = 1024
@@ -193,6 +194,16 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         .check(
           s"Comment length must not exceed $MAX_COMMENT_LENGTH characters." -> checkCommentLength)
         .map(RejectBatchChangeInput)
+  }
+
+  case object ApproveBatchChangeInputSerializer
+      extends ValidationSerializer[ApproveBatchChangeInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, ApproveBatchChangeInput] =
+      (js \ "reviewComment")
+        .optional[String]
+        .check(
+          s"Comment length must not exceed $MAX_COMMENT_LENGTH characters." -> checkCommentLength)
+        .map(ApproveBatchChangeInput)
   }
 
   def extractRecord(typ: RecordType, js: JValue): ValidatedNel[String, RecordData] = {

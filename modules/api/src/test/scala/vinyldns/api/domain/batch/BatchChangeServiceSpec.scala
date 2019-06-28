@@ -394,6 +394,76 @@ class BatchChangeServiceSpec
     }
   }
 
+  "approveBatchChange" should {
+    "succeed if the batchChange is PendingApproval and reviewer is authorized" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        rightResultOf(underTest.approveBatchChange(batchChange.id, supportUserAuth, None).value)
+
+      result shouldBe batchChange
+    }
+
+    "fail if the batchChange is not PendingApproval" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.approveBatchChange(batchChange.id, supportUserAuth, None).value)
+
+      result shouldBe BatchChangeNotPendingApproval(batchChange.id)
+    }
+
+    "fail if the batchChange reviewer is not authorized" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.approveBatchChange(batchChange.id, auth, None).value)
+
+      result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
+
+    "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Approval" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.approveBatchChange(batchChange.id, auth, None).value)
+
+      result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
+  }
+
   "getBatchChange" should {
     "Succeed if batchChange id exists" in {
       val batchChange =

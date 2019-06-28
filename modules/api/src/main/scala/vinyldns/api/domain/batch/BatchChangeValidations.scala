@@ -51,6 +51,10 @@ trait BatchChangeValidationsAlgebra {
   def validateBatchChangeRejection(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+
+  def validateBatchChangeApproval(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 }
 
 class BatchChangeValidations(
@@ -99,6 +103,12 @@ class BatchChangeValidations(
     }
 
   def validateBatchChangeRejection(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingApproval(
+      batchChange)
+
+  def validateBatchChangeApproval(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
     validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingApproval(
