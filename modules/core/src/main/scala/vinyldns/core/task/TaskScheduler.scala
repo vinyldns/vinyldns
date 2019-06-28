@@ -40,7 +40,7 @@ trait Task {
 object TaskScheduler {
   private val logger = LoggerFactory.getLogger("TaskScheduler")
 
-  // Starts a task on a schedule, returns a Fiber that can be used to cancel the task
+  // Starts a task on a schedule, returns a Stream that can be used to actually start and cancel the task
   def schedule(task: Task, taskRepository: TaskRepository)(
       implicit t: Timer[IO],
       cs: ContextShift[IO]): Stream[IO, Unit] = {
