@@ -69,11 +69,10 @@ object BatchChangeStatus extends Enumeration {
       hasRejected: Boolean): BatchChangeStatus =
     (hasPending, hasFailed, hasComplete, hasNeedsReview, hasRejected) match {
       case (true, _, _, _, _) => BatchChangeStatus.Pending
-      case (_, _, _, true, _) => BatchChangeStatus.Pending
+      case (_, _, _, true, _) => BatchChangeStatus.Pending // PendingApproval in approval status
       case (_, true, true, _, _) => BatchChangeStatus.PartialFailure
       case (_, true, false, _, _) => BatchChangeStatus.Failed
-      case (_, _, _, _, true) =>
-        BatchChangeStatus.Failed // this will be ManuallyRejected in approval status
+      case (_, _, _, _, true) => BatchChangeStatus.Failed // will be ManuallyRejected in approval status
       case _ => BatchChangeStatus.Complete
     }
 }
