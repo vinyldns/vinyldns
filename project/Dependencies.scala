@@ -67,7 +67,8 @@ object Dependencies {
     "com.sun.xml.bind"          %  "jaxb-core"                      % jaxbV,
     "com.sun.xml.bind"          %  "jaxb-impl"                      % jaxbV,
     "ch.qos.logback"            %  "logback-classic"                % "1.0.7",
-    "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2"
+    "io.dropwizard.metrics"     %  "metrics-jvm"                    % "3.2.2",
+    "co.fs2"                    %% "fs2-core"                       % "1.0.0"
   )
 
   lazy val dynamoDBDependencies = Seq(
