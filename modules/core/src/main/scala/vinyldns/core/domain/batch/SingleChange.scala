@@ -106,10 +106,11 @@ final case class SingleDeleteChange(
  - Complete has been processed - must have recordChangeId
  - Failed had some error (see systemMessage) - may have recordChangeId, not required
  - NeedsReview means there was a validation error and it needs manual review
+ - Rejected means the reviewer has rejected this batch change
  */
 object SingleChangeStatus extends Enumeration {
   type SingleChangeStatus = Value
-  val Pending, Complete, Failed, NeedsReview = Value
+  val Pending, Complete, Failed, NeedsReview, Rejected = Value
 }
 
 case class RecordKey(zoneId: String, recordName: String, recordType: RecordType)
