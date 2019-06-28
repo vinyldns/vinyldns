@@ -42,7 +42,6 @@ final case class AddChangeInput(
     record: RecordData)
     extends ChangeInput {
 
-  // TODO - once we have SingleChangeStatus.NeedsReview, this should use that
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange = {
     val knownTtl = ttl.getOrElse(VinylDNSConfig.defaultTtl)
     SingleAddChange(
@@ -61,7 +60,6 @@ final case class AddChangeInput(
 }
 
 final case class DeleteChangeInput(inputName: String, typ: RecordType) extends ChangeInput {
-  // TODO - once we have SingleChangeStatus.NeedsReview, this should use that
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange =
     SingleDeleteChange(
       None,
