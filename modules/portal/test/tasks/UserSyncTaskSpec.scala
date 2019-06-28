@@ -22,8 +22,6 @@ import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import vinyldns.core.domain.membership._
 
-import scala.concurrent.duration._
-
 class UserSyncTaskSpec extends Specification with Mockito {
   val notAuthUser: User = User("not-authorized", "accessKey", "secretKey")
   val lockedNotAuthUser: User = notAuthUser.copy(lockStatus = LockStatus.Locked)
@@ -44,14 +42,24 @@ class UserSyncTaskSpec extends Specification with Mockito {
 
   "SyncUserTask" should {
     "successfully lock unauthorized, non-test users" in {
-      UserSyncTask
-        .syncUsers(mockUserAccountAccessor, mockAuthenticator)
+      new UserSyncTask(mockUserAccountAccessor, mockAuthenticator)
+        .run()
         .unsafeRunSync() must beEqualTo(())
+
+      there.was(one(mockUserAccountAccessor).lockUsers(List(notAuthUser)))
     }
 
     "successfully process if no users are found" in {
-      UserSyncTask
-        .syncUsers(mockUserAccountAccessor, mockAuthenticator)
+      val mockAuth: Authenticator = mock[Authenticator]
+      mockAuth.getUsersNotInLdap(List(notAuthUser)).returns(IO(Nil))
+
+      val mockUsers = mock[UserAccountAccessor]
+      mockUsers
+        .lockUsers(Nil)
+        .returns(IO(Nil))
+
+      new UserSyncTask(mockUsers, mockAuth)
+        .run()
         .unsafeRunSync() must beEqualTo(())
     }
   }

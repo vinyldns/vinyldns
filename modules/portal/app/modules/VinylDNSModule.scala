@@ -36,14 +36,13 @@ import cats.effect.{ContextShift, IO, Timer}
 import com.google.inject.AbstractModule
 import controllers._
 import controllers.repository.{PortalDataAccessor, PortalDataAccessorProvider}
-import org.slf4j.LoggerFactory
 import play.api.{Configuration, Environment}
-import tasks.TaskHandler
+import tasks.UserSyncTask
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{UserChangeRepository, UserRepository}
 import vinyldns.core.health.HealthService
 import vinyldns.core.repository.DataStoreLoader
-import vinyldns.core.task.TaskRepository
+import vinyldns.core.task.{TaskRepository, TaskScheduler}
 
 // $COVERAGE-OFF$
 class VinylDNSModule(environment: Environment, configuration: Configuration)
@@ -53,7 +52,6 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
   implicit val t: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
   implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.Implicits.global)
-  private val logger = LoggerFactory.getLogger("vinyldns.portal.modules.VinylDNSModule")
 
   def configure(): Unit = {
     val startApp = for {
@@ -66,11 +64,18 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       healthService = new HealthService(auth.healthCheck() :: loaderResponse.healthChecks)
       repositories = loaderResponse.accessor
       _ <- if (settings.ldapSyncEnabled) {
-        new TaskHandler(repositories.taskRepository)
-          .run(
-            settings,
-            new UserAccountAccessor(repositories.userRepository, repositories.userChangeRepository),
-            auth)
+        TaskScheduler
+          .schedule(
+            new UserSyncTask(
+              new UserAccountAccessor(
+                repositories.userRepository,
+                repositories.userChangeRepository),
+              auth,
+              settings.ldapSyncPollingInterval),
+            repositories.taskRepository
+          )
+          .compile
+          .drain
           .start
       } else IO.unit
     } yield {

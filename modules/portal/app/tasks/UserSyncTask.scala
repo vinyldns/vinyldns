@@ -20,23 +20,29 @@ import cats.effect.IO
 import controllers.{Authenticator, UserAccountAccessor}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.LockStatus
+import vinyldns.core.task.Task
 
-object UserSyncTask {
-  val SYNC_USER_TASK_NAME = "user_sync"
-  private val log: Logger = LoggerFactory.getLogger("UserSyncTask")
+import scala.concurrent.duration._
 
-  def syncUsers(
-      userAccountAccessor: UserAccountAccessor,
-      authenticator: Authenticator): IO[Unit] = {
-    log.error("Initiating user sync")
+class UserSyncTask(
+    userAccountAccessor: UserAccountAccessor,
+    authenticator: Authenticator,
+    val runEvery: FiniteDuration = 24.hours,
+    val timeout: FiniteDuration = 24.hours)
+    extends Task {
+  val name: String = "user_sync"
+  private val logger: Logger = LoggerFactory.getLogger("UserSyncTask")
+
+  def run(): IO[Unit] = {
+    logger.error("Initiating user sync")
     for {
       allUsers <- userAccountAccessor.getAllUsers
       activeUsers = allUsers.filter(u => u.lockStatus != LockStatus.Locked && !u.isTest)
       nonActiveUsers <- authenticator.getUsersNotInLdap(activeUsers)
       lockedUsers <- userAccountAccessor.lockUsers(nonActiveUsers)
       _ <- IO(
-        log.error(
-          s"Users locked: ${lockedUsers.map(_.userName)}. Total locked: ${lockedUsers.size}"))
+        logger.error(
+          s"""usersLocked="${lockedUsers.map(_.userName)}"; userLockCount="${lockedUsers.size}" """))
     } yield ()
   }
 }
