@@ -225,9 +225,9 @@ class ZoneRoutingSpec
         nameFilter: Option[String],
         startFrom: Option[String],
         maxItems: Int,
-        listAll: Boolean = false): Result[ListZonesResponse] = {
+        ignoreAccess: Boolean = false): Result[ListZonesResponse] = {
 
-      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, listAll) match {
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
         case (_, None, Some("zone3."), 3, false) =>
           Right(
             ListZonesResponse(
@@ -236,7 +236,7 @@ class ZoneRoutingSpec
               startFrom = Some("zone3."),
               nextId = Some("zone6."),
               maxItems = 3,
-              listAll = false
+              ignoreAccess = false
             )
           )
         case (_, None, Some("zone4."), 4, false) =>
@@ -247,7 +247,7 @@ class ZoneRoutingSpec
               startFrom = Some("zone4."),
               nextId = None,
               maxItems = 4,
-              listAll = false)
+              ignoreAccess = false)
           )
 
         case (_, None, None, 3, false) =>
@@ -258,7 +258,7 @@ class ZoneRoutingSpec
               startFrom = None,
               nextId = Some("zone3."),
               maxItems = 3,
-              listAll = false)
+              ignoreAccess = false)
           )
 
         case (_, None, None, 5, true) =>
@@ -274,7 +274,7 @@ class ZoneRoutingSpec
               startFrom = None,
               nextId = None,
               maxItems = 5,
-              listAll = true
+              ignoreAccess = true
             )
           )
 
@@ -286,7 +286,8 @@ class ZoneRoutingSpec
               startFrom = Some("zone4."),
               nextId = None,
               maxItems = 4,
-              listAll = false)
+              ignoreAccess = false
+            )
           )
 
         case (_, None, None, _, _) =>
@@ -296,7 +297,7 @@ class ZoneRoutingSpec
               nameFilter = None,
               startFrom = None,
               nextId = None,
-              listAll = false)
+              ignoreAccess = false)
           )
 
         case _ => Left(InvalidRequest("shouldnt get here"))
@@ -857,7 +858,7 @@ class ZoneRoutingSpec
         resp.nextId shouldBe None
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
-        resp.listAll shouldBe false
+        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -870,7 +871,7 @@ class ZoneRoutingSpec
         resp.nextId shouldBe Some("zone3.")
         resp.maxItems shouldBe 3
         resp.startFrom shouldBe None
-        resp.listAll shouldBe false
+        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -884,12 +885,12 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("foo")
-        resp.listAll shouldBe false
+        resp.ignoreAccess shouldBe false
       }
     }
 
     "return all zones when list all is true" in {
-      Get(s"/zones?maxItems=5&listAll=true") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?maxItems=5&ignoreAccess=true") ~> zoneRoute(okAuth) ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -898,7 +899,7 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 5
         resp.startFrom shouldBe None
         resp.nameFilter shouldBe None
-        resp.listAll shouldBe true
+        resp.ignoreAccess shouldBe true
       }
     }
 

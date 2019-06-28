@@ -132,7 +132,7 @@ def test_list_zones_list_all_default_false(list_zones_context):
     Test that the default list all value for a list zones request is false
     """
     result = list_zones_context.client.list_zones(status=200)
-    assert_that(result['listAll'], is_(False))
+    assert_that(result['ignoreAccess'], is_(False))
 
 def test_list_zones_invalid_max_items_fails(list_zones_context):
     """
@@ -255,7 +255,7 @@ def test_list_zones_list_all_success(list_zones_context):
     result = list_zones_context.client.list_zones(list_all=True, status=200)
     retrieved = result['zones']
 
-    assert_that(result['listAll'], is_(True))
+    assert_that(result['ignoreAccess'], is_(True))
     assert_that(len(retrieved), greater_than(5))
 
 
@@ -266,6 +266,6 @@ def test_list_zones_list_all_success_with_name_filter(list_zones_context):
     result = list_zones_context.client.list_zones(name_filter='shared', list_all=True, status=200)
     retrieved = result['zones']
 
-    assert_that(result['listAll'], is_(True))
+    assert_that(result['ignoreAccess'], is_(True))
     assert_that(retrieved, has_item(has_entry('name', 'shared.')))
     assert_that(retrieved, has_item(has_entry('accessLevel', 'NoAccess')))

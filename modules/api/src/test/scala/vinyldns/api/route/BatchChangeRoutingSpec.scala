@@ -229,9 +229,10 @@ class BatchChangeRoutingSpec
         auth: AuthPrincipal,
         startFrom: Option[Int],
         maxItems: Int,
-        listAll: Boolean = false): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
+        ignoreAccess: Boolean = false)
+      : EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
-        (auth, startFrom, maxItems, listAll) match {
+        (auth, startFrom, maxItems, ignoreAccess) match {
           case (_, None, 100, false) =>
             EitherT.rightT(
               BatchChangeSummaryList(
@@ -273,7 +274,7 @@ class BatchChangeRoutingSpec
 
           case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
         } else if (auth.userId == superUserAuth.userId)
-        (auth, startFrom, maxItems, listAll) match {
+        (auth, startFrom, maxItems, ignoreAccess) match {
           case (_, None, 100, true) =>
             EitherT.rightT(
               BatchChangeSummaryList(
@@ -284,7 +285,7 @@ class BatchChangeRoutingSpec
                   batchChangeSummaryInfo4),
                 startFrom = None,
                 nextId = None,
-                listAll = true
+                ignoreAccess = true
               )
             )
           case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
@@ -504,8 +505,8 @@ class BatchChangeRoutingSpec
       }
     }
 
-    "return all batch changes if listAll is true" in {
-      Get("/zones/batchrecordchanges?listAll=true") ~> batchChangeRoute(superUserAuth) ~> check {
+    "return all batch changes if ignoreAccess is true" in {
+      Get("/zones/batchrecordchanges?ignoreAccess=true") ~> batchChangeRoute(superUserAuth) ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
