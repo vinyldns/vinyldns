@@ -30,33 +30,40 @@ class TaskSchedulerSpec extends WordSpec with Matchers with MockitoSugar with Be
   private implicit val timer: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
 
   private val mockRepo = mock[TaskRepository]
-  
+
+  class TestTask(
+      val name: String,
+      val timeout: FiniteDuration,
+      val runEvery: FiniteDuration,
+      testResult: IO[Unit] = IO.unit)
+      extends Task {
+    def run(): IO[Unit] = testResult
+  }
+
   override def beforeEach() = Mockito.reset(mockRepo)
 
   "TaskScheduler" should {
     "run a scheduled task" in {
-      val mockTask = mock[Task]
-      doReturn("test").when(mockTask).name
-      doReturn(IO.unit).when(mockTask).run()
-      doReturn(IO.pure(true)).when(mockRepo).claimTask("test", 1.seconds)
+      val task = new TestTask("test", 5.seconds, 500.millis)
+      val spied = spy(task)
+      doReturn(IO.pure(true)).when(mockRepo).claimTask("test", task.timeout)
       doReturn(IO.unit).when(mockRepo).releaseTask("test")
 
-      TaskScheduler.schedule(mockTask, 1.seconds, mockRepo).take(1).compile.drain.unsafeRunSync()
+      TaskScheduler.schedule(spied, mockRepo).take(1).compile.drain.unsafeRunSync()
 
-      verify(mockTask).run()
-      verify(mockRepo).claimTask("test", 1.seconds)
-      verify(mockRepo).releaseTask("test")
+      verify(spied).run()
+      verify(mockRepo).claimTask(task.name, task.timeout)
+      verify(mockRepo).releaseTask(task.name)
     }
 
     "release the task even on error" in {
-      val mockTask = mock[Task]
-      doReturn("test").when(mockTask).name
-      doReturn(IO.raiseError(new RuntimeException("fail"))).when(mockTask).run()
-      doReturn(IO.pure(true)).when(mockRepo).claimTask("test", 1.seconds)
-      doReturn(IO.unit).when(mockRepo).releaseTask("test")
+      val task =
+        new TestTask("test", 5.seconds, 500.millis, IO.raiseError(new RuntimeException("fail")))
+      doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout)
+      doReturn(IO.unit).when(mockRepo).releaseTask(task.name)
 
-      TaskScheduler.schedule(mockTask, 1.seconds, mockRepo).take(1).compile.drain.unsafeRunSync()
-      verify(mockRepo).releaseTask("test")
+      TaskScheduler.schedule(task, mockRepo).take(1).compile.drain.unsafeRunSync()
+      verify(mockRepo).releaseTask(task.name)
     }
   }
 }

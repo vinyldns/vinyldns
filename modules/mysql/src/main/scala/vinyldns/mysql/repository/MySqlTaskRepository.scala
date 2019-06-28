@@ -16,6 +16,8 @@
 
 package vinyldns.mysql.repository
 
+import java.time.Instant
+
 import cats.effect.IO
 import org.joda.time.DateTime
 import scalikejdbc._
@@ -52,12 +54,11 @@ class MySqlTaskRepository extends TaskRepository {
 
   def claimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
     IO {
-      val pollingExpirationHours = pollingInterval.toHours * 2
-      val currentTime = DateTime.now
+      val currentTime = Instant.now
       DB.localTx { implicit s =>
         val updateResult = CLAIM_UNCLAIMED_TASK
           .bindByName(
-            'updatedTimeComparison -> currentTime.minusHours(pollingExpirationHours.toInt),
+            'updatedTimeComparison -> currentTime.minusMillis(pollingInterval.toMillis),
             'taskName -> name,
             'currentTime -> currentTime)
           .first()

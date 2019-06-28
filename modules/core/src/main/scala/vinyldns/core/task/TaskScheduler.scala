@@ -27,6 +27,12 @@ trait Task {
   // The name of the task, should be unique / constant and should not change
   def name: String
 
+  // The amount of time this task is running before it can be reclaimed / considered failed
+  def timeout: FiniteDuration
+
+  // How often to attempt to run the task
+  def runEvery: FiniteDuration
+
   // Runs the task
   def run(): IO[Unit]
 }
@@ -35,12 +41,12 @@ object TaskScheduler {
   private val logger = LoggerFactory.getLogger("TaskScheduler")
 
   // Starts a task on a schedule, returns a Fiber that can be used to cancel the task
-  def schedule(task: Task, runEvery: FiniteDuration, taskRepository: TaskRepository)(
+  def schedule(task: Task, taskRepository: TaskRepository)(
       implicit t: Timer[IO],
       cs: ContextShift[IO]): Stream[IO, Unit] = {
 
     def claimTask(): IO[Option[Task]] = IO.suspend {
-      taskRepository.claimTask(task.name, runEvery).map {
+      taskRepository.claimTask(task.name, task.timeout).map {
         case true =>
           logger.info(s"""Successfully found and claimed task; taskName="${task.name}" """)
           Some(task)
@@ -69,6 +75,6 @@ object TaskScheduler {
       }
 
     // Awake on the interval provided
-    Stream.awakeEvery[IO](runEvery).evalMap(_ => runOnceSafely(task))
+    Stream.awakeEvery[IO](task.runEvery).evalMap(_ => runOnceSafely(task))
   }
 }
