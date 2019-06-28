@@ -83,9 +83,7 @@ class MySqlBatchChangeRepository
          |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
          |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
          |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
-         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count,
-         |              SUM( case sc.status when 'NeedsReview' then 1 else 0 end ) AS needs_review_count,
-         |              SUM( case sc.status when 'Rejected' then 1 else 0 end ) AS rejected_count
+         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count
          |         FROM single_change sc
          |         JOIN batch_change bc
          |           ON sc.batch_change_id = bc.id
@@ -241,20 +239,15 @@ class MySqlBatchChangeRepository
                 val pending = res.int("pending_count")
                 val failed = res.int("fail_count")
                 val complete = res.int("complete_count")
-                val needsReview = res.int("needs_review_count")
-                val rejected = res.int("rejected_count")
+                val approvalStatus = toApprovalStatus(res.intOpt("approval_status"))
                 BatchChangeSummary(
                   res.string("user_id"),
                   res.string("user_name"),
                   Option(res.string("comments")),
                   new org.joda.time.DateTime(res.timestamp("created_time")),
                   pending + failed + complete,
-                  BatchChangeStatus.fromSingleStatuses(
-                    pending > 0,
-                    failed > 0,
-                    complete > 0,
-                    needsReview > 0,
-                    rejected > 0),
+                  BatchChangeStatus
+                    .calculateBatchStatus(approvalStatus, pending > 0, failed > 0, complete > 0),
                   Option(res.string("owner_group_id")),
                   res.string("id")
                 )

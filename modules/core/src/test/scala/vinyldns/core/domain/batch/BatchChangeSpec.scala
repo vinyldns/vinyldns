@@ -35,8 +35,6 @@ class BatchChangeSpec extends WordSpec with Matchers {
     None)
   private val failedChange = pendingChange.copy(status = SingleChangeStatus.Failed)
   private val completeChange = pendingChange.copy(status = SingleChangeStatus.Complete)
-  private val needsReviewChange = pendingChange.copy(status = SingleChangeStatus.NeedsReview)
-  private val rejectedChange = pendingChange.copy(status = SingleChangeStatus.Rejected)
 
   private val batchChangeBase = BatchChange(
     "userId",
@@ -63,14 +61,14 @@ class BatchChangeSpec extends WordSpec with Matchers {
         .copy(changes = List(completeChange))
         .status shouldBe BatchChangeStatus.Complete
     }
-    "calculate Pending status for NeedsReview changes" in {
+    "calculate Pending status when approval status is PendingApproval" in {
       batchChangeBase
-        .copy(changes = List(needsReviewChange, rejectedChange))
+        .copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
         .status shouldBe BatchChangeStatus.Pending
     }
-    "calculate Failed status for Rejected changes" in {
+    "calculate Failed status when approval status is ManuallyRejected" in {
       batchChangeBase
-        .copy(changes = List(rejectedChange))
+        .copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
         .status shouldBe BatchChangeStatus.Failed
     }
   }
