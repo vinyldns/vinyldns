@@ -125,7 +125,7 @@ object CommandHandler {
       }
     }.as(())
 
-  /* Actually processes a \request */
+  /* Actually processes a change request */
   def processChangeRequests(
       zoneChangeProcessor: ZoneChange => IO[ZoneChange],
       recordChangeProcessor: (DnsConnection, RecordSetChange) => IO[RecordSetChange],
