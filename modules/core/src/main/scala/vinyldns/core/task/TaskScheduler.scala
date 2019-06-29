@@ -50,7 +50,7 @@ object TaskScheduler {
     *          ...
     *          // once everything is done you can cancel it via the handle
     *          handle.cancel.unsafeRunSync()
-    * @return a Stream that when run will awake on the interal defined on the Task provided, and
+    * @return a Stream that when run will awake on the interval defined on the Task provided, and
     *         run the task.run()
     */
   def schedule(task: Task, taskRepository: TaskRepository)(
