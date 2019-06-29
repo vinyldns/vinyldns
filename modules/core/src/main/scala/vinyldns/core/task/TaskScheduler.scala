@@ -40,7 +40,19 @@ trait Task {
 object TaskScheduler {
   private val logger = LoggerFactory.getLogger("TaskScheduler")
 
-  // Starts a task on a schedule, returns a Stream that can be used to actually start and cancel the task
+  /**
+    * Schedules a task to be run.  Will insert the task into the TaskRepository if it is not
+    * already present.  The result is a Stream that the caller has to manage the lifecycle for.
+    *
+    * @example
+    *          val scheduledStream = TaskScheduler.schedule(...)
+    *          val handle = scheduledStream.compile.drain.start.unsafeRunSync()
+    *          ...
+    *          // once everything is done you can cancel it via the handle
+    *          handle.cancel.unsafeRunSync()
+    * @return a Stream that when run will awake on the interal defined on the Task provided, and
+    *         run the task.run()
+    */
   def schedule(task: Task, taskRepository: TaskRepository)(
       implicit t: Timer[IO],
       cs: ContextShift[IO]): Stream[IO, Unit] = {
@@ -74,7 +86,15 @@ object TaskScheduler {
         logger.error(s"""Unexpected error is task; taskName="${task.name}" """, error)
       }
 
-    // Awake on the interval provided
-    Stream.awakeEvery[IO](task.runEvery).evalMap(_ => runOnceSafely(task))
+    // We must first schedule the task in the repository and then create our stream
+    // Semantics of repo.scheduleTask are idempotent, if the task already exists we are ok
+    // Then we run our scheduled task with awakeEvery
+    Stream
+      .eval(taskRepository.saveTask(task.name))
+      .flatMap { _ =>
+        Stream
+          .awakeEvery[IO](task.runEvery)
+          .evalMap(_ => runOnceSafely(task))
+      }
   }
 }

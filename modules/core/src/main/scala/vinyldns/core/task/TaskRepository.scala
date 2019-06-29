@@ -26,4 +26,6 @@ trait TaskRepository extends Repository {
   def claimTask(name: String, taskTimeout: FiniteDuration): IO[Boolean]
 
   def releaseTask(name: String): IO[Unit]
+
+  def saveTask(name: String): IO[Unit]
 }

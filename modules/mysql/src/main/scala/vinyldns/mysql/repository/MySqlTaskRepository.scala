@@ -52,6 +52,12 @@ class MySqlTaskRepository extends TaskRepository {
       | WHERE name = {name}
       """.stripMargin
 
+  private val PUT_TASK =
+    sql"""
+         |INSERT IGNORE INTO task(name, in_flight, created, updated)
+         |VALUES ({taskName}, 0, NOW(), NULL)
+      """.stripMargin
+
   def claimTask(name: String, taskTimeout: FiniteDuration): IO[Boolean] =
     IO {
       val currentTime = Instant.now
@@ -72,6 +78,14 @@ class MySqlTaskRepository extends TaskRepository {
   def releaseTask(name: String): IO[Unit] = IO {
     DB.localTx { implicit s =>
       UNCLAIM_TASK.bindByName('currentTime -> DateTime.now, 'name -> name).update().apply()
+    }
+  }
+
+  // Save the task, do not overwrite if it is already there
+  def saveTask(name: String): IO[Unit] = IO {
+    DB.localTx { implicit s =>
+      PUT_TASK.bindByName('taskName -> name).update().apply()
+      ()
     }
   }
 }

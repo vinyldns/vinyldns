@@ -46,8 +46,9 @@ class TaskSchedulerSpec extends WordSpec with Matchers with MockitoSugar with Be
     "run a scheduled task" in {
       val task = new TestTask("test", 5.seconds, 500.millis)
       val spied = spy(task)
-      doReturn(IO.pure(true)).when(mockRepo).claimTask("test", task.timeout)
-      doReturn(IO.unit).when(mockRepo).releaseTask("test")
+      doReturn(IO.unit).when(mockRepo).saveTask(task.name)
+      doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout)
+      doReturn(IO.unit).when(mockRepo).releaseTask(task.name)
 
       TaskScheduler.schedule(spied, mockRepo).take(1).compile.drain.unsafeRunSync()
 
@@ -59,11 +60,26 @@ class TaskSchedulerSpec extends WordSpec with Matchers with MockitoSugar with Be
     "release the task even on error" in {
       val task =
         new TestTask("test", 5.seconds, 500.millis, IO.raiseError(new RuntimeException("fail")))
+      doReturn(IO.unit).when(mockRepo).saveTask(task.name)
       doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout)
       doReturn(IO.unit).when(mockRepo).releaseTask(task.name)
 
       TaskScheduler.schedule(task, mockRepo).take(1).compile.drain.unsafeRunSync()
       verify(mockRepo).releaseTask(task.name)
+    }
+
+    "fail to start if the task cannot be saved" in {
+      val task = new TestTask("test", 5.seconds, 500.millis)
+      val spied = spy(task)
+      doReturn(IO.raiseError(new RuntimeException("fail"))).when(mockRepo).saveTask(task.name)
+
+      a[RuntimeException] should be thrownBy TaskScheduler
+        .schedule(task, mockRepo)
+        .take(1)
+        .compile
+        .drain
+        .unsafeRunSync()
+      verify(spied, never()).run()
     }
   }
 }

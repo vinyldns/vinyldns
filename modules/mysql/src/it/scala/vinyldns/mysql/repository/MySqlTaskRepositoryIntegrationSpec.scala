@@ -68,6 +68,16 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
     }
   }
 
+  def getTaskInfo(name: String): IO[Option[(Boolean, DateTime)]] = IO {
+    DB.readOnly { implicit s =>
+      sql"SELECT in_flight, updated from task WHERE name = {taskName} FOR UPDATE"
+        .bindByName('taskName -> name)
+        .map(rs => (rs.boolean(1), new DateTime(rs.timestamp(2))))
+        .first()
+        .apply()
+    }
+  }
+
   "claimTask" should {
     "return true if non-in-flight task exists and updated time is null" in {
       val f = for {
@@ -115,6 +125,32 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
         inFlight shouldBe false
         updateTime should not be startDateTime
       }
+    }
+  }
+
+  "schedule task" should {
+    "insert a new task" in {
+      val f = for {
+        _ <- repo.saveTask("new-one")
+        taskInfo <- getTaskInfo("new-one")
+      } yield taskInfo
+
+      f.unsafeRunSync() shouldBe defined
+    }
+
+    "not replace a task that is already present" in {
+      // schedule a task and claim it, then try to reschedule it while it is claimed (bad)
+      // the result should be that the task is still claimed / in_flight
+      val f = for {
+        _ <- repo.saveTask("repeat")
+        _ <- repo.claimTask("repeat", 5.seconds)
+        firstTaskInfo <- getTaskInfo("repeat")
+        _ <- repo.saveTask("repeat")
+        secondTaskInfo <- getTaskInfo("repeat")
+        _ <- repo.releaseTask("repeat")
+      } yield firstTaskInfo == secondTaskInfo
+
+      f.unsafeRunSync() shouldBe true
     }
   }
 }
