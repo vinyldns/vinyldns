@@ -128,7 +128,7 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
     }
   }
 
-  "schedule task" should {
+  "save task" should {
     "insert a new task" in {
       val f = for {
         _ <- repo.saveTask("new-one")
