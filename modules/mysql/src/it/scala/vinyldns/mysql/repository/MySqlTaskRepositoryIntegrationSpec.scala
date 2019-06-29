@@ -72,7 +72,6 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
     "return true if non-in-flight task exists and expiration time has elapsed" in {
       val f = for {
         _ <- repo.saveTask(TASK_NAME)
-        _ <- repo.claimTask(TASK_NAME, 1.hour)
         _ <- ageTaskBySeconds(100) // Age the task by 100 seconds
         unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.second)
       } yield unclaimedTaskExists
