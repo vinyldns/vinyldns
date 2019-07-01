@@ -76,7 +76,8 @@ object BatchChangeApprovalStatus extends Enumeration {
   type BatchChangeApprovalStatus = Value
   val AutoApproved, PendingApproval, ManuallyApproved, ManuallyRejected = Value
 
-  private val valueMap = BatchChangeApprovalStatus.values.map(v => v.toString.toLowerCase -> v).toMap
+  private val valueMap =
+    BatchChangeApprovalStatus.values.map(v => v.toString.toLowerCase -> v).toMap
 
   def find(status: String): Option[BatchChangeApprovalStatus] =
     valueMap.get(status.toLowerCase)

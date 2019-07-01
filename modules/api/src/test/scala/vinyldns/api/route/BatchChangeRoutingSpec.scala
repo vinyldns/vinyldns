@@ -551,7 +551,7 @@ class BatchChangeRoutingSpec
     }
 
     "return user's Pending batch changes if approval status is `PendingApproval`" in {
-      Get("/zones/batchrecordchanges?approvalStatus=pending") ~>
+      Get("/zones/batchrecordchanges?approvalStatus=pendingapproval") ~>
         batchChangeRoute(okAuth) ~> check {
         status shouldBe OK
 
