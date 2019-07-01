@@ -764,26 +764,21 @@ class BatchChangeValidationsSpec
       CnameIsNotUniqueError(addCname.inputChange.inputName, existingA.typ))
   }
 
-  // Is this test valid??
   property("""validateChangesWithContext: should succeed for CNAME record
-      |if there's a duplicate PTR ipv6 record that is being deleted""".stripMargin) {
+      |if there's a duplicate PTR ipv4 record that is being deleted""".stripMargin) {
     val addCname = AddChangeForValidation(
-      validZone,
-      "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-      AddChangeInput(
-        "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
-        RecordType.CNAME,
-        ttl,
-        CNAMEData("cname"))
+      validIp4ReverseZone,
+      "30",
+      AddChangeInput("30.2.0.192.in-addr.arpa.", RecordType.CNAME, ttl, CNAMEData("cname"))
     )
     val deletePtr = DeleteChangeForValidation(
-      validZone,
-      "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-      DeleteChangeInput("0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", RecordType.PTR))
-    val existingRecordPTR = ptrIp6.copy(zoneId = addCname.zone.id, name = addCname.recordName)
+      validIp4ReverseZone,
+      "30",
+      DeleteChangeInput("192.0.2.30", RecordType.PTR))
+    val ptr4 = ptrIp4.copy(zoneId = validIp4ReverseZone.id)
     val result = validateChangesWithContext(
       List(addCname.validNel, deletePtr.validNel),
-      ExistingRecordSets(List(existingRecordPTR)),
+      ExistingRecordSets(List(ptr4)),
       okAuth,
       None)
 
