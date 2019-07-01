@@ -63,7 +63,8 @@ trait BatchChangeRoute extends Directives {
               ignoreAccess: Boolean,
               approvalStatus: Option[String]) =>
             {
-              val convertApprovalStatus = BatchChangeApprovalStatus.fromString(approvalStatus)
+              val convertApprovalStatus = BatchChangeApprovalStatus.find(approvalStatus.mkString)
+
               handleRejections(invalidQueryHandler) {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,

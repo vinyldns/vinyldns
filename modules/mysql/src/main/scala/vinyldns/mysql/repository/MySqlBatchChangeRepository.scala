@@ -229,15 +229,12 @@ class MySqlBatchChangeRepository
           val startValue = startFrom.getOrElse(0)
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
-          (userId, approvalStatus) match {
-            case (Some(uid), Some(status)) =>
-              sb.append(
-                s"WHERE bc.user_id = '$uid' AND bc.approval_status = '${fromApprovalStatus(status)}'")
-            case (Some(uid), None) => sb.append(s"WHERE bc.user_id = '$uid'")
-            case (None, Some(status)) =>
-              sb.append(s"WHERE bc.approval_status = '${fromApprovalStatus(status)}'")
-            case _ => ()
-          }
+
+          val uid = userId.map(u => s"bc.user_id = '$u'")
+          val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
+          val opts = uid ++ as
+
+          sb.append("WHERE").append(opts.mkString(" AND "))
 
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
