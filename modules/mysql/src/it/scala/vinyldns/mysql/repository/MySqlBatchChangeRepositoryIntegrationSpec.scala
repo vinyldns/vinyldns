@@ -188,7 +188,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "update batch change" in {
-      val batchChange = randomBatchChange
+      val batchChange = randomBatchChange(List())
       val singleChanges = batchChange.changes.map {
         case sad: SingleAddChange => sad.copy(recordName = sad.recordName.map(name => s"updated-$name"))
         case sdc: SingleDeleteChange => sdc.copy(recordName = sdc.recordName.map(name => s"updated-$name"))

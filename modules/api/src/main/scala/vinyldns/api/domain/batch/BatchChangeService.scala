@@ -397,8 +397,10 @@ class BatchChangeService(
     } yield listWithGroupNames
   }
 
-  def rejectBatchChange(batchChange: BatchChange, reviewComment: Option[String], reviewerId: String):
-    BatchResult[BatchChange] = {
+  def rejectBatchChange(
+      batchChange: BatchChange,
+      reviewComment: Option[String],
+      reviewerId: String): BatchResult[BatchChange] = {
     val rejectedSingleChanges = batchChange.changes.map {
       case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
       case sdc: SingleDeleteChange => sdc.copy(status = SingleChangeStatus.Rejected)

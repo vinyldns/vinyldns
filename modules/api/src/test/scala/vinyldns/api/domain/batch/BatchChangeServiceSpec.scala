@@ -350,7 +350,7 @@ class BatchChangeServiceSpec
 
       result.status shouldBe BatchChangeStatus.Failed
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyRejected
-      result.changes.foreach(_.status shouldBe SingleChangeStatus.Failed)
+      result.changes.foreach(_.status shouldBe SingleChangeStatus.Rejected)
       result.reviewComment shouldBe Some("review comment")
       result.reviewerId shouldBe Some(supportUserAuth.userId)
       result.reviewTimestamp should not be None
