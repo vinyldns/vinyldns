@@ -85,7 +85,7 @@ object TaskScheduler extends Monitored {
     def runOnceSafely(task: Task): IO[Unit] =
       monitor(s"task.${task.name}") {
         claimTask().bracket(runTask)(releaseTask).handleError { error =>
-          logger.error(s"""Unexpected error is task; taskName="${task.name}" """, error)
+          logger.error(s"""Unexpected error running task; taskName="${task.name}" """, error)
         }
       }
 
