@@ -61,5 +61,15 @@ class BatchChangeSpec extends WordSpec with Matchers {
         .copy(changes = List(completeChange))
         .status shouldBe BatchChangeStatus.Complete
     }
+    "calculate Pending status when approval status is PendingApproval" in {
+      batchChangeBase
+        .copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+        .status shouldBe BatchChangeStatus.Pending
+    }
+    "calculate Failed status when approval status is ManuallyRejected" in {
+      batchChangeBase
+        .copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
+        .status shouldBe BatchChangeStatus.Failed
+    }
   }
 }

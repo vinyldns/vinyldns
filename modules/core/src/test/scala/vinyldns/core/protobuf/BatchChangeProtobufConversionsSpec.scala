@@ -111,5 +111,45 @@ class BatchChangeProtobufConversionsSpec
 
       roundTrip.right.value shouldBe tst
     }
+
+    "round trip single changes in NeedsReview state" in {
+      val tst = SingleDeleteChange(
+        None,
+        None,
+        None,
+        "testInputName",
+        RecordType.A,
+        SingleChangeStatus.NeedsReview,
+        None,
+        None,
+        None,
+        "some-id"
+      )
+      val pb = toPB(tst)
+
+      val roundTrip = fromPB(pb.right.value)
+
+      roundTrip.right.value shouldBe tst
+    }
+
+    "round trip single changes in Rejected state" in {
+      val tst = SingleDeleteChange(
+        None,
+        None,
+        None,
+        "testInputName",
+        RecordType.A,
+        SingleChangeStatus.Rejected,
+        None,
+        None,
+        None,
+        "some-id"
+      )
+      val pb = toPB(tst)
+
+      val roundTrip = fromPB(pb.right.value)
+
+      roundTrip.right.value shouldBe tst
+    }
   }
 }

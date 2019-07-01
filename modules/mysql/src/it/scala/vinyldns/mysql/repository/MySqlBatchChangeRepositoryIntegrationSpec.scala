@@ -42,7 +42,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
   import RecordType._
 
   object TestData {
-    def generateSingleAddChange(recordType: RecordType, recordData: RecordData): SingleAddChange =
+    def generateSingleAddChange(recordType: RecordType,
+                                recordData: RecordData,
+                                status: SingleChangeStatus = Pending): SingleAddChange =
       SingleAddChange(
         Some(okZone.id),
         Some(okZone.name),
@@ -50,19 +52,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         "test.somezone.com.",
         recordType, 3600,
         recordData,
-        Pending,
+        status,
         None,
         None,
         None)
-
-    val sc1: SingleAddChange =
-      generateSingleAddChange(A, AData("1.2.3.4"))
-
-    val sc2: SingleAddChange =
-      generateSingleAddChange(A, AData("1.2.3.40"))
-
-    val sc3: SingleAddChange =
-      generateSingleAddChange(AAAA, AAAAData("2001:558:feed:beef:0:0:0:1"))
 
     val deleteChange: SingleDeleteChange =
       SingleDeleteChange(
@@ -76,17 +69,19 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         None,
         None)
 
-    def randomBatchChange: BatchChange = BatchChange(
+
+    def randomChangeList: List[SingleChange] = List(
+      generateSingleAddChange(A, AData("1.2.3.4"), Pending),
+      generateSingleAddChange(A, AData("1.2.3.40"), Complete),
+      generateSingleAddChange(AAAA, AAAAData("2001:558:feed:beef:0:0:0:1"), Pending),
+      deleteChange.copy(id = UUID.randomUUID().toString))
+
+    def randomBatchChange(changes: List[SingleChange] = randomChangeList): BatchChange = BatchChange(
       okAuth.userId,
       okAuth.signedInUser.userName,
       Some("description"),
       DateTime.now,
-      List(
-        sc1.copy(id = UUID.randomUUID().toString),
-        sc2.copy(id = UUID.randomUUID().toString),
-        sc3.copy(id = UUID.randomUUID().toString),
-        deleteChange.copy(id = UUID.randomUUID().toString)
-      ),
+      changes,
       Some(UUID.randomUUID().toString),
       BatchChangeApprovalStatus.AutoApproved,
       Some(UUID.randomUUID().toString),
@@ -94,24 +89,24 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       Some(DateTime.now.plusSeconds(2))
     )
 
-    val bcARecords: BatchChange = randomBatchChange
+    val bcARecords: BatchChange = randomBatchChange()
 
     def randomBatchChangeWithList(singleChanges: List[SingleChange]): BatchChange =
       bcARecords.copy(id = UUID.randomUUID().toString, changes = singleChanges)
 
-    val pendingBatchChange: BatchChange = randomBatchChange.copy(createdTimestamp = DateTime.now)
+    val pendingBatchChange: BatchChange = randomBatchChange().copy(createdTimestamp = DateTime.now)
 
     val completeBatchChange: BatchChange = randomBatchChangeWithList(
-      randomBatchChange.changes.map(_.complete("recordChangeId", "recordSetId")))
+      randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId")))
       .copy(createdTimestamp = DateTime.now.plusMillis(1000))
 
     val failedBatchChange: BatchChange =
-      randomBatchChangeWithList(randomBatchChange.changes.map(_.withFailureMessage("failed")))
+      randomBatchChangeWithList(randomBatchChange().changes.map(_.withFailureMessage("failed")))
         .copy(createdTimestamp = DateTime.now.plusMillis(100000))
 
     val partialFailureBatchChange: BatchChange = randomBatchChangeWithList(
-      randomBatchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
-        ++ randomBatchChange.changes.drop(2).map(_.withFailureMessage("failed"))
+      randomBatchChange().changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
+        ++ randomBatchChange().changes.drop(2).map(_.withFailureMessage("failed"))
     ).copy(createdTimestamp = DateTime.now.plusMillis(1000000))
 
 
@@ -120,7 +115,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val change_one: BatchChange = pendingBatchChange.copy(createdTimestamp = timeBase)
     val change_two: BatchChange =
       completeBatchChange.copy(createdTimestamp = timeBase.plus(1000), ownerGroupId = None)
-    val otherUserBatchChange: BatchChange = randomBatchChange.copy(userId = "Other",
+    val otherUserBatchChange: BatchChange = randomBatchChange().copy(userId = "Other",
         createdTimestamp = timeBase.plus(50000))
     val change_three: BatchChange = failedBatchChange.copy(createdTimestamp = timeBase.plus(100000))
     val change_four: BatchChange = partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
@@ -202,7 +197,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "save/get a batch change with empty comments, ownerGroup, reviewerId, reviewComment, reviewTimeStamp" in {
-      val testBatch = randomBatchChange.copy(comments = None, ownerGroupId = None, reviewerId = None,
+      val testBatch = randomBatchChange().copy(comments = None, ownerGroupId = None, reviewerId = None,
         reviewComment = None, reviewTimestamp = None)
       val f =
         for {
@@ -214,7 +209,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "save/get a batch change with BatchChangeApprovalStatus.PendingApproval" in {
-      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      val testBatch = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
       val f =
         for {
           _ <- repo.save(testBatch)
@@ -225,7 +220,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "save/get a batch change with BatchChangeApprovalStatus.ManuallyApproved" in {
-      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+      val testBatch = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
       val f =
         for {
           _ <- repo.save(testBatch)
@@ -236,7 +231,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "save/get a batch change with BatchChangeApprovalStatus.ManuallyRejected" in {
-      val testBatch = randomBatchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
+      val testBatch = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
       val f =
         for {
           _ <- repo.save(testBatch)
@@ -267,7 +262,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "get single changes should match order from batch changes" in {
-      val batchChange = randomBatchChange
+      val batchChange = randomBatchChange()
       val f =
         for {
           _ <- repo.save(batchChange)
@@ -284,7 +279,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "update single changes" in {
-      val batchChange = randomBatchChange
+      val batchChange = randomBatchChange()
       val completed = batchChange.changes.map(_.complete("aaa", "bbb"))
       val f =
         for {
@@ -303,7 +298,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     }
 
     "update some changes in a batch" in {
-      val batchChange = randomBatchChange
+      val batchChange = randomBatchChange()
       val completed = batchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
       val incomplete = batchChange.changes.drop(2)
       val f =
@@ -315,9 +310,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
       f.unsafeRunSync() shouldBe completed ++ incomplete
     }
-    
+
     "return the batch when updating single changes" in {
-      val batchChange = randomBatchChange
+      val batchChange = randomBatchChange()
       val completed = batchChange.changes.take(2).map(_.complete("recordChangeId", "recordSetId"))
       val f =
         for {
@@ -501,6 +496,69 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     "return empty list if a batch change summary is not found by user ID" in {
       val batchChangeSummaries = repo.getBatchChangeSummaries(Some("doesnotexist")).unsafeRunSync()
       batchChangeSummaries.batchChanges shouldBe empty
+    }
+    "properly status check (pending)" in {
+      val chg = randomBatchChange(
+        List(generateSingleAddChange(A, AData("1.2.3.4"), Complete),
+          generateSingleAddChange(A, AData("2.2.3.4"), Pending),
+          generateSingleAddChange(A, AData("3.2.3.4"), Complete)
+        )
+      )
+      val saved =
+        for {
+          _ <- repo.save(chg)
+          retrieved <- repo.getBatchChange(chg.id)
+        } yield retrieved
+
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Pending
+    }
+    "properly status check (pending) when approvalStatus is PendingApproval" in {
+      val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      val saved =
+        for {
+          _ <- repo.save(chg)
+          retrieved <- repo.getBatchChange(chg.id)
+        } yield retrieved
+
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Pending
+    }
+    "properly status check (complete)" in {
+      val chg = randomBatchChange(
+        List(generateSingleAddChange(A, AData("1.2.3.4"), Complete),
+          generateSingleAddChange(A, AData("2.2.3.4"), Complete),
+          generateSingleAddChange(A, AData("3.2.3.4"), Complete))
+      )
+      val saved =
+        for {
+          _ <- repo.save(chg)
+          retrieved <- repo.getBatchChange(chg.id)
+        } yield retrieved
+
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Complete
+    }
+    "properly status check (failed)" in {
+      val chg = randomBatchChange(
+        List(generateSingleAddChange(A, AData("1.2.3.4"), Failed),
+          generateSingleAddChange(A, AData("2.2.3.4"), Failed),
+          generateSingleAddChange(A, AData("3.2.3.4"), Failed))
+      )
+      val saved =
+        for {
+          _ <- repo.save(chg)
+          retrieved <- repo.getBatchChange(chg.id)
+        } yield retrieved
+
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Failed
+    }
+    "properly status check (failed) when approval status is ManuallyRejected" in {
+      val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
+      val saved =
+        for {
+          _ <- repo.save(chg)
+          retrieved <- repo.getBatchChange(chg.id)
+        } yield retrieved
+
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Failed
     }
   }
 }
