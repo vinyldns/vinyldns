@@ -58,7 +58,7 @@ object TaskScheduler extends Monitored {
       implicit t: Timer[IO],
       cs: ContextShift[IO]): Stream[IO, Unit] = {
 
-    def claimTask(): IO[Option[Task]] = IO.suspend {
+    def claimTask(): IO[Option[Task]] =
       taskRepository.claimTask(task.name, task.timeout).map {
         case true =>
           logger.info(s"""Successfully found and claimed task; taskName="${task.name}" """)
@@ -67,8 +67,8 @@ object TaskScheduler extends Monitored {
           logger.info(s"""No task claimed; taskName="${task.name}" """)
           None
       }
-    }
 
+    // Note: IO.suspend is needed due to bug in cats effect 1.0.0 #421
     def releaseTask(maybeTask: Option[Task]): IO[Unit] = IO.suspend {
       maybeTask
         .map(
