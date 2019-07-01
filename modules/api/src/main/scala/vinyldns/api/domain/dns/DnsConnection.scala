@@ -22,9 +22,11 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import vinyldns.api.Interfaces.{result, _}
 import vinyldns.api.crypto.Crypto
+import vinyldns.api.logging.LoggingUtils._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
+import vinyldns.core.logging.StructuredArgs._
 
 object DnsProtocol {
 
@@ -109,7 +111,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
       zoneName: String,
       typ: RecordType): Either[Throwable, DnsQuery] = {
     val dnsName = recordDnsName(name, zoneName)
-    logger.info(s"Querying for dns dnsRecordName='${dnsName.toString}'; recordType='$typ'")
+    logger.info(s"Querying for dns", entries(dnsQuestionEvent(dnsName, typ)))
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
     lookup.setResolver(resolver)
     lookup.setSearchPath(Array.empty[String])

@@ -25,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.core.domain.zone.{ListZoneChangesResults, ZoneChange, ZoneChangeRepository}
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -99,7 +100,7 @@ class DynamoDBZoneChangeRepository private[repository] (
 
   def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {
-      log.info(s"Saving zone change ${zoneChange.id}")
+      log.info("Saving zone change", entries(event(Save, zoneChange)))
       val item = toItem(zoneChange)
       val request = new PutItemRequest().withTableName(zoneChangeTable).withItem(item)
 
@@ -111,7 +112,9 @@ class DynamoDBZoneChangeRepository private[repository] (
       startFrom: Option[String] = None,
       maxItems: Int = 100): IO[ListZoneChangesResults] =
     monitor("repo.ZoneChange.getChanges") {
-      log.info(s"Getting zone changes for zone $zoneId")
+      log.info(
+        "Getting zone changes for zone.",
+        entries(event("getZoneChanges", Id(zoneId, "zone"))))
 
       // millisecond string
       val startTime = startFrom.getOrElse(DateTime.now.getMillis.toString)

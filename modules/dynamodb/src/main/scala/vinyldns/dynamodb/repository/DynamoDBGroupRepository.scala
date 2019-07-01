@@ -26,6 +26,7 @@ import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
 import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus}
+import vinyldns.core.logging.StructuredArgs.{entries, _}
 import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
@@ -92,7 +93,7 @@ class DynamoDBGroupRepository private[repository] (
 
   def save(group: Group): IO[Group] =
     monitor("repo.Group.save") {
-      log.info(s"Saving group ${group.id} ${group.name}.")
+      log.info("Saving a group", entries(event(Save, group)))
       val item = toItem(group)
       val request = new PutItemRequest().withTableName(groupTableName).withItem(item)
       dynamoDBHelper.putItem(request).map(_ => group)
@@ -100,7 +101,7 @@ class DynamoDBGroupRepository private[repository] (
 
   def delete(group: Group): IO[Group] =
     monitor("repo.Group.delete") {
-      log.info(s"Deleting group ${group.id} ${group.name}.")
+      log.info("Deleting a group", entries(event(Delete, group)))
       val key = new HashMap[String, AttributeValue]()
       key.put(GROUP_ID, new AttributeValue(group.id))
       val request = new DeleteItemRequest().withTableName(groupTableName).withKey(key)
@@ -110,7 +111,7 @@ class DynamoDBGroupRepository private[repository] (
   /*Looks up a group.  If the group is not found, or if the group's status is Deleted, will return None */
   def getGroup(groupId: String): IO[Option[Group]] =
     monitor("repo.Group.getGroup") {
-      log.info(s"Getting group $groupId.")
+      log.info("Getting a group by ID", entries(event(Read, Id(groupId, "group"))))
       val key = new HashMap[String, AttributeValue]()
       key.put(GROUP_ID, new AttributeValue(groupId))
       val request = new GetItemRequest().withTableName(groupTableName).withKey(key)
@@ -156,7 +157,7 @@ class DynamoDBGroupRepository private[repository] (
     }
 
     monitor("repo.Group.getGroups") {
-      log.info(s"Getting groups by id $groupIds")
+      log.info(s"Getting groups by ids", entries(event(Read, Ids(groupIds, "group"))))
 
       // Group the group ids into batches of 100, that is the max size of the BatchGetItemRequest
       val batches = groupIds.grouped(100).toSet
@@ -178,7 +179,7 @@ class DynamoDBGroupRepository private[repository] (
 
   def getAllGroups(): IO[Set[Group]] =
     monitor("repo.Group.getAllGroups") {
-      log.info(s"getting all group IDs")
+      log.info("Getting groups by ids", entries(event(ReadAll, Ids(Set.empty, "group"))))
 
       // filtering NOT Deleted because there is no case insensitive filter. we later filter
       // the response in case anything got through
@@ -192,7 +193,10 @@ class DynamoDBGroupRepository private[repository] (
         start <- IO(System.currentTimeMillis())
         groupsScan <- dynamoDBHelper.scanAll(scanRequest)
         end <- IO(System.currentTimeMillis())
-        _ <- IO(log.debug(s"getAllGroups groups scan time: ${end - start} millis"))
+        _ <- IO(
+          log.debug(
+            s"getAllGroups groups scan time in millis",
+            entries(Map("duration" -> (end - start)))))
       } yield groupsScan
 
       scan.map { results =>
@@ -202,7 +206,7 @@ class DynamoDBGroupRepository private[repository] (
           .filter(_.status == GroupStatus.Active)
           .toSet
         val duration = System.currentTimeMillis() - startTime
-        log.debug(s"getAllGroups fromItem duration = $duration millis")
+        log.debug("getAllGroups fromItem", entries(Map("duration" -> duration)))
 
         groups
       }
@@ -210,7 +214,7 @@ class DynamoDBGroupRepository private[repository] (
 
   def getGroupByName(groupName: String): IO[Option[Group]] =
     monitor("repo.Group.getGroupByName") {
-      log.info(s"Getting group by name $groupName")
+      log.info("Getting group by Name", entries(event(Read, Id(groupName, "group"))))
       val expressionAttributeValues = new HashMap[String, AttributeValue]
       expressionAttributeValues.put(":name", new AttributeValue(groupName))
 
@@ -272,7 +276,7 @@ class DynamoDBGroupRepository private[repository] (
       )
     } catch {
       case ex: Throwable =>
-        log.error("fromItem", ex)
+        log.error("failed to covert db item to Group", ex)
         throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
     }
   }

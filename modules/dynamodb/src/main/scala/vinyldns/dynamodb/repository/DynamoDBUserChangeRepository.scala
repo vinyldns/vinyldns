@@ -26,6 +26,7 @@ import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership._
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.route.Monitored
 
 object DynamoDBUserChangeRepository {
@@ -120,7 +121,7 @@ class DynamoDBUserChangeRepository private[repository] (
 
   def save(change: UserChange): IO[UserChange] =
     monitor("repo.UserChange.save") {
-      logger.info(s"Saving user change ${change.id}")
+      logger.info("Saving user change", entries(event(Save, change)))
       val item = serialize(change)
       val request = new PutItemRequest().withTableName(tableName).withItem(item)
       dynamoDBHelper.putItem(request).as(change)

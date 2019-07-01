@@ -18,13 +18,14 @@ package vinyldns.api.route
 
 import java.net.URLEncoder
 import java.security.MessageDigest
+
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.{Mac, SecretKey}
-
 import akka.http.scaladsl.model.HttpRequest
 import org.joda.time.DateTime
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.slf4j.LoggerFactory
+import vinyldns.core.logging.StructuredArgs
 
 import scala.collection.SortedSet
 import scala.collection.immutable.TreeMap
@@ -116,16 +117,21 @@ class Aws4Authenticator {
     val signature = calculateSig(canonicalRequest, dateTime, signatureScope, secret)
 
     // This is worth while during the upgrade to akka http and beyond as debugging auth issues is difficult
-    val sb = new StringBuilder
-    sb.append(s"SIGNATURE_SCOPE: $signatureScope\r\n")
-    sb.append(s"SIGNATURE_HEADRES: $signatureHeaders\r\n")
-    sb.append(s"SIGNED_HEADERS: $signedHeaders\r\n")
-    sb.append(s"DATE_TIME: $dateTime\r\n")
-    sb.append(s"HEADERS: $headers\r\n")
-    sb.append(s"CANONICAL_REQUEST: $canonicalRequest\r\n")
-    sb.append(s"SIGNATURE_RECEIVED: $signatureReceived\r\n")
-    sb.append(s"CALCULATED_SIGNATURE: $signature\r\n")
-    logger.info(sb.toString)
+    val h = headers.toMap.mapValues(_.toArray)
+    logger.info(
+      "authenticateReq",
+      StructuredArgs.entries(
+        Map(
+          "signatureScope" -> signatureScope,
+          "signatureHeaders" -> signatureHeaders,
+          "signedHeaders" -> signedHeaders.toArray,
+          "dateTime" -> dateTime,
+          "headers" -> h,
+          "canonicalRequest" -> canonicalRequest,
+          "signatureReceived" -> signatureReceived,
+          "signature" -> signature
+        ))
+    )
 
     signature.equals(signatureReceived)
   }

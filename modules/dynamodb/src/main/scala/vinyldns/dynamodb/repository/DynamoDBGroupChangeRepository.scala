@@ -25,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.model._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.{GroupChange, GroupChangeRepository, ListGroupChangesResults}
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.protobuf.GroupProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -93,7 +94,7 @@ class DynamoDBGroupChangeRepository private[repository] (
 
   def save(groupChange: GroupChange): IO[GroupChange] =
     monitor("repo.GroupChange.save") {
-      log.info(s"Saving groupChange ${groupChange.id}.")
+      log.info("Saving groupChange", entries(event(Save, groupChange)))
       val item = toItem(groupChange)
       val request = new PutItemRequest().withTableName(groupChangeTableName).withItem(item)
       dynamoDBHelper.putItem(request).map(_ => groupChange)
@@ -101,7 +102,7 @@ class DynamoDBGroupChangeRepository private[repository] (
 
   def getGroupChange(groupChangeId: String): IO[Option[GroupChange]] =
     monitor("repo.GroupChange.getGroupChange") {
-      log.info(s"Getting groupChange $groupChangeId.")
+      log.info("Getting groupChange", entries(event(Read, Id(groupChangeId, "groupChange"))))
       val key = new HashMap[String, AttributeValue]()
       key.put(GROUP_CHANGE_ID, new AttributeValue(groupChangeId))
       val request = new GetItemRequest().withTableName(groupChangeTableName).withKey(key)
@@ -116,7 +117,8 @@ class DynamoDBGroupChangeRepository private[repository] (
       startFrom: Option[String],
       maxItems: Int): IO[ListGroupChangesResults] =
     monitor("repo.GroupChange.getGroupChanges") {
-      log.info("Getting groupChanges")
+
+      log.info("Getting groupChanges", entries(event(Read, Id(groupId, "group"))))
 
       // millisecond string
       val startTime = startFrom.getOrElse(DateTime.now.getMillis.toString)

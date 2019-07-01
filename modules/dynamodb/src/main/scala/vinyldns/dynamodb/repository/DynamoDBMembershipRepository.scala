@@ -23,6 +23,7 @@ import cats.implicits._
 import com.amazonaws.services.dynamodbv2.model._
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.membership.MembershipRepository
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
@@ -75,7 +76,7 @@ class DynamoDBMembershipRepository private[repository] (
 
   def getGroupsForUser(userId: String): IO[Set[String]] =
     monitor("repo.Membership.getGroupsForUser") {
-      log.info(s"Getting groups by user id $userId")
+      log.info(s"Getting groups by user id", entries(event("getGroupsForUser", Id(userId, "user"))))
       val expressionAttributeValues = new HashMap[String, AttributeValue]
       expressionAttributeValues.put(":userId", new AttributeValue(userId))
 
@@ -95,7 +96,13 @@ class DynamoDBMembershipRepository private[repository] (
 
   def addMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
     monitor("repo.Membership.addMembers") {
-      log.info(s"Saving members for group $groupId")
+      log.info(
+        s"Saving members for group",
+        entries(
+          event(
+            "addMembers",
+            Relation(Id(groupId, "group"), Ids(memberUserIds, "user"), "groupMembership")))
+      )
 
       val items = memberUserIds.toList
         .map(toItem(_, groupId))
@@ -110,7 +117,13 @@ class DynamoDBMembershipRepository private[repository] (
 
   def removeMembers(groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
     monitor("repo.Membership.removeMembers") {
-      log.info(s"Removing members for group $groupId")
+      log.info(
+        s"Removing members for group",
+        entries(
+          event(
+            "removeMembers",
+            Relation(Id(groupId, "group"), Ids(memberUserIds, "user"), "groupMembership")))
+      )
 
       val items = memberUserIds.toList
         .map(toItem(_, groupId))

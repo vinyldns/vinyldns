@@ -26,7 +26,6 @@ import akka.http.scaladsl.server.{Route, RouteResult}
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
-import net.logstash.logback.argument.StructuredArguments
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
@@ -35,8 +34,7 @@ import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
 import vinyldns.core.domain.membership.{MembershipRepository, UserRepository}
 import vinyldns.core.health.HealthService
-
-import scala.collection.JavaConverters._
+import vinyldns.core.logging.StructuredArgs._
 import scala.util.matching.Regex
 
 object VinylDNSService {
@@ -126,9 +124,9 @@ object VinylDNSService {
               val logEntries = logMessage(req, response, duration)
               response match {
                 case Some(r) if r.status.isSuccess() =>
-                  logger.info("request processed", StructuredArguments.entries(convert(logEntries)))
+                  logger.info("request processed", entries(logEntries))
                 case _ =>
-                  logger.error("request failed", StructuredArguments.entries(convert(logEntries)))
+                  logger.error("request failed", entries(logEntries))
               }
             } else {
               ()
@@ -137,19 +135,6 @@ object VinylDNSService {
       }
   }
 
-  /**
-    * Converts scala Map to Java Map required for structured logging library.
-    *
-    * @param m scala map
-    * @return a java map
-    */
-  def convert(m: Map[_, _]): java.util.Map[_, _] =
-    m.map { e =>
-      e._2 match {
-        case mm: Map[_, _] => e._1 -> convert(mm)
-        case _ => e
-      }
-    }.asJava
 }
 
 // $COVERAGE-OFF$

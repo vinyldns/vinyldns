@@ -28,6 +28,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{ListUsersResults, LockStatus, User, UserRepository}
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.route.Monitored
 
 import scala.collection.JavaConverters._
@@ -158,7 +159,7 @@ class DynamoDBUserRepository private[repository] (
 
   def getUser(userId: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
-      log.info(s"Getting user by id $userId")
+      log.info("Getting user by id", entries(event(Read, Id(userId, "user"))))
 
       val key = new HashMap[String, AttributeValue]()
       key.put(USER_ID, new AttributeValue(userId))
@@ -172,6 +173,7 @@ class DynamoDBUserRepository private[repository] (
     }
 
   def getUserByName(username: String): IO[Option[User]] = {
+    log.info("Getting user by name", entries(event(Read, Id(username, "user"))))
     val attributeNames = new util.HashMap[String, String]()
     attributeNames.put("#uname", USER_NAME)
     val attributeValues = new util.HashMap[String, AttributeValue]()
@@ -228,7 +230,7 @@ class DynamoDBUserRepository private[repository] (
     }
 
     monitor("repo.User.getUsers") {
-      log.info(s"Getting users by id $userIds")
+      log.info("Getting users by ids", entries(event(ReadAll, Ids(userIds, "user"))))
 
       val sortedUserIds = userIds.toList.sorted
 
@@ -303,7 +305,7 @@ class DynamoDBUserRepository private[repository] (
 
   def save(user: User): IO[User] = //For testing purposes
     monitor("repo.User.save") {
-      log.info(s"Saving user id: ${user.id} name: ${user.userName}.")
+      log.info("Saving user", entries(event(Save, user)))
       val request = new PutItemRequest().withTableName(userTableName).withItem(serialize(user))
       dynamoDBHelper.putItem(request).map(_ => user)
     }

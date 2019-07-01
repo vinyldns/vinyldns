@@ -1,4 +1,4 @@
-<configuration debug="true">
+<configuration>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
@@ -64,7 +64,7 @@
         <appender-ref ref="CONSOLE" />
     </logger>
 
-    <root level="ERROR">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

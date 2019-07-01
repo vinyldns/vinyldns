@@ -17,16 +17,15 @@
 package vinyldns.api.domain.zone
 
 import cats.effect._
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import org.xbill.DNS.{TSIG, ZoneTransferIn}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.dns.DnsConversions
-import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
-
+import vinyldns.core.logging.StructuredArgs._
 import scala.collection.JavaConverters._
 import vinyldns.core.domain.record.{RecordSetRepository, RecordType}
 
@@ -83,14 +82,20 @@ case class DnsZoneViewLoader(
           else IO.pure(Unit)
           dnsZoneName <- IO(zoneDnsName(zone.name))
           recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
-          _ <- IO(DnsZoneViewLoader.logger.info(
-            s"dns.loadDnsView zoneName=${zone.name}; rawRsCount=${zoneXfr.size}; rsCount=${recordSets.size}"))
+          _ <- IO(
+            DnsZoneViewLoader.logger.info(
+              "dns.loadDnsView",
+              entries(
+                event(
+                  "dns-zone-view",
+                  zone,
+                  Map("rawRsCount" -> zoneXfr.size, "rsCount" -> recordSets.size)))))
         } yield ZoneView(zone, recordSets)
     }
 }
 
 object VinylDNSZoneViewLoader {
-  val logger = LoggerFactory.getLogger("VinylDNSZoneViewLoader")
+  val logger: Logger = LoggerFactory.getLogger("VinylDNSZoneViewLoader")
 }
 case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepository)
     extends ZoneViewLoader
@@ -106,7 +111,8 @@ case class VinylDNSZoneViewLoader(zone: Zone, recordSetRepository: RecordSetRepo
             recordNameFilter = None)
           .map { result =>
             VinylDNSZoneViewLoader.logger.info(
-              s"vinyldns.loadZoneView zoneName=${zone.name}; rsCount=${result.recordSets.size}")
+              "vinyldns.loadZoneView",
+              entries(event("dns-zone-view", zone, Map("rsCount" -> result.recordSets.size))))
             ZoneView(zone, result.recordSets)
           }
     }

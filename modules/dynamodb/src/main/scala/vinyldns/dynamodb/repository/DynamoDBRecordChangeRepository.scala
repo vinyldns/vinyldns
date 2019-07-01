@@ -26,6 +26,7 @@ import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordChangeRepository
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -111,7 +112,7 @@ class DynamoDBRecordChangeRepository private[repository] (
 
   def save(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordChange.save") {
-      log.info(s"Saving change set ${changeSet.id} with size ${changeSet.changes.size}")
+      log.info("Saving change set", entries(event(Save, changeSet)))
       val MaxBatchWriteGroup = 25
       val writeItems = changeSet.changes.map(change => toWriteRequest(changeSet, change))
       val batchWrites = writeItems
@@ -139,7 +140,9 @@ class DynamoDBRecordChangeRepository private[repository] (
       startFrom: Option[String] = None,
       maxItems: Int = 100): IO[ListRecordSetChangesResults] =
     monitor("repo.RecordChange.getRecordSetChanges") {
-      log.info(s"Getting record set changes for zone $zoneId")
+      log.info(
+        s"Getting record set changes for zone",
+        entries(event("getRecordSetChangesByZoneId", Id(zoneId, "zone"))))
 
       // millisecond string
       val startTime = startFrom.getOrElse(DateTime.now.getMillis.toString)
@@ -178,7 +181,12 @@ class DynamoDBRecordChangeRepository private[repository] (
 
   def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]] =
     monitor("repo.RecordChange.getRecordSetChange") {
-      log.info(s"Getting record set change for zone $zoneId and changeId $changeId")
+      log.info(
+        s"Getting record set changes for zone",
+        entries(
+          event(
+            "getRecordSetChangesByZoneIdAndChangeId",
+            Seq(Id(zoneId, "zone"), Id(changeId, "changeSet")))))
       val expressionAttributeValues = new HashMap[String, AttributeValue]
       expressionAttributeValues.put(":record_set_change_id", new AttributeValue(changeId))
       expressionAttributeValues.put(":zone_id", new AttributeValue(zoneId))
@@ -208,7 +216,7 @@ class DynamoDBRecordChangeRepository private[repository] (
       fromPB(VinylDNSProto.RecordSetChange.parseFrom(recordSetChangeBlob.getB.array()))
     } catch {
       case ex: Throwable =>
-        log.error("fromItem", ex)
+        log.error("Failed to convert db item to RecordSetChange", ex)
         throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
     }
 

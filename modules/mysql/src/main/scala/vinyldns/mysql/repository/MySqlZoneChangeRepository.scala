@@ -21,6 +21,7 @@ import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.zone._
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.protobuf._
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -49,7 +50,7 @@ class MySqlZoneChangeRepository
   override def save(zoneChange: ZoneChange): IO[ZoneChange] =
     monitor("repo.ZoneChange.save") {
       IO {
-        logger.info(s"Saving zone change ${zoneChange.id}")
+        logger.info("Saving zone change", entries(event(Save, zoneChange)))
         DB.localTx { implicit s =>
           PUT_ZONE_CHANGE
             .bindByName(
@@ -73,7 +74,10 @@ class MySqlZoneChangeRepository
     // sorted from most recent, startFrom is an offset from the most recent change
     monitor("repo.ZoneChange.listZoneChanges") {
       IO {
-        logger.info(s"Getting zone changes for zone $zoneId")
+        logger.info(
+          "Getting zone changes for zone.",
+          entries(event(Read, Id(zoneId, "zoneChange"))))
+
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(DateTime.now().getMillis.toString)
           // maxItems gets a plus one to know if the table is exhausted so we can conditionally give a nextId

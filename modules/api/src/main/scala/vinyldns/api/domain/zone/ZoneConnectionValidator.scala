@@ -27,6 +27,7 @@ import vinyldns.api.domain.dns.DnsConnection
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, DnsBackend, Zone, ZoneConnection}
 import vinyldns.core.health.HealthCheck._
+import vinyldns.core.logging.StructuredArgs._
 
 import scala.concurrent.duration._
 
@@ -63,7 +64,8 @@ object ZoneConnectionValidator {
         val backend = configuredDnsConnections.dnsBackends.find(_.id == bid)
         if (backend.isEmpty) {
           logger.error(
-            s"BackendId [$bid] for zone [${zone.id}: ${zone.name}] is not defined in config")
+            "BackendId for zone is not defined in config",
+            entries(event("get-backend-by-zone", zone, Map("backend" -> bid))))
         }
         backend
       }

@@ -25,6 +25,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 
@@ -103,7 +104,8 @@ class DynamoDBRecordSetRepository private[repository] (
   def apply(changeSet: ChangeSet): IO[ChangeSet] =
     monitor("repo.RecordSet.apply") {
       log.info(
-        s"Applying change set for zone ${changeSet.zoneId} with size ${changeSet.changes.size}")
+        "Applying change set for zone",
+        entries(event("RecordSet.apply.ChangeSet", changeSet)))
 
       // The BatchWriteItem max size is 25, so we need to group by that number
       val MaxBatchWriteGroup = 25
@@ -136,7 +138,9 @@ class DynamoDBRecordSetRepository private[repository] (
       maxItems: Option[Int],
       recordNameFilter: Option[String]): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
-      log.info(s"Getting recordSets for zone $zoneId")
+      log.info(
+        s"Getting recordSets for zone",
+        entries(event("getRecordSetsByZoneId", Id(zoneId, "zone"))))
 
       val keyConditions = Map[String, String](ZONE_ID -> zoneId)
       val filterExpression = recordNameFilter.map(filter =>
@@ -172,7 +176,10 @@ class DynamoDBRecordSetRepository private[repository] (
 
   def getRecordSetsByName(zoneId: String, name: String): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetByName") {
-      log.info(s"Getting recordSet $name from zone $zoneId")
+      log.info(
+        "Getting recordSet",
+        entries(
+          event("getRecordSetsByNameAndZoneId", Seq(Id(name, "recordSet"), Id(zoneId, "zone")))))
 
       val keyConditions = Map[String, String](
         ZONE_ID -> zoneId,
@@ -188,6 +195,13 @@ class DynamoDBRecordSetRepository private[repository] (
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetsByNameAndType") {
+      log.info(
+        "Getting recordSet",
+        entries(
+          event(
+            "getRecordSetsByNameZoneIdAndType",
+            Seq(Id(name, "recordSetName"), Id(zoneId, "zone"), Id(typ.toString, "recordSetType"))))
+      )
       log.info(s"Getting recordSet $name, zone $zoneId, type $typ")
 
       val keyConditions = Map[String, String](
@@ -207,7 +221,10 @@ class DynamoDBRecordSetRepository private[repository] (
   def getRecordSet(zoneId: String, recordSetId: String): IO[Option[RecordSet]] =
     monitor("repo.RecordSet.getRecordSetById") {
       //Do not need ZoneId, recordSetId is unique
-      log.info(s"Getting recordSet $recordSetId and Zone $zoneId")
+      log.info(
+        "Getting recordSet",
+        entries(event("getRecordSetsByNameZoneIdAndType", Seq(Id(recordSetId, "recordSet")))))
+
       val key = new HashMap[String, AttributeValue]()
       key.put(RECORD_SET_ID, new AttributeValue(recordSetId))
       val request = new GetItemRequest().withTableName(recordSetTableName).withKey(key)
@@ -222,7 +239,9 @@ class DynamoDBRecordSetRepository private[repository] (
 
   def getRecordSetCount(zoneId: String): IO[Int] =
     monitor("repo.RecordSet.getRecordSetCount") {
-      log.info(s"Getting record set count zone $zoneId")
+      log.info(
+        "Getting record set count zone",
+        entries(event("getRecordSetCount", Id(zoneId, "zone"))))
 
       val keyConditions = Map[String, String](ZONE_ID -> zoneId)
       // set isCountQuery to true to ignore items

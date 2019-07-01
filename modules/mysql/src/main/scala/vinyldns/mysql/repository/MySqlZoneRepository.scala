@@ -28,6 +28,7 @@ import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 import vinyldns.core.domain.DomainHelpers._
+import vinyldns.core.logging.StructuredArgs._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -315,7 +316,9 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
 
     if (allAccessors.length > MAX_ACCESSORS) {
       logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!")
+        "User association to groups exceeded the threshold. Not all zones maybe returned!",
+        entries(event("user-group-limit-exceeded", user, Map(Threshold -> MAX_ACCESSORS)))
+      )
     }
 
     // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access

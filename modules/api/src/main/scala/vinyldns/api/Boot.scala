@@ -37,6 +37,7 @@ import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDa
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
 import vinyldns.core.health.HealthService
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 import vinyldns.core.repository.DataStoreLoader
 
@@ -166,7 +167,9 @@ object Boot extends App {
         ()
       }
 
-      logger.error(s"STARTING VINYLDNS SERVER ON $restHost:$restPort")
+      logger.error(
+        "STARTING VINYLDNS SERVER",
+        entries(Map("server" -> Map("address" -> restHost, "port" -> restPort))))
       logger.error(banner)
 
       // Starts up our http server

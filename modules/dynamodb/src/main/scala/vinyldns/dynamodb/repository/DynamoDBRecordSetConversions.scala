@@ -117,7 +117,7 @@ trait DynamoDBRecordSetConversions extends ProtobufConversions {
       fromPB(VinylDNSProto.RecordSet.parseFrom(recordSetBlob.getB.array()))
     } catch {
       case ex: Throwable =>
-        logger.error("fromItem", ex)
+        logger.error("Failed to convert from DBItem to RecordSet", ex)
         throw new UnexpectedDynamoResponseException(ex.getMessage, ex)
     }
 }
