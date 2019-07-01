@@ -19,6 +19,7 @@ import cats.effect._
 import cats.implicits._
 import fs2._
 import org.slf4j.LoggerFactory
+import vinyldns.core.route.Monitored
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -37,7 +38,7 @@ trait Task {
   def run(): IO[Unit]
 }
 
-object TaskScheduler {
+object TaskScheduler extends Monitored {
   private val logger = LoggerFactory.getLogger("TaskScheduler")
 
   /**
@@ -82,8 +83,10 @@ object TaskScheduler {
 
     // Acquires a task, runs it, and makes sure it is cleaned up, swallows the error via a log
     def runOnceSafely(task: Task): IO[Unit] =
-      claimTask().bracket(runTask)(releaseTask).handleError { error =>
-        logger.error(s"""Unexpected error is task; taskName="${task.name}" """, error)
+      monitor(s"task.${task.name}") {
+        claimTask().bracket(runTask)(releaseTask).handleError { error =>
+          logger.error(s"""Unexpected error is task; taskName="${task.name}" """, error)
+        }
       }
 
     // We must first schedule the task in the repository and then create our stream
