@@ -17,7 +17,6 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
-import org.joda.time.DateTime
 import scalikejdbc._
 import vinyldns.core.task.TaskRepository
 
@@ -32,34 +31,40 @@ class MySqlTaskRepository extends TaskRepository {
    *
    * `updated IS NULL` case is for the first run where the seeded data does not have an updated time set
    */
-
   private val CLAIM_UNCLAIMED_TASK =
     sql"""
       |UPDATE task
-      |   SET in_flight = 1, updated = {currentTime}
+      |   SET in_flight = 1, updated = NOW()
       | WHERE (in_flight = 0
       |    OR updated IS NULL
-      |    OR updated < {updatedTimeComparison})
+      |    OR updated < DATE_SUB(NOW(),INTERVAL {timeoutSeconds} SECOND))
       |   AND name = {taskName};
       """.stripMargin
 
   private val UNCLAIM_TASK =
     sql"""
       |UPDATE task
-      |   SET in_flight = 0, updated = {currentTime}
-      | WHERE name = {name}
+      |   SET in_flight = 0, updated = NOW()
+      | WHERE name = {taskName}
       """.stripMargin
 
-  def claimTask(name: String, pollingInterval: FiniteDuration): IO[Boolean] =
+  // In case multiple nodes attempt to insert task at the same time, do not overwrite
+  private val PUT_TASK =
+    sql"""
+         |INSERT IGNORE INTO task(name, in_flight, created, updated)
+         |VALUES ({taskName}, 0, NOW(), NULL)
+      """.stripMargin
+
+  /**
+    * Note - the column in MySQL is datetime with no fractions, so the best we can do is seconds
+    * If taskTimeout is less than one second, this will never claim as
+    * FiniteDuration.toSeconds results in ZERO OL for something like 500.millis
+    */
+  def claimTask(name: String, taskTimeout: FiniteDuration): IO[Boolean] =
     IO {
-      val pollingExpirationHours = pollingInterval.toHours * 2
-      val currentTime = DateTime.now
       DB.localTx { implicit s =>
         val updateResult = CLAIM_UNCLAIMED_TASK
-          .bindByName(
-            'updatedTimeComparison -> currentTime.minusHours(pollingExpirationHours.toInt),
-            'taskName -> name,
-            'currentTime -> currentTime)
+          .bindByName('timeoutSeconds -> taskTimeout.toSeconds, 'taskName -> name)
           .first()
           .update()
           .apply()
@@ -70,7 +75,15 @@ class MySqlTaskRepository extends TaskRepository {
 
   def releaseTask(name: String): IO[Unit] = IO {
     DB.localTx { implicit s =>
-      UNCLAIM_TASK.bindByName('currentTime -> DateTime.now, 'name -> name).update().apply()
+      UNCLAIM_TASK.bindByName('taskName -> name).update().apply()
+    }
+  }
+
+  // Save the task, do not overwrite if it is already there
+  def saveTask(name: String): IO[Unit] = IO {
+    DB.localTx { implicit s =>
+      PUT_TASK.bindByName('taskName -> name).update().apply()
+      ()
     }
   }
 }
