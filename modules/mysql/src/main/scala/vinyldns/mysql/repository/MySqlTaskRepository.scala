@@ -62,6 +62,8 @@ class MySqlTaskRepository extends TaskRepository {
     * Note - the column in MySQL is datetime with no fractions, so the best we can do is seconds
     * If taskTimeout is less than one second, this will never claim as
     * FiniteDuration.toSeconds results in ZERO OL for something like 500.millis
+    * Enforces the invariant that pollingInterval < taskTimeout.  If pollingInterval > taskTimeout, the
+    * taskTimeout will be used as the polling interval
     */
   def claimTask(
       name: String,
@@ -69,10 +71,12 @@ class MySqlTaskRepository extends TaskRepository {
       pollingInterval: FiniteDuration): IO[Boolean] =
     IO {
       DB.localTx { implicit s =>
+        val adjustedPollingInterval =
+          if (pollingInterval > taskTimeout) taskTimeout else pollingInterval
         val updateResult = CLAIM_UNCLAIMED_TASK
           .bindByName(
             'timeoutSeconds -> taskTimeout.toSeconds,
-            'pollingInterval -> pollingInterval.toSeconds,
+            'pollingInterval -> adjustedPollingInterval.toSeconds,
             'taskName -> name)
           .first()
           .update()

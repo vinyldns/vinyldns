@@ -90,6 +90,16 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
 
       f.unsafeRunSync() shouldBe true
     }
+    "return true if non-in-flight task exists and polling > timeout and timeout expired" in {
+      // in_flight = 0; updated > {pollingInterval == taskTimeout}
+      val f = for {
+        _ <- repo.saveTask(TASK_NAME)
+        _ <- ageTaskBySeconds(100) // Age the task by 100 seconds
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 50.seconds, 200.seconds)
+      } yield unclaimedTaskExists
+
+      f.unsafeRunSync() shouldBe true
+    }
     "return false if non-in-flight task exists and polling interval has not elapsed" in {
       // in_flight = 0; updated < {pollingInterval}; updated < {taskTimeout}
       val f = for {
@@ -107,6 +117,17 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
         _ <- repo.claimTask(TASK_NAME, 1.hour, 30.seconds)
         _ <- ageTaskBySeconds(5) // Age the task by only 5 seconds, polling interval is 30 seconds
         unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.hour, 30.seconds)
+      } yield unclaimedTaskExists
+
+      f.unsafeRunSync() shouldBe false
+    }
+    "return false if in-flight task exists and expiration time has not elapsed and polling > expiration" in {
+      // in_flight = 1; updated < {pollingInterval == taskTimeout}
+      val f = for {
+        _ <- repo.saveTask(TASK_NAME)
+        _ <- repo.claimTask(TASK_NAME, 1.hour, 1.hours)
+        _ <- ageTaskBySeconds(5) // Age the task by only 5 seconds, timeout is 10 seconds, polling is 20
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 10.seconds, 20.seconds)
       } yield unclaimedTaskExists
 
       f.unsafeRunSync() shouldBe false
