@@ -32,7 +32,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import cats.effect._
-import vinyldns.api.domain.BatchChangeIsEmpty
+import vinyldns.core.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._

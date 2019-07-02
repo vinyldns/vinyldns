@@ -37,6 +37,7 @@ import vinyldns.api.repository.{
 }
 import vinyldns.core
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.Group
@@ -572,7 +573,8 @@ class BatchChangeServiceSpec
   }
 
   "getExistingRecordSets" should {
-    val error = InvalidTTL(0).invalidNel
+    val error =
+      InvalidTTL(0, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH).invalidNel
 
     "combine gets for each valid record" in {
       val in = List(
