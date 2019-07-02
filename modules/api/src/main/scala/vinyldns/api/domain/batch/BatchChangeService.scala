@@ -26,7 +26,7 @@ import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
-import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
+import vinyldns.api.domain.{CnameAtZoneApexError, ZoneDiscoveryError}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
@@ -236,7 +236,7 @@ class BatchChangeService(
 
     zone match {
       case Some(zn) if (zn.name == change.inputName && change.typ == CNAME) =>
-        RecordAlreadyExists(change.inputName).invalidNel
+        CnameAtZoneApexError().invalidNel
       case Some(zn) =>
         ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
