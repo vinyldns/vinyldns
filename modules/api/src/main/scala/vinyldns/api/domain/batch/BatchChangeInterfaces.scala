@@ -20,7 +20,7 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import vinyldns.api.domain.DomainValidationError
+import vinyldns.core.domain.DomainValidationError
 
 object BatchChangeInterfaces {
 

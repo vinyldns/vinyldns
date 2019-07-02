@@ -24,6 +24,7 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, batch, _}
+import vinyldns.core.domain._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestMembershipData._
