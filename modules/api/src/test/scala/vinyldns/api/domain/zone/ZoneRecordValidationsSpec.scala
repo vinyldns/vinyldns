@@ -19,7 +19,7 @@ package vinyldns.api.domain.zone
 import cats.scalatest.ValidatedMatchers
 import com.comcast.ip4s._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
+import vinyldns.core.domain.{DomainValidationError, HighValueDomainError}
 import vinyldns.core.domain.record._
 import vinyldns.core.TestRecordSetData._
 
