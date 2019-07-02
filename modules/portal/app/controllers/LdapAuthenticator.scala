@@ -18,12 +18,13 @@ package controllers
 
 import java.util
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import controllers.LdapAuthenticator.LdapByDomainAuthenticator
 import controllers.VinylDNS.UserDetails
 import javax.naming.directory._
 import javax.naming.Context
+import vinyldns.core.domain.membership.User
 import vinyldns.core.health.HealthCheck._
 
 import scala.collection.JavaConverters._
@@ -92,8 +93,6 @@ object LdapAuthenticator {
   private[controllers] object LdapByDomainAuthenticator {
     def apply(settings: Settings): LdapByDomainAuthenticator =
       new LdapByDomainAuthenticator(settings, createContext(settings))
-
-    def apply(): LdapByDomainAuthenticator = LdapByDomainAuthenticator(Settings)
   }
 
   /**
@@ -178,6 +177,8 @@ final case class LdapServiceException(errorMessage: String)
     extends LdapException(s"Encountered error communicating with LDAP service: $errorMessage")
 final case class InvalidCredentials(username: String)
     extends LdapException(s"Provided credentials were invalid for user [$username].")
+final case class NoLdapSearchDomainsConfigured()
+    extends LdapException("No LDAP search domains were configured so user lookup is impossible.")
 
 /**
   * Top level ldap authenticator that tries authenticating on multiple domains. Authentication is
@@ -190,6 +191,9 @@ class LdapAuthenticator(
     authenticator: LdapByDomainAuthenticator,
     serviceAccount: ServiceAccount)
     extends Authenticator {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   /**
     * Attempts to search for user in specified LDAP domains. Attempts all LDAP domains that are specified in order; in
@@ -226,10 +230,16 @@ class LdapAuthenticator(
     }
 
   def authenticate(username: String, password: String): Either[LdapException, LdapUserDetails] =
-    findUserDetails(searchBase, username, authenticator.authenticate(_, username, password), true)
+    // Need to check domains here due to recursive nature of findUserDetails
+    if (searchBase.isEmpty) Left(NoLdapSearchDomainsConfigured())
+    else
+      findUserDetails(searchBase, username, authenticator.authenticate(_, username, password), true)
 
   def lookup(username: String): Either[LdapException, LdapUserDetails] =
-    findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount), true)
+    // Need to check domains here due to recursive nature of findUserDetails
+    if (searchBase.isEmpty) Left(NoLdapSearchDomainsConfigured())
+    else
+      findUserDetails(searchBase, username, authenticator.lookup(_, username, serviceAccount), true)
 
   def healthCheck(): HealthCheck =
     IO {
@@ -240,11 +250,24 @@ class LdapAuthenticator(
         case _ => ().asRight
       }
     }.asHealthCheck
+
+  // List[User] => List[Either[LdapException, LdapUserDetails]] => List[User]
+  def getUsersNotInLdap(users: List[User]): IO[List[User]] =
+    users
+      .map { u =>
+        IO(lookup(u.userName)).map {
+          case Left(_: UserDoesNotExistException) => Some(u) // Only grab users that do not exist
+          case _ => None
+        }
+      }
+      .parSequence
+      .map(_.flatten)
 }
 
 trait Authenticator {
   def authenticate(username: String, password: String): Either[LdapException, LdapUserDetails]
   def lookup(username: String): Either[LdapException, LdapUserDetails]
+  def getUsersNotInLdap(usernames: List[User]): IO[List[User]]
   def healthCheck(): HealthCheck
 }
 
@@ -282,6 +305,9 @@ class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
     }
 
   def healthCheck(): HealthCheck = authenticator.healthCheck()
+
+  def getUsersNotInLdap(users: List[User]): IO[List[User]] =
+    authenticator.getUsersNotInLdap(users)
 }
 
 case class LdapSearchDomain(organization: String, domainName: String)

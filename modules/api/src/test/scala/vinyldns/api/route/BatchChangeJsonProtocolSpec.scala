@@ -533,4 +533,31 @@ class BatchChangeJsonProtocolSpec
         s"Comment length must not exceed $MAX_COMMENT_LENGTH characters.".invalidNel
     }
   }
+
+  "Round-trip serialization/deserialization of a ApproveBatchChangeInput" should {
+    "succeed if no comments are provided" in {
+      val approveBatchChangeInput = ApproveBatchChangeInput(None)
+      ApproveBatchChangeInputSerializer
+        .fromJson(
+          ApproveBatchChangeInputSerializer
+            .toJson(approveBatchChangeInput)) shouldBe approveBatchChangeInput.validNel
+    }
+
+    "succeed if comments are provided" in {
+      val approveBatchChangeInput = ApproveBatchChangeInput(Some("some comments"))
+      ApproveBatchChangeInputSerializer
+        .fromJson(
+          ApproveBatchChangeInputSerializer
+            .toJson(approveBatchChangeInput)) shouldBe approveBatchChangeInput.validNel
+    }
+
+    "fail if comments exceed MAX_COMMENT_LENGTH characters" in {
+      val approveBatchChangeInput = ApproveBatchChangeInput(Some("a" * 1025))
+      ApproveBatchChangeInputSerializer
+        .fromJson(
+          ApproveBatchChangeInputSerializer
+            .toJson(approveBatchChangeInput)) shouldBe
+        s"Comment length must not exceed $MAX_COMMENT_LENGTH characters.".invalidNel
+    }
+  }
 }

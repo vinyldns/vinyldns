@@ -26,6 +26,7 @@ import pureconfig.module.catseffect.loadConfigF
 import vinyldns.core.repository.DataStoreConfig
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 
 // $COVERAGE-OFF$
 class Settings(private val config: Configuration) {
@@ -41,6 +42,13 @@ class Settings(private val config: Configuration) {
   val ldapCtxFactory: String = config.get[String]("LDAP.context.initialContextFactory")
   val ldapSecurityAuthentication: String = config.get[String]("LDAP.context.securityAuthentication")
   val ldapProviderUrl: URI = new URI(config.get[String]("LDAP.context.providerUrl"))
+
+  val ldapSyncEnabled: Boolean =
+    config.getOptional[Boolean]("LDAP.user-sync.enabled").getOrElse(false)
+  val ldapSyncPollingInterval: FiniteDuration = config
+    .getOptional[Int]("LDAP.user-sync.hours-polling-interval")
+    .getOrElse(24)
+    .hours
 
   val portalTestLogin: Boolean = config.getOptional[Boolean]("portal.test_login").getOrElse(false)
 

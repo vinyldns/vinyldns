@@ -81,7 +81,17 @@ trait BatchChangeRoute extends Directives {
           // TODO: Update response entity to return modified batch change
           }
         }
-      }
+      } ~
+        (post & path("zones" / "batchrecordchanges" / Segment / "approve")) { id =>
+          monitor("Endpoint.approveBatchChange") {
+            entity(as[Option[ApproveBatchChangeInput]]) { input =>
+              execute(batchChangeService.approveBatchChange(id, authPrincipal, input)) { chg =>
+                complete(StatusCodes.OK, chg)
+              }
+            // TODO: Update response entity to return modified batch change
+            }
+          }
+        }
 
     if (VinylDNSConfig.manualBatchReviewEnabled) standardBatchChangeRoutes ~ manualBatchReviewRoutes
     else standardBatchChangeRoutes
