@@ -87,8 +87,8 @@ final case class SingleAddChange(
     systemMessage: Option[String],
     recordChangeId: Option[String],
     recordSetId: Option[String],
-    id: String = UUID.randomUUID().toString,
-    validationErrors: List[DomainValidationErrorCode] = List.empty)
+    validationErrors: List[DomainValidationErrorCode] = List.empty,
+    id: String = UUID.randomUUID().toString)
     extends SingleChange
 
 final case class SingleDeleteChange(
@@ -101,8 +101,8 @@ final case class SingleDeleteChange(
     systemMessage: Option[String],
     recordChangeId: Option[String],
     recordSetId: Option[String],
-    id: String = UUID.randomUUID().toString,
-    validationErrors: List[DomainValidationErrorCode] = List.empty)
+    validationErrors: List[DomainValidationErrorCode] = List.empty,
+    id: String = UUID.randomUUID().toString)
     extends SingleChange
 
 /*
