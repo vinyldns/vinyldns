@@ -16,8 +16,11 @@
 
 package vinyldns.api.domain
 
-import cats.implicits._, cats.data._
+import cats.implicits._
+import cats.data._
 import vinyldns.api.domain.ValidationImprovements._
+import vinyldns.core.domain._
+
 import scala.util.matching.Regex
 
 /*
@@ -107,12 +110,12 @@ object DomainValidations {
 
   def validateTTL(ttl: Long): ValidatedNel[DomainValidationError, Long] =
     if (ttl >= TTL_MIN_LENGTH && ttl <= TTL_MAX_LENGTH) ttl.validNel
-    else InvalidTTL(ttl).invalidNel[Long]
+    else InvalidTTL(ttl, TTL_MIN_LENGTH, TTL_MAX_LENGTH).invalidNel[Long]
 
   def validateTxtTextLength(value: String): ValidatedNel[DomainValidationError, String] =
     validateStringLength(value, Some(TXT_TEXT_MIN_LENGTH), TXT_TEXT_MAX_LENGTH)
 
   def validateMxPreference(pref: Int): ValidatedNel[DomainValidationError, Int] =
     if (pref >= MX_PREFERENCE_MIN_VALUE && pref <= MX_PREFERENCE_MAX_VALUE) pref.validNel
-    else InvalidMxPreference(pref).invalidNel[Int]
+    else InvalidMxPreference(pref, MX_PREFERENCE_MIN_VALUE, MX_PREFERENCE_MAX_VALUE).invalidNel[Int]
 }

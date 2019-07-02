@@ -16,9 +16,9 @@
 
 package vinyldns.api.domain.batch
 
-import vinyldns.api.domain.DomainValidationError
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
+import vinyldns.core.domain.DomainValidationError
 import vinyldns.core.domain.batch.SingleChange
 
 /* Error response options */
