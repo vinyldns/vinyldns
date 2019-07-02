@@ -263,7 +263,7 @@ class MySqlBatchChangeRepository
               .apply()
           val maxQueries = queryResult.take(maxItems)
           val nextId = if (queryResult.size <= maxItems) None else Some(startValue + maxItems)
-          val ignoreAccess = userId.isDefined
+          val ignoreAccess = userId.isEmpty
           BatchChangeSummaryList(
             maxQueries,
             startFrom,

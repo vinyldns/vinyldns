@@ -33,7 +33,6 @@ trait BatchChangeRoute extends Directives {
 
   final private val MAX_ITEMS_LIMIT: Int = 100
 
-  case class BatchChangeApproval(approvalType: String) {}
   val batchChangeRoute: AuthPrincipal => server.Route = { authPrincipal: AuthPrincipal =>
     val standardBatchChangeRoutes = (post & path("zones" / "batchrecordchanges")) {
       monitor("Endpoint.postBatchChange") {
@@ -63,7 +62,7 @@ trait BatchChangeRoute extends Directives {
               ignoreAccess: Boolean,
               approvalStatus: Option[String]) =>
             {
-              val convertApprovalStatus = BatchChangeApprovalStatus.find(approvalStatus.mkString)
+              val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
 
               handleRejections(invalidQueryHandler) {
                 validate(
