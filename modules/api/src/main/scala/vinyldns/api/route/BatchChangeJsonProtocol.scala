@@ -21,7 +21,7 @@ import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
 import cats.implicits._
-import vinyldns.api.domain.DomainValidationError
+import vinyldns.core.domain.DomainValidationError
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.domain.batch._

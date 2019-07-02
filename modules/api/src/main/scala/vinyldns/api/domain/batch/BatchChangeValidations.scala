@@ -25,7 +25,8 @@ import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.{AccessValidationAlgebra, _}
+import vinyldns.api.domain.AccessValidationAlgebra
+import vinyldns.core.domain._
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
 import vinyldns.core.domain.membership.Group
 
@@ -155,7 +156,8 @@ class BatchChangeValidations(
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>
         validateMxPreference(mx.preference).asUnit |+| validateHostName(mx.exchange).asUnit
-      case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
+      case other =>
+        InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
 
   def validateInputName(change: ChangeInput): SingleValidation[Unit] = {
@@ -166,7 +168,8 @@ class BatchChangeValidations(
         validateHostName(change.inputName).asUnit
       case PTR =>
         validatePtrIp(change.inputName)
-      case other => InvalidBatchRecordType(other.toString).invalidNel[Unit]
+      case other =>
+        InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
     typedChecks |+| isNotHighValueDomain(change)
   }
@@ -227,7 +230,7 @@ class BatchChangeValidations(
         case add: AddChangeForValidation => add
       }
     if (!multiRecordEnabled && matchingAddRecords.length > 1)
-      NewMultiRecordError(change).invalidNel
+      NewMultiRecordError(change.inputChange.inputName, change.inputChange.typ).invalidNel
     else ().validNel
   }
 
@@ -322,7 +325,8 @@ class BatchChangeValidations(
           existingRecords,
           changeGroups) |+|
           newRecordSetIsNotMulti(change, changeGroups)
-      case other => InvalidBatchRecordType(other.toString).invalidNel
+      case other =>
+        InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel
     }
 
     val validations =

@@ -14,16 +14,31 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain
+package vinyldns.core.domain
 
-import vinyldns.api.domain.batch.BatchTransformations.AddChangeForValidation
-import vinyldns.api.domain.batch.SupportedBatchChangeRecordTypes
 import vinyldns.core.domain.record.{RecordSet, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 
 // $COVERAGE-OFF$
 sealed abstract class DomainValidationError(val isFatal: Boolean = true) {
   def message: String
+}
+
+// Note: any errors deemed nonFatal will need to have a defined error code
+// also note, a code mapping CANNOT be changed once created
+object DomainValidationErrorCode extends Enumeration {
+  type DomainValidationErrorCode = Value
+  val Undefined, DVE01 = Value
+
+  def fromError(err: DomainValidationError): DomainValidationErrorCode = err match {
+    case _: ZoneDiscoveryError => DVE01
+    case _ => Undefined
+  }
+
+  def toErrorText(code: DomainValidationErrorCode): String = code match {
+    case DVE01 => "ZoneDiscoveryError"
+    case Undefined => "Undefined error"
+  }
 }
 
 // The request itself is invalid in this case, so we fail fast
@@ -82,22 +97,21 @@ final case class InvalidIPAddress(param: String) extends DomainValidationError {
   def message: String = s"""Invalid IP address: "$param"."""
 }
 
-final case class InvalidTTL(param: Long) extends DomainValidationError {
+final case class InvalidTTL(param: Long, min: Long, max: Long) extends DomainValidationError {
   def message: String =
-    s"""Invalid TTL: "${param.toString}", must be a number between """ +
-      s"${DomainValidations.TTL_MIN_LENGTH} and ${DomainValidations.TTL_MAX_LENGTH}."
+    s"""Invalid TTL: "${param.toString}", must be a number between $min and $max."""
 }
 
-final case class InvalidMxPreference(param: Long) extends DomainValidationError {
+final case class InvalidMxPreference(param: Long, min: Long, max: Long)
+    extends DomainValidationError {
   def message: String =
-    s"""Invalid MX Preference: "${param.toString}", must be a number between """ +
-      s"${DomainValidations.MX_PREFERENCE_MIN_VALUE} and ${DomainValidations.MX_PREFERENCE_MAX_VALUE}."
+    s"""Invalid MX Preference: "${param.toString}", must be a number between $min and $max."""
 }
 
-final case class InvalidBatchRecordType(param: String) extends DomainValidationError {
+final case class InvalidBatchRecordType(param: String, supported: Set[RecordType])
+    extends DomainValidationError {
   def message: String =
-    s"""Invalid Batch Record Type: "$param", valid record types for batch changes include """ +
-      s"${SupportedBatchChangeRecordTypes.get}."
+    s"""Invalid Batch Record Type: "$param", valid record types for batch changes include $supported."""
 }
 
 final case class ZoneDiscoveryError(name: String) extends DomainValidationError {
@@ -159,11 +173,12 @@ final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
       .replaceAll("\n", " ")
 }
 
-final case class NewMultiRecordError(change: AddChangeForValidation) extends DomainValidationError {
+final case class NewMultiRecordError(changeName: String, changeType: RecordType)
+    extends DomainValidationError {
   def message: String =
     s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
-       |Cannot create a new record set with multiple records for inputName ${change.inputChange.inputName} and
-       |type ${change.inputChange.typ}.""".stripMargin
+       |Cannot create a new record set with multiple records for inputName $changeName and
+       |type $changeType}.""".stripMargin
       .replaceAll("\n", " ")
 }
 

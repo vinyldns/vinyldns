@@ -20,7 +20,7 @@ import cats.implicits._
 import cats.data._
 import com.comcast.ip4s.IpAddress
 import com.comcast.ip4s.interop.cats.implicits._
-import vinyldns.api.domain.{DomainValidationError, HighValueDomainError}
+import vinyldns.core.domain.{DomainValidationError, HighValueDomainError}
 import vinyldns.core.domain.record.{NSData, RecordSet}
 
 import scala.util.matching.Regex
