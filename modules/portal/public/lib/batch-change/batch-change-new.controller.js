@@ -22,6 +22,9 @@
             groupsService.getMyGroups()
                 .then(function (results) {
                     $scope.myGroups = results['data']['groups'];
+                    if ($scope.myGroups.length == 1) {
+                        $scope.newBatch.ownerGroupId = $scope.myGroups[0]['id']
+                    }
                 })
                 .catch(function (error) {
                     handleError(error, 'groupsService::getMyGroups-failure');
