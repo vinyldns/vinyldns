@@ -29,6 +29,7 @@ import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, C
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.domain.{InvalidIpv4Address, InvalidTTL, ZoneDiscoveryError}
 import vinyldns.core.domain.batch.SingleChangeStatus._
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
@@ -471,7 +472,10 @@ class BatchChangeJsonProtocolSpec
 
     "serializing a mix of valid inputs and BatchChangeErrors should return the appropriate success or error" in {
       val errorList =
-        NonEmptyList.fromListUnsafe(List(InvalidIpv4Address("bad address"), InvalidTTL(5)))
+        NonEmptyList.fromListUnsafe(
+          List(
+            InvalidIpv4Address("bad address"),
+            InvalidTTL(5, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH)))
 
       val validAddA = AddChangeForValidation(okZone, "foo", addAChangeInput).validNel
       val invalidAddA = errorList.invalid[ChangeForValidation]
@@ -487,7 +491,9 @@ class BatchChangeJsonProtocolSpec
         List(
           addAChangeInput,
           decompose(addAChangeInput).asInstanceOf[JObject] ~
-            ("errors" -> List(InvalidIpv4Address("bad address").message, InvalidTTL(5).message)),
+            ("errors" -> List(
+              InvalidIpv4Address("bad address").message,
+              InvalidTTL(5, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH).message)),
           decompose(addAAAAChangeInput).asInstanceOf[JObject] ~
             ("errors" -> List(barDiscoveryError.message)),
           addAAAAChangeInput

@@ -21,6 +21,7 @@ import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop._
 import vinyldns.api.ValidationTestImprovements._
+import vinyldns.core.domain.{InvalidDomainName, InvalidLength}
 
 class DomainValidationsSpec
     extends PropSpec
