@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 import vinyldns.core.health.HealthCheck._
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
@@ -69,7 +70,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     */
   def receive(count: MessageCount): IO[List[SqsMessage]] =
     monitor("queue.SQS.receive") {
-      logger.debug(s"Receiving $count messages.\n")
+      logger.debug("Receiving messages", entries(event("msgReceive", count)))
       sqsAsync[ReceiveMessageRequest, ReceiveMessageResult](
         // Can return 1-10 messages.
         // (see: https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/
@@ -99,14 +100,16 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
     // This is tricky, we need to attempt to parse the message.  If we cannot, delete it; otherwise return ok
     IO(SqsMessage.parseSqsMessage(message)).flatMap {
       case Left(e) =>
-        logger.error(s"Failed handling message with id '${message.getMessageId}'", e)
+        logger.error(
+          "Failed handling message with id",
+          entries(event("parse-error", Id(message.getMessageId, "message")) ++ Map("error" -> e)))
         delete(message.getReceiptHandle).as(Left(e))
       case Right(ok) => IO.pure(Right(ok))
     }
 
   def delete(receiptHandle: String): IO[Unit] =
     monitor("queue.SQS.delete") {
-      logger.info(s"Deleting message with receipt handle: $receiptHandle.\n")
+      logger.info("Deleting message", entries(event(Delete, Id(receiptHandle, "receiptHandle"))))
       sqsAsync[DeleteMessageRequest, DeleteMessageResult](
         new DeleteMessageRequest(queueUrl, receiptHandle),
         client.deleteMessageAsync).as(())
@@ -123,7 +126,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
 
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitor("queue.SQS.send") {
-      logger.info(s"Sending command: $command.\n")
+      logger.info("Sending command", entries(event("send", Detail(command))))
       sqsAsync[SendMessageRequest, SendMessageResult](
         toSendMessageRequest(command)
           .withQueueUrl(queueUrl),
@@ -148,7 +151,9 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   /* Change message visibility timeout. Valid values: 0 to 43200 seconds (ie. 12 hours) */
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.SQS.changeMessageTimeout") {
-      logger.info(s"Updating visibility timeout to $duration for message: $message.\n")
+      logger.info(
+        "Updating visibility timeout",
+        entries(event("changeMessageTimeout", message, Map("duration" -> duration))))
       IO.fromEither(validateMessageTimeout(duration)).flatMap { validDuration =>
         sqsAsync[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](
           new ChangeMessageVisibilityRequest()

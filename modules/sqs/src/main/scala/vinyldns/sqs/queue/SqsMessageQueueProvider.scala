@@ -23,6 +23,7 @@ import com.amazonaws.services.sqs.model.QueueDoesNotExistException
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 import org.slf4j.LoggerFactory
 import pureconfig.module.catseffect.loadConfigF
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider}
 
 import scala.util.matching.Regex
@@ -36,7 +37,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       _ <- IO.fromEither(validateQueueName(settingsConfig.queueName))
       client <- setupClient(settingsConfig)
       queueUrl <- setupQueue(client, settingsConfig.queueName)
-      _ <- IO(logger.error(s"Queue URL: $queueUrl\n"))
+      _ <- IO(logger.error(s"Queue URL", entries(Map("queueUrl" -> queueUrl))))
     } yield new SqsMessageQueue(queueUrl, client)
 
   def validateQueueName(queueName: String): Either[InvalidQueueName, String] = {
@@ -57,10 +58,13 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
   def setupClient(sqsMessageQueueSettings: SqsMessageQueueSettings): IO[AmazonSQSAsync] =
     IO {
       logger.error(
-        s"Setting up queue client with settings: " +
-          s"service endpoint: ${sqsMessageQueueSettings.serviceEndpoint}; " +
-          s"signing region: ${sqsMessageQueueSettings.serviceEndpoint}; " +
-          s"queue name: ${sqsMessageQueueSettings.queueName}")
+        "Setting up queue client with settings",
+        Map(
+          "serviceEndpoint" -> sqsMessageQueueSettings.serviceEndpoint,
+          "signingRegion" -> sqsMessageQueueSettings.signingRegion,
+          "queueName" -> sqsMessageQueueSettings.queueName
+        )
+      )
       AmazonSQSAsyncClientBuilder
         .standard()
         .withEndpointConfiguration(
@@ -78,7 +82,7 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
   def setupQueue(client: AmazonSQSAsync, queueName: String): IO[String] =
     // Create queue if it doesn't exist
     IO {
-      logger.error(s"Setting up queue with name [$queueName]")
+      logger.error("Setting up queue with name", entries(Map("queueName" -> queueName)))
       client.getQueueUrl(queueName).getQueueUrl
     }.recoverWith {
       case _: QueueDoesNotExistException => IO(client.createQueue(queueName).getQueueUrl)

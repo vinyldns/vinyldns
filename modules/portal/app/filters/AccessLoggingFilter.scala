@@ -18,13 +18,12 @@ package filters
 
 import akka.stream.Materializer
 import javax.inject.Inject
-import net.logstash.logback.argument.StructuredArguments
+import vinyldns.core.logging.StructuredArgs._
 import org.slf4j.LoggerFactory
 import play.api.mvc.{Filter, RequestHeader, Result}
 import play.mvc.Http
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.collection.JavaConverters._
 
 class AccessLoggingFilter @Inject()(
     implicit val mat: Materializer,
@@ -40,18 +39,18 @@ class AccessLoggingFilter @Inject()(
       if (!request.uri.contains("/public") && !request.uri.contains("/assets")) {
         val accessInfo = Map(
           "http" ->
-            Map("url" -> Map("path" -> request.path, "query" -> request.rawQueryString).asJava).asJava,
-          "request" -> Map("method" -> request.method).asJava,
-          "response" -> Map("status_code" -> result.header.status).asJava,
-          "client" -> Map("address" -> request.remoteAddress).asJava,
+            Map("url" -> Map("path" -> request.path, "query" -> request.rawQueryString)),
+          "request" -> Map("method" -> request.method),
+          "response" -> Map("status_code" -> result.header.status),
+          "client" -> Map("address" -> request.remoteAddress),
           "user_agent" ->
             Map(
               "original" -> request.headers
                 .get(Http.HeaderNames.USER_AGENT)
-                .getOrElse("unknown")).asJava
-        ).asJava
+                .getOrElse("unknown"))
+        )
 
-        logger.info("", StructuredArguments.entries(accessInfo))
+        logger.info("", entries(accessInfo))
       }
     })
 
