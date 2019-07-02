@@ -81,7 +81,7 @@ class BatchChangeRoutingSpec
             Some("systemMessage"),
             None,
             None,
-            "singleAddChangeId"),
+            id = "singleAddChangeId"),
           SingleDeleteChange(
             Some("zoneId"),
             Some("zoneName"),
@@ -92,7 +92,7 @@ class BatchChangeRoutingSpec
             Some("systemMessage"),
             None,
             None,
-            "singleDeleteChangeId")
+            id = "singleDeleteChangeId")
         ),
         ownerGroupId,
         approvalStatus,
@@ -171,7 +171,7 @@ class BatchChangeRoutingSpec
       Some("systemMessage"),
       None,
       None,
-      "singleDeleteChangeId")
+      id = "singleDeleteChangeId")
     val backwardsCompatibleAdd = SingleDeleteChange(
       None,
       None,
@@ -182,7 +182,7 @@ class BatchChangeRoutingSpec
       Some("systemMessage"),
       None,
       None,
-      "singleDeleteChangeId")
+      id = "singleDeleteChangeId")
 
     val backwardsCompatable: BatchChange = genericValidResponse.copy(
       id = "testBwComp",

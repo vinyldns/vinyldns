@@ -286,7 +286,7 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        "id")
+        id = "id")
       val result = SingleAddChangeSerializer.toJson(toJson)
 
       result shouldBe ("zoneId" -> "zoneId") ~
@@ -317,7 +317,7 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        "id")
+        id = "id")
       val result = SingleDeleteChangeSerializer.toJson(toJson)
 
       result shouldBe ("zoneId" -> "zoneId") ~
@@ -346,7 +346,7 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        "id")
+        id = "id")
       val add = SingleAddChange(
         Some("zoneId"),
         Some("zoneName"),
@@ -359,7 +359,7 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        "id")
+        id = "id")
 
       val time = DateTime.now
       val batchChange = BatchChange(
@@ -399,7 +399,7 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        "id")
+        id = "id")
       val add = SingleAddChange(
         Some("zoneId"),
         Some("zoneName"),
@@ -412,7 +412,7 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        "id")
+        id = "id")
 
       val time = DateTime.now
       val batchChange = BatchChange(
