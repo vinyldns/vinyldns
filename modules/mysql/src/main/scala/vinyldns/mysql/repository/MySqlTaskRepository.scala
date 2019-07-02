@@ -28,16 +28,19 @@ class MySqlTaskRepository extends TaskRepository {
    * - Acquires an exclusive row lock for unclaimed and/or expired tasks
    * - Updates in_flight flag, marking that a task is claimed
    * - Commits transaction, releasing row lock
-   *
-   * `updated IS NULL` case is for the first run where the seeded data does not have an updated time set
+   *  Claims the task if in_flight=0 (which means that no one else is holding the task)
+   *  - OR -
+   *  Claims the task if the last time it was updated is older than the task timeout in seconds
+   *  (which assumes for example the node running the task died)
+   *  - OR -
+   *  Claims the task if the last time it was updated is older than the polling interval AND in_flight=0 or expired
    */
   private val CLAIM_UNCLAIMED_TASK =
     sql"""
       |UPDATE task
       |   SET in_flight = 1, updated = NOW()
-      | WHERE (in_flight = 0
-      |    OR updated IS NULL
-      |    OR updated < DATE_SUB(NOW(),INTERVAL {timeoutSeconds} SECOND))
+      | WHERE (in_flight = 0 OR updated < DATE_SUB(NOW(),INTERVAL {timeoutSeconds} SECOND))
+      |   AND (updated IS NULL OR updated < DATE_SUB(NOW(),INTERVAL {pollingInterval} SECOND))
       |   AND name = {taskName};
       """.stripMargin
 
@@ -60,11 +63,17 @@ class MySqlTaskRepository extends TaskRepository {
     * If taskTimeout is less than one second, this will never claim as
     * FiniteDuration.toSeconds results in ZERO OL for something like 500.millis
     */
-  def claimTask(name: String, taskTimeout: FiniteDuration): IO[Boolean] =
+  def claimTask(
+      name: String,
+      taskTimeout: FiniteDuration,
+      pollingInterval: FiniteDuration): IO[Boolean] =
     IO {
       DB.localTx { implicit s =>
         val updateResult = CLAIM_UNCLAIMED_TASK
-          .bindByName('timeoutSeconds -> taskTimeout.toSeconds, 'taskName -> name)
+          .bindByName(
+            'timeoutSeconds -> taskTimeout.toSeconds,
+            'pollingInterval -> pollingInterval.toSeconds,
+            'taskName -> name)
           .first()
           .update()
           .apply()

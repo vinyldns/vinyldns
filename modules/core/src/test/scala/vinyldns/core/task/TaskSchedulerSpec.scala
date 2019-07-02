@@ -47,25 +47,28 @@ class TaskSchedulerSpec extends WordSpec with Matchers with MockitoSugar with Be
       val task = new TestTask("test", 5.seconds, 500.millis)
       val spied = spy(task)
       doReturn(IO.unit).when(mockRepo).saveTask(task.name)
-      doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout)
+      doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout, task.runEvery)
       doReturn(IO.unit).when(mockRepo).releaseTask(task.name)
 
       TaskScheduler.schedule(spied, mockRepo).take(1).compile.drain.unsafeRunSync()
 
-      verify(spied).run()
-      verify(mockRepo).claimTask(task.name, task.timeout)
-      verify(mockRepo).releaseTask(task.name)
+      // We run twice because we run once on start up
+      verify(spied, times(2)).run()
+      verify(mockRepo, times(2)).claimTask(task.name, task.timeout, task.runEvery)
+      verify(mockRepo, times(2)).releaseTask(task.name)
     }
 
     "release the task even on error" in {
       val task =
         new TestTask("test", 5.seconds, 500.millis, IO.raiseError(new RuntimeException("fail")))
       doReturn(IO.unit).when(mockRepo).saveTask(task.name)
-      doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout)
+      doReturn(IO.pure(true)).when(mockRepo).claimTask(task.name, task.timeout, task.runEvery)
       doReturn(IO.unit).when(mockRepo).releaseTask(task.name)
 
       TaskScheduler.schedule(task, mockRepo).take(1).compile.drain.unsafeRunSync()
-      verify(mockRepo).releaseTask(task.name)
+
+      // We release the task twice, once on start and once on the run
+      verify(mockRepo, times(2)).releaseTask(task.name)
     }
 
     "fail to start if the task cannot be saved" in {

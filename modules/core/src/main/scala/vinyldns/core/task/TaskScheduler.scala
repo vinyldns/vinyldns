@@ -59,7 +59,7 @@ object TaskScheduler extends Monitored {
       cs: ContextShift[IO]): Stream[IO, Unit] = {
 
     def claimTask(): IO[Option[Task]] =
-      taskRepository.claimTask(task.name, task.timeout).map {
+      taskRepository.claimTask(task.name, task.timeout, task.runEvery).map {
         case true =>
           logger.info(s"""Successfully found and claimed task; taskName="${task.name}" """)
           Some(task)
@@ -90,10 +90,11 @@ object TaskScheduler extends Monitored {
       }
 
     // We must first schedule the task in the repository and then create our stream
+    // After it exists, we run it once when we first start the stream
     // Semantics of repo.scheduleTask are idempotent, if the task already exists we are ok
     // Then we run our scheduled task with awakeEvery
     Stream
-      .eval(taskRepository.saveTask(task.name))
+      .eval(taskRepository.saveTask(task.name).flatMap(_ => runOnceSafely(task)))
       .flatMap { _ =>
         Stream
           .awakeEvery[IO](task.runEvery)
