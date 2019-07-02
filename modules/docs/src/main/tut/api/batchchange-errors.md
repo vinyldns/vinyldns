@@ -93,7 +93,7 @@ Since by-change accumulated errors are collected at different stages, errors at 
 18. [High Value Domain](#HighValueDomain)
 19. [RecordSet has Multiple Records](#ExistingMultiRecordError)
 20. [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
-
+21. [CNAME at the Zone Apex Is Not Allowed]("CnameApexError")
 
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
@@ -414,6 +414,18 @@ This error means that you have multiple Add entries with the same name and type 
 
 Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
 
+
+#### 21. CNAME at the Zone Apex is not Allowed <a id="CnameApexError"></a>
+
+##### Error Message:
+
+```
+CNAME at the zone apex is not allowed
+```
+
+##### Details:
+
+CNAME records cannot be `@` or the same name as the zone.
 
 
 ### FULL-REQUEST ERRORS <a id="full-request-errors" />
