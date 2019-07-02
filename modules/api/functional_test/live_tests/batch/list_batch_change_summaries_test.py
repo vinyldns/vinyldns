@@ -200,9 +200,9 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
     temp_group = {
-    'name': 'test-get-batch-record-owner-group',
+    'name': 'test-list-summaries-deleted-owner-group',
     'email': 'test@test.com',
-    'description': 'for testing that a get batch change still works when record owner group is deleted',
+    'description': 'for testing that list summaries still works when record owner group is deleted',
     'members': [ { 'id': 'sharedZoneUser'} ],
     'admins': [ { 'id': 'sharedZoneUser'} ]
     }
