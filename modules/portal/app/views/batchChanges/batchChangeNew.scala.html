@@ -43,11 +43,7 @@
                                             <span class="fa fa-question-circle"></span>
                                         </span>
                                     </label>
-                                    <select class="form-control" id="recordOwnerGroup" ng-model="newBatch.ownerGroupId">
-                                        <option></option>
-                                        <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}"
-                                                ng-selected="updateZoneInfo.adminGroupName == group.name">
-                                            {{group.name}}</option>
+                                    <select class="form-control" id="recordOwnerGroup" ng-model="newBatch.ownerGroupId" ng-options="group.id as group.name for group in myGroups | orderBy: 'name'">
                                     </select>
                                     <p class="help-block"><a href="/groups">Or you can create a new group from the Groups page.</a></p>
                                 </div>
