@@ -62,35 +62,79 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
 
   "claimTask" should {
     "return true if non-in-flight task exists task is new" in {
+      // in_flight = 0; updated = NULL
       val f = for {
         _ <- repo.saveTask(TASK_NAME)
-        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.hour)
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.hour, 1.hour)
       } yield unclaimedTaskExists
 
       f.unsafeRunSync() shouldBe true
     }
     "return true if non-in-flight task exists and expiration time has elapsed" in {
+      // in_flight = 0; updated > {taskTimeout}
       val f = for {
         _ <- repo.saveTask(TASK_NAME)
         _ <- ageTaskBySeconds(100) // Age the task by 100 seconds
-        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.second)
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 5.seconds, 3.seconds)
       } yield unclaimedTaskExists
 
       f.unsafeRunSync() shouldBe true
     }
-    "return false if in-flight task exists and expiration time has not elapsed" in {
+    "return true if non-in-flight task exists and polling interval has elapsed" in {
+      // in_flight = 0; updated > {pollingInterval}; updated < {taskTimeout}
       val f = for {
         _ <- repo.saveTask(TASK_NAME)
-        _ <- repo.claimTask(TASK_NAME, 1.hour)
-        _ <- ageTaskBySeconds(5) // Age the task by only 5 seconds
-        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.hour)
+        _ <- ageTaskBySeconds(100) // Age the task by 100 seconds
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 200.seconds, 3.seconds)
+      } yield unclaimedTaskExists
+
+      f.unsafeRunSync() shouldBe true
+    }
+    "return true if non-in-flight task exists and polling > timeout and timeout expired" in {
+      // in_flight = 0; updated > {pollingInterval == taskTimeout}
+      val f = for {
+        _ <- repo.saveTask(TASK_NAME)
+        _ <- ageTaskBySeconds(100) // Age the task by 100 seconds
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 50.seconds, 200.seconds)
+      } yield unclaimedTaskExists
+
+      f.unsafeRunSync() shouldBe true
+    }
+    "return false if non-in-flight task exists and polling interval has not elapsed" in {
+      // in_flight = 0; updated < {pollingInterval}; updated < {taskTimeout}
+      val f = for {
+        _ <- repo.saveTask(TASK_NAME)
+        _ <- ageTaskBySeconds(100) // Age the task by 100 seconds
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 200.seconds, 200.seconds)
+      } yield unclaimedTaskExists
+
+      f.unsafeRunSync() shouldBe false
+    }
+    "return false if in-flight task exists and expiration time has not elapsed" in {
+      // in_flight = 1; updated < {pollingInterval}; updated < {taskTimeout}
+      val f = for {
+        _ <- repo.saveTask(TASK_NAME)
+        _ <- repo.claimTask(TASK_NAME, 1.hour, 30.seconds)
+        _ <- ageTaskBySeconds(5) // Age the task by only 5 seconds, polling interval is 30 seconds
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.hour, 30.seconds)
+      } yield unclaimedTaskExists
+
+      f.unsafeRunSync() shouldBe false
+    }
+    "return false if in-flight task exists and expiration time has not elapsed and polling > expiration" in {
+      // in_flight = 1; updated < {pollingInterval == taskTimeout}
+      val f = for {
+        _ <- repo.saveTask(TASK_NAME)
+        _ <- repo.claimTask(TASK_NAME, 1.hour, 1.hours)
+        _ <- ageTaskBySeconds(5) // Age the task by only 5 seconds, timeout is 10 seconds, polling is 20
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 10.seconds, 20.seconds)
       } yield unclaimedTaskExists
 
       f.unsafeRunSync() shouldBe false
     }
     "return false if task does not exist" in {
       val f = for {
-        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.hour)
+        unclaimedTaskExists <- repo.claimTask(TASK_NAME, 1.hour, 1.hour)
       } yield unclaimedTaskExists
 
       f.unsafeRunSync() shouldBe false
@@ -101,7 +145,7 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
     "unset in-flight flag for task and update time" in {
       val f = for {
         _ <- repo.saveTask(TASK_NAME)
-        _ <- repo.claimTask(TASK_NAME, 1.hour)
+        _ <- repo.claimTask(TASK_NAME, 1.hour, 30.seconds)
         _ <- ageTaskBySeconds(2)
         oldTaskInfo <- getTaskInfo(TASK_NAME)
         _ <- repo.releaseTask(TASK_NAME)
@@ -140,7 +184,7 @@ class MySqlTaskRepositoryIntegrationSpec extends WordSpec with BeforeAndAfterAll
       // the result should be that the task is still claimed / in_flight
       val f = for {
         _ <- repo.saveTask("repeat")
-        _ <- repo.claimTask("repeat", 5.seconds)
+        _ <- repo.claimTask("repeat", 30.seconds, 10.seconds)
         firstTaskInfo <- getTaskInfo("repeat")
         _ <- repo.saveTask("repeat")
         secondTaskInfo <- getTaskInfo("repeat")
