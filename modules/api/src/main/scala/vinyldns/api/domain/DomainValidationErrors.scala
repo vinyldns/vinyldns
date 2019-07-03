@@ -167,7 +167,7 @@ final case class NewMultiRecordError(change: AddChangeForValidation) extends Dom
       .replaceAll("\n", " ")
 }
 
-final case class CnameAtZoneApexError() extends DomainValidationError {
-  def message: String = "CNAME at the zone apex is not allowed."
+final case class CnameAtZoneApexError(zoneName: String) extends DomainValidationError {
+  def message: String = s"CNAME cannot be the same name as zone $zoneName"
 }
 // $COVERAGE-ON$

@@ -236,7 +236,7 @@ class BatchChangeService(
 
     zone match {
       case Some(zn) if (zn.name == change.inputName && change.typ == CNAME) =>
-        CnameAtZoneApexError().invalidNel
+        CnameAtZoneApexError(zn.name).invalidNel
       case Some(zn) =>
         ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel

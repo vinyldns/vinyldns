@@ -1524,7 +1524,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
 
         # CNAME cant be apex
         assert_failed_change_in_error_response(response[8], input_name="parent.com.", record_type="CNAME", record_data="test.com.",
-                                               error_messages=["CNAME at the zone apex is not allowed."])
+                                               error_messages=["CNAME cannot be the same name as zone parent.com."])
 
         # context validations: duplicates in batch
         assert_successful_change_in_error_response(response[9], input_name="192.0.2.15", record_type="PTR", record_data="test.com.")

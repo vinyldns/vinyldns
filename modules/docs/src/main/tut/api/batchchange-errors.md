@@ -93,7 +93,7 @@ Since by-change accumulated errors are collected at different stages, errors at 
 18. [High Value Domain](#HighValueDomain)
 19. [RecordSet has Multiple Records](#ExistingMultiRecordError)
 20. [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
-21. [CNAME at the Zone Apex Is Not Allowed]("CnameApexError")
+21. [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
 
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
@@ -420,7 +420,7 @@ Note that this error is configuration-driven and will only appear if your instan
 ##### Error Message:
 
 ```
-CNAME at the zone apex is not allowed
+CNAME cannot be the same name as zone <zone_name>
 ```
 
 ##### Details:
