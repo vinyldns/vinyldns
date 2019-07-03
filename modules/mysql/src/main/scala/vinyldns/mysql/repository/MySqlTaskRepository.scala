@@ -39,8 +39,8 @@ class MySqlTaskRepository extends TaskRepository {
     sql"""
       |UPDATE task
       |   SET in_flight = 1, updated = NOW()
-      | WHERE (in_flight = 0 OR updated < DATE_SUB(NOW(),INTERVAL {timeoutSeconds} SECOND))
-      |   AND (updated IS NULL OR updated < DATE_SUB(NOW(),INTERVAL {pollingInterval} SECOND))
+      | WHERE (in_flight = 0 AND (updated IS NULL OR updated < DATE_SUB(NOW(),INTERVAL {pollingInterval} SECOND)))
+      |   OR (updated < DATE_SUB(NOW(),INTERVAL {timeoutSeconds} SECOND))
       |   AND name = {taskName};
       """.stripMargin
 
