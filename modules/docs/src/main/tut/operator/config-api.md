@@ -631,4 +631,23 @@ high-value-domains = {
       "fd69:27cc:fe91:0:0:0:ffff:0"
     ]
 }
+
+# Zone Connection Data
+backends = [
+    {
+      id = "func-test-backend"
+      zone-connection {
+        name = "vinyldns."
+        key-name = "vinyldns."
+        key = "nzisn+4G2ldMn0q1CV3vsg=="
+        primary-server = "127.0.0.1:19001"
+      }
+      transfer-connection {
+        name = "vinyldns."
+        key-name = "vinyldns."
+        key = "nzisn+4G2ldMn0q1CV3vsg=="
+        primary-server = "127.0.0.1:19001"
+      }
+    }
+]
 ```

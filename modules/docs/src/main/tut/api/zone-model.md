@@ -29,8 +29,9 @@ adminGroupId  | string      | The id of the administrators group for the zone |
 created       | date-time   | The time when the zone was first created |
 account       | string      | **DEPRECATED** The account that created the zone |
 email         | string      | The distribution email for the zone |
-connection    | ZoneConnection | The connection used to issue DDNS updates to the backend zone.  If not provided, default keys will be used.  See the [Zone Connection Attributes](#zone-conn-attr) for more information |
-transferConnection | ZoneConnection | The connection that is used to sync the zone with the DNS backend.  This can be different than the update connection.  If not provided, default keys will be used |
+backendId     | string      | Optional. Recommended over `connection` and `transferConnection`. The configuration ID of the DNS backend server for the zone |
+connection    | ZoneConnection | Optional. The connection used to issue DDNS updates to the backend zone.  If not provided, default keys will be used.  See the [Zone Connection Attributes](#zone-conn-attr) for more information |
+transferConnection | ZoneConnection | Optional. The connection that is used to sync the zone with the DNS backend.  This can be different than the update connection.  If not provided, default keys will be used |
 shared        | boolean     | An indicator that the zone is shared with anyone. At this time only VinylDNS administrators can set this to true.|
 acl           | ZoneACL     | The access control rules governing the zone.  See the [Zone ACL Rule Attributes](#zone-acl-rule-attr) for more information
 id            | string      | The unique identifier for this zone
@@ -88,28 +89,8 @@ accessLevel   | string      | Access level of the user requesting the zone. Curr
   },
   "id": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
   "latestSync": "2016-12-16T15:27:26Z",
+  "backendId":"func-test-backend",
   "accessLevel": "Delete"
-}
-```
-
-#### ZONE CONNECTION ATTRIBUTES <a id="zone-conn-attr"></a>
-Zone Connection specifies the connection information to the backend DNS server.
-
-field        | type        | description |
------------- | :---------- | :---------- |
-primaryServer | string      | The ip address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed. |
-keyName       | string      | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
-name          | string      | A user identifier for the connection.
-key           | string      | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective. |
-
-#### ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a>
-
-```
-{
-  "primaryServer": "127.0.0.1:5301",
-  "keyName": "vinyl.",
-  "name": "ok.",
-  "key": "OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="
 }
 ```
 
@@ -248,6 +229,27 @@ The **IPv6** ACL Rule
 ```
 
 Will give Read permissions to PTR Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address.
+
+#### ZONE CONNECTION ATTRIBUTES <a id="zone-conn-attr"></a>
+Zone Connection specifies the connection information to the backend DNS server.
+
+field        | type        | description |
+------------ | :---------- | :---------- |
+primaryServer | string      | The ip address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed. |
+keyName       | string      | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
+name          | string      | A user identifier for the connection.
+key           | string      | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective. |
+
+#### ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a>
+
+```
+{
+  "primaryServer": "127.0.0.1:5301",
+  "keyName": "vinyl.",
+  "name": "ok.",
+  "key": "OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="
+}
+```
 
 ### SHARED ZONES <a id="shared-zones"></a>
 
