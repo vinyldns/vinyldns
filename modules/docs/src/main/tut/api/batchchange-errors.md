@@ -420,7 +420,7 @@ Note that this error is configuration-driven and will only appear if your instan
 ##### Error Message:
 
 ```
-CNAME cannot be the same name as zone <zone_name>
+CNAME cannot be the same name as zone "<zone_name>".
 ```
 
 ##### Details:
