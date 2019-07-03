@@ -11,4 +11,4 @@ DeleteRecordSet,A,test6.exmaple.com.,,
 DeleteRecordSet,AAAA+PTR,test7.example.com.,,fd69:27cc:fe91::60
 DeleteRecordSet,CNAME,test8.example.com.,,
 DeleteRecordSet,PTR,193.0.2.192,,
-DeleteRecordSet,TXT,test5.example.com
+DeleteRecordSet,TXT,test5.example.com,,
