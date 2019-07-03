@@ -957,7 +957,6 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List.empty,
         result.changes.head.id
       )
       result.changes(1) shouldBe SingleAddChange(
@@ -972,7 +971,6 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List.empty,
         result.changes(1).id
       )
       result.changes(2) shouldBe SingleAddChange(
@@ -987,7 +985,6 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List.empty,
         result.changes(2).id
       )
     }
@@ -1019,7 +1016,6 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List.empty,
         result.changes.head.id
       )
       result.changes(1) shouldBe SingleAddChange(
@@ -1034,7 +1030,6 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(DomainValidationErrorCode.Undefined),
         result.changes(1).id
       )
       result.changes(2) shouldBe core.domain.batch.SingleDeleteChange(
@@ -1047,7 +1042,6 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(DomainValidationErrorCode.Undefined),
         result.changes(2).id
       )
     }
