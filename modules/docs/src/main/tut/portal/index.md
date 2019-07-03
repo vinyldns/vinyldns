@@ -21,7 +21,9 @@ In order to use [tooling](/tools) to access VinylDNS, all users must download th
 [Learn more](credentials)
 
 ### Zones
-The Zones section of the portal is for managing DNS zones and records. This area also includes more granular management of user abilities. To access Zones in the portal select the Zones link in the left column navigation. Access to zones in this part of the portal is limited to zone administrators and users with explicit permissions.  
+The Zones section of the portal is for managing DNS zones and records. This area also includes more granular management of user abilities.
+To access Zones in the portal select the Zones link in the left column navigation.
+Access to individual zones in this part of the portal is limited to zone administrators and users with explicit permissions.
 
 [Learn More](zones)
 

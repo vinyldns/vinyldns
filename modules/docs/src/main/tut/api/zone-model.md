@@ -36,6 +36,7 @@ acl           | ZoneACL     | The access control rules governing the zone.  See 
 id            | string      | The unique identifier for this zone
 latestSync    | date-time   | The last date and time the zone was synced
 isTest        | boolean     | Defaults to **false**. Used for restricted access during VinylDNS testing, can be ignored by clients
+accessLevel   | string      | Access level of the user requesting the zone. Current levels are Delete (full access), Read and NoAccess.
 
 #### ZONE EXAMPLE <a id="zone-example"></a>
 
@@ -86,7 +87,8 @@ isTest        | boolean     | Defaults to **false**. Used for restricted access 
     ]
   },
   "id": "9cbdd3ac-9752-4d56-9ca0-6a1a14fc5562",
-  "latestSync": "2016-12-16T15:27:26Z"
+  "latestSync": "2016-12-16T15:27:26Z",
+  "accessLevel": "Delete"
 }
 ```
 
