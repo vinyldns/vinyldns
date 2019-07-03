@@ -231,6 +231,12 @@ class BatchChangeValidations(
     else ().validNel
   }
 
+  def newRecordSetIsNotDotted(change: AddChangeForValidation): SingleValidation[Unit] =
+    if (change.recordName != change.zone.name && change.recordName.contains("."))
+      ZoneDiscoveryError(change.inputChange.inputName).invalidNel
+    else
+      ().validNel
+
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
@@ -298,14 +304,15 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
-      case A | AAAA | MX | PTR =>
+      case A | AAAA | MX =>
         noCnameWithRecordNameInExistingRecords(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
           existingRecords,
           changeGroups) |+|
-          newRecordSetIsNotMulti(change, changeGroups)
+          newRecordSetIsNotMulti(change, changeGroups) |+|
+          newRecordSetIsNotDotted(change)
       case CNAME =>
         cnameHasUniqueNameInExistingRecords(
           change.zone.id,
@@ -313,8 +320,9 @@ class BatchChangeValidations(
           change.inputChange.inputName,
           existingRecords,
           changeGroups) |+|
-          cnameHasUniqueNameInBatch(change, changeGroups)
-      case TXT =>
+          cnameHasUniqueNameInBatch(change, changeGroups) |+|
+          newRecordSetIsNotDotted(change)
+      case TXT | PTR =>
         noCnameWithRecordNameInExistingRecords(
           change.zone.id,
           change.recordName,
