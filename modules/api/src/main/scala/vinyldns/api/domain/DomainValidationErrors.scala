@@ -166,5 +166,4 @@ final case class NewMultiRecordError(change: AddChangeForValidation) extends Dom
        |type ${change.inputChange.typ}.""".stripMargin
       .replaceAll("\n", " ")
 }
-
 // $COVERAGE-ON$

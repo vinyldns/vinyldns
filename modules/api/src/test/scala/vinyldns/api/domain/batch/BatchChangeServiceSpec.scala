@@ -68,6 +68,8 @@ class BatchChangeServiceSpec
   private val onlyBaseAddAAAA =
     AddChangeInput("have.only.base", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
   private val noZoneAddA = AddChangeInput("no.zone.match.", RecordType.A, ttl, AData("1.1.1.1"))
+  private val dottedAddA =
+    AddChangeInput("dot.ted.apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))
   private val cnameAdd =
     AddChangeInput("cname.test.com", RecordType.CNAME, ttl, CNAMEData("testing.test.com."))
   private val cnameApexAdd =
@@ -642,6 +644,13 @@ class BatchChangeServiceSpec
       underTestOnlyNoZonesList.zones shouldBe Set()
     }
 
+    "return all possible zones for a dotted host" in {
+      val underTestZonesList: ExistingZones =
+        await(underTest.getZonesForRequest(List(dottedAddA.validNel)))
+
+      (underTestZonesList.zones should contain).allOf(apexZone, baseZone)
+    }
+
     "return all possible zones given an IPv4 PTR" in {
       val underTestPTRZonesList: ExistingZones =
         await(underTest.getZonesForRequest(List(ptrAdd.validNel)))
@@ -762,6 +771,27 @@ class BatchChangeServiceSpec
         underTest.zoneDiscovery(List(cnameAdd.validNel), ExistingZones(Set(apexZone, baseZone)))
 
       result should containChangeForValidation(AddChangeForValidation(baseZone, "cname", cnameAdd))
+    }
+
+    "properly discover records in forward zones" in {
+      val apex = apexZone.name
+
+      val aApex = AddChangeInput(apex, RecordType.A, ttl, AData("1.2.3.4"))
+      val aNormal = AddChangeInput(s"record.$apex", RecordType.A, ttl, AData("1.2.3.4"))
+      val aDotted =
+        AddChangeInput(s"some.dotted.record.$apex", RecordType.A, ttl, AData("1.2.3.4"))
+
+      val expected = List(
+        AddChangeForValidation(apexZone, apex, aApex),
+        AddChangeForValidation(apexZone, "record", aNormal),
+        AddChangeForValidation(apexZone, "some.dotted.record", aDotted)
+      )
+
+      val discovered = underTest.zoneDiscovery(
+        List(aApex.validNel, aNormal.validNel, aDotted.validNel),
+        ExistingZones(Set(apexZone, baseZone)))
+
+      discovered.getValid shouldBe expected
     }
 
     "properly discover TXT records" in {

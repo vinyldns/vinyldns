@@ -765,24 +765,20 @@ class BatchChangeValidationsSpec
   }
 
   property("""validateChangesWithContext: should succeed for CNAME record
-      |if there's a duplicate PTR ipv6 record that is being deleted""".stripMargin) {
+      |if there's a duplicate PTR ipv4 record that is being deleted""".stripMargin) {
     val addCname = AddChangeForValidation(
-      validZone,
-      "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-      AddChangeInput(
-        "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
-        RecordType.CNAME,
-        ttl,
-        CNAMEData("cname"))
+      validIp4ReverseZone,
+      "30",
+      AddChangeInput("30.2.0.192.in-addr.arpa.", RecordType.CNAME, ttl, CNAMEData("cname"))
     )
     val deletePtr = DeleteChangeForValidation(
-      validZone,
-      "0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-      DeleteChangeInput("0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", RecordType.PTR))
-    val existingRecordPTR = ptrIp6.copy(zoneId = addCname.zone.id, name = addCname.recordName)
+      validIp4ReverseZone,
+      "30",
+      DeleteChangeInput("192.0.2.30", RecordType.PTR))
+    val ptr4 = ptrIp4.copy(zoneId = validIp4ReverseZone.id)
     val result = validateChangesWithContext(
       List(addCname.validNel, deletePtr.validNel),
-      ExistingRecordSets(List(existingRecordPTR)),
+      ExistingRecordSets(List(ptr4)),
       okAuth,
       None)
 
@@ -1721,5 +1717,171 @@ class BatchChangeValidationsSpec
     result(4) should haveInvalid[DomainValidationError](NewMultiRecordError(add2))
     // non duplicate
     result(5) shouldBe valid
+  }
+
+  property("""validateChangesWithContext: should fail validateAddWithContext with
+             |ZoneDiscoveryError if new record is dotted host but not a TXT record type""".stripMargin) {
+    val addA = AddChangeForValidation(
+      okZone,
+      "dotted.a",
+      AddChangeInput("dotted.a.ok.", RecordType.A, ttl, AData("1.1.1.1")))
+
+    val addAAAA = AddChangeForValidation(
+      okZone,
+      "dotted.aaaa",
+      AddChangeInput("dotted.aaaa.ok.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
+
+    val addCNAME = AddChangeForValidation(
+      okZone,
+      "dotted.cname",
+      AddChangeInput("dotted.cname.ok.", RecordType.CNAME, ttl, CNAMEData("foo.com")))
+
+    val addMX = AddChangeForValidation(
+      okZone,
+      "dotted.mx",
+      AddChangeInput("dotted.mx.ok.", RecordType.MX, ttl, MXData(1, "foo.bar.")))
+
+    val addTXT = AddChangeForValidation(
+      okZone,
+      "dotted.txt",
+      AddChangeInput("dotted.txt.ok.", RecordType.TXT, ttl, TXTData("test")))
+
+    val result =
+      validateChangesWithContext(
+        List(addA.validNel, addAAAA.validNel, addCNAME.validNel, addMX.validNel, addTXT.validNel),
+        ExistingRecordSets(List()),
+        okAuth,
+        None)
+
+    result(0) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.a.ok."))
+    result(1) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.aaaa.ok."))
+    result(2) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.cname.ok."))
+    result(3) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.mx.ok."))
+    result(4) shouldBe valid
+  }
+
+  property(
+    """validateChangesWithContext: should succeed deleting existing dotted host records""".stripMargin) {
+    val existingA = rsOk.copy(name = "existing.dotted.a")
+    val existingAAAA = aaaa.copy(name = "existing.dotted.aaaa")
+    val existingCname = cname.copy(name = "existing.dotted.cname")
+    val existingMX = mx.copy(name = "existing.dotted.mx")
+    val existingTXT = txt.copy(name = "existing.dotted.txt")
+    val deleteA = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.a",
+      DeleteChangeInput("existing.dotted.a.ok.", RecordType.A))
+    val deleteAAAA = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.aaaa",
+      DeleteChangeInput("existing.dotted.aaaa.ok.", RecordType.AAAA))
+    val deleteCname = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.cname",
+      DeleteChangeInput("existing.dotted.cname.ok.", RecordType.CNAME))
+    val deleteMX = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.mx",
+      DeleteChangeInput("existing.dotted.mx.ok.", RecordType.MX))
+    val deleteTXT = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.txt",
+      DeleteChangeInput("existing.dotted.txt.ok.", RecordType.TXT))
+    val result = validateChangesWithContext(
+      List(
+        deleteA.validNel,
+        deleteAAAA.validNel,
+        deleteCname.validNel,
+        deleteMX.validNel,
+        deleteTXT.validNel),
+      ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT)),
+      okAuth,
+      None
+    )
+
+    result(0) shouldBe valid
+    result(1) shouldBe valid
+    result(2) shouldBe valid
+    result(3) shouldBe valid
+    result(4) shouldBe valid
+  }
+
+  property(
+    """validateChangesWithContext: should succeed updating existing dotted host records""".stripMargin) {
+    val existingA = rsOk.copy(name = "existing.dotted.a")
+    val existingAAAA = aaaa.copy(name = "existing.dotted.aaaa")
+    val existingCname = cname.copy(name = "existing.dotted.cname")
+    val existingMX = mx.copy(name = "existing.dotted.mx")
+    val existingTXT = txt.copy(name = "existing.dotted.txt")
+
+    val deleteA = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.a",
+      DeleteChangeInput("existing.dotted.a.ok.", RecordType.A))
+    val deleteAAAA = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.aaaa",
+      DeleteChangeInput("existing.dotted.aaaa.ok.", RecordType.AAAA))
+    val deleteCname = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.cname",
+      DeleteChangeInput("existing.dotted.cname.ok.", RecordType.CNAME))
+    val deleteMX = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.mx",
+      DeleteChangeInput("existing.dotted.mx.ok.", RecordType.MX))
+    val deleteTXT = DeleteChangeForValidation(
+      okZone,
+      "existing.dotted.txt",
+      DeleteChangeInput("existing.dotted.txt.ok.", RecordType.TXT))
+
+    val addUpdateA = AddChangeForValidation(
+      okZone,
+      "existing.dotted.a",
+      AddChangeInput("existing.dotted.a.ok.", RecordType.A, ttl, AData("1.2.3.4")))
+    val addUpdateAAAA = AddChangeForValidation(
+      okZone,
+      "existing.dotted.aaaa",
+      AddChangeInput(
+        "existing.dotted.aaaa.ok.",
+        RecordType.AAAA,
+        Some(700),
+        AAAAData("1:2:3:4:5:6:7:8")))
+    val addUpdateCNAME = AddChangeForValidation(
+      okZone,
+      "existing.dotted.cname",
+      AddChangeInput("existing.dotted.cname.ok.", RecordType.CNAME, Some(700), CNAMEData("test")))
+    val addUpdateMX = AddChangeForValidation(
+      okZone,
+      "existing.dotted.mx",
+      AddChangeInput("existing.dotted.mx.ok.", RecordType.MX, Some(700), MXData(3, "mx")))
+    val addUpdateTXT = AddChangeForValidation(
+      okZone,
+      "existing.dotted.txt",
+      AddChangeInput("existing.dotted.txt.ok.", RecordType.TXT, Some(700), TXTData("testing")))
+
+    val result = validateChangesWithContext(
+      List(
+        addUpdateA.validNel,
+        addUpdateAAAA.validNel,
+        addUpdateCNAME.validNel,
+        addUpdateMX.validNel,
+        addUpdateTXT.validNel,
+        deleteA.validNel,
+        deleteAAAA.validNel,
+        deleteCname.validNel,
+        deleteMX.validNel,
+        deleteTXT.validNel
+      ),
+      ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT)),
+      okAuth,
+      None
+    )
+
+    result(0) shouldBe valid
+    result(1) shouldBe valid
+    result(2) shouldBe valid
+    result(3) shouldBe valid
+    result(4) shouldBe valid
   }
 }
