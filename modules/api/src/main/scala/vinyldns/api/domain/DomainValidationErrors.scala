@@ -168,6 +168,6 @@ final case class NewMultiRecordError(change: AddChangeForValidation) extends Dom
 }
 
 final case class CnameAtZoneApexError(zoneName: String) extends DomainValidationError {
-  def message: String = s"CNAME cannot be the same name as zone \"$zoneName\"."
+  def message: String = s"""CNAME cannot be the same name as zone "$zoneName"."""
 }
 // $COVERAGE-ON$
