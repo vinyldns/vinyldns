@@ -24,23 +24,6 @@ sealed abstract class DomainValidationError(val isFatal: Boolean = true) {
   def message: String
 }
 
-// Note: any errors deemed nonFatal will need to have a defined error code
-// also note, a code mapping CANNOT be changed once created
-object DomainValidationErrorCode extends Enumeration {
-  type DomainValidationErrorCode = Value
-  val Undefined, DVE01 = Value
-
-  def fromError(err: DomainValidationError): DomainValidationErrorCode = err match {
-    case _: ZoneDiscoveryError => DVE01
-    case _ => Undefined
-  }
-
-  def toErrorText(code: DomainValidationErrorCode): String = code match {
-    case DVE01 => "ZoneDiscoveryError"
-    case Undefined => "Undefined error"
-  }
-}
-
 // The request itself is invalid in this case, so we fail fast
 final case class ChangeLimitExceeded(limit: Int) extends DomainValidationError {
   def message: String = s"Cannot request more than $limit changes in a single batch change request"
