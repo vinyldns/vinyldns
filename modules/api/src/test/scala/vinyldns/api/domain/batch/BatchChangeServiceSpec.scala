@@ -819,7 +819,7 @@ class BatchChangeServiceSpec
       val result =
         underTest.zoneDiscovery(List(cnameApexAdd.validNel), ExistingZones(Set(apexZone)))
 
-      result.head should haveInvalid[DomainValidationError](RecordAlreadyExists("apex.test.com."))
+      result.head should haveInvalid[DomainValidationError](CnameAtZoneApexError(apexZone.name))
     }
 
     "return an error if no base zone is found for CNAME records" in {
