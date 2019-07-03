@@ -34,6 +34,7 @@ import vinyldns.core.domain.record._
 import cats.effect._
 import vinyldns.api.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 
 class BatchChangeRoutingSpec
@@ -59,7 +60,9 @@ class BatchChangeRoutingSpec
     def createBatchChangeResponse(
         comments: Option[String] = None,
         ownerGroupId: Option[String] = None,
-        auth: AuthPrincipal = okAuth): BatchChange =
+        auth: AuthPrincipal = okAuth,
+        approvalStatus: BatchChangeApprovalStatus = BatchChangeApprovalStatus.AutoApproved)
+      : BatchChange =
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
@@ -92,7 +95,7 @@ class BatchChangeRoutingSpec
             "singleDeleteChangeId")
         ),
         ownerGroupId,
-        BatchChangeApprovalStatus.AutoApproved,
+        approvalStatus,
         None,
         None,
         None,
@@ -139,10 +142,16 @@ class BatchChangeRoutingSpec
       compact(render(("comments" -> comments) ~~ changeList))
 
     val batchChangeSummaryInfo1 = BatchChangeSummary(createBatchChangeResponse(Some("first")))
-    val batchChangeSummaryInfo2 = BatchChangeSummary(createBatchChangeResponse(Some("second")))
+    val batchChangeSummaryInfo2 = BatchChangeSummary(
+      createBatchChangeResponse(
+        Some("second"),
+        approvalStatus = BatchChangeApprovalStatus.PendingApproval))
     val batchChangeSummaryInfo3 = BatchChangeSummary(createBatchChangeResponse(Some("third")))
     val batchChangeSummaryInfo4 = BatchChangeSummary(
-      createBatchChangeResponse(Some("fourth"), auth = dummyAuth))
+      createBatchChangeResponse(
+        Some("fourth"),
+        auth = dummyAuth,
+        approvalStatus = BatchChangeApprovalStatus.PendingApproval))
 
     val validResponseWithComments: BatchChange = createBatchChangeResponse(
       Some("validChangeWithComments"))
@@ -229,11 +238,12 @@ class BatchChangeRoutingSpec
         auth: AuthPrincipal,
         startFrom: Option[Int],
         maxItems: Int,
-        ignoreAccess: Boolean = false)
+        ignoreAccess: Boolean = false,
+        approvalStatus: Option[BatchChangeApprovalStatus] = None)
       : EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
-        (auth, startFrom, maxItems, ignoreAccess) match {
-          case (_, None, 100, false) =>
+        (auth, startFrom, maxItems, ignoreAccess, approvalStatus) match {
+          case (_, None, 100, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges =
@@ -243,7 +253,7 @@ class BatchChangeRoutingSpec
               )
             )
 
-          case (_, None, 1, false) =>
+          case (_, None, 1, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo1),
@@ -253,7 +263,7 @@ class BatchChangeRoutingSpec
               )
             )
 
-          case (_, Some(1), 100, false) =>
+          case (_, Some(1), 100, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -262,7 +272,7 @@ class BatchChangeRoutingSpec
               )
             )
 
-          case (_, Some(1), 1, false) =>
+          case (_, Some(1), 1, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -272,10 +282,20 @@ class BatchChangeRoutingSpec
               )
             )
 
+          case (_, None, 100, _, Some(BatchChangeApprovalStatus.PendingApproval)) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(batchChangeSummaryInfo2),
+                startFrom = None,
+                nextId = None,
+                approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+              )
+            )
+
           case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
         } else if (auth.userId == superUserAuth.userId)
-        (auth, startFrom, maxItems, ignoreAccess) match {
-          case (_, None, 100, true) =>
+        (auth, startFrom, maxItems, ignoreAccess, approvalStatus) match {
+          case (_, None, 100, true, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(
@@ -288,6 +308,38 @@ class BatchChangeRoutingSpec
                 ignoreAccess = true
               )
             )
+
+          case (_, None, 100, true, Some(BatchChangeApprovalStatus.PendingApproval)) => {
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(batchChangeSummaryInfo2, batchChangeSummaryInfo4),
+                startFrom = None,
+                nextId = None,
+                ignoreAccess = true,
+                approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+              )
+            )
+          }
+
+          case (_, None, 100, false, None) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(),
+                startFrom = None,
+                nextId = None
+              )
+            )
+
+          case (_, None, 100, false, Some(BatchChangeApprovalStatus.PendingApproval)) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(),
+                startFrom = None,
+                nextId = None,
+                approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+              )
+            )
+
           case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
         } else
         EitherT.rightT(BatchChangeSummaryList(List()))
@@ -498,6 +550,21 @@ class BatchChangeRoutingSpec
       }
     }
 
+    "return user's Pending batch changes if approval status is `PendingApproval`" in {
+      Get("/zones/batchrecordchanges?approvalStatus=pendingapproval") ~>
+        batchChangeRoute(okAuth) ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeSummaryList]
+
+        resp.batchChanges.length shouldBe 1
+        resp.maxItems shouldBe 100
+        resp.startFrom shouldBe None
+        resp.nextId shouldBe None
+        resp.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingApproval)
+      }
+    }
+
     "return an error if maxItems is out of range" in {
       Get("/zones/batchrecordchanges?startFrom=1&maxItems=101") ~> batchChangeRoute(okAuth) ~> check {
         status shouldBe BadRequest
@@ -517,7 +584,7 @@ class BatchChangeRoutingSpec
       }
     }
 
-    "return all batch changes if ignoreAccess is true" in {
+    "return all batch changes if ignoreAccess is true and requester is a super user" in {
       Get("/zones/batchrecordchanges?ignoreAccess=true") ~> batchChangeRoute(superUserAuth) ~> check {
         status shouldBe OK
 
@@ -527,6 +594,23 @@ class BatchChangeRoutingSpec
         resp.maxItems shouldBe 100
         resp.startFrom shouldBe None
         resp.nextId shouldBe None
+      }
+    }
+
+    "return all Pending batch changes if ignoreAccess is true, approval status is `PendingApproval`," +
+      " and requester is a super user" in {
+      Get("/zones/batchrecordchanges?ignoreAccess=true&approvalStatus=PendingApproval") ~>
+        batchChangeRoute(superUserAuth) ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeSummaryList]
+
+        resp.batchChanges.length shouldBe 2
+        resp.maxItems shouldBe 100
+        resp.startFrom shouldBe None
+        resp.nextId shouldBe None
+        resp.ignoreAccess shouldBe true
+        resp.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingApproval)
       }
     }
   }

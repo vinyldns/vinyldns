@@ -112,8 +112,11 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
   def getBatchChangeSummaries(
       userId: Option[String],
       startFrom: Option[Int] = None,
-      maxItems: Int = 100): IO[BatchChangeSummaryList] = {
-    val userBatchChanges = batches.values.toList.filter(b => userId.forall(_ == b.userId))
+      maxItems: Int = 100,
+      approvalStatus: Option[BatchChangeApprovalStatus] = None): IO[BatchChangeSummaryList] = {
+    val userBatchChanges = batches.values.toList
+      .filter(b => userId.forall(_ == b.userId))
+      .filter(as => approvalStatus.forall(_ == as.approvalStatus))
     val batchChangeSummaries = for {
       sc <- userBatchChanges
       ids = sc.changes
@@ -136,8 +139,15 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val until = maxItems + start
     val limited = sorted.slice(start, until)
     val nextId = if (limited.size < maxItems) None else Some(start + limited.size)
+    val ignoreAccess = userId.isDefined
     IO.pure(
-      BatchChangeSummaryList(limited, startFrom = startFrom, nextId = nextId, maxItems = maxItems))
+      BatchChangeSummaryList(
+        limited,
+        startFrom = startFrom,
+        nextId = nextId,
+        maxItems = maxItems,
+        ignoreAccess = ignoreAccess,
+        approvalStatus = approvalStatus))
   }
 
   def clear(): Unit = {

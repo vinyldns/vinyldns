@@ -127,9 +127,9 @@ def test_list_zones_max_items_100(list_zones_context):
     result = list_zones_context.client.list_zones(status=200)
     assert_that(result['maxItems'], is_(100))
 
-def test_list_zones_list_all_default_false(list_zones_context):
+def test_list_zones_ignore_access_default_false(list_zones_context):
     """
-    Test that the default list all value for a list zones request is false
+    Test that the default ignore access value for a list zones request is false
     """
     result = list_zones_context.client.list_zones(status=200)
     assert_that(result['ignoreAccess'], is_(False))
@@ -248,22 +248,22 @@ def test_list_zones_with_search_last_page(list_zones_context):
     assert_that(result['nameFilter'], is_('*test-searched-3'))
     assert_that(result['startFrom'], is_('list-zones-test-searched-2.'))
 
-def test_list_zones_list_all_success(list_zones_context):
+def test_list_zones_ignore_access_success(list_zones_context):
     """
-    Test that we can retrieve a list of all zones
+    Test that we can retrieve a list of zones regardless of zone access
     """
-    result = list_zones_context.client.list_zones(list_all=True, status=200)
+    result = list_zones_context.client.list_zones(ignore_access=True, status=200)
     retrieved = result['zones']
 
     assert_that(result['ignoreAccess'], is_(True))
     assert_that(len(retrieved), greater_than(5))
 
 
-def test_list_zones_list_all_success_with_name_filter(list_zones_context):
+def test_list_zones_ignore_access_success_with_name_filter(list_zones_context):
     """
     Test that we can retrieve a list of all zones with a name filter
     """
-    result = list_zones_context.client.list_zones(name_filter='shared', list_all=True, status=200)
+    result = list_zones_context.client.list_zones(name_filter='shared', ignore_access=True, status=200)
     retrieved = result['zones']
 
     assert_that(result['ignoreAccess'], is_(True))

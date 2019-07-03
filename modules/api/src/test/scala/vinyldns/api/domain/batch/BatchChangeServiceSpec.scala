@@ -1169,6 +1169,43 @@ class BatchChangeServiceSpec
       result.batchChanges(0).createdTimestamp shouldBe batchChangeTwo.createdTimestamp
     }
 
+    "return list of batchChangeSummaries filtered by approvalStatus if some exist" in {
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      batchChangeRepo.save(batchChangeOne)
+
+      val batchChangeTwo = BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        None,
+        new DateTime(DateTime.now.getMillis + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result = rightResultOf(
+        underTest
+          .listBatchChangeSummaries(
+            auth,
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval))
+          .value)
+
+      result.maxItems shouldBe 100
+      result.nextId shouldBe None
+      result.startFrom shouldBe None
+      result.ignoreAccess shouldBe false
+      result.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingApproval)
+
+      result.batchChanges.length shouldBe 1
+      result.batchChanges(0).createdTimestamp shouldBe batchChangeOne.createdTimestamp
+    }
+
     "return an offset list of batchChangeSummaries if some exist" in {
       val batchChangeOne =
         BatchChange(

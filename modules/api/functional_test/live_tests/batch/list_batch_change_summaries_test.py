@@ -63,7 +63,8 @@ class ListBatchChangeSummariesFixture():
             shared_zone_test_context.ok_vinyldns_client.wait_until_recordset_change_status(delete_result, 'Complete')
         clear_ok_acl_rules(shared_zone_test_context)
 
-    def check_batch_change_summaries_page_accuracy(self, summaries_page, size, next_id=False, start_from=False, max_items=100):
+    def check_batch_change_summaries_page_accuracy(self, summaries_page, size, next_id=False, start_from=False,
+                                                   max_items=100, approval_status=False):
         # validate fields
         if next_id:
             assert_that(summaries_page, has_key('nextId'))
@@ -73,6 +74,10 @@ class ListBatchChangeSummariesFixture():
             assert_that(summaries_page['startFrom'], is_(start_from))
         else:
             assert_that(summaries_page, is_not(has_key('startFrom')))
+        if approval_status:
+            assert_that(summaries_page, has_key('approvalStatus'))
+        else:
+            assert_that(summaries_page, is_not(has_key('approvalStatus')))
         assert_that(summaries_page['maxItems'], is_(max_items))
 
 
@@ -144,6 +149,15 @@ def test_list_batch_change_summaries_with_next_id(list_fixture):
 
     list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=1, start_from=batch_change_summaries_result['nextId'])
 
+
+def test_list_batch_change_summaries_with_pending_status(list_fixture):
+    """
+    Test listing a limited number of user's batch change summaries with maxItems parameter
+    """
+    client = list_fixture.client
+    batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingApproval")
+
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=0, approval_status="PendingApproval")
 
 def test_list_batch_change_summaries_with_list_batch_change_summaries_with_no_changes_passes():
     """
@@ -252,7 +266,7 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
-def test_list_batch_change_summaries_with_list_all_true_only_shows_requesting_users_records(shared_zone_test_context):
+def test_list_batch_change_summaries_with_ignore_access_true_only_shows_requesting_users_records(shared_zone_test_context):
     """
     Test that getting a batch change summary with list all set to true only returns the requesting user's batch changes
     if they are not a super user
@@ -287,7 +301,7 @@ def test_list_batch_change_summaries_with_list_all_true_only_shows_requesting_us
         record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
         record_to_delete = set(record_set_list)
 
-        batch_change_summaries_result = client.list_batch_change_summaries(list_all=True, status=200)["batchChanges"]
+        batch_change_summaries_result = client.list_batch_change_summaries(ignore_access=True, status=200)["batchChanges"]
 
         under_test = [item for item in batch_change_summaries_result if item['id'] == completed_batch['id']]
         assert_that(under_test, has_length(1))
@@ -299,7 +313,7 @@ def test_list_batch_change_summaries_with_list_all_true_only_shows_requesting_us
         ok_record_set_list = [(change['zoneId'], change['recordSetId']) for change in ok_completed_batch['changes']]
         ok_record_to_delete = set(ok_record_set_list)
 
-        ok_batch_change_summaries_result = ok_client.list_batch_change_summaries(list_all=True, status=200)["batchChanges"]
+        ok_batch_change_summaries_result = ok_client.list_batch_change_summaries(ignore_access=True, status=200)["batchChanges"]
 
         ok_under_test = [item for item in ok_batch_change_summaries_result if (item['id'] == ok_completed_batch['id'] or item['id'] == completed_batch['id']) ]
         assert_that(ok_under_test, has_length(1))
@@ -311,3 +325,4 @@ def test_list_batch_change_summaries_with_list_all_true_only_shows_requesting_us
         for result_rs in ok_record_to_delete:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
+

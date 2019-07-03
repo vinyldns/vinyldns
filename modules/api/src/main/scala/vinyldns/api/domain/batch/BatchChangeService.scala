@@ -29,6 +29,7 @@ import vinyldns.api.domain.dns.DnsConversions._
 import vinyldns.api.domain.{RecordAlreadyExists, ZoneDiscoveryError}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 import vinyldns.core.domain.membership.{Group, GroupRepository}
@@ -372,11 +373,13 @@ class BatchChangeService(
       auth: AuthPrincipal,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
-      ignoreAccess: Boolean = false): BatchResult[BatchChangeSummaryList] = {
+      ignoreAccess: Boolean = false,
+      approvalStatus: Option[BatchChangeApprovalStatus] = None)
+    : BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
     for {
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, startFrom, maxItems)
+        .getBatchChangeSummaries(userId, startFrom, maxItems, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
@@ -385,7 +388,8 @@ class BatchChangeService(
         rsOwnerGroups)
       listWithGroupNames = listResults.copy(
         batchChanges = summariesWithGroupNames,
-        ignoreAccess = ignoreAccess)
+        ignoreAccess = ignoreAccess,
+        approvalStatus = approvalStatus)
     } yield listWithGroupNames
   }
 }

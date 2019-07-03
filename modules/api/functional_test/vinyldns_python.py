@@ -444,7 +444,7 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, u'GET', self.headers, not_found_ok=True, **kwargs)
         return data
 
-    def list_zones(self, name_filter=None, start_from=None, max_items=None, list_all=False, **kwargs):
+    def list_zones(self, name_filter=None, start_from=None, max_items=None, ignore_access=False, **kwargs):
         """
         Gets a list of zones that currently exist
         :return: a list of zones
@@ -461,8 +461,8 @@ class VinylDNSClient(object):
         if max_items:
             query.append(u'maxItems=' + str(max_items))
 
-        if list_all:
-            query.append(u'ignoreAccess=' + str(list_all))
+        if ignore_access:
+            query.append(u'ignoreAccess=' + str(ignore_access))
 
         if query:
             url = url + u'?' + u'&'.join(query)
@@ -595,7 +595,7 @@ class VinylDNSClient(object):
         _, data = self.make_request(url, u'POST', self.headers, json.dumps(approve_batch_change_input), **kwargs)
         return data
 
-    def list_batch_change_summaries(self, start_from=None, max_items=None, list_all=False, **kwargs):
+    def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None, **kwargs):
         """
         Gets list of user's batch change summaries
         :return: the content of the response
@@ -605,8 +605,10 @@ class VinylDNSClient(object):
             args.append(u'startFrom={0}'.format(start_from))
         if max_items is not None:
             args.append(u'maxItems={0}'.format(max_items))
-        if list_all:
-            args.append(u'ignoreAccess={0}'.format(list_all))
+        if ignore_access:
+            args.append(u'ignoreAccess={0}'.format(ignore_access))
+        if approval_status:
+            args.append(u'approvalStatus={0}'.format(approval_status))
 
         url = urljoin(self.index_url, u'/zones/batchrecordchanges') + u'?' + u'&'.join(args)
 
