@@ -31,8 +31,12 @@ trait Task {
   // The amount of time this task is running before it can be reclaimed / considered failed
   def timeout: FiniteDuration
 
-  // How often to attempt to run the task
+  // How often the task should actually be executed
   def runEvery: FiniteDuration
+
+  // How often to check the store to see if the task should be run
+  // this should be a short duration, a few seconds
+  def checkInterval: FiniteDuration
 
   // Runs the task
   def run(): IO[Unit]
@@ -92,12 +96,16 @@ object TaskScheduler extends Monitored {
     // We must first schedule the task in the repository and then create our stream
     // After it exists, we run it once when we first start the stream
     // Semantics of repo.scheduleTask are idempotent, if the task already exists we are ok
-    // Then we run our scheduled task with awakeEvery
+    // Then we run our scheduled task with fixedDelay, because we want a constant delay in between
+    // tasks (for example if the task runs every 1 hour, and the task itself takes 20 seconds,
+    // the delay until the next run will 1 hour after the task finished)...awakeEvery uses fixedRate which differs
+    // because it tries its best to run exactly every 1 hour in the previous example, regardless of how long
+    // the task took to execute
     Stream
       .eval(taskRepository.saveTask(task.name).flatMap(_ => runOnceSafely(task)))
       .flatMap { _ =>
         Stream
-          .awakeEvery[IO](task.runEvery)
+          .fixedDelay[IO](task.checkInterval)
           .evalMap(_ => runOnceSafely(task))
       }
   }
