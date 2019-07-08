@@ -83,13 +83,27 @@ class BatchChangeService(
         recordSets,
         auth,
         batchChangeInput.ownerGroupId)
-      changeForConversion <- buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
+      changeForConversion <- buildBatchChange(
+        batchChangeInput,
+        validatedSingleChanges,
+        auth,
+        batchChangeInput.batchChangeId)
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         zoneMap,
         recordSets,
         batchChangeInput.ownerGroupId)
     } yield serviceCompleteBatch
+
+  def buildBatchChange(
+      batchChangeInput: BatchChangeInput,
+      validatedSingleChanges: ValidatedBatch[ChangeForValidation],
+      auth: AuthPrincipal,
+      batchChangeId: Option[String]): BatchResult[BatchChange] =
+    batchChangeId match {
+      case Some(id) => getExistingBatchChange(id)
+      case None => buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
+    }
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -107,8 +121,18 @@ class BatchChangeService(
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
-    } yield batchChange
+      _ <- approveBatchChange(batchChange, authPrincipal)
+      buildBatchChangeInput = BatchChangeInput(None, List(), None, Some(batchChangeId))
+      resubmitBatchChange <- applyBatchChange(buildBatchChangeInput, authPrincipal)
+    } yield resubmitBatchChange
 
+  def approveBatchChange(
+      batchChange: BatchChange,
+      auth: AuthPrincipal): BatchResult[BatchChange] = {
+    val updatedBatchChange =
+      batchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+    batchChangeRepo.save(updatedBatchChange).toBatchResult
+  }
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
       batchChange <- getExistingBatchChange(id)

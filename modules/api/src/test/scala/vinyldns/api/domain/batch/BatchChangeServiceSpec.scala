@@ -325,6 +325,70 @@ class BatchChangeServiceSpec
       result.changes(1).asInstanceOf[SingleAddChange].ttl shouldBe 900
       result.changes(3).asInstanceOf[SingleAddChange].ttl shouldBe existingApex.ttl
     }
+
+    "succeed with included batchChange ID if manual review is enabled" in {
+      val singleChange = SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None
+      )
+
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(singleChange),
+          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+
+      batchChangeRepo.save(batchChange)
+
+      val input = BatchChangeInput(None, List(apexAddA), None, Some(batchChange.id))
+      val result = rightResultOf(underTestManualEnabled.applyBatchChange(input, auth).value)
+
+      result.changes.length shouldBe 1
+    }
+
+    "fail with included batchChange ID if manual review in enabled and batch change is rejected" in {
+      val singleChange = SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None
+      )
+
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(singleChange),
+          approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
+
+      batchChangeRepo.save(batchChange)
+
+      val input = BatchChangeInput(None, List(apexAddA), None, Some(batchChange.id))
+      val result = leftResultOf(underTestManualEnabled.applyBatchChange(input, auth).value)
+
+      result shouldBe an[UnknownConversionError]
+    }
   }
 
   "rejectBatchChange" should {
@@ -410,9 +474,10 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        rightResultOf(underTest.approveBatchChange(batchChange.id, supportUserAuth, None).value)
+        rightResultOf(
+          underTestManualEnabled.approveBatchChange(batchChange.id, supportUserAuth, None).value)
 
-      result shouldBe batchChange
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
     }
 
     "fail if the batchChange is not PendingApproval" in {
