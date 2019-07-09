@@ -32,7 +32,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 import cats.effect._
-import vinyldns.api.domain.BatchChangeIsEmpty
+import vinyldns.core.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
@@ -81,7 +81,7 @@ class BatchChangeRoutingSpec
             Some("systemMessage"),
             None,
             None,
-            "singleAddChangeId"),
+            id = "singleAddChangeId"),
           SingleDeleteChange(
             Some("zoneId"),
             Some("zoneName"),
@@ -92,7 +92,7 @@ class BatchChangeRoutingSpec
             Some("systemMessage"),
             None,
             None,
-            "singleDeleteChangeId")
+            id = "singleDeleteChangeId")
         ),
         ownerGroupId,
         approvalStatus,
@@ -171,7 +171,7 @@ class BatchChangeRoutingSpec
       Some("systemMessage"),
       None,
       None,
-      "singleDeleteChangeId")
+      id = "singleDeleteChangeId")
     val backwardsCompatibleAdd = SingleDeleteChange(
       None,
       None,
@@ -182,7 +182,7 @@ class BatchChangeRoutingSpec
       Some("systemMessage"),
       None,
       None,
-      "singleDeleteChangeId")
+      id = "singleDeleteChangeId")
 
     val backwardsCompatable: BatchChange = genericValidResponse.copy(
       id = "testBwComp",

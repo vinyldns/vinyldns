@@ -24,6 +24,7 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, batch, _}
+import vinyldns.core.domain._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestMembershipData._
@@ -389,7 +390,8 @@ class BatchChangeValidationsSpec
       val change =
         AddChangeInput("test.comcast.com.", RecordType.A, Some(invalidTTL), AData("1.1.1.1"))
       val result = validateAddChangeInput(change)
-      result should haveInvalid[DomainValidationError](InvalidTTL(invalidTTL))
+      result should haveInvalid[DomainValidationError](
+        InvalidTTL(invalidTTL, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH))
     }
   }
 
@@ -1382,8 +1384,16 @@ class BatchChangeValidationsSpec
     val resultSmall = validateAddChangeInput(inputSmall)
     val resultLarge = validateAddChangeInput(inputLarge)
 
-    resultSmall should haveInvalid[DomainValidationError](InvalidMxPreference(-1))
-    resultLarge should haveInvalid[DomainValidationError](InvalidMxPreference(1000000))
+    resultSmall should haveInvalid[DomainValidationError](
+      InvalidMxPreference(
+        -1,
+        DomainValidations.MX_PREFERENCE_MIN_VALUE,
+        DomainValidations.MX_PREFERENCE_MAX_VALUE))
+    resultLarge should haveInvalid[DomainValidationError](
+      InvalidMxPreference(
+        1000000,
+        DomainValidations.MX_PREFERENCE_MIN_VALUE,
+        DomainValidations.MX_PREFERENCE_MAX_VALUE))
   }
 
   property("validateAddChangeInput: should fail for a MX addChangeInput with invalid exchange") {
@@ -1396,7 +1406,11 @@ class BatchChangeValidationsSpec
     "validateAddChangeInput: should fail for a MX addChangeInput with invalid preference and exchange") {
     val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(-1, "foo$.bar."))
     val result = validateAddChangeInput(input)
-    result should haveInvalid[DomainValidationError](InvalidMxPreference(-1))
+    result should haveInvalid[DomainValidationError](
+      InvalidMxPreference(
+        -1,
+        DomainValidations.MX_PREFERENCE_MIN_VALUE,
+        DomainValidations.MX_PREFERENCE_MAX_VALUE))
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))
   }
 
@@ -1711,10 +1725,14 @@ class BatchChangeValidationsSpec
     )
 
     result(0) shouldBe valid
-    result(1) should haveInvalid[DomainValidationError](NewMultiRecordError(update1))
-    result(2) should haveInvalid[DomainValidationError](NewMultiRecordError(update2))
-    result(3) should haveInvalid[DomainValidationError](NewMultiRecordError(add1))
-    result(4) should haveInvalid[DomainValidationError](NewMultiRecordError(add2))
+    result(1) should haveInvalid[DomainValidationError](
+      NewMultiRecordError(update1.inputChange.inputName, update1.inputChange.typ))
+    result(2) should haveInvalid[DomainValidationError](
+      NewMultiRecordError(update2.inputChange.inputName, update2.inputChange.typ))
+    result(3) should haveInvalid[DomainValidationError](
+      NewMultiRecordError(add1.inputChange.inputName, add1.inputChange.typ))
+    result(4) should haveInvalid[DomainValidationError](
+      NewMultiRecordError(add2.inputChange.inputName, add2.inputChange.typ))
     // non duplicate
     result(5) shouldBe valid
   }

@@ -24,7 +24,8 @@ import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import vinyldns.api._
-import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
+import vinyldns.api.domain.AccessValidations
+import vinyldns.core.domain.HighValueDomainError
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData._

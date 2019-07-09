@@ -25,11 +25,12 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
-import vinyldns.api.domain.{AccessValidations, HighValueDomainError}
+import vinyldns.api.domain.AccessValidations
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.HighValueDomainError
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._

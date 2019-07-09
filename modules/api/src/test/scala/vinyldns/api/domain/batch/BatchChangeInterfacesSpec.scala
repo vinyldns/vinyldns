@@ -21,7 +21,7 @@ import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import cats.effect._
 import cats.implicits._
-import vinyldns.api.domain.{BatchChangeIsEmpty, ChangeLimitExceeded}
+import vinyldns.core.domain.{BatchChangeIsEmpty, ChangeLimitExceeded}
 
 class BatchChangeInterfacesSpec extends WordSpec with Matchers with CatsHelpers {
 

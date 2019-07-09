@@ -19,7 +19,7 @@ package vinyldns.api.domain.batch
 import cats.data.NonEmptyList
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.ZoneDiscoveryError
+import vinyldns.core.domain.ZoneDiscoveryError
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
