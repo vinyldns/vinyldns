@@ -143,6 +143,9 @@ Be sure to follow the [LDAP Setup Guide](setup-ldap) first to get the values you
 
 LDAP configuration connects VinylDNS to your Directory where user information is stored.
 
+The default value for user sync enabled is _false_ and user sync hours polling interval is 24 (max value). If the hours polling interval
+is configured higher than 24, 24 hours will be used.
+
 ```yaml
 LDAP {
   # The name of the user to connect VinylDNS to LDAP
@@ -164,6 +167,11 @@ LDAP {
 
     # Set this to point to your LDAP
     providerUrl = "ldaps://somedomain.com:9999"
+  }
+  
+  user-sync {
+    enabled = true # Default value is false
+    hours-polling-interval = 12 # Default value is 24
   }
 }
 ```
