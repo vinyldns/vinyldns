@@ -161,7 +161,7 @@ final case class NewMultiRecordError(changeName: String, changeType: RecordType)
   def message: String =
     s"""Multi-record recordsets are not enabled for this instance of VinylDNS.
        |Cannot create a new record set with multiple records for inputName $changeName and
-       |type $changeType}.""".stripMargin
+       |type $changeType.""".stripMargin
       .replaceAll("\n", " ")
 }
 
