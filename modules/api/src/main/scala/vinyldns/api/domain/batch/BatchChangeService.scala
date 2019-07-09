@@ -95,6 +95,15 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId)
     } yield serviceCompleteBatch
 
+  def convertToBatchChangeInput(batchChange: BatchChange): BatchChangeInput = {
+    val convertedChanges = batchChange.changes.map(_.asChangeInput)
+    BatchChangeInput(
+      batchChange.comments,
+      convertedChanges,
+      batchChange.ownerGroupId,
+      Some(batchChange.id))
+  }
+
   def buildBatchChange(
       batchChangeInput: BatchChangeInput,
       validatedSingleChanges: ValidatedBatch[ChangeForValidation],
@@ -121,16 +130,22 @@ class BatchChangeService(
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
-      _ <- approveBatchChange(batchChange, authPrincipal)
-      buildBatchChangeInput = BatchChangeInput(None, List(), None, Some(batchChangeId))
-      resubmitBatchChange <- applyBatchChange(buildBatchChangeInput, authPrincipal)
-    } yield resubmitBatchChange
+      updatedBatchChange <- approveBatchChange(batchChange, authPrincipal, approveBatchChangeInput)
+      convertBatchChange = convertToBatchChangeInput(batchChange)
+      _ <- applyBatchChange(convertBatchChange, authPrincipal)
+    } yield updatedBatchChange
 
   def approveBatchChange(
       batchChange: BatchChange,
-      auth: AuthPrincipal): BatchResult[BatchChange] = {
+      auth: AuthPrincipal,
+      review: Option[ApproveBatchChangeInput]): BatchResult[BatchChange] = {
+    val reviewComment = review.flatMap(b => b.reviewComment)
     val updatedBatchChange =
-      batchChange.copy(approvalStatus = BatchChangeApprovalStatus.ManuallyApproved)
+      batchChange.copy(
+        approvalStatus = BatchChangeApprovalStatus.ManuallyApproved,
+        reviewerId = Some(auth.userId),
+        reviewComment = reviewComment,
+        reviewTimestamp = Some(DateTime.now))
     batchChangeRepo.save(updatedBatchChange).toBatchResult
   }
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =

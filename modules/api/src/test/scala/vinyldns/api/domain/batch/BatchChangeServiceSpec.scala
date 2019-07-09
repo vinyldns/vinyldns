@@ -473,11 +473,17 @@ class BatchChangeServiceSpec
           approvalStatus = BatchChangeApprovalStatus.PendingApproval)
       batchChangeRepo.save(batchChange)
 
+      val review = ApproveBatchChangeInput(Some("All good!"))
+
       val result =
         rightResultOf(
-          underTestManualEnabled.approveBatchChange(batchChange.id, supportUserAuth, None).value)
+          underTestManualEnabled
+            .approveBatchChange(batchChange.id, supportUserAuth, Some(review))
+            .value)
 
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
+      result.reviewerId shouldBe Some(supportUserAuth.userId)
+      result.reviewComment shouldBe Some("All good!")
     }
 
     "fail if the batchChange is not PendingApproval" in {

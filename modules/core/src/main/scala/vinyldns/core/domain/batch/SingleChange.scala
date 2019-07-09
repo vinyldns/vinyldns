@@ -37,6 +37,7 @@ sealed trait SingleChange {
     case (Some(zid), Some(rname), t) => Some(RecordKey(zid, rname, t))
     case _ => None
   }
+  def asChangeInput: ChangeInput
 
   def withFailureMessage(error: String): SingleChange = this match {
     case add: SingleAddChange =>
@@ -86,7 +87,10 @@ final case class SingleAddChange(
     recordChangeId: Option[String],
     recordSetId: Option[String],
     id: String = UUID.randomUUID().toString)
-    extends SingleChange
+    extends SingleChange {
+  def asChangeInput: ChangeInput =
+    AddChangeInput(inputName, typ, Some(ttl), recordData)
+}
 
 final case class SingleDeleteChange(
     zoneId: Option[String],
@@ -99,7 +103,10 @@ final case class SingleDeleteChange(
     recordChangeId: Option[String],
     recordSetId: Option[String],
     id: String = UUID.randomUUID().toString)
-    extends SingleChange
+    extends SingleChange {
+  def asChangeInput: ChangeInput =
+    DeleteChangeInput(inputName, typ)
+}
 
 /*
  - Pending has not yet been processed
