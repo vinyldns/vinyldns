@@ -16,14 +16,19 @@
 
 package vinyldns.api.route
 
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.ValidatedNel
 import org.json4s.JsonDSL._
+import org.json4s.MappingException
 import org.json4s.jackson.JsonMethods._
+import vinyldns.api.Interfaces.Result
+import vinyldns.api.domain.batch.BatchChangeErrorResponse
+import vinyldns.api.domain.batch.BatchChangeInterfaces.BatchResult
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.route.Monitor
 
@@ -33,7 +38,26 @@ import scala.util.control.NonFatal
 
 trait VinylDNSDirectives extends Directives {
 
-  val vinylDNSAuthenticator: VinylDNSAuthenticator
+  def vinylDNSAuthenticator: VinylDNSAuthenticator
+
+  // Rejection handler to map 404 to 405
+  implicit def validationRejectionHandler: RejectionHandler =
+    RejectionHandler
+      .newBuilder()
+      .handle {
+        case MalformedRequestContentRejection(msg, MappingException(_, _)) =>
+          complete(
+            HttpResponse(
+              status = StatusCodes.BadRequest,
+              entity = HttpEntity(ContentTypes.`application/json`, msg)
+            ))
+      }
+      .handleNotFound {
+        extractUnmatchedPath { p =>
+          complete((StatusCodes.MethodNotAllowed, s"The requested path [$p] does not exist."))
+        }
+      }
+      .result()
 
   def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
     extractStrictEntity(10.seconds).flatMap { strictEntity =>
@@ -124,4 +148,84 @@ trait VinylDNSDirectives extends Directives {
       case Invalid(errors) =>
         reject(ValidationRejection(compact(render("errors" -> errors.toList.toSet))))
     }
+
+  /**
+    * Helpers to handle route authentication flow for routing. Implementing classes/objects
+    * must provide sendResponse implementation.
+    */
+  trait AuthenticationResultImprovements {
+    // Handle conversion of VinylDNS service result to user response
+    def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route
+
+    /**
+      * Authenticate user and execute service call without request entity
+      *
+      * Flow:
+      * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
+      * - Invoke service call, f, and return the response to the user.
+      */
+    def authenticateAndExecute[A](f: AuthPrincipal => Result[A])(g: A => Route): Route =
+      authenticate { authPrincipal =>
+        onSuccess(f(authPrincipal).value.unsafeToFuture()) { result =>
+          sendResponse(result, g)
+        }
+      }
+
+    /**
+      * Authenticate user and execute service call using request entity
+      *
+      * Flow:
+      * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
+      * - Deserialize request entity into expected data structure. Proceed if successful; otherwise
+      *   return error to user.
+      * - Invoke service call, f, and return the response to the user.
+      */
+    def authenticateAndExecuteWithEntity[A, B](f: (AuthPrincipal, B) => Result[A])(g: A => Route)(
+        implicit um: FromRequestUnmarshaller[B]): Route =
+      authenticate { authPrincipal =>
+        entity(as[B]) { deserializedEntity =>
+          onSuccess(f(authPrincipal, deserializedEntity).value.unsafeToFuture()) { result =>
+            sendResponse(result, g)
+          }
+        }
+      }
+  }
+
+  trait AuthenticationBatchResultImprovements {
+    // Handle conversion of VinylDNS service result to user response
+    def sendResponse[A](either: Either[BatchChangeErrorResponse, A], f: A => Route): Route
+
+    /**
+      * Authenticate user and execute service call without request entity
+      *
+      * Flow:
+      * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
+      * - Invoke service call, f, and return the response to the user.
+      */
+    def authenticateAndExecute[A](f: AuthPrincipal => BatchResult[A])(g: A => Route): Route =
+      authenticate { authPrincipal =>
+        onSuccess(f(authPrincipal).value.unsafeToFuture()) { result =>
+          sendResponse(result, g)
+        }
+      }
+
+    /**
+      * Authenticate user and execute service call using request entity
+      *
+      * Flow:
+      * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
+      * - Deserialize request entity into expected data structure. Proceed if successful; otherwise
+      *   return error to user.
+      * - Invoke service call, f, and return the response to the user.
+      */
+    def authenticateAndExecuteWithEntity[A, B](f: (AuthPrincipal, B) => BatchResult[A])(
+        g: A => Route)(implicit um: FromRequestUnmarshaller[B]): Route =
+      authenticate { authPrincipal =>
+        entity(as[B]) { deserializedEntity =>
+          onSuccess(f(authPrincipal, deserializedEntity).value.unsafeToFuture()) { result =>
+            sendResponse(result, g)
+          }
+        }
+      }
+  }
 }

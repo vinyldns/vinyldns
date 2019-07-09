@@ -18,7 +18,6 @@ package vinyldns.api.route
 
 import akka.event.Logging._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server.directives.LogEntry
@@ -130,21 +129,11 @@ class VinylDNSService(
     with StatusRoute
     with PrometheusRoute
     with BatchChangeRoute
-    with VinylDNSJsonProtocol
-    with JsonValidationRejection {
+    with VinylDNSJsonProtocol {
 
   val aws4Authenticator = new Aws4Authenticator
   val vinylDNSAuthenticator: VinylDNSAuthenticator =
     new ProductionVinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
-
-  // Authenticated routes must go first
-  def authenticatedRoutes: server.Route =
-    handleRejections(validationRejectionHandler)(authenticate { authPrincipal =>
-      batchChangeRoute(authPrincipal) ~
-        zoneRoute(authPrincipal) ~
-        recordSetRoute(authPrincipal) ~
-        membershipRoute(authPrincipal)
-    })
 
   val unloggedUris = Seq(
     Uri.Path("/health"),
@@ -154,9 +143,16 @@ class VinylDNSService(
     Uri.Path("/metrics/prometheus"))
   val unloggedRoutes
     : Route = healthCheckRoute ~ pingRoute ~ colorRoute ~ statusRoute ~ prometheusRoute
+
+  val allRoutes: Route = unloggedRoutes ~
+    batchChangeRoute ~
+    zoneRoute ~
+    recordSetRoute ~
+    membershipRoute
+
   val vinyldnsRoutes: Route =
-    logRequestResult(VinylDNSService.buildLogEntry(unloggedUris))(
-      unloggedRoutes ~ authenticatedRoutes)
-  val routes = vinyldnsRoutes
+    logRequestResult(VinylDNSService.buildLogEntry(unloggedUris))(allRoutes)
+  val routes: Route =
+    handleRejections(validationRejectionHandler)(allRoutes)
 }
 // $COVERAGE-ON$

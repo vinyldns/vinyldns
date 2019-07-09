@@ -17,40 +17,53 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
-import cats.data.EitherT
-import cats.effect._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 import vinyldns.api.domain.batch._
 
 trait BatchChangeRoute extends Directives {
-  this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
+  this: VinylDNSJsonProtocol with VinylDNSDirectives =>
 
   val batchChangeService: BatchChangeServiceAlgebra
 
+  object BatchChangeAuthHelper extends AuthenticationBatchResultImprovements {
+    def sendResponse[A](either: Either[BatchChangeErrorResponse, A], f: A => Route): Route =
+      either match {
+        case Right(a) => f(a)
+        case Left(ibci: InvalidBatchChangeInput) => complete(StatusCodes.BadRequest, ibci)
+        case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
+        case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
+        case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
+        case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
+        case Left(bcnpa: BatchChangeNotPendingApproval) =>
+          complete(StatusCodes.BadRequest, bcnpa.message)
+        case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
+      }
+  }
+
+  import BatchChangeAuthHelper._
+
   final private val MAX_ITEMS_LIMIT: Int = 100
 
-  val batchChangeRoute: AuthPrincipal => server.Route = { authPrincipal: AuthPrincipal =>
+  val batchChangeRoute: Route = {
     val standardBatchChangeRoutes = (post & path("zones" / "batchrecordchanges")) {
       parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
         {
           monitor("Endpoint.postBatchChange") {
-            entity(as[BatchChangeInput]) { batchChangeInput =>
-              execute(batchChangeService
-                .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
-                complete(StatusCodes.Accepted, chg)
-              }
-            }
+            authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
+              (authPrincipal, batchChangeInput) =>
+                batchChangeService.applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
+                  complete(StatusCodes.Accepted, chg)
+                }
           }
         }
       }
     } ~
       (get & path("zones" / "batchrecordchanges" / Segment)) { id =>
         monitor("Endpoint.getBatchChange") {
-          execute(batchChangeService.getBatchChange(id, authPrincipal)) { chg =>
+          authenticateAndExecute(batchChangeService.getBatchChange(id, _)) { chg =>
             complete(StatusCodes.OK, chg)
           }
         }
@@ -73,9 +86,9 @@ trait BatchChangeRoute extends Directives {
                 validate(
                   0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
                   s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
-                  execute(
+                  authenticateAndExecute(
                     batchChangeService.listBatchChangeSummaries(
-                      authPrincipal,
+                      _,
                       startFrom,
                       maxItems,
                       ignoreAccess,
@@ -91,28 +104,20 @@ trait BatchChangeRoute extends Directives {
     val manualBatchReviewRoutes =
       (post & path("zones" / "batchrecordchanges" / Segment / "reject")) { id =>
         monitor("Endpoint.rejectBatchChange") {
-          entity(as[Option[RejectBatchChangeInput]]) { input =>
-            execute(
-              batchChangeService
-                .rejectBatchChange(id, authPrincipal, input.getOrElse(RejectBatchChangeInput()))) {
-              chg =>
-                complete(StatusCodes.OK, chg)
-            }
-          // TODO: Update response entity to return modified batch change
+          authenticateAndExecuteWithEntity[BatchChange, Option[RejectBatchChangeInput]]((
+              authPrincipal,
+              input) => batchChangeService.rejectBatchChange(id, authPrincipal, input)) { chg =>
+            complete(StatusCodes.OK, chg)
           }
+          // TODO: Update response entity to return modified batch change
         }
       } ~
         (post & path("zones" / "batchrecordchanges" / Segment / "approve")) { id =>
           monitor("Endpoint.approveBatchChange") {
-            entity(as[Option[ApproveBatchChangeInput]]) { input =>
-              execute(
-                batchChangeService
-                  .approveBatchChange(
-                    id,
-                    authPrincipal,
-                    input.getOrElse(ApproveBatchChangeInput()))) { chg =>
-                complete(StatusCodes.OK, chg)
-              }
+            authenticateAndExecuteWithEntity[BatchChange, Option[ApproveBatchChangeInput]](
+              (authPrincipal, input) =>
+                batchChangeService.approveBatchChange(id, authPrincipal, input)) { chg =>
+              complete(StatusCodes.OK, chg)
             // TODO: Update response entity to return modified batch change
             }
           }
@@ -130,18 +135,4 @@ trait BatchChangeRoute extends Directives {
         complete(StatusCodes.BadRequest, msg)
     }
     .result()
-
-  private def execute[A](f: => EitherT[IO, BatchChangeErrorResponse, A])(rt: A => Route): Route =
-    onSuccess(f.value.unsafeToFuture()) {
-      case Right(a) => rt(a)
-      case Left(ibci: InvalidBatchChangeInput) => complete(StatusCodes.BadRequest, ibci)
-      case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
-      case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
-      case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
-      case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
-      case Left(bcnpa: BatchChangeNotPendingApproval) =>
-        complete(StatusCodes.BadRequest, bcnpa.message)
-      case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
-      case Left(brnf: BatchRequesterNotFound) => complete(StatusCodes.NotFound, brnf.message)
-    }
 }

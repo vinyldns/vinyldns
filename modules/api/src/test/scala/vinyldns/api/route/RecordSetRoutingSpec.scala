@@ -41,7 +41,6 @@ class RecordSetRoutingSpec
     with ScalatestRouteTest
     with RecordSetRoute
     with VinylDNSJsonProtocol
-    with JsonValidationRejection
     with VinylDNSDirectives
     with Matchers {
 
@@ -516,7 +515,7 @@ class RecordSetRoutingSpec
       .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(recordSet)))
 
   private def validateCreateRecordType(rs: RecordSet) =
-    post(rs) ~> recordSetRoute(okAuth) ~> check {
+    post(rs) ~> recordSetRoute ~> check {
       status shouldBe StatusCodes.Accepted
 
       val change = responseAs[RecordSetChange]
@@ -544,7 +543,7 @@ class RecordSetRoutingSpec
     val errSet = expectedErrs.toSet
     Post(s"/zones/${okZone.id}/recordsets")
       .withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(js)))) ~>
-      Route.seal(recordSetRoute(okAuth)) ~> check {
+      Route.seal(recordSetRoute) ~> check {
       status shouldBe StatusCodes.BadRequest
       val result = responseAs[JValue]
       val errs = (result \ "errors").extractOpt[List[String]]
@@ -569,7 +568,7 @@ class RecordSetRoutingSpec
 
   "GET recordset change" should {
     "return the recordset change" in {
-      Get(s"/zones/${okZone.id}/recordsets/test/changes/good") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsets/test/changes/good") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
 
         status shouldBe StatusCodes.OK
@@ -582,20 +581,19 @@ class RecordSetRoutingSpec
     }
 
     "return a 404 Not Found when the zone doesn't exist" in {
-      Get(s"/zones/${zoneNotFound.id}/recordsets/test/changes/zoneNotFound") ~> recordSetRoute(
-        okAuth) ~> check {
+      Get(s"/zones/${zoneNotFound.id}/recordsets/test/changes/zoneNotFound") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a 404 Not Found when the change doesn't exist" in {
-      Get(s"/zones/${okZone.id}/recordsets/test/changes/changeNotFound") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsets/test/changes/changeNotFound") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a forbidden when the user cant see the zone" in {
-      Get(s"/zones/${okZone.id}/recordsets/test/changes/forbidden") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsets/test/changes/forbidden") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
@@ -603,7 +601,7 @@ class RecordSetRoutingSpec
 
   "GET recordset changes" should {
     "return the recordset changes" in {
-      Get(s"/zones/${okZone.id}/recordsetchanges") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsetchanges") ~> recordSetRoute ~> check {
         val response = responseAs[ListRecordSetChangesResponse]
 
         response.zoneId shouldBe okZone.id
@@ -613,22 +611,22 @@ class RecordSetRoutingSpec
     }
 
     "return the ZoneNotFoundError when the zone does not exist" in {
-      Get(s"/zones/${zoneNotFound.id}/recordsetchanges") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${zoneNotFound.id}/recordsetchanges") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a Forbidden when the user is not authorized" in {
-      Get(s"/zones/${notAuthorizedZone.id}/recordsetchanges") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${notAuthorizedZone.id}/recordsetchanges") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
     "return a Bad Request when maxItems is out of Bounds" in {
-      Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=101") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=101") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
       }
-      Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
@@ -636,7 +634,7 @@ class RecordSetRoutingSpec
 
   "GET recordset" should {
     "return the recordset summary info" in {
-      Get(s"/zones/${okZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[GetRecordSetResponse].recordSet
         resultRs.id shouldBe rsOk.id
@@ -646,13 +644,13 @@ class RecordSetRoutingSpec
     }
 
     "return a 404 Not Found when the record set doesn't exist" in {
-      Get(s"/zones/${okZone.id}/recordsets/${rsNotFound.id}") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsets/${rsNotFound.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a 404 Not Found when the zone doesn't exist" in {
-      Get(s"/zones/${zoneNotFound.id}/recordsets/${rsZoneNotFound.id}") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${zoneNotFound.id}/recordsets/${rsZoneNotFound.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -661,8 +659,7 @@ class RecordSetRoutingSpec
   "PUT recordset" should {
     "save the changes to the recordset" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsOk.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsOk))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsOk))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Accepted
 
         val change = responseAs[RecordSetChange]
@@ -678,64 +675,56 @@ class RecordSetRoutingSpec
 
     "return a 404 Not Found when the record set doesn't exist" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsNotFound.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsNotFound))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsNotFound))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a 404 Not Found when the zone doesn't exist" in {
       Put(s"/zones/${zoneNotFound.id}/recordsets/${rsZoneNotFound.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsZoneNotFound))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsZoneNotFound))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a 409 Conflict when the update conflicts with an existing recordset" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsAlreadyExists.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsAlreadyExists))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsAlreadyExists))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
 
     "return a 400 BadRequest when the update is for a deleted zone" in {
       Put(s"/zones/${zoneDeleted.id}/recordsets/${rsZoneDeleted.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsZoneDeleted))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsZoneDeleted))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
 
     "return a 409 Conflict when the update conflicts with a pending recordset" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsPendingUpdate.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsPendingUpdate))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsPendingUpdate))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
 
     "return a 403 Forbidden when the update is not authorized" in {
       Put(s"/zones/${notAuthorizedZone.id}/recordsets/${rsNotAuthorized.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsNotAuthorized))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsNotAuthorized))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
     "return a 409 Conflict when the zone is syncing" in {
       Put(s"/zones/${syncingZone.id}/recordsets/${rsZoneSyncing.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsZoneSyncing))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsZoneSyncing))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
 
     "return a 422 Unprocessable Entity when the request is invalid" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsInvalidRequest.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsInvalidRequest))) ~> recordSetRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(rsInvalidRequest))) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.UnprocessableEntity
       }
     }
@@ -743,7 +732,7 @@ class RecordSetRoutingSpec
     "return appropriate errors for missing information" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsOk.id}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(rsMissingData)))) ~>
-        Route.seal(recordSetRoute(okAuth)) ~> check {
+        Route.seal(recordSetRoute) ~> check {
         status shouldBe StatusCodes.BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -763,7 +752,7 @@ class RecordSetRoutingSpec
           HttpEntity(
             ContentTypes.`application/json`,
             rsJson(rsOk.copy(zoneId = invalidChangeZone.id)))) ~>
-        recordSetRoute(okAuth) ~> check {
+        recordSetRoute ~> check {
         status shouldBe StatusCodes.UnprocessableEntity
         val error = responseAs[String]
         error shouldBe "Cannot update RecordSet's zoneId attribute"
@@ -773,7 +762,7 @@ class RecordSetRoutingSpec
     "return appropriate errors for invalid information" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsOk.id}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(rsInvalidType)))) ~>
-        Route.seal(recordSetRoute(okAuth)) ~> check {
+        Route.seal(recordSetRoute) ~> check {
         status shouldBe StatusCodes.BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -785,7 +774,7 @@ class RecordSetRoutingSpec
     "return appropriate errors for correct metadata but invalid records" in {
       Put(s"/zones/${okZone.id}/recordsets/${rsOk.id}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(rsInvalidRecord)))) ~>
-        Route.seal(recordSetRoute(okAuth)) ~> check {
+        Route.seal(recordSetRoute) ~> check {
         status shouldBe StatusCodes.BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -797,7 +786,7 @@ class RecordSetRoutingSpec
     "return appropriate errors for CNAME record set with multiple records" in {
       Put(s"/zones/${okZone.id}/recordsets/${invalidCname.id}")
         .withEntity(HttpEntity(ContentTypes.`application/json`, rsJson(invalidCname))) ~>
-        Route.seal(recordSetRoute(okAuth)) ~> check {
+        Route.seal(recordSetRoute) ~> check {
         status shouldBe StatusCodes.BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -809,7 +798,7 @@ class RecordSetRoutingSpec
 
   "GET recordsets" should {
     "return all recordsets" in {
-      Get(s"/zones/${okZone.id}/recordsets") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${okZone.id}/recordsets") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.OK
         val resultRs = responseAs[ListRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
@@ -818,7 +807,7 @@ class RecordSetRoutingSpec
     }
 
     "return a 404 Not Found when the zone doesn't exist" in {
-      Get(s"/zones/${zoneNotFound.id}/recordsets") ~> recordSetRoute(okAuth) ~> check {
+      Get(s"/zones/${zoneNotFound.id}/recordsets") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -826,7 +815,7 @@ class RecordSetRoutingSpec
 
   "DELETE recordset" should {
     "delete the recordset" in {
-      Delete(s"/zones/${okZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute(okAuth) ~> check {
+      Delete(s"/zones/${okZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Accepted
         val change = responseAs[RecordSetChange]
         change.changeType shouldBe RecordSetChangeType.Delete
@@ -840,37 +829,37 @@ class RecordSetRoutingSpec
     }
 
     "return a 404 Not Found when the record set doesn't exist" in {
-      Delete(s"/zones/${okZone.id}/recordsets/${rsNotFound.id}") ~> recordSetRoute(okAuth) ~> check {
+      Delete(s"/zones/${okZone.id}/recordsets/${rsNotFound.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a 404 Not Found when the zone doesn't exist" in {
-      Delete(s"/zones/${zoneNotFound.id}/recordsets/${rsOk.id}") ~> recordSetRoute(okAuth) ~> check {
+      Delete(s"/zones/${zoneNotFound.id}/recordsets/${rsOk.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return a 400 BadRequest when the delete is for a deleted zone" in {
-      Delete(s"/zones/${zoneDeleted.id}/recordsets/${rsZoneDeleted.id}") ~> recordSetRoute(okAuth) ~> check {
+      Delete(s"/zones/${zoneDeleted.id}/recordsets/${rsZoneDeleted.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
 
     "return a 403 Forbidden when the delete is not authorized" in {
-      Delete(s"/zones/${notAuthorizedZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute(okAuth) ~> check {
+      Delete(s"/zones/${notAuthorizedZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
     "return a 409 Conflict when the zone is syncing" in {
-      Delete(s"/zones/${syncingZone.id}/recordsets/${rsZoneSyncing.id}") ~> recordSetRoute(okAuth) ~> check {
+      Delete(s"/zones/${syncingZone.id}/recordsets/${rsZoneSyncing.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
 
     "return a 422 Unprocessable Entity when the request is invalid" in {
-      Delete(s"/zones/${okZone.id}/recordsets/${rsInvalidRequest.id}") ~> recordSetRoute(okAuth) ~> check {
+      Delete(s"/zones/${okZone.id}/recordsets/${rsInvalidRequest.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.UnprocessableEntity
       }
     }
@@ -878,37 +867,37 @@ class RecordSetRoutingSpec
 
   "POST recordset" should {
     "return 202 Accepted when the the recordset is created" in {
-      post(rsOk) ~> recordSetRoute(okAuth) ~> check {
+      post(rsOk) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Accepted
       }
     }
 
     "return a 404 NOT FOUND if the zone does not exist" in {
-      post(rsZoneNotFound) ~> recordSetRoute(okAuth) ~> check {
+      post(rsZoneNotFound) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
 
     "return 409 Conflict when adding a record set with an existing name and type" in {
-      post(rsAlreadyExists) ~> recordSetRoute(okAuth) ~> check {
+      post(rsAlreadyExists) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }
 
     "return a 400 BadRequest when the create is for a deleted zone" in {
-      post(rsZoneDeleted) ~> recordSetRoute(okAuth) ~> check {
+      post(rsZoneDeleted) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
 
     "return a 403 Forbidden when the create is not authorized" in {
-      post(rsNotAuthorized) ~> recordSetRoute(okAuth) ~> check {
+      post(rsNotAuthorized) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }
 
     "return a 409 Conflict when the zone is syncing" in {
-      post(rsZoneSyncing) ~> recordSetRoute(okAuth) ~> check {
+      post(rsZoneSyncing) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Conflict
       }
     }

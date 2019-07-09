@@ -18,170 +18,167 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import vinyldns.api.Interfaces.Result
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, LockStatus}
 
 trait MembershipRoute extends Directives {
-  this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
+  this: VinylDNSJsonProtocol with VinylDNSDirectives =>
   final private val DEFAULT_MAX_ITEMS: Int = 100
   final private val MAX_ITEMS_LIMIT: Int = 1000
 
   val membershipService: MembershipServiceAlgebra
 
-  val membershipRoute = { authPrincipal: AuthPrincipal =>
-    path("groups" / Segment) { groupId =>
-      get {
-        monitor("Endpoint.getGroup") {
-          execute(membershipService.getGroup(groupId, authPrincipal)) { group =>
+  object MembershipAuthHelper extends AuthenticationResultImprovements {
+    def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route =
+      either match {
+        case Right(a) => f(a)
+        case Left(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+        case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+        case Left(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
+        case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
+        case Left(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+        case Left(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
+        case Left(e) => failWith(e)
+      }
+  }
+
+  import MembershipAuthHelper._
+
+  val membershipRoute: Route = path("groups" / Segment) { groupId =>
+    get {
+      monitor("Endpoint.getGroup") {
+        authenticateAndExecute(membershipService.getGroup(groupId, _)) { group =>
+          complete(StatusCodes.OK, GroupInfo(group))
+        }
+      }
+    } ~
+      delete {
+        monitor("Endpoint.deleteGroup") {
+          authenticateAndExecute(membershipService.deleteGroup(groupId, _)) { group =>
+            complete(StatusCodes.OK, GroupInfo(group))
+          }
+        }
+      }
+  } ~
+    path("groups") {
+      post {
+        monitor("Endpoint.createGroup") {
+          authenticateAndExecuteWithEntity[Group, CreateGroupInput] { (authPrincipal, input) =>
+            val group = Group(
+              input.name,
+              input.email,
+              input.description,
+              memberIds = input.members.map(_.id),
+              adminUserIds = input.admins.map(_.id))
+            membershipService.createGroup(group, authPrincipal)
+          } { group =>
             complete(StatusCodes.OK, GroupInfo(group))
           }
         }
       } ~
-        delete {
-          monitor("Endpoint.deleteGroup") {
-            execute(membershipService.deleteGroup(groupId, authPrincipal)) { group =>
-              complete(StatusCodes.OK, GroupInfo(group))
-            }
-          }
-        }
-    } ~
-      path("groups") {
-        post {
-          monitor("Endpoint.createGroup") {
-            entity(as[CreateGroupInput]) { input =>
-              ifValid(
-                Group
-                  .build(
-                    input.name,
-                    input.email,
-                    input.description,
-                    input.members.map(_.id),
-                    input.admins.map(_.id))) { inputGroup: Group =>
-                execute(membershipService.createGroup(inputGroup, authPrincipal)) { group =>
-                  complete(StatusCodes.OK, GroupInfo(group))
-                }
-              }
-            }
-          }
-        } ~
-          get {
-            parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "groupNameFilter".?) {
-              (startFrom: Option[String], maxItems: Int, groupNameFilter: Option[String]) =>
-                {
-                  monitor("Endpoint.listMyGroups") {
-                    handleRejections(invalidQueryHandler) {
-                      validate(
-                        check = 0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                        errorMsg = s"""
+        get {
+          parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "groupNameFilter".?) {
+            (startFrom: Option[String], maxItems: Int, groupNameFilter: Option[String]) =>
+              {
+                monitor("Endpoint.listMyGroups") {
+                  handleRejections(invalidQueryHandler) {
+                    validate(
+                      check = 0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                      errorMsg = s"""
                              | maxItems was $maxItems, maxItems must be between 0 exclusive
                              | and $MAX_ITEMS_LIMIT inclusive"
                            """.stripMargin
-                      ) {
-                        execute(membershipService
-                          .listMyGroups(groupNameFilter, startFrom, maxItems, authPrincipal)) {
-                          groups =>
-                            complete(StatusCodes.OK, groups)
-                        }
+                    ) {
+                      authenticateAndExecute(membershipService
+                        .listMyGroups(groupNameFilter, startFrom, maxItems, _)) { groups =>
+                        complete(StatusCodes.OK, groups)
                       }
                     }
                   }
                 }
-            }
-          }
-      } ~
-      path("groups" / Segment) { _ =>
-        put {
-          monitor("Endpoint.updateGroup") {
-            entity(as[UpdateGroupInput]) { input =>
-              ifValid(
-                Group.build(
-                  input.id,
-                  input.name,
-                  input.email,
-                  input.description,
-                  input.members.map(_.id),
-                  input.admins.map(_.id))) { inputGroup: Group =>
-                execute(
-                  membershipService.updateGroup(
-                    inputGroup.id,
-                    inputGroup.name,
-                    inputGroup.email,
-                    inputGroup.description,
-                    inputGroup.memberIds,
-                    inputGroup.adminUserIds,
-                    authPrincipal)) { group =>
-                  complete(StatusCodes.OK, GroupInfo(group))
-                }
               }
-            }
           }
         }
-      } ~
-      path("groups" / Segment / "members") { groupId =>
-        get {
-          monitor("Endpoint.listGroupMembers") {
-            parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-              (startFrom: Option[String], maxItems: Int) =>
-                handleRejections(invalidQueryHandler) {
-                  validate(
-                    0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                    s"maxItems was $maxItems, maxItems must be between 0 exclusive and $MAX_ITEMS_LIMIT inclusive") {
-                    execute(
-                      membershipService.listMembers(groupId, startFrom, maxItems, authPrincipal)) {
-                      members =>
-                        complete(StatusCodes.OK, members)
-                    }
-                  }
-                }
-            }
+    } ~
+    path("groups" / Segment) { _ =>
+      put {
+        monitor("Endpoint.updateGroup") {
+          authenticateAndExecuteWithEntity[Group, UpdateGroupInput](
+            (authPrincipal, input) =>
+              membershipService.updateGroup(
+                input.id,
+                input.name,
+                input.email,
+                input.description,
+                (input.members ++ input.admins).map(_.id),
+                input.admins.map(_.id),
+                authPrincipal)) { group =>
+            complete(StatusCodes.OK, GroupInfo(group))
           }
-        }
-      } ~
-      path("groups" / Segment / "admins") { groupId =>
-        get {
-          monitor("Endpoint.listGroupAdmins") {
-            execute(membershipService.listAdmins(groupId, authPrincipal)) { admins =>
-              complete(StatusCodes.OK, admins)
-            }
-          }
-        }
-      } ~
-      path("groups" / Segment / "activity") { groupId =>
-        get {
-          monitor("Endpoint.groupActivity") {
-            parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-              (startFrom: Option[String], maxItems: Int) =>
-                handleRejections(invalidQueryHandler) {
-                  validate(
-                    0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                    s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT") {
-                    execute(membershipService
-                      .getGroupActivity(groupId, startFrom, maxItems, authPrincipal)) { activity =>
-                      complete(StatusCodes.OK, activity)
-                    }
-                  }
-                }
-            }
-          }
-        }
-      } ~
-      (put & path("users" / Segment / "lock") & monitor("Endpoint.lockUser")) { id =>
-        execute(membershipService.updateUserLockStatus(id, LockStatus.Locked, authPrincipal)) {
-          user =>
-            complete(StatusCodes.OK, UserInfo(user))
-        }
-      } ~
-      (put & path("users" / Segment / "unlock") & monitor("Endpoint.unlockUser")) { id =>
-        execute(membershipService.updateUserLockStatus(id, LockStatus.Unlocked, authPrincipal)) {
-          user =>
-            complete(StatusCodes.OK, UserInfo(user))
         }
       }
-  }
+    } ~
+    path("groups" / Segment / "members") { groupId =>
+      get {
+        monitor("Endpoint.listGroupMembers") {
+          parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+            (startFrom: Option[String], maxItems: Int) =>
+              handleRejections(invalidQueryHandler) {
+                validate(
+                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                  s"maxItems was $maxItems, maxItems must be between 0 exclusive and $MAX_ITEMS_LIMIT inclusive") {
+                  authenticateAndExecute(membershipService
+                    .listMembers(groupId, startFrom, maxItems, _)) { members =>
+                    complete(StatusCodes.OK, members)
+                  }
+                }
+              }
+          }
+        }
+      }
+    } ~
+    path("groups" / Segment / "admins") { groupId =>
+      get {
+        monitor("Endpoint.listGroupAdmins") {
+          authenticateAndExecute(membershipService.listAdmins(groupId, _)) { admins =>
+            complete(StatusCodes.OK, admins)
+          }
+        }
+      }
+    } ~
+    path("groups" / Segment / "activity") { groupId =>
+      get {
+        monitor("Endpoint.groupActivity") {
+          parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+            (startFrom: Option[String], maxItems: Int) =>
+              handleRejections(invalidQueryHandler) {
+                validate(
+                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                  s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT") {
+                  authenticateAndExecute(membershipService
+                    .getGroupActivity(groupId, startFrom, maxItems, _)) { activity =>
+                    complete(StatusCodes.OK, activity)
+                  }
+                }
+              }
+          }
+        }
+      }
+    } ~
+    (put & path("users" / Segment / "lock") & monitor("Endpoint.lockUser")) { id =>
+      authenticateAndExecute(membershipService.updateUserLockStatus(id, LockStatus.Locked, _)) {
+        user =>
+          complete(StatusCodes.OK, UserInfo(user))
+      }
+    } ~
+    (put & path("users" / Segment / "unlock") & monitor("Endpoint.unlockUser")) { id =>
+      authenticateAndExecute(membershipService.updateUserLockStatus(id, LockStatus.Unlocked, _)) {
+        user =>
+          complete(StatusCodes.OK, UserInfo(user))
+      }
+    }
 
   private val invalidQueryHandler = RejectionHandler
     .newBuilder()
@@ -190,16 +187,4 @@ trait MembershipRoute extends Directives {
         complete(StatusCodes.BadRequest, msg)
     }
     .result()
-
-  private def execute[A](f: => Result[A])(rt: A => Route): Route =
-    onSuccess(f.value.unsafeToFuture()) {
-      case Right(a) => rt(a)
-      case Left(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-      case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-      case Left(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
-      case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
-      case Left(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-      case Left(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
-      case Left(e) => failWith(e)
-    }
 }

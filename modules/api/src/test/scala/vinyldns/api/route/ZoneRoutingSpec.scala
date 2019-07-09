@@ -38,7 +38,6 @@ class ZoneRoutingSpec
     with ScalatestRouteTest
     with ZoneRoute
     with VinylDNSJsonProtocol
-    with JsonValidationRejection
     with VinylDNSDirectives
     with OneInstancePerTest
     with Matchers {
@@ -408,8 +407,7 @@ class ZoneRoutingSpec
       Set(RecordType.AAAA, RecordType.CNAME))
     "return a 202 Accepted when the acl rule is good" in {
       Put(s"/zones/${ok.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> zoneRoute ~> check {
         status shouldBe Accepted
 
         val result = responseAs[ZoneChange]
@@ -436,8 +434,7 @@ class ZoneRoutingSpec
         recordTypes = Set())
 
       Put(s"/zones/${ok.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(requestAllUsers))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(requestAllUsers))) ~> zoneRoute ~> check {
         status shouldBe Accepted
 
         val result = responseAs[ZoneChange]
@@ -452,16 +449,14 @@ class ZoneRoutingSpec
 
     "return a 404 Not Found when the zone is not found" in {
       Put(s"/zones/${notFound.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
 
     "return a 403 Forbidden if not authorized" in {
       Put(s"/zones/${notAuthorized.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
@@ -469,7 +464,7 @@ class ZoneRoutingSpec
     "return a 500 if there is an unexpected failure" in {
       Put(s"/zones/${error.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> Route
-        .seal(zoneRoute(okAuth)) ~> check {
+        .seal(zoneRoute) ~> check {
         status shouldBe InternalServerError
       }
     }
@@ -482,7 +477,7 @@ class ZoneRoutingSpec
       Put(s"/zones/${ok.id}/acl/rules")
         .withEntity(HttpEntity(
           ContentTypes.`application/json`,
-          compact(render(missingACLAccessLevel)))) ~> Route.seal(zoneRoute(okAuth)) ~> check {
+          compact(render(missingACLAccessLevel)))) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -502,7 +497,7 @@ class ZoneRoutingSpec
 
       Put(s"/zones/${ok.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(withUserAndGroup)))) ~> Route
-        .seal(zoneRoute(okAuth)) ~> check {
+        .seal(zoneRoute) ~> check {
 
         status shouldBe BadRequest
         val result = responseAs[JValue]
@@ -523,8 +518,7 @@ class ZoneRoutingSpec
         Some("x{5,-3}"),
         Set(RecordType.AAAA, RecordType.CNAME))
       Put(s"/zones/${badRegex.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(badRequest))) ~> zoneRoute ~> check {
 
         status shouldBe BadRequest
         val result = responseAs[JValue]
@@ -543,8 +537,7 @@ class ZoneRoutingSpec
       Set(RecordType.AAAA, RecordType.CNAME))
     "return a 202 Accepted when the acl rule is good" in {
       Delete(s"/zones/${ok.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(goodRequest))) ~> zoneRoute ~> check {
         status shouldBe Accepted
 
         // just make sure we have a zone change as a response
@@ -555,16 +548,14 @@ class ZoneRoutingSpec
 
     "return a 404 Not Found when the zone is not found" in {
       Delete(s"/zones/${notFound.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
 
     "return a 403 Forbidden if not authorized" in {
       Delete(s"/zones/${notAuthorized.id}/acl/rules")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
@@ -572,7 +563,7 @@ class ZoneRoutingSpec
     "return a 500 if there is an unexpected failure" in {
       Delete(s"/zones/${error.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, js(userAclRuleInfo))) ~> Route
-        .seal(zoneRoute(okAuth)) ~> check {
+        .seal(zoneRoute) ~> check {
         status shouldBe InternalServerError
       }
     }
@@ -585,7 +576,7 @@ class ZoneRoutingSpec
       Delete(s"/zones/${ok.id}/acl/rules")
         .withEntity(HttpEntity(
           ContentTypes.`application/json`,
-          compact(render(missingACLAccessLevel)))) ~> Route.seal(zoneRoute(okAuth)) ~> check {
+          compact(render(missingACLAccessLevel)))) ~> Route.seal(zoneRoute) ~> check {
 
         status shouldBe BadRequest
         val result = responseAs[JValue]
@@ -606,7 +597,7 @@ class ZoneRoutingSpec
 
       Delete(s"/zones/${ok.id}/acl/rules")
         .withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(withUserAndGroup)))) ~> Route
-        .seal(zoneRoute(okAuth)) ~> check {
+        .seal(zoneRoute) ~> check {
 
         status shouldBe BadRequest
         val result = responseAs[JValue]
@@ -621,13 +612,13 @@ class ZoneRoutingSpec
 
   "POST zone" should {
     "return 202 Accepted when the zone is created" in {
-      post(ok) ~> zoneRoute(okAuth) ~> check {
+      post(ok) ~> zoneRoute ~> check {
         status shouldBe Accepted
       }
     }
 
     "encrypt the connection and transfer connection keys" in {
-      post(connectionOk) ~> zoneRoute(okAuth) ~> check {
+      post(connectionOk) ~> zoneRoute ~> check {
         status shouldBe Accepted
         val result = responseAs[ZoneChange]
         val resultKey = result.zone.connection.get.key
@@ -641,7 +632,7 @@ class ZoneRoutingSpec
     }
 
     "return a fully populated zone in the response" in {
-      post(ok) ~> zoneRoute(okAuth) ~> check {
+      post(ok) ~> zoneRoute ~> check {
         val result = responseAs[ZoneChange]
         result.changeType shouldBe ZoneChangeType.Create
         Option(result.status) shouldBe defined
@@ -663,7 +654,7 @@ class ZoneRoutingSpec
     }
 
     "change the zone name to a fully qualified domain name" in {
-      post(trailingDot) ~> zoneRoute(okAuth) ~> check {
+      post(trailingDot) ~> zoneRoute ~> check {
         status shouldBe Accepted
         val result = responseAs[ZoneChange]
         result.changeType shouldBe ZoneChangeType.Create
@@ -684,43 +675,43 @@ class ZoneRoutingSpec
     }
 
     "return 409 Conflict if the zone already exists" in {
-      post(alreadyExists) ~> zoneRoute(okAuth) ~> check {
+      post(alreadyExists) ~> zoneRoute ~> check {
         status shouldBe Conflict
       }
     }
 
     "return 400 BadRequest if the zone adminGroupId is invalid" in {
-      post(badAdminId) ~> zoneRoute(okAuth) ~> check {
+      post(badAdminId) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "return 403 Forbidden if the zone is shared and user is not authorized" in {
-      post(nonSuperUserSharedZone) ~> zoneRoute(okAuth) ~> check {
+      post(nonSuperUserSharedZone) ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
 
     "validate the connection when it is posted" in {
-      post(connectionOk) ~> zoneRoute(okAuth) ~> check {
+      post(connectionOk) ~> zoneRoute ~> check {
         status shouldBe Accepted
       }
     }
 
     "fail if the connection validation fails" in {
-      post(connectionFailed) ~> zoneRoute(okAuth) ~> check {
+      post(connectionFailed) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "fail if the zone validation fails" in {
-      post(zoneValidationFailed) ~> zoneRoute(okAuth) ~> check {
+      post(zoneValidationFailed) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "report missing data" in {
-      post(missingFields) ~> Route.seal(zoneRoute(okAuth)) ~> check {
+      post(missingFields) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -738,7 +729,7 @@ class ZoneRoutingSpec
     }
 
     "ignore fields not defined in CreateZoneInput" in {
-      post(zoneWithInvalidId) ~> Route.seal(zoneRoute(okAuth)) ~> check {
+      post(zoneWithInvalidId) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe Accepted
       }
     }
@@ -746,7 +737,7 @@ class ZoneRoutingSpec
 
   "DELETE zone" should {
     "return 202 on successful delete of existing zone" in {
-      Delete(s"/zones/${ok.id}") ~> zoneRoute(okAuth) ~> check {
+      Delete(s"/zones/${ok.id}") ~> zoneRoute ~> check {
         status shouldBe Accepted
 
         val result = responseAs[ZoneChange]
@@ -758,19 +749,19 @@ class ZoneRoutingSpec
     }
 
     "return 404 if the zone does not exist" in {
-      Delete(s"/zones/${notFound.id}") ~> zoneRoute(okAuth) ~> check {
+      Delete(s"/zones/${notFound.id}") ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
 
     "return 403 if the user is not authorized" in {
-      Delete(s"/zones/${notAuthorized.id}") ~> zoneRoute(okAuth) ~> check {
+      Delete(s"/zones/${notAuthorized.id}") ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
 
     "return a 409 Conflict if the zone is unavailable" in {
-      Delete(s"/zones/${zone1.id}") ~> zoneRoute(okAuth) ~> check {
+      Delete(s"/zones/${zone1.id}") ~> zoneRoute ~> check {
         status shouldBe Conflict
       }
     }
@@ -778,7 +769,7 @@ class ZoneRoutingSpec
 
   "GET zone" should {
     "return the zone is retrieved" in {
-      Get(s"/zones/${ok.id}") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/${ok.id}") ~> zoneRoute ~> check {
         status shouldBe OK
 
         val resultZone = responseAs[GetZoneResponse].zone
@@ -795,7 +786,7 @@ class ZoneRoutingSpec
     }
 
     "return 404 if the zone does not exist" in {
-      Get(s"/zones/${notFound.id}") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/${notFound.id}") ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
@@ -803,7 +794,7 @@ class ZoneRoutingSpec
 
   "GET zone by name " should {
     "return the zone is retrieved" in {
-      Get(s"/zones/name/${ok.name}") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/name/${ok.name}") ~> zoneRoute ~> check {
         status shouldBe OK
 
         val resultZone = responseAs[GetZoneResponse].zone
@@ -820,7 +811,7 @@ class ZoneRoutingSpec
     }
 
     "return 404 if the zone does not exist" in {
-      Get(s"/zones/name/${notFound.name}") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/name/${notFound.name}") ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
@@ -828,7 +819,7 @@ class ZoneRoutingSpec
 
   "GET all zones" should {
     "return the zones" in {
-      Get("/zones") ~> zoneRoute(okAuth) ~> check {
+      Get("/zones") ~> zoneRoute ~> check {
         val zones = responseAs[ListZonesResponse].zones
         (zones.map(_.id) should contain)
           .only(zone1.id, zone2.id, zone3.id)
@@ -838,7 +829,7 @@ class ZoneRoutingSpec
 
   "GET zones" should {
     "return the next id when more results exist" in {
-      Get(s"/zones?startFrom=zone3.&maxItems=3") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?startFrom=zone3.&maxItems=3") ~> zoneRoute ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -850,7 +841,7 @@ class ZoneRoutingSpec
     }
 
     "not return the next id when there are no more results" in {
-      Get(s"/zones?startFrom=zone4.&maxItems=4") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -863,7 +854,7 @@ class ZoneRoutingSpec
     }
 
     "not return the start from when not provided" in {
-      Get(s"/zones?maxItems=3") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?maxItems=3") ~> zoneRoute ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -876,7 +867,7 @@ class ZoneRoutingSpec
     }
 
     "return the name filter when provided" in {
-      Get(s"/zones?nameFilter=foo&startFrom=zone4.&maxItems=4") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?nameFilter=foo&startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -890,7 +881,7 @@ class ZoneRoutingSpec
     }
 
     "return all zones when list all is true" in {
-      Get(s"/zones?maxItems=5&ignoreAccess=true") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?maxItems=5&ignoreAccess=true") ~> zoneRoute ~> check {
         val resp = responseAs[ListZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -904,7 +895,7 @@ class ZoneRoutingSpec
     }
 
     "return an error if the max items is out of range" in {
-      Get(s"/zones?maxItems=700") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones?maxItems=700") ~> zoneRoute ~> check {
         status shouldBe BadRequest
         responseEntity.toString should include(
           "maxItems was 700, maxItems must be between 0 and 100")
@@ -914,7 +905,7 @@ class ZoneRoutingSpec
 
   "GET zone changes" should {
     "return the zone changes" in {
-      Get(s"/zones/${ok.id}/changes") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/${ok.id}/changes") ~> zoneRoute ~> check {
         val changes = responseAs[ListZoneChangesResponse]
 
         changes.zoneId shouldBe ok.id
@@ -924,22 +915,22 @@ class ZoneRoutingSpec
     }
 
     "return the ZoneNotFoundError when the zone does not exist" in {
-      Get(s"/zones/${notFound.id}/changes") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/${notFound.id}/changes") ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
 
     "return a Forbidden when the user is not authorized" in {
-      Get(s"/zones/${notAuthorized.id}/changes") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/${notAuthorized.id}/changes") ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
 
     "return a Bad Request when maxItems is out of Bounds" in {
-      Get(s"/zones/${ok.id}/changes?maxItems=101") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/${ok.id}/changes?maxItems=101") ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
-      Get(s"/zones/${ok.id}/changes?maxItems=0") ~> zoneRoute(okAuth) ~> check {
+      Get(s"/zones/${ok.id}/changes?maxItems=0") ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
@@ -948,7 +939,7 @@ class ZoneRoutingSpec
   "PUT zone" should {
     "return 202 when the zone is updated" in {
       Put(s"/zones/${ok.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(ok))) ~> zoneRoute(okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(ok))) ~> zoneRoute ~> check {
         status shouldBe Accepted
         val result = responseAs[ZoneChange]
         result.changeType shouldBe ZoneChangeType.Update
@@ -971,8 +962,7 @@ class ZoneRoutingSpec
 
     "return 404 NotFound if the zone is not found" in {
       Put(s"/zones/${notFound.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(notFound))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(notFound))) ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
@@ -980,47 +970,44 @@ class ZoneRoutingSpec
     "return 403 if the user is not authorized" in {
       Put(s"/zones/${notAuthorized.id}").withEntity(HttpEntity(
         ContentTypes.`application/json`,
-        zoneJson(notAuthorized))) ~> zoneRoute(okAuth) ~> check {
+        zoneJson(notAuthorized))) ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
 
     "return 400 BadRequest if the zone adminGroupId is invalid" in {
       Put(s"/zones/${badAdminId.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(badAdminId))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(badAdminId))) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "return a 409 Conflict if the zone is unavailable" in {
       Put(s"/zones/${zone1.id}")
-        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(zone1))) ~> zoneRoute(
-        okAuth) ~> check {
+        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(zone1))) ~> zoneRoute ~> check {
         status shouldBe Conflict
       }
     }
 
     "validate the connection when the update is posted" in {
-      Put(s"/zones/${connectionOk.id}").withEntity(HttpEntity(
-        ContentTypes.`application/json`,
-        zoneJson(connectionOk))) ~> zoneRoute(okAuth) ~> check {
+      Put(s"/zones/${connectionOk.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, zoneJson(connectionOk))) ~> zoneRoute ~> check {
         status shouldBe Accepted
       }
     }
 
     "fail the update if the connection validation fails" in {
-      Put(s"/zones/${connectionFailed.id}").withEntity(
-        HttpEntity(ContentTypes.`application/json`, zoneJson(connectionFailed))) ~> zoneRoute(
-        okAuth) ~> check {
+      Put(s"/zones/${connectionFailed.id}").withEntity(HttpEntity(
+        ContentTypes.`application/json`,
+        zoneJson(connectionFailed))) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "fail the update if the zone validation fails" in {
-      Put(s"/zones/${zoneValidationFailed.id}").withEntity(
-        HttpEntity(ContentTypes.`application/json`, zoneJson(zoneValidationFailed))) ~> zoneRoute(
-        okAuth) ~> check {
+      Put(s"/zones/${zoneValidationFailed.id}").withEntity(HttpEntity(
+        ContentTypes.`application/json`,
+        zoneJson(zoneValidationFailed))) ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
@@ -1028,7 +1015,7 @@ class ZoneRoutingSpec
     "report missing data" in {
       Put(s"/zones/${ok.id}").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render(missingFields)))) ~> Route.seal(
-        zoneRoute(okAuth)) ~> check {
+        zoneRoute) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -1049,7 +1036,7 @@ class ZoneRoutingSpec
     "report type mismatch" in {
       Put(s"/zones/${ok.id}").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render(zoneWithInvalidId)))) ~> Route
-        .seal(zoneRoute(okAuth)) ~> check {
+        .seal(zoneRoute) ~> check {
         status shouldBe BadRequest
         val result = responseAs[JValue]
         val errs = (result \ "errors").extractOpt[List[String]]
@@ -1061,39 +1048,39 @@ class ZoneRoutingSpec
 
   "POST zone sync" should {
     "return 202 Accepted if the zone can be synced" in {
-      Post(s"/zones/${ok.id}/sync") ~> zoneRoute(okAuth) ~> check {
+      Post(s"/zones/${ok.id}/sync") ~> zoneRoute ~> check {
         val result = responseAs[ZoneChange]
         result.changeType shouldBe ZoneChangeType.Sync
         status shouldBe Accepted
       }
     }
     "return 404 NotFound if the zone is not found" in {
-      Post(s"/zones/${notFound.id}/sync") ~> zoneRoute(okAuth) ~> check {
+      Post(s"/zones/${notFound.id}/sync") ~> zoneRoute ~> check {
         status shouldBe NotFound
       }
     }
     "return a Forbidden if the user is not authorized" in {
-      Post(s"/zones/${notAuthorized.id}/sync") ~> zoneRoute(okAuth) ~> check {
+      Post(s"/zones/${notAuthorized.id}/sync") ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
     "return a BadRequest if the zone is in an invalid state to be synced" in {
-      Post(s"/zones/${zone1.id}/sync") ~> zoneRoute(okAuth) ~> check {
+      Post(s"/zones/${zone1.id}/sync") ~> zoneRoute ~> check {
         status shouldBe BadRequest
       }
     }
     "return a Conflict if the zone has a pending update" in {
-      Post(s"/zones/${zone2.id}/sync") ~> zoneRoute(okAuth) ~> check {
+      Post(s"/zones/${zone2.id}/sync") ~> zoneRoute ~> check {
         status shouldBe Conflict
       }
     }
     "return Forbidden if the zone has recently been synced" in {
-      Post(s"/zones/${zone3.id}/sync") ~> zoneRoute(okAuth) ~> check {
+      Post(s"/zones/${zone3.id}/sync") ~> zoneRoute ~> check {
         status shouldBe Forbidden
       }
     }
     "return a Conflict if the zone is currently syncing" in {
-      Post(s"/zones/${zone5.id}/sync") ~> zoneRoute(okAuth) ~> check {
+      Post(s"/zones/${zone5.id}/sync") ~> zoneRoute ~> check {
         status shouldBe Conflict
       }
     }
@@ -1101,7 +1088,7 @@ class ZoneRoutingSpec
 
   "GET backendids" should {
     "return a 200 OK with the backend ids" in {
-      Get("/zones/backendids") ~> zoneRoute(okAuth) ~> check {
+      Get("/zones/backendids") ~> zoneRoute ~> check {
         status shouldBe OK
         val result = responseAs[List[String]]
         result shouldBe List("backend-1", "backend-2")
