@@ -315,7 +315,7 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved
       ).asRight
-    } else if (manualReviewEnabled && allNonFatal) {
+    } else if (manualReviewEnabled && allNonFatal && !batchChangeInput.disableManualReview) {
       // only soft failures, can go to pending state
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
