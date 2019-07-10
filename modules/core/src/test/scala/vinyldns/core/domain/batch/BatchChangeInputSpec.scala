@@ -18,7 +18,6 @@ package vinyldns.core.domain.batch
 
 import cats.data.NonEmptyList
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.ZoneDiscoveryError
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
@@ -62,7 +61,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       asAdd.recordName shouldBe None
       asAdd.inputName shouldBe "some.test.com."
       asAdd.typ shouldBe A
-      asAdd.ttl shouldBe VinylDNSConfig.defaultTtl
+      asAdd.ttl shouldBe 7200L
       asAdd.recordData shouldBe AData("1.1.1.1")
       asAdd.status shouldBe SingleChangeStatus.NeedsReview
       asAdd.systemMessage shouldBe None

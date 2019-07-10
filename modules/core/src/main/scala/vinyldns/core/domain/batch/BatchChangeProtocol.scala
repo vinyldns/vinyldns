@@ -17,10 +17,8 @@
 package vinyldns.core.domain.batch
 
 import cats.data.NonEmptyList
-import vinyldns.api.VinylDNSConfig
-import vinyldns.api.domain.DomainValidationError
+import vinyldns.core.domain.DomainValidationError
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
-import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType._
 
@@ -44,7 +42,7 @@ final case class AddChangeInput(
     extends ChangeInput {
 
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange = {
-    val knownTtl = ttl.getOrElse(VinylDNSConfig.defaultTtl)
+    val knownTtl = ttl.getOrElse(7200L)
     SingleAddChange(
       None,
       None,
