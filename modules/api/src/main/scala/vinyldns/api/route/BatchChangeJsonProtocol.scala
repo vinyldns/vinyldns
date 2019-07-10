@@ -22,7 +22,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import cats.implicits._
 import vinyldns.core.domain.DomainValidationError
-import vinyldns.api.domain.batch.ChangeInputType._
+import vinyldns.core.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType.RecordType

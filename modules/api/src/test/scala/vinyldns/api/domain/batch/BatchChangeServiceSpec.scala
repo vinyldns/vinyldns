@@ -356,6 +356,7 @@ class BatchChangeServiceSpec
       val result = rightResultOf(underTestManualEnabled.applyBatchChange(input, auth).value)
 
       result.changes.length shouldBe 1
+      result.id shouldBe batchChange.id
     }
 
     "fail with included batchChange ID if manual review in enabled and batch change is rejected" in {
@@ -463,13 +464,26 @@ class BatchChangeServiceSpec
 
   "approveBatchChange" should {
     "succeed if the batchChange is PendingApproval and reviewer is authorized" in {
+      val singleChange = SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None)
+
       val batchChange =
         BatchChange(
           auth.userId,
           auth.signedInUser.userName,
           None,
           DateTime.now,
-          List(),
+          List(singleChange),
           approvalStatus = BatchChangeApprovalStatus.PendingApproval)
       batchChangeRepo.save(batchChange)
 
@@ -481,9 +495,11 @@ class BatchChangeServiceSpec
             .approveBatchChange(batchChange.id, supportUserAuth, Some(review))
             .value)
 
+      result.id shouldBe batchChange.id
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
       result.reviewerId shouldBe Some(supportUserAuth.userId)
       result.reviewComment shouldBe Some("All good!")
+      result.changes(0).asInstanceOf[SingleAddChange].inputName shouldBe singleChange.inputName
     }
 
     "fail if the batchChange is not PendingApproval" in {
@@ -535,6 +551,42 @@ class BatchChangeServiceSpec
         leftResultOf(underTest.approveBatchChange(batchChange.id, auth, None).value)
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
+
+    "succeed if there's a hard failure after a batch change is approved" in {
+      val singleChange = SingleAddChange(
+        Some(existingNonApex.zoneId),
+        Some(existingNonApex.name),
+        Some("non-apex"),
+        "non-apex.test.com.",
+        TXT,
+        ttl.get,
+        TXTData("trying to add a record that already exists"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None
+      )
+
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(singleChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      batchChangeRepo.save(batchChange)
+
+      val review = ApproveBatchChangeInput(Some("All good!"))
+
+      val result =
+        rightResultOf(
+          underTestManualEnabled
+            .approveBatchChange(batchChange.id, supportUserAuth, Some(review))
+            .value)
+
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
     }
   }
 
@@ -1465,6 +1517,63 @@ class BatchChangeServiceSpec
 
     "return the group if the group exists for the owner group ID" in {
       rightResultOf(underTest.getOwnerGroup(Some(okGroup.id)).value) shouldBe Some(okGroup)
+    }
+  }
+
+  "buildOrGetBatchChange" should {
+    "build a new batch change if no batch change ID is given" in {
+      val input = BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, cnameAdd))
+
+      val validatedSingleChanges = List(
+        AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA).validNel,
+        AddChangeForValidation(baseZone, "cname", cnameAdd).validNel
+      )
+
+      val result =
+        rightResultOf(underTest.buildOrGetBatchChange(input, validatedSingleChanges, okAuth).value)
+
+      result.changes.length shouldBe 3
+    }
+    "retrieve an existing batch change if a valid batch change ID is given" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved,
+          id = "new-batch")
+
+      batchChangeRepo.save(batchChange)
+
+      val input =
+        BatchChangeInput(None, List(apexAddA), None, Some(batchChange.id))
+
+      val validatedSingleChanges =
+        List(AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel)
+
+      val result =
+        rightResultOf(underTest.buildOrGetBatchChange(input, validatedSingleChanges, auth).value)
+
+      result.id shouldBe batchChange.id
+      result.changes.length shouldBe 0
+    }
+    "build a new batch change if an invalid batch change ID is given" in {
+      val input =
+        BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, cnameAdd), Some("none-existent"))
+
+      val validatedSingleChanges = List(
+        AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+        AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA).validNel,
+        AddChangeForValidation(baseZone, "cname", cnameAdd).validNel
+      )
+
+      val result =
+        rightResultOf(underTest.buildOrGetBatchChange(input, validatedSingleChanges, okAuth).value)
+
+      result.changes.length shouldBe 3
     }
   }
 

@@ -23,13 +23,13 @@ import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.api.domain.{AccessValidations, batch, _}
+import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.core.domain._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
@@ -98,7 +98,7 @@ class BatchChangeValidationsSpec
     for {
       numChanges <- choose(min, max)
       changes <- listOfN(numChanges, validAChangeGen)
-    } yield batch.BatchChangeInput(None, changes)
+    } yield BatchChangeInput(None, changes)
 
   private val createPrivateAddChange = AddChangeForValidation(
     okZone,
@@ -237,7 +237,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateBatchChangeInput: should fail if both input size is valid and owner group ID aew invalid") {
+    "validateBatchChangeInput: should fail if both input size is valid and owner group ID is invalid") {
     forAll(validBatchChangeInput(0, 0)) { batchChangeInput =>
       val result = validateBatchChangeInput(
         batchChangeInput.copy(ownerGroupId = Some(dummyGroup.id)),

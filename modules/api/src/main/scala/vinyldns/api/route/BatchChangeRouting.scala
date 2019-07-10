@@ -23,8 +23,8 @@ import cats.data.EitherT
 import cats.effect._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch._
 import vinyldns.api.domain.batch._
-import vinyldns.core.domain.batch.BatchChangeApprovalStatus
 
 trait BatchChangeRoute extends Directives {
   this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>

@@ -27,7 +27,7 @@ import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
 import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.membership.Group
 
 trait BatchChangeValidationsAlgebra {

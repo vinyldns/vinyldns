@@ -52,7 +52,7 @@ class BatchChangeRoutingSpec
   import vinyldns.core.domain.batch.SingleChangeStatus._
 
   object TestData {
-    import vinyldns.api.domain.batch.ChangeInputType._
+    import vinyldns.core.domain.batch.ChangeInputType._
 
     val batchChangeLimit = 1000
 

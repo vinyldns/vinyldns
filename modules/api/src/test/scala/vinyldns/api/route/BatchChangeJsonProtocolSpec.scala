@@ -26,7 +26,7 @@ import org.json4s._
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.domain._
 import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, ChangeForValidation}
-import vinyldns.api.domain.batch.ChangeInputType._
+import vinyldns.core.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.domain.{InvalidIpv4Address, InvalidTTL, ZoneDiscoveryError}

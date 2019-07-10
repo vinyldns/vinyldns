@@ -83,11 +83,7 @@ class BatchChangeService(
         recordSets,
         auth,
         batchChangeInput.ownerGroupId)
-      changeForConversion <- buildBatchChange(
-        batchChangeInput,
-        validatedSingleChanges,
-        auth,
-        batchChangeInput.batchChangeId)
+      changeForConversion <- buildOrGetBatchChange(batchChangeInput, validatedSingleChanges, auth)
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         zoneMap,
@@ -103,16 +99,6 @@ class BatchChangeService(
       batchChange.ownerGroupId,
       Some(batchChange.id))
   }
-
-  def buildBatchChange(
-      batchChangeInput: BatchChangeInput,
-      validatedSingleChanges: ValidatedBatch[ChangeForValidation],
-      auth: AuthPrincipal,
-      batchChangeId: Option[String]): BatchResult[BatchChange] =
-    batchChangeId match {
-      case Some(id) => getExistingBatchChange(id)
-      case None => buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
-    }
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -131,9 +117,9 @@ class BatchChangeService(
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
       updatedBatchChange <- approveBatchChange(batchChange, authPrincipal, approveBatchChangeInput)
-      convertBatchChange = convertToBatchChangeInput(batchChange)
-      _ <- applyBatchChange(convertBatchChange, authPrincipal)
-    } yield updatedBatchChange
+      convertBatchChange = convertToBatchChangeInput(updatedBatchChange)
+      reValidatedBatchChange <- applyBatchChange(convertBatchChange, authPrincipal)
+    } yield reValidatedBatchChange
 
   def approveBatchChange(
       batchChange: BatchChange,
@@ -148,6 +134,7 @@ class BatchChangeService(
         reviewTimestamp = Some(DateTime.now))
     batchChangeRepo.save(updatedBatchChange).toBatchResult
   }
+
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
       batchChange <- getExistingBatchChange(id)
@@ -325,6 +312,16 @@ class BatchChangeService(
       changeForValidation.getOrElse(ZoneDiscoveryError(change.inputName).invalidNel)
     }
   }
+
+  def buildOrGetBatchChange(
+     batchChangeInput: BatchChangeInput,
+     validatedSingleChanges: ValidatedBatch[ChangeForValidation],
+     auth: AuthPrincipal): BatchResult[BatchChange] =
+    batchChangeInput.batchChangeId match {
+      // TODO - handle re-validations errors, assuming happy path for now
+      case Some(id) => getExistingBatchChange(id)
+      case None => buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
+    }
 
   def buildResponse(
       batchChangeInput: BatchChangeInput,
