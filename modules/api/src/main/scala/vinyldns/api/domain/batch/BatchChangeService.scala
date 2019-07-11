@@ -401,10 +401,7 @@ class BatchChangeService(
       batchChange: BatchChange,
       reviewComment: Option[String],
       reviewerId: String): BatchResult[BatchChange] = {
-    val rejectedSingleChanges = batchChange.changes.map {
-      case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
-      case sdc: SingleDeleteChange => sdc.copy(status = SingleChangeStatus.Rejected)
-    }
+    val rejectedSingleChanges = batchChange.changes.map(_.reject)
 
     // Update rejection attributes and single changes for batch change
     val rejectedBatch = batchChange.copy(

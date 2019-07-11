@@ -71,6 +71,11 @@ sealed trait SingleChange {
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId))
   }
+
+  def reject: SingleChange = this match {
+    case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
+    case sdc: SingleDeleteChange => sdc.copy(status = SingleChangeStatus.Rejected)
+  }
 }
 
 final case class SingleAddChange(
