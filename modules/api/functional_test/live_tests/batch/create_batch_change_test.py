@@ -37,8 +37,8 @@ def assert_successful_change_in_error_response(input_json, change_type="Add", in
 def assert_change_success_response_values(changes_json, zone, index, record_name, input_name, record_data, ttl=200, record_type="A", change_type="Add"):
     assert_that(changes_json[index]['zoneId'], is_(zone['id']))
     assert_that(changes_json[index]['zoneName'], is_(zone['name']))
-    assert_that(changes_json[index]['recordName'], is_(record_name))
-    assert_that(changes_json[index]['inputName'], is_(input_name))
+    assert_that(changes_json[index]['recordName'], is_(record_name.lower()))
+    assert_that(changes_json[index]['inputName'], is_(input_name.lower()))
     if change_type=="Add":
         assert_that(changes_json[index]['ttl'], is_(ttl))
     assert_that(changes_json[index]['type'], is_(record_type))
