@@ -21,8 +21,9 @@ import java.net.InetAddress
 import cats.syntax.either._
 import org.joda.time.DateTime
 import org.xbill.DNS
+import org.xbill.DNS.{DClass, Flags, Name, Opcode, Rcode, Record, Section}
 import scodec.bits.ByteVector
-import vinyldns.api.domain.dns.DnsProtocol._
+import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, _}
 import vinyldns.core.domain.{DomainHelpers, record}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
@@ -446,6 +447,113 @@ trait DnsConversions {
     val update = new DNS.Update(zoneDnsName(zoneName))
     update.delete(r.getName, r.getType)
     Right(update)
+  }
+
+  private val dns = "dns"
+  private val name = "name"
+  private val _type = "type"
+  private val clazz = "class"
+  private val ttl = "ttl"
+  private val tsig = "tsig_check"
+  private val data = "data"
+  private val id = "id"
+  private val op_code = "op_code"
+
+  /**
+    * This ECS custom schema for DNS question and answers are derived from https://github.com/elastic/ecs/pull/438
+    *
+    * @param name representation of domain name
+    * @param rType record type, for e.g.: A, AAA, CNAME, etc.
+    * @return
+    */
+  def dnsQuestionEvent(name: Name, rType: RecordType): Map[_, _] =
+    Map(dns -> Map("question" -> Map(name -> name.toString(true), _type -> rType.toString)))
+
+  /**
+    * Note: [07/09/2019] Elastic ECS forum is currently discussing (https://github.com/elastic/ecs/pull/438) to create
+    * separate log document for each answer to enable accurate Elasticsearch search against the answers fields.
+    * Meanwhile we are logging the answers as array of objects in single log statement.
+    *
+    * @param responseCode response code from the underlying name server
+    * @param answers DNS answers resolved from underlying name server
+    * @return map containing the fields to include into the log statement
+    */
+  def dnsAnswerEvent(responseCode: Int, answers: List[Record]): Map[_, _] = {
+    val rCodeKey = if (responseCode > 0) Rcode.string(responseCode) else "UNPARSEABLE"
+    Map(
+      "answers" -> answers.map(r => recordInfo(rCodeKey, r)).toArray,
+      "answers_count" -> answers.size,
+      "response_code" -> rCodeKey,
+    )
+  }
+
+  def recordInfo(opCode: String, r: Record): Map[_, _] =
+    Map(
+      name -> r.getName.toString,
+      clazz -> DClass.string(r.getDClass),
+      ttl -> r.getTTL,
+      _type -> fromDnsRecordType(r.getType).toString,
+      data -> r.rdataToString(),
+      op_code -> opCode
+    )
+
+  def dnsQAndAEvent(
+      question: DNS.Message,
+      errorOrAnswer: Either[Throwable, DnsResponse]): Map[_, _] = {
+
+    val questionFields = dnsMessageEvent(question)
+
+    val resultFields = errorOrAnswer.fold(
+      t => Map("error" -> Map("message" -> t.getMessage, "code" -> "unhandled-error")), {
+        case NoError(answer) => dnsMessageEvent(answer)
+      }
+    )
+
+    Map(
+      "dns" ->
+        Map("question" -> questionFields, "answer" -> resultFields))
+  }
+
+  def validFlag(bit: Int): Boolean = bit >= 0 && bit <= 0xF && Flags.isFlag(bit)
+
+  /**
+    *
+    * @param dnsMessage Either the message sent(question) or received(answer) from the server
+    * @return Map containing the fields to include into log statement
+    */
+  def dnsMessageEvent(dnsMessage: DNS.Message): Map[_, _] = {
+
+    val rCode =
+      if (dnsMessage.getOPT != null) dnsMessage.getRcode else dnsMessage.getHeader.getRcode
+
+    val tsigStatus =
+      if (dnsMessage.isSigned)
+        if (dnsMessage.isVerified) Map(tsig -> "ok") else Map(tsig -> "invalid")
+
+    val flags = (0 until 16)
+      .flatMap(i =>
+        if (validFlag(i) && dnsMessage.getHeader.getFlag(i)) {
+          Some(Flags.string(i) -> true)
+        } else {
+          None
+      })
+      .toMap
+
+    val additionalSections = (0 until 4).flatMap { i =>
+      val opCode =
+        if (dnsMessage.getHeader.getOpcode != Opcode.UPDATE) Section.longString(i)
+        else Section.updString(i)
+      dnsMessage.getSectionArray(i).map(r => recordInfo(opCode, r))
+    }
+
+    Map(
+      id -> dnsMessage.getHeader.getID,
+      tsig -> tsigStatus,
+      op_code -> Opcode.string(dnsMessage.getHeader.getOpcode),
+      "opt" -> Map("ext_rcode" -> Rcode.string(rCode)),
+      "additionals" -> additionalSections.toArray,
+      "flags" -> flags
+    )
   }
 }
 

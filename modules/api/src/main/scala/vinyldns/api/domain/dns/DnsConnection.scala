@@ -22,7 +22,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS
 import vinyldns.api.Interfaces.{result, _}
 import vinyldns.api.crypto.Crypto
-import vinyldns.api.logging.LoggingUtils._
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeType}
 import vinyldns.core.domain.zone.{Zone, ZoneConnection}
@@ -111,7 +110,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
       zoneName: String,
       typ: RecordType): Either[Throwable, DnsQuery] = {
     val dnsName = recordDnsName(name, zoneName)
-    logger.info(s"Querying for dns", entries(dnsQuestionEvent(dnsName, typ)))
+    logger.info(s"Querying for DNS", entries(dnsQuestionEvent(dnsName, typ)))
     val lookup = new DNS.Lookup(dnsName, toDnsRecordType(typ))
     lookup.setResolver(resolver)
     lookup.setSearchPath(Array.empty[String])
@@ -161,8 +160,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
         resp <- toDnsResponse(resp)
       } yield resp
 
-    logger.info(
-      s"DnsConnection.send - Sending DNS Message ${obscuredDnsMessage(msg).toString}\n...received response $result")
+    logger.info("DnsConnection.send", entries(dnsQAndAEvent(obscuredDnsMessage(msg), result)))
 
     result
   }
@@ -170,7 +168,9 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
   private def runQuery(query: DnsQuery): Either[Throwable, List[RecordSet]] = {
     val answers = query.run()
 
-    logger.info(s"Result of DNS lookup is ${answers.map(_.toString)}; result code: ${query.result}")
+    logger.info(
+      "Result of DNS lookup",
+      Map("dns" -> entries(dnsAnswerEvent(query.result, answers))))
 
     query.result match {
       case DNS.Lookup.TRY_AGAIN =>
@@ -181,10 +181,18 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
         // so if we can parse the error into an rcode, then we need to handle it properly; otherwise, we can try again
         // The DNS.Rcode.value function will return -1 if the error cannot be parsed into an integer
         if (DNS.Rcode.value(query.error) >= 0) {
-          logger.info(s"Received TRY_AGAIN from DNS lookup; converting error: ${query.error}")
+          logger.info(
+            "Received TRY_AGAIN from DNS lookup; converting error",
+            entries(
+              Map("error" ->
+                Map("code" -> "TRY_AGAIN", "message" -> query.error))))
           fromDnsRcodeToError(DNS.Rcode.value(query.error), query.error)
         } else {
-          logger.info(s"Unparseable error code returned from DNS: ${query.error}")
+          logger.info(
+            "Unparseable error code returned from DNS",
+            entries(
+              Map("error" ->
+                Map("code" -> "UNPARSEABLE", "message" -> query.error))))
           Left(TryAgain(query.error))
         }
 
