@@ -40,6 +40,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.ws.WSClient
 import play.api.mvc.RequestHeader
+import vinyldns.core.logging.StructuredArgs._
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -115,7 +116,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       "nonce" -> nonce.toString
     )
 
-    logger.info(s"Generated LoginId $loginId")
+    logger.info("Generated LoginId", entries(event("token-generate", Id(loginId, "oidc-login"))))
     Uri(s"${oidcInfo.authorizationEndpoint}").withQuery(query)
   }
 
@@ -145,14 +146,15 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     val issueTime = Option(claimsSet.getIssueTime)
 
     val user = getStringFieldOption(claimsSet, oidcInfo.jwtUsernameField)
-    logger.debug(s"Current time: $now, token for $user will expire at: $expirationTime")
+    logger.debug("token info", entries(event("token-info", Id(user.getOrElse(""), "user"),
+      Map("now" -> now, "expireAt" -> expirationTime.getOrElse(now)))))
 
     val idTokenStillValid = expirationTime.forall(now.before) &&
       notBeforeTime.forall(now.after) &&
       issueTime.forall(now.after)
 
     if (!idTokenStillValid) {
-      logger.info(s"Token for $user is expired")
+      logger.info("token expired", entries(event("token-expired", Id(user.getOrElse(""), "user"))))
     }
 
     idTokenStillValid
@@ -181,7 +183,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     val claimsSet = Try(JWTClaimsSet.parse(jwtClaimsSetString)) match {
       case Success(s) => Some(s)
       case Failure(e) =>
-        logger.error(s"oidc session token parse error: ${e.getMessage}")
+        logger.error("oidc session token parse error", e)
         None
     }
 
@@ -194,7 +196,8 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       }
       username
     } else {
-      logger.info(s"oidc session token for user [$username] is invalid")
+      logger.info("oidc session token for user is invalid", entries(event("token-invalid",
+        Id(username.getOrElse(""), "user"))))
       None
     }
   }
@@ -245,7 +248,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       val codeGrant = new AuthorizationCodeGrant(code, redirectUri)
       val request = new TokenRequest(tokenEndpoint, clientAuth, codeGrant)
 
-      logger.info(s"Sending token_id request for loginId [$loginId]")
+      logger.info("Sending token_id request", entries(event("token-request", Id(loginId, "oidc-token"))))
       IO(request.toHTTPRequest.send()).map(handleCallbackResponse)
     }
 
@@ -253,7 +256,7 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     Either
       .fromTry(Try(t))
       .leftMap { err =>
-        logger.error(s"Unexpected error in OIDC flow: ${err.getMessage}")
+        logger.error(s"Unexpected error in OIDC flow: ${err.getMessage}", err)
         ErrorResponse(500, err.getMessage)
       }
 }

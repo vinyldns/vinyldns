@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 import play.api.Logger
 import play.api.mvc._
 import play.api.Configuration
+import vinyldns.core.logging.StructuredArgs._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -70,8 +71,8 @@ class FrontendController @Inject()(
     }
   }
 
-  private def getLoggedInUser(request: RequestHeader) =
-    if (oidcEnabled) {
+  private def getLoggedInUser(request: RequestHeader): String =
+    (if (oidcEnabled) {
       request.session
         .get(VinylDNS.ID_TOKEN)
         .flatMap {
@@ -79,10 +80,10 @@ class FrontendController @Inject()(
         }
     } else {
       request.session.get("username")
-    }.getOrElse("No user in session")
+    }).getOrElse("No user in session")
 
   def logout(): Action[AnyContent] = Action { implicit request =>
-    logger.info(s"Initializing logout for user [${getLoggedInUser(request)}]")
+    logger.info("Initializing logout for user", entries(event("logout", Id(getLoggedInUser(request), "user"))))
     if (oidcEnabled) {
       Redirect(oidcAuthenticator.oidcLogoutUrl).withNewSession
     } else {
@@ -91,7 +92,7 @@ class FrontendController @Inject()(
   }
 
   def noAccess(): Action[AnyContent] = Action { implicit request =>
-    logger.info(s"User account for '${getLoggedInUser(request)}' is locked.")
+    logger.info("User account locked", entries(event("locked", Id(getLoggedInUser(request), "user"))))
     Unauthorized(
       views.html.systemMessage(
         """
@@ -125,7 +126,7 @@ class FrontendController @Inject()(
   }
 
   def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
-    logger.info(s"View Batch Change for $batchId")
+    logger.info("View Batch Change", entries(event("view-batch", Id(batchId, "batch"))))
     Future(Ok(views.html.batchChanges.batchChangeDetail(request.user.userName)))
   }
 

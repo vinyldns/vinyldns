@@ -21,6 +21,7 @@ import controllers.{OidcAuthenticator, VinylDNS}
 import org.slf4j.Logger
 import play.api.mvc.{ActionFunction, Request, Result, Session}
 import vinyldns.core.domain.membership.{LockStatus, User}
+import vinyldns.core.logging.StructuredArgs._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -60,7 +61,8 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
 
     userName match {
       case None =>
-        logger.info("User is not logged in or token expired; redirecting to login screen")
+        logger.info("User is not logged in or token expired; redirecting to login screen",
+          entries(event("login-redirect", Id("None", "user"), Map("reason" -> "expired-token"))))
         notLoggedInResult
 
       case Some(un) =>
@@ -68,15 +70,17 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
         userLookup(un).unsafeToFuture().flatMap {
           // Odd case, but let's handle with a different error message
           case None =>
-            logger.error(s"Cant find account for user with username $un")
+            logger.error("Cant find account for user with username",
+              entries(event("notFound", Id(un, "user"))))
             cantFindAccountResult(un)
 
           case Some(user) if user.lockStatus == LockStatus.Locked =>
-            logger.info(s"User ${user.userName}'s account is locked; redirecting to lock screen")
+            logger.error("User account is locked; redirecting to lock screen",
+              entries(event("login-redirect", user, Map("reason" -> "locked"))))
             lockedUserResult(un)
 
           case Some(user) =>
-            logger.debug(s"User ${user.userName}'s is logged in")
+            logger.debug(s"User logged in", entries(event("login-success", user)))
             block(new UserRequest(un, user, request))
         }
     }

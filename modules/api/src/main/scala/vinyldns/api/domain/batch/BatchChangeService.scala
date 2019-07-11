@@ -36,6 +36,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.logging.StructuredArgs._
 
 object BatchChangeService {
   def apply(
@@ -355,8 +356,8 @@ class BatchChangeService(
     case _ =>
       // this should not be called with a rejected change (or if manual review is off)!
       logger.error(
-        s"convertOrSave called with a rejected batch change; " +
-          s"batchChangeId=${batchChange.id}; manualReviewEnabled=$manualReviewEnabled")
+        s"convertOrSave called with a rejected batch change",
+        entries(event("", batchChange, Map("manualReviewEnabled" -> manualReviewEnabled))))
       UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
   }
 

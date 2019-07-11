@@ -31,6 +31,7 @@ import vinyldns.core.domain.zone.{
   ZoneChangeStatus,
   ZoneRepository
 }
+import vinyldns.core.logging.StructuredArgs._
 
 object ZoneSyncHandler extends DnsConversions with Monitored {
 
@@ -101,7 +102,8 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
 
           if (changesWithUserIds.isEmpty) {
             logger.info(
-              s"zone.sync.changes; zoneName='${zone.name}'; changeCount=0; zoneChange='${zoneChange.id}'")
+              "zone.sync.changes",
+              entries(event("zoneSyncChanges", zoneChange, Map("changeCount" -> 0))))
             IO.pure(
               zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(DateTime.now)),
@@ -117,15 +119,27 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
               .grouped(1000)
               .foreach { dottedGroup =>
                 val dottedGroupString = dottedGroup.mkString(", ")
+
                 logger.info(
-                  s"Zone sync for zoneName='${zone.name}'; zoneId='${zone.id}'; " +
-                    s"zoneChange='${zoneChange.id}' includes the following ${dottedGroup.length} " +
-                    s"dotted host records: [$dottedGroupString]")
+                  "zone sync dottedHostRecords information",
+                  entries(
+                    event(
+                      "zoneSyncChanges",
+                      zoneChange,
+                      Map(
+                        "dottedGroupCount" -> dottedGroup.length,
+                        "dottedHostRecords" -> dottedGroupString
+                      )))
+                )
               }
 
             logger.info(
-              s"zone.sync.changes; zoneName='${zone.name}'; " +
-                s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'")
+              "zone.sync.changes",
+              entries(
+                event(
+                  "zoneSyncChanges",
+                  zoneChange,
+                  Map("changeCount" -> changesWithUserIds.size))))
             val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
 
             // we want to make sure we write to both the change repo and record set repo
@@ -150,8 +164,14 @@ object ZoneSyncHandler extends DnsConversions with Monitored {
       .map {
         case Left(e: Throwable) =>
           logger.error(
-            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
-            e)
+            "Encountered error syncing",
+            entries(
+              event(
+                "sync-error",
+                zoneChange,
+                Map(
+                  "error" -> Map("message" -> e.getMessage, "id" -> e.getClass.getName)
+                ))))
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),

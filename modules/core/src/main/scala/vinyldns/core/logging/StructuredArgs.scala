@@ -17,6 +17,7 @@
 package vinyldns.core.logging
 
 import net.logstash.logback.argument.{StructuredArgument, StructuredArguments}
+import vinyldns.core.domain.batch.BatchChange
 import vinyldns.core.domain.membership.{Group, GroupChange, User, UserChange}
 import vinyldns.core.domain.record.{ChangeSet, RecordSet, RecordSetChange}
 import vinyldns.core.domain.zone.{Zone, ZoneChange}
@@ -85,17 +86,22 @@ object StructuredArgs {
     */
   private def fields[T](t: T): Map[_, _] = t match {
     //core domains
-    case z: Zone => Map(_Id -> z.id, Name -> z.name, Type -> "zone")
     case u: User => Map(_Id -> u.id, Name -> u.userName, Type -> "user")
     case g: Group => Map(_Id -> g.id, Name -> g.name, Type -> "group")
+    case z: Zone => Map(_Id -> z.id, Name -> z.name, Type -> "zone")
     case gc: GroupChange => Map(_Id -> gc.id, Name -> gc.newGroup.name, Type -> "groupChange")
     case cs: ChangeSet =>
       Map(_Id -> cs.id, "zone" -> cs.zoneId, Type -> "changeSet", "size" -> cs.changes.size)
     case uc: UserChange => Map(_Id -> uc.id, Type -> "userChange")
     case mc: MessageCount => Map("count" -> mc.value, Type -> "message")
     case zc: ZoneChange => Map(_Id -> zc.id, Name -> zc.zone.name, Type -> "zoneChange")
+    case bc: BatchChange => Map(_Id -> bc.id, "count" -> bc.changes.size, Type -> "batchChange")
     case cm: CommandMessage =>
-      Map(_Id -> cm.id.value, "commandId" -> cm.command.id, ZoneId -> cm.command.zoneId)
+      Map(
+        _Id -> cm.id.value,
+        "commandId" -> cm.command.id,
+        ZoneId -> cm.command.zoneId,
+        Type -> "commandMessage")
 
     //wrapper
     case id: Id => Map(_Id -> id.id, Type -> id._type)

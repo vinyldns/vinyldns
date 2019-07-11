@@ -26,6 +26,7 @@ import vinyldns.api.engine.{RecordSetChangeHandler, ZoneChangeHandler, ZoneSyncH
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetChange, RecordSetRepository}
 import vinyldns.core.domain.zone._
+import vinyldns.core.logging.StructuredArgs._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.duration._
@@ -116,7 +117,7 @@ object CommandHandler {
       message.command match {
         case sync: ZoneChange
             if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.Create =>
-          logger.info(s"Updating visibility timeout for zone change; changeId=${sync.id}")
+          logger.info(s"Updating visibility timeout", entries(event("update", sync)))
           mq.changeMessageTimeout(message, 1.hour)
 
         case _ =>
@@ -151,13 +152,22 @@ object CommandHandler {
     IO.pure(logger.info(s"Running change request $message"))
       .flatMap(_ => p)
       .map { _ =>
-        logger.info(s"Successfully completed processing of message $message")
+        logger.info(
+          s"Successfully completed processing of message",
+          entries(event("process-success", message)))
         DeleteMessage(message)
       }
       .attempt
       .map {
         case Left(e) =>
-          logger.warn(s"Failed processing message need to retry; $message", e)
+          logger.warn(
+            "Failed processing message need to retry",
+            entries(
+              event(
+                "process-failure",
+                message,
+                Map("error" -> Map("message" -> e.getMessage, "id" -> e.getClass.getName))))
+          )
           RetryMessage(message)
         case Right(ok) => ok
       }
@@ -169,7 +179,9 @@ object CommandHandler {
         mq.remove(msg)
       case RetryMessage(msg) =>
         // Nothing to do here, the message will be retried after visibility timeout
-        logger.error(s"Message failed, retrying; $msg")
+        logger.error(
+          "Message failed, retrying",
+          entries(event("process-retry", msg, Map("reason" -> "failed"))))
         mq.requeue(msg)
     }.as(())
 

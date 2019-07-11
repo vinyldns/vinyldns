@@ -30,6 +30,7 @@ import scala.concurrent.duration._
 import vinyldns.core.notifier.AllNotifiers
 import vinyldns.core.notifier.Notification
 import vinyldns.core.domain.batch.BatchChangeStatus
+import vinyldns.core.logging.StructuredArgs._
 
 object RecordSetChangeHandler {
 
@@ -185,24 +186,34 @@ object RecordSetChangeHandler {
 
     state match {
       case Pending(change) =>
-        logger.info(s"CHANGE PENDING; ${getChangeLog(change)}")
+        logger.info(
+          "CHANGE PENDING",
+          entries(event("fsm", Detail(change), Map("state" -> "pending"))))
         bypassValidation(Validated(change))(orElse = validate(change, conn))
 
       case Validated(change) =>
-        logger.info(s"CHANGE VALIDATED; ${getChangeLog(change)}")
+        logger.info(
+          "CHANGE VALIDATED",
+          entries(event("fsm", Detail(change), Map("state" -> "validated"))))
         apply(change, conn).flatMap(fsm(_, conn, wildcardExists))
 
       case Applied(change) =>
-        logger.info(s"CHANGE APPLIED; ${getChangeLog(change)}")
+        logger.info(
+          "CHANGE APPLIED",
+          entries(event("fsm", Detail(change), Map("state" -> "applied"))))
         bypassValidation(Verified(change.successful))(orElse = verify(change, conn))
 
       case Verified(change) =>
-        logger.info(s"CHANGE VERIFIED; ${getChangeLog(change)}")
+        logger.info(
+          "CHANGE VERIFIED",
+          entries(event("fsm", Detail(change), Map("state" -> "verified"))))
         // if we got here, we are good.  Note: Complete could still mean that the change failed
         IO.pure(Completed(change))
 
       case done: Completed =>
-        logger.info(s"CHANGE COMPLETED; ${getChangeLog(done.change)}")
+        logger.info(
+          "CHANGE COMPLETED",
+          entries(event("fsm", Detail(done.change), Map("state" -> "completed"))))
         IO.pure(done)
     }
   }
@@ -243,18 +254,6 @@ object RecordSetChangeHandler {
       }
 
     loop()
-  }
-
-  private def getChangeLog(change: RecordSetChange): String = {
-    val sb = new StringBuilder
-    sb.append("changeId='").append(change.id).append("'")
-    sb.append(" changeType='").append(change.changeType).append("'")
-    sb.append(" recordSetName='").append(change.recordSet.name).append("'")
-    sb.append(" recordSetId='").append(change.recordSet.id).append("'")
-    sb.append(" zoneName='").append(change.zone.name).append("'")
-    sb.append(" zoneId='").append(change.zone.id).append("'")
-    sb.append(" isTestZone='").append(change.zone.isTest).append("'")
-    sb.toString
   }
 
   private def wildCardExistsForRecord(

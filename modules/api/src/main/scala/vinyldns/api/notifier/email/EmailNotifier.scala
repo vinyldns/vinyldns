@@ -24,6 +24,7 @@ import vinyldns.core.domain.membership.User
 import org.slf4j.LoggerFactory
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
+
 import scala.util.Try
 import vinyldns.core.domain.batch.SingleChange
 import vinyldns.core.domain.batch.SingleAddChange
@@ -38,11 +39,12 @@ import vinyldns.core.domain.record.RecordData
 import org.joda.time.format.DateTimeFormat
 import vinyldns.core.domain.batch.BatchChangeStatus._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+import vinyldns.core.logging.StructuredArgs._
 
 class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepository: UserRepository)
     extends Notifier {
 
-  private val logger = LoggerFactory.getLogger("EmailNotifier")
+  private val logger = LoggerFactory.getLogger(classOf[EmailNotifier])
 
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {
@@ -73,9 +75,23 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       case Some(user: User) if user.email.isDefined =>
         IO {
           logger.warn(
-            s"Unable to properly parse email for ${user.id}: ${user.email.getOrElse("<none>")}")
+            "Unable to properly parse email",
+            entries(
+              event(
+                "batch-notification",
+                user,
+                Map("email" -> user.email.getOrElse("<none>"), "reason" -> "parser-error"))))
         }
-      case None => IO { logger.warn(s"Unable to find user: ${bc.userId}") }
+      case None =>
+        IO {
+          logger.warn(
+            "Unable to find user",
+            entries(
+              event(
+                "batch-notification",
+                Id(bc.userId, "user"),
+                Map("reason" -> "user-not-found"))))
+        }
       case _ => IO.unit
     }
 
