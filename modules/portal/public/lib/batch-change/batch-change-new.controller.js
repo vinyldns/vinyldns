@@ -34,6 +34,7 @@
             $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}]};
             $scope.alerts = [];
             $scope.batchChangeErrors = false;
+            $scope.ownerGroupError = false;
             $scope.formStatus = "pendingSubmit";
 
             $scope.addSingleChange = function() {
@@ -93,6 +94,9 @@
                         } else {
                             $scope.newBatch.changes = error.data;
                             $scope.batchChangeErrors = true;
+                            $scope.ownerGroupError = error.data.filter(d => d.errors)
+                                .flatMap(d => d.errors)
+                                .find(e => e.includes('owner group ID must be specified for record')) ? true : false;
                             $scope.formStatus = "pendingSubmit";
                             $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
                         }
