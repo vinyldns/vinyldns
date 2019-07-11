@@ -81,7 +81,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
             get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
             get_change_A_AAAA_json("ok.", record_type="AAAA", address="fd69:27cc:fe91::60"),
             get_change_A_AAAA_json("relative.parent.com.", address="1.1.1.1"),
-            get_change_CNAME_json("cname.parent.com", cname="nice.parent.com"),
+            get_change_CNAME_json("CNAME.PARENT.COM", cname="nice.parent.com"),
             get_change_CNAME_json("2cname.parent.com", cname="nice.parent.com"),
             get_change_CNAME_json("4.2.0.192.in-addr.arpa.", cname="4.4/30.2.0.192.in-addr.arpa."),
             get_change_PTR_json("192.0.2.193", ptrdname="www.vinyldns"),
