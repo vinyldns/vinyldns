@@ -342,7 +342,7 @@ def test_create_batch_change_with_updates_deletes_success(shared_zone_test_conte
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=1, record_name="update", ttl=300,
                                               input_name="update.dummy.", record_data="1.2.3.4")
         assert_change_success_response_values(result['changes'], zone=dummy_zone, index=2, record_name="Update",
-                                              input_name="Update.dummy.", record_data=None, change_type="DeleteRecordSet")
+                                              input_name="update.dummy.", record_data=None, change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=3, record_name="delete",
                                               input_name="delete.ok.", record_data=None, record_type="CNAME", change_type="DeleteRecordSet")
         assert_change_success_response_values(result['changes'], zone=classless_zone_delegation_zone, index=4, record_name="193", ttl=300,
