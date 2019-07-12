@@ -18,6 +18,7 @@ package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
+import vinyldns.core.domain.ZoneDiscoveryError
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
@@ -40,6 +41,7 @@ class BatchChangeProtobufConversionsSpec
     Some("systemMessage"),
     Some("recordChangeId"),
     Some("recordSetId"),
+    List(ZoneDiscoveryError("some-zone-name")),
     "id"
   )
   private val testDeleteChange = SingleDeleteChange(
@@ -52,6 +54,7 @@ class BatchChangeProtobufConversionsSpec
     Some("systemMessage"),
     Some("recordChangeId"),
     Some("recordSetId"),
+    List(ZoneDiscoveryError("some-zone-name")),
     "id"
   )
 
@@ -83,6 +86,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(),
         "some-id"
       )
       val pb = toPB(tst)
@@ -103,6 +107,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(),
         "some-id"
       )
       val pb = toPB(tst)
@@ -123,6 +128,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(),
         "some-id"
       )
       val pb = toPB(tst)
@@ -143,10 +149,10 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(ZoneDiscoveryError("some-zone-name")),
         "some-id"
       )
       val pb = toPB(tst)
-
       val roundTrip = fromPB(pb.right.value)
 
       roundTrip.right.value shouldBe tst

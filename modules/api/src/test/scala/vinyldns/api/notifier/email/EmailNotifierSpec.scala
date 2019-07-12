@@ -178,7 +178,8 @@ class EmailNotifierSpec
           SingleChangeStatus.Complete,
           None,
           None,
-          None),
+          None,
+          List.empty),
         SingleDeleteChange(
           Some(""),
           Some(""),
@@ -188,7 +189,8 @@ class EmailNotifierSpec
           SingleChangeStatus.Failed,
           Some("message for you"),
           None,
-          None)
+          None,
+          List.empty)
       )
       val change = batchChange(Some(description), singleChanges)
 

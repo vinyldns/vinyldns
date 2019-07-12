@@ -110,7 +110,9 @@ object BatchTransformations {
         SingleChangeStatus.Pending,
         None,
         None,
-        None)
+        None,
+        List.empty
+      )
     }
 
     def isAddChangeForValidation: Boolean = true
@@ -133,7 +135,9 @@ object BatchTransformations {
         SingleChangeStatus.Pending,
         None,
         None,
-        None)
+        None,
+        List.empty
+      )
 
     def isAddChangeForValidation: Boolean = false
 

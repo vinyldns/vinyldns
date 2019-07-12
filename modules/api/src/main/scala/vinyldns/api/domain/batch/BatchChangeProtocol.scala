@@ -55,7 +55,9 @@ final case class AddChangeInput(
       SingleChangeStatus.NeedsReview,
       None,
       None,
-      None)
+      None,
+      errors.toList
+    )
   }
 }
 
@@ -70,7 +72,8 @@ final case class DeleteChangeInput(inputName: String, typ: RecordType) extends C
       SingleChangeStatus.NeedsReview,
       None,
       None,
-      None)
+      None,
+      errors.toList)
 }
 
 object AddChangeInput {
