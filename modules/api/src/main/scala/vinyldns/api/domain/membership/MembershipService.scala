@@ -135,9 +135,10 @@ class MembershipService(
       groupNameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListMyGroupsResponse] = {
+      authPrincipal: AuthPrincipal,
+      ignoreAccess: Boolean): Result[ListMyGroupsResponse] = {
     val groupsCall =
-      if (authPrincipal.isSystemAdmin) {
+      if (ignoreAccess) {
         groupRepo.getAllGroups()
       } else {
         groupRepo.getGroups(authPrincipal.memberGroupIds.toSet)

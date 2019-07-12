@@ -69,8 +69,9 @@ class MembershipRoute(
         }
       } ~
         (get & monitor("Endpoint.listMyGroups")) {
-          parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "groupNameFilter".?) {
-            (startFrom: Option[String], maxItems: Int, groupNameFilter: Option[String]) =>
+          parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "groupNameFilter".?,
+            "ignoreAccess".as[Boolean].?(false)) {
+            (startFrom: Option[String], maxItems: Int, groupNameFilter: Option[String], ignoreAccess: Boolean) =>
               {
                 handleRejections(invalidQueryHandler) {
                   validate(
@@ -81,7 +82,7 @@ class MembershipRoute(
                          """.stripMargin
                   ) {
                     authenticateAndExecute(membershipService
-                      .listMyGroups(groupNameFilter, startFrom, maxItems, _)) { groups =>
+                      .listMyGroups(groupNameFilter, startFrom, maxItems, _, ignoreAccess)) { groups =>
                       complete(StatusCodes.OK, groups)
                     }
                   }
