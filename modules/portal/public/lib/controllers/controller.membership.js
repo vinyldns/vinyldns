@@ -179,8 +179,11 @@ angular.module('controller.membership', []).controller('MembershipController', f
             function getGroupMemberListSuccess(result) {
                 $log.log('refresh::getGroupMemberList-success', result);
                 //update groups
-                $scope.membership.members = result.members;
+                var membersWithLockStatus = result.members
+                    .map(member => Object.assign(member, $scope.membership.group.members.find(gm => gm.id == member.id)));
+                $scope.membership.members = membersWithLockStatus;
                 $scope.membershipLoaded = true;
+
                 return result;
             }
 

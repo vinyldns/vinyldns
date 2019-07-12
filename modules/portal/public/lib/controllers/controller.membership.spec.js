@@ -33,7 +33,7 @@ describe('Controller: MembershipController', function () {
             data: {
                 id: 'id',
                 admins: [{id: "adminId"}],
-                members: [{id: "adminId"}, {id: "nonAdmin"}]
+                members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}]
             }
         };
 
@@ -59,6 +59,7 @@ describe('Controller: MembershipController', function () {
                     }]
             }
         };
+
         this.groupsService.getGroup = function() {
           return $q.when(mockGroup);
         };
@@ -296,21 +297,23 @@ describe('Controller: MembershipController', function () {
 
         var expectedGroup = { id: 'id',
             admins: [{id: "adminId"}],
-            members: [{id: "adminId"}, {id: "nonAdmin"}] };
+            members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}] };
         var expectedMembership = [
             { id: "adminId",
                 userName: "user1",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser1"
+                userName: "someUser1",
+                lockStatus: "Unlocked"
             },
             { id: "nonAdmin",
                 userName: "user2",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser2"
+                userName: "someUser2",
+                lockStatus: "Locked"
             }];
 
         expect(this.scope.membership.group).toEqual(expectedGroup);
@@ -333,21 +336,23 @@ describe('Controller: MembershipController', function () {
 
         var expectedGroup = { id: 'id',
             admins: [{id: "adminId"}],
-            members: [{id: "adminId"}, {id: "nonAdmin"}] };
+            members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}] };
         var expectedMembership = [
             { id: "adminId",
                 userName: "user1",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser1"
+                userName: "someUser1",
+                lockStatus: "Unlocked"
             },
             { id: "nonAdmin",
                 userName: "user2",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser2"
+                userName: "someUser2",
+                lockStatus: "Locked"
             }];
 
         expect(this.scope.membership.group).toEqual(expectedGroup);
@@ -371,21 +376,23 @@ describe('Controller: MembershipController', function () {
 
         var expectedGroup = { id: 'id',
             admins: [{id: "adminId"}],
-            members: [{id: "adminId"}, {id: "nonAdmin"}] };
+            members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}] };
         var expectedMembership = [
             { id: "adminId",
                 userName: "user1",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser1"
+                userName: "someUser1",
+                lockStatus: "Unlocked"
             },
             { id: "nonAdmin",
                 userName: "user2",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser2"
+                userName: "someUser2",
+                lockStatus: "Locked"
             }];
 
         expect(this.scope.membership.group).toEqual(expectedGroup);

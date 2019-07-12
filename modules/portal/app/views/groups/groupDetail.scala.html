@@ -31,7 +31,8 @@
 
             <div class="row">
                 <div class="col-md-12">
-
+                    <p ng-if="membership.group.description"><strong>Description:</strong> {{membership.group.description}}</p>
+                    <p><strong>Group Email:</strong> {{membership.group.email}}</p>
                     <!-- START SIMPLE DATATABLE -->
                     <div class="panel panel-default">
                         <div class="panel-heading">
@@ -69,6 +70,7 @@
                                         <th>Name</th>
                                         <th>Email</th>
                                         <th>Group Manager</th>
+                                        <th>Status</th>
                                         <th ng-if="isGroupAdmin">Actions</th>
                                     </tr>
                                 </thead>
@@ -83,6 +85,7 @@
                                                 <span class="slider"></span>
                                             </label>
                                         </td>
+                                        <td>{{member.lockStatus}}</td>
                                         <td ng-if="isGroupAdmin">
                                             <button class="btn btn-danger btn-rounded" ng-click="removeMember(member.id);">
                                                 Delete
