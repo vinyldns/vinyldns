@@ -36,7 +36,7 @@
                                 <input type="text" class="form-control" ng-model="newBatch.comments">
                             </div>
                             @if(meta.sharedDisplayEnabled) {
-                            <div class="form-group row">
+                            <div class="form-group row" ng-class="{ownerGroupError: ownerGroupError}">
                                 <div class="col-md-6">
                                     <label class="h5" for="recordOwnerGroup">Record Owner Group
                                         <span data-toggle="tooltip" data-placement="top" title="Record Owner Group is required if any records in the batch change are in shared zones and not already owned.">
@@ -45,6 +45,7 @@
                                     </label>
                                     <select class="form-control" id="recordOwnerGroup" ng-model="newBatch.ownerGroupId" ng-options="group.id as group.name for group in myGroups | orderBy: 'name'">
                                     </select>
+                                    <p ng-if="ownerGroupError"><strong>Record Owner Group is required for records in shared zones.</strong></p>
                                     <p class="help-block"><a href="/groups">Or you can create a new group from the Groups page.</a></p>
                                 </div>
                             </div>

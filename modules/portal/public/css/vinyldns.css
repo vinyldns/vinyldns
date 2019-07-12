@@ -372,7 +372,7 @@ label.switch {
    display: none;
 }
 
-.changeError {
+.changeError, .ownerGroupError {
     background: rgba(255, 0, 0, 0.32);
 }
 
