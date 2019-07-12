@@ -190,7 +190,7 @@ ACL rules can be applied to specific record types and can include record masks t
 apply to. These record masks apply to record names, but because PTR record names are part their reverse zone ip, the use of regular
 expressions for record masks are not supported.
 <br><br>
-Instead PTR record masks must be CIDR rules, which will denote a range of ip addresses that the rule will apply to.
+Instead PTR record masks must be CIDR rules, which will denote a range of IP addresses that the rule will apply to.
 While more information and useful CIDR rule utility tools can be found online, CIDR rules describe how many bits of an ip address' binary representation
 must be the same for a match.
 

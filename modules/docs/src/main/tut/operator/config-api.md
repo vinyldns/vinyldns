@@ -635,7 +635,7 @@ high-value-domains = {
 # Zone Connection Data
 backends = [
     {
-      id = "func-test-backend"
+      id = "test-backend-id"
       zone-connection {
         name = "vinyldns."
         key-name = "vinyldns."
