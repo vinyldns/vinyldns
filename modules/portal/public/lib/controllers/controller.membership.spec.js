@@ -33,7 +33,7 @@ describe('Controller: MembershipController', function () {
             data: {
                 id: 'id',
                 admins: [{id: "adminId"}],
-                members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}]
+                members: [{id: "adminId"}, {id: "nonAdmin"}]
             }
         };
 
@@ -47,7 +47,8 @@ describe('Controller: MembershipController', function () {
                         firstName: "user",
                         isAdmin: true,
                         lastName: "name",
-                        userName: "someUser1"
+                        userName: "someUser1",
+                        lockStatus: "Unlocked"
                     },
                     {
                         id: "nonAdmin",
@@ -55,7 +56,8 @@ describe('Controller: MembershipController', function () {
                         firstName: "user",
                         isAdmin: true,
                         lastName: "name",
-                        userName: "someUser2"
+                        userName: "someUser2",
+                        lockStatus: "Locked"
                     }]
             }
         };
@@ -297,7 +299,7 @@ describe('Controller: MembershipController', function () {
 
         var expectedGroup = { id: 'id',
             admins: [{id: "adminId"}],
-            members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}] };
+            members: [{id: "adminId"}, {id: "nonAdmin"}] };
         var expectedMembership = [
             { id: "adminId",
                 userName: "user1",
@@ -336,7 +338,7 @@ describe('Controller: MembershipController', function () {
 
         var expectedGroup = { id: 'id',
             admins: [{id: "adminId"}],
-            members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}] };
+            members: [{id: "adminId"}, {id: "nonAdmin"}] };
         var expectedMembership = [
             { id: "adminId",
                 userName: "user1",
@@ -376,7 +378,7 @@ describe('Controller: MembershipController', function () {
 
         var expectedGroup = { id: 'id',
             admins: [{id: "adminId"}],
-            members: [{id: "adminId", lockStatus: "Unlocked"}, {id: "nonAdmin", lockStatus: "Locked"}] };
+            members: [{id: "adminId"}, {id: "nonAdmin"}] };
         var expectedMembership = [
             { id: "adminId",
                 userName: "user1",
