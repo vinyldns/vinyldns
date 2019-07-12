@@ -225,7 +225,7 @@ message UserChange {
 }
 
 message DomainValidationError {
-  required int64 errorType = 1;
+  required string errorType = 1;
   optional bytes data = 2;
 }
 

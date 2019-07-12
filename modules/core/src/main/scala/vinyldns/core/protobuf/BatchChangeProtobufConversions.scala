@@ -17,6 +17,7 @@
 package vinyldns.core.protobuf
 
 import cats.syntax.all._
+import vinyldns.core.domain.{DomainValidationError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch.{
   SingleAddChange,
   SingleChange,
@@ -26,6 +27,7 @@ import vinyldns.core.domain.batch.{
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.protobuf.SingleChangeType.{SingleAddType, SingleChangeType, SingleDeleteType}
 import vinyldns.proto.VinylDNSProto
+import scala.collection.JavaConverters._
 
 object SingleChangeType extends Enumeration {
   type SingleChangeType = Value
@@ -37,10 +39,22 @@ object SingleChangeType extends Enumeration {
   }
 }
 
+object DomainValidationErrorCode extends Enumeration {
+  type DomainValidationErrorType = Value
+  // NOTE: once defined, an error code cannot be changed!
+  val ZDE, Unknown = Value
+
+  def from(error: DomainValidationError): DomainValidationErrorType = error match {
+    case _: ZoneDiscoveryError => ZDE
+    case _ => Unknown
+  }
+}
+
 trait BatchChangeProtobufConversions extends ProtobufConversions {
   /* Currently, we only support the add change type.  When we support additional change we will add them here */
   def fromPB(
       changeType: SingleChangeType,
+      errors: List[DomainValidationError],
       change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
     Either.catchNonFatal {
       changeType match {
@@ -60,6 +74,7 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
             if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
             if (change.hasRecordChangeId) Some(change.getRecordChangeId) else None,
             if (change.hasRecordSetId) Some(change.getRecordSetId) else None,
+            errors,
             change.getId
           )
         case SingleDeleteType =>
@@ -73,18 +88,42 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
             if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
             if (change.hasRecordChangeId) Some(change.getRecordChangeId) else None,
             if (change.hasRecordSetId) Some(change.getRecordSetId) else None,
+            errors,
             change.getId
           )
-
       }
     }
 
-  def fromPB(change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
+  def fromPB(change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] = {
+    import cats.implicits._
+    for {
+      typ <- Either.catchNonFatal(SingleChangeType.withName(change.getChangeType))
+      errorList <- Either.catchNonFatal(change.getValidationErrorsList.asScala.toList)
+      convertedErrors <- errorList.map(fromPB).sequence
+      sc <- fromPB(typ, convertedErrors, change)
+    } yield sc
+  }
+
+  def fromPB(
+      error: VinylDNSProto.DomainValidationError): Either[Throwable, DomainValidationError] = {
+    import DomainValidationErrorCode._
+
     Either
-      .catchNonFatal(SingleChangeType.withName(change.getChangeType))
-      .flatMap { t =>
-        fromPB(t, change)
+      .catchNonFatal(DomainValidationErrorCode.withName(error.getErrorType))
+      .flatMap { errorCode =>
+        errorCode match {
+          case ZDE =>
+            Either.catchNonFatal {
+              val errorInput =
+                VinylDNSProto.DomainValidationErrorOneString.parseFrom(error.getData).getStringOne
+              ZoneDiscoveryError(errorInput)
+            }
+          case _ =>
+            // TODO
+            new RuntimeException("TODO").asLeft[DomainValidationError]
+        }
       }
+  }
 
   def toPB(change: SingleAddChange): Either[Throwable, VinylDNSProto.SingleChange] =
     Either.catchNonFatal {
@@ -108,6 +147,7 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       change.systemMessage.foreach(x => sc.setSystemMessage(x))
       change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
       change.recordSetId.foreach(x => sc.setRecordSetId(x))
+      change.validationErrors.map(toDomainErrorProto).foreach(e => sc.addValidationErrors(e))
 
       sc.build()
     }
@@ -128,6 +168,7 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       change.systemMessage.foreach(x => sc.setSystemMessage(x))
       change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
       change.recordSetId.foreach(x => sc.setRecordSetId(x))
+      change.validationErrors.map(toDomainErrorProto).foreach(e => sc.addValidationErrors(e))
 
       sc.build()
     }
@@ -137,4 +178,24 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       case sac: SingleAddChange => toPB(sac)
       case sdc: SingleDeleteChange => toPB(sdc)
     }
+
+  def toDomainErrorProto(error: DomainValidationError): VinylDNSProto.DomainValidationError = {
+    import DomainValidationErrorCode._
+
+    def toSingleErrorPb(s: String): VinylDNSProto.DomainValidationErrorOneString =
+      VinylDNSProto.DomainValidationErrorOneString.newBuilder().setStringOne(s).build()
+
+    val builder = VinylDNSProto.DomainValidationError.newBuilder()
+    error match {
+      case ZoneDiscoveryError(name) =>
+        builder
+          .setErrorType(ZDE.toString)
+          .setData(toSingleErrorPb(name).toByteString)
+      case _ =>
+        // TODO
+        throw new RuntimeException("TODO")
+    }
+    builder.build()
+
+  }
 }
