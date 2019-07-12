@@ -94,9 +94,8 @@
                         } else {
                             $scope.newBatch.changes = error.data;
                             $scope.batchChangeErrors = true;
-                            $scope.ownerGroupError = error.data.filter(d => d.errors)
-                                .flatMap(d => d.errors)
-                                .find(e => e.includes('owner group ID must be specified for record')) ? true : false;
+                            $scope.ownerGroupError = error.data.flatMap(d => d.errors)
+                                .some(e => e.includes('owner group ID must be specified for record'));
                             $scope.formStatus = "pendingSubmit";
                             $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
                         }
