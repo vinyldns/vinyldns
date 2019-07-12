@@ -18,6 +18,7 @@ package vinyldns.core.domain.batch
 
 import java.util.UUID
 
+import vinyldns.core.domain.DomainValidationError
 import vinyldns.core.domain.batch.SingleChangeStatus.SingleChangeStatus
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -33,6 +34,7 @@ sealed trait SingleChange {
   val typ: RecordType
   val inputName: String
   val zoneName: Option[String]
+  val validationErrors: List[DomainValidationError]
   val recordKey: Option[RecordKey] = (zoneId, recordName, typ) match {
     case (Some(zid), Some(rname), t) => Some(RecordKey(zid, rname, t))
     case _ => None
@@ -90,6 +92,7 @@ final case class SingleAddChange(
     systemMessage: Option[String],
     recordChangeId: Option[String],
     recordSetId: Option[String],
+    validationErrors: List[DomainValidationError] = List.empty,
     id: String = UUID.randomUUID().toString)
     extends SingleChange
 
@@ -103,6 +106,7 @@ final case class SingleDeleteChange(
     systemMessage: Option[String],
     recordChangeId: Option[String],
     recordSetId: Option[String],
+    validationErrors: List[DomainValidationError] = List.empty,
     id: String = UUID.randomUUID().toString)
     extends SingleChange
 
