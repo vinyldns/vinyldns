@@ -1854,8 +1854,8 @@ def test_update_dotted_cname_record_apex_fails(shared_zone_test_context):
     create_rs['name'] = zone_name
 
     try:
-        errors = client.update_recordset(create_rs, status=400)['errors']
-        assert_that(errors[0],is_("Record name cannot contain '.' with given type"))
+        error = client.update_recordset(create_rs, status=422)
+        assert_that(error,is_("CNAME RecordSet cannot have name '@' because it points to zone origin"))
 
     finally:
         delete_response = client.delete_recordset(zone['id'],create_rs['id'], status=202)['status']

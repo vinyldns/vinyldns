@@ -673,8 +673,7 @@ def test_create_dotted_cname_record_apex_fails(shared_zone_test_context):
     }
 
     errors = client.create_recordset(apex_cname_rs, status=400)['errors']
-    assert_that(errors[0], is_("Record with name " + apex_cname_rs['name'] + " and type CNAME is a dotted host which "
-                                "is not allowed in zone " + zone['name']))
+    assert_that(errors[0], is_("CNAME data must be absolute"))
 
 def test_create_cname_with_multiple_records(shared_zone_test_context):
     """
