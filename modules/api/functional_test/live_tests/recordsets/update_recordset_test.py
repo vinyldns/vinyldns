@@ -1872,7 +1872,7 @@ def test_update_cname_as_dotted_host_fails(shared_zone_test_context):
 
     apex_cname_rs = {
         'zoneId': zone['id'],
-        'name': 'ygritte',
+        'name': 'link',
         'type': 'CNAME',
         'ttl': 500,
         'records': [{'cname': 'got.reference'}]
