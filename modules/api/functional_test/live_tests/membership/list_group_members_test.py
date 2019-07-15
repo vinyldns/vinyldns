@@ -39,6 +39,7 @@ def test_list_group_members_success(shared_zone_test_context):
         assert_that(dummy['id'], is_('dummy'))
         assert_that(dummy['userName'], is_('dummy'))
         assert_that(dummy['isAdmin'], is_(False))
+        assert_that(dummy['lockStatus'], is_("Unlocked"))
         assert_that(dummy, is_not(has_key('firstName')))
         assert_that(dummy, is_not(has_key('lastName')))
         assert_that(dummy, is_not(has_key('email')))
@@ -52,6 +53,8 @@ def test_list_group_members_success(shared_zone_test_context):
         assert_that(ok['lastName'], is_('ok'))
         assert_that(ok['email'], is_('test@test.com'))
         assert_that(ok['created'], is_not(none()))
+        assert_that(ok['lockStatus'], is_("Unlocked"))
+
     finally:
         if saved_group:
             client.delete_group(saved_group['id'], status=(200,404))
@@ -93,7 +96,7 @@ def test_list_group_members_start_from(shared_zone_test_context):
 
         # members has one more because admins are added as members
         assert_that(result['members'], has_length(len(members) + 1))
-        assert_that(result['members'], has_item({ 'lockStatus': 'Unlocked', 'id': 'ok'}))
+        assert_that(result['members'], has_item({'lockStatus': 'Unlocked', 'id': 'ok'}))
         result_member_ids = map(lambda member: member['id'], result['members'])
         for user in members:
             assert_that(result_member_ids, has_item(user['id']))
@@ -117,6 +120,7 @@ def test_list_group_members_start_from(shared_zone_test_context):
             assert_that(dummy, is_not(has_key('lastName')))
             assert_that(dummy, is_not(has_key('email')))
             assert_that(dummy['created'], is_not(none()))
+            assert_that(dummy['lockStatus'], is_("Unlocked"))
     finally:
         if saved_group:
             client.delete_group(saved_group['id'], status=(200,404))
@@ -172,6 +176,7 @@ def test_list_group_members_start_from_non_user(shared_zone_test_context):
             assert_that(dummy, is_not(has_key('lastName')))
             assert_that(dummy, is_not(has_key('email')))
             assert_that(dummy['created'], is_not(none()))
+            assert_that(dummy['lockStatus'], is_("Unlocked"))
     finally:
         if saved_group:
             client.delete_group(saved_group['id'], status=(200,404))
@@ -227,6 +232,7 @@ def test_list_group_members_max_item(shared_zone_test_context):
             assert_that(dummy, is_not(has_key('lastName')))
             assert_that(dummy, is_not(has_key('email')))
             assert_that(dummy['created'], is_not(none()))
+            assert_that(dummy['lockStatus'], is_("Unlocked"))
     finally:
         if saved_group:
             client.delete_group(saved_group['id'], status=(200,404))
@@ -281,6 +287,7 @@ def test_list_group_members_max_item_default(shared_zone_test_context):
             assert_that(dummy, is_not(has_key('lastName')))
             assert_that(dummy, is_not(has_key('email')))
             assert_that(dummy['created'], is_not(none()))
+            assert_that(dummy['lockStatus'], is_("Unlocked"))
     finally:
         if saved_group:
             client.delete_group(saved_group['id'], status=(200,404))
@@ -409,6 +416,7 @@ def test_list_group_members_next_id_correct(shared_zone_test_context):
             assert_that(dummy, is_not(has_key('lastName')))
             assert_that(dummy, is_not(has_key('email')))
             assert_that(dummy['created'], is_not(none()))
+            assert_that(dummy['lockStatus'], is_("Unlocked"))
     finally:
         if saved_group:
             client.delete_group(saved_group['id'], status=(200,404))
@@ -462,6 +470,7 @@ def test_list_group_members_next_id_exhausted(shared_zone_test_context):
             assert_that(dummy, is_not(has_key('lastName')))
             assert_that(dummy, is_not(has_key('email')))
             assert_that(dummy['created'], is_not(none()))
+            assert_that(dummy['lockStatus'], is_("Unlocked"))
     finally:
         if saved_group:
             client.delete_group(saved_group['id'], status=(200,404))
@@ -516,6 +525,7 @@ def test_list_group_members_next_id_exhausted_two_pages(shared_zone_test_context
             assert_that(dummy, is_not(has_key('lastName')))
             assert_that(dummy, is_not(has_key('email')))
             assert_that(dummy['created'], is_not(none()))
+            assert_that(dummy['lockStatus'], is_("Unlocked"))
 
         second_page = client.list_members_group(saved_group['id'],
                                                 start_from=first_page['nextId'],

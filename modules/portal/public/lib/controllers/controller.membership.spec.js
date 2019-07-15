@@ -47,7 +47,8 @@ describe('Controller: MembershipController', function () {
                         firstName: "user",
                         isAdmin: true,
                         lastName: "name",
-                        userName: "someUser1"
+                        userName: "someUser1",
+                        lockStatus: "Unlocked"
                     },
                     {
                         id: "nonAdmin",
@@ -55,10 +56,12 @@ describe('Controller: MembershipController', function () {
                         firstName: "user",
                         isAdmin: true,
                         lastName: "name",
-                        userName: "someUser2"
+                        userName: "someUser2",
+                        lockStatus: "Locked"
                     }]
             }
         };
+
         this.groupsService.getGroup = function() {
           return $q.when(mockGroup);
         };
@@ -303,14 +306,16 @@ describe('Controller: MembershipController', function () {
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser1"
+                userName: "someUser1",
+                lockStatus: "Unlocked"
             },
             { id: "nonAdmin",
                 userName: "user2",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser2"
+                userName: "someUser2",
+                lockStatus: "Locked"
             }];
 
         expect(this.scope.membership.group).toEqual(expectedGroup);
@@ -340,14 +345,16 @@ describe('Controller: MembershipController', function () {
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser1"
+                userName: "someUser1",
+                lockStatus: "Unlocked"
             },
             { id: "nonAdmin",
                 userName: "user2",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser2"
+                userName: "someUser2",
+                lockStatus: "Locked"
             }];
 
         expect(this.scope.membership.group).toEqual(expectedGroup);
@@ -378,14 +385,16 @@ describe('Controller: MembershipController', function () {
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser1"
+                userName: "someUser1",
+                lockStatus: "Unlocked"
             },
             { id: "nonAdmin",
                 userName: "user2",
                 firstName: "user",
                 isAdmin: true,
                 lastName: "name",
-                userName: "someUser2"
+                userName: "someUser2",
+                lockStatus: "Locked"
             }];
 
         expect(this.scope.membership.group).toEqual(expectedGroup);

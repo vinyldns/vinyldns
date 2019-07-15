@@ -97,7 +97,8 @@ case class MemberInfo(
     lastName: Option[String] = None,
     email: Option[String] = None,
     created: Option[DateTime] = None,
-    isAdmin: Boolean = false
+    isAdmin: Boolean = false,
+    lockStatus: LockStatus
 )
 
 object MemberInfo {
@@ -109,7 +110,8 @@ object MemberInfo {
       lastName = user.lastName,
       email = user.email,
       created = Some(user.created),
-      isAdmin = group.adminUserIds.contains(user.id)
+      isAdmin = group.adminUserIds.contains(user.id),
+      lockStatus = user.lockStatus
     )
 }
 
