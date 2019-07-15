@@ -83,7 +83,7 @@ object AddChangeInput {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new AddChangeInput(transformName.toLowerCase, typ, ttl, record)
+    new AddChangeInput(transformName, typ, ttl, record)
   }
 }
 
@@ -93,7 +93,7 @@ object DeleteChangeInput {
       case PTR => inputName
       case _ => ensureTrailingDot(inputName)
     }
-    new DeleteChangeInput(transformName.toLowerCase, typ)
+    new DeleteChangeInput(transformName, typ)
   }
 }
 

@@ -49,15 +49,6 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       input.changes(4).inputName shouldBe "aaaadot.test.com."
       input.changes(5).inputName shouldBe "cnamedot.test.com."
     }
-    "transform inputName to lowercase" in {
-      val addChangeA = AddChangeInput("APEX.TEST.COM.", A, Some(100), AData("1.1.1.1"))
-      val deleteChangeA = DeleteChangeInput("apex-delete.TEST.com", A)
-
-      val input = BatchChangeInput(None, List(addChangeA, deleteChangeA))
-
-      input.changes(0).inputName shouldBe "apex.test.com."
-      input.changes(1).inputName shouldBe "apex-delete.test.com."
-    }
   }
   "asNewStoredChange" should {
     "Convert an AddChangeInput into SingleAddChange" in {

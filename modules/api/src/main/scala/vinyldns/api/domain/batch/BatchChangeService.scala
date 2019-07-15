@@ -222,9 +222,9 @@ class BatchChangeService(
     changes.mapValid { change =>
       change.typ match {
         case A | AAAA | CNAME | MX | TXT => forwardZoneDiscovery(change, zoneMap)
-        case PTR if validateIpv4Address(change.inputName).isValid =>
+        case PTR if validateIpv4Address(change.inputName.toLowerCase()).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
-        case PTR if validateIpv6Address(change.inputName).isValid =>
+        case PTR if validateIpv6Address(change.inputName.toLowerCase()).isValid =>
           ptrIpv6ZoneDiscovery(change, zoneMap)
         case _ => ZoneDiscoveryError(change.inputName).invalidNel
       }
@@ -235,15 +235,16 @@ class BatchChangeService(
       zoneMap: ExistingZones): SingleValidation[ChangeForValidation] = {
 
     // getAllPossibleZones is ordered most to least specific, so 1st match is right
-    val zone = getAllPossibleZones(change.inputName).map(zoneMap.getByName).collectFirst {
-      case Some(zn) => zn
-    }
+    val zone =
+      getAllPossibleZones(change.inputName.toLowerCase()).map(zoneMap.getByName).collectFirst {
+        case Some(zn) => zn
+      }
 
     zone match {
-      case Some(zn) if (zn.name == change.inputName && change.typ == CNAME) =>
+      case Some(zn) if (zn.name == change.inputName.toLowerCase() && change.typ == CNAME) =>
         CnameAtZoneApexError(zn.name).invalidNel
       case Some(zn) =>
-        ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel
+        ChangeForValidation(zn, relativize(change.inputName.toLowerCase(), zn.name), change).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
