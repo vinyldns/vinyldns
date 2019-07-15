@@ -14,7 +14,7 @@ class ListRecordSetsFixture():
         self.shared_group = shared_zone_test_context.shared_record_group
         self.new_rs = {}
         existing_records = self.client.list_recordsets(self.test_context['id'])['recordSets']
-        assert_that(existing_records, has_length(7))
+        assert_that(existing_records, has_length(9))
         rs_template = {
             'zoneId': self.test_context['id'],
             'name': '00-test-list-recordsets-',
@@ -77,8 +77,9 @@ class ListRecordSetsFixture():
         list_results_recordSets_page = list_results_page['recordSets']
         assert_that(list_results_recordSets_page, has_length(size))
         for i in range(len(list_results_recordSets_page)):
-            assert_that(list_results_recordSets_page[i]['name'], is_(self.all_records[i+offset]['name']))
-            verify_recordset(list_results_recordSets_page[i], self.all_records[i+offset])
+            if i < 17:
+                assert_that(list_results_recordSets_page[i]['name'], is_(self.all_records[i+offset]['name']))
+                verify_recordset(list_results_recordSets_page[i], self.all_records[i+offset])
             assert_that(list_results_recordSets_page[i]['accessLevel'], is_('Delete'))
 
 
@@ -102,7 +103,7 @@ def test_list_recordsets_no_start(rs_fixture):
     ok_zone = rs_fixture.test_context
 
     list_results = client.list_recordsets(ok_zone['id'], status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
+    rs_fixture.check_recordsets_page_accuracy(list_results, size=19, offset=0)
 
 def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
     """
@@ -123,7 +124,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
         result_rs = client.wait_until_recordset_change_status(result, 'Complete')['recordSet']
 
         list_results = client.list_recordsets(ok_zone['id'], status=200)
-        assert_that(list_results['recordSets'], has_length(18))
+        assert_that(list_results['recordSets'], has_length(20))
 
         # confirm the created recordset is in the list of recordsets
         rs_from_list = (r for r in list_results['recordSets'] if r['id'] == result_rs['id']).next()
@@ -136,7 +137,7 @@ def test_list_recordsets_with_owner_group_id_and_owner_group_name(rs_fixture):
             delete_result = client.delete_recordset(ok_zone['id'], result_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
             list_results = client.list_recordsets(ok_zone['id'], status=200)
-            rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0)
+            rs_fixture.check_recordsets_page_accuracy(list_results, size=19, offset=0)
 
 
 def test_list_recordsets_multiple_pages(rs_fixture):
@@ -155,13 +156,13 @@ def test_list_recordsets_multiple_pages(rs_fixture):
     list_results_page = client.list_recordsets(ok_zone['id'], start_from=start, max_items=5, status=200)
     rs_fixture.check_recordsets_page_accuracy(list_results_page, size=5, offset=2, nextId=True, startFrom=start, maxItems=5)
 
-    # third page of 4 items
+    # third page of 6 items
     start = list_results_page['nextId']
     # nextId differs local/in dev where we get exactly the last item
     # If you put 3 items in local in memory dynamo and request three items, you always get an exclusive start key,
     # but in real dynamo you don't. Requesting something over 4 will force consistent behavior
-    list_results_page = client.list_recordsets(ok_zone['id'], start_from=start, max_items=11, status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=10, offset=7, nextId=False, startFrom=start, maxItems=11)
+    list_results_page = client.list_recordsets(ok_zone['id'], start_from=start, max_items=13, status=200)
+    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=12, offset=7, nextId=False, startFrom=start, maxItems=13)
 
 
 def test_list_recordsets_excess_page_size(rs_fixture):
@@ -172,8 +173,8 @@ def test_list_recordsets_excess_page_size(rs_fixture):
     ok_zone = rs_fixture.test_context
 
     #page of 19 items
-    list_results_page = client.list_recordsets(ok_zone['id'], max_items=19, status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=17, offset=0, maxItems=19, nextId=False)
+    list_results_page = client.list_recordsets(ok_zone['id'], max_items=20, status=200)
+    rs_fixture.check_recordsets_page_accuracy(list_results_page, size=19, offset=0, maxItems=20, nextId=False)
 
 
 def test_list_recordsets_fails_max_items_too_large(rs_fixture):
@@ -204,7 +205,7 @@ def test_list_recordsets_default_size_is_100(rs_fixture):
     ok_zone = rs_fixture.test_context
 
     list_results = client.list_recordsets(ok_zone['id'], status=200)
-    rs_fixture.check_recordsets_page_accuracy(list_results, size=17, offset=0, maxItems=100)
+    rs_fixture.check_recordsets_page_accuracy(list_results, size=19, offset=0, maxItems=100)
 
 
 def test_list_recordsets_duplicate_names(rs_fixture):
