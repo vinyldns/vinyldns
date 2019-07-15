@@ -75,7 +75,7 @@ case class UserInfo(
     lastName: Option[String] = None,
     email: Option[String] = None,
     created: Option[DateTime] = None,
-    lockStatus: Option[LockStatus] = None
+    lockStatus: LockStatus = LockStatus.Unlocked
 )
 object UserInfo {
   def apply(user: User): UserInfo =
@@ -86,7 +86,7 @@ object UserInfo {
       lastName = user.lastName,
       email = user.email,
       created = Some(user.created),
-      lockStatus = Some(user.lockStatus)
+      lockStatus = user.lockStatus
     )
 }
 

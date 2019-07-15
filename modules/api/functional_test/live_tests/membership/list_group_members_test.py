@@ -96,7 +96,7 @@ def test_list_group_members_start_from(shared_zone_test_context):
 
         # members has one more because admins are added as members
         assert_that(result['members'], has_length(len(members) + 1))
-        assert_that(result['members'], has_item({'id': 'ok'}))
+        assert_that(result['members'], has_item({'lockStatus': 'Unlocked', 'id': 'ok'}))
         result_member_ids = map(lambda member: member['id'], result['members'])
         for user in members:
             assert_that(result_member_ids, has_item(user['id']))

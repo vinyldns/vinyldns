@@ -181,7 +181,6 @@ angular.module('controller.membership', []).controller('MembershipController', f
                 //update groups
                 $scope.membership.members = result.members;
                 $scope.membershipLoaded = true;
-
                 return result;
             }
 
