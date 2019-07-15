@@ -197,7 +197,7 @@ message SingleChange {
   optional string recordChangeId = 10;
   optional string recordSetId = 11;
   optional SingleChangeData changeData = 12;
-  repeated DomainValidationError validationErrors = 13;
+  repeated string validationErrors = 13;
 }
 
 message User {
@@ -222,13 +222,4 @@ message UserChange {
   required string id = 4;
   required string changeType = 5;
   optional User oldUser = 6;
-}
-
-message DomainValidationError {
-  required string errorType = 1;
-  optional bytes data = 2;
-}
-
-message DomainValidationErrorOneString {
-  required string stringOne = 1;
 }
