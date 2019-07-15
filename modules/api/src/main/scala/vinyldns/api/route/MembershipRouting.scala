@@ -23,28 +23,27 @@ import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
 import vinyldns.core.domain.membership.{Group, LockStatus}
 
-trait MembershipRoute extends Directives {
-  this: VinylDNSJsonProtocol with VinylDNSDirectives =>
+class MembershipRoute(
+    membershipService: MembershipServiceAlgebra,
+    val vinylDNSAuthenticator: VinylDNSAuthenticator)
+    extends VinylDNSJsonProtocol
+    with VinylDNSDirectives[Throwable] {
   final private val DEFAULT_MAX_ITEMS: Int = 100
   final private val MAX_ITEMS_LIMIT: Int = 1000
 
-  val membershipService: MembershipServiceAlgebra
+  def getRoutes(): Route = membershipRoute
 
-  object MembershipAuthHelper extends AuthenticationResultImprovements {
-    def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route =
-      either match {
-        case Right(a) => f(a)
-        case Left(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-        case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-        case Left(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
-        case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-        case Left(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(e) => failWith(e)
-      }
-  }
-
-  import MembershipAuthHelper._
+  def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route =
+    either match {
+      case Right(a) => f(a)
+      case Left(GroupNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+      case Left(GroupAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(UserNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(InvalidGroupRequestError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(e) => failWith(e)
+    }
 
   val membershipRoute: Route = path("groups" / Segment) { groupId =>
     get {

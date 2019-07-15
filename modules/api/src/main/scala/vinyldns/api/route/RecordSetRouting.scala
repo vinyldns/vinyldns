@@ -17,7 +17,7 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
+import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
 import akka.util.Timeout
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
@@ -35,34 +35,34 @@ case class ListRecordSetsResponse(
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None)
 
-trait RecordSetRoute extends Directives {
-  this: VinylDNSJsonProtocol with VinylDNSDirectives =>
-  final private val DEFAULT_MAX_ITEMS: Int = 100
+class RecordSetRoute(
+    recordSetService: RecordSetServiceAlgebra,
+    val vinylDNSAuthenticator: VinylDNSAuthenticator)
+    extends VinylDNSJsonProtocol
+    with VinylDNSDirectives[Throwable] {
 
-  val recordSetService: RecordSetServiceAlgebra
+  def getRoutes(): Route = recordSetRoute
+
+  final private val DEFAULT_MAX_ITEMS: Int = 100
 
   // Timeout must be long enough to allow the cluster to form
   implicit val rsCmdTimeout: Timeout = Timeout(10.seconds)
 
-  object RecordAuthHelper extends AuthenticationResultImprovements {
-    def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route =
-      either match {
-        case Right(a) => f(a)
-        case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-        case Left(RecordSetAlreadyExists(msg)) => complete(StatusCodes.Conflict, msg)
-        case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-        case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
-        case Left(RecordSetNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-        case Left(InvalidRequest(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
-        case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
-        case Left(RecordSetChangeNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-        case Left(InvalidGroupError(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
-        case Left(e) => failWith(e)
-      }
-  }
-
-  import RecordAuthHelper._
+  def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route =
+    either match {
+      case Right(a) => f(a)
+      case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(RecordSetAlreadyExists(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+      case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(RecordSetNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(InvalidRequest(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
+      case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(RecordSetChangeNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(InvalidGroupError(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
+      case Left(e) => failWith(e)
+    }
 
   val recordSetRoute = path("zones" / Segment / "recordsets") { zoneId =>
     post {

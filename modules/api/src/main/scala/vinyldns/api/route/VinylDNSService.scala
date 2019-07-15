@@ -18,13 +18,15 @@ package vinyldns.api.route
 
 import akka.event.Logging._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler, Route}
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server.directives.LogEntry
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import vinyldns.api.domain.auth.AuthPrincipalProvider
+
+import org.json4s.MappingException
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
@@ -34,6 +36,9 @@ import vinyldns.core.health.HealthService
 import scala.util.matching.Regex
 
 object VinylDNSService {
+
+  import akka.http.scaladsl.server.Directives._
+
   val ZoneIdRegex: Regex = "(?i)(/?zones/)(?:[0-9a-f]-?)+(.*)".r
   val ZoneAndRecordIdRegex: Regex =
     "(?i)(/?zones/)(?:[0-9a-f]-?)+(/recordsets/)(?:[0-9a-f]-?)+(.*)".r
@@ -107,6 +112,25 @@ object VinylDNSService {
           }
       }
   }
+
+  // Rejection handler to map 404 to 405
+  implicit def validationRejectionHandler: RejectionHandler =
+    RejectionHandler
+      .newBuilder()
+      .handle {
+        case MalformedRequestContentRejection(msg, MappingException(_, _)) =>
+          complete(
+            HttpResponse(
+              status = StatusCodes.BadRequest,
+              entity = HttpEntity(ContentTypes.`application/json`, msg)
+            ))
+      }
+      .handleNotFound {
+        extractUnmatchedPath { p =>
+          complete((StatusCodes.MethodNotAllowed, s"The requested path [$p] does not exist."))
+        }
+      }
+      .result()
 }
 
 // $COVERAGE-OFF$
@@ -121,19 +145,22 @@ class VinylDNSService(
     authPrincipalProvider: AuthPrincipalProvider)
     extends VinylDNSDirectives
     with PingRoute
-    with ZoneRoute
-    with RecordSetRoute
     with HealthCheckRoute
     with BlueGreenRoute
-    with MembershipRoute
     with StatusRoute
     with PrometheusRoute
-    with BatchChangeRoute
     with VinylDNSJsonProtocol {
+
+  import VinylDNSService.validationRejectionHandler
 
   val aws4Authenticator = new Aws4Authenticator
   val vinylDNSAuthenticator: VinylDNSAuthenticator =
     new ProductionVinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
+
+  val zoneRoute = new ZoneRoute(zoneService, vinylDNSAuthenticator).getRoutes()
+  val recordSetRoute = new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes()
+  val membershipRoute = new MembershipRoute(membershipService, vinylDNSAuthenticator).getRoutes()
+  val batchChangeRoute = new BatchChangeRoute(batchChangeService, vinylDNSAuthenticator).getRoutes()
 
   val unloggedUris = Seq(
     Uri.Path("/health"),

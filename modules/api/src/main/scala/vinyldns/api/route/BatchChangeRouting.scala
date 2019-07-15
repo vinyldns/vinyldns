@@ -17,33 +17,32 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
+import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 import vinyldns.api.domain.batch._
 
-trait BatchChangeRoute extends Directives {
-  this: VinylDNSJsonProtocol with VinylDNSDirectives =>
+class BatchChangeRoute(
+    batchChangeService: BatchChangeServiceAlgebra,
+    val vinylDNSAuthenticator: VinylDNSAuthenticator)
+    extends VinylDNSJsonProtocol
+    with VinylDNSDirectives[BatchChangeErrorResponse] {
 
-  val batchChangeService: BatchChangeServiceAlgebra
+  def getRoutes(): Route = batchChangeRoute
 
-  object BatchChangeAuthHelper extends AuthenticationBatchResultImprovements {
-    def sendResponse[A](either: Either[BatchChangeErrorResponse, A], f: A => Route): Route =
-      either match {
-        case Right(a) => f(a)
-        case Left(ibci: InvalidBatchChangeInput) => complete(StatusCodes.BadRequest, ibci)
-        case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
-        case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
-        case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
-        case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
-        case Left(bcnpa: BatchChangeNotPendingApproval) =>
-          complete(StatusCodes.BadRequest, bcnpa.message)
-        case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
-      }
-  }
-
-  import BatchChangeAuthHelper._
+  def sendResponse[A](either: Either[BatchChangeErrorResponse, A], f: A => Route): Route =
+    either match {
+      case Right(a) => f(a)
+      case Left(ibci: InvalidBatchChangeInput) => complete(StatusCodes.BadRequest, ibci)
+      case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
+      case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
+      case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
+      case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
+      case Left(bcnpa: BatchChangeNotPendingApproval) =>
+        complete(StatusCodes.BadRequest, bcnpa.message)
+      case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
+    }
 
   final private val MAX_ITEMS_LIMIT: Int = 100
 

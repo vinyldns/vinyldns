@@ -28,10 +28,11 @@ import scala.concurrent.duration._
 case class GetZoneResponse(zone: ZoneInfo)
 case class ZoneRejected(zone: Zone, errors: List[String])
 
-trait ZoneRoute extends Directives {
-  this: VinylDNSJsonProtocol with VinylDNSDirectives =>
+class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: VinylDNSAuthenticator)
+    extends VinylDNSJsonProtocol
+    with VinylDNSDirectives[Throwable] {
 
-  val zoneService: ZoneServiceAlgebra
+  def getRoutes(): Route = zoneRoute
 
   final private val DEFAULT_MAX_ITEMS: Int = 100
   final private val MAX_ITEMS_LIMIT: Int = 100
@@ -39,28 +40,24 @@ trait ZoneRoute extends Directives {
   // Timeout must be long enough to allow the cluster to form
   implicit val zoneCmdTimeout: Timeout = Timeout(10.seconds)
 
-  object ZoneAuthHelper extends AuthenticationResultImprovements {
-    def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route =
-      either match {
-        case Right(a) => f(a)
-        case Left(ZoneAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
-        case Left(ConnectionFailed(_, msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(ZoneValidationFailed(zone, errors, _)) =>
-          complete(StatusCodes.BadRequest, ZoneRejected(zone, errors))
-        case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-        case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-        case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
-        case Left(InvalidSyncStateError(msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
-        case Left(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
-        case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
-        case Left(e) => failWith(e)
-      }
-  }
-
-  import ZoneAuthHelper._
+  def sendResponse[A](either: Either[Throwable, A], f: A => Route): Route =
+    either match {
+      case Right(a) => f(a)
+      case Left(ZoneAlreadyExistsError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(ConnectionFailed(_, msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(ZoneValidationFailed(zone, errors, _)) =>
+        complete(StatusCodes.BadRequest, ZoneRejected(zone, errors))
+      case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
+      case Left(InvalidGroupError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
+      case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(InvalidSyncStateError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
+      case Left(RecentSyncError(msg)) => complete(StatusCodes.Forbidden, msg)
+      case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(InvalidRequest(msg)) => complete(StatusCodes.BadRequest, msg)
+      case Left(e) => failWith(e)
+    }
 
   val zoneRoute: Route = (post & path("zones") & monitor("Endpoint.createZone")) {
     authenticateAndExecuteWithEntity[ZoneCommandResult, CreateZoneInput](
