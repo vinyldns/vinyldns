@@ -61,8 +61,10 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
 
     userName match {
       case None =>
-        logger.info("User is not logged in or token expired; redirecting to login screen",
-          entries(event("login-redirect", Id("None", "user"), Map("reason" -> "expired-token"))))
+        logger.info(
+          "User is not logged in or token expired; redirecting to login screen",
+          entries(event("login-redirect", Id("None", "user"), Map("reason" -> "expired-token")))
+        )
         notLoggedInResult
 
       case Some(un) =>
@@ -70,12 +72,14 @@ trait VinylDnsAction extends ActionFunction[Request, UserRequest] {
         userLookup(un).unsafeToFuture().flatMap {
           // Odd case, but let's handle with a different error message
           case None =>
-            logger.error("Cant find account for user with username",
+            logger.error(
+              "Cant find account for user with username",
               entries(event("notFound", Id(un, "user"))))
             cantFindAccountResult(un)
 
           case Some(user) if user.lockStatus == LockStatus.Locked =>
-            logger.error("User account is locked; redirecting to lock screen",
+            logger.error(
+              "User account is locked; redirecting to lock screen",
               entries(event("login-redirect", user, Map("reason" -> "locked"))))
             lockedUserResult(un)
 

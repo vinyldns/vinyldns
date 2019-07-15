@@ -146,8 +146,13 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
     val issueTime = Option(claimsSet.getIssueTime)
 
     val user = getStringFieldOption(claimsSet, oidcInfo.jwtUsernameField)
-    logger.debug("token info", entries(event("token-info", Id(user.getOrElse(""), "user"),
-      Map("now" -> now, "expireAt" -> expirationTime.getOrElse(now)))))
+    logger.debug(
+      "token info",
+      entries(
+        event(
+          "token-info",
+          Id(user.getOrElse(""), "user"),
+          Map("now" -> now, "expireAt" -> expirationTime.getOrElse(now)))))
 
     val idTokenStillValid = expirationTime.forall(now.before) &&
       notBeforeTime.forall(now.after) &&
@@ -196,8 +201,9 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       }
       username
     } else {
-      logger.info("oidc session token for user is invalid", entries(event("token-invalid",
-        Id(username.getOrElse(""), "user"))))
+      logger.info(
+        "oidc session token for user is invalid",
+        entries(event("token-invalid", Id(username.getOrElse(""), "user"))))
       None
     }
   }
@@ -248,7 +254,9 @@ class OidcAuthenticator @Inject()(wsClient: WSClient, configuration: Configurati
       val codeGrant = new AuthorizationCodeGrant(code, redirectUri)
       val request = new TokenRequest(tokenEndpoint, clientAuth, codeGrant)
 
-      logger.info("Sending token_id request", entries(event("token-request", Id(loginId, "oidc-token"))))
+      logger.info(
+        "Sending token_id request",
+        entries(event("token-request", Id(loginId, "oidc-token"))))
       IO(request.toHTTPRequest.send()).map(handleCallbackResponse)
     }
 

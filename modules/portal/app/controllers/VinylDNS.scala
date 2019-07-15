@@ -154,11 +154,17 @@ class VinylDNS @Inject()(
     details.value
       .map {
         case Right((user, token)) =>
-          logger.info("Login complete", entries(event("login-success", user, Map("loginId" -> loginId))))
+          logger.info(
+            "Login complete",
+            entries(event("login-success", user, Map("loginId" -> loginId))))
           Redirect("/index").withSession(ID_TOKEN -> token.toString)
         case Left(err) =>
-          logger.error("login failed", Map(Event -> Map("action" -> "login-failure"), "loginId" -> loginId,
-            "error" -> Map("code" -> err.code, "message" -> err.message)))
+          logger.error(
+            "login failed",
+            Map(
+              Event -> Map("action" -> "login-failure"),
+              "loginId" -> loginId,
+              "error" -> Map("code" -> err.code, "message" -> err.message)))
           InternalServerError(
             views.html.systemMessage("""
               |There was an issue when logging in.
@@ -195,7 +201,9 @@ class VinylDNS @Inject()(
   def getGroup(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
-      logger.info("getGroup", entries(event("getGroup", Id(id, "group"), Map("status_code" -> response.status))))
+      logger.info(
+        "getGroup",
+        entries(event("getGroup", Id(id, "group"), Map("status_code" -> response.status))))
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
@@ -204,7 +212,9 @@ class VinylDNS @Inject()(
   def deleteGroup(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest = VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"groups/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
-      logger.info("deleteGroup", entries(event("deleteGroup", Id(id, "group"), Map("status_code" -> response.status))))
+      logger.info(
+        "deleteGroup",
+        entries(event("deleteGroup", Id(id, "group"), Map("status_code" -> response.status))))
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
@@ -215,7 +225,9 @@ class VinylDNS @Inject()(
     val vinyldnsRequest =
       VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"groups/$id", payload)
     executeRequest(vinyldnsRequest, request.user).map(response => {
-      logger.info("updateGroup", entries(event("updateGroup", Id(id, "group"), Map("status_code" -> response.status))))
+      logger.info(
+        "updateGroup",
+        entries(event("updateGroup", Id(id, "group"), Map("status_code" -> response.status))))
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)
     })
@@ -252,7 +264,8 @@ class VinylDNS @Inject()(
   }
 
   private def processCsv(user: User): Result = {
-    logger.info("Sending credentials for user",
+    logger.info(
+      "Sending credentials for user",
       entries(event("send-credentials", user, Map("access_key" -> user.accessKey))))
 
     Ok(
@@ -267,7 +280,9 @@ class VinylDNS @Inject()(
 
   def serveCredsFile(fileName: String): Action[AnyContent] = frontendAction.async {
     implicit request =>
-      logger.info("Sending credentials for user", entries(event("send-credentials", Id(fileName, "credentials-file"))))
+      logger.info(
+        "Sending credentials for user",
+        entries(event("send-credentials", Id(fileName, "credentials-file"))))
       Future(processCsv(request.user))
   }
 
@@ -351,8 +366,9 @@ class VinylDNS @Inject()(
             "Authentication failed, please contact your VinylDNS administrators"))
       case Right(userDetails: LdapUserDetails) =>
         val user = processLoginWithDetails(userDetails).unsafeRunSync()
-        logger.info("login successfull", entries(event("login-success", user,
-          Map("namespace" -> userDetails.nameInNamespace))))
+        logger.info(
+          "login successfull",
+          entries(event("login-success", user, Map("namespace" -> userDetails.nameInNamespace))))
         Redirect("/index")
           .withSession("username" -> user.userName, "accessKey" -> user.accessKey)
     }
@@ -362,10 +378,14 @@ class VinylDNS @Inject()(
       .get(userDetails.username)
       .flatMap {
         case None =>
-          logger.info("Creating user account", entries(event(Save, Id(userDetails.username, "user"))))
+          logger.info(
+            "Creating user account",
+            entries(event(Save, Id(userDetails.username, "user"))))
           createNewUser(userDetails)
         case Some(u) =>
-          logger.info("Creating user account", entries(event("entity-exists", Id(userDetails.username, "user"))))
+          logger.info(
+            "Creating user account",
+            entries(event("entity-exists", Id(userDetails.username, "user"))))
           IO.pure(u)
       }
 

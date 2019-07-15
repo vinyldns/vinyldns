@@ -27,6 +27,7 @@ import vinyldns.api.domain.dns.DnsProtocol.{DnsResponse, _}
 import vinyldns.core.domain.{DomainHelpers, record}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
+import vinyldns.core.logging.StructuredArgs.Event
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -467,7 +468,9 @@ trait DnsConversions {
     * @return
     */
   def dnsQuestionEvent(name: Name, rType: RecordType): Map[_, _] =
-    Map(dns -> Map("question" -> Map(name -> name.toString(true), _type -> rType.toString)))
+    Map(
+      Event -> Map("action" -> "dns.question"),
+      dns -> Map("question" -> Map(name -> name.toString(true), _type -> rType.toString)))
 
   /**
     * Note: [07/09/2019] Elastic ECS forum is currently discussing (https://github.com/elastic/ecs/pull/438) to create
@@ -481,9 +484,13 @@ trait DnsConversions {
   def dnsAnswerEvent(responseCode: Int, answers: List[Record]): Map[_, _] = {
     val rCodeKey = if (responseCode > 0) Rcode.string(responseCode) else "UNPARSEABLE"
     Map(
-      "answers" -> answers.map(r => recordInfo(rCodeKey, r)).toArray,
-      "answers_count" -> answers.size,
-      "response_code" -> rCodeKey,
+      Event -> Map("action" -> "dns.answer"),
+      dns ->
+        Map(
+          "answers" -> answers.map(r => recordInfo(rCodeKey, r)).toArray,
+          "answers_count" -> answers.size,
+          "response_code" -> rCodeKey,
+        )
     )
   }
 
@@ -510,6 +517,7 @@ trait DnsConversions {
     )
 
     Map(
+      Event -> Map("action" -> "dns.question"),
       "dns" ->
         Map("question" -> questionFields, "answer" -> resultFields))
   }
@@ -518,13 +526,18 @@ trait DnsConversions {
 
   /**
     *
-    * @param dnsMessage Either the message sent(question) or received(answer) from the server
+    * @param dnsMessage Either the message sent(question) or received(answer) to/from the server
     * @return Map containing the fields to include into log statement
     */
   def dnsMessageEvent(dnsMessage: DNS.Message): Map[_, _] = {
 
     val rCode =
-      if (dnsMessage.getOPT != null) dnsMessage.getRcode else dnsMessage.getHeader.getRcode
+      if (dnsMessage.getOPT != null)
+        dnsMessage.getRcode
+      else if (dnsMessage.getHeader != null)
+        dnsMessage.getHeader.getRcode
+      else
+        0
 
     val tsigStatus =
       if (dnsMessage.isSigned)
@@ -532,7 +545,7 @@ trait DnsConversions {
 
     val flags = (0 until 16)
       .flatMap(i =>
-        if (validFlag(i) && dnsMessage.getHeader.getFlag(i)) {
+        if (validFlag(i) && dnsMessage.getHeader != null && dnsMessage.getHeader.getFlag(i)) {
           Some(Flags.string(i) -> true)
         } else {
           None
@@ -541,20 +554,61 @@ trait DnsConversions {
 
     val additionalSections = (0 until 4).flatMap { i =>
       val opCode =
-        if (dnsMessage.getHeader.getOpcode != Opcode.UPDATE) Section.longString(i)
+        if (dnsMessage.getHeader != null && dnsMessage.getHeader.getOpcode != Opcode.UPDATE)
+          Section.longString(i)
         else Section.updString(i)
-      dnsMessage.getSectionArray(i).map(r => recordInfo(opCode, r))
+      if (dnsMessage.getSectionArray(i) != null) {
+        Some(dnsMessage.getSectionArray(i).map(r => recordInfo(opCode, r)))
+      } else None
     }
 
+    val idVal = if (dnsMessage.getHeader != null) dnsMessage.getHeader.getID else ""
+    val opCode = if (dnsMessage.getHeader != null) dnsMessage.getHeader.getOpcode else 0
     Map(
-      id -> dnsMessage.getHeader.getID,
+      id -> idVal,
       tsig -> tsigStatus,
-      op_code -> Opcode.string(dnsMessage.getHeader.getOpcode),
+      op_code -> Opcode.string(opCode),
       "opt" -> Map("ext_rcode" -> Rcode.string(rCode)),
       "additionals" -> additionalSections.toArray,
       "flags" -> flags
     )
   }
+
+  def recordSetInfo(rs: RecordSet): Map[_, _] = {
+    val recInfo = toDnsRecords(rs, rs.name).fold(
+      t => Map("error" -> Map("message" -> t.getMessage)),
+      rs => rs.map(r => recordInfo("UPDATE", r)))
+    Map(
+      "id" -> rs.id,
+      "type" -> "recordSet",
+      "name" -> rs.name,
+      "account" -> rs.account,
+      "created" -> rs.created.getMillis,
+      "status" -> rs.status.toString,
+      "zoneId" -> rs.zoneId,
+      "ownerGroupId" -> rs.ownerGroupId,
+      "records" -> recInfo,
+      "recordSetType" -> rs.typ.toString,
+      "updated" -> rs.updated.fold(0L)(_.getMillis),
+    )
+  }
+
+  def rsChangeEvent(action: String, drs: RecordSetChange, addInfo: Map[_, _]): Map[_, _] =
+    Map(
+      "action" -> Map("name" -> action),
+      "entity" -> (Map(
+        "id" -> drs.id,
+        "type" -> "recordSetChange",
+        "userId" -> drs.userId,
+        "changeType" -> drs.changeType,
+        "status" -> drs.status.toString,
+        "systemMessage" -> drs.systemMessage.toString,
+        "zoneId" -> drs.zone.id,
+        "zoneName" -> drs.zone.name,
+        "singleBatchChangeIds" -> drs.singleBatchChangeIds.toArray,
+        "recordSet" -> recordSetInfo(drs.recordSet)
+      ) ++ addInfo)
+    )
 }
 
 object DnsConversions extends DnsConversions

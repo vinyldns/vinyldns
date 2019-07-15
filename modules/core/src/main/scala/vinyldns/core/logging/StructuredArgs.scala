@@ -20,7 +20,7 @@ import net.logstash.logback.argument.{StructuredArgument, StructuredArguments}
 import vinyldns.core.domain.batch.BatchChange
 import vinyldns.core.domain.membership.{Group, GroupChange, User, UserChange}
 import vinyldns.core.domain.record.{ChangeSet, RecordSet, RecordSetChange}
-import vinyldns.core.domain.zone.{Zone, ZoneChange}
+import vinyldns.core.domain.zone.{Zone, ZoneChange, ZoneCommand}
 import vinyldns.core.queue.{CommandMessage, MessageCount}
 
 import scala.collection.JavaConverters._
@@ -102,6 +102,8 @@ object StructuredArgs {
         "commandId" -> cm.command.id,
         ZoneId -> cm.command.zoneId,
         Type -> "commandMessage")
+    case zc: ZoneCommand =>
+      Map(_Id -> zc.id, Type -> "zoneCommand", Name -> zc.zoneId)
 
     //wrapper
     case id: Id => Map(_Id -> id.id, Type -> id._type)
@@ -160,19 +162,18 @@ object StructuredArgs {
         "latestSync" -> dz.latestSync.fold(0L)(_.getMillis)
       )
 
-    case dr: RecordSet =>
+    case rs: RecordSet =>
       Map(
-        _Id -> dr.id,
+        _Id -> rs.id,
         Type -> "recordSet",
-        Name -> dr.name,
-        Account -> dr.account,
-        Created -> dr.created.getMillis,
-        Status -> dr.status.toString,
-        ZoneId -> dr.zoneId,
-        "ownerGroupId" -> dr.ownerGroupId,
-        "records" -> dr.records.map(fields).toArray,
-        "recordSetType" -> dr.typ.toString,
-        "updated" -> dr.updated.fold(0L)(_.getMillis),
+        Name -> rs.name,
+        Account -> rs.account,
+        Created -> rs.created.getMillis,
+        Status -> rs.status.toString,
+        ZoneId -> rs.zoneId,
+        "ownerGroupId" -> rs.ownerGroupId,
+        "recordSetType" -> rs.typ.toString,
+        "updated" -> rs.updated.fold(0L)(_.getMillis),
       )
   }
 

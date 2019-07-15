@@ -168,9 +168,7 @@ class DnsConnection(val resolver: DNS.SimpleResolver) extends DnsConversions {
   private def runQuery(query: DnsQuery): Either[Throwable, List[RecordSet]] = {
     val answers = query.run()
 
-    logger.info(
-      "Result of DNS lookup",
-      Map("dns" -> entries(dnsAnswerEvent(query.result, answers))))
+    logger.info("Result of DNS lookup", entries(dnsAnswerEvent(query.result, answers)))
 
     query.result match {
       case DNS.Lookup.TRY_AGAIN =>

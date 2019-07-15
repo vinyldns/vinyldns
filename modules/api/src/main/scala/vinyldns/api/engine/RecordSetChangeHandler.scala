@@ -20,6 +20,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import vinyldns.api.domain.dns.DnsConnection
+import vinyldns.api.domain.dns.DnsConversions._
 import vinyldns.api.domain.dns.DnsProtocol.NoError
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
@@ -188,32 +189,32 @@ object RecordSetChangeHandler {
       case Pending(change) =>
         logger.info(
           "CHANGE PENDING",
-          entries(event("fsm", Detail(change), Map("state" -> "pending"))))
+          entries(rsChangeEvent("RSChangeHandlerFSM", change, Map("state" -> "pending"))))
         bypassValidation(Validated(change))(orElse = validate(change, conn))
 
       case Validated(change) =>
         logger.info(
           "CHANGE VALIDATED",
-          entries(event("fsm", Detail(change), Map("state" -> "validated"))))
+          entries(rsChangeEvent("RSChangeHandlerFSM", change, Map("state" -> "validated"))))
         apply(change, conn).flatMap(fsm(_, conn, wildcardExists))
 
       case Applied(change) =>
         logger.info(
           "CHANGE APPLIED",
-          entries(event("fsm", Detail(change), Map("state" -> "applied"))))
+          entries(rsChangeEvent("RSChangeHandlerFSM", change, Map("state" -> "applied"))))
         bypassValidation(Verified(change.successful))(orElse = verify(change, conn))
 
       case Verified(change) =>
         logger.info(
           "CHANGE VERIFIED",
-          entries(event("fsm", Detail(change), Map("state" -> "verified"))))
+          entries(rsChangeEvent("RSChangeHandlerFSM", change, Map("state" -> "verified"))))
         // if we got here, we are good.  Note: Complete could still mean that the change failed
         IO.pure(Completed(change))
 
       case done: Completed =>
         logger.info(
           "CHANGE COMPLETED",
-          entries(event("fsm", Detail(done.change), Map("state" -> "completed"))))
+          entries(rsChangeEvent("RSChangeHandlerFSM", done.change, Map("state" -> "completed"))))
         IO.pure(done)
     }
   }
