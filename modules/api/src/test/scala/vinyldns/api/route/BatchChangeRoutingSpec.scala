@@ -27,6 +27,7 @@ import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestMembershipData._
@@ -37,25 +38,28 @@ import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record._
 
-class BatchChangeRoutingSpec
+class BatchChangeRoutingSpec()
     extends WordSpec
     with ScalatestRouteTest
-    with BatchChangeRoute
-    with VinylDNSDirectives
+    with MockitoSugar
     with VinylDNSJsonProtocol
+    with VinylDNSRouteTestHelper
     with Matchers
     with BeforeAndAfterEach {
 
   val batchChangeService: BatchChangeServiceAlgebra = TestBatchChangeService
-  val okAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
-  val noAuthAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(notAuth)
-  val supportUserAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
-    supportUserAuth)
-  val superUserAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(superUserAuth)
+  val okAuthRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(okAuth))
+  val notAuthRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(notAuth))
+  val supportUserRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(supportUserAuth))
+  val superUserRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(superUserAuth))
 
-  var vinylDNSAuthenticator: VinylDNSAuthenticator = _
+  var batchChangeRoute: Route = _
 
-  override def beforeEach(): Unit = vinylDNSAuthenticator = okAuthenticator
+  override def beforeEach(): Unit = batchChangeRoute = okAuthRoute.getRoutes
 
   import vinyldns.core.domain.batch.SingleChangeStatus._
 
@@ -438,10 +442,9 @@ class BatchChangeRoutingSpec
 
     "return a 202 Accepted for valid add and delete request with allowManualReview parameter" in {
       val validRequestWithoutComments: String = compact(render(changeList))
-
       Post("/zones/batchrecordchanges?allowManualReview=false").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
 
         status shouldBe Accepted
 
@@ -631,7 +634,7 @@ class BatchChangeRoutingSpec
     }
 
     "return empty list of batch change summaries for the user that called it" in {
-      vinylDNSAuthenticator = noAuthAuthenticator
+      batchChangeRoute = notAuthRoute.getRoutes
       Get("/zones/batchrecordchanges") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
@@ -642,7 +645,7 @@ class BatchChangeRoutingSpec
     }
 
     "return all batch changes if ignoreAccess is true and requester is a super user" in {
-      vinylDNSAuthenticator = superUserAuthenticator
+      batchChangeRoute = superUserRoute.getRoutes
       Get("/zones/batchrecordchanges?ignoreAccess=true") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
@@ -657,7 +660,7 @@ class BatchChangeRoutingSpec
 
     "return all Pending batch changes if ignoreAccess is true, approval status is `PendingApproval`," +
       " and requester is a super user" in {
-      vinylDNSAuthenticator = superUserAuthenticator
+      batchChangeRoute = superUserRoute.getRoutes
       Get("/zones/batchrecordchanges?ignoreAccess=true&approvalStatus=PendingApproval") ~>
         batchChangeRoute ~> check {
         status shouldBe OK
@@ -676,7 +679,7 @@ class BatchChangeRoutingSpec
 
   "POST reject batch change" should {
     "return OK if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
@@ -686,7 +689,7 @@ class BatchChangeRoutingSpec
     }
 
     "return OK if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         batchChangeRoute ~> check {
@@ -713,18 +716,14 @@ class BatchChangeRoutingSpec
     }
 
     "return OK if no request entity is provided" in {
-<<<<<<< HEAD
-      Post("/zones/batchrecordchanges/pendingBatchId/reject") ~> batchChangeRoute(supportUserAuth) ~> check {
-=======
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/reject") ~> batchChangeRoute ~> check {
->>>>>>> 9790ac4e... Initial working with membership route.
         status shouldBe OK
       }
     }
 
     "return BadRequest if batch change is not pending approval" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/batchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         batchChangeRoute ~> check {
@@ -735,7 +734,7 @@ class BatchChangeRoutingSpec
 
   "POST approve batch change" should {
     "return OK if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
@@ -745,7 +744,7 @@ class BatchChangeRoutingSpec
     }
 
     "return OK if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         batchChangeRoute ~> check {
@@ -762,7 +761,7 @@ class BatchChangeRoutingSpec
     }
 
     "return BadRequest if comments exceed 1024 characters" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute) ~> check {
@@ -773,14 +772,14 @@ class BatchChangeRoutingSpec
     }
 
     "return OK no request entity is provided" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/approve") ~> batchChangeRoute ~> check {
         status shouldBe OK
       }
     }
 
     "return BadRequest if batch change is not pending approval" in {
-      vinylDNSAuthenticator = supportUserAuthenticator
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/batchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         batchChangeRoute ~> check {
@@ -789,10 +788,11 @@ class BatchChangeRoutingSpec
     }
 
     "return NotFound if the requesting user cant be found" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/notFoundUser/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe NotFound
       }
     }

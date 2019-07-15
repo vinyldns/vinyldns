@@ -113,7 +113,6 @@ object VinylDNSService {
       }
   }
 
-  // Rejection handler to map 404 to 405
   implicit def validationRejectionHandler: RejectionHandler =
     RejectionHandler
       .newBuilder()
@@ -127,7 +126,7 @@ object VinylDNSService {
       }
       .handleNotFound {
         extractUnmatchedPath { p =>
-          complete((StatusCodes.MethodNotAllowed, s"The requested path [$p] does not exist."))
+          complete((StatusCodes.NotFound, s"The requested path [$p] does not exist."))
         }
       }
       .result()
@@ -143,8 +142,7 @@ class VinylDNSService(
     val batchChangeService: BatchChangeServiceAlgebra,
     val collectorRegistry: CollectorRegistry,
     authPrincipalProvider: AuthPrincipalProvider)
-    extends VinylDNSDirectives
-    with PingRoute
+    extends PingRoute
     with HealthCheckRoute
     with BlueGreenRoute
     with StatusRoute
@@ -157,10 +155,12 @@ class VinylDNSService(
   val vinylDNSAuthenticator: VinylDNSAuthenticator =
     new ProductionVinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
 
-  val zoneRoute = new ZoneRoute(zoneService, vinylDNSAuthenticator).getRoutes()
-  val recordSetRoute = new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes()
-  val membershipRoute = new MembershipRoute(membershipService, vinylDNSAuthenticator).getRoutes()
-  val batchChangeRoute = new BatchChangeRoute(batchChangeService, vinylDNSAuthenticator).getRoutes()
+  val zoneRoute: Route = new ZoneRoute(zoneService, vinylDNSAuthenticator).getRoutes
+  val recordSetRoute: Route = new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes
+  val membershipRoute: Route =
+    new MembershipRoute(membershipService, vinylDNSAuthenticator).getRoutes
+  val batchChangeRoute: Route =
+    new BatchChangeRoute(batchChangeService, vinylDNSAuthenticator).getRoutes
 
   val unloggedUris = Seq(
     Uri.Path("/health"),

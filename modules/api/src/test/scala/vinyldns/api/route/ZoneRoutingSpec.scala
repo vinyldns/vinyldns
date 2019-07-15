@@ -36,9 +36,8 @@ import vinyldns.core.domain.zone._
 class ZoneRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with ZoneRoute
     with VinylDNSJsonProtocol
-    with VinylDNSDirectives
+    with VinylDNSRouteTestHelper
     with OneInstancePerTest
     with Matchers {
 
@@ -123,6 +122,9 @@ class ZoneRoutingSpec
     nextId = None,
     startFrom = None,
     maxItems = 100)
+
+  val zoneRoute: Route =
+    new ZoneRoute(TestZoneService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(
@@ -370,8 +372,6 @@ class ZoneRoutingSpec
   }
 
   val zoneService: ZoneServiceAlgebra = TestZoneService
-
-  val vinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
 
   def zoneJson(name: String, email: String): String =
     zoneJson(Zone(name, email, connection = null, created = null, status = null, id = null))

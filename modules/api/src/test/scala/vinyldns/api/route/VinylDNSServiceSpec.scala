@@ -16,12 +16,13 @@
 
 package vinyldns.api.route
 
+import akka.event.Logging._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.directives.LogEntry
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
-import akka.event.Logging._
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.directives.LogEntry
 import vinyldns.core.domain.auth.AuthPrincipal
 
 class VinylDNSServiceSpec
@@ -33,6 +34,10 @@ class VinylDNSServiceSpec
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
     mock[AuthPrincipal])
+
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+    case _ => failWith(e)
+  }
 
   private def buildMockRequest(
       path: String = "/path/to/resource",

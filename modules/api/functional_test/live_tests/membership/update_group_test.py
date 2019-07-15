@@ -614,3 +614,31 @@ def test_update_group_not_authorized(shared_zone_test_context):
     finally:
         if saved_group:
             ok_client.delete_group(saved_group['id'], status=(200,404))
+
+def test_update_group_adds_admins_to_member_list(shared_zone_test_context):
+    """
+    Tests that updating a group adds admins to member list
+    """
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    result = None
+
+    try:
+        new_group = {
+            'name': 'test-update-group-add-admins-to-members',
+            'email': 'test@test.com',
+            'description': 'this is a description',
+            'members': [ {'id': 'ok'} ],
+            'admins': [ {'id': 'ok'} ]
+        }
+
+        saved_group = ok_client.create_group(new_group, status=200)
+
+        saved_group['admins'] = [ { 'id': 'dummy' }]
+        result = ok_client.update_group(saved_group['id'], saved_group, status=200)
+
+        assert_that(map(lambda x: x['id'], result['members']), contains('ok', 'dummy'))
+        assert_that(result['admins'][0]['id'], is_('dummy'))
+    finally:
+        if result:
+            dummy_client.delete_group(result['id'], status=(200,404))

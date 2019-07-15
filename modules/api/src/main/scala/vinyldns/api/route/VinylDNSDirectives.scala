@@ -33,9 +33,9 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
 
-trait VinylDNSDirectives[E] extends Directives {
+trait VinylDNSDirectives extends Directives {
 
-  def vinylDNSAuthenticator: VinylDNSAuthenticator
+  val vinylDNSAuthenticator: VinylDNSAuthenticator
 
   def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
     extractStrictEntity(10.seconds).flatMap { strictEntity =>
@@ -129,9 +129,9 @@ trait VinylDNSDirectives[E] extends Directives {
 
   /**
     * Helpers to handle route authentication flow for routing. Implementing classes/objects
-    * must provide sendResponse implementation.
+    * must provide handleErrors implementation.
     */
-  def sendResponse[A](either: Either[E, A], f: A => Route): Route
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route]
 
   /**
     * Authenticate user and execute service call without request entity
@@ -140,10 +140,12 @@ trait VinylDNSDirectives[E] extends Directives {
     * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
     * - Invoke service call, f, and return the response to the user.
     */
-  def authenticateAndExecute[A](f: AuthPrincipal => EitherT[IO, E, A])(g: A => Route): Route =
+  def authenticateAndExecute[A, E <: Throwable](f: AuthPrincipal => EitherT[IO, E, A])(
+      g: A => Route): Route =
     authenticate { authPrincipal =>
-      onSuccess(f(authPrincipal).value.unsafeToFuture()) { result =>
-        sendResponse(result, g)
+      onSuccess(f(authPrincipal).value.unsafeToFuture()) {
+        case Right(a) => g(a)
+        case Left(e) => handleErrors(e).applyOrElse(e, failWith)
       }
     }
 
@@ -156,12 +158,14 @@ trait VinylDNSDirectives[E] extends Directives {
     * return error to user.
     * - Invoke service call, f, and return the response to the user.
     */
-  def authenticateAndExecuteWithEntity[A, B](f: (AuthPrincipal, B) => EitherT[IO, E, A])(
-      g: A => Route)(implicit um: FromRequestUnmarshaller[B]): Route =
+  def authenticateAndExecuteWithEntity[A, B, E <: Throwable](
+      f: (AuthPrincipal, B) => EitherT[IO, E, A])(g: A => Route)(
+      implicit um: FromRequestUnmarshaller[B]): Route =
     authenticate { authPrincipal =>
       entity(as[B]) { deserializedEntity =>
-        onSuccess(f(authPrincipal, deserializedEntity).value.unsafeToFuture()) { result =>
-          sendResponse(result, g)
+        onSuccess(f(authPrincipal, deserializedEntity).value.unsafeToFuture()) {
+          case Right(a) => g(a)
+          case Left(e) => handleErrors(e).applyOrElse(e, failWith)
         }
       }
     }

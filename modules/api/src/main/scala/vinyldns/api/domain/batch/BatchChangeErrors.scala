@@ -22,7 +22,7 @@ import vinyldns.core.domain.DomainValidationError
 import vinyldns.core.domain.batch.SingleChange
 
 /* Error response options */
-sealed trait BatchChangeErrorResponse
+sealed trait BatchChangeErrorResponse extends Throwable
 final case class InvalidBatchChangeInput(errors: List[DomainValidationError])
     extends BatchChangeErrorResponse
 

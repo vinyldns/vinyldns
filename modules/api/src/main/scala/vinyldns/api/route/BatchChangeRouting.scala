@@ -19,7 +19,6 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
 import vinyldns.api.domain.batch._
 
@@ -27,95 +26,104 @@ class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
     val vinylDNSAuthenticator: VinylDNSAuthenticator)
     extends VinylDNSJsonProtocol
-    with VinylDNSDirectives[BatchChangeErrorResponse] {
+    with VinylDNSDirectives {
 
-  def getRoutes(): Route = batchChangeRoute
+  def getRoutes: Route = batchChangeRoute
 
-  def sendResponse[A](either: Either[BatchChangeErrorResponse, A], f: A => Route): Route =
-    either match {
-      case Right(a) => f(a)
-      case Left(ibci: InvalidBatchChangeInput) => complete(StatusCodes.BadRequest, ibci)
-      case Left(crl: InvalidBatchChangeResponses) => complete(StatusCodes.BadRequest, crl)
-      case Left(cnf: BatchChangeNotFound) => complete(StatusCodes.NotFound, cnf.message)
-      case Left(una: UserNotAuthorizedError) => complete(StatusCodes.Forbidden, una.message)
-      case Left(uct: BatchConversionError) => complete(StatusCodes.BadRequest, uct)
-      case Left(bcnpa: BatchChangeNotPendingApproval) =>
-        complete(StatusCodes.BadRequest, bcnpa.message)
-      case Left(uce: UnknownConversionError) => complete(StatusCodes.InternalServerError, uce)
-    }
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+    case ibci: InvalidBatchChangeInput => complete(StatusCodes.BadRequest, ibci)
+    case crl: InvalidBatchChangeResponses => complete(StatusCodes.BadRequest, crl)
+    case cnf: BatchChangeNotFound => complete(StatusCodes.NotFound, cnf.message)
+    case una: UserNotAuthorizedError => complete(StatusCodes.Forbidden, una.message)
+    case uct: BatchConversionError => complete(StatusCodes.BadRequest, uct)
+    case bcnpa: BatchChangeNotPendingApproval =>
+      complete(StatusCodes.BadRequest, bcnpa.message)
+    case uce: UnknownConversionError => complete(StatusCodes.InternalServerError, uce)
+    case brnf: BatchRequesterNotFound => complete(StatusCodes.NotFound, brnf.message)
+  }
 
   final private val MAX_ITEMS_LIMIT: Int = 100
 
   val batchChangeRoute: Route = {
-    val standardBatchChangeRoutes = (post & path("zones" / "batchrecordchanges")) {
-      parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
-        {
-          monitor("Endpoint.postBatchChange") {
-            authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
-              (authPrincipal, batchChangeInput) =>
-                batchChangeService.applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
-                  complete(StatusCodes.Accepted, chg)
-                }
+    val standardBatchChangeRoutes = path("zones" / "batchrecordchanges") {
+      (post & monitor("Endpoint.postBatchChange")) {
+        parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
+          authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput, BatchChangeErrorResponse](
+            (authPrincipal, batchChangeInput) =>
+              batchChangeService
+                .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
+            complete(StatusCodes.Accepted, chg)
           }
         }
-      }
+      } ~
+        (get & monitor("Endpoint.listBatchChangeSummaries")) {
+          parameters(
+            "startFrom".as[Int].?,
+            "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
+            "ignoreAccess".as[Boolean].?(false),
+            "approvalStatus".as[String].?) {
+            (
+                startFrom: Option[Int],
+                maxItems: Int,
+                ignoreAccess: Boolean,
+                approvalStatus: Option[String]) =>
+              {
+                val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
+
+                handleRejections(invalidQueryHandler) {
+                  validate(
+                    0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                    s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
+                    authenticateAndExecute(
+                      batchChangeService.listBatchChangeSummaries(
+                        _,
+                        startFrom,
+                        maxItems,
+                        ignoreAccess,
+                        convertApprovalStatus)) { summaries =>
+                      complete(StatusCodes.OK, summaries)
+                    }
+                  }
+                }
+              }
+          }
+        }
     } ~
-      (get & path("zones" / "batchrecordchanges" / Segment)) { id =>
-        monitor("Endpoint.getBatchChange") {
+      path("zones" / "batchrecordchanges" / Segment) { id =>
+        (get & monitor("Endpoint.getBatchChange")) {
           authenticateAndExecute(batchChangeService.getBatchChange(id, _)) { chg =>
             complete(StatusCodes.OK, chg)
           }
         }
-      } ~
-      (get & path("zones" / "batchrecordchanges") & monitor("Endpoint.listBatchChangeSummaries")) {
-        parameters(
-          "startFrom".as[Int].?,
-          "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
-          "ignoreAccess".as[Boolean].?(false),
-          "approvalStatus".as[String].?) {
-          (
-              startFrom: Option[Int],
-              maxItems: Int,
-              ignoreAccess: Boolean,
-              approvalStatus: Option[String]) =>
-            {
-              val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
-
-              handleRejections(invalidQueryHandler) {
-                validate(
-                  0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
-                  s"maxItems was $maxItems, maxItems must be between 1 and $MAX_ITEMS_LIMIT, inclusive.") {
-                  authenticateAndExecute(
-                    batchChangeService.listBatchChangeSummaries(
-                      _,
-                      startFrom,
-                      maxItems,
-                      ignoreAccess,
-                      convertApprovalStatus)) { summaries =>
-                    complete(StatusCodes.OK, summaries)
-                  }
-                }
-              }
-            }
-        }
       }
 
     val manualBatchReviewRoutes =
-      (post & path("zones" / "batchrecordchanges" / Segment / "reject")) { id =>
-        monitor("Endpoint.rejectBatchChange") {
-          authenticateAndExecuteWithEntity[BatchChange, Option[RejectBatchChangeInput]]((
-              authPrincipal,
-              input) => batchChangeService.rejectBatchChange(id, authPrincipal, input)) { chg =>
-            complete(StatusCodes.OK, chg)
+      path("zones" / "batchrecordchanges" / Segment / "reject") { id =>
+        (post & monitor("Endpoint.rejectBatchChange")) {
+          authenticateAndExecuteWithEntity[
+            BatchChange,
+            Option[RejectBatchChangeInput],
+            BatchChangeErrorResponse]((authPrincipal, input) =>
+            batchChangeService
+              .rejectBatchChange(id, authPrincipal, input.getOrElse(RejectBatchChangeInput()))) {
+            chg =>
+              complete(StatusCodes.OK, chg)
           }
           // TODO: Update response entity to return modified batch change
         }
       } ~
-        (post & path("zones" / "batchrecordchanges" / Segment / "approve")) { id =>
-          monitor("Endpoint.approveBatchChange") {
-            authenticateAndExecuteWithEntity[BatchChange, Option[ApproveBatchChangeInput]](
+        path("zones" / "batchrecordchanges" / Segment / "approve") { id =>
+          (post & monitor("Endpoint.approveBatchChange")) {
+            authenticateAndExecuteWithEntity[
+              BatchChange,
+              Option[ApproveBatchChangeInput],
+              BatchChangeErrorResponse](
               (authPrincipal, input) =>
-                batchChangeService.approveBatchChange(id, authPrincipal, input)) { chg =>
+                batchChangeService
+                  .approveBatchChange(
+                    id,
+                    authPrincipal,
+                    input.getOrElse(ApproveBatchChangeInput()))) { chg =>
               complete(StatusCodes.OK, chg)
             // TODO: Update response entity to return modified batch change
             }

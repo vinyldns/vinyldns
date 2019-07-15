@@ -39,9 +39,8 @@ import scala.util.Random
 class RecordSetRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with RecordSetRoute
     with VinylDNSJsonProtocol
-    with VinylDNSDirectives
+    with VinylDNSRouteTestHelper
     with Matchers {
 
   private val zoneNotFound = Zone("not.found", "test@test.com")
@@ -504,8 +503,8 @@ class RecordSetRoutingSpec
   }
 
   val recordSetService: RecordSetServiceAlgebra = new TestService
-
-  val vinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
+  val recordSetRoute: Route =
+    new RecordSetRoute(recordSetService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
 
   private def rsJson(recordSet: RecordSet): String =
     compact(render(Extraction.decompose(recordSet)))

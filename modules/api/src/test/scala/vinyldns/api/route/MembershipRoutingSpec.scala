@@ -30,32 +30,32 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.membership._
-import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.{Group, LockStatus}
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
+import vinyldns.core.domain.membership.{Group, LockStatus}
 
 class MembershipRoutingSpec
     extends WordSpec
     with ScalatestRouteTest
-    with MembershipRoute
     with VinylDNSJsonProtocol
-    with VinylDNSDirectives
+    with VinylDNSRouteTestHelper
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach {
 
   val membershipService: MembershipService = mock[MembershipService]
-  val okAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
-  val superUserAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(superUserAuth)
-
-  var vinylDNSAuthenticator: VinylDNSAuthenticator = _
+  val okAuthRoute: Route =
+    new MembershipRoute(membershipService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
+  val superUserRoute: Route =
+    new MembershipRoute(membershipService, new TestVinylDNSAuthenticator(superUserAuth)).getRoutes
+  var membershipRoute: Route = _
 
   override protected def beforeEach(): Unit = {
     reset(membershipService)
-    vinylDNSAuthenticator = okAuthenticator
+    membershipRoute = okAuthRoute
   }
 
   private def js[A](info: A): String = compact(render(Extraction.decompose(info)))
@@ -691,7 +691,7 @@ class MembershipRoutingSpec
   }
   "PUT update user lock status" should {
     "return a 200 response with the user locked" in {
-      vinylDNSAuthenticator = superUserAuthenticator
+      membershipRoute = superUserRoute
       val updatedUser = okUser.copy(lockStatus = LockStatus.Locked)
       doReturn(result(updatedUser))
         .when(membershipService)
@@ -708,7 +708,7 @@ class MembershipRoutingSpec
     }
 
     "return a 200 response with the user unlocked" in {
-      vinylDNSAuthenticator = superUserAuthenticator
+      membershipRoute = superUserRoute
       val updatedUser = lockedUser.copy(lockStatus = LockStatus.Unlocked)
       doReturn(result(updatedUser))
         .when(membershipService)
