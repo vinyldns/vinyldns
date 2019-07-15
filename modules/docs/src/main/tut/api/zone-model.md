@@ -29,8 +29,8 @@ adminGroupId  | string      | The id of the administrators group for the zone |
 created       | date-time   | The time when the zone was first created |
 account       | string      | **DEPRECATED** The account that created the zone |
 email         | string      | The distribution email for the zone |
-backendId     | string      | Optional. Recommended over `connection` and `transferConnection`. The configuration ID of the DNS backend server for the zone |
-connection    | ZoneConnection | Optional. The connection used to issue DDNS updates to the backend zone.  If not provided, default keys will be used.  See the [Zone Connection Attributes](#zone-conn-attr) for more information |
+backendId     | string      | Optional. Recommended over `connection` and `transferConnection`. The configuration ID of the DNS backend server for the zone. If not provided, default keys will be used unless connection and transfer connection are provided. |
+connection    | ZoneConnection | Optional. The connection used to issue DDNS updates to the backend zone.  If not provided, default keys will be used unless backendId is provided.  See the [Zone Connection Attributes](#zone-conn-attr) for more information |
 transferConnection | ZoneConnection | Optional. The connection that is used to sync the zone with the DNS backend.  This can be different than the update connection.  If not provided, default keys will be used |
 shared        | boolean     | An indicator that the zone is shared with anyone. At this time only VinylDNS administrators can set this to true.|
 acl           | ZoneACL     | The access control rules governing the zone.  See the [Zone ACL Rule Attributes](#zone-acl-rule-attr) for more information
