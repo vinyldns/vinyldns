@@ -187,6 +187,26 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       repo.save(bcARecords).unsafeRunSync() shouldBe bcARecords
     }
 
+    "update batch change" in {
+      val batchChange = randomBatchChange(List())
+      val singleChanges = batchChange.changes.map {
+        case sad: SingleAddChange => sad.copy(recordName = sad.recordName.map(name => s"updated-$name"))
+        case sdc: SingleDeleteChange => sdc.copy(recordName = sdc.recordName.map(name => s"updated-$name"))
+      }
+      val updatedBatch = batchChange.copy(comments = Some("updated comments"),
+        ownerGroupId = Some("new-owner-group-id"), approvalStatus = BatchChangeApprovalStatus.ManuallyRejected,
+        reviewerId = Some("reviewer-id"), reviewComment = Some("updated reviewer comment"),
+        reviewTimestamp = Some(DateTime.now), changes = singleChanges)
+
+      val f = for {
+        _ <- repo.save(batchChange)
+        _ <- repo.save(updatedBatch)
+        getBatch <- repo.getBatchChange(batchChange.id)
+      } yield getBatch
+
+      areSame(f.unsafeRunSync(), Some(updatedBatch))
+    }
+
     "get a batch change by ID" in {
       val f =
         for {
