@@ -117,64 +117,66 @@ object StructuredArgs {
     case x: String => Map(Value -> x)
   }
 
-  private def detailedFields[T](t: T): Map[_, _] = t match {
-    case dzc: ZoneChange =>
-      Map(
-        Id -> dzc.id,
-        Type -> "zoneChange",
-        userId -> dzc.userId,
-        changeType -> dzc.changeType,
-        Status -> dzc.status.toString,
-        systemMessage -> dzc.systemMessage.toString,
-        Created -> dzc.created.getMillis,
-        Zone -> fields(Detail(dzc.zone))
-      )
+  private def detailedFields[T](t: T): Map[_, _] = {
+    t match {
+      case dzc: ZoneChange =>
+        Map(
+          Id -> dzc.id,
+          Type -> "zoneChange",
+          userId -> dzc.userId,
+          changeType -> dzc.changeType,
+          Status -> dzc.status.toString,
+          systemMessage -> dzc.systemMessage.toString,
+          Created -> dzc.created.getMillis,
+          Zone -> fields(Detail(dzc.zone))
+        )
 
-    case drs: RecordSetChange =>
-      Map(
-        Id -> drs.id,
-        Type -> "recordSetChange",
-        userId -> drs.userId,
-        changeType -> drs.changeType,
-        Status -> drs.status.toString,
-        systemMessage -> drs.systemMessage.toString,
-        ZoneId -> drs.zone.id,
-        ZoneName -> drs.zone.name,
-        "singleBatchChangeIds" -> drs.singleBatchChangeIds.toArray,
-        "recordSet" -> fields(Detail(drs.recordSet))
-      )
+      case drs: RecordSetChange =>
+        Map(
+          Id -> drs.id,
+          Type -> "recordSetChange",
+          userId -> drs.userId,
+          changeType -> drs.changeType,
+          Status -> drs.status.toString,
+          systemMessage -> drs.systemMessage.toString,
+          ZoneId -> drs.zone.id,
+          ZoneName -> drs.zone.name,
+          "singleBatchChangeIds" -> drs.singleBatchChangeIds.toArray,
+          "recordSet" -> fields(Detail(drs.recordSet))
+        )
 
-    case dz: Zone =>
-      Map(
-        _Id -> dz.id,
-        Type -> "zone",
-        Name -> dz.name,
-        Account -> dz.account,
-        Status -> dz.status.toString,
-        Created -> dz.created,
-        "adminGroupId" -> dz.adminGroupId,
-        "shared" -> dz.shared,
-        "connection" -> dz.connection.toString,
-        "transferConnection" -> dz.transferConnection.toString,
-        "reverse" -> dz.isReverse,
-        "isTest" -> dz.isTest,
-        "updated" -> dz.updated.fold(0L)(_.getMillis),
-        "latestSync" -> dz.latestSync.fold(0L)(_.getMillis)
-      )
+      case dz: Zone =>
+        Map(
+          _Id -> dz.id,
+          Type -> "zone",
+          Name -> dz.name,
+          Account -> dz.account,
+          Status -> dz.status.toString,
+          Created -> dz.created,
+          "adminGroupId" -> dz.adminGroupId,
+          "shared" -> dz.shared,
+          "connection" -> dz.connection.toString,
+          "transferConnection" -> dz.transferConnection.toString,
+          "reverse" -> dz.isReverse,
+          "isTest" -> dz.isTest,
+          "updated" -> dz.updated.fold(0L)(_.getMillis),
+          "latestSync" -> dz.latestSync.fold(0L)(_.getMillis)
+        )
 
-    case rs: RecordSet =>
-      Map(
-        _Id -> rs.id,
-        Type -> "recordSet",
-        Name -> rs.name,
-        Account -> rs.account,
-        Created -> rs.created.getMillis,
-        Status -> rs.status.toString,
-        ZoneId -> rs.zoneId,
-        "ownerGroupId" -> rs.ownerGroupId,
-        "recordSetType" -> rs.typ.toString,
-        "updated" -> rs.updated.fold(0L)(_.getMillis),
-      )
+      case rs: RecordSet =>
+        Map(
+          _Id -> rs.id,
+          Type -> "recordSet",
+          Name -> rs.name,
+          Account -> rs.account,
+          Created -> rs.created.getMillis,
+          Status -> rs.status.toString,
+          ZoneId -> rs.zoneId,
+          "ownerGroupId" -> rs.ownerGroupId,
+          "recordSetType" -> rs.typ.toString,
+          "updated" -> rs.updated.fold(0L)(_.getMillis)
+        )
+    }
   }
 
   /**

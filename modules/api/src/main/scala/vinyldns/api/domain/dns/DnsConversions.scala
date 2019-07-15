@@ -467,10 +467,11 @@ trait DnsConversions {
     * @param rType record type, for e.g.: A, AAA, CNAME, etc.
     * @return
     */
-  def dnsQuestionEvent(name: Name, rType: RecordType): Map[_, _] =
+  def dnsQuestionEvent(name: Name, rType: RecordType): Map[_, _] = {
     Map(
       Event -> Map("action" -> "dns.question"),
       dns -> Map("question" -> Map(name -> name.toString(true), _type -> rType.toString)))
+  }
 
   /**
     * Note: [07/09/2019] Elastic ECS forum is currently discussing (https://github.com/elastic/ecs/pull/438) to create
@@ -482,19 +483,24 @@ trait DnsConversions {
     * @return map containing the fields to include into the log statement
     */
   def dnsAnswerEvent(responseCode: Int, answers: List[Record]): Map[_, _] = {
-    val rCodeKey = if (responseCode > 0) Rcode.string(responseCode) else "UNPARSEABLE"
+    val rCodeKey = if (responseCode > 0) {
+      Rcode.string(responseCode)
+    } else {
+      "UNPARSEABLE"
+    }
+
     Map(
       Event -> Map("action" -> "dns.answer"),
       dns ->
         Map(
           "answers" -> answers.map(r => recordInfo(rCodeKey, r)).toArray,
           "answers_count" -> answers.size,
-          "response_code" -> rCodeKey,
+          "response_code" -> rCodeKey
         )
     )
   }
 
-  def recordInfo(opCode: String, r: Record): Map[_, _] =
+  def recordInfo(opCode: String, r: Record): Map[_, _] = {
     Map(
       name -> r.getName.toString,
       clazz -> DClass.string(r.getDClass),
@@ -503,6 +509,7 @@ trait DnsConversions {
       data -> r.rdataToString(),
       op_code -> opCode
     )
+  }
 
   def dnsQAndAEvent(
       question: DNS.Message,
@@ -511,7 +518,7 @@ trait DnsConversions {
     val questionFields = dnsMessageEvent(question)
 
     val resultFields = errorOrAnswer.fold(
-      t => Map("error" -> Map("message" -> t.getMessage, "code" -> "unhandled-error")), {
+      t => Map("error" -> Map("message" -> t.getMessage, "code" -> "dns-error")), {
         case NoError(answer) => dnsMessageEvent(answer)
       }
     )
@@ -522,62 +529,72 @@ trait DnsConversions {
         Map("question" -> questionFields, "answer" -> resultFields))
   }
 
-  def validFlag(bit: Int): Boolean = bit >= 0 && bit <= 0xF && Flags.isFlag(bit)
+  def validFlag(bit: Int): Boolean = {
+    bit >= 0 && bit <= 0xF && Flags.isFlag(bit)
+  }
 
   /**
     *
     * @param dnsMessage Either the message sent(question) or received(answer) to/from the server
     * @return Map containing the fields to include into log statement
     */
-  def dnsMessageEvent(dnsMessage: DNS.Message): Map[_, _] = {
+  private def dnsMessageEvent(dnsMessage: DNS.Message): Map[_, _] = {
 
     val rCode =
-      if (dnsMessage.getOPT != null)
+      if (dnsMessage.getOPT != null) {
         dnsMessage.getRcode
-      else if (dnsMessage.getHeader != null)
+      } else if (dnsMessage.getHeader != null) {
         dnsMessage.getHeader.getRcode
-      else
-        0
+      } else 0
 
     val tsigStatus =
-      if (dnsMessage.isSigned)
-        if (dnsMessage.isVerified) Map(tsig -> "ok") else Map(tsig -> "invalid")
+      if (dnsMessage.isSigned) {
+        if (dnsMessage.isVerified) {
+          Map(tsig -> "ok")
+        } else {
+          Map(tsig -> "invalid")
+        }
+      } else {
+        Map()
+      }
 
-    val flags = (0 until 16)
-      .flatMap(i =>
+    val flags = (0 until 16).flatMap{ i =>
         if (validFlag(i) && dnsMessage.getHeader != null && dnsMessage.getHeader.getFlag(i)) {
           Some(Flags.string(i) -> true)
         } else {
           None
-      })
-      .toMap
+      }}.toMap
 
     val additionalSections = (0 until 4).flatMap { i =>
       val opCode =
-        if (dnsMessage.getHeader != null && dnsMessage.getHeader.getOpcode != Opcode.UPDATE)
+        if (dnsMessage.getHeader != null && dnsMessage.getHeader.getOpcode != Opcode.UPDATE) {
           Section.longString(i)
-        else Section.updString(i)
+        } else {
+          Section.updString(i)
+        }
       if (dnsMessage.getSectionArray(i) != null) {
         Some(dnsMessage.getSectionArray(i).map(r => recordInfo(opCode, r)))
-      } else None
+      } else {
+        None
+      }
     }
 
     val idVal = if (dnsMessage.getHeader != null) dnsMessage.getHeader.getID else ""
     val opCode = if (dnsMessage.getHeader != null) dnsMessage.getHeader.getOpcode else 0
     Map(
       id -> idVal,
-      tsig -> tsigStatus,
       op_code -> Opcode.string(opCode),
       "opt" -> Map("ext_rcode" -> Rcode.string(rCode)),
       "additionals" -> additionalSections.toArray,
       "flags" -> flags
-    )
+    ) ++ tsigStatus
   }
 
   def recordSetInfo(rs: RecordSet): Map[_, _] = {
     val recInfo = toDnsRecords(rs, rs.name).fold(
-      t => Map("error" -> Map("message" -> t.getMessage)),
-      rs => rs.map(r => recordInfo("UPDATE", r)))
+      {t => Map("error" -> Map("message" -> t.getMessage))},
+      {rs => rs.map(r => recordInfo("UPDATE", r))})
+
     Map(
       "id" -> rs.id,
       "type" -> "recordSet",
@@ -589,14 +606,15 @@ trait DnsConversions {
       "ownerGroupId" -> rs.ownerGroupId,
       "records" -> recInfo,
       "recordSetType" -> rs.typ.toString,
-      "updated" -> rs.updated.fold(0L)(_.getMillis),
+      "updated" -> rs.updated.fold(0L)(_.getMillis)
     )
   }
 
-  def rsChangeEvent(action: String, drs: RecordSetChange, addInfo: Map[_, _]): Map[_, _] =
+  def rsChangeEvent(action: String, drs: RecordSetChange, addInfo: Map[_, _]): Map[_, _] = {
     Map(
       "action" -> Map("name" -> action),
-      "entity" -> (Map(
+      "entity" -> {
+        Map(
         "id" -> drs.id,
         "type" -> "recordSetChange",
         "userId" -> drs.userId,
@@ -607,8 +625,10 @@ trait DnsConversions {
         "zoneName" -> drs.zone.name,
         "singleBatchChangeIds" -> drs.singleBatchChangeIds.toArray,
         "recordSet" -> recordSetInfo(drs.recordSet)
-      ) ++ addInfo)
+        ) ++ addInfo
+      }
     )
+  }
 }
 
 object DnsConversions extends DnsConversions
