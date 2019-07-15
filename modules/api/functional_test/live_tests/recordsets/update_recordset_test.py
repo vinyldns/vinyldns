@@ -1861,6 +1861,36 @@ def test_update_dotted_cname_record_apex_fails(shared_zone_test_context):
         delete_response = client.delete_recordset(zone['id'],create_rs['id'], status=202)['status']
         client.wait_until_recordset_deleted(delete_response, 'Complete')
 
+def test_update_cname_as_dotted_host_fails(shared_zone_test_context):
+    """
+    Test that updating a CNAME record set with record name being a dotted host fails.
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+    zone_name = zone['name'].rstrip('.')
+
+    apex_cname_rs = {
+        'zoneId': zone['id'],
+        'name': 'ygritte',
+        'type': 'CNAME',
+        'ttl': 500,
+        'records': [{'cname': 'got.reference'}]
+    }
+
+    create_response = client.create_recordset(apex_cname_rs, status=202)
+    create_rs = client.wait_until_recordset_change_status(create_response, 'Complete')['recordSet']
+
+    create_rs['name'] = 'dotted.name'
+
+    try:
+        error = client.update_recordset(create_rs, status=422)
+        assert_that(error,is_("Record with name dotted.name and type CNAME is a dotted host which is not allowed in zone parent.com."))
+
+    finally:
+        delete_response = client.delete_recordset(zone['id'],create_rs['id'], status=202)['status']
+        client.wait_until_recordset_deleted(delete_response, 'Complete')
+
 def test_update_succeeds_for_applied_unsynced_record_change(shared_zone_test_context):
     """
     Update should succeed if record change is not synced with DNS backend, but has already been applied
