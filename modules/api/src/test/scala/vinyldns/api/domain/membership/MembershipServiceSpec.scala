@@ -608,6 +608,22 @@ class MembershipServiceSpec
           rightResultOf(underTest.listMyGroups(None, None, 100, notAuth, false).value)
         result shouldBe ListMyGroupsResponse(Seq(), None, None, None, 100, false)
       }
+      "return all groups from the database if ignoreAccess is true" in {
+        doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
+        val result: ListMyGroupsResponse =
+          rightResultOf(underTest.listMyGroups(None, None, 100, notAuth, true).value)
+        verify(mockGroupRepo).getAllGroups()
+        result.groups should contain theSameElementsAs Seq(
+          GroupInfo(dummyGroup),
+          GroupInfo(okGroup))
+      }
+      "return member groups from the database for super users" in {
+        doReturn(IO.pure(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
+        val result: ListMyGroupsResponse =
+          rightResultOf(underTest.listMyGroups(None, None, 100, superUserAuth, false).value)
+        verify(mockGroupRepo, never()).getAllGroups()
+        result.groups should contain theSameElementsAs Seq()
+      }
       "return groups from the database for super users" in {
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
@@ -616,6 +632,14 @@ class MembershipServiceSpec
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
           GroupInfo(okGroup))
+      }
+      "return member groups from the database for support users" in {
+        val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
+        doReturn(IO.pure(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
+        val result: ListMyGroupsResponse =
+          rightResultOf(underTest.listMyGroups(None, None, 100, supportAuth, false).value)
+        verify(mockGroupRepo, never()).getAllGroups()
+        result.groups should contain theSameElementsAs Seq()
       }
       "return groups from the database for support users" in {
         val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
