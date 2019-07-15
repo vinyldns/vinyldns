@@ -698,7 +698,7 @@ class MembershipRoutingSpec
         val result = responseAs[UserInfo]
 
         result.id shouldBe okUser.id
-        result.lockStatus shouldBe Some(LockStatus.Locked)
+        result.lockStatus shouldBe LockStatus.Locked
       }
     }
 
@@ -714,7 +714,7 @@ class MembershipRoutingSpec
         val result = responseAs[UserInfo]
 
         result.id shouldBe lockedUser.id
-        result.lockStatus shouldBe Some(LockStatus.Unlocked)
+        result.lockStatus shouldBe LockStatus.Unlocked
       }
     }
 
