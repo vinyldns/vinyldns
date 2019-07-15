@@ -329,15 +329,16 @@ vinyldns {
 ```
 
 ## Default Zone Connections
-VinylDNS allows you to specify zone connection information _for each zone_.
+VinylDNS has three ways of indicating zone connections:
+
+1. Global default connection applies to all zones unless overridden by one of the following connections. This configuration is required.
+2. Backends allows you to specify zone connection information for an individual zone by choosing a pre-configured zone connection. This configuration is optional.
+3. Zone level override allows you to specify zone update and transfer connection information _for each zone_. More information is in the [Zone Model](../api/zone-model).
 
 VinylDNS has **2** connections for each zone:
 
 1. The DDNS connection - used for making DDNS updates to the zone
 1. The Transfer connection - used for making AXFR requests for zone syncing with the DNS backend
-
-VinylDNS supports the ability to provide _default_ connections, so keys do not need to be generated for _every_ zone.  This assumes a
-"default" DNS backend.
 
 VinylDNS also ties in testing network connectivity to the default zone connection's primary server into its API health checks. A value
 for the health check connection timeout in milliseconds can be specified using `health-check-timeout`; a default value of 10000 will
@@ -372,6 +373,25 @@ vinyldns {
     primaryServer = "vinyldns-bind9"
   }
 }
+
+# Zone Connection Data, ID can be specified in a zone to override the global default configuration
+backends = [
+    {
+      id = "test-backend-id"
+      zone-connection {
+        name = "vinyldns."
+        key-name = "vinyldns."
+        key = "nzisn+4G2ldMn0q1CV3vsg=="
+        primary-server = "127.0.0.1:19001"
+      }
+      transfer-connection {
+        name = "vinyldns."
+        key-name = "vinyldns."
+        key = "nzisn+4G2ldMn0q1CV3vsg=="
+        primary-server = "127.0.0.1:19001"
+      }
+    }
+]
 ```
 
 ## Additional Configuration Settings
