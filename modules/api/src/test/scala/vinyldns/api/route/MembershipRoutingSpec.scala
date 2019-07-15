@@ -188,15 +188,16 @@ class MembershipRoutingSpec
     "return a 200 response with the groups when no optional parameters are used" in {
       val twoUserGroupInfo = GroupInfo(twoUserGroup)
       doReturn(
-        result(ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100)))
+        result(
+          ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100, false)))
         .when(membershipService)
-        .listMyGroups(None, None, 100, okAuth)
-      Get("/groups") ~> Route.seal(membershipRoute) ~> check {
+        .listMyGroups(None, None, 100, okAuth, false)
+      Get("/groups") ~> Route.seal(membershipRoute(okAuth)) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[ListMyGroupsResponse]
         val expected =
-          ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100)
+          ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100, false)
 
         result shouldBe expected
       }
@@ -209,13 +210,15 @@ class MembershipRoutingSpec
             groupNameFilter = Some("ok"),
             startFrom = Some("anyString"),
             nextId = None,
-            maxItems = 100)))
+            maxItems = 100,
+            ignoreAccess = false)))
         .when(membershipService)
         .listMyGroups(
           groupNameFilter = Some("ok"),
           startFrom = Some("anyString"),
           maxItems = 100,
-          okAuth)
+          okAuth,
+          ignoreAccess = false)
       Get("/groups?startFrom=anyString&maxItems=100&groupNameFilter=ok") ~> Route.seal(
         membershipRoute) ~> check {
         status shouldBe StatusCodes.OK
@@ -226,7 +229,8 @@ class MembershipRoutingSpec
           groupNameFilter = Some("ok"),
           startFrom = Some("anyString"),
           maxItems = 100,
-          nextId = None)
+          nextId = None,
+          ignoreAccess = false)
 
         result shouldBe expected
       }
@@ -244,7 +248,7 @@ class MembershipRoutingSpec
     "return a 500 response when fails" in {
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
-        .listMyGroups(None, None, 100, okAuth)
+        .listMyGroups(None, None, 100, okAuth, false)
 
       Get("/groups") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.InternalServerError

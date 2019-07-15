@@ -529,14 +529,15 @@ class MembershipServiceSpec
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
         val result: ListMyGroupsResponse =
-          rightResultOf(underTest.listMyGroups(None, None, 100, listOfDummyGroupsAuth).value)
+          rightResultOf(underTest.listMyGroups(None, None, 100, listOfDummyGroupsAuth, false).value)
         verify(mockGroupRepo, never()).getAllGroups()
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.take(100),
           None,
           None,
           nextId = Some(listOfDummyGroups(99).id),
-          maxItems = 100)
+          maxItems = 100,
+          ignoreAccess = false)
       }
       "return only return groups whose name matches the filter" in {
         doReturn(IO.pure(listOfDummyGroups.toSet))
@@ -548,14 +549,16 @@ class MembershipServiceSpec
               groupNameFilter = Some("name-dummy01"),
               startFrom = None,
               maxItems = 100,
-              listOfDummyGroupsAuth)
+              listOfDummyGroupsAuth,
+              false)
             .value)
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.slice(10, 20),
           groupNameFilter = Some("name-dummy01"),
           startFrom = None,
           nextId = None,
-          maxItems = 100)
+          maxItems = 100,
+          ignoreAccess = false)
       }
       "return only return groups after startFrom" in {
         doReturn(IO.pure(listOfDummyGroups.toSet))
@@ -567,14 +570,16 @@ class MembershipServiceSpec
               groupNameFilter = None,
               startFrom = Some(listOfDummyGroups(99).id),
               maxItems = 100,
-              listOfDummyGroupsAuth)
+              listOfDummyGroupsAuth,
+              ignoreAccess = false)
             .value)
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.slice(100, 200),
           groupNameFilter = None,
           startFrom = Some(listOfDummyGroups(99).id),
           nextId = None,
-          maxItems = 100)
+          maxItems = 100,
+          ignoreAccess = false)
       }
       "return only return maxItems groups" in {
         doReturn(IO.pure(listOfDummyGroups.toSet))
@@ -586,25 +591,27 @@ class MembershipServiceSpec
               groupNameFilter = None,
               startFrom = None,
               maxItems = 10,
-              listOfDummyGroupsAuth)
+              listOfDummyGroupsAuth,
+              ignoreAccess = false)
             .value)
         result shouldBe ListMyGroupsResponse(
           groups = listOfDummyGroupInfo.slice(0, 10),
           groupNameFilter = None,
           startFrom = None,
           nextId = Some(listOfDummyGroups(9).id),
-          maxItems = 10)
+          maxItems = 10,
+          ignoreAccess = false)
       }
       "return an empty set if the user is not a member of any groups" in {
         doReturn(IO.pure(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
         val result: ListMyGroupsResponse =
-          rightResultOf(underTest.listMyGroups(None, None, 100, notAuth).value)
-        result shouldBe ListMyGroupsResponse(Seq(), None, None, None, 100)
+          rightResultOf(underTest.listMyGroups(None, None, 100, notAuth, false).value)
+        result shouldBe ListMyGroupsResponse(Seq(), None, None, None, 100, false)
       }
       "return groups from the database for super users" in {
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
-          rightResultOf(underTest.listMyGroups(None, None, 100, superUserAuth).value)
+          rightResultOf(underTest.listMyGroups(None, None, 100, superUserAuth, true).value)
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
@@ -614,7 +621,7 @@ class MembershipServiceSpec
         val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
-          rightResultOf(underTest.listMyGroups(None, None, 100, supportAuth).value)
+          rightResultOf(underTest.listMyGroups(None, None, 100, supportAuth, true).value)
         verify(mockGroupRepo).getAllGroups()
         result.groups should contain theSameElementsAs Seq(
           GroupInfo(dummyGroup),
@@ -626,8 +633,8 @@ class MembershipServiceSpec
           .when(mockGroupRepo)
           .getGroups(any[Set[String]])
         val result: ListMyGroupsResponse =
-          rightResultOf(underTest.listMyGroups(None, None, 100, deletedGroupAuth).value)
-        result shouldBe ListMyGroupsResponse(Seq(), None, None, None, 100)
+          rightResultOf(underTest.listMyGroups(None, None, 100, deletedGroupAuth, false).value)
+        result shouldBe ListMyGroupsResponse(Seq(), None, None, None, 100, false)
       }
     }
 
