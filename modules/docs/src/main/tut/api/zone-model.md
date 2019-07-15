@@ -235,7 +235,7 @@ Zone Connection specifies the connection information to the backend DNS server.
 
 field        | type        | description |
 ------------ | :---------- | :---------- |
-primaryServer | string      | The ip address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed. |
+primaryServer | string      | The IP address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed. |
 keyName       | string      | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
 name          | string      | A user identifier for the connection.
 key           | string      | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective. |
