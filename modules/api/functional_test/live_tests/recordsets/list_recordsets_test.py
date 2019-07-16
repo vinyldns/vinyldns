@@ -52,7 +52,7 @@ class ListRecordSetsFixture():
             self.client.wait_until_recordset_change_status(result_list[i], 'Complete')
             self.new_rs[i] = result_list[i]['recordSet']
 
-        for i in range(7):
+        for i in range(9):
             self.all_records[i + 10] = existing_records[i]
 
     def tear_down(self):
@@ -77,9 +77,8 @@ class ListRecordSetsFixture():
         list_results_recordSets_page = list_results_page['recordSets']
         assert_that(list_results_recordSets_page, has_length(size))
         for i in range(len(list_results_recordSets_page)):
-            if i < 17:
-                assert_that(list_results_recordSets_page[i]['name'], is_(self.all_records[i+offset]['name']))
-                verify_recordset(list_results_recordSets_page[i], self.all_records[i+offset])
+            assert_that(list_results_recordSets_page[i]['name'], is_(self.all_records[i+offset]['name']))
+            verify_recordset(list_results_recordSets_page[i], self.all_records[i+offset])
             assert_that(list_results_recordSets_page[i]['accessLevel'], is_('Delete'))
 
 
