@@ -37,7 +37,7 @@ def assert_successful_change_in_error_response(input_json, change_type="Add", in
 def assert_change_success_response_values(changes_json, zone, index, record_name, input_name, record_data, ttl=200, record_type="A", change_type="Add"):
     assert_that(changes_json[index]['zoneId'], is_(zone['id']))
     assert_that(changes_json[index]['zoneName'], is_(zone['name']))
-    assert_that(changes_json[index]['recordName'], is_(record_name.lower()))
+    assert_that(changes_json[index]['recordName'], is_(record_name))
     assert_that(changes_json[index]['inputName'], is_(input_name))
     if change_type=="Add":
         assert_that(changes_json[index]['ttl'], is_(ttl))
@@ -116,7 +116,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                                               input_name="ok.", record_data="fd69:27cc:fe91::60", record_type="AAAA")
         assert_change_success_response_values(result['changes'], zone=parent_zone, index=2, record_name="relative",
                                               input_name="relative.parent.com.", record_data="1.1.1.1")
-        assert_change_success_response_values(result['changes'], zone=parent_zone, index=3, record_name="cname",
+        assert_change_success_response_values(result['changes'], zone=parent_zone, index=3, record_name="CNAME",
                                               input_name="CNAME.PARENT.COM.", record_data="nice.parent.com.", record_type="CNAME")
         assert_change_success_response_values(result['changes'], zone=parent_zone, index=4, record_name="2cname",
                                               input_name="2cname.parent.com.", record_data="nice.parent.com.", record_type="CNAME")
@@ -170,7 +170,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         verify_recordset(rs4, expected4)
 
         rs5 = client.get_recordset(record_set_list[3][0], record_set_list[3][1])['recordSet']
-        expected5 = {'name': 'cname',
+        expected5 = {'name': 'CNAME',
                      'zoneId': parent_zone['id'],
                      'type': 'CNAME',
                      'ttl': 200,

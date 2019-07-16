@@ -307,7 +307,7 @@ class BatchChangeValidationsSpec
       validateInputChanges(List(goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input))
     result(0) shouldBe valid
     result(1) shouldBe valid
-    result(2) should haveInvalid[DomainValidationError](InvalidDomainName("invaliddomainname$."))
+    result(2) should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
     result(3) should haveInvalid[DomainValidationError](InvalidIpv6Address("invalidIpv6:123"))
   }
 
@@ -333,7 +333,7 @@ class BatchChangeValidationsSpec
       |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = DeleteChangeInput("invalidDomainName$", RecordType.A)
     val result = validateInputName(change)
-    result should haveInvalid[DomainValidationError](InvalidDomainName("invaliddomainname$."))
+    result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
@@ -341,10 +341,8 @@ class BatchChangeValidationsSpec
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = DeleteChangeInput(invalidDomainName, RecordType.AAAA)
     val result = validateInputName(change)
-    result should (haveInvalid[DomainValidationError](
-      InvalidDomainName(s"${invalidDomainName.toLowerCase}."))
-      .and(haveInvalid[DomainValidationError](
-        InvalidLength(s"${invalidDomainName.toLowerCase}.", 2, 255))))
+    result should (haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
+      .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255))))
   }
 
   property("""validateInputName: PTR should fail with InvalidIPAddress for deletes
@@ -352,7 +350,7 @@ class BatchChangeValidationsSpec
     val invalidIp = "invalidIp.111"
     val change = DeleteChangeInput(invalidIp, RecordType.PTR)
     val result = validateInputName(change)
-    result should haveInvalid[DomainValidationError](InvalidIPAddress(invalidIp.toLowerCase))
+    result should haveInvalid[DomainValidationError](InvalidIPAddress(invalidIp))
   }
 
   property("validateAddChangeInput: should succeed if single addChangeInput is good for A Record") {
@@ -374,7 +372,7 @@ class BatchChangeValidationsSpec
       |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = AddChangeInput("invalidDomainName$", RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change)
-    result should haveInvalid[DomainValidationError](InvalidDomainName("invaliddomainname$."))
+    result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
   property("""validateAddChangeInput: should fail with a DomainValidationError
@@ -382,10 +380,8 @@ class BatchChangeValidationsSpec
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = AddChangeInput(invalidDomainName, RecordType.A, ttl, AData("1.1.1.1"))
     val result = validateAddChangeInput(change)
-    result should haveInvalid[DomainValidationError](
-      InvalidDomainName(s"${invalidDomainName.toLowerCase}."))
-      .and(haveInvalid[DomainValidationError](
-        InvalidLength(s"${invalidDomainName.toLowerCase}.", 2, 255)))
+    result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
+      .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255)))
   }
 
   property(
