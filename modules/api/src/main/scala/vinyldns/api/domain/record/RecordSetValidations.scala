@@ -94,7 +94,7 @@ object RecordSetValidations {
       zone: Zone,
       existingRecordSet: Option[RecordSet] = None): Either[Throwable, Unit] =
     newRecordSet.typ match {
-      case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone)
+      case CNAME => cnameValidations(newRecordSet, existingRecordsWithName, zone, existingRecordSet)
       case NS => nsValidations(newRecordSet, zone, existingRecordSet)
       case SOA => soaValidations(newRecordSet, zone)
       case PTR => ptrValidations(newRecordSet, zone)
