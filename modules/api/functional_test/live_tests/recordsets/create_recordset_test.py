@@ -657,9 +657,9 @@ def test_create_dotted_a_record_apex_with_trailing_dot_succeeds(shared_zone_test
             delete_result = client.delete_recordset(apex_a_rs['zoneId'], apex_a_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
-def test_create_cname_record_apex_fails(shared_zone_test_context):
+def test_create_dotted_cname_record_fails(shared_zone_test_context):
     """
-    Test that creating a CNAME record set with record name matching zone name returns an error.
+    Test that creating a CNAME record set with dotted host record name returns an error.
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
@@ -699,9 +699,9 @@ def test_create_cname_with_multiple_records(shared_zone_test_context):
     errors = client.create_recordset(new_rs, status=400)['errors']
     assert_that(errors[0], is_("CNAME record sets cannot contain multiple records"))
 
-def test_create_dotted_cname_record_apex_fails(shared_zone_test_context):
+def test_create_cname_record_apex_fails(shared_zone_test_context):
     """
-    Test that creating a CNAME record set with record name matching dotted apex returns an error.
+    Test that creating a CNAME record set with record name matching zone name returns an error.
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
