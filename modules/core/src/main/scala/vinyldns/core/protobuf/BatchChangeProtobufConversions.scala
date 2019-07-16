@@ -89,7 +89,7 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
     errors.map { e =>
       val errorType = DomainValidationErrorType.withName(e.getErrorType)
       val message = e.getMessage
-      new DomainValidationStoredError(errorType, message)
+      DomainValidationStoredError(errorType, message)
     }
   }
 

@@ -1045,7 +1045,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(nonFatalError),
+        List(DomainValidationStoredError(nonFatalError)),
         result.changes(1).id
       )
       result.changes(2) shouldBe core.domain.batch.SingleDeleteChange(
@@ -1058,7 +1058,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
-        List(nonFatalError),
+        List(DomainValidationStoredError(nonFatalError)),
         result.changes(2).id
       )
     }
