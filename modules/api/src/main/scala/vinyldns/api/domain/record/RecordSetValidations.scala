@@ -126,7 +126,7 @@ object RecordSetValidations {
       ensuring(
         RecordSetAlreadyExists(s"RecordSet with name ${newRecordSet.name} already " +
           s"exists in zone ${zone.name}, CNAME record cannot use duplicate name"))(
-        !existingRecordsWithName.exists(_.id != newRecordSet.id)
+        existingRecordsWithName.forall(_.id == newRecordSet.id)
       )
     }
 

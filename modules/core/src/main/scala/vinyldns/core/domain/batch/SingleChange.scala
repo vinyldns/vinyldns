@@ -18,7 +18,7 @@ package vinyldns.core.domain.batch
 
 import java.util.UUID
 
-import vinyldns.core.domain.DomainValidationStoredError
+import vinyldns.core.domain.SingleChangeError
 import vinyldns.core.domain.batch.SingleChangeStatus.SingleChangeStatus
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -34,7 +34,7 @@ sealed trait SingleChange {
   val typ: RecordType
   val inputName: String
   val zoneName: Option[String]
-  val validationErrors: List[DomainValidationStoredError]
+  val validationErrors: List[SingleChangeError]
   val recordKey: Option[RecordKey] = (zoneId, recordName, typ) match {
     case (Some(zid), Some(rname), t) => Some(RecordKey(zid, rname, t))
     case _ => None
@@ -81,33 +81,33 @@ sealed trait SingleChange {
 }
 
 final case class SingleAddChange(
-    zoneId: Option[String],
-    zoneName: Option[String],
-    recordName: Option[String],
-    inputName: String,
-    typ: RecordType,
-    ttl: Long,
-    recordData: RecordData,
-    status: SingleChangeStatus,
-    systemMessage: Option[String],
-    recordChangeId: Option[String],
-    recordSetId: Option[String],
-    validationErrors: List[DomainValidationStoredError] = List.empty,
-    id: String = UUID.randomUUID().toString)
+                                  zoneId: Option[String],
+                                  zoneName: Option[String],
+                                  recordName: Option[String],
+                                  inputName: String,
+                                  typ: RecordType,
+                                  ttl: Long,
+                                  recordData: RecordData,
+                                  status: SingleChangeStatus,
+                                  systemMessage: Option[String],
+                                  recordChangeId: Option[String],
+                                  recordSetId: Option[String],
+                                  validationErrors: List[SingleChangeError] = List.empty,
+                                  id: String = UUID.randomUUID().toString)
     extends SingleChange
 
 final case class SingleDeleteChange(
-    zoneId: Option[String],
-    zoneName: Option[String],
-    recordName: Option[String],
-    inputName: String,
-    typ: RecordType,
-    status: SingleChangeStatus,
-    systemMessage: Option[String],
-    recordChangeId: Option[String],
-    recordSetId: Option[String],
-    validationErrors: List[DomainValidationStoredError] = List.empty,
-    id: String = UUID.randomUUID().toString)
+                                     zoneId: Option[String],
+                                     zoneName: Option[String],
+                                     recordName: Option[String],
+                                     inputName: String,
+                                     typ: RecordType,
+                                     status: SingleChangeStatus,
+                                     systemMessage: Option[String],
+                                     recordChangeId: Option[String],
+                                     recordSetId: Option[String],
+                                     validationErrors: List[SingleChangeError] = List.empty,
+                                     id: String = UUID.randomUUID().toString)
     extends SingleChange
 
 /*

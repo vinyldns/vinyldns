@@ -18,11 +18,11 @@ package vinyldns.core.domain
 
 import vinyldns.core.domain.DomainValidationErrorType.DomainValidationErrorType
 
-case class DomainValidationStoredError(errorType: DomainValidationErrorType, message: String)
+case class SingleChangeError(errorType: DomainValidationErrorType, message: String)
 
-object DomainValidationStoredError {
-  def apply(error: DomainValidationError): DomainValidationStoredError =
-    new DomainValidationStoredError(DomainValidationErrorType.from(error), error.message)
+object SingleChangeError {
+  def apply(error: DomainValidationError): SingleChangeError =
+    new SingleChangeError(DomainValidationErrorType.from(error), error.message)
 }
 
 object DomainValidationErrorType extends Enumeration {
