@@ -186,22 +186,53 @@ class RecordSetValidationsSpec
     "typeSpecificValidations" should {
       "Run dotted hosts checks" should {
         val dottedARecord = rsOk.copy(name = "this.is.a.failure.")
-        "return a failure for any record with dotted hosts in forward zones" in {
+        "return a failure for any new record with dotted hosts in forward zones" in {
           leftValue(
             typeSpecificValidations(dottedARecord, List(), okZone)
           ) shouldBe an[InvalidRequest]
         }
-        "return a failure for any record with dotted hosts in forward zones (CNAME)" in {
+
+        "return a failure for any new record with dotted hosts in forward zones (CNAME)" in {
           leftValue(
             typeSpecificValidations(dottedARecord.copy(typ = CNAME), List(), okZone)
           ) shouldBe an[InvalidRequest]
         }
-        "return a failure for any record with dotted hosts in forward zones (NS)" in {
+
+        "return a failure for any new record with dotted hosts in forward zones (NS)" in {
           leftValue(
             typeSpecificValidations(dottedARecord.copy(typ = NS), List(), okZone)
           ) shouldBe an[InvalidRequest]
         }
+
+        "return a success for any existing record with dotted hosts in forward zones" in {
+          typeSpecificValidations(
+            dottedARecord,
+            List(),
+            okZone,
+            Some(dottedARecord.copy(ttl = 300))) should be(right)
+        }
+
+        "return a success for any existing record with dotted hosts in forward zones (CNAME)" in {
+          val dottedCNAMERecord = dottedARecord.copy(typ = CNAME)
+          typeSpecificValidations(
+            dottedCNAMERecord,
+            List(),
+            okZone,
+            Some(dottedCNAMERecord.copy(ttl = 300))) should be(right)
+        }
+
+        "return a failure for any existing record with dotted hosts in forward zones (NS)" in {
+          val dottedNSRecord = dottedARecord.copy(typ = NS)
+          leftValue(
+            typeSpecificValidations(
+              dottedNSRecord,
+              List(),
+              okZone,
+              Some(dottedNSRecord.copy(ttl = 300)))
+          ) shouldBe an[InvalidRequest]
+        }
       }
+
       "Skip dotted checks on SRV" should {
         "return success for an SRV record following convention with FQDN" in {
           val test = srv.copy(name = "_sip._tcp.example.com.")
