@@ -657,23 +657,23 @@ def test_create_dotted_a_record_apex_with_trailing_dot_succeeds(shared_zone_test
             delete_result = client.delete_recordset(apex_a_rs['zoneId'], apex_a_rs['id'], status=202)
             client.wait_until_recordset_change_status(delete_result, 'Complete')
 
-def test_create_dotted_cname_record_apex_fails(shared_zone_test_context):
+def test_create_dotted_cname_record_fails(shared_zone_test_context):
     """
-    Test that creating a CNAME record set with record name matching dotted apex returns an error.
+    Test that creating a CNAME record set with dotted record name returns an error.
     """
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.parent_zone
 
     apex_cname_rs = {
         'zoneId': zone['id'],
-        'name': zone['name'].rstrip('.'),
+        'name': 'dot.ted',
         'type': 'CNAME',
         'ttl': 500,
-        'records': [{'cname': 'foo'}]
+        'records': [{'cname': 'foo.bar.'}]
     }
 
-    errors = client.create_recordset(apex_cname_rs, status=400)['errors']
-    assert_that(errors[0], is_("CNAME data must be absolute"))
+    error = client.create_recordset(apex_cname_rs, status=422)
+    assert_that(error, is_("Record with name dot.ted and type CNAME is a dotted host which is not allowed in zone parent.com."))
 
 def test_create_cname_with_multiple_records(shared_zone_test_context):
     """
@@ -699,6 +699,23 @@ def test_create_cname_with_multiple_records(shared_zone_test_context):
     errors = client.create_recordset(new_rs, status=400)['errors']
     assert_that(errors[0], is_("CNAME record sets cannot contain multiple records"))
 
+def test_create_dotted_cname_record_apex_fails(shared_zone_test_context):
+    """
+    Test that creating a CNAME record set with record name matching dotted apex returns an error.
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+
+    apex_cname_rs = {
+        'zoneId': zone['id'],
+        'name': zone['name'].rstrip('.'),
+        'type': 'CNAME',
+        'ttl': 500,
+        'records': [{'cname': 'foo.bar.'}]
+    }
+
+    error = client.create_recordset(apex_cname_rs, status=422)
+    assert_that(error, is_("CNAME RecordSet cannot have name '@' because it points to zone origin"))
 
 def test_create_cname_pointing_to_origin_symbol_fails(shared_zone_test_context):
     """
