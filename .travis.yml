@@ -1,54 +1,46 @@
 language: scala
-
 scala:
-  - 2.12.8
-
+- 2.12.8
 python:
-  - 2.7
-
+- 2.7
 sudo: false
-
 jdk:
-  - oraclejdk8
-
+- oraclejdk8
 services:
-  - docker
-
+- docker
 cache:
   pip: true
   bundler: true
   npm: true
   directories:
-  - $HOME/.sbt/1.0
-  - $HOME/.sbt/boot/scala*
-  - $HOME/.sbt/cache
-  - $HOME/.sbt/launchers
-  - $HOME/.ivy2/cache
-  - $HOME/.coursier
+  - "$HOME/.sbt/1.0"
+  - "$HOME/.sbt/boot/scala*"
+  - "$HOME/.sbt/cache"
+  - "$HOME/.sbt/launchers"
+  - "$HOME/.ivy2/cache"
+  - "$HOME/.coursier"
   timeout: 900
-
 before_install:
-  - gem update --system
-
+- gem update --system
 install:
-  - gem install sass jekyll:3.2.1
-
+- gem install sass jekyll:3.2.1
 before_cache:
-# Cleanup the cached directories to avoid unnecessary cache updates (https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html)
 - du -h -d 1 $HOME/.ivy2/
 - du -h -d 2 $HOME/.sbt/
 - du -h -d 4 $HOME/.coursier/
 - find $HOME/.sbt -name "*.lock" -type f -delete
 - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
 - find $HOME/.coursier/cache -name "*.lock" -type f -delete
-
 jobs:
   include:
-    - name: "Validate and verify modules"
-      script: sbt ++$TRAVIS_SCALA_VERSION ";validate; verify" && bash <(curl -s https://codecov.io/bash)
-    - name: "Run API and portal functional tests"
-      script: ./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh
-    - stage: Deploy
-      if: branch = master AND type = push
-      name: "Deploy doc site"
-      script: sbt ";project docs; publishMicrosite";
+  - name: Validate and verify modules
+    script: sbt ++$TRAVIS_SCALA_VERSION ";validate; verify" && bash <(curl -s https://codecov.io/bash)
+  - name: Run API and portal functional tests
+    script: "./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh"
+  - stage: Deploy
+    if: branch = master AND type = push
+    name: Deploy doc site
+    script: sbt ";project docs; publishMicrosite";
+notifications:
+  slack:
+    secure: nWOgq1vE2y0rzIKMr0hbRiwE7mbiTcvUZ/8LxpPC1hucZTq/2NWGMEhtsW/OXHN2JPpmXb0w8b8eopk81sxqLMheLvwYn/yoSjDBNt07viE3D54WJlLhggRVCjAGPloAZy7rQ2cPOCJ/Jq4opKRValoC7r59aOjSJYuKQS6cFJ34Tm3jsf1xHnX/AfAmWJf5080AJBihcdREs3Yh4ZxohZo71Imnvnxa+bY/+VscBarsKAsjPWJJ523Kdh/XA35tBIDsYkQ80VL350TXypEyu9JuLWXjlZx7B//+TDCUOryuERdc2y1QkrCSVzPPgIHCD5GPeuEqoHAk9fUO18jBZtex7oAdVFCD+jZcsNeJHcSdgjAO+L/ShNmzBuTdfi0janEms45GBhB1fE5qjGH4hO/IrFilUMVJ4imJchZbPxkh8Te0wmWF+pbGUUzZ6JH/iXGyGTsuwCvoKutwyyiGZBAlXgq3auiJcpRRHB0TLtBNInEZNmJ5XL+BYEl/FK4R9eYMHGspCQFxOgvdJO/IF+j/9dqC4gPPMNxG+S4uT0yXwOgaHOR2dxLTzq0gX5WjGh2poeKjLEDp1viH7cVJmeYz38Bp1cUEVUU5bZQgqt6v/3avcRIV9opBrK5afdjiJIaaxU4DnLP4/AK4By4ktv6zLsVTa2OrfUiRdi4d53Y=
