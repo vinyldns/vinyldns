@@ -1831,6 +1831,30 @@ def test_update_dotted_a_record_apex_adds_trailing_dot_to_name(shared_zone_test_
         client.wait_until_recordset_change_status(delete_result, 'Complete')
 
 
+def test_update_existing_dotted_a_record_succeeds(shared_zone_test_context):
+    """
+    Test that updating an existing A record with dotted host name succeeds
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+
+    recordsets = client.list_recordsets(zone['id'], record_name_filter="dotted.a", status=200)['recordSets']
+
+    update_rs = recordsets[0]
+
+    update_rs['records'] = [{'address': '1.1.1.1'}]
+
+    try:
+        update_response = client.update_recordset(update_rs, status=202)
+        updated_rs = client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(updated_rs['records'], is_([{'address': '1.1.1.1'}]))
+
+    finally:
+        update_rs['records'] = [{'address': '7.7.7.7'}]
+        revert_rs_update = client.update_recordset(update_rs, status=202)
+        client.wait_until_recordset_change_status(revert_rs_update, 'Complete')
+
 def test_update_dotted_cname_record_apex_fails(shared_zone_test_context):
     """
     Test that updating a CNAME record set with record name matching dotted apex returns an error.
@@ -1861,9 +1885,9 @@ def test_update_dotted_cname_record_apex_fails(shared_zone_test_context):
         delete_response = client.delete_recordset(zone['id'],create_rs['id'], status=202)['status']
         client.wait_until_recordset_deleted(delete_response, 'Complete')
 
-def test_update_cname_as_dotted_host_fails(shared_zone_test_context):
+def test_update_cname_to_dotted_host_fails(shared_zone_test_context):
     """
-    Test that updating a CNAME record set with record name being a dotted host fails.
+    Test that updating a CNAME record set to record name being a dotted host fails.
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
@@ -1890,6 +1914,30 @@ def test_update_cname_as_dotted_host_fails(shared_zone_test_context):
     finally:
         delete_response = client.delete_recordset(zone['id'],create_rs['id'], status=202)['status']
         client.wait_until_recordset_deleted(delete_response, 'Complete')
+
+def test_update_existing_dotted_cname_record_succeeds(shared_zone_test_context):
+    """
+    Test that updating an existing CNAME record with dotted host name succeeds
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.ok_zone
+
+    recordsets = client.list_recordsets(zone['id'], record_name_filter="dottedc.name", status=200)['recordSets']
+
+    update_rs = recordsets[0]
+
+    update_rs['records'] = [{'cname': 'got.reference'}]
+
+    try:
+        update_response = client.update_recordset(update_rs, status=202)
+        updated_rs = client.wait_until_recordset_change_status(update_response, 'Complete')['recordSet']
+        assert_that(updated_rs['records'], is_([{'cname': 'got.reference.'}]))
+
+    finally:
+        update_rs['records'] = [{'cname': 'test.example.com'}]
+        revert_rs_update = client.update_recordset(update_rs, status=202)
+        client.wait_until_recordset_change_status(revert_rs_update, 'Complete')
 
 def test_update_succeeds_for_applied_unsynced_record_change(shared_zone_test_context):
     """
