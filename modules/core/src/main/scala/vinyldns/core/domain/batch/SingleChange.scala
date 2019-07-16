@@ -81,33 +81,33 @@ sealed trait SingleChange {
 }
 
 final case class SingleAddChange(
-                                  zoneId: Option[String],
-                                  zoneName: Option[String],
-                                  recordName: Option[String],
-                                  inputName: String,
-                                  typ: RecordType,
-                                  ttl: Long,
-                                  recordData: RecordData,
-                                  status: SingleChangeStatus,
-                                  systemMessage: Option[String],
-                                  recordChangeId: Option[String],
-                                  recordSetId: Option[String],
-                                  validationErrors: List[SingleChangeError] = List.empty,
-                                  id: String = UUID.randomUUID().toString)
+    zoneId: Option[String],
+    zoneName: Option[String],
+    recordName: Option[String],
+    inputName: String,
+    typ: RecordType,
+    ttl: Long,
+    recordData: RecordData,
+    status: SingleChangeStatus,
+    systemMessage: Option[String],
+    recordChangeId: Option[String],
+    recordSetId: Option[String],
+    validationErrors: List[SingleChangeError] = List.empty,
+    id: String = UUID.randomUUID().toString)
     extends SingleChange
 
 final case class SingleDeleteChange(
-                                     zoneId: Option[String],
-                                     zoneName: Option[String],
-                                     recordName: Option[String],
-                                     inputName: String,
-                                     typ: RecordType,
-                                     status: SingleChangeStatus,
-                                     systemMessage: Option[String],
-                                     recordChangeId: Option[String],
-                                     recordSetId: Option[String],
-                                     validationErrors: List[SingleChangeError] = List.empty,
-                                     id: String = UUID.randomUUID().toString)
+    zoneId: Option[String],
+    zoneName: Option[String],
+    recordName: Option[String],
+    inputName: String,
+    typ: RecordType,
+    status: SingleChangeStatus,
+    systemMessage: Option[String],
+    recordChangeId: Option[String],
+    recordSetId: Option[String],
+    validationErrors: List[SingleChangeError] = List.empty,
+    id: String = UUID.randomUUID().toString)
     extends SingleChange
 
 /*

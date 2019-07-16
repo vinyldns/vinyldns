@@ -43,9 +43,9 @@ object SingleChangeType extends Enumeration {
 trait BatchChangeProtobufConversions extends ProtobufConversions {
   /* Currently, we only support the add change type.  When we support additional change we will add them here */
   def fromPB(
-              changeType: SingleChangeType,
-              errors: List[SingleChangeError],
-              change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
+      changeType: SingleChangeType,
+      errors: List[SingleChangeError],
+      change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
     Either.catchNonFatal {
       changeType match {
         case SingleAddType =>

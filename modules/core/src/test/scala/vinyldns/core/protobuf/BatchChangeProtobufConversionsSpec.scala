@@ -18,7 +18,7 @@ package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
-import vinyldns.core.domain.{SingleChangeError, HighValueDomainError, ZoneDiscoveryError}
+import vinyldns.core.domain.{HighValueDomainError, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
