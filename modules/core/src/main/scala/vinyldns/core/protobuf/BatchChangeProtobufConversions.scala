@@ -84,14 +84,15 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       }
     }
 
-  def fromPB(errors: List[VinylDNSProto.DomainValidationStoredError])
-    : Either[Throwable, List[SingleChangeError]] = Either.catchNonFatal {
-    errors.map { e =>
-      val errorType = DomainValidationErrorType.withName(e.getErrorType)
-      val message = e.getMessage
-      SingleChangeError(errorType, message)
+  def fromPB(
+      errors: List[VinylDNSProto.SingleChangeError]): Either[Throwable, List[SingleChangeError]] =
+    Either.catchNonFatal {
+      errors.map { e =>
+        val errorType = DomainValidationErrorType.withName(e.getErrorType)
+        val message = e.getMessage
+        SingleChangeError(errorType, message)
+      }
     }
-  }
 
   def fromPB(change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
     for {
@@ -143,7 +144,7 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
     change.recordSetId.foreach(x => sc.setRecordSetId(x))
 
     change.validationErrors.map { error =>
-      val builtError = VinylDNSProto.DomainValidationStoredError
+      val builtError = VinylDNSProto.SingleChangeError
         .newBuilder()
         .setErrorType(error.errorType.toString)
         .setMessage(error.message)

@@ -1043,7 +1043,7 @@ class BatchChangeServiceSpec
         List(SingleChangeError(nonFatalError)),
         result.changes(1).id
       )
-      result.changes(2) shouldBe core.domain.batch.SingleDeleteChange(
+      result.changes(2) shouldBe SingleDeleteChange(
         None,
         None,
         None,
