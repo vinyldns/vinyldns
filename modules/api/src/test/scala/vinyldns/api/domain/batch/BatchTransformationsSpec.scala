@@ -34,6 +34,7 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
     val ipv6nonMatch1 = Zone("5.1.0.0.2.ip6.arpa.", "test")
     val ipv6nonMatch2 = Zone("5.0.8.b.d.0.1.0.0.2.ip6.arpa.", "test")
     val ipv6nonMatch3 = Zone("5.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.", "test")
+    val forwardMatch1 = Zone("FORWARD.com", "test")
 
     val existingZones = ExistingZones(
       Set(
@@ -47,7 +48,8 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
         ipv6match3,
         ipv6nonMatch1,
         ipv6nonMatch2,
-        ipv6nonMatch3))
+        ipv6nonMatch3,
+        forwardMatch1))
 
     "getipv4PTRMatches" should {
       "return all possible matches including proper delegations" in {
@@ -79,6 +81,11 @@ class BatchTransformationsSpec extends WordSpec with Matchers {
       "return empty if there are no matches" in {
         existingZones.getipv6PTRMatches("2002:0db0:0000:0000:0000:0000:0000:0000") shouldBe List()
         existingZones.getipv6PTRMatches("2002:db0::ff00:42:8329") shouldBe List()
+      }
+    }
+    "getByName" should {
+      "return match regardless of capitalization" in {
+        existingZones.getByName("forward.COM") shouldBe Some(forwardMatch1)
       }
     }
   }

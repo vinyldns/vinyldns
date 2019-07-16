@@ -81,7 +81,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
             get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
             get_change_A_AAAA_json("ok.", record_type="AAAA", address="fd69:27cc:fe91::60"),
             get_change_A_AAAA_json("relative.parent.com.", address="1.1.1.1"),
-            get_change_CNAME_json("cname.parent.com", cname="nice.parent.com"),
+            get_change_CNAME_json("CNAME.PARENT.COM", cname="nice.parent.com"),
             get_change_CNAME_json("2cname.parent.com", cname="nice.parent.com"),
             get_change_CNAME_json("4.2.0.192.in-addr.arpa.", cname="4.4/30.2.0.192.in-addr.arpa."),
             get_change_PTR_json("192.0.2.193", ptrdname="www.vinyldns"),
@@ -116,8 +116,8 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                                               input_name="ok.", record_data="fd69:27cc:fe91::60", record_type="AAAA")
         assert_change_success_response_values(result['changes'], zone=parent_zone, index=2, record_name="relative",
                                               input_name="relative.parent.com.", record_data="1.1.1.1")
-        assert_change_success_response_values(result['changes'], zone=parent_zone, index=3, record_name="cname",
-                                              input_name="cname.parent.com.", record_data="nice.parent.com.", record_type="CNAME")
+        assert_change_success_response_values(result['changes'], zone=parent_zone, index=3, record_name="CNAME",
+                                              input_name="CNAME.PARENT.COM.", record_data="nice.parent.com.", record_type="CNAME")
         assert_change_success_response_values(result['changes'], zone=parent_zone, index=4, record_name="2cname",
                                               input_name="2cname.parent.com.", record_data="nice.parent.com.", record_type="CNAME")
         assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=5, record_name="4",
@@ -170,7 +170,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         verify_recordset(rs4, expected4)
 
         rs5 = client.get_recordset(record_set_list[3][0], record_set_list[3][1])['recordSet']
-        expected5 = {'name': 'cname',
+        expected5 = {'name': 'CNAME',
                      'zoneId': parent_zone['id'],
                      'type': 'CNAME',
                      'ttl': 200,

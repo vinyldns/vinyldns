@@ -35,11 +35,11 @@ object SupportedBatchChangeRecordTypes {
 object BatchTransformations {
 
   final case class ExistingZones(zones: Set[Zone]) {
-    val zoneMap: Map[String, Zone] = zones.map(z => (z.name, z)).toMap
+    val zoneMap: Map[String, Zone] = zones.map(z => (z.name.toLowerCase(), z)).toMap
 
     def getById(id: String): Boolean = zones.exists(zn => zn.id.equals(id))
 
-    def getByName(name: String): Option[Zone] = zoneMap.get(name)
+    def getByName(name: String): Option[Zone] = zoneMap.get(name.toLowerCase())
 
     def getipv4PTRMatches(ipv4: String): List[Zone] =
       zones.filter { zn =>
