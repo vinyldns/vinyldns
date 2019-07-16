@@ -17,7 +17,7 @@
 package vinyldns.core.protobuf
 
 import cats.syntax.all._
-import vinyldns.core.domain.DomainValidationErrorType
+import vinyldns.core.domain.{DomainValidationErrorType, DomainValidationStoredError}
 import vinyldns.core.domain.batch.{
   SingleAddChange,
   SingleChange,
@@ -44,10 +44,9 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
   /* Currently, we only support the add change type.  When we support additional change we will add them here */
   def fromPB(
       changeType: SingleChangeType,
+      errors: List[DomainValidationStoredError],
       change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
     Either.catchNonFatal {
-      val errors =
-        change.getValidationErrorsList.asScala.toList.map(DomainValidationErrorType.withName)
       changeType match {
         case SingleAddType =>
           val changeData = VinylDNSProto.SingleAddChange.parseFrom(change.getChangeData.getData)
@@ -85,10 +84,21 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       }
     }
 
+  def fromPB(errors: List[VinylDNSProto.DomainValidationStoredError])
+    : Either[Throwable, List[DomainValidationStoredError]] = Either.catchNonFatal {
+    errors.map { e =>
+      val errorType = DomainValidationErrorType.withName(e.getErrorType)
+      val message = e.getMessage
+      new DomainValidationStoredError(errorType, message)
+    }
+  }
+
   def fromPB(change: VinylDNSProto.SingleChange): Either[Throwable, SingleChange] =
     for {
       typ <- Either.catchNonFatal(SingleChangeType.withName(change.getChangeType))
-      sc <- fromPB(typ, change)
+      errorStored <- Either.catchNonFatal(change.getValidationErrorsList.asScala.toList)
+      errors <- fromPB(errorStored)
+      sc <- fromPB(typ, errors, change)
     } yield sc
 
   def toPB(change: SingleAddChange): Either[Throwable, VinylDNSProto.SingleChange] =
@@ -102,19 +112,8 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
         .newBuilder()
         .setChangeData(scd)
         .setChangeType(SingleAddType.toString)
-        .setId(change.id)
-        .setInputName(change.inputName)
-        .setRecordType(change.typ.toString)
-        .setStatus(change.status.toString)
 
-      change.zoneId.foreach(x => sc.setZoneId(x))
-      change.zoneName.foreach(x => sc.setZoneName(x))
-      change.recordName.foreach(x => sc.setRecordName(x))
-      change.systemMessage.foreach(x => sc.setSystemMessage(x))
-      change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
-      change.recordSetId.foreach(x => sc.setRecordSetId(x))
-      change.validationErrors.map(x => sc.addValidationErrors(x.toString))
-
+      addCommonSingleChangeFields(sc, change)
       sc.build()
     }
 
@@ -123,21 +122,36 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       val sc = VinylDNSProto.SingleChange
         .newBuilder()
         .setChangeType(SingleDeleteType.toString)
-        .setId(change.id)
-        .setInputName(change.inputName)
-        .setRecordType(change.typ.toString)
-        .setStatus(change.status.toString)
 
-      change.zoneId.foreach(x => sc.setZoneId(x))
-      change.zoneName.foreach(x => sc.setZoneName(x))
-      change.recordName.foreach(x => sc.setRecordName(x))
-      change.systemMessage.foreach(x => sc.setSystemMessage(x))
-      change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
-      change.recordSetId.foreach(x => sc.setRecordSetId(x))
-      change.validationErrors.map(x => sc.addValidationErrors(x.toString))
-
+      addCommonSingleChangeFields(sc, change)
       sc.build()
     }
+
+  def addCommonSingleChangeFields(
+      sc: VinylDNSProto.SingleChange.Builder,
+      change: SingleChange): Unit = {
+    sc.setId(change.id)
+      .setInputName(change.inputName)
+      .setRecordType(change.typ.toString)
+      .setStatus(change.status.toString)
+
+    change.zoneId.foreach(x => sc.setZoneId(x))
+    change.zoneName.foreach(x => sc.setZoneName(x))
+    change.recordName.foreach(x => sc.setRecordName(x))
+    change.systemMessage.foreach(x => sc.setSystemMessage(x))
+    change.recordChangeId.foreach(x => sc.setRecordChangeId(x))
+    change.recordSetId.foreach(x => sc.setRecordSetId(x))
+
+    change.validationErrors.map { error =>
+      val builtError = VinylDNSProto.DomainValidationStoredError
+        .newBuilder()
+        .setErrorType(error.errorType.toString)
+        .setMessage(error.message)
+        .build()
+
+      sc.addValidationErrors(builtError)
+    }
+  }
 
   def toPB(change: SingleChange): Either[Throwable, VinylDNSProto.SingleChange] =
     change match {

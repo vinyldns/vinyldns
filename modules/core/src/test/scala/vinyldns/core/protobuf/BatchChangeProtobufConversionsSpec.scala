@@ -18,7 +18,7 @@ package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
-import vinyldns.core.domain.ZoneDiscoveryError
+import vinyldns.core.domain.{DomainValidationStoredError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
@@ -28,6 +28,8 @@ class BatchChangeProtobufConversionsSpec
     with BatchChangeProtobufConversions
     with EitherMatchers
     with EitherValues {
+
+  private val testDVError = DomainValidationStoredError(ZoneDiscoveryError("some-zone-name"))
 
   private val testAddChange = SingleAddChange(
     Some("zoneId"),
@@ -41,7 +43,7 @@ class BatchChangeProtobufConversionsSpec
     Some("systemMessage"),
     Some("recordChangeId"),
     Some("recordSetId"),
-    List(ZoneDiscoveryError("some-zone-name")),
+    List(testDVError),
     "id"
   )
   private val testDeleteChange = SingleDeleteChange(
@@ -54,7 +56,7 @@ class BatchChangeProtobufConversionsSpec
     Some("systemMessage"),
     Some("recordChangeId"),
     Some("recordSetId"),
-    List(ZoneDiscoveryError("some-zone-name")),
+    List(testDVError, testDVError.copy(message = "something else")),
     "id"
   )
 
@@ -149,7 +151,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
-        List(ZoneDiscoveryError("some-zone-name")),
+        List(testDVError),
         "some-id"
       )
       val pb = toPB(tst)
