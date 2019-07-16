@@ -27,11 +27,43 @@ object DomainValidationStoredError {
 
 object DomainValidationErrorType extends Enumeration {
   type DomainValidationErrorType = Value
-  // NOTE: once defined, an error code cannot be changed!
-  val ZDE, Unknown = Value
+  // NOTE: once defined, an error code type cannot be changed!
+  val ChangeLimitExceeded, BatchChangeIsEmpty, GroupDoesNotExist, NotAMemberOfOwnerGroup,
+  InvalidDomainName, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
+  InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMxPreference,
+  InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
+  CnameIsNotUniqueError, UserIsNotAuthorized, RecordNameNotUniqueInBatch, RecordInReverseZoneError,
+  HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError, NewMultiRecordError,
+  CnameAtZoneApexError = Value
 
-  def from(error: DomainValidationError): DomainValidationErrorType = error match {
-    case _: ZoneDiscoveryError => ZDE
-    case _ => Unknown
-  }
+  def from(error: DomainValidationError): DomainValidationErrorType =
+    error match {
+      case _: ChangeLimitExceeded => ChangeLimitExceeded
+      case _: BatchChangeIsEmpty => BatchChangeIsEmpty
+      case _: GroupDoesNotExist => GroupDoesNotExist
+      case _: NotAMemberOfOwnerGroup => NotAMemberOfOwnerGroup
+      case _: InvalidDomainName => InvalidDomainName
+      case _: InvalidLength => InvalidLength
+      case _: InvalidEmail => InvalidEmail
+      case _: InvalidRecordType => InvalidRecordType
+      case _: InvalidPortNumber => InvalidPortNumber
+      case _: InvalidIpv4Address => InvalidIpv4Address
+      case _: InvalidIpv6Address => InvalidIpv6Address
+      case _: InvalidIPAddress => InvalidIPAddress
+      case _: InvalidTTL => InvalidTTL
+      case _: InvalidMxPreference => InvalidMxPreference
+      case _: InvalidBatchRecordType => InvalidBatchRecordType
+      case _: ZoneDiscoveryError => ZoneDiscoveryError
+      case _: RecordAlreadyExists => RecordAlreadyExists
+      case _: RecordDoesNotExist => RecordDoesNotExist
+      case _: CnameIsNotUniqueError => CnameIsNotUniqueError
+      case _: UserIsNotAuthorized => UserIsNotAuthorized
+      case _: RecordNameNotUniqueInBatch => RecordNameNotUniqueInBatch
+      case _: RecordInReverseZoneError => RecordInReverseZoneError
+      case _: HighValueDomainError => HighValueDomainError
+      case _: MissingOwnerGroupId => MissingOwnerGroupId
+      case _: ExistingMultiRecordError => ExistingMultiRecordError
+      case _: NewMultiRecordError => NewMultiRecordError
+      case _: CnameAtZoneApexError => CnameAtZoneApexError
+    }
 }
