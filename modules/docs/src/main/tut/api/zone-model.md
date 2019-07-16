@@ -233,11 +233,11 @@ Will give Read permissions to PTR Record Sets 1000:1000:1000:1000:0000:0000:0000
 #### ZONE CONNECTION ATTRIBUTES <a id="zone-conn-attr"></a>
 In order for VinylDNS to make updates in DNS, it needs key information for every zone. There are 3 ways to specify that key information; ask your VinylDNS admin which is appropriate for your zone based on the configuration of the service:
 
-1. Leave connection, transfer connection, and backendId blank: In this case, the default VinylDNS keys will be used
-2. Specify a backendID on the zone: if multiple backends are configured for your instance of VinylDNS, you can specify a backendID on the zone and the keys associated with that backend will be used.
-3. Specify ZoneConnection and TransferConnection on the zone itself: See below for details
+1. Leave connection, transfer connection, and backend ID blank: In this case, the default VinylDNS keys will be used
+2. Specify a backend ID on the zone: if multiple backends are configured for your instance of VinylDNS, you can specify a backend ID on the zone and the keys associated with that backend will be used.
+3. Specify zone connection and transfer connection on the zone itself: see below for details
 
-Note that if both a backendID and specific connection keys are included on a zone, the specific connection keys will be used.
+Note that if both a backend ID and specific connection keys are included on a zone, the specific connection keys will be used.
 
 Zone Connection specifies the connection information to the backend DNS server.
 
