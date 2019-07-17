@@ -117,7 +117,7 @@ object StructuredArgs {
     case x: String => Map(Value -> x)
   }
 
-  private def detailedFields[T](t: T): Map[_, _] = {
+  private def detailedFields[T](t: T): Map[_, _] =
     t match {
       case dzc: ZoneChange =>
         Map(
@@ -177,7 +177,6 @@ object StructuredArgs {
           "updated" -> rs.updated.fold(0L)(_.getMillis)
         )
     }
-  }
 
   /**
     * Converts scala Map to Java Map required for structured logging library.
@@ -189,6 +188,7 @@ object StructuredArgs {
     m.map { e =>
       e._2 match {
         case mm: Map[_, _] => e._1 -> convert(mm)
+        case a: Array[Map[_, _]] => e._1 -> a.map(convert)
         case _ => e
       }
     }.asJava

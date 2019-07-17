@@ -467,11 +467,10 @@ trait DnsConversions {
     * @param rType record type, for e.g.: A, AAA, CNAME, etc.
     * @return
     */
-  def dnsQuestionEvent(name: Name, rType: RecordType): Map[_, _] = {
+  def dnsQuestionEvent(name: Name, rType: RecordType): Map[_, _] =
     Map(
       Event -> Map("action" -> "dns.question"),
       dns -> Map("question" -> Map(name -> name.toString(true), _type -> rType.toString)))
-  }
 
   /**
     * Note: [07/09/2019] Elastic ECS forum is currently discussing (https://github.com/elastic/ecs/pull/438) to create
@@ -500,7 +499,7 @@ trait DnsConversions {
     )
   }
 
-  def recordInfo(opCode: String, r: Record): Map[_, _] = {
+  def recordInfo(opCode: String, r: Record): Map[_, _] =
     Map(
       name -> r.getName.toString,
       clazz -> DClass.string(r.getDClass),
@@ -509,7 +508,6 @@ trait DnsConversions {
       data -> r.rdataToString(),
       op_code -> opCode
     )
-  }
 
   def dnsQAndAEvent(
       question: DNS.Message,
@@ -529,9 +527,8 @@ trait DnsConversions {
         Map("question" -> questionFields, "answer" -> resultFields))
   }
 
-  def validFlag(bit: Int): Boolean = {
+  def validFlag(bit: Int): Boolean =
     bit >= 0 && bit <= 0xF && Flags.isFlag(bit)
-  }
 
   /**
     *
@@ -558,12 +555,13 @@ trait DnsConversions {
         Map()
       }
 
-    val flags = (0 until 16).flatMap{ i =>
-        if (validFlag(i) && dnsMessage.getHeader != null && dnsMessage.getHeader.getFlag(i)) {
-          Some(Flags.string(i) -> true)
-        } else {
-          None
-      }}.toMap
+    val flags = (0 until 16).flatMap { i =>
+      if (validFlag(i) && dnsMessage.getHeader != null && dnsMessage.getHeader.getFlag(i)) {
+        Some(Flags.string(i) -> true)
+      } else {
+        None
+      }
+    }.toMap
 
     val additionalSections = (0 until 4).flatMap { i =>
       val opCode =
@@ -591,9 +589,12 @@ trait DnsConversions {
   }
 
   def recordSetInfo(rs: RecordSet): Map[_, _] = {
-    val recInfo = toDnsRecords(rs, rs.name).fold(
-      {t => Map("error" -> Map("message" -> t.getMessage))},
-      {rs => rs.map(r => recordInfo("UPDATE", r))})
+    val recInfo = toDnsRecords(rs, rs.name).fold({ t =>
+      Map("error" -> Map("message" -> t.getMessage))
+    }, { rs =>
+      val array = rs.map(r => recordInfo("UPDATE", r)).toArray
+      array
+    })
 
     Map(
       "id" -> rs.id,
@@ -603,32 +604,31 @@ trait DnsConversions {
       "created" -> rs.created.getMillis,
       "status" -> rs.status.toString,
       "zoneId" -> rs.zoneId,
-      "ownerGroupId" -> rs.ownerGroupId,
+      "ownerGroupId" -> rs.ownerGroupId.getOrElse(""),
       "records" -> recInfo,
       "recordSetType" -> rs.typ.toString,
       "updated" -> rs.updated.fold(0L)(_.getMillis)
     )
   }
 
-  def rsChangeEvent(action: String, drs: RecordSetChange, addInfo: Map[_, _]): Map[_, _] = {
+  def rsChangeEvent(action: String, drs: RecordSetChange, addInfo: Map[_, _]): Map[_, _] =
     Map(
       "action" -> Map("name" -> action),
       "entity" -> {
         Map(
-        "id" -> drs.id,
-        "type" -> "recordSetChange",
-        "userId" -> drs.userId,
-        "changeType" -> drs.changeType,
-        "status" -> drs.status.toString,
-        "systemMessage" -> drs.systemMessage.toString,
-        "zoneId" -> drs.zone.id,
-        "zoneName" -> drs.zone.name,
-        "singleBatchChangeIds" -> drs.singleBatchChangeIds.toArray,
-        "recordSet" -> recordSetInfo(drs.recordSet)
+          "id" -> drs.id,
+          "type" -> "recordSetChange",
+          "userId" -> drs.userId,
+          "changeType" -> drs.changeType.value.toString,
+          "status" -> drs.status.toString,
+          "systemMessage" -> drs.systemMessage.toString,
+          "zoneId" -> drs.zone.id,
+          "zoneName" -> drs.zone.name,
+          "singleBatchChangeIds" -> drs.singleBatchChangeIds.toArray,
+          "recordSet" -> recordSetInfo(drs.recordSet)
         ) ++ addInfo
       }
     )
-  }
 }
 
 object DnsConversions extends DnsConversions
