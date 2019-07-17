@@ -18,6 +18,7 @@ package vinyldns.api.domain.batch
 
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
+import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
@@ -164,4 +165,10 @@ object BatchTransformations {
       changeList.nonEmpty && changeList.exists(_.isDeleteChangeForValidation)
     }
   }
+
+  final case class BatchValidationFlowOutput(
+      validatedChanges: ValidatedBatch[ChangeForValidation],
+      existingZones: ExistingZones,
+      existingRecordSets: ExistingRecordSets
+  )
 }

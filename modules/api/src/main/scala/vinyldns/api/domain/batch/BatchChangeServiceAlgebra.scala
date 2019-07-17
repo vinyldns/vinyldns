@@ -41,7 +41,6 @@ trait BatchChangeServiceAlgebra {
       authPrincipal: AuthPrincipal,
       rejectBatchChangeInput: Option[RejectBatchChangeInput]): BatchResult[BatchChange]
 
-
   def approveBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,

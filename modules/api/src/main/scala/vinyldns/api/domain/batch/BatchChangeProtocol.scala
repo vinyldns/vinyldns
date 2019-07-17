@@ -100,9 +100,8 @@ object AddChangeInput {
     new AddChangeInput(transformName, typ, ttl, record)
   }
 
-  def apply(sc: SingleAddChange): AddChangeInput = {
+  def apply(sc: SingleAddChange): AddChangeInput =
     AddChangeInput(sc.inputName, sc.typ, Some(sc.ttl), sc.recordData)
-  }
 }
 
 object DeleteChangeInput {
@@ -114,9 +113,8 @@ object DeleteChangeInput {
     new DeleteChangeInput(transformName, typ)
   }
 
-  def apply(sc: SingleDeleteChange): DeleteChangeInput = {
+  def apply(sc: SingleDeleteChange): DeleteChangeInput =
     DeleteChangeInput(sc.inputName, sc.typ)
-  }
 }
 
 object ChangeInputType extends Enumeration {
