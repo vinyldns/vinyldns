@@ -29,6 +29,16 @@ final case class BatchChangeInput(
     changes: List[ChangeInput],
     ownerGroupId: Option[String] = None)
 
+object BatchChangeInput {
+  def apply(batchChange: BatchChange): BatchChangeInput = {
+    val changes = batchChange.changes.map {
+      case add: SingleAddChange => AddChangeInput(add)
+      case del: SingleDeleteChange => DeleteChangeInput(del)
+    }
+    new BatchChangeInput(batchChange.comments, changes, batchChange.ownerGroupId)
+  }
+}
+
 sealed trait ChangeInput {
   val inputName: String
   val typ: RecordType
@@ -89,6 +99,10 @@ object AddChangeInput {
     }
     new AddChangeInput(transformName, typ, ttl, record)
   }
+
+  def apply(sc: SingleAddChange): AddChangeInput = {
+    AddChangeInput(sc.inputName, sc.typ, Some(sc.ttl), sc.recordData)
+  }
 }
 
 object DeleteChangeInput {
@@ -98,6 +112,10 @@ object DeleteChangeInput {
       case _ => ensureTrailingDot(inputName)
     }
     new DeleteChangeInput(transformName, typ)
+  }
+
+  def apply(sc: SingleDeleteChange): DeleteChangeInput = {
+    DeleteChangeInput(sc.inputName, sc.typ)
   }
 }
 

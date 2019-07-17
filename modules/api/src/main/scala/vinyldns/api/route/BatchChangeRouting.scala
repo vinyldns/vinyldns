@@ -96,7 +96,7 @@ trait BatchChangeRoute extends Directives {
       } ~
         (post & path("zones" / "batchrecordchanges" / Segment / "approve")) { id =>
           monitor("Endpoint.approveBatchChange") {
-            entity(as[Option[ApproveBatchChangeInput]]) { input =>
+            entity(as[ApproveBatchChangeInput]) { input =>
               execute(batchChangeService.approveBatchChange(id, authPrincipal, input)) { chg =>
                 complete(StatusCodes.OK, chg)
               }
