@@ -36,6 +36,7 @@ object DomainValidationErrorType extends Enumeration {
   HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError, NewMultiRecordError,
   CnameAtZoneApexError = Value
 
+  // $COVERAGE-OFF$
   def from(error: DomainValidationError): DomainValidationErrorType =
     error match {
       case _: ChangeLimitExceeded => ChangeLimitExceeded
@@ -66,4 +67,5 @@ object DomainValidationErrorType extends Enumeration {
       case _: NewMultiRecordError => NewMultiRecordError
       case _: CnameAtZoneApexError => CnameAtZoneApexError
     }
+  // $COVERAGE-ON$
 }
