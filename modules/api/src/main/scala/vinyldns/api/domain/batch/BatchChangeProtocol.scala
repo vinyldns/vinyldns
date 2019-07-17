@@ -28,7 +28,7 @@ final case class BatchChangeInput(
     comments: Option[String],
     changes: List[ChangeInput],
     ownerGroupId: Option[String] = None,
-    disableManualReview: Boolean = false)
+    allowManualReview: Boolean = true)
 
 sealed trait ChangeInput {
   val inputName: String

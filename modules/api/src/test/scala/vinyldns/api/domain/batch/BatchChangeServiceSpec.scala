@@ -1075,14 +1075,14 @@ class BatchChangeServiceSpec
       result shouldBe an[InvalidBatchChangeResponses]
     }
     "return a BatchChangeErrorList if all data inputs are valid/soft failures, manual review is enabled, " +
-      "but batch change disableManualReview attribute is true" in {
+      "but batch change allowManualReview attribute is false" in {
       val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTestManualEnabled
         .buildResponse(
           BatchChangeInput(
             None,
             List(apexAddA, onlyBaseAddAAAA, delete),
-            disableManualReview = true),
+            allowManualReview = false),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             nonFatalError.invalidNel,

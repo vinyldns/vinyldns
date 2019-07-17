@@ -93,15 +93,15 @@ class BatchChangeJsonProtocolSpec
     addCNAMEChangeInputJson)
 
   val addBatchChangeInputWithComment: JObject = ("comments" -> Some("some comment")) ~~
-    addChangeList ~~ ("disableManualReview" -> false)
+    addChangeList ~~ ("allowManualReview" -> true)
 
   val addBatchChangeInputWithOwnerGroupId: JObject = ("ownerGroupId" -> Some("owner-group-id")) ~~
-    addBatchChangeInputWithComment ~~ ("disableManualReview" -> false)
+    addBatchChangeInputWithComment ~~ ("allowManualReview" -> true)
 
-  val changeInputWithDisableManualReview: JObject = ("changes" -> List(
+  val changeInputWithManualReviewDisabled: JObject = ("changes" -> List(
     deleteAChangeInputJson,
     addAAAAChangeInputJson,
-    addCNAMEChangeInputJson)) ~~ ("disableManualReview" -> true)
+    addCNAMEChangeInputJson)) ~~ ("allowManualReview" -> false)
 
   val addAChangeInput = AddChangeInput("foo.", A, Some(3600), AData("1.1.1.1"))
 
@@ -208,7 +208,7 @@ class BatchChangeJsonProtocolSpec
         Some("some comment"),
         List(addAChangeInput, addAAAAChangeInput, addCNAMEChangeInput, addPTRChangeInput),
         None,
-        false)
+        true)
     }
 
     "successfully serialize valid add change data without comment and owner group ID" in {
@@ -227,14 +227,14 @@ class BatchChangeJsonProtocolSpec
         List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput))
     }
 
-    "successfully serialize valid change data with a given disableManualReview value" in {
-      val result = BatchChangeInputSerializer.fromJson(changeInputWithDisableManualReview).value
+    "successfully serialize valid change data with a given allowManualReview value" in {
+      val result = BatchChangeInputSerializer.fromJson(changeInputWithManualReviewDisabled).value
 
       result shouldBe BatchChangeInput(
         None,
         List(deleteAChangeInput, addAAAAChangeInput, addCNAMEChangeInput),
         None,
-        disableManualReview = true)
+        allowManualReview = false)
     }
 
     "successfully serialize valid add and delete change with comment and owner group ID" in {
