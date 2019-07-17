@@ -130,7 +130,9 @@ class BatchChangeService(
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
         UnknownConversionError("TODO") //TODO this should be some other error
       )
-      reviewInfo = BatchChangeReviewInfo(authPrincipal.userId, approveBatchChangeInput.reviewComment)
+      reviewInfo = BatchChangeReviewInfo(
+        authPrincipal.userId,
+        approveBatchChangeInput.reviewComment)
       validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth)
       changeForConversion <- buildResponseForApprover(
         batchChange,
@@ -143,12 +145,6 @@ class BatchChangeService(
         validationOutput.existingRecordSets,
         batchChange.ownerGroupId)
     } yield serviceCompleteBatch
-  /*
-  (existingBatchChange: BatchChange,
-                               batchChangeInput: BatchChangeInput,
-                               transformed: ValidatedBatch[ChangeForValidation],
-                               reviewInfo: BatchChangeReviewInfo): Either[BatchChangeErrorResponse, BatchChange] = {
-   */
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
