@@ -21,8 +21,6 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
-import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
 import vinyldns.api._
@@ -35,7 +33,6 @@ import vinyldns.api.repository.{
   EmptyZoneRepo,
   InMemoryBatchChangeRepository
 }
-import vinyldns.core
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -52,11 +49,9 @@ class BatchChangeServiceSpec
     with BeforeAndAfterEach
     with EitherMatchers
     with EitherValues
-    with ValidatedMatchers
-    with MockitoSugar {
+    with ValidatedMatchers {
 
-  private val nonFatalError = mock[DomainValidationError]
-  doReturn(false).when(nonFatalError).isFatal
+  private val nonFatalError = ZoneDiscoveryError("test", fatal = false)
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
   private val ttl = Some(200L)
@@ -968,6 +963,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
+        List.empty,
         result.changes.head.id
       )
       result.changes(1) shouldBe SingleAddChange(
@@ -982,6 +978,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
+        List.empty,
         result.changes(1).id
       )
       result.changes(2) shouldBe SingleAddChange(
@@ -996,6 +993,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
+        List.empty,
         result.changes(2).id
       )
     }
@@ -1027,6 +1025,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
+        List.empty,
         result.changes.head.id
       )
       result.changes(1) shouldBe SingleAddChange(
@@ -1041,9 +1040,10 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
+        List(SingleChangeError(nonFatalError)),
         result.changes(1).id
       )
-      result.changes(2) shouldBe core.domain.batch.SingleDeleteChange(
+      result.changes(2) shouldBe SingleDeleteChange(
         None,
         None,
         None,
@@ -1053,6 +1053,7 @@ class BatchChangeServiceSpec
         None,
         None,
         None,
+        List(SingleChangeError(nonFatalError)),
         result.changes(2).id
       )
     }

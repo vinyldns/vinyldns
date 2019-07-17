@@ -18,7 +18,7 @@ package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
 import vinyldns.api.VinylDNSConfig
-import vinyldns.core.domain.DomainValidationError
+import vinyldns.core.domain.{DomainValidationError, SingleChangeError}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordData
@@ -55,7 +55,9 @@ final case class AddChangeInput(
       SingleChangeStatus.NeedsReview,
       None,
       None,
-      None)
+      None,
+      errors.toList.map(SingleChangeError(_))
+    )
   }
 }
 
@@ -70,7 +72,9 @@ final case class DeleteChangeInput(inputName: String, typ: RecordType) extends C
       SingleChangeStatus.NeedsReview,
       None,
       None,
-      None)
+      None,
+      errors.toList.map(SingleChangeError(_))
+    )
 }
 
 object AddChangeInput {

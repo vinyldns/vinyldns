@@ -197,6 +197,12 @@ message SingleChange {
   optional string recordChangeId = 10;
   optional string recordSetId = 11;
   optional SingleChangeData changeData = 12;
+  repeated SingleChangeError validationErrors = 13;
+}
+
+message SingleChangeError {
+  required string errorType = 1;
+  required string message = 2;
 }
 
 message User {

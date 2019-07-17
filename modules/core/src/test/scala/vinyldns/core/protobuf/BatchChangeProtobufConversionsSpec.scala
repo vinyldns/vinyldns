@@ -18,6 +18,7 @@ package vinyldns.core.protobuf
 
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
+import vinyldns.core.domain.{HighValueDomainError, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
@@ -27,6 +28,8 @@ class BatchChangeProtobufConversionsSpec
     with BatchChangeProtobufConversions
     with EitherMatchers
     with EitherValues {
+
+  private val testDVError = SingleChangeError(ZoneDiscoveryError("some-zone-name"))
 
   private val testAddChange = SingleAddChange(
     Some("zoneId"),
@@ -40,6 +43,7 @@ class BatchChangeProtobufConversionsSpec
     Some("systemMessage"),
     Some("recordChangeId"),
     Some("recordSetId"),
+    List(testDVError),
     "id"
   )
   private val testDeleteChange = SingleDeleteChange(
@@ -52,6 +56,7 @@ class BatchChangeProtobufConversionsSpec
     Some("systemMessage"),
     Some("recordChangeId"),
     Some("recordSetId"),
+    List(testDVError, SingleChangeError(HighValueDomainError("hvd"))),
     "id"
   )
 
@@ -83,6 +88,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(),
         "some-id"
       )
       val pb = toPB(tst)
@@ -103,6 +109,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(),
         "some-id"
       )
       val pb = toPB(tst)
@@ -123,6 +130,7 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(),
         "some-id"
       )
       val pb = toPB(tst)
@@ -143,10 +151,10 @@ class BatchChangeProtobufConversionsSpec
         None,
         None,
         None,
+        List(testDVError),
         "some-id"
       )
       val pb = toPB(tst)
-
       val roundTrip = fromPB(pb.right.value)
 
       roundTrip.right.value shouldBe tst

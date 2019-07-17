@@ -26,6 +26,7 @@ import vinyldns.core.domain.record.{AAAAData, AData, RecordData, RecordType}
 import vinyldns.core.domain.batch._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData.okAuth
+import vinyldns.core.domain.{SingleChangeError, ZoneDiscoveryError}
 import vinyldns.mysql.TestMySqlInstance
 
 class MySqlBatchChangeRepositoryIntegrationSpec
@@ -44,7 +45,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
   object TestData {
     def generateSingleAddChange(recordType: RecordType,
                                 recordData: RecordData,
-                                status: SingleChangeStatus = Pending): SingleAddChange =
+                                status: SingleChangeStatus = Pending,
+                                errors: List[SingleChangeError] = List.empty): SingleAddChange =
       SingleAddChange(
         Some(okZone.id),
         Some(okZone.name),
@@ -55,7 +57,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         status,
         None,
         None,
-        None)
+        None,
+        errors)
 
     val deleteChange: SingleDeleteChange =
       SingleDeleteChange(
@@ -71,7 +74,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
 
     def randomChangeList: List[SingleChange] = List(
-      generateSingleAddChange(A, AData("1.2.3.4"), Pending),
+      generateSingleAddChange(A, AData("1.2.3.4"), Pending, List(SingleChangeError(ZoneDiscoveryError("test err")))),
       generateSingleAddChange(A, AData("1.2.3.40"), Complete),
       generateSingleAddChange(AAAA, AAAAData("2001:558:feed:beef:0:0:0:1"), Pending),
       deleteChange.copy(id = UUID.randomUUID().toString))

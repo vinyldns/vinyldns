@@ -97,7 +97,8 @@ final case class InvalidBatchRecordType(param: String, supported: Set[RecordType
     s"""Invalid Batch Record Type: "$param", valid record types for batch changes include $supported."""
 }
 
-final case class ZoneDiscoveryError(name: String) extends DomainValidationError {
+final case class ZoneDiscoveryError(name: String, fatal: Boolean = true)
+    extends DomainValidationError(fatal) {
   def message: String =
     s"""Zone Discovery Failed: zone for "$name" does not exist in VinylDNS. """ +
       "If zone exists, then it must be connected to in VinylDNS."
