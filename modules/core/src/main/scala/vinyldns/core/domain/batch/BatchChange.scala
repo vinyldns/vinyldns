@@ -95,11 +95,19 @@ case class BatchChangeInfo(
     id: String,
     status: BatchChangeStatus,
     ownerGroupName: Option[String],
+    approvalStatus: BatchChangeApprovalStatus,
+    reviewerId: Option[String],
+    reviewerUserName: Option[String],
+    reviewComment: Option[String],
+    reviewTimestamp: Option[DateTime],
     scheduledTime: Option[DateTime]
 )
 
 object BatchChangeInfo {
-  def apply(batchChange: BatchChange, ownerGroupName: Option[String] = None): BatchChangeInfo = {
+  def apply(
+      batchChange: BatchChange,
+      ownerGroupName: Option[String] = None,
+      reviewerUserName: Option[String] = None): BatchChangeInfo = {
     import batchChange._
     BatchChangeInfo(
       userId,
@@ -111,7 +119,12 @@ object BatchChangeInfo {
       id,
       status,
       ownerGroupName,
-      scheduledTime
+      approvalStatus,
+      reviewerId,
+      reviewerUserName,
+      reviewComment,
+      reviewTimestamp,
+      scheduledTime: Option[DateTime]
     )
   }
 }

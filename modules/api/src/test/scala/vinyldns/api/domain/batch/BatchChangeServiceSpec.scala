@@ -32,6 +32,7 @@ import vinyldns.api.domain.{AccessValidations, _}
 import vinyldns.api.repository.{
   EmptyGroupRepo,
   EmptyRecordSetRepo,
+  EmptyUserRepo,
   EmptyZoneRepo,
   InMemoryBatchChangeRepository
 }
@@ -39,7 +40,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.membership.{Group, User}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
 import vinyldns.core.domain.zone.Zone
@@ -292,6 +293,16 @@ class BatchChangeServiceSpec
       }
   }
 
+  object TestUserRepo extends EmptyUserRepo {
+    override def getUser(userId: String): IO[Option[User]] =
+      IO.pure {
+        userId match {
+          case superUser.id => Some(superUser)
+          case _ => None
+        }
+      }
+  }
+
   private val underTest = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
@@ -299,6 +310,7 @@ class BatchChangeServiceSpec
     validations,
     batchChangeRepo,
     EmptyBatchConverter,
+    TestUserRepo,
     false,
     TestAuth,
     mockNotifiers)
@@ -310,6 +322,7 @@ class BatchChangeServiceSpec
     validations,
     batchChangeRepo,
     EmptyBatchConverter,
+    TestUserRepo,
     true,
     TestAuth,
     mockNotifiers)
@@ -773,6 +786,7 @@ class BatchChangeServiceSpec
         validations,
         batchChangeRepo,
         EmptyBatchConverter,
+        TestUserRepo,
         false,
         TestAuth,
         mockNotifiers)
@@ -809,6 +823,7 @@ class BatchChangeServiceSpec
         validations,
         batchChangeRepo,
         EmptyBatchConverter,
+        TestUserRepo,
         false,
         TestAuth,
         mockNotifiers)
@@ -1298,6 +1313,7 @@ class BatchChangeServiceSpec
 
       result.batchChanges.length shouldBe 1
       result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
+      result.batchChanges(0).approvalStatus shouldBe BatchChangeApprovalStatus.AutoApproved
     }
 
     "return a list of batchChangeSummaries if some exist" in {
@@ -1586,6 +1602,20 @@ class BatchChangeServiceSpec
 
     "return the group if the group exists for the owner group ID" in {
       rightResultOf(underTest.getOwnerGroup(Some(okGroup.id)).value) shouldBe Some(okGroup)
+    }
+  }
+
+  "getReviewer" should {
+    "return None if reviewer ID is None" in {
+      rightResultOf(underTest.getReviewer(None).value) shouldBe None
+    }
+
+    "return None if reviewer does not exist for the given reviewer ID" in {
+      rightResultOf(underTest.getReviewer(Some("non-existent-user-id")).value) shouldBe None
+    }
+
+    "return the reviewer if the reviewer exists for the given reviewer ID" in {
+      rightResultOf(underTest.getReviewer(Some(superUser.id)).value) shouldBe Some(superUser)
     }
   }
 
