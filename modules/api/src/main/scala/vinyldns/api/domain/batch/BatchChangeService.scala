@@ -37,6 +37,7 @@ import vinyldns.core.domain.membership.{Group, GroupRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.notifier.{AllNotifiers, Notification}
 
 object BatchChangeService {
   def apply(
@@ -44,7 +45,8 @@ object BatchChangeService {
       batchChangeValidations: BatchChangeValidationsAlgebra,
       batchChangeConverter: BatchChangeConverterAlgebra,
       manualReviewEnabled: Boolean,
-      authProvider: AuthPrincipalProvider): BatchChangeService =
+      authProvider: AuthPrincipalProvider,
+      notifiers: AllNotifiers): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
@@ -53,7 +55,8 @@ object BatchChangeService {
       dataAccessor.batchChangeRepository,
       batchChangeConverter,
       manualReviewEnabled,
-      authProvider
+      authProvider,
+      notifiers
     )
 }
 
@@ -65,7 +68,8 @@ class BatchChangeService(
     batchChangeRepo: BatchChangeRepository,
     batchChangeConverter: BatchChangeConverterAlgebra,
     manualReviewEnabled: Boolean,
-    authProvider: AuthPrincipalProvider)
+    authProvider: AuthPrincipalProvider,
+    notifiers: AllNotifiers)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -106,6 +110,7 @@ class BatchChangeService(
         batchChange,
         rejectBatchChangeInput.reviewComment,
         authPrincipal.signedInUser.id)
+      _ <- notifiers.notify(Notification(rejectedBatchChange)).toBatchResult
     } yield rejectedBatchChange
 
   def approveBatchChange(
