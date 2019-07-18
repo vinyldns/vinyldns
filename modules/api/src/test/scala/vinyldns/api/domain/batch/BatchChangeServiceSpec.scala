@@ -21,6 +21,7 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import org.joda.time.DateTime
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
 import vinyldns.api._
@@ -42,15 +43,23 @@ import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
 import vinyldns.core.domain.zone.Zone
+import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+
+import scala.concurrent.ExecutionContext
 
 class BatchChangeServiceSpec
     extends WordSpec
     with Matchers
+    with MockitoSugar
     with CatsHelpers
     with BeforeAndAfterEach
     with EitherMatchers
     with EitherValues
     with ValidatedMatchers {
+
+  implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   private val nonFatalError = ZoneDiscoveryError("test", fatal = false)
 
@@ -119,6 +128,8 @@ class BatchChangeServiceSpec
     None)
 
   private val batchChangeRepo = new InMemoryBatchChangeRepository
+  private val mockNotifier = mock[Notifier]
+  private val mockNotifiers = AllNotifiers(List(mockNotifier))
 
   object EmptyBatchConverter extends BatchChangeConverterAlgebra {
     def sendBatchForProcessing(
@@ -252,7 +263,8 @@ class BatchChangeServiceSpec
     batchChangeRepo,
     EmptyBatchConverter,
     false,
-    TestAuth)
+    TestAuth,
+    mockNotifiers)
 
   private val underTestManualEnabled = new BatchChangeService(
     TestZoneRepo,
@@ -262,7 +274,8 @@ class BatchChangeServiceSpec
     batchChangeRepo,
     EmptyBatchConverter,
     true,
-    TestAuth)
+    TestAuth,
+    mockNotifiers)
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -347,6 +360,8 @@ class BatchChangeServiceSpec
           approvalStatus = BatchChangeApprovalStatus.PendingApproval)
       batchChangeRepo.save(batchChange)
 
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
       val result =
         rightResultOf(
           underTest
@@ -362,6 +377,9 @@ class BatchChangeServiceSpec
       result.reviewComment shouldBe Some("review comment")
       result.reviewerId shouldBe Some(supportUserAuth.userId)
       result.reviewTimestamp should not be None
+
+      // Verify that notification is sent
+      verify(mockNotifier).notify(any[Notification[BatchChange]])
     }
 
     "fail if the batchChange is not PendingApproval" in {
@@ -722,7 +740,8 @@ class BatchChangeServiceSpec
         batchChangeRepo,
         EmptyBatchConverter,
         false,
-        TestAuth)
+        TestAuth,
+        mockNotifiers)
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val possibleZones = List(
@@ -757,7 +776,8 @@ class BatchChangeServiceSpec
         batchChangeRepo,
         EmptyBatchConverter,
         false,
-        TestAuth)
+        TestAuth,
+        mockNotifiers)
 
       val ip1 = "::1"
       val possibleZones1 = (5 to 16).map(num0s => ("0." * num0s) + "ip6.arpa.")
