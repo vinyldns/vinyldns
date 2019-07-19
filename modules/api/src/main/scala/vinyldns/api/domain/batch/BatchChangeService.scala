@@ -460,8 +460,7 @@ class BatchChangeService(
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
-      approvalStatus: Option[BatchChangeApprovalStatus] = None)
-    : BatchResult[BatchChangeSummaryList] = {
+      approvalStatus: Option[BatchChangeApprovalStatus] = None): BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
     for {
       listResults <- batchChangeRepo
