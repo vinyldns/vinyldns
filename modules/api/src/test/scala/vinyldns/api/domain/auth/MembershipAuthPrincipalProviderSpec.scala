@@ -88,5 +88,27 @@ class MembershipAuthPrincipalProviderSpec
         authPrincipal.memberGroupIds shouldBe Seq()
       }
     }
+    "return the AuthPrincipal when given a userId" in {
+      val mockUserRepo = mock[UserRepository]
+      val mockMembershipRepo = mock[MembershipRepository]
+      val underTest = new MembershipAuthPrincipalProvider(mockUserRepo, mockMembershipRepo)
+
+      val user = okUser
+      val userId = user.id
+
+      doReturn(IO.pure(Option(okUser)))
+        .when(mockUserRepo)
+        .getUser(any[String])
+
+      doReturn(IO.pure(Set(okGroup.id, dummyGroup.id)))
+        .when(mockMembershipRepo)
+        .getGroupsForUser(any[String])
+
+      val result = underTest.getAuthPrincipalByUserId(userId).unsafeRunSync()
+      result.map { authPrincipal =>
+        authPrincipal.signedInUser shouldBe okUser
+        authPrincipal.memberGroupIds should contain theSameElementsAs Seq(okGroup.id, dummyGroup.id)
+      }
+    }
   }
 }
