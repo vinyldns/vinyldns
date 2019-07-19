@@ -238,7 +238,10 @@ class BatchChangeServiceSpec
     def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]] = IO.pure(None)
 
     def getAuthPrincipalByUserId(userId: String): IO[Option[AuthPrincipal]] =
-      IO.pure(Some(okAuth))
+      userId match {
+        case okAuth.userId => IO.pure(Some(okAuth))
+        case _ => IO.pure(None)
+      }
   }
 
   private val underTest = new BatchChangeService(
@@ -493,6 +496,26 @@ class BatchChangeServiceSpec
           underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value)
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
+
+    "fail if the requesting user cannot be found" in {
+      val batchChange =
+        BatchChange(
+          "someOtherUserId",
+          "someUn",
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(
+          underTest
+            .approveBatchChange(batchChange.id, superUserAuth, ApproveBatchChangeInput())
+            .value)
+
+      result shouldBe BatchRequesterNotFound("someOtherUserId")
     }
   }
 

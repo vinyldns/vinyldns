@@ -17,10 +17,11 @@
 package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
+import org.joda.time.DateTime
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSConfig
-import vinyldns.core.domain.ZoneDiscoveryError
-import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteChange}
+import vinyldns.core.domain.{DomainValidationErrorType, SingleChangeError, ZoneDiscoveryError}
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData}
 
@@ -86,6 +87,61 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       asDelete.systemMessage shouldBe None
       asDelete.recordChangeId shouldBe None
       asDelete.recordSetId shouldBe None
+    }
+  }
+  "apply from SingleChange" should {
+    "properly convert changes to adds and deletes" in {
+      val singleAddChange = SingleAddChange(
+        Some("testZoneId"),
+        Some("testZoneName"),
+        Some("testRname"),
+        "testRname.testZoneName.",
+        A,
+        1234,
+        AData("1.2.3.4"),
+        SingleChangeStatus.NeedsReview,
+        Some("msg"),
+        None,
+        None,
+        List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err"))
+      )
+
+      val expectedAddChange =
+        AddChangeInput("testRname.testZoneName.", A, Some(1234), AData("1.2.3.4"))
+
+      val singleDelChange = SingleDeleteChange(
+        Some("testZoneId"),
+        Some("testZoneName"),
+        Some("testRname"),
+        "testRname.testZoneName.",
+        A,
+        SingleChangeStatus.NeedsReview,
+        Some("msg"),
+        None,
+        None,
+        List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "test err"))
+      )
+
+      val expectedDelChange =
+        DeleteChangeInput("testRname.testZoneName.", A)
+
+      val change = BatchChange(
+        "userId",
+        "userName",
+        Some("comments"),
+        DateTime.now(),
+        List(singleAddChange, singleDelChange),
+        Some("owner"),
+        BatchChangeApprovalStatus.PendingApproval
+      )
+
+      val expectedInput =
+        BatchChangeInput(
+          Some("comments"),
+          List(expectedAddChange, expectedDelChange),
+          Some("owner"))
+
+      BatchChangeInput(change) shouldBe expectedInput
     }
   }
 }
