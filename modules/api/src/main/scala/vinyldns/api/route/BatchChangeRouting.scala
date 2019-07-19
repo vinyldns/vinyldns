@@ -87,8 +87,11 @@ trait BatchChangeRoute extends Directives {
       (post & path("zones" / "batchrecordchanges" / Segment / "reject")) { id =>
         monitor("Endpoint.rejectBatchChange") {
           entity(as[Option[RejectBatchChangeInput]]) { input =>
-            execute(batchChangeService.rejectBatchChange(id, authPrincipal, input)) { chg =>
-              complete(StatusCodes.OK, chg)
+            execute(
+              batchChangeService
+                .rejectBatchChange(id, authPrincipal, input.getOrElse(RejectBatchChangeInput()))) {
+              chg =>
+                complete(StatusCodes.OK, chg)
             }
           // TODO: Update response entity to return modified batch change
           }
@@ -97,7 +100,12 @@ trait BatchChangeRoute extends Directives {
         (post & path("zones" / "batchrecordchanges" / Segment / "approve")) { id =>
           monitor("Endpoint.approveBatchChange") {
             entity(as[Option[ApproveBatchChangeInput]]) { input =>
-              execute(batchChangeService.approveBatchChange(id, authPrincipal, input)) { chg =>
+              execute(
+                batchChangeService
+                  .approveBatchChange(
+                    id,
+                    authPrincipal,
+                    input.getOrElse(ApproveBatchChangeInput()))) { chg =>
                 complete(StatusCodes.OK, chg)
               }
             // TODO: Update response entity to return modified batch change

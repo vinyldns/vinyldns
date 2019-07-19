@@ -347,7 +347,7 @@ class BatchChangeRoutingSpec
     def rejectBatchChange(
         batchChangeId: String,
         authPrincipal: AuthPrincipal,
-        rejectionComment: Option[RejectBatchChangeInput])
+        rejectionComment: RejectBatchChangeInput)
       : EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       (batchChangeId, authPrincipal.isSystemAdmin) match {
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
@@ -359,7 +359,7 @@ class BatchChangeRoutingSpec
     def approveBatchChange(
         batchChangeId: String,
         authPrincipal: AuthPrincipal,
-        rejectionComment: Option[ApproveBatchChangeInput])
+        rejectionComment: ApproveBatchChangeInput)
       : EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       (batchChangeId, authPrincipal.isSystemAdmin) match {
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
@@ -651,7 +651,7 @@ class BatchChangeRoutingSpec
       }
     }
 
-    "return OK no request entity is provided" in {
+    "return OK if no request entity is provided" in {
       Post("/zones/batchrecordchanges/pendingBatchId/reject") ~> batchChangeRoute(supportUserAuth) ~> check {
         status shouldBe OK
       }
@@ -702,7 +702,7 @@ class BatchChangeRoutingSpec
       }
     }
 
-    "return OK no request entity is provided" in {
+    "return OK if no request entity is provided" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve") ~> batchChangeRoute(supportUserAuth) ~> check {
         status shouldBe OK
       }

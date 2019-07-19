@@ -340,7 +340,7 @@ class BatchChangeServiceSpec
             .rejectBatchChange(
               batchChange.id,
               supportUserAuth,
-              Some(RejectBatchChangeInput(Some("review comment"))))
+              RejectBatchChangeInput(Some("review comment")))
             .value)
 
       result.status shouldBe BatchChangeStatus.Failed
@@ -363,7 +363,10 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(underTest.rejectBatchChange(batchChange.id, supportUserAuth, None).value)
+        leftResultOf(
+          underTest
+            .rejectBatchChange(batchChange.id, supportUserAuth, RejectBatchChangeInput())
+            .value)
 
       result shouldBe BatchChangeNotPendingApproval(batchChange.id)
     }
@@ -380,7 +383,8 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(underTest.rejectBatchChange(batchChange.id, auth, None).value)
+        leftResultOf(
+          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value)
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -397,7 +401,8 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(underTest.rejectBatchChange(batchChange.id, auth, None).value)
+        leftResultOf(
+          underTest.rejectBatchChange(batchChange.id, auth, RejectBatchChangeInput()).value)
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -416,7 +421,10 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        rightResultOf(underTest.approveBatchChange(batchChange.id, supportUserAuth, None).value)
+        rightResultOf(
+          underTest
+            .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
+            .value)
 
       result shouldBe batchChange
     }
@@ -433,7 +441,10 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(underTest.approveBatchChange(batchChange.id, supportUserAuth, None).value)
+        leftResultOf(
+          underTest
+            .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
+            .value)
 
       result shouldBe BatchChangeNotPendingApproval(batchChange.id)
     }
@@ -450,7 +461,8 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(underTest.approveBatchChange(batchChange.id, auth, None).value)
+        leftResultOf(
+          underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value)
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
@@ -467,7 +479,8 @@ class BatchChangeServiceSpec
       batchChangeRepo.save(batchChange)
 
       val result =
-        leftResultOf(underTest.approveBatchChange(batchChange.id, auth, None).value)
+        leftResultOf(
+          underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value)
 
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
