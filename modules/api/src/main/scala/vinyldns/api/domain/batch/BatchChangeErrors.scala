@@ -49,3 +49,7 @@ final case class BatchChangeNotPendingApproval(id: String) extends BatchChangeEr
   def message: String =
     s"""Batch change $id is not pending approval, so it cannot be rejected."""
 }
+
+final case class BatchRequesterNotFound(userId: String) extends BatchChangeErrorResponse {
+  def message: String = s"The requesting user $userId cannot be found in VinylDNS"
+}

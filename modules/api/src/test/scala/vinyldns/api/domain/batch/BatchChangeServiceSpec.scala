@@ -24,6 +24,7 @@ import org.joda.time.DateTime
 import org.scalatest.{BeforeAndAfterEach, EitherValues, Matchers, WordSpec}
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
 import vinyldns.api._
+import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, _}
@@ -233,6 +234,13 @@ class BatchChangeServiceSpec
       IO.pure(dbZones.filter(z => zoneNames.exists(z.name.endsWith)))
   }
 
+  object TestAuth extends AuthPrincipalProvider {
+    def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]] = IO.pure(None)
+
+    def getAuthPrincipalByUserId(userId: String): IO[Option[AuthPrincipal]] =
+      IO.pure(Some(okAuth))
+  }
+
   private val underTest = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
@@ -240,7 +248,8 @@ class BatchChangeServiceSpec
     validations,
     batchChangeRepo,
     EmptyBatchConverter,
-    false)
+    false,
+    TestAuth)
 
   private val underTestManualEnabled = new BatchChangeService(
     TestZoneRepo,
@@ -249,7 +258,8 @@ class BatchChangeServiceSpec
     validations,
     batchChangeRepo,
     EmptyBatchConverter,
-    true)
+    true,
+    TestAuth)
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -688,7 +698,8 @@ class BatchChangeServiceSpec
         validations,
         batchChangeRepo,
         EmptyBatchConverter,
-        false)
+        false,
+        TestAuth)
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val possibleZones = List(
@@ -722,7 +733,8 @@ class BatchChangeServiceSpec
         validations,
         batchChangeRepo,
         EmptyBatchConverter,
-        false)
+        false,
+        TestAuth)
 
       val ip1 = "::1"
       val possibleZones1 = (5 to 16).map(num0s => ("0." * num0s) + "ip6.arpa.")

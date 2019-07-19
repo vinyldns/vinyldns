@@ -58,7 +58,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         (js \ "comments").optional[String],
         changeList,
         (js \ "ownerGroupId").optional[String]
-      ).mapN(BatchChangeInput)
+      ).mapN(BatchChangeInput(_, _, _))
     }
   }
 
