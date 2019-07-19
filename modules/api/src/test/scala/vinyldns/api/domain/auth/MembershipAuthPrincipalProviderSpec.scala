@@ -110,5 +110,20 @@ class MembershipAuthPrincipalProviderSpec
         authPrincipal.memberGroupIds should contain theSameElementsAs Seq(okGroup.id, dummyGroup.id)
       }
     }
+    "return None if the userID does not exist" in {
+      val mockUserRepo = mock[UserRepository]
+      val mockMembershipRepo = mock[MembershipRepository]
+      val underTest = new MembershipAuthPrincipalProvider(mockUserRepo, mockMembershipRepo)
+
+      val user = okUser
+      val userId = user.id
+
+      doReturn(IO.pure(None))
+        .when(mockUserRepo)
+        .getUser(any[String])
+
+      val result = underTest.getAuthPrincipalByUserId(userId).unsafeRunSync()
+      result shouldBe None
+    }
   }
 }
