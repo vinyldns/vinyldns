@@ -69,7 +69,8 @@ class BatchChangeService(
   val logger: Logger = LoggerFactory.getLogger(classOf[BatchChangeService])
   def applyBatchChange(
       batchChangeInput: BatchChangeInput,
-      auth: AuthPrincipal): BatchResult[BatchChange] =
+      auth: AuthPrincipal,
+      allowManualReview: Boolean): BatchResult[BatchChange] =
     for {
       existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
       _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth)
@@ -83,7 +84,11 @@ class BatchChangeService(
         recordSets,
         auth,
         batchChangeInput.ownerGroupId)
-      changeForConversion <- buildResponse(batchChangeInput, validatedSingleChanges, auth).toBatchResult
+      changeForConversion <- buildResponse(
+        batchChangeInput,
+        validatedSingleChanges,
+        auth,
+        allowManualReview).toBatchResult
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         zoneMap,
@@ -294,7 +299,8 @@ class BatchChangeService(
   def buildResponse(
       batchChangeInput: BatchChangeInput,
       transformed: ValidatedBatch[ChangeForValidation],
-      auth: AuthPrincipal): Either[BatchChangeErrorResponse, BatchChange] = {
+      auth: AuthPrincipal,
+      allowManualReview: Boolean): Either[BatchChangeErrorResponse, BatchChange] = {
 
     val allErrors = transformed
       .collect {
@@ -315,7 +321,7 @@ class BatchChangeService(
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved
       ).asRight
-    } else if (manualReviewEnabled && allNonFatal && batchChangeInput.allowManualReview) {
+    } else if (manualReviewEnabled && allNonFatal && allowManualReview) {
       // only soft failures, can go to pending state
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>

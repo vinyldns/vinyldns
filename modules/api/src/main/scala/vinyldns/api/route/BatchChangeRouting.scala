@@ -35,10 +35,15 @@ trait BatchChangeRoute extends Directives {
 
   val batchChangeRoute: AuthPrincipal => server.Route = { authPrincipal: AuthPrincipal =>
     val standardBatchChangeRoutes = (post & path("zones" / "batchrecordchanges")) {
-      monitor("Endpoint.postBatchChange") {
-        entity(as[BatchChangeInput]) { batchChangeInput =>
-          execute(batchChangeService.applyBatchChange(batchChangeInput, authPrincipal)) { chg =>
-            complete(StatusCodes.Accepted, chg)
+      parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
+        {
+          monitor("Endpoint.postBatchChange") {
+            entity(as[BatchChangeInput]) { batchChangeInput =>
+              execute(batchChangeService
+                .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
+                complete(StatusCodes.Accepted, chg)
+              }
+            }
           }
         }
       }

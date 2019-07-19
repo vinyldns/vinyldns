@@ -255,14 +255,14 @@ class BatchChangeServiceSpec
     "succeed if all inputs are good" in {
       val input = BatchChangeInput(None, List(apexAddA, nonApexAddA))
 
-      val result = rightResultOf(underTest.applyBatchChange(input, auth).value)
+      val result = rightResultOf(underTest.applyBatchChange(input, auth, true).value)
 
       result.changes.length shouldBe 2
     }
 
     "fail if conversion cannot process" in {
       val input = BatchChangeInput(Some("conversionError"), List(apexAddA, nonApexAddA))
-      val result = leftResultOf(underTest.applyBatchChange(input, auth).value)
+      val result = leftResultOf(underTest.applyBatchChange(input, auth, true).value)
 
       result shouldBe an[BatchConversionError]
     }
@@ -270,7 +270,7 @@ class BatchChangeServiceSpec
     "fail with GroupDoesNotExist if owner group ID is provided for a non-existent group" in {
       val ownerGroupId = "non-existent-group-id"
       val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
-      val result = leftResultOf(underTest.applyBatchChange(input, auth).value)
+      val result = leftResultOf(underTest.applyBatchChange(input, auth, true).value)
 
       result shouldBe InvalidBatchChangeInput(List(GroupDoesNotExist(ownerGroupId)))
     }
@@ -278,7 +278,7 @@ class BatchChangeServiceSpec
     "fail with UserDoesNotBelongToOwnerGroup if normal user does not belong to group specified by owner group ID" in {
       val ownerGroupId = "user-is-not-member"
       val input = BatchChangeInput(None, List(apexAddA), Some(ownerGroupId))
-      val result = leftResultOf(underTest.applyBatchChange(input, notAuth).value)
+      val result = leftResultOf(underTest.applyBatchChange(input, notAuth, true).value)
 
       result shouldBe
         InvalidBatchChangeInput(
@@ -287,7 +287,7 @@ class BatchChangeServiceSpec
 
     "succeed if owner group ID is provided and user is a member of the group" in {
       val input = BatchChangeInput(None, List(apexAddA), Some(okGroup.id))
-      val result = rightResultOf(underTest.applyBatchChange(input, okAuth).value)
+      val result = rightResultOf(underTest.applyBatchChange(input, okAuth, true).value)
 
       result.changes.length shouldBe 1
     }
@@ -298,7 +298,7 @@ class BatchChangeServiceSpec
       val result =
         rightResultOf(
           underTest
-            .applyBatchChange(input, AuthPrincipal(superUser, Seq(baseZone.adminGroupId)))
+            .applyBatchChange(input, AuthPrincipal(superUser, Seq(baseZone.adminGroupId)), true)
             .value)
 
       result.changes.length shouldBe 1
@@ -313,7 +313,7 @@ class BatchChangeServiceSpec
         AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
 
       val input = BatchChangeInput(None, List(noTtl, withTtl, noTtlDel, noTtlUpdate))
-      val result = rightResultOf(underTest.applyBatchChange(input, auth).value)
+      val result = rightResultOf(underTest.applyBatchChange(input, auth, true).value)
 
       result.changes.length shouldBe 4
       result.changes(0).asInstanceOf[SingleAddChange].ttl shouldBe VinylDNSConfig.defaultTtl
@@ -945,7 +945,8 @@ class BatchChangeServiceSpec
             AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA).validNel,
             AddChangeForValidation(baseZone, "cname", cnameAdd).validNel
           ),
-          okAuth
+          okAuth,
+          true
         )
         .toOption
         .get
@@ -1007,7 +1008,8 @@ class BatchChangeServiceSpec
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
-          okAuth
+          okAuth,
+          true
         )
         .toOption
         .get
@@ -1067,7 +1069,8 @@ class BatchChangeServiceSpec
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
-          okAuth
+          okAuth,
+          true
         )
         .left
         .value
@@ -1079,16 +1082,14 @@ class BatchChangeServiceSpec
       val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTestManualEnabled
         .buildResponse(
-          BatchChangeInput(
-            None,
-            List(apexAddA, onlyBaseAddAAAA, delete),
-            allowManualReview = false),
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
-          okAuth
+          okAuth,
+          false
         )
         .left
         .value
@@ -1103,7 +1104,8 @@ class BatchChangeServiceSpec
             ZoneDiscoveryError("no.zone.match.").invalidNel,
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel,
             nonFatalError.invalidNel),
-          okAuth
+          okAuth,
+          true
         )
         .left
         .value
