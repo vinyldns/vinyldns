@@ -23,6 +23,7 @@ import vinyldns.core.route.Monitored
 
 trait AuthPrincipalProvider extends Monitored {
   def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]]
+  def getAuthPrincipalByUserId(userId: String): IO[Option[AuthPrincipal]]
 }
 
 class MembershipAuthPrincipalProvider(
@@ -39,9 +40,23 @@ class MembershipAuthPrincipalProvider(
         }
     }
 
+  def getAuthPrincipalByUserId(userId: String): IO[Option[AuthPrincipal]] =
+    getUserById(userId).flatMap {
+      case None => IO.pure(None)
+      case Some(user) =>
+        getGroupsForUser(userId).map { memberships =>
+          Option(AuthPrincipal(user, memberships.toSeq))
+        }
+    }
+
   private def getUserByAccessKey(accessKey: String): IO[Option[User]] =
     monitor("user.getUserByAccessKey") {
       userRepo.getUserByAccessKey(accessKey)
+    }
+
+  private def getUserById(userId: String): IO[Option[User]] =
+    monitor("user.getUserById") {
+      userRepo.getUser(userId)
     }
 
   private def getGroupsForUser(userId: String): IO[Set[String]] =
