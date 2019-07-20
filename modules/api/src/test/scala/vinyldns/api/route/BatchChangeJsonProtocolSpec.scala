@@ -389,7 +389,8 @@ class BatchChangeJsonProtocolSpec
         ("changes" -> decompose(List(add, delete))) ~
         ("status" -> decompose(BatchChangeStatus.Pending)) ~
         ("id" -> "someId") ~
-        ("ownerGroupId" -> JNothing)
+        ("ownerGroupId" -> JNothing) ~
+        ("scheduledTime" -> JNothing)
     }
   }
 

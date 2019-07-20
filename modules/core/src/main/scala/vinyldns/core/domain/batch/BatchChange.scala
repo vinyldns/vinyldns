@@ -33,7 +33,9 @@ case class BatchChange(
     reviewerId: Option[String] = None,
     reviewComment: Option[String] = None,
     reviewTimestamp: Option[DateTime] = None,
-    id: String = UUID.randomUUID().toString) {
+    id: String = UUID.randomUUID().toString,
+    scheduledTime: Option[DateTime] = None
+) {
   val status: BatchChangeStatus = {
     val singleStatuses = changes.map(_.status)
     val hasPending = singleStatuses.contains(SingleChangeStatus.Pending)
@@ -92,7 +94,8 @@ case class BatchChangeInfo(
     ownerGroupId: Option[String],
     id: String,
     status: BatchChangeStatus,
-    ownerGroupName: Option[String]
+    ownerGroupName: Option[String],
+    scheduledTime: Option[DateTime]
 )
 
 object BatchChangeInfo {
@@ -107,7 +110,8 @@ object BatchChangeInfo {
       ownerGroupId,
       id,
       status,
-      ownerGroupName
+      ownerGroupName,
+      scheduledTime
     )
   }
 }

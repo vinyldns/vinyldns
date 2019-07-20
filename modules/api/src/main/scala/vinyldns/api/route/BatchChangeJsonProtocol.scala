@@ -21,6 +21,7 @@ import cats.data.Validated._
 import org.json4s.JsonDSL._
 import org.json4s._
 import cats.implicits._
+import org.joda.time.DateTime
 import vinyldns.core.domain.DomainValidationError
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
@@ -57,7 +58,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
       (
         (js \ "comments").optional[String],
         changeList,
-        (js \ "ownerGroupId").optional[String]
+        (js \ "ownerGroupId").optional[String],
+        (js \ "scheduledTime").optional[DateTime]
       ).mapN(BatchChangeInput(_, _, _))
     }
   }
@@ -151,7 +153,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("changes" -> Extraction.decompose(bc.changes)) ~
         ("status" -> bc.status.toString) ~
         ("id" -> bc.id) ~
-        ("ownerGroupId" -> bc.ownerGroupId)
+        ("ownerGroupId" -> bc.ownerGroupId) ~
+        ("scheduledTime" -> Extraction.decompose(bc.scheduledTime))
   }
 
   case object BatchChangeInfoSerializer extends ValidationSerializer[BatchChangeInfo] {

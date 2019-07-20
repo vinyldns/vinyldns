@@ -61,8 +61,8 @@ class BatchChangeRoutingSpec
         comments: Option[String] = None,
         ownerGroupId: Option[String] = None,
         auth: AuthPrincipal = okAuth,
-        approvalStatus: BatchChangeApprovalStatus = BatchChangeApprovalStatus.AutoApproved)
-      : BatchChange =
+        approvalStatus: BatchChangeApprovalStatus = BatchChangeApprovalStatus.AutoApproved,
+        scheduledTime: Option[DateTime] = None): BatchChange =
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
@@ -99,7 +99,8 @@ class BatchChangeRoutingSpec
         None,
         None,
         None,
-        "batchId"
+        "batchId",
+        scheduledTime
       )
 
     /* Builds BatchChange response */
@@ -158,6 +159,12 @@ class BatchChangeRoutingSpec
     val validResponseWithoutComments: BatchChange = createBatchChangeResponse()
     val validResponseWithOwnerGroupId: BatchChange =
       createBatchChangeResponse(ownerGroupId = Some("some-group-id"))
+
+    val testScheduledTime: DateTime = DateTime.now.secondOfDay().roundFloorCopy()
+    val validResponseWithCommentsAndScheduled = createBatchChangeResponse(
+      comments = Some("validResponseWithCommentsAndScheduled"),
+      scheduledTime = Some(testScheduledTime)
+    )
     val genericValidResponse: BatchChange = createBatchChangeResponse(
       Some("generic valid response"))
 
@@ -215,6 +222,9 @@ class BatchChangeRoutingSpec
         case Some("validChangeWithOwnerGroup") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
             IO.pure(Right(validResponseWithOwnerGroupId)))
+        case Some("validChangeWithCommentsAndScheduled") =>
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Right(validResponseWithCommentsAndScheduled)))
         case Some(_) =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))
       }
@@ -428,6 +438,27 @@ class BatchChangeRoutingSpec
 
         val change = responseAs[JValue]
         compact(change) shouldBe compact(Extraction.decompose(validResponseWithoutComments))
+      }
+    }
+
+    "return a 202 Accepted for valid add and delete request with scheduled time" in {
+      val validRequestWithScheduledTime: String =
+        compact(
+          render(
+            ("comments" -> "validChangeWithCommentsAndScheduled") ~~ ("scheduledTime" -> Extraction
+              .decompose(DateTime.now.secondOfDay().roundFloorCopy())) ~~ changeList
+          )
+        )
+
+      Post("/zones/batchrecordchanges").withEntity(
+        HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)) ~>
+        batchChangeRoute(okAuth) ~> check {
+
+        status shouldBe Accepted
+
+        val change = responseAs[JValue]
+        compact(change) shouldBe compact(
+          Extraction.decompose(validResponseWithCommentsAndScheduled))
       }
     }
 

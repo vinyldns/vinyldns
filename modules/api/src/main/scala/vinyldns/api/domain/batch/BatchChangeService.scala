@@ -333,7 +333,8 @@ class BatchChangeService(
         DateTime.now,
         changes,
         batchChangeInput.ownerGroupId,
-        BatchChangeApprovalStatus.AutoApproved
+        BatchChangeApprovalStatus.AutoApproved,
+        scheduledTime = batchChangeInput.scheduledTime
       ).asRight
     } else if (manualReviewEnabled && allNonFatal && allowManualReview) {
       // only soft failures, can go to pending state
@@ -351,7 +352,8 @@ class BatchChangeService(
         DateTime.now,
         changes,
         batchChangeInput.ownerGroupId,
-        BatchChangeApprovalStatus.PendingApproval
+        BatchChangeApprovalStatus.PendingApproval,
+        scheduledTime = batchChangeInput.scheduledTime
       ).asRight
     } else {
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
