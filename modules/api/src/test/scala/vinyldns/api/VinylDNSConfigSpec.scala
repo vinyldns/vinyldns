@@ -42,7 +42,8 @@ class VinylDNSConfigSpec extends WordSpec with Matchers {
         zone,
         batchChange,
         user,
-        recordSet)
+        recordSet,
+        task)
     }
     "assign the correct dynamodb repositories" in {
       val dynamodbConfig =
