@@ -366,6 +366,7 @@ class BatchChangeRoutingSpec
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
+        case ("notFoundUser", _) => EitherT(IO.pure(BatchRequesterNotFound("someid", "somename").asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
       }
   }
@@ -728,6 +729,15 @@ class BatchChangeRoutingSpec
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         batchChangeRoute(supportUserAuth) ~> check {
         status shouldBe BadRequest
+      }
+    }
+
+    "return NotFound if the requesting user cant be found" in {
+      Post("/zones/batchrecordchanges/notFoundUser/approve").withEntity(HttpEntity(
+        ContentTypes.`application/json`,
+        compact(render("comments" -> "some comments")))) ~>
+        batchChangeRoute(supportUserAuth) ~> check {
+        status shouldBe NotFound
       }
     }
   }

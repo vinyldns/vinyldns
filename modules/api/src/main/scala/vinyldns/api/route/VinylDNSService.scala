@@ -25,12 +25,11 @@ import akka.http.scaladsl.server.directives.LogEntry
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
-import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
+import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
-import vinyldns.core.domain.membership.{MembershipRepository, UserRepository}
 import vinyldns.core.health.HealthService
 
 import scala.util.matching.Regex
@@ -120,8 +119,7 @@ class VinylDNSService(
     val recordSetService: RecordSetServiceAlgebra,
     val batchChangeService: BatchChangeServiceAlgebra,
     val collectorRegistry: CollectorRegistry,
-    userRepository: UserRepository,
-    membershipRepository: MembershipRepository)
+    authPrincipalProvider: AuthPrincipalProvider)
     extends VinylDNSDirectives
     with PingRoute
     with ZoneRoute
@@ -136,8 +134,6 @@ class VinylDNSService(
     with JsonValidationRejection {
 
   val aws4Authenticator = new Aws4Authenticator
-  val authPrincipalProvider =
-    new MembershipAuthPrincipalProvider(userRepository, membershipRepository)
   val vinylDNSAuthenticator: VinylDNSAuthenticator =
     new ProductionVinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
 

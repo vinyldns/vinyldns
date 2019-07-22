@@ -23,6 +23,7 @@ import cats.implicits._
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.domain.DomainValidations._
+import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.dns.DnsConversions._
@@ -42,7 +43,8 @@ object BatchChangeService {
       dataAccessor: ApiDataAccessor,
       batchChangeValidations: BatchChangeValidationsAlgebra,
       batchChangeConverter: BatchChangeConverterAlgebra,
-      manualReviewEnabled: Boolean): BatchChangeService =
+      manualReviewEnabled: Boolean,
+      authProvider: AuthPrincipalProvider): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
@@ -50,7 +52,8 @@ object BatchChangeService {
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
       batchChangeConverter,
-      manualReviewEnabled
+      manualReviewEnabled,
+      authProvider
     )
 }
 
@@ -61,7 +64,8 @@ class BatchChangeService(
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
     batchChangeConverter: BatchChangeConverterAlgebra,
-    manualReviewEnabled: Boolean)
+    manualReviewEnabled: Boolean,
+    authProvider: AuthPrincipalProvider)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -116,6 +120,11 @@ class BatchChangeService(
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
+      _ = BatchChangeInput(batchChange)
+      _ <- EitherT.fromOptionF[IO, BatchChangeErrorResponse, AuthPrincipal](
+        authProvider.getAuthPrincipalByUserId(batchChange.userId),
+        BatchRequesterNotFound(batchChange.userId, batchChange.userName)
+      )
     } yield batchChange
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =

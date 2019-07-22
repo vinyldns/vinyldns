@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory
 import vinyldns.api.backend.CommandHandler
 import vinyldns.api.crypto.Crypto
 import vinyldns.api.domain.AccessValidations
+import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
@@ -128,11 +129,16 @@ object Boot extends App {
           loaderResponse.healthChecks)
       val batchChangeConverter =
         new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
+      val authPrincipalProvider =
+        new MembershipAuthPrincipalProvider(
+          repositories.userRepository,
+          repositories.membershipRepository)
       val batchChangeService = BatchChangeService(
         repositories,
         batchChangeValidations,
         batchChangeConverter,
-        VinylDNSConfig.manualBatchReviewEnabled)
+        VinylDNSConfig.manualBatchReviewEnabled,
+        authPrincipalProvider)
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
         membershipService,
@@ -142,8 +148,7 @@ object Boot extends App {
         recordSetService,
         batchChangeService,
         collectorRegistry,
-        repositories.userRepository,
-        repositories.membershipRepository
+        authPrincipalProvider
       )
 
       DefaultExports.initialize()
