@@ -60,7 +60,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         changeList,
         (js \ "ownerGroupId").optional[String],
         (js \ "scheduledTime").optional[DateTime]
-      ).mapN(BatchChangeInput(_, _, _))
+      ).mapN(BatchChangeInput(_, _, _, _))
     }
   }
 
