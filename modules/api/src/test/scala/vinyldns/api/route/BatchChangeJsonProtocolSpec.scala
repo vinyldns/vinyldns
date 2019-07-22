@@ -306,6 +306,7 @@ class BatchChangeJsonProtocolSpec
         ("systemMessage" -> "systemMessage") ~
         ("recordChangeId" -> decompose(None)) ~
         ("recordSetId" -> decompose(None)) ~
+        ("validationErrors" -> decompose(List())) ~
         ("id" -> "id") ~
         ("changeType" -> "Add")
     }
@@ -335,6 +336,7 @@ class BatchChangeJsonProtocolSpec
         ("systemMessage" -> "systemMessage") ~
         ("recordChangeId" -> decompose(None)) ~
         ("recordSetId" -> decompose(None)) ~
+        ("validationErrors" -> decompose(List())) ~
         ("id" -> "id") ~
         ("changeType" -> "DeleteRecordSet")
     }
