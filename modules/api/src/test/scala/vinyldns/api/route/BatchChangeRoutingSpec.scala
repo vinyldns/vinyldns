@@ -464,7 +464,7 @@ class BatchChangeRoutingSpec()
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
 
         status shouldBe Accepted
 
