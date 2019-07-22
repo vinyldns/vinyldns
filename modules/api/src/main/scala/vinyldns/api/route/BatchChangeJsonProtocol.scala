@@ -125,6 +125,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("systemMessage" -> sac.systemMessage) ~
         ("recordChangeId" -> sac.recordChangeId) ~
         ("recordSetId" -> sac.recordSetId) ~
+        ("validationErrors" -> Extraction.decompose(sac.validationErrors)) ~
         ("id" -> sac.id)
   }
 
@@ -141,6 +142,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("systemMessage" -> sac.systemMessage) ~
         ("recordChangeId" -> sac.recordChangeId) ~
         ("recordSetId" -> sac.recordSetId) ~
+        ("validationErrors" -> Extraction.decompose(sac.validationErrors)) ~
         ("id" -> sac.id)
   }
 
