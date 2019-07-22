@@ -30,7 +30,7 @@ case class ZoneRejected(zone: Zone, errors: List[String])
 
 class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: VinylDNSAuthenticator)
     extends VinylDNSJsonProtocol
-    with VinylDNSDirectives {
+    with VinylDNSDirectives[Throwable] {
 
   def getRoutes: Route = zoneRoute
 
@@ -40,7 +40,7 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
   // Timeout must be long enough to allow the cluster to form
   implicit val zoneCmdTimeout: Timeout = Timeout(10.seconds)
 
-  def handleErrors[Throwable](errors: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors(errors: Throwable): PartialFunction[Throwable, Route] = {
     case ZoneAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)
     case ConnectionFailed(_, msg) => complete(StatusCodes.BadRequest, msg)
     case ZoneValidationFailed(zone, errorList, _) =>
@@ -58,7 +58,7 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
 
   val zoneRoute: Route = path("zones") {
     (post & monitor("Endpoint.createZone")) {
-      authenticateAndExecuteWithEntity[ZoneCommandResult, CreateZoneInput, Throwable](
+      authenticateAndExecuteWithEntity[ZoneCommandResult, CreateZoneInput](
         (authPrincipal, createZoneInput) =>
           zoneService.connectToZone(encrypt(createZoneInput), authPrincipal)) { chg =>
         complete(StatusCodes.Accepted, chg)
@@ -109,7 +109,7 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
         }
       } ~
         (put & monitor("Endpoint.updateZone")) {
-          authenticateAndExecuteWithEntity[ZoneCommandResult, UpdateZoneInput, Throwable](
+          authenticateAndExecuteWithEntity[ZoneCommandResult, UpdateZoneInput](
             (authPrincipal, updateZoneInput) =>
               zoneService.updateZone(encrypt(updateZoneInput), authPrincipal)) { chg =>
             complete(StatusCodes.Accepted, chg)
@@ -147,14 +147,14 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
     } ~
     path("zones" / Segment / "acl" / "rules") { id =>
       (put & monitor("Endpoint.addZoneACLRule")) {
-        authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo, Throwable](
-          (authPrincipal, rule) => zoneService.addACLRule(id, rule, authPrincipal)) { chg =>
+        authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo]((authPrincipal, rule) =>
+          zoneService.addACLRule(id, rule, authPrincipal)) { chg =>
           complete(StatusCodes.Accepted, chg)
         }
       } ~
         (delete & monitor("Endpoint.deleteZoneACLRule")) {
-          authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo, Throwable](
-            (authPrincipal, rule) => zoneService.deleteACLRule(id, rule, authPrincipal)) { chg =>
+          authenticateAndExecuteWithEntity[ZoneCommandResult, ACLRuleInfo]((authPrincipal, rule) =>
+            zoneService.deleteACLRule(id, rule, authPrincipal)) { chg =>
             complete(StatusCodes.Accepted, chg)
           }
         }

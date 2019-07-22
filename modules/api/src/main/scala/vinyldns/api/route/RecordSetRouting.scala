@@ -39,7 +39,7 @@ class RecordSetRoute(
     recordSetService: RecordSetServiceAlgebra,
     val vinylDNSAuthenticator: VinylDNSAuthenticator)
     extends VinylDNSJsonProtocol
-    with VinylDNSDirectives {
+    with VinylDNSDirectives[Throwable] {
 
   def getRoutes: Route = recordSetRoute
 
@@ -48,7 +48,7 @@ class RecordSetRoute(
   // Timeout must be long enough to allow the cluster to form
   implicit val rsCmdTimeout: Timeout = Timeout(10.seconds)
 
-  def handleErrors[Throwable](e: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
     case ZoneNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case RecordSetAlreadyExists(msg) => complete(StatusCodes.Conflict, msg)
     case ZoneInactiveError(msg) => complete(StatusCodes.BadRequest, msg)
@@ -61,12 +61,11 @@ class RecordSetRoute(
     case InvalidGroupError(msg) => complete(StatusCodes.UnprocessableEntity, msg)
   }
 
-  val recordSetRoute = path("zones" / Segment / "recordsets") { zoneId =>
+  val recordSetRoute: Route = path("zones" / Segment / "recordsets") { zoneId =>
     (post & monitor("Endpoint.addRecordSet")) {
-      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet, Throwable](
-        (authPrincipal, recordSet) => recordSetService.addRecordSet(recordSet, authPrincipal)) {
-        rc =>
-          complete(StatusCodes.Accepted, rc)
+      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet]((authPrincipal, recordSet) =>
+        recordSetService.addRecordSet(recordSet, authPrincipal)) { rc =>
+        complete(StatusCodes.Accepted, rc)
       }
     } ~
       (get & monitor("Endpoint.getRecordSets")) {
@@ -98,7 +97,7 @@ class RecordSetRoute(
           }
         } ~
         (put & monitor("Endpoint.updateRecordSet")) {
-          authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet, Throwable] {
+          authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
             (authPrincipal, recordSet) =>
               recordSet match {
                 case badRs if badRs.zoneId != zoneId =>

@@ -37,7 +37,7 @@ class VinylDNSDirectivesSpec
     with Matchers
     with MockitoSugar
     with OneInstancePerTest
-    with VinylDNSDirectives
+    with VinylDNSDirectives[Throwable]
     with Directives
     with VinylDNSJsonProtocol
     with BeforeAndAfterEach {
@@ -51,7 +51,7 @@ class VinylDNSDirectivesSpec
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator = mock[VinylDNSAuthenticator]
 
-  def handleErrors[Throwable](e: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
     case _ => complete(StatusCodes.InternalServerError)
   }
 

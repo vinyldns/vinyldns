@@ -27,13 +27,13 @@ class MembershipRoute(
     membershipService: MembershipServiceAlgebra,
     val vinylDNSAuthenticator: VinylDNSAuthenticator)
     extends VinylDNSJsonProtocol
-    with VinylDNSDirectives {
+    with VinylDNSDirectives[Throwable] {
   final private val DEFAULT_MAX_ITEMS: Int = 100
   final private val MAX_ITEMS_LIMIT: Int = 1000
 
   def getRoutes: Route = membershipRoute
 
-  def handleErrors[Throwable](e: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
     case GroupNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
     case GroupAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)
@@ -56,15 +56,14 @@ class MembershipRoute(
   } ~
     path("groups") {
       (post & monitor("Endpoint.createGroup")) {
-        authenticateAndExecuteWithEntity[Group, CreateGroupInput, Throwable] {
-          (authPrincipal, input) =>
-            val group = Group(
-              input.name,
-              input.email,
-              input.description,
-              memberIds = (input.members ++ input.admins).map(_.id),
-              adminUserIds = input.admins.map(_.id))
-            membershipService.createGroup(group, authPrincipal)
+        authenticateAndExecuteWithEntity[Group, CreateGroupInput] { (authPrincipal, input) =>
+          val group = Group(
+            input.name,
+            input.email,
+            input.description,
+            memberIds = (input.members ++ input.admins).map(_.id),
+            adminUserIds = input.admins.map(_.id))
+          membershipService.createGroup(group, authPrincipal)
         } { group =>
           complete(StatusCodes.OK, GroupInfo(group))
         }
@@ -93,7 +92,7 @@ class MembershipRoute(
     } ~
     path("groups" / Segment) { _ =>
       (put & monitor("Endpoint.updateGroup")) {
-        authenticateAndExecuteWithEntity[Group, UpdateGroupInput, Throwable](
+        authenticateAndExecuteWithEntity[Group, UpdateGroupInput](
           (authPrincipal, input) =>
             membershipService.updateGroup(
               input.id,

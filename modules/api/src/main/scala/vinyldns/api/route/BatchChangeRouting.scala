@@ -26,12 +26,11 @@ class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
     val vinylDNSAuthenticator: VinylDNSAuthenticator)
     extends VinylDNSJsonProtocol
-    with VinylDNSDirectives {
+    with VinylDNSDirectives[BatchChangeErrorResponse] {
 
   def getRoutes: Route = batchChangeRoute
 
-  def handleErrors[BatchChangeErrorResponse](
-      e: BatchChangeErrorResponse): PartialFunction[BatchChangeErrorResponse, Route] = {
+  def handleErrors(e: BatchChangeErrorResponse): PartialFunction[BatchChangeErrorResponse, Route] = {
     case ibci: InvalidBatchChangeInput => complete(StatusCodes.BadRequest, ibci)
     case crl: InvalidBatchChangeResponses => complete(StatusCodes.BadRequest, crl)
     case cnf: BatchChangeNotFound => complete(StatusCodes.NotFound, cnf.message)
@@ -49,7 +48,7 @@ class BatchChangeRoute(
     val standardBatchChangeRoutes = path("zones" / "batchrecordchanges") {
       (post & monitor("Endpoint.postBatchChange")) {
         parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
-          authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput, BatchChangeErrorResponse](
+          authenticateAndExecuteWithEntity[BatchChange, BatchChangeInput](
             (authPrincipal, batchChangeInput) =>
               batchChangeService
                 .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
@@ -101,12 +100,10 @@ class BatchChangeRoute(
     val manualBatchReviewRoutes =
       path("zones" / "batchrecordchanges" / Segment / "reject") { id =>
         (post & monitor("Endpoint.rejectBatchChange")) {
-          authenticateAndExecuteWithEntity[
-            BatchChange,
-            Option[RejectBatchChangeInput],
-            BatchChangeErrorResponse]((authPrincipal, input) =>
-            batchChangeService
-              .rejectBatchChange(id, authPrincipal, input.getOrElse(RejectBatchChangeInput()))) {
+          authenticateAndExecuteWithEntity[BatchChange, Option[RejectBatchChangeInput]](
+            (authPrincipal, input) =>
+              batchChangeService
+                .rejectBatchChange(id, authPrincipal, input.getOrElse(RejectBatchChangeInput()))) {
             chg =>
               complete(StatusCodes.OK, chg)
           }
@@ -115,10 +112,7 @@ class BatchChangeRoute(
       } ~
         path("zones" / "batchrecordchanges" / Segment / "approve") { id =>
           (post & monitor("Endpoint.approveBatchChange")) {
-            authenticateAndExecuteWithEntity[
-              BatchChange,
-              Option[ApproveBatchChangeInput],
-              BatchChangeErrorResponse](
+            authenticateAndExecuteWithEntity[BatchChange, Option[ApproveBatchChangeInput]](
               (authPrincipal, input) =>
                 batchChangeService
                   .approveBatchChange(

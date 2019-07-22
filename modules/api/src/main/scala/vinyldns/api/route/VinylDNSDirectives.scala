@@ -33,9 +33,11 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
 
-trait VinylDNSDirectives extends Directives {
+trait VinylDNSDirectives[E] extends Directives {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator
+
+  def getRoutes: Route
 
   def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
     extractStrictEntity(10.seconds).flatMap { strictEntity =>
@@ -131,7 +133,7 @@ trait VinylDNSDirectives extends Directives {
     * Helpers to handle route authentication flow for routing. Implementing classes/objects
     * must provide handleErrors implementation.
     */
-  def handleErrors[T](e: T): PartialFunction[T, Route]
+  def handleErrors(e: E): PartialFunction[E, Route]
 
   /**
     * Authenticate user and execute service call without request entity
@@ -140,11 +142,11 @@ trait VinylDNSDirectives extends Directives {
     * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
     * - Invoke service call, f, and return the response to the user.
     */
-  def authenticateAndExecute[A, E](f: AuthPrincipal => EitherT[IO, E, A])(g: A => Route): Route =
+  def authenticateAndExecute[A](f: AuthPrincipal => EitherT[IO, E, A])(g: A => Route): Route =
     authenticate { authPrincipal =>
       onSuccess(f(authPrincipal).value.unsafeToFuture()) {
         case Right(a) => g(a)
-        case Left(e) => handleErrors(e).applyOrElse(e, failWith[E])
+        case Left(e) => handleErrors(e).applyOrElse(e, failWith)
       }
     }
 
@@ -157,18 +159,18 @@ trait VinylDNSDirectives extends Directives {
     * return error to user.
     * - Invoke service call, f, and return the response to the user.
     */
-  def authenticateAndExecuteWithEntity[A, B, E](f: (AuthPrincipal, B) => EitherT[IO, E, A])(
+  def authenticateAndExecuteWithEntity[A, B](f: (AuthPrincipal, B) => EitherT[IO, E, A])(
       g: A => Route)(implicit um: FromRequestUnmarshaller[B]): Route =
     authenticate { authPrincipal =>
       entity(as[B]) { deserializedEntity =>
         onSuccess(f(authPrincipal, deserializedEntity).value.unsafeToFuture()) {
           case Right(a) => g(a)
-          case Left(e) => handleErrors(e).applyOrElse(e, failWith[E])
+          case Left(e) => handleErrors(e).applyOrElse(e, failWith)
         }
       }
     }
 
-  private def failWith[E](error: E): StandardRoute = error match {
+  private def failWith(error: E): StandardRoute = error match {
     case error: Throwable => StandardRoute(_.fail(error))
   }
 }
