@@ -118,7 +118,7 @@ class BatchChangeService(
       _ = BatchChangeInput(batchChange)
       _ <- EitherT.fromOptionF[IO, BatchChangeErrorResponse, AuthPrincipal](
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
-        BatchRequesterNotFound(batchChange.userId)
+        BatchRequesterNotFound(batchChange.userId, batchChange.userName)
       )
     } yield batchChange
 

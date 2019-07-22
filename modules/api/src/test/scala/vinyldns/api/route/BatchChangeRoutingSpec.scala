@@ -365,7 +365,7 @@ class BatchChangeRoutingSpec
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
-        case ("notFoundUser", _) => EitherT(IO.pure(BatchRequesterNotFound("someid").asLeft))
+        case ("notFoundUser", _) => EitherT(IO.pure(BatchRequesterNotFound("someid", "somename").asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
       }
   }

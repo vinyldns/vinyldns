@@ -515,7 +515,7 @@ class BatchChangeServiceSpec
             .approveBatchChange(batchChange.id, superUserAuth, ApproveBatchChangeInput())
             .value)
 
-      result shouldBe BatchRequesterNotFound("someOtherUserId")
+      result shouldBe BatchRequesterNotFound("someOtherUserId", "someUn")
     }
   }
 

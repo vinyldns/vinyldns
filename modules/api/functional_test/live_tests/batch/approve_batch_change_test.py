@@ -19,10 +19,10 @@ def test_approve_batch_change_with_comments_exceeding_max_length_fails(shared_zo
     """
 
     client = shared_zone_test_context.ok_vinyldns_client
-    reject_batch_change_input = {
+    approve_batch_change_input = {
         "reviewComment": "a"*1025
     }
-    errors = client.approve_batch_change("some-id", reject_batch_change_input, status=400)['errors']
+    errors = client.approve_batch_change("some-id", approve_batch_change_input, status=400)['errors']
     assert_that(errors, contains_inanyorder("Comment length must not exceed 1024 characters."))
 
 @pytest.mark.manual_batch_review
