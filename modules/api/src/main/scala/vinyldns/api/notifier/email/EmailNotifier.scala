@@ -91,7 +91,6 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
 
     // For manually reviewed e-mails, add additional info; e-mails are not sent for pending batch changes
     if (bc.approvalStatus != AutoApproved) {
-      bc.reviewerId.foreach(reviewerId => sb.append(s"<b>Reviewer:</b> $reviewerId <br/>"))
       bc.reviewComment.foreach(reviewComment =>
         sb.append(s"<b>Review comment:</b> $reviewComment <br/>"))
       bc.reviewTimestamp.foreach(reviewTimestamp =>
