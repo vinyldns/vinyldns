@@ -58,7 +58,8 @@ object VinylDateParser {
     format.dateFormat
       .parse(s)
       .map(_.getTime)
-      .getOrElse(throw new MappingException(s"Invalid date format $s"))
+      .getOrElse(throw new MappingException(
+        s"Invalid date format $s; provide the date format as YYYY-MM-DDTHH:MM:SSZ"))
 }
 case object VinylDateTimeSerializer
     extends CustomSerializer[DateTime](
@@ -95,7 +96,6 @@ trait JsonValidationSupport extends Json4sSupport {
     * we will get a StackOverflow
     *
     * @param ser The serializer to be removed from the formats
-    *
     * @return An adjusted Formats without the serializer passed in
     */
   private[route] def adjustedFormats(ser: Serializer[_]) =
@@ -162,7 +162,6 @@ trait JsonValidation extends JsonValidationSupport {
       * partial function does not match, then Json4s keeps trying other things
       *
       * @param format passed in by Json4s
-      *
       * @return A deserialized T
       */
     def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), A] = {
@@ -182,7 +181,6 @@ trait JsonValidation extends JsonValidationSupport {
       * Override this to define your own custom validations
       *
       * @param js A [[JValue]] to be validated and deserialized
-      *
       * @return A ValidatedNel[String, T] that will contain either the deserialized type T
       *         or a list of String that contain errors
       */
@@ -255,7 +253,6 @@ trait JsonValidation extends JsonValidationSupport {
       * Indicates that the value needs to be present
       *
       * @param msg The message to return if the value is not present
-      *
       * @return The type extracted from JSON, or a failure with the message specified if not present
       */
     def required[T: Manifest](msg: => String): ValidatedNel[String, T] =
@@ -273,7 +270,6 @@ trait JsonValidation extends JsonValidationSupport {
       * Sets a default value if the type could not be extracted from Json
       *
       * @param default The default value to set when the value is not present
-      *
       * @return The value that was parsed, or the default
       */
     def default[T: Manifest](default: => T): ValidatedNel[String, T] =
@@ -283,7 +279,6 @@ trait JsonValidation extends JsonValidationSupport {
       * Indicates that the value needs to be present
       *
       * @param msg The message to return if the value is not present
-      *
       * @return The type extracted from JSON, or a failure with the message specified if not present
       */
     def required[E <: Enumeration](enum: E, msg: => String): ValidatedNel[String, E#Value] =
@@ -302,7 +297,6 @@ trait JsonValidation extends JsonValidationSupport {
       * Sets a default value if the type could not be extracted from Json
       *
       * @param default The default value to set when the value is not present
-      *
       * @return The value that was parsed, or the default
       */
     def default[E <: Enumeration](enum: E, default: => E#Value): ValidatedNel[String, E#Value] =
