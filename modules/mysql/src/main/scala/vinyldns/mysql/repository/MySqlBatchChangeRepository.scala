@@ -16,6 +16,8 @@
 
 package vinyldns.mysql.repository
 
+import java.sql.Timestamp
+
 import cats.data._
 import cats.effect._
 import org.joda.time.DateTime
@@ -26,7 +28,6 @@ import vinyldns.core.domain.batch._
 import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
-import java.sql.Timestamp
 
 /**
   * MySqlBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
@@ -303,15 +304,15 @@ class MySqlBatchChangeRepository
         result.string("user_id"),
         result.string("user_name"),
         result.stringOpt("comments"),
-        new org.joda.time.DateTime(result.timestamp("created_time")),
+        toDateTime(result.timestamp("created_time")),
         Nil,
-        Option(result.string("owner_group_id")),
+        result.stringOpt("owner_group_id"),
         toApprovalStatus(result.intOpt("approval_status")),
         result.stringOpt("reviewer_id"),
         result.stringOpt("review_comment"),
-        toReviewTimestamp(result.timestampOpt("review_timestamp")),
+        result.timestampOpt("review_timestamp").map(toDateTime),
         batchChangeId.getOrElse(result.string("id")),
-        result.timestampOpt("scheduled_time").map(st => new DateTime(st))
+        result.timestampOpt("scheduled_time").map(toDateTime)
       )
   }
 
@@ -399,6 +400,5 @@ class MySqlBatchChangeRepository
       case _ => BatchChangeApprovalStatus.AutoApproved
     }
 
-  def toReviewTimestamp(result: Option[Timestamp]): Option[DateTime] =
-    result.map(new org.joda.time.DateTime(_))
+  def toDateTime(ts: Timestamp): DateTime = new DateTime(ts)
 }
