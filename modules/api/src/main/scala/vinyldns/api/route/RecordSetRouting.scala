@@ -48,7 +48,7 @@ class RecordSetRoute(
   // Timeout must be long enough to allow the cluster to form
   implicit val rsCmdTimeout: Timeout = Timeout(10.seconds)
 
-  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors[Throwable](e: Throwable): PartialFunction[Throwable, Route] = {
     case ZoneNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case RecordSetAlreadyExists(msg) => complete(StatusCodes.Conflict, msg)
     case ZoneInactiveError(msg) => complete(StatusCodes.BadRequest, msg)

@@ -30,7 +30,8 @@ class BatchChangeRoute(
 
   def getRoutes: Route = batchChangeRoute
 
-  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors[BatchChangeErrorResponse](
+      e: BatchChangeErrorResponse): PartialFunction[BatchChangeErrorResponse, Route] = {
     case ibci: InvalidBatchChangeInput => complete(StatusCodes.BadRequest, ibci)
     case crl: InvalidBatchChangeResponses => complete(StatusCodes.BadRequest, crl)
     case cnf: BatchChangeNotFound => complete(StatusCodes.NotFound, cnf.message)

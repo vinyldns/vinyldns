@@ -14,7 +14,6 @@ object CompilerOptions {
     "-Xlint:nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
     "-Xlint:nullary-unit",               // Warn when nullary methods return Unit.
     "-Xlint:private-shadow",             // A private field (or class parameter) shadows a superclass field
-    "-Xlint:type-parameter-shadow",      // A local type parameter shadows a type already in scope.
     "-Xlint:unsound-match",              // Pattern match may not be typesafe.
     "-Xfatal-warnings",                  // Enable failure of compilation when warnings exist.
     "-Ypartial-unification",             // Enable partial unification in type constructor inference

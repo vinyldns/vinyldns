@@ -33,7 +33,7 @@ class MembershipRoute(
 
   def getRoutes: Route = membershipRoute
 
-  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors[Throwable](e: Throwable): PartialFunction[Throwable, Route] = {
     case GroupNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
     case GroupAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)

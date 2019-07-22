@@ -40,7 +40,7 @@ class ZoneRoute(zoneService: ZoneServiceAlgebra, val vinylDNSAuthenticator: Viny
   // Timeout must be long enough to allow the cluster to form
   implicit val zoneCmdTimeout: Timeout = Timeout(10.seconds)
 
-  def handleErrors(errors: Throwable): PartialFunction[Throwable, Route] = {
+  def handleErrors[Throwable](errors: Throwable): PartialFunction[Throwable, Route] = {
     case ZoneAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)
     case ConnectionFailed(_, msg) => complete(StatusCodes.BadRequest, msg)
     case ZoneValidationFailed(zone, errorList, _) =>
