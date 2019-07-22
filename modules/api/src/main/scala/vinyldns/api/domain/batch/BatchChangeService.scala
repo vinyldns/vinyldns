@@ -33,7 +33,13 @@ import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalS
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 import vinyldns.core.domain.{CnameAtZoneApexError, ZoneDiscoveryError}
-import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{
+  Group,
+  GroupRepository,
+  ListUsersResults,
+  User,
+  UserRepository
+}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
@@ -455,12 +461,22 @@ class BatchChangeService(
       summary.copy(ownerGroupName = groupName)
     }
 
+  def addReviewerUserNamesToSummaries(
+      summaries: List[BatchChangeSummary],
+      reviewers: ListUsersResults): List[BatchChangeSummary] =
+    summaries.map { summary =>
+      val userName =
+        summary.reviewerId.flatMap(userId => reviewers.users.find(_.id == userId).map(_.userName))
+      summary.copy(reviewerName = userName)
+    }
+
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
-      approvalStatus: Option[BatchChangeApprovalStatus] = None): BatchResult[BatchChangeSummaryList] = {
+      approvalStatus: Option[BatchChangeApprovalStatus] = None)
+    : BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
     for {
       listResults <- batchChangeRepo
@@ -471,8 +487,13 @@ class BatchChangeService(
       summariesWithGroupNames = addOwnerGroupNamesToSummaries(
         listResults.batchChanges,
         rsOwnerGroups)
+      reviewerIds = listResults.batchChanges.flatMap(_.reviewerId).toSet
+      reviewerUserNames <- userRepository.getUsers(reviewerIds, None, Some(maxItems)).toBatchResult
+      summariesWithReviewerUserNames = addReviewerUserNamesToSummaries(
+        summariesWithGroupNames,
+        reviewerUserNames)
       listWithGroupNames = listResults.copy(
-        batchChanges = summariesWithGroupNames,
+        batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
         approvalStatus = approvalStatus)
     } yield listWithGroupNames

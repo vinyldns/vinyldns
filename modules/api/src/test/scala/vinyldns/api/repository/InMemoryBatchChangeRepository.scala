@@ -128,11 +128,12 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         sc.createdTimestamp,
         changes,
         sc.ownerGroupId,
-        BatchChangeApprovalStatus.AutoApproved,
-        None,
-        None,
-        None,
-        sc.id)
+        sc.approvalStatus,
+        sc.reviewerId,
+        sc.reviewComment,
+        sc.reviewTimestamp,
+        sc.id
+      )
     } yield BatchChangeSummary(batchChange)
     val sorted = batchChangeSummaries.sortBy(_.createdTimestamp)
     val start = startFrom.getOrElse(0)

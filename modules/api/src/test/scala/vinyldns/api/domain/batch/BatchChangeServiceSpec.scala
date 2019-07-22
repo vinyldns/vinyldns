@@ -40,7 +40,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.membership.{Group, User}
+import vinyldns.core.domain.membership.{Group, ListUsersResults, User}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
 import vinyldns.core.domain.zone.Zone
@@ -301,6 +301,12 @@ class BatchChangeServiceSpec
           case _ => None
         }
       }
+
+    override def getUsers(
+        userIds: Set[String],
+        startFrom: Option[String],
+        maxItems: Option[Int]): IO[ListUsersResults] =
+      IO.pure(ListUsersResults(Seq(superUser), None))
   }
 
   private val underTest = new BatchChangeService(
@@ -686,6 +692,26 @@ class BatchChangeServiceSpec
 
       val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
       result shouldBe BatchChangeInfo(batchChange)
+    }
+
+    "Succeed with review information in result" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          ownerGroupId = Some(okGroup.id),
+          BatchChangeApprovalStatus.ManuallyApproved,
+          Some(superUser.id),
+          None,
+          Some(DateTime.now)
+        )
+      batchChangeRepo.save(batchChange)
+
+      val result = rightResultOf(underTest.getBatchChange(batchChange.id, auth).value)
+      result shouldBe BatchChangeInfo(batchChange, Some(okGroup.name), Some(superUser.userName))
     }
   }
 
@@ -1301,7 +1327,11 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+          approvalStatus = BatchChangeApprovalStatus.ManuallyApproved,
+          reviewerId = Some(superUser.id),
+          reviewComment = Some("this looks good"),
+          reviewTimestamp = Some(DateTime.now)
+        )
       batchChangeRepo.save(batchChange)
 
       val result = rightResultOf(underTest.listBatchChangeSummaries(auth, maxItems = 100).value)
@@ -1313,7 +1343,9 @@ class BatchChangeServiceSpec
 
       result.batchChanges.length shouldBe 1
       result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
-      result.batchChanges(0).approvalStatus shouldBe BatchChangeApprovalStatus.AutoApproved
+      result.batchChanges(0).ownerGroupId shouldBe None
+      result.batchChanges(0).approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
+      result.batchChanges(0).reviewerName shouldBe Some(superUser.userName)
     }
 
     "return a list of batchChangeSummaries if some exist" in {
