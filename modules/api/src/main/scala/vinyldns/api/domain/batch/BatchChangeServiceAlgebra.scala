@@ -25,7 +25,8 @@ import vinyldns.core.domain.batch.{BatchChange, BatchChangeInfo, BatchChangeSumm
 trait BatchChangeServiceAlgebra {
   def applyBatchChange(
       batchChangeInput: BatchChangeInput,
-      auth: AuthPrincipal): BatchResult[BatchChange]
+      auth: AuthPrincipal,
+      allowManualReview: Boolean): BatchResult[BatchChange]
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo]
 
