@@ -99,20 +99,20 @@ class BatchChangeService(
   def rejectBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      rejectBatchChangeInput: Option[RejectBatchChangeInput]): BatchResult[BatchChange] =
+      rejectBatchChangeInput: RejectBatchChangeInput): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeRejection(batchChange, authPrincipal).toBatchResult
       rejectedBatchChange <- rejectBatchChange(
         batchChange,
-        rejectBatchChangeInput.flatMap(_.reviewComment),
+        rejectBatchChangeInput.reviewComment,
         authPrincipal.signedInUser.id)
     } yield rejectedBatchChange
 
   def approveBatchChange(
       batchChangeId: String,
       authPrincipal: AuthPrincipal,
-      approveBatchChangeInput: Option[ApproveBatchChangeInput]): BatchResult[BatchChange] =
+      approveBatchChangeInput: ApproveBatchChangeInput): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
