@@ -100,7 +100,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     }
 
     // Single change data table
-    sb.append(s"""<table border = "1">
+    sb.append(s"""<br/><table border = "1">
       |   <tr><th>#</th><th>Change Type</th><th>Record Type</th><th>Input Name</th>
       |       <th>TTL</th><th>Record Data</th><th>Status</th><th>Message</th></tr>
       |   ${bc.changes.zipWithIndex.map((formatSingleChange _).tupled).mkString("\n")}
