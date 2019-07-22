@@ -17,6 +17,7 @@
 package vinyldns.api.domain.batch
 
 import cats.data.NonEmptyList
+import org.joda.time.DateTime
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.{DomainValidationError, SingleChangeError}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
@@ -27,7 +28,8 @@ import vinyldns.core.domain.record.RecordType._
 final case class BatchChangeInput(
     comments: Option[String],
     changes: List[ChangeInput],
-    ownerGroupId: Option[String] = None)
+    ownerGroupId: Option[String] = None,
+    scheduledTime: Option[DateTime] = None)
 
 object BatchChangeInput {
   def apply(batchChange: BatchChange): BatchChangeInput = {

@@ -16,6 +16,8 @@
 
 package vinyldns.mysql.repository
 
+import java.sql.Timestamp
+
 import cats.data._
 import cats.effect._
 import org.joda.time.DateTime
@@ -26,7 +28,6 @@ import vinyldns.core.domain.batch._
 import vinyldns.core.protobuf.{BatchChangeProtobufConversions, SingleChangeType}
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
-import java.sql.Timestamp
 
 /**
   * MySqlBatchChangeRepository implements the JDBC queries that support the APIs defined in BatchChangeRepository.scala
@@ -47,12 +48,13 @@ class MySqlBatchChangeRepository
   private final val PUT_BATCH_CHANGE =
     sql"""
        |            INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
-       |                                     approval_status, reviewer_id, review_comment, review_timestamp)
+       |                                     approval_status, reviewer_id, review_comment, review_timestamp,
+       |                                     scheduled_time)
        |                 VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
-       |                        {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp})
+       |                        {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp}, {scheduledTime})
        |ON DUPLICATE KEY UPDATE comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus},
        |                        reviewer_id={reviewerId}, review_comment={reviewComment},
-       |                        review_timestamp={reviewTimestamp}
+       |                        review_timestamp={reviewTimestamp}, scheduled_time={scheduledTime}
        """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =
@@ -68,7 +70,7 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_METADATA =
     sql"""
          |SELECT user_id, user_name, created_time, comments, owner_group_id,
-         |       approval_status, reviewer_id, review_comment, review_timestamp
+         |       approval_status, reviewer_id, review_comment, review_timestamp, scheduled_time
          |  FROM batch_change bc
          | WHERE bc.id = ?
         """.stripMargin
@@ -76,7 +78,7 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE =
     sql"""
          |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
-         |       bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp
+         |       bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time
          |  FROM batch_change bc
          |  JOIN (SELECT id, batch_change_id from single_change where id = ?) sc
          |    ON sc.batch_change_id = bc.id
@@ -85,7 +87,7 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_SUMMARY_BASE =
     """
          |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
-         |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp,
+         |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time,
          |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
          |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
          |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count
@@ -261,7 +263,9 @@ class MySqlBatchChangeRepository
                   BatchChangeStatus
                     .calculateBatchStatus(approvalStatus, pending > 0, failed > 0, complete > 0),
                   Option(res.string("owner_group_id")),
-                  res.string("id")
+                  res.string("id"),
+                  None,
+                  res.timestampOpt("scheduled_time").map(st => new org.joda.time.DateTime(st))
                 )
               }
               .list()
@@ -300,14 +304,15 @@ class MySqlBatchChangeRepository
         result.string("user_id"),
         result.string("user_name"),
         result.stringOpt("comments"),
-        new org.joda.time.DateTime(result.timestamp("created_time")),
+        toDateTime(result.timestamp("created_time")),
         Nil,
-        Option(result.string("owner_group_id")),
+        result.stringOpt("owner_group_id"),
         toApprovalStatus(result.intOpt("approval_status")),
         result.stringOpt("reviewer_id"),
         result.stringOpt("review_comment"),
-        toReviewTimestamp(result.timestampOpt("review_timestamp")),
-        batchChangeId.getOrElse(result.string("id"))
+        result.timestampOpt("review_timestamp").map(toDateTime),
+        batchChangeId.getOrElse(result.string("id")),
+        result.timestampOpt("scheduled_time").map(toDateTime)
       )
   }
 
@@ -325,7 +330,8 @@ class MySqlBatchChangeRepository
           'approvalStatus -> fromApprovalStatus(batchChange.approvalStatus),
           'reviewerId -> batchChange.reviewerId,
           'reviewComment -> batchChange.reviewComment,
-          'reviewTimestamp -> batchChange.reviewTimestamp
+          'reviewTimestamp -> batchChange.reviewTimestamp,
+          'scheduledTime -> batchChange.scheduledTime
         ): _*
       )
       .update()
@@ -394,6 +400,5 @@ class MySqlBatchChangeRepository
       case _ => BatchChangeApprovalStatus.AutoApproved
     }
 
-  def toReviewTimestamp(result: Option[Timestamp]): Option[DateTime] =
-    result.map(new org.joda.time.DateTime(_))
+  def toDateTime(ts: Timestamp): DateTime = new DateTime(ts)
 }
