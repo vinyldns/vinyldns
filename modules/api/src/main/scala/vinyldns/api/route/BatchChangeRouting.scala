@@ -23,8 +23,8 @@ import cats.data.EitherT
 import cats.effect._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.batch._
 import vinyldns.api.domain.batch._
-import vinyldns.core.domain.batch.BatchChangeApprovalStatus
 
 trait BatchChangeRoute extends Directives {
   this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
@@ -35,10 +35,15 @@ trait BatchChangeRoute extends Directives {
 
   val batchChangeRoute: AuthPrincipal => server.Route = { authPrincipal: AuthPrincipal =>
     val standardBatchChangeRoutes = (post & path("zones" / "batchrecordchanges")) {
-      monitor("Endpoint.postBatchChange") {
-        entity(as[BatchChangeInput]) { batchChangeInput =>
-          execute(batchChangeService.applyBatchChange(batchChangeInput, authPrincipal)) { chg =>
-            complete(StatusCodes.Accepted, chg)
+      parameters("allowManualReview".as[Boolean].?(true)) { allowManualReview: Boolean =>
+        {
+          monitor("Endpoint.postBatchChange") {
+            entity(as[BatchChangeInput]) { batchChangeInput =>
+              execute(batchChangeService
+                .applyBatchChange(batchChangeInput, authPrincipal, allowManualReview)) { chg =>
+                complete(StatusCodes.Accepted, chg)
+              }
+            }
           }
         }
       }

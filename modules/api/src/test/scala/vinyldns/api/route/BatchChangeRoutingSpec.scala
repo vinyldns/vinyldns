@@ -197,7 +197,8 @@ class BatchChangeRoutingSpec
   object TestBatchChangeService extends BatchChangeServiceAlgebra {
     def applyBatchChange(
         batchChangeInput: BatchChangeInput,
-        auth: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+        auth: AuthPrincipal,
+        allowManualReview: Boolean): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
       batchChangeInput.comments match {
         case Some("validChangeWithComments") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
@@ -413,6 +414,20 @@ class BatchChangeRoutingSpec
 
         val change = responseAs[JValue]
         compact(change) shouldBe compact(Extraction.decompose(validResponseWithOwnerGroupId))
+      }
+    }
+
+    "return a 202 Accepted for valid add and delete request with allowManualReview parameter" in {
+      val validRequestWithoutComments: String = compact(render(changeList))
+
+      Post("/zones/batchrecordchanges?allowManualReview=false").withEntity(
+        HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)) ~>
+        batchChangeRoute(okAuth) ~> check {
+
+        status shouldBe Accepted
+
+        val change = responseAs[JValue]
+        compact(change) shouldBe compact(Extraction.decompose(validResponseWithoutComments))
       }
     }
 
