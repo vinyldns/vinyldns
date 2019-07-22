@@ -270,7 +270,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
 
-def test_create_batch_change_with_scheduled_time(shared_zone_test_context):
+def test_create_batch_change_with_scheduled_time_succeeds(shared_zone_test_context):
     """
     Test successfully creating a batch change with scheduled time set
     """
@@ -292,6 +292,29 @@ def test_create_batch_change_with_scheduled_time(shared_zone_test_context):
         record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
         to_delete = set(record_set_list)
         assert_that(completed_batch['scheduledTime'], dt)
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, client)
+
+
+def test_create_batch_change_without_scheduled_time_succeeds(shared_zone_test_context):
+    """
+    Test successfully creating a batch change without scheduled time set
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
+        ]
+    }
+
+    to_delete = []
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(result)
+        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+        to_delete = set(record_set_list)
+        assert_that(completed_batch, is_not(has_key('scheduledTime')))
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
