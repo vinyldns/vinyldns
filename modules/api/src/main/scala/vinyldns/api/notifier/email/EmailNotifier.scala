@@ -58,7 +58,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     message.saveChanges()
     val transport = session.getTransport("smtp")
     transport.connect()
-    transport.sendMessage(message, message.getAllRecipients())
+    transport.sendMessage(message, message.getAllRecipients)
     transport.close()
   }
 
@@ -79,19 +79,34 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       case _ => IO.unit
     }
 
-  def formatBatchChange(bc: BatchChange): String =
-    s"""<h1>Batch Change Results</h1>
+  def formatBatchChange(bc: BatchChange): String = {
+    val sb = new StringBuilder
+    // Batch change info
+    sb.append(s"""<h1>Batch Change Results</h1>
       | <b>Submitter:</b> ${bc.userName} <br/>
-      | ${bc.comments.map(comments => s"<b>Description:</b> ${comments}</br>").getOrElse("")}
+      | ${bc.comments.map(comments => s"<b>Description:</b> $comments</br>").getOrElse("")}
       | <b>Created:</b> ${bc.createdTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>
       | <b>Id:</b> ${bc.id}<br/>
-      | <b>Status:</b> ${formatStatus(bc.approvalStatus, bc.status)}<br/>
-      | <table border = "1">
+      | <b>Status:</b> ${formatStatus(bc.approvalStatus, bc.status)}<br/>""".stripMargin)
+
+    // For manually reviewed e-mails, add additional info; e-mails are not sent for pending batch changes
+    if (bc.approvalStatus != AutoApproved) {
+      bc.reviewComment.foreach(reviewComment =>
+        sb.append(s"<b>Review comment:</b> $reviewComment <br/>"))
+      bc.reviewTimestamp.foreach(reviewTimestamp =>
+        sb.append(
+          s"<b>Time reviewed:</b> ${reviewTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"))
+    }
+
+    // Single change data table
+    sb.append(s"""<br/><table border = "1">
       |   <tr><th>#</th><th>Change Type</th><th>Record Type</th><th>Input Name</th>
       |       <th>TTL</th><th>Record Data</th><th>Status</th><th>Message</th></tr>
       |   ${bc.changes.zipWithIndex.map((formatSingleChange _).tupled).mkString("\n")}
       | </table>
-     """.stripMargin
+     """.stripMargin)
+    sb.toString
+  }
 
   def formatStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
     (approval, status) match {
