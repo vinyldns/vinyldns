@@ -21,33 +21,45 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.data.EitherT
+import cats.effect._
 import cats.implicits._
 import org.joda.time.DateTime
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.mockito.MockitoSugar
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestMembershipData._
-import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.record._
-import cats.effect._
 import vinyldns.core.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
+import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record._
 
-class BatchChangeRoutingSpec
+class BatchChangeRoutingSpec()
     extends WordSpec
     with ScalatestRouteTest
-    with BatchChangeRoute
-    with JsonValidationRejection
-    with VinylDNSDirectives
+    with MockitoSugar
     with VinylDNSJsonProtocol
-    with Matchers {
+    with VinylDNSRouteTestHelper
+    with Matchers
+    with BeforeAndAfterEach {
 
   val batchChangeService: BatchChangeServiceAlgebra = TestBatchChangeService
-  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(okAuth)
+  val okAuthRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(okAuth))
+  val notAuthRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(notAuth))
+  val supportUserRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(supportUserAuth))
+  val superUserRoute: BatchChangeRoute =
+    new BatchChangeRoute(TestBatchChangeService, new TestVinylDNSAuthenticator(superUserAuth))
+
+  var batchChangeRoute: Route = _
+
+  override def beforeEach(): Unit = batchChangeRoute = okAuthRoute.getRoutes
 
   import vinyldns.core.domain.batch.SingleChangeStatus._
 
@@ -303,7 +315,7 @@ class BatchChangeRoutingSpec
               )
             )
 
-          case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
+          case _ => EitherT.rightT(BatchChangeSummaryList(List()))
         } else if (auth.userId == superUserAuth.userId)
         (auth, startFrom, maxItems, ignoreAccess, approvalStatus) match {
           case (_, None, 100, true, None) =>
@@ -351,7 +363,7 @@ class BatchChangeRoutingSpec
               )
             )
 
-          case (_) => EitherT.rightT(BatchChangeSummaryList(List()))
+          case _ => EitherT.rightT(BatchChangeSummaryList(List()))
         } else
         EitherT.rightT(BatchChangeSummaryList(List()))
 
@@ -364,7 +376,7 @@ class BatchChangeRoutingSpec
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
-        case (_) => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
+        case _ => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
       }
 
     def approveBatchChange(
@@ -389,7 +401,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithComments)) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
 
         status shouldBe Accepted
 
@@ -403,7 +415,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
 
         status shouldBe Accepted
 
@@ -420,7 +432,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithOwnerGroupId)) ~>
-        batchChangeRoute(sharedAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe Accepted
 
         val change = responseAs[JValue]
@@ -430,10 +442,9 @@ class BatchChangeRoutingSpec
 
     "return a 202 Accepted for valid add and delete request with allowManualReview parameter" in {
       val validRequestWithoutComments: String = compact(render(changeList))
-
       Post("/zones/batchrecordchanges?allowManualReview=false").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithoutComments)) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
 
         status shouldBe Accepted
 
@@ -453,7 +464,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, validRequestWithScheduledTime)) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
 
         status shouldBe Accepted
 
@@ -470,7 +481,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, emptyBatchRequest)) ~>
-        Route.seal(batchChangeRoute(okAuth)) ~> check {
+        Route.seal(batchChangeRoute) ~> check {
 
         status shouldBe BadRequest
       }
@@ -486,7 +497,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, invalidRequestChangeType)) ~>
-        Route.seal(batchChangeRoute(okAuth)) ~> check {
+        Route.seal(batchChangeRoute) ~> check {
 
         status shouldBe BadRequest
       }
@@ -497,7 +508,7 @@ class BatchChangeRoutingSpec
 
       Post("/zones/batchrecordchanges").withEntity(
         HttpEntity(ContentTypes.`application/json`, runtimeError)) ~>
-        Route.seal(batchChangeRoute(okAuth)) ~> check {
+        Route.seal(batchChangeRoute) ~> check {
 
         status shouldBe InternalServerError
       }
@@ -506,7 +517,7 @@ class BatchChangeRoutingSpec
 
   "GET Batch Change Info" should {
     "return the batch change info given a valid batch change id" in {
-      Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute(okAuth) ~> check {
+      Get(s"/zones/batchrecordchanges/${genericValidResponse.id}") ~> batchChangeRoute ~> check {
 
         status shouldBe OK
 
@@ -517,7 +528,7 @@ class BatchChangeRoutingSpec
     }
 
     "maintain backwards compatability for zoneName/recordName/zoneId" in {
-      Get(s"/zones/batchrecordchanges/${backwardsCompatable.id}") ~> batchChangeRoute(okAuth) ~> check {
+      Get(s"/zones/batchrecordchanges/${backwardsCompatable.id}") ~> batchChangeRoute ~> check {
 
         status shouldBe OK
 
@@ -531,14 +542,14 @@ class BatchChangeRoutingSpec
     }
 
     "return a NotFound error given a nonexistent batch change id" in {
-      Get("/zones/batchrecordchanges/nonexistentID") ~> batchChangeRoute(okAuth) ~> check {
+      Get("/zones/batchrecordchanges/nonexistentID") ~> batchChangeRoute ~> check {
 
         status shouldBe NotFound
       }
     }
 
     "return a Forbidden error if user did not create the batch change" in {
-      Get("/zones/batchrecordchanges/notAuthedID") ~> batchChangeRoute(notAuth) ~> check {
+      Get("/zones/batchrecordchanges/notAuthedID") ~> batchChangeRoute ~> check {
 
         status shouldBe Forbidden
       }
@@ -547,7 +558,7 @@ class BatchChangeRoutingSpec
 
   "GET batchChangesSummaries" should {
     "return the list of batch change summaries for the user that called it" in {
-      Get("/zones/batchrecordchanges") ~> batchChangeRoute(okAuth) ~> check {
+      Get("/zones/batchrecordchanges") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -560,7 +571,7 @@ class BatchChangeRoutingSpec
     }
 
     "return the first batch change summary for the user that called it" in {
-      Get("/zones/batchrecordchanges?maxItems=1") ~> batchChangeRoute(okAuth) ~> check {
+      Get("/zones/batchrecordchanges?maxItems=1") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -573,7 +584,7 @@ class BatchChangeRoutingSpec
     }
 
     "return an offset of the batch change summaries for the user that called it" in {
-      Get("/zones/batchrecordchanges?startFrom=1") ~> batchChangeRoute(okAuth) ~> check {
+      Get("/zones/batchrecordchanges?startFrom=1") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -586,7 +597,7 @@ class BatchChangeRoutingSpec
     }
 
     "return only the second batch change summary for the user that called it" in {
-      Get("/zones/batchrecordchanges?startFrom=1&maxItems=1") ~> batchChangeRoute(okAuth) ~> check {
+      Get("/zones/batchrecordchanges?startFrom=1&maxItems=1") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -600,7 +611,7 @@ class BatchChangeRoutingSpec
 
     "return user's Pending batch changes if approval status is `PendingApproval`" in {
       Get("/zones/batchrecordchanges?approvalStatus=pendingapproval") ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -614,7 +625,7 @@ class BatchChangeRoutingSpec
     }
 
     "return an error if maxItems is out of range" in {
-      Get("/zones/batchrecordchanges?startFrom=1&maxItems=101") ~> batchChangeRoute(okAuth) ~> check {
+      Get("/zones/batchrecordchanges?startFrom=1&maxItems=101") ~> batchChangeRoute ~> check {
         status shouldBe BadRequest
 
         responseEntity.toString should include(
@@ -623,7 +634,8 @@ class BatchChangeRoutingSpec
     }
 
     "return empty list of batch change summaries for the user that called it" in {
-      Get("/zones/batchrecordchanges") ~> batchChangeRoute(notAuth) ~> check {
+      batchChangeRoute = notAuthRoute.getRoutes
+      Get("/zones/batchrecordchanges") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[JValue]
@@ -633,7 +645,8 @@ class BatchChangeRoutingSpec
     }
 
     "return all batch changes if ignoreAccess is true and requester is a super user" in {
-      Get("/zones/batchrecordchanges?ignoreAccess=true") ~> batchChangeRoute(superUserAuth) ~> check {
+      batchChangeRoute = superUserRoute.getRoutes
+      Get("/zones/batchrecordchanges?ignoreAccess=true") ~> batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -647,8 +660,9 @@ class BatchChangeRoutingSpec
 
     "return all Pending batch changes if ignoreAccess is true, approval status is `PendingApproval`," +
       " and requester is a super user" in {
+      batchChangeRoute = superUserRoute.getRoutes
       Get("/zones/batchrecordchanges?ignoreAccess=true&approvalStatus=PendingApproval") ~>
-        batchChangeRoute(superUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe OK
 
         val resp = responseAs[BatchChangeSummaryList]
@@ -665,18 +679,20 @@ class BatchChangeRoutingSpec
 
   "POST reject batch change" should {
     "return OK if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe OK
       }
     }
 
     "return OK if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe OK
       }
     }
@@ -684,7 +700,7 @@ class BatchChangeRoutingSpec
     "return Forbidden if user is not a super or support admin" in {
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe Forbidden
       }
     }
@@ -692,7 +708,7 @@ class BatchChangeRoutingSpec
     "return BadRequest if comments exceed 1024 characters" in {
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
         ContentTypes.`application/json`,
-        compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute(okAuth)) ~> check {
+        compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute) ~> check {
         status shouldBe BadRequest
 
         responseEntity.toString should include("Comment length must not exceed 1024 characters.")
@@ -700,15 +716,17 @@ class BatchChangeRoutingSpec
     }
 
     "return OK if no request entity is provided" in {
-      Post("/zones/batchrecordchanges/pendingBatchId/reject") ~> batchChangeRoute(supportUserAuth) ~> check {
+      batchChangeRoute = supportUserRoute.getRoutes
+      Post("/zones/batchrecordchanges/pendingBatchId/reject") ~> batchChangeRoute ~> check {
         status shouldBe OK
       }
     }
 
     "return BadRequest if batch change is not pending approval" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/batchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe BadRequest
       }
     }
@@ -716,18 +734,20 @@ class BatchChangeRoutingSpec
 
   "POST approve batch change" should {
     "return OK if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe OK
       }
     }
 
     "return OK if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe OK
       }
     }
@@ -735,40 +755,44 @@ class BatchChangeRoutingSpec
     "return Forbidden if user is not a super or support admin" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
-        batchChangeRoute(okAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe Forbidden
       }
     }
 
     "return BadRequest if comments exceed 1024 characters" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
-        compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute(okAuth)) ~> check {
+        compact(render("reviewComment" -> "a" * 1025)))) ~> Route.seal(batchChangeRoute) ~> check {
         status shouldBe BadRequest
 
         responseEntity.toString should include("Comment length must not exceed 1024 characters.")
       }
     }
 
-    "return OK if no request entity is provided" in {
-      Post("/zones/batchrecordchanges/pendingBatchId/approve") ~> batchChangeRoute(supportUserAuth) ~> check {
+    "return OK no request entity is provided" in {
+      batchChangeRoute = supportUserRoute.getRoutes
+      Post("/zones/batchrecordchanges/pendingBatchId/approve") ~> batchChangeRoute ~> check {
         status shouldBe OK
       }
     }
 
     "return BadRequest if batch change is not pending approval" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/batchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe BadRequest
       }
     }
 
     "return NotFound if the requesting user cant be found" in {
+      batchChangeRoute = supportUserRoute.getRoutes
       Post("/zones/batchrecordchanges/notFoundUser/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
-        batchChangeRoute(supportUserAuth) ~> check {
+        batchChangeRoute ~> check {
         status shouldBe NotFound
       }
     }

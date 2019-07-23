@@ -20,8 +20,10 @@ import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import cats.data.Validated.{Invalid, Valid}
-import cats.data.ValidatedNel
+import cats.data.{EitherT, ValidatedNel}
+import cats.effect.IO
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -31,9 +33,11 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
 
-trait VinylDNSDirectives extends Directives {
+trait VinylDNSDirectives[E] extends Directives {
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator
+
+  def getRoutes: Route
 
   def authenticate: Directive1[AuthPrincipal] = extractRequestContext.flatMap { ctx =>
     extractStrictEntity(10.seconds).flatMap { strictEntity =>
@@ -124,4 +128,49 @@ trait VinylDNSDirectives extends Directives {
       case Invalid(errors) =>
         reject(ValidationRejection(compact(render("errors" -> errors.toList.toSet))))
     }
+
+  /**
+    * Helpers to handle route authentication flow for routing. Implementing classes/objects
+    * must provide handleErrors implementation.
+    */
+  def handleErrors(e: E): PartialFunction[E, Route]
+
+  /**
+    * Authenticate user and execute service call without request entity
+    *
+    * Flow:
+    * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
+    * - Invoke service call, f, and return the response to the user.
+    */
+  def authenticateAndExecute[A](f: AuthPrincipal => EitherT[IO, E, A])(g: A => Route): Route =
+    authenticate { authPrincipal =>
+      onSuccess(f(authPrincipal).value.unsafeToFuture()) {
+        case Right(a) => g(a)
+        case Left(e) => handleErrors(e).applyOrElse(e, failWith)
+      }
+    }
+
+  /**
+    * Authenticate user and execute service call using request entity
+    *
+    * Flow:
+    * - Authenticate user. Proceed if successful; otherwise return unauthorized error to user.
+    * - Deserialize request entity into expected data structure. Proceed if successful; otherwise
+    * return error to user.
+    * - Invoke service call, f, and return the response to the user.
+    */
+  def authenticateAndExecuteWithEntity[A, B](f: (AuthPrincipal, B) => EitherT[IO, E, A])(
+      g: A => Route)(implicit um: FromRequestUnmarshaller[B]): Route =
+    authenticate { authPrincipal =>
+      entity(as[B]) { deserializedEntity =>
+        onSuccess(f(authPrincipal, deserializedEntity).value.unsafeToFuture()) {
+          case Right(a) => g(a)
+          case Left(e) => handleErrors(e).applyOrElse(e, failWith)
+        }
+      }
+    }
+
+  private def failWith(error: E): StandardRoute = error match {
+    case error: Throwable => StandardRoute(_.fail(error))
+  }
 }

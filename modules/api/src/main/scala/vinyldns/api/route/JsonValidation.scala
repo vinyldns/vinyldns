@@ -18,9 +18,9 @@ package vinyldns.api.route
 
 import java.util.NoSuchElementException
 
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.{Directives, MalformedRequestContentRejection, RejectionHandler}
 import cats.data.Validated.{Invalid, Valid}
+import cats.data._
+import cats.implicits._
 import com.fasterxml.jackson.core.JsonParseException
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import org.joda.time.DateTime
@@ -30,25 +30,8 @@ import org.json4s.ext._
 import org.json4s.jackson.JsonMethods._
 
 import scala.reflect.ClassTag
-import cats.data._
-import cats.implicits._
 
 case class JsonErrors(errors: List[String])
-
-trait JsonValidationRejection extends Directives {
-  implicit def validationRejectionHandler: RejectionHandler =
-    RejectionHandler
-      .newBuilder()
-      .handle {
-        case MalformedRequestContentRejection(msg, MappingException(_, _)) =>
-          complete(
-            HttpResponse(
-              status = StatusCodes.BadRequest,
-              entity = HttpEntity(ContentTypes.`application/json`, msg)
-            ))
-      }
-      .result()
-}
 
 // TODO: An update to json4s changed the date time formatting.  In order to stay compatible, had to
 // revert the date time formatting here.  When changing to circe (updating to java8 instant),
