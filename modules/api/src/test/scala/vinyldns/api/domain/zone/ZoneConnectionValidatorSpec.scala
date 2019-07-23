@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import cats.scalatest.EitherMatchers
+import cats.scalatest.{EitherMatchers, EitherValues}
 import org.joda.time.DateTime
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
@@ -37,7 +37,8 @@ class ZoneConnectionValidatorSpec
     with MockitoSugar
     with BeforeAndAfterEach
     with ResultHelpers
-    with EitherMatchers {
+    with EitherMatchers
+    with EitherValues {
 
   private val mockDnsConnection = mock[DnsConnection]
   private val mockZoneView = mock[ZoneView]
@@ -246,9 +247,10 @@ class ZoneConnectionValidatorSpec
         .when(mockDnsConnection)
         .resolve(badZone.name, badZone.name, RecordType.SOA)
 
-      val result = leftResultOf(underTest.validateZoneConnections(badZone).value)
-      result shouldBe a[ConnectionFailed]
-      result.getMessage should include("Transfer connection invalid")
+      val result = underTest.validateZoneConnections(badZone).value.unsafeRunSync()
+      val error = result.leftValue
+      error shouldBe a[ConnectionFailed]
+      error.getMessage should include("Transfer connection invalid")
     }
     "isValidBackendId" should {
       val backend = DnsBackend("some-test-backend", testDefaultConnection, testDefaultConnection)
