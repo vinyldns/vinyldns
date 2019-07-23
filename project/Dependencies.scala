@@ -52,7 +52,9 @@ object Dependencies {
     "com.comcast"               %% "ip4s-cats"                      % ip4sV,
     "com.iheart"                %% "ficus"                          % "1.4.3",
     "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
-    "javax.mail"                %  "javax.mail-api"                 % "1.6.2"
+    "javax.mail"                %  "javax.mail-api"                 % "1.6.2",
+    "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
+    "com.amazonaws"             %  "aws-java-sdk-sns"              % awsV withSources()
   )
 
   lazy val coreDependencies = Seq(
