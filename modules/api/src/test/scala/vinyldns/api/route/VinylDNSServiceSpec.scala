@@ -35,6 +35,8 @@ class VinylDNSServiceSpec
   val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
     mock[AuthPrincipal])
 
+  def getRoutes: Route = mock[Route]
+
   def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
     case _ => complete(StatusCodes.InternalServerError)
   }

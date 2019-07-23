@@ -45,8 +45,11 @@ class VinylDNSDirectivesSpec
   private val mockLatency = mock[Histogram]
   private val mockErrors = mock[Meter]
 
+  def getRoutes: Route = zoneRoute
+
   val zoneRoute: Route =
     new ZoneRoute(mock[ZoneServiceAlgebra], mock[VinylDNSAuthenticator]).getRoutes
+
   val zoneService: ZoneServiceAlgebra = mock[ZoneServiceAlgebra]
 
   val vinylDNSAuthenticator: VinylDNSAuthenticator = mock[VinylDNSAuthenticator]
