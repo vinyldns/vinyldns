@@ -36,10 +36,10 @@ services:
   localstack:
     image: localstack/localstack
     ports:
-      - "19004:19004"
       - "19006:19006"
+      - "19007:19007"
     environment:
-      - SERVICES=sns:19006, sqs:19004
+      - SERVICES=sns:19006,sqs:19007
       - START_WEB=0
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:

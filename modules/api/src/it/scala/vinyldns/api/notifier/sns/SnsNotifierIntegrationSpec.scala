@@ -79,7 +79,7 @@ class SnsNotifierIntegrationSpec
         .build()
       val sqs = AmazonSQSClientBuilder.standard
         .withEndpointConfiguration(
-          new EndpointConfiguration("http://127.0.0.1:19004", "us-east-1")
+          new EndpointConfiguration("http://127.0.0.1:19007", "us-east-1")
         )
         .build()
 
