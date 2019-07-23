@@ -26,7 +26,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, OneInstancePerTest, WordSpec}
-import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.api.domain.zone.ZoneServiceAlgebra
 import vinyldns.core.route.Monitor
 
 import scala.util.Failure
@@ -37,15 +37,26 @@ class VinylDNSDirectivesSpec
     with Matchers
     with MockitoSugar
     with OneInstancePerTest
-    with VinylDNSDirectives
+    with VinylDNSDirectives[Throwable]
     with Directives
+    with VinylDNSJsonProtocol
     with BeforeAndAfterEach {
 
   private val mockLatency = mock[Histogram]
   private val mockErrors = mock[Meter]
 
-  val vinylDNSAuthenticator: VinylDNSAuthenticator = new TestVinylDNSAuthenticator(
-    mock[AuthPrincipal])
+  def getRoutes: Route = zoneRoute
+
+  val zoneRoute: Route =
+    new ZoneRoute(mock[ZoneServiceAlgebra], mock[VinylDNSAuthenticator]).getRoutes
+
+  val zoneService: ZoneServiceAlgebra = mock[ZoneServiceAlgebra]
+
+  val vinylDNSAuthenticator: VinylDNSAuthenticator = mock[VinylDNSAuthenticator]
+
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+    case _ => complete(StatusCodes.InternalServerError)
+  }
 
   class TestMonitor extends Monitor("test") {
     override val latency: Histogram = mockLatency
@@ -146,6 +157,22 @@ class VinylDNSDirectivesSpec
 
         verifyZeroInteractions(mockLatency)
         verifyZeroInteractions(mockErrors)
+      }
+    }
+  }
+
+  "GET" should {
+    "return 404 NotFound if route doesn't exist" in {
+      Get("/no-existo") ~> Route.seal(zoneRoute) ~> check {
+        response.status shouldBe StatusCodes.NotFound
+      }
+    }
+  }
+
+  "PUT" should {
+    "return 405 MethodNotAllowed if HTTP method is not allowed for that route" in {
+      Put("/zones") ~> Route.seal(zoneRoute) ~> check {
+        response.status shouldBe StatusCodes.MethodNotAllowed
       }
     }
   }

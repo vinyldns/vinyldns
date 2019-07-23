@@ -219,3 +219,26 @@ def test_create_group_no_members(shared_zone_test_context):
     finally:
         if result:
             client.delete_group(result['id'], status=(200,404))
+
+def test_create_group_adds_admins_to_member_list(shared_zone_test_context):
+    """
+    Tests that creating a group adds admins to member list
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result = None
+
+    try:
+        new_group = {
+            'name': 'test-create-group-add-admins-to-members',
+            'email': 'test@test.com',
+            'description': 'this is a description',
+            'members': [ {'id': 'ok'} ],
+            'admins': [ {'id': 'dummy'} ]
+        }
+
+        result = client.create_group(new_group, status=200)
+        assert_that(map(lambda x: x['id'], result['members']), contains('ok', 'dummy'))
+        assert_that(result['admins'][0]['id'], is_('dummy'))
+    finally:
+        if result:
+            client.delete_group(result['id'], status=(200,404))

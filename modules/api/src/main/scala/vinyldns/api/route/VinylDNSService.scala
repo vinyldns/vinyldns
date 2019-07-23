@@ -18,14 +18,15 @@ package vinyldns.api.route
 
 import akka.event.Logging._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{MalformedRequestContentRejection, RejectionHandler, Route}
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server.directives.LogEntry
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import vinyldns.api.domain.auth.AuthPrincipalProvider
+
+import org.json4s.MappingException
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
@@ -35,6 +36,9 @@ import vinyldns.core.health.HealthService
 import scala.util.matching.Regex
 
 object VinylDNSService {
+
+  import akka.http.scaladsl.server.Directives._
+
   val ZoneIdRegex: Regex = "(?i)(/?zones/)(?:[0-9a-f]-?)+(.*)".r
   val ZoneAndRecordIdRegex: Regex =
     "(?i)(/?zones/)(?:[0-9a-f]-?)+(/recordsets/)(?:[0-9a-f]-?)+(.*)".r
@@ -108,6 +112,24 @@ object VinylDNSService {
           }
       }
   }
+
+  implicit def validationRejectionHandler: RejectionHandler =
+    RejectionHandler
+      .newBuilder()
+      .handle {
+        case MalformedRequestContentRejection(msg, MappingException(_, _)) =>
+          complete(
+            HttpResponse(
+              status = StatusCodes.BadRequest,
+              entity = HttpEntity(ContentTypes.`application/json`, msg)
+            ))
+      }
+      .handleNotFound {
+        extractUnmatchedPath { p =>
+          complete((StatusCodes.NotFound, s"The requested path [$p] does not exist."))
+        }
+      }
+      .result()
 }
 
 // $COVERAGE-OFF$
@@ -120,31 +142,25 @@ class VinylDNSService(
     val batchChangeService: BatchChangeServiceAlgebra,
     val collectorRegistry: CollectorRegistry,
     authPrincipalProvider: AuthPrincipalProvider)
-    extends VinylDNSDirectives
-    with PingRoute
-    with ZoneRoute
-    with RecordSetRoute
+    extends PingRoute
     with HealthCheckRoute
     with BlueGreenRoute
-    with MembershipRoute
     with StatusRoute
     with PrometheusRoute
-    with BatchChangeRoute
-    with VinylDNSJsonProtocol
-    with JsonValidationRejection {
+    with VinylDNSJsonProtocol {
+
+  import VinylDNSService.validationRejectionHandler
 
   val aws4Authenticator = new Aws4Authenticator
   val vinylDNSAuthenticator: VinylDNSAuthenticator =
     new ProductionVinylDNSAuthenticator(aws4Authenticator, authPrincipalProvider)
 
-  // Authenticated routes must go first
-  def authenticatedRoutes: server.Route =
-    handleRejections(validationRejectionHandler)(authenticate { authPrincipal =>
-      batchChangeRoute(authPrincipal) ~
-        zoneRoute(authPrincipal) ~
-        recordSetRoute(authPrincipal) ~
-        membershipRoute(authPrincipal)
-    })
+  val zoneRoute: Route = new ZoneRoute(zoneService, vinylDNSAuthenticator).getRoutes
+  val recordSetRoute: Route = new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes
+  val membershipRoute: Route =
+    new MembershipRoute(membershipService, vinylDNSAuthenticator).getRoutes
+  val batchChangeRoute: Route =
+    new BatchChangeRoute(batchChangeService, vinylDNSAuthenticator).getRoutes
 
   val unloggedUris = Seq(
     Uri.Path("/health"),
@@ -154,9 +170,16 @@ class VinylDNSService(
     Uri.Path("/metrics/prometheus"))
   val unloggedRoutes
     : Route = healthCheckRoute ~ pingRoute ~ colorRoute ~ statusRoute ~ prometheusRoute
+
+  val allRoutes: Route = unloggedRoutes ~
+    batchChangeRoute ~
+    zoneRoute ~
+    recordSetRoute ~
+    membershipRoute
+
   val vinyldnsRoutes: Route =
-    logRequestResult(VinylDNSService.buildLogEntry(unloggedUris))(
-      unloggedRoutes ~ authenticatedRoutes)
-  val routes = vinyldnsRoutes
+    logRequestResult(VinylDNSService.buildLogEntry(unloggedUris))(allRoutes)
+  val routes: Route =
+    handleRejections(validationRejectionHandler)(allRoutes)
 }
 // $COVERAGE-ON$

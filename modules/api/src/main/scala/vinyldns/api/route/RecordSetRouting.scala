@@ -17,13 +17,13 @@
 package vinyldns.api.route
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, RejectionHandler, Route, ValidationRejection}
+import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
 import akka.util.Timeout
 import vinyldns.api.Interfaces._
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone._
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordSet
+import vinyldns.core.domain.zone.ZoneCommandResult
 
 import scala.concurrent.duration._
 
@@ -35,115 +35,109 @@ case class ListRecordSetsResponse(
     maxItems: Option[Int] = None,
     recordNameFilter: Option[String] = None)
 
-trait RecordSetRoute extends Directives {
-  this: VinylDNSJsonProtocol with VinylDNSDirectives with JsonValidationRejection =>
-  final private val DEFAULT_MAX_ITEMS: Int = 100
+class RecordSetRoute(
+    recordSetService: RecordSetServiceAlgebra,
+    val vinylDNSAuthenticator: VinylDNSAuthenticator)
+    extends VinylDNSJsonProtocol
+    with VinylDNSDirectives[Throwable] {
 
-  val recordSetService: RecordSetServiceAlgebra
+  def getRoutes: Route = recordSetRoute
+
+  final private val DEFAULT_MAX_ITEMS: Int = 100
 
   // Timeout must be long enough to allow the cluster to form
   implicit val rsCmdTimeout: Timeout = Timeout(10.seconds)
 
-  val recordSetRoute = { authPrincipal: AuthPrincipal =>
-    path("zones" / Segment / "recordsets") { zoneId =>
-      post {
-        monitor("Endpoint.addRecordSet") {
-          entity(as[RecordSet]) { rs =>
-            execute(recordSetService.addRecordSet(rs, authPrincipal)) { rc =>
-              complete(StatusCodes.Accepted, rc)
+  def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+    case ZoneNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
+    case RecordSetAlreadyExists(msg) => complete(StatusCodes.Conflict, msg)
+    case ZoneInactiveError(msg) => complete(StatusCodes.BadRequest, msg)
+    case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
+    case ZoneUnavailableError(msg) => complete(StatusCodes.Conflict, msg)
+    case RecordSetNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
+    case InvalidRequest(msg) => complete(StatusCodes.UnprocessableEntity, msg)
+    case PendingUpdateError(msg) => complete(StatusCodes.Conflict, msg)
+    case RecordSetChangeNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
+    case InvalidGroupError(msg) => complete(StatusCodes.UnprocessableEntity, msg)
+  }
+
+  val recordSetRoute: Route = path("zones" / Segment / "recordsets") { zoneId =>
+    (post & monitor("Endpoint.addRecordSet")) {
+      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet]((authPrincipal, recordSet) =>
+        recordSetService.addRecordSet(recordSet, authPrincipal)) { rc =>
+        complete(StatusCodes.Accepted, rc)
+      }
+    } ~
+      (get & monitor("Endpoint.getRecordSets")) {
+        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "recordNameFilter".?) {
+          (startFrom: Option[String], maxItems: Int, recordNameFilter: Option[String]) =>
+            handleRejections(invalidQueryHandler) {
+              validate(
+                0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
+                s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS") {
+                authenticateAndExecute(recordSetService
+                  .listRecordSets(zoneId, startFrom, Some(maxItems), recordNameFilter, _)) {
+                  rsResponse =>
+                    complete(StatusCodes.OK, rsResponse)
+                }
+              }
             }
-          }
+        }
+      }
+  } ~
+    path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
+      (get & monitor("Endpoint.getRecordSet")) {
+        authenticateAndExecute(recordSetService.getRecordSet(rsId, zoneId, _)) { rs =>
+          complete(StatusCodes.OK, GetRecordSetResponse(rs))
         }
       } ~
-        get {
-          monitor("Endpoint.getRecordSets") {
-            parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS), "recordNameFilter".?) {
-              (startFrom: Option[String], maxItems: Int, recordNameFilter: Option[String]) =>
-                handleRejections(invalidQueryHandler) {
-                  validate(
-                    0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
-                    s"maxItems was ${maxItems}, maxItems must be between 0 and $DEFAULT_MAX_ITEMS") {
-                    execute(
-                      recordSetService.listRecordSets(
-                        zoneId,
-                        startFrom,
-                        Some(maxItems),
-                        recordNameFilter,
-                        authPrincipal)) { rsResponse =>
-                      complete(StatusCodes.OK, rsResponse)
-                    }
-                  }
-                }
-            }
+        (delete & monitor("Endpoint.deleteRecordSet")) {
+          authenticateAndExecute(recordSetService.deleteRecordSet(rsId, zoneId, _)) { rc =>
+            complete(StatusCodes.Accepted, rc)
+          }
+        } ~
+        (put & monitor("Endpoint.updateRecordSet")) {
+          authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
+            (authPrincipal, recordSet) =>
+              recordSet match {
+                case badRs if badRs.zoneId != zoneId =>
+                  Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
+                case goodRs =>
+                  recordSetService.updateRecordSet(goodRs, authPrincipal)
+              }
+          } { rc =>
+            complete(StatusCodes.Accepted, rc)
           }
         }
     } ~
-      path("zones" / Segment / "recordsets" / Segment) { (zoneId, rsId) =>
-        get {
-          monitor("Endpoint.getRecordSet") {
-            execute(recordSetService.getRecordSet(rsId, zoneId, authPrincipal)) { rs =>
-              complete(StatusCodes.OK, GetRecordSetResponse(rs))
-            }
-          }
-        } ~
-          delete {
-            monitor("Endpoint.deleteRecordSet") {
-              execute(recordSetService.deleteRecordSet(rsId, zoneId, authPrincipal)) { rc =>
-                complete(StatusCodes.Accepted, rc)
-              }
-            }
-          } ~
-          put {
-            monitor("Endpoint.updateRecordSet") {
-              entity(as[RecordSet]) { rs =>
-                handleRejections(invalidContentHandler) {
-                  validate(
-                    check = rs.zoneId == zoneId,
-                    errorMsg = "Cannot update RecordSet's zoneId attribute"
-                  ) {
-                    execute(recordSetService.updateRecordSet(rs, authPrincipal)) { rc =>
-                      complete(StatusCodes.Accepted, rc)
-                    }
-                  }
-                }
-              }
-            }
-          }
-      } ~
-      path("zones" / Segment / "recordsets" / Segment / "changes" / Segment) {
-        (zoneId, _, changeId) =>
-          get {
-            monitor("Endpoint.getRecordSetChange") {
-              execute(recordSetService.getRecordSetChange(zoneId, changeId, authPrincipal)) {
-                change =>
-                  complete(StatusCodes.OK, change)
-              }
-            }
-          }
-      } ~
-      path("zones" / Segment / "recordsetchanges") { zoneId =>
-        get {
-          monitor("Endpoint.listRecordSetChanges") {
-            parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-              (startFrom: Option[String], maxItems: Int) =>
-                handleRejections(invalidQueryHandler) {
-                  validate(
-                    check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
-                    errorMsg = s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
-                      s"and $DEFAULT_MAX_ITEMS inclusive"
-                  ) {
-                    execute(recordSetService
-                      .listRecordSetChanges(zoneId, startFrom, maxItems, authPrincipal)) {
-                      changes =>
-                        complete(StatusCodes.OK, changes)
-                    }
-                  }
-                }
-            }
+    path("zones" / Segment / "recordsets" / Segment / "changes" / Segment) {
+      (zoneId, _, changeId) =>
+        (get & monitor("Endpoint.getRecordSetChange")) {
+          authenticateAndExecute(recordSetService.getRecordSetChange(zoneId, changeId, _)) {
+            change =>
+              complete(StatusCodes.OK, change)
           }
         }
+    } ~
+    path("zones" / Segment / "recordsetchanges") { zoneId =>
+      (get & monitor("Endpoint.listRecordSetChanges")) {
+        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Option[String], maxItems: Int) =>
+            handleRejections(invalidQueryHandler) {
+              validate(
+                check = 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
+                errorMsg = s"maxItems was $maxItems, maxItems must be between 0 exclusive " +
+                  s"and $DEFAULT_MAX_ITEMS inclusive"
+              ) {
+                authenticateAndExecute(recordSetService
+                  .listRecordSetChanges(zoneId, startFrom, maxItems, _)) { changes =>
+                  complete(StatusCodes.OK, changes)
+                }
+              }
+            }
+        }
       }
-  }
+    }
 
   private val invalidQueryHandler = RejectionHandler
     .newBuilder()
@@ -152,28 +146,4 @@ trait RecordSetRoute extends Directives {
         complete(StatusCodes.BadRequest, msg)
     }
     .result()
-
-  private val invalidContentHandler = RejectionHandler
-    .newBuilder()
-    .handle {
-      case ValidationRejection(msg, _) =>
-        complete(StatusCodes.UnprocessableEntity, msg)
-    }
-    .result()
-
-  private def execute[A](f: => Result[A])(rt: A => Route): Route =
-    onSuccess(f.value.unsafeToFuture()) {
-      case Right(a) => rt(a)
-      case Left(ZoneNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-      case Left(RecordSetAlreadyExists(msg)) => complete(StatusCodes.Conflict, msg)
-      case Left(ZoneInactiveError(msg)) => complete(StatusCodes.BadRequest, msg)
-      case Left(NotAuthorizedError(msg)) => complete(StatusCodes.Forbidden, msg)
-      case Left(ZoneUnavailableError(msg)) => complete(StatusCodes.Conflict, msg)
-      case Left(RecordSetNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-      case Left(InvalidRequest(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
-      case Left(PendingUpdateError(msg)) => complete(StatusCodes.Conflict, msg)
-      case Left(RecordSetChangeNotFoundError(msg)) => complete(StatusCodes.NotFound, msg)
-      case Left(InvalidGroupError(msg)) => complete(StatusCodes.UnprocessableEntity, msg)
-      case Left(e) => failWith(e)
-    }
 }

@@ -77,27 +77,3 @@ case class Group(
       memberIds = memberIdsUpdate ++ adminUserIdsUpdate,
       adminUserIds = adminUserIdsUpdate)
 }
-
-object Group {
-  import cats.data.ValidatedNel
-  import cats.implicits._
-
-  def build(
-      name: String,
-      email: String,
-      description: Option[String],
-      members: Set[String],
-      admins: Set[String]): ValidatedNel[String, Group] =
-    Group(name, email, description, memberIds = members ++ admins, adminUserIds = admins)
-      .validNel[String]
-
-  def build(
-      id: String,
-      name: String,
-      email: String,
-      description: Option[String],
-      members: Set[String],
-      admins: Set[String]): ValidatedNel[String, Group] =
-    Group(name, email, description, id, memberIds = members ++ admins, adminUserIds = admins)
-      .validNel[String]
-}
