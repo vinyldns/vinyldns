@@ -32,6 +32,8 @@ import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder
 import org.json4s.jackson.JsonMethods._
 import org.json4s.DefaultFormats
+import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.AWSStaticCredentialsProvider
 
 class SnsNotifierIntegrationSpec
     extends MySqlApiIntegrationSpec
@@ -71,16 +73,23 @@ class SnsNotifierIntegrationSpec
         id = "a615e2bb-8b35-4a39-8947-1edd0e653afa"
       )
 
+      val credentialsProvider = new AWSStaticCredentialsProvider(
+        new BasicAWSCredentials(
+          snsConfig.getString("access-key"),
+          snsConfig.getString("secret-key")))
       val sns = AmazonSNSClientBuilder.standard
         .withEndpointConfiguration(
           new EndpointConfiguration(
             snsConfig.getString("service-endpoint"),
             snsConfig.getString("signing-region")))
+        .withCredentials(credentialsProvider)
         .build()
-      val sqs = AmazonSQSClientBuilder.standard
+      val sqs = AmazonSQSClientBuilder
+        .standard()
         .withEndpointConfiguration(
           new EndpointConfiguration("http://127.0.0.1:19007", "us-east-1")
         )
+        .withCredentials(credentialsProvider)
         .build()
 
       val program = for {
