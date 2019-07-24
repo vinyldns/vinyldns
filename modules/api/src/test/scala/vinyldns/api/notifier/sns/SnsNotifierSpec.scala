@@ -84,7 +84,7 @@ class SnsNotifierSpec
         .load(NotifierConfig("", snsConfig), mockUserRepository)
         .unsafeRunSync()
 
-      notifier.notify(new Notification("this won't be supported ever")) should be(IO.unit)
+      notifier.notify(Notification("this won't be supported ever")) should be(IO.unit)
     }
 
     "send a notification" in {

@@ -39,7 +39,7 @@ class SnsNotifierProvider extends NotifierProvider {
 
   def createClient(config: SnsNotifierConfig): IO[AmazonSNS] = IO {
     logger.error(
-      s"Setting up sns notifier client with settings: " +
+      "Setting up sns notifier client with settings: " +
         s"service endpoint: ${config.serviceEndpoint}; " +
         s"signing region: ${config.signingRegion}; " +
         s"topic name: ${config.topicArn}")
