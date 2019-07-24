@@ -16,5 +16,9 @@ There are a few existing tools for working with the VinylDNS API.
 - [vinyldns-js](https://github.com/vinyldns/vinyldns-js) - JavaScript client for use in Node.js
 - [terraform-provider-vinyldns](https://github.com/vinyldns/terraform-provider-vinyldns) - a Terraform provider for VinylDNS
 
+## Integrations
+
+- [external-dns](https://github.com/kubernetes-incubator/external-dns) - makes Kubernetes resources discoverable via public DNS servers
+
 ## Coming Soon
 - [vinyldns-ansible](https://github.com/vinyldns/vinyldns-ansible) - Ansible integration with VinylDNS
