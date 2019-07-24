@@ -34,7 +34,7 @@ object DomainValidationErrorType extends Enumeration {
   InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
   CnameIsNotUniqueError, UserIsNotAuthorized, RecordNameNotUniqueInBatch, RecordInReverseZoneError,
   HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError, NewMultiRecordError,
-  CnameAtZoneApexError, ScheduledChangeDisabled = Value
+  CnameAtZoneApexError = Value
 
   // $COVERAGE-OFF$
   def from(error: DomainValidationError): DomainValidationErrorType =
@@ -66,7 +66,6 @@ object DomainValidationErrorType extends Enumeration {
       case _: ExistingMultiRecordError => ExistingMultiRecordError
       case _: NewMultiRecordError => NewMultiRecordError
       case _: CnameAtZoneApexError => CnameAtZoneApexError
-      case ScheduledChangesDisabled => ScheduledChangeDisabled
     }
   // $COVERAGE-ON$
 }
