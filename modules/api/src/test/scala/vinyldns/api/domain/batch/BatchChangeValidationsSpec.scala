@@ -24,10 +24,10 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, batch, _}
-import vinyldns.core.domain._
-import vinyldns.core.TestZoneData._
-import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
+import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus}
 import vinyldns.core.domain.record._
@@ -179,19 +179,19 @@ class BatchChangeValidationsSpec
     "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled") {
     val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
     validateScheduledChange(input, scheduledChangesEnabled = false) should
-      haveInvalid[DomainValidationError](ScheduledChangesDisabled)
+      beLeft[BatchChangeErrorResponse](ScheduledChangesDisabled)
   }
 
   property(
     "validateScheduledChange: should succeed if batch is scheduled and scheduled change enabled") {
     val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
-    validateScheduledChange(input, scheduledChangesEnabled = true) should beValid(())
+    validateScheduledChange(input, scheduledChangesEnabled = true) should beRight(())
   }
 
   property(
     "validateScheduledChange: should succeed if batch is not scheduled and scheduled change disabled") {
     val input = BatchChangeInput(None, List(), scheduledTime = None)
-    validateScheduledChange(input, scheduledChangesEnabled = false) should beValid(())
+    validateScheduledChange(input, scheduledChangesEnabled = false) should beRight(())
   }
 
   property("validateInputChanges: should succeed if all inputs are good") {

@@ -31,7 +31,7 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestMembershipData._
-import vinyldns.core.domain.{BatchChangeIsEmpty, ScheduledChangesDisabled}
+import vinyldns.core.domain.BatchChangeIsEmpty
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
@@ -235,7 +235,7 @@ class BatchChangeRoutingSpec()
             IO.pure(Right(validResponseWithCommentsAndScheduled)))
         case Some("scheduledChangeDisabled") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
-            IO.pure(Left(InvalidBatchChangeInput(List(ScheduledChangesDisabled))))
+            IO.pure(Left(ScheduledChangesDisabled))
           )
         case Some(_) =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))

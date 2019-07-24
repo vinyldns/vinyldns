@@ -72,17 +72,18 @@ class BatchChangeValidations(
       input: BatchChangeInput,
       existingGroup: Option[Group],
       authPrincipal: AuthPrincipal): BatchResult[Unit] = {
-    val validations = validateBatchChangeInputSize(input) |+| validateScheduledChange(
-      input,
-      scheduledChangesEnabled) |+| validateOwnerGroupId(
+    val validations = validateBatchChangeInputSize(input) |+| validateOwnerGroupId(
       input.ownerGroupId,
       existingGroup,
       authPrincipal)
 
-    EitherT.fromEither(
-      validations
+    for {
+      _ <- validations
         .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeInput(nel.toList))
-        .toEither)
+        .toEither
+        .toBatchResult
+      _ <- validateScheduledChange(input, scheduledChangesEnabled).toBatchResult
+    } yield ()
   }
 
   def validateBatchChangeInputSize(input: BatchChangeInput): SingleValidation[Unit] =
@@ -499,7 +500,7 @@ class BatchChangeValidations(
 
   def validateScheduledChange(
       input: BatchChangeInput,
-      scheduledChangesEnabled: Boolean): SingleValidation[Unit] =
-    if (scheduledChangesEnabled || input.scheduledTime.isEmpty) ().validNel
-    else ScheduledChangesDisabled.invalidNel
+      scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    if (scheduledChangesEnabled || input.scheduledTime.isEmpty) Right(())
+    else Left(ScheduledChangesDisabled)
 }
