@@ -175,6 +175,25 @@ class BatchChangeValidationsSpec
     }
   }
 
+  property(
+    "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled") {
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
+    validateScheduledChange(input, scheduledChangesEnabled = false) should
+      haveInvalid[DomainValidationError](ScheduledChangesDisabled)
+  }
+
+  property(
+    "validateScheduledChange: should succeed if batch is scheduled and scheduled change enabled") {
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
+    validateScheduledChange(input, scheduledChangesEnabled = true) should beValid(())
+  }
+
+  property(
+    "validateScheduledChange: should succeed if batch is not scheduled and scheduled change disabled") {
+    val input = BatchChangeInput(None, List(), scheduledTime = None)
+    validateScheduledChange(input, scheduledChangesEnabled = false) should beValid(())
+  }
+
   property("validateInputChanges: should succeed if all inputs are good") {
     forAll(listOfN(3, validAChangeGen)) { input: List[ChangeInput] =>
       val result = validateInputChanges(input)
@@ -237,7 +256,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateBatchChangeInput: should fail if both input size is valid and owner group ID aew invalid") {
+    "validateBatchChangeInput: should fail if both input size is valid and owner group ID are invalid") {
     forAll(validBatchChangeInput(0, 0)) { batchChangeInput =>
       val result = validateBatchChangeInput(
         batchChangeInput.copy(ownerGroupId = Some(dummyGroup.id)),

@@ -169,4 +169,9 @@ final case class NewMultiRecordError(changeName: String, changeType: RecordType)
 final case class CnameAtZoneApexError(zoneName: String) extends DomainValidationError {
   def message: String = s"""CNAME cannot be the same name as zone "$zoneName"."""
 }
+
+case object ScheduledChangesDisabled extends DomainValidationError {
+  val message: String =
+    s"""Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance."""
+}
 // $COVERAGE-ON$
