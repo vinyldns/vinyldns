@@ -17,7 +17,7 @@
         <h3>
             <span class="fa fa-list-ol"></span> Batch Change
             <span ng-if="batch.status == 'Complete'" class="label label-success">{{batch.status}}</span>
-            <span ng-if="batch.status == 'Pending' && batch.approvalStatus !='PendingApproval'" class="label label-info">{{batch.status}}</span>
+            <span ng-if="batch.status == 'Pending' && batch.approvalStatus != 'PendingApproval'" class="label label-info">{{batch.status}}</span>
             <span ng-if="batch.status == 'PartialFailure'" class="label label-warning">Partial Failure</span>
             <span ng-if="batch.status == 'Failed' && batch.approvalStatus != 'ManuallyRejected'" class="label label-danger">{{batch.status}}</span>
             <span ng-if="batch.approvalStatus == 'PendingApproval'" class="label label-warning">Pending Review</span>

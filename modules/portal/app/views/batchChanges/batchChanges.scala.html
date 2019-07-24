@@ -64,9 +64,9 @@
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
                                         <span ng-if="batchChange.status == 'Complete'" class="label label-success">{{batchChange.status}}</span>
-                                        <span ng-if="batchChange.status == 'Pending' && batchChange.approvalStatus !='PendingApproval'" class="label label-info">{{batchChange.status}}</span>
+                                        <span ng-if="batchChange.status == 'Pending' && batchChange.approvalStatus != 'PendingApproval'" class="label label-info">{{batchChange.status}}</span>
                                         <span ng-if="batchChange.status == 'PartialFailure'" class="label label-warning">Partial Failure</span>
-                                        <span ng-if="batchChange.status == 'Failed' && batchChange.approvalStatus !='ManuallyRejected'" class="label label-danger">{{batchChange.status}}</span>
+                                        <span ng-if="batchChange.status == 'Failed' && batchChange.approvalStatus != 'ManuallyRejected'" class="label label-danger">{{batchChange.status}}</span>
                                         <span ng-if="batchChange.approvalStatus == 'PendingApproval'" class="label label-warning">Pending Review</span>
                                         <span ng-if="batchChange.approvalStatus == 'ManuallyRejected'" class="label label-danger">Rejected</span>
                                     </td>
