@@ -25,7 +25,7 @@ class SharedZoneTestContext(object):
                 'name': 'ok-group',
                 'email': 'test@test.com',
                 'description': 'this is a description',
-                'members': [ { 'id': 'ok'} ],
+                'members': [ { 'id': 'ok'}, { 'id': 'support-user-id'} ],
                 'admins': [ { 'id': 'ok'} ]
             }
 

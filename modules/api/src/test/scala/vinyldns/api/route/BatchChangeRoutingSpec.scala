@@ -738,20 +738,20 @@ class BatchChangeRoutingSpec()
   }
 
   "POST approve batch change" should {
-    "return OK if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
+    "return Accepted if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
         supportUserRoute ~> check {
-        status shouldBe OK
+        status shouldBe Accepted
       }
     }
 
-    "return OK if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
+    "return Accepted if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         supportUserRoute ~> check {
-        status shouldBe OK
+        status shouldBe Accepted
       }
     }
 
@@ -773,9 +773,9 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "return OK no request entity is provided" in {
+    "return Accepted no request entity is provided" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve") ~> supportUserRoute ~> check {
-        status shouldBe OK
+        status shouldBe Accepted
       }
     }
 

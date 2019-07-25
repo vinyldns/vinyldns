@@ -121,7 +121,7 @@ class BatchChangeRoute(
                     id,
                     authPrincipal,
                     input.getOrElse(ApproveBatchChangeInput()))) { chg =>
-              complete(StatusCodes.OK, chg)
+              complete(StatusCodes.Accepted, chg)
             // TODO: Update response entity to return modified batch change
             }
           }

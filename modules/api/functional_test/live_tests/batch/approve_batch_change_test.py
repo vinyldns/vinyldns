@@ -1,6 +1,52 @@
 from hamcrest import *
 from utils import *
 
+
+@pytest.mark.manual_batch_review
+def test_approve_pending_batch_change_success(shared_zone_test_context):
+    """
+    Test approving a batch change succeeds for a support user
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    approver = shared_zone_test_context.support_user_client
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("test-approve-success.not.loaded.", address="4.3.2.1")
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+
+    to_delete = []
+    to_disconnect = None
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(result['id'])
+        assert_that(get_batch['status'], is_('Pending'))
+        assert_that(get_batch['changes'][0]['status'], is_('NeedsReview'))
+
+        # need to create the zone so the change can succeed
+        zone = {
+            'name': 'not.loaded.',
+            'email': 'test@test.com',
+            'adminGroupId': shared_zone_test_context.ok_group['id'],
+            'backendId': 'func-test-backend',
+            'shared': True
+        }
+        zone_create = approver.create_zone(zone, status=202)
+        to_disconnect = zone_create['zone']
+        approver.wait_until_zone_active(to_disconnect['id'])
+
+        approved = approver.approve_batch_change(result['id'], status=202)
+        completed_batch = client.wait_until_batch_change_completed(approved)
+        to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
+
+        assert_that(completed_batch['status'], is_('Complete'))
+        assert_that(completed_batch['changes'][0]['status'], is_('Complete'))
+    finally:
+        clear_zoneid_rsid_tuple_list(to_delete, client)
+        if to_disconnect is not None:
+            approver.abandon_zones(to_disconnect['id'], status=202)
+
 @pytest.mark.manual_batch_review
 def test_approve_batch_change_with_invalid_batch_change_id_fails(shared_zone_test_context):
     """
