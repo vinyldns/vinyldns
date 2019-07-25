@@ -1858,7 +1858,9 @@ def test_ipv4_ptr_record_when_zone_discovery_only_finds_mismatched_delegated_zon
 
     batch_change_input = {
         "changes": [
-            get_change_PTR_json("192.0.2.1")
+            get_change_PTR_json("192.0.2.1"),
+            # dummy change with too big TTL so ZD failure wont go to pending if enabled
+            get_change_A_AAAA_json("this.change.will.fail.", ttl=99999999999 ,address="1.1.1.1")
         ]
     }
 
