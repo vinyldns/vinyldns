@@ -58,5 +58,5 @@ final case class BatchRequesterNotFound(userId: String, userName: String)
 
 case object ScheduledChangesDisabled extends BatchChangeErrorResponse {
   val message: String =
-    s"""Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance."""
+    "Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance."
 }
