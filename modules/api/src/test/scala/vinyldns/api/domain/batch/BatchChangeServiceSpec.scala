@@ -442,7 +442,7 @@ class BatchChangeServiceSpec
               RejectBatchChangeInput(Some("review comment")))
             .value)
 
-      result.status shouldBe BatchChangeStatus.Failed
+      result.status shouldBe BatchChangeStatus.Rejected
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyRejected
       result.changes.foreach(_.status shouldBe SingleChangeStatus.Rejected)
       result.reviewComment shouldBe Some("review comment")
