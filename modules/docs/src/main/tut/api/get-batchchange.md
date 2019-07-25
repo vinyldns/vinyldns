@@ -36,11 +36,13 @@ name          | type        | description |
  ------------ | :---------- | :---------- |
 userId        | string      | The unique identifier of the user that created the batch change. |
 userName      | string      | The username of the user that created the batch change. |
-comments      | string      | Optional comments about the batch change. |
+comments      | string      | Conditional: comments about the batch change, if provided. |
 createdTimestamp | date-time      | The timestamp (in GMT) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteChange](../api/batchchange-model/#singledeletechange-). |
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
+ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
+approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingApproval**, **ManuallyApproved** or **ManuallyRejected**. |
 
 
 #### EXAMPLE RESPONSE
@@ -82,6 +84,7 @@ id            | string      | The unique identifier for this batch change. |
         }
     ], 
     "status": "Pending", 
-    "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a"
+    "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a",
+    "approvalStatus": "AutoApproved"
 }
 ```

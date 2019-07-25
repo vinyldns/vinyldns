@@ -6,19 +6,36 @@ section: "api"
 
 # Batch Change Errors
 1. [By-Change Accumulated Errors](#by-change-accumulated-errors)
+   - [Permissible Errors](#permissible-errors)
+   - [Fatal Errors](#fatal-errors)
 2. [Full-Request Errors](#full-request-errors)
 
 ### BY-CHANGE ACCUMULATED ERRORS <a id="by-change-accumulated-errors" />
 
-Since all of the batch changes are being validated simultaneously, it is possible to encounter a variety of errors for a given change. Each change that is associated with errors will have its own list of **errors** containing one or more errors; any changes without the **errors** list have been fully validated and are good to submit. If any change in the batch is deemed invalid for any reason, no changes in the batch will be applied. These types of errors will probably account for the majority of errors that users encounter.
+Since all of the batch changes are being validated simultaneously, it is possible to encounter a variety of errors for a given change. Each change that is associated with errors will have its own list of **errors** containing one or more errors; any changes without the **errors** list have been fully validated and are good to submit. 
 
-By-change accumulated errors are errors that get collected at different validation stages and correspond to individual change inputs. By-change accumulated errors are grouped into the following stages:
+By-change accumulated errors are errors that get collected at different validation stages and correspond to individual change inputs. These types of errors will probably account for the majority of errors that users encounter. By-change accumulated errors are grouped into the following stages:
 
 - Independent input validations: Validate invalid data input formats and values.
 - Record and zone discovery: Resolve record and zone from fully-qualified input name.
 - Dependent context validations: Check for sufficient user access and conflicts with existing records or other submissions within the batch.
 
 Since by-change accumulated errors are collected at different stages, errors at later stages may exist but will not appear unless errors at earlier stages are addressed.
+
+By-change accumulated errors can be further classified as *permissible* or *fatal* errors. The presence of one or more fatal errors will result in an immediate failure and no changes in the batch being applied. The behavior of permissible errors depends on whether manual review is configured on: if manual review is disabled, permissible errors are treated as fatal errors; if manual review is enabled, batches with only permissible errors will enter a pending review state.
+
+The following chart provides a breakdown of batch change status outcome based on a combination of manual review configuration and error types present in the batch change:
+
+Manual Review Enabled? | Errors in Batch?           | Status Outcome |
+ :-------------------: | :------------------------- | :------------- |
+Yes                    | Both fatal and permissible | Failed         |
+Yes                    | Fatal only                 | Failed         |
+Yes                    | Permissible only           | PendingReview  |
+Yes                    | No                         | Pending        |
+No                     | Both fatal and permissible | Failed         |
+No                     | Fatal only                 | Failed         |
+No                     | Permissible only           | Failed         |
+No                     | No                         | Pending        |
 
 #### EXAMPLE ERROR RESPONSE BY CHANGE <a id="batchchange-error-response-by-change" />
 
@@ -73,6 +90,10 @@ Since by-change accumulated errors are collected at different stages, errors at 
 
 #### By-Change Errors
 
+##### Permissible Errors
+1. [Zone Discovery Failed](#ZoneDiscoveryFailed)
+
+##### Fatal errors
 1. [Invalid Domain Name](#InvalidDomainName)
 2. [Invalid Length](#InvalidLength)
 3. [Invalid Record Type](#InvalidRecordType)
@@ -81,23 +102,43 @@ Since by-change accumulated errors are collected at different stages, errors at 
 6. [Invalid IP Address](#InvalidIPAddress)
 7. [Invalid TTL](#InvalidTTL)
 8. [Invalid Batch Record Type](#InvalidBatchRecordType)
-9. [Zone Discovery Failed](#ZoneDiscoveryFailed)
-10. [Record Already Exists](#RecordAlreadyExists)
-11. [Record Does Not Exist](#RecordDoesNotExist)
-12. [CNAME Conflict](#CNAMEConflict)
-13. [User Is Not Authorized](#UserIsNotAuthorized)
-14. [Record Name Not Unique In Batch Change](#RecordNameNotUniqueInBatchChange)
-15. [Invalid Record Type In Reverse Zone](#InvalidRecordTypeInReverseZone)
-16. [Missing Owner Group Id](#MissingOwnerGroupId)
-17. [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
-18. [High Value Domain](#HighValueDomain)
-19. [RecordSet has Multiple Records](#ExistingMultiRecordError)
-20. [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
-21. [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
+9. [Record Already Exists](#RecordAlreadyExists)
+10. [Record Does Not Exist](#RecordDoesNotExist)
+11. [CNAME Conflict](#CNAMEConflict)
+12. [User Is Not Authorized](#UserIsNotAuthorized)
+13. [Record Name Not Unique In Batch Change](#RecordNameNotUniqueInBatchChange)
+14. [Invalid Record Type In Reverse Zone](#InvalidRecordTypeInReverseZone)
+15. [Missing Owner Group Id](#MissingOwnerGroupId)
+16. [Not a Member of Owner Group](#NotAMemberOfOwnerGroup)
+17. [High Value Domain](#HighValueDomain)
+18. [RecordSet has Multiple Records](#ExistingMultiRecordError)
+19. [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
+20. [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
 
-#### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
+### Permissible Errors <a id="permissible-errors**"></a>
+#### 1. Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a>
 
 ##### Error Message:
+
+```
+Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.
+```
+
+##### Details:
+
+Given an inputName, VinylDNS will determine the record and zone name for the requested change. For most records, the record
+names are the same as the zone name (apex), or split at at the first '.', so the inputName 'rname.zone.name.com' will be split
+into record name 'rname' and zone name 'zone.name.com' (or 'rname.zone.name.com' for both the record and zone name if it's an apex record).
+For PTR records, there is logic to determine the appropriate reverse zone from the given IP address.
+
+If this logic cannot find a matching zone in VinylDNS, you will see this error.
+In that case, you need to connect to the zone in VinylDNS.
+Even if the zone already exists outside of VinylDNS, it has to be added to VinylDNS to modify records.
+
+### Fatal errors <a id="fatal-errors"></a>
+#### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
+
+##### Error Message:__
 
 ```
 Invalid domain name: "<input>", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminate with a dot.
@@ -243,26 +284,7 @@ Invalid Batch Record Type: "<input>", valid record types for batch changes inclu
 The DNS record type is not currently supported for batch changes.
 
 
-#### 9. Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a>
-
-##### Error Message:
-
-```
-Zone Discovery Failed: zone for "<input>" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.
-```
-
-##### Details:
-
-Given an inputName, VinylDNS will determine the record and zone name for the requested change. For most records, the record
-names are the same as the zone name (apex), or split at at the first '.', so the inputName 'rname.zone.name.com' will be split
-into record name 'rname' and zone name 'zone.name.com' (or 'rname.zone.name.com' for both the record and zone name if it's an apex record).
-For PTR records, there is logic to determine the appropriate reverse zone from the given IP address.
-
-If this logic cannot find a matching zone in VinylDNS, you will see this error.
-In that case, you need to connect to the zone in VinylDNS.
-Even if the zone already exists outside of VinylDNS, it has to be added to VinylDNS to modify records.
-
-#### 10. Record Already Exists <a id="RecordAlreadyExists"></a>
+#### 9. Record Already Exists <a id="RecordAlreadyExists"></a>
 
 ##### Error Message:
 
@@ -276,7 +298,7 @@ Record "<input>" Already Exists: cannot add an existing record; to update it, is
 A record with the given name already exists, and cannot be duplicated for the given type.
 
 
-#### 11. Record Does Not Exist <a id="RecordDoesNotExist"></a>
+#### 10. Record Does Not Exist <a id="RecordDoesNotExist"></a>
 
 ##### Error Message:
 
@@ -290,7 +312,7 @@ A record with the given name could not be found in VinylDNS.
 If the record exists in DNS, then you should [sync the zone](../api/vinyl-basics/#syncingZone) for that record to bring VinylDNS up to date with what is in the DNS backend.
 
 
-#### 12. CNAME Conflict <a id="CNAMEConflict"></a>
+#### 11. CNAME Conflict <a id="CNAMEConflict"></a>
 
 ##### Error Message:
 
@@ -303,7 +325,7 @@ CNAME conflict: CNAME record names must be unique. Existing record with name "<n
 A CNAME record with the given name already exists. CNAME records must have unique names.
 
 
-#### 13. User Is Not Authorized <a id="UserIsNotAuthorized"></a>
+#### 12. User Is Not Authorized <a id="UserIsNotAuthorized"></a>
 
 ##### Error Message:
 
@@ -316,7 +338,7 @@ User "<user>" is not authorized.
 User must either be in the admin group for the zone being changed, or have an ACL rule.
 
 
-#### 14. Record Name Not Unique In Batch Change <a id="RecordNameNotUniqueInBatchChange"></a>
+#### 13. Record Name Not Unique In Batch Change <a id="RecordNameNotUniqueInBatchChange"></a>
 
 ##### Error Message:
 
@@ -330,7 +352,7 @@ Certain record types do not allow multiple records with the same name. If you ge
 illegally input two or more records with the same name and one of these types.
 
 
-#### 15. Invalid Record Type In Reverse Zone <a id="InvalidRecordTypeInReverseZone"></a>
+#### 14. Invalid Record Type In Reverse Zone <a id="InvalidRecordTypeInReverseZone"></a>
 
 ##### Error Message:
 
@@ -343,7 +365,7 @@ Invalid Record Type In Reverse Zone: record with name "<name>" and type "<type>"
 Not all record types are allowed in a DNS reverse zone. The given type is not supported.
 
 
-#### 16. Missing Owner Group Id <a id="MissingOwnerGroupId"></a>
+#### 15. Missing Owner Group Id <a id="MissingOwnerGroupId"></a>
 
 ##### Error Message:
 
@@ -356,7 +378,7 @@ Zone "<zone name>" is a shared zone, so owner group ID must be specified for rec
 You are trying to create a new record or update an existing unowned record in a shared zone. This requires a record owner group ID in the batch change.  
 
 
-#### 17. Not a Member of Owner Group <a id="NotAMemberOfOwnerGroup"></a>
+#### 16. Not a Member of Owner Group <a id="NotAMemberOfOwnerGroup"></a>
 
 ##### Error Message:
 
@@ -370,7 +392,7 @@ You must be a member of the group you are assigning for record ownership in the 
 
 
 
-#### 18. High Value Domain <a id="HighValueDomain"></a>
+#### 17. High Value Domain <a id="HighValueDomain"></a>
 
 ##### Error Message:
 
@@ -385,7 +407,7 @@ The list of high value domains is specific to each VinylDNS instance.
 You should reach out to your VinylDNS administrators for more information.
 
 
-#### 19. RecordSet has Multiple DNS records <a id="ExistingMultiRecordError"></a>
+#### 18. RecordSet has Multiple DNS records <a id="ExistingMultiRecordError"></a>
 
 ##### Error Message:
 
@@ -400,7 +422,7 @@ This error means that the recordset you are attempting to update/delete has mult
 Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
 
 
-#### 20. Cannot Create a RecordSet with Multiple Records <a id="NewMultiRecordError"></a>
+#### 19. Cannot Create a RecordSet with Multiple Records <a id="NewMultiRecordError"></a>
 
 ##### Error Message:
 
@@ -415,7 +437,7 @@ This error means that you have multiple Add entries with the same name and type 
 Note that this error is configuration-driven and will only appear if your instance of VinylDNS does not support multi-record batch updates.
 
 
-#### 21. CNAME at the Zone Apex is not Allowed <a id="CnameApexError"></a>
+#### 20. CNAME at the Zone Apex is not Allowed <a id="CnameApexError"></a>
 
 ##### Error Message:
 
