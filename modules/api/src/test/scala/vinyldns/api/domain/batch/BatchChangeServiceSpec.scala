@@ -1346,6 +1346,9 @@ class BatchChangeServiceSpec
       result.batchChanges(0).ownerGroupId shouldBe None
       result.batchChanges(0).approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
       result.batchChanges(0).reviewerName shouldBe Some(superUser.userName)
+      result.batchChanges(0).reviewerId shouldBe Some(superUser.id)
+      result.batchChanges(0).reviewComment shouldBe Some("this looks good")
+      result.batchChanges(0).reviewTimestamp shouldBe batchChange.reviewTimestamp
     }
 
     "return a list of batchChangeSummaries if some exist" in {
