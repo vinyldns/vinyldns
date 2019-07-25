@@ -21,7 +21,13 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{ChangeSet, ListRecordSetResults, RecordSet, RecordSetRepository}
 import vinyldns.core.domain.zone.{ListZonesResults, Zone, ZoneRepository}
 import cats.effect._
-import vinyldns.core.domain.membership.{Group, GroupRepository}
+import vinyldns.core.domain.membership.{
+  Group,
+  GroupRepository,
+  ListUsersResults,
+  User,
+  UserRepository
+}
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 
 // Empty implementations let our other test classes just edit with the methods they need
@@ -92,4 +98,23 @@ trait EmptyGroupRepo extends GroupRepository {
   def getGroupByName(groupName: String): IO[Option[Group]] = IO.pure(None)
 
   def getAllGroups(): IO[Set[Group]] = IO.pure(Set())
+}
+
+trait EmptyUserRepo extends UserRepository {
+  def getUser(userId: String): IO[Option[User]] = IO.pure(None)
+
+  def getUsers(
+      userIds: Set[String],
+      startFrom: Option[String],
+      maxItems: Option[Int]): IO[ListUsersResults] = IO.pure(ListUsersResults(List(), None))
+
+  def getAllUsers: IO[List[User]] = IO.pure(List())
+
+  def getUserByAccessKey(accessKey: String): IO[Option[User]] = IO.pure(None)
+
+  def getUserByName(userName: String): IO[Option[User]] = IO.pure(None)
+
+  def save(user: User): IO[User] = IO.pure(user)
+
+  def save(users: List[User]): IO[List[User]] = IO.pure(List())
 }

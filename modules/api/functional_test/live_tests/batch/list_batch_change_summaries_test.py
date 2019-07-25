@@ -93,6 +93,8 @@ class ListBatchChangeSummariesFixture():
             assert_that(summary["totalChanges"], equal_to(self.completed_changes[i + start_from]["totalChanges"]))
             assert_that(summary["status"], equal_to(self.completed_changes[i + start_from]["status"]))
             assert_that(summary["id"], equal_to(self.completed_changes[i + start_from]["id"]))
+            assert_that(summary["approvalStatus"], equal_to("AutoApproved"))
+            assert_that(summary, is_not(has_key("reviewerId")))
 
 
 @pytest.fixture(scope = "module")

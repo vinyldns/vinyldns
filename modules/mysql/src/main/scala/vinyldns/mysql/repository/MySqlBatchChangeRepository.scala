@@ -265,6 +265,11 @@ class MySqlBatchChangeRepository
                   Option(res.string("owner_group_id")),
                   res.string("id"),
                   None,
+                  approvalStatus,
+                  res.stringOpt("reviewer_id"),
+                  None,
+                  res.stringOpt("review_comment"),
+                  res.timestampOpt("review_timestamp").map(st => new org.joda.time.DateTime(st)),
                   res.timestampOpt("scheduled_time").map(st => new org.joda.time.DateTime(st))
                 )
               }

@@ -33,7 +33,13 @@ import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalS
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 import vinyldns.core.domain.{CnameAtZoneApexError, ZoneDiscoveryError}
-import vinyldns.core.domain.membership.{Group, GroupRepository}
+import vinyldns.core.domain.membership.{
+  Group,
+  GroupRepository,
+  ListUsersResults,
+  User,
+  UserRepository
+}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
@@ -54,6 +60,7 @@ object BatchChangeService {
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
       batchChangeConverter,
+      dataAccessor.userRepository,
       manualReviewEnabled,
       authProvider,
       notifiers
@@ -67,6 +74,7 @@ class BatchChangeService(
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
     batchChangeConverter: BatchChangeConverterAlgebra,
+    userRepository: UserRepository,
     manualReviewEnabled: Boolean,
     authProvider: AuthPrincipalProvider,
     notifiers: AllNotifiers)
@@ -159,7 +167,9 @@ class BatchChangeService(
       _ <- canGetBatchChange(batchChange, auth).toBatchResult
       rsOwnerGroup <- getOwnerGroup(batchChange.ownerGroupId)
       rsOwnerGroupName = rsOwnerGroup.map(_.name)
-    } yield BatchChangeInfo(batchChange, rsOwnerGroupName)
+      reviewer <- getReviewer(batchChange.reviewerId)
+      reviewerUserName = reviewer.map(_.userName)
+    } yield BatchChangeInfo(batchChange, rsOwnerGroupName, reviewerUserName)
 
   def getExistingBatchChange(id: String): BatchResult[BatchChange] =
     batchChangeRepo
@@ -254,6 +264,14 @@ class BatchChangeService(
       group <- OptionT(groupRepository.getGroup(groupId))
     } yield group
     ownerGroup.value.toBatchResult
+  }
+
+  def getReviewer(reviewerId: Option[String]): BatchResult[Option[User]] = {
+    val reviewer = for {
+      uid <- OptionT.fromOption[IO](reviewerId)
+      user <- OptionT(userRepository.getUser(uid))
+    } yield user
+    reviewer.value.toBatchResult
   }
 
   def zoneDiscovery(
@@ -443,6 +461,15 @@ class BatchChangeService(
       summary.copy(ownerGroupName = groupName)
     }
 
+  def addReviewerUserNamesToSummaries(
+      summaries: List[BatchChangeSummary],
+      reviewers: ListUsersResults): List[BatchChangeSummary] =
+    summaries.map { summary =>
+      val userName =
+        summary.reviewerId.flatMap(userId => reviewers.users.find(_.id == userId).map(_.userName))
+      summary.copy(reviewerName = userName)
+    }
+
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       startFrom: Option[Int] = None,
@@ -460,8 +487,13 @@ class BatchChangeService(
       summariesWithGroupNames = addOwnerGroupNamesToSummaries(
         listResults.batchChanges,
         rsOwnerGroups)
+      reviewerIds = listResults.batchChanges.flatMap(_.reviewerId).toSet
+      reviewerUserNames <- userRepository.getUsers(reviewerIds, None, Some(maxItems)).toBatchResult
+      summariesWithReviewerUserNames = addReviewerUserNamesToSummaries(
+        summariesWithGroupNames,
+        reviewerUserNames)
       listWithGroupNames = listResults.copy(
-        batchChanges = summariesWithGroupNames,
+        batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
         approvalStatus = approvalStatus)
     } yield listWithGroupNames
