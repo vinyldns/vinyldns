@@ -124,7 +124,7 @@ object BatchChangeInfo {
       reviewerUserName,
       reviewComment,
       reviewTimestamp,
-      scheduledTime: Option[DateTime]
+      scheduledTime
     )
   }
 }
