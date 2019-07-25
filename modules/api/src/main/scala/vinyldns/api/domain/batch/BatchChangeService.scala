@@ -80,6 +80,23 @@ class BatchChangeService(
       auth: AuthPrincipal,
       allowManualReview: Boolean): BatchResult[BatchChange] =
     for {
+      validationOutput <- applyBatchChangeValidationFlow(batchChangeInput, auth)
+      changeForConversion <- buildResponse(
+        batchChangeInput,
+        validationOutput.validatedChanges,
+        auth,
+        allowManualReview).toBatchResult
+      serviceCompleteBatch <- convertOrSave(
+        changeForConversion,
+        validationOutput.existingZones,
+        validationOutput.existingRecordSets,
+        batchChangeInput.ownerGroupId)
+    } yield serviceCompleteBatch
+
+  def applyBatchChangeValidationFlow(
+      batchChangeInput: BatchChangeInput,
+      auth: AuthPrincipal): BatchResult[BatchValidationFlowOutput] =
+    for {
       existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
       _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth)
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
@@ -92,17 +109,7 @@ class BatchChangeService(
         recordSets,
         auth,
         batchChangeInput.ownerGroupId)
-      changeForConversion <- buildResponse(
-        batchChangeInput,
-        validatedSingleChanges,
-        auth,
-        allowManualReview).toBatchResult
-      serviceCompleteBatch <- convertOrSave(
-        changeForConversion,
-        zoneMap,
-        recordSets,
-        batchChangeInput.ownerGroupId)
-    } yield serviceCompleteBatch
+    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, recordSets)
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -125,12 +132,26 @@ class BatchChangeService(
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
-      _ = BatchChangeInput(batchChange)
-      _ <- EitherT.fromOptionF[IO, BatchChangeErrorResponse, AuthPrincipal](
+      asInput = BatchChangeInput(batchChange)
+      requesterAuth <- EitherT.fromOptionF(
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
         BatchRequesterNotFound(batchChange.userId, batchChange.userName)
       )
-    } yield batchChange
+      reviewInfo = BatchChangeReviewInfo(
+        authPrincipal.userId,
+        approveBatchChangeInput.reviewComment)
+      validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth)
+      changeForConversion <- buildResponseForApprover(
+        batchChange,
+        asInput,
+        validationOutput.validatedChanges,
+        reviewInfo).toBatchResult
+      serviceCompleteBatch <- convertOrSave(
+        changeForConversion,
+        validationOutput.existingZones,
+        validationOutput.existingRecordSets,
+        batchChange.ownerGroupId)
+    } yield serviceCompleteBatch
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
@@ -325,7 +346,7 @@ class BatchChangeService(
     val allNonFatal = allErrors.forall(!_.isFatal)
 
     if (allErrors.isEmpty) {
-      val changes = transformed.getValid.map(_.asNewStoredChange)
+      val changes = transformed.getValid.map(_.asStoredChange())
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
@@ -341,7 +362,7 @@ class BatchChangeService(
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
-            case Valid(v) => v.asNewStoredChange
+            case Valid(v) => v.asStoredChange()
             case Invalid(e) => input.asNewStoredChange(e)
           }
       }
@@ -359,6 +380,33 @@ class BatchChangeService(
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
     }
   }
+
+  def buildResponseForApprover(
+      existingBatchChange: BatchChange,
+      batchChangeInput: BatchChangeInput,
+      transformed: ValidatedBatch[ChangeForValidation],
+      reviewInfo: BatchChangeReviewInfo): Either[BatchChangeErrorResponse, BatchChange] =
+    if (transformed.forall(_.isValid)) {
+      val changes = transformed.getValid.zip(existingBatchChange.changes).map {
+        case (newValidation, existing) => newValidation.asStoredChange(Some(existing.id))
+      }
+
+      BatchChange(
+        existingBatchChange.userId,
+        existingBatchChange.userName,
+        existingBatchChange.comments,
+        existingBatchChange.createdTimestamp,
+        changes,
+        existingBatchChange.ownerGroupId,
+        BatchChangeApprovalStatus.ManuallyApproved,
+        Some(reviewInfo.reviewerId),
+        reviewInfo.reviewComment,
+        Some(reviewInfo.reviewTimestamp),
+        id = existingBatchChange.id
+      ).asRight
+    } else {
+      InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
+    }
 
   def convertOrSave(
       batchChange: BatchChange,

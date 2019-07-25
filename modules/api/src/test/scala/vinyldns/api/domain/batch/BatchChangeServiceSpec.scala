@@ -127,6 +127,43 @@ class BatchChangeServiceSpec
     None,
     None)
 
+  private val singleChangeGood = SingleAddChange(
+    Some(baseZone.id),
+    Some(baseZone.name),
+    Some("test-a-pending"),
+    s"test-a-pending.${baseZone.name}",
+    RecordType.A,
+    1234,
+    AData("1.1.1.1"),
+    SingleChangeStatus.Pending,
+    None,
+    None,
+    None
+  )
+
+  private val singleChangeNR = SingleAddChange(
+    None,
+    None,
+    None,
+    s"test-a-needs-rev.${baseZone.name}",
+    RecordType.A,
+    1234,
+    AData("1.1.1.1"),
+    SingleChangeStatus.NeedsReview,
+    None,
+    None,
+    None,
+    List(SingleChangeError(DomainValidationErrorType.ZoneDiscoveryError, "error info"))
+  )
+
+  private val singleChangeNRPostReview = singleChangeNR.copy(
+    zoneId = Some(baseZone.id),
+    zoneName = Some(baseZone.name),
+    recordName = Some("test-a-needs-rev"),
+    status = SingleChangeStatus.Pending,
+    validationErrors = List.empty
+  )
+
   private val batchChangeRepo = new InMemoryBatchChangeRepository
   private val mockNotifier = mock[Notifier]
   private val mockNotifiers = AllNotifiers(List(mockNotifier))
@@ -440,35 +477,44 @@ class BatchChangeServiceSpec
   }
 
   "approveBatchChange" should {
+    val batchChangeNeedsApproval = BatchChange(
+      auth.userId,
+      auth.signedInUser.userName,
+      Some("comments in"),
+      DateTime.now,
+      List(singleChangeGood, singleChangeNR),
+      Some(authGrp.id),
+      BatchChangeApprovalStatus.PendingApproval
+    )
     "succeed if the batchChange is PendingApproval and reviewer is authorized" in {
-      val batchChange =
-        BatchChange(
-          auth.userId,
-          auth.signedInUser.userName,
-          None,
-          DateTime.now,
-          List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
-      batchChangeRepo.save(batchChange)
+      batchChangeRepo.save(batchChangeNeedsApproval)
 
       val result =
         rightResultOf(
-          underTest
-            .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
+          underTestManualEnabled
+            .approveBatchChange(
+              batchChangeNeedsApproval.id,
+              supportUserAuth,
+              ApproveBatchChangeInput(Some("reviewed!")))
             .value)
 
-      result shouldBe batchChange
+      result.userId shouldBe batchChangeNeedsApproval.userId
+      result.userName shouldBe batchChangeNeedsApproval.userName
+      result.comments shouldBe batchChangeNeedsApproval.comments
+      result.createdTimestamp shouldBe batchChangeNeedsApproval.createdTimestamp
+      result.ownerGroupId shouldBe batchChangeNeedsApproval.ownerGroupId
+      result.id shouldBe batchChangeNeedsApproval.id
+
+      result.changes shouldBe List(singleChangeGood, singleChangeNRPostReview)
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
+      result.reviewerId shouldBe Some(supportUserAuth.userId)
+      result.reviewComment shouldBe Some("reviewed!")
+      result.reviewTimestamp shouldBe defined
     }
 
     "fail if the batchChange is not PendingApproval" in {
       val batchChange =
-        BatchChange(
-          auth.userId,
-          auth.signedInUser.userName,
-          None,
-          DateTime.now,
-          List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        batchChangeNeedsApproval.copy(approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       batchChangeRepo.save(batchChange)
 
       val result =
@@ -481,32 +527,20 @@ class BatchChangeServiceSpec
     }
 
     "fail if the batchChange reviewer is not authorized" in {
-      val batchChange =
-        BatchChange(
-          auth.userId,
-          auth.signedInUser.userName,
-          None,
-          DateTime.now,
-          List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
-      batchChangeRepo.save(batchChange)
+      batchChangeRepo.save(batchChangeNeedsApproval)
 
       val result =
         leftResultOf(
-          underTest.approveBatchChange(batchChange.id, auth, ApproveBatchChangeInput()).value)
+          underTest
+            .approveBatchChange(batchChangeNeedsApproval.id, auth, ApproveBatchChangeInput())
+            .value)
 
-      result shouldBe UserNotAuthorizedError(batchChange.id)
+      result shouldBe UserNotAuthorizedError(batchChangeNeedsApproval.id)
     }
 
     "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Approval" in {
       val batchChange =
-        BatchChange(
-          auth.userId,
-          auth.signedInUser.userName,
-          None,
-          DateTime.now,
-          List(),
-          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+        batchChangeNeedsApproval.copy(approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       batchChangeRepo.save(batchChange)
 
       val result =
@@ -1187,7 +1221,62 @@ class BatchChangeServiceSpec
       ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
     }
   }
+  "buildResponseForApprover" should {
+    val batchChangeNeedsApproval = BatchChange(
+      auth.userId,
+      auth.signedInUser.userName,
+      Some("comments in"),
+      DateTime.now,
+      List(singleChangeGood, singleChangeNR),
+      Some(authGrp.id),
+      BatchChangeApprovalStatus.PendingApproval
+    )
+    val asInput = BatchChangeInput(batchChangeNeedsApproval)
+    val asAdds = asInput.changes.collect {
+      case a: AddChangeInput => a
+    }
+    val reviewInfo = BatchChangeReviewInfo(supportUser.id, Some("some approval comment"))
+    "return a BatchChange if all data inputs are valid" in {
+      val result = underTestManualEnabled
+        .buildResponseForApprover(
+          batchChangeNeedsApproval,
+          asInput,
+          List(
+            AddChangeForValidation(
+              baseZone,
+              singleChangeGood.inputName.split('.').head,
+              asAdds.head).validNel,
+            AddChangeForValidation(baseZone, singleChangeNR.inputName.split('.').head, asAdds(1)).validNel
+          ),
+          reviewInfo
+        )
+        .toOption
+        .get
 
+      result shouldBe a[BatchChange]
+      result.changes.head shouldBe singleChangeGood
+      result.changes(1) shouldBe singleChangeNRPostReview
+    }
+    "return an error even with valid/soft failures and manual review enabled" in {
+      val result = underTestManualEnabled
+        .buildResponseForApprover(
+          batchChangeNeedsApproval,
+          asInput,
+          List(
+            AddChangeForValidation(
+              baseZone,
+              singleChangeGood.inputName.split('.').head,
+              asAdds.head).validNel,
+            nonFatalError.invalidNel
+          ),
+          reviewInfo
+        )
+        .left
+        .value
+
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
+  }
   "listBatchChangeSummaries" should {
     "return a list of batchChangeSummaries if one exists" in {
       val batchChange =

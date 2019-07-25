@@ -16,8 +16,11 @@
 
 package vinyldns.api.domain.batch
 
+import java.util.UUID
+
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
+import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
@@ -76,7 +79,7 @@ object BatchTransformations {
     val recordName: String
     val inputChange: ChangeInput
     val recordKey = RecordKey(zone.id, recordName, inputChange.typ)
-    def asNewStoredChange: SingleChange
+    def asStoredChange(changeId: Option[String] = None): SingleChange
     def isAddChangeForValidation: Boolean
     def isDeleteChangeForValidation: Boolean
   }
@@ -95,7 +98,7 @@ object BatchTransformations {
       inputChange: AddChangeInput,
       existingRecordTtl: Option[Long] = None)
       extends ChangeForValidation {
-    def asNewStoredChange: SingleChange = {
+    def asStoredChange(changeId: Option[String] = None): SingleChange = {
 
       val ttl = inputChange.ttl.orElse(existingRecordTtl).getOrElse(VinylDNSConfig.defaultTtl)
 
@@ -111,7 +114,8 @@ object BatchTransformations {
         None,
         None,
         None,
-        List.empty
+        List.empty,
+        changeId.getOrElse(UUID.randomUUID().toString)
       )
     }
 
@@ -125,7 +129,7 @@ object BatchTransformations {
       recordName: String,
       inputChange: DeleteChangeInput)
       extends ChangeForValidation {
-    def asNewStoredChange: SingleChange =
+    def asStoredChange(changeId: Option[String] = None): SingleChange =
       SingleDeleteChange(
         Some(zone.id),
         Some(zone.name),
@@ -136,7 +140,8 @@ object BatchTransformations {
         None,
         None,
         None,
-        List.empty
+        List.empty,
+        changeId.getOrElse(UUID.randomUUID().toString)
       )
 
     def isAddChangeForValidation: Boolean = false
@@ -164,4 +169,10 @@ object BatchTransformations {
       changeList.nonEmpty && changeList.exists(_.isDeleteChangeForValidation)
     }
   }
+
+  final case class BatchValidationFlowOutput(
+      validatedChanges: ValidatedBatch[ChangeForValidation],
+      existingZones: ExistingZones,
+      existingRecordSets: ExistingRecordSets
+  )
 }
