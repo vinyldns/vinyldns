@@ -64,12 +64,12 @@ class BatchChangeSpec extends WordSpec with Matchers {
     "calculate Pending status when approval status is PendingApproval" in {
       batchChangeBase
         .copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
-        .status shouldBe BatchChangeStatus.Pending
+        .status shouldBe BatchChangeStatus.PendingReview
     }
     "calculate Failed status when approval status is ManuallyRejected" in {
       batchChangeBase
         .copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
-        .status shouldBe BatchChangeStatus.Failed
+        .status shouldBe BatchChangeStatus.Rejected
     }
     "calculate Scheduled status when approval status is PendingApproval and scheduled time is set" in {
       batchChangeBase

@@ -657,7 +657,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
       saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Pending
     }
-    "properly status check (pending) when approvalStatus is PendingApproval" in {
+    "properly status check (pendingReview) when approvalStatus is PendingApproval" in {
       val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
       val saved =
         for {
@@ -665,7 +665,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
 
-      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Pending
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.PendingReview
     }
     "properly status check (complete)" in {
       val chg = randomBatchChange(
@@ -699,7 +699,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
       saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Failed
     }
-    "properly status check (failed) when approval status is ManuallyRejected" in {
+    "properly status check (rejected) when approval status is ManuallyRejected" in {
       val chg =
         randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
       val saved =
@@ -708,7 +708,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
 
-      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Failed
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Rejected
     }
   }
 }
