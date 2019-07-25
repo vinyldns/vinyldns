@@ -40,6 +40,8 @@ class BatchChangeRoute(
       complete(StatusCodes.BadRequest, bcnpa.message)
     case uce: UnknownConversionError => complete(StatusCodes.InternalServerError, uce)
     case brnf: BatchRequesterNotFound => complete(StatusCodes.NotFound, brnf.message)
+    case ScheduledChangesDisabled =>
+      complete(StatusCodes.BadRequest, ScheduledChangesDisabled.message)
   }
 
   final private val MAX_ITEMS_LIMIT: Int = 100
