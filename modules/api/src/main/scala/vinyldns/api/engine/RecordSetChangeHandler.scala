@@ -73,7 +73,7 @@ object RecordSetChangeHandler {
       batchChangeOption <- batchChangeRepository.updateSingleChanges(singleChangeStatusUpdates)
       _ <- batchChangeOption.map { bc =>
         bc.status match {
-          case BatchChangeStatus.Pending =>
+          case BatchChangeStatus.PendingProcessing | BatchChangeStatus.PendingReview =>
             IO.unit
           case _ =>
             notifiers.notify(Notification(bc))

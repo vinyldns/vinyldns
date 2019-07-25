@@ -60,7 +60,7 @@ case class BatchChange(
  */
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
-  val Pending, PendingReview, Complete, Failed, PartialFailure, Rejected, Scheduled = Value
+  val PendingProcessing, PendingReview, Complete, Failed, PartialFailure, Rejected, Scheduled = Value
 
   def calculateBatchStatus(
       approvalStatus: BatchChangeApprovalStatus,
@@ -69,13 +69,12 @@ object BatchChangeStatus extends Enumeration {
       hasComplete: Boolean,
       isScheduled: Boolean): BatchChangeStatus =
     approvalStatus match {
-<<<<<<< HEAD
       case BatchChangeApprovalStatus.PendingApproval if isScheduled => BatchChangeStatus.Scheduled
       case BatchChangeApprovalStatus.PendingApproval => BatchChangeStatus.PendingReview
       case BatchChangeApprovalStatus.ManuallyRejected => BatchChangeStatus.Rejected
       case _ =>
         (hasPending, hasFailed, hasComplete) match {
-          case (true, _, _) => BatchChangeStatus.Pending
+          case (true, _, _) => BatchChangeStatus.PendingProcessing
           case (false, true, true) => BatchChangeStatus.PartialFailure
           case (false, true, false) => BatchChangeStatus.Failed
           case _ => BatchChangeStatus.Complete

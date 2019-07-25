@@ -46,7 +46,7 @@ class BatchChangeSpec extends WordSpec with Matchers {
 
   "BatchChange" should {
     "calculate Pending status based on SingleChanges" in {
-      batchChangeBase.status shouldBe BatchChangeStatus.Pending
+      batchChangeBase.status shouldBe BatchChangeStatus.PendingProcessing
     }
     "calculate PartialFailure status based on SingleChanges" in {
       batchChangeBase

@@ -655,7 +655,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
 
-      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Pending
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.PendingProcessing
     }
     "properly status check (pendingReview) when approvalStatus is PendingApproval" in {
       val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
