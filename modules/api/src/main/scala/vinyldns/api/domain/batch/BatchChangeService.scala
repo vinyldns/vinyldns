@@ -346,7 +346,7 @@ class BatchChangeService(
     val allNonFatal = allErrors.forall(!_.isFatal)
 
     if (allErrors.isEmpty) {
-      val changes = transformed.getValid.map(_.asNewStoredChange)
+      val changes = transformed.getValid.map(_.asStoredChange())
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
@@ -362,7 +362,7 @@ class BatchChangeService(
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
-            case Valid(v) => v.asNewStoredChange
+            case Valid(v) => v.asStoredChange()
             case Invalid(e) => input.asNewStoredChange(e)
           }
       }
@@ -388,7 +388,7 @@ class BatchChangeService(
       reviewInfo: BatchChangeReviewInfo): Either[BatchChangeErrorResponse, BatchChange] =
     if (transformed.forall(_.isValid)) {
       val changes = transformed.getValid.zip(existingBatchChange.changes).map {
-        case (newValidation, existing) => newValidation.asStoredChangeWithId(existing.id)
+        case (newValidation, existing) => newValidation.asStoredChange(Some(existing.id))
       }
 
       BatchChange(
