@@ -6,7 +6,7 @@ section: "api"
 
 # Approve Batch Change
 
-Manually approves a batch change in pending review status given the batch change ID, resulting in revalidation and submission for backend processing. Only system administrators (ie. support or super user) can manually review a batch change.
+Manually approves a batch change in pending review status given the batch change ID, resulting in revalidation and submission for backend processing. Only system administrators (ie. support or super user) can manually review a batch change. In the event that a batch change is approved and still encounters permissible errors, it will remain in manual review state until re-approved or rejected.
 
 
 #### HTTP REQUEST
@@ -25,7 +25,7 @@ id            | string        | yes         | Unique identifier assigned to each
 
 Code          | description |
  ------------ | :---------- |
-200           | **OK** Batch change is approved and is returned in response body. |
+202           | **OK** Batch change is approved and is returned in response body. Batch change is submitted for backend processing. |
 400           | **BadRequest** Batch change is not in pending approval status. |
 403           | **Forbidden** User is not a system administrator (ie. support or super user). |
 404           | **NotFound** Batch change does not exist. |
@@ -70,7 +70,7 @@ ownerGroupId  | string      | Conditional: Record ownership assignment, if provi
             "id": "a69cad97-994d-41e3-aed2-ec8c86a30ac5"
         }
     ],
-    "status": "Pending",
+    "status": "PendingProcessing",
     "id": "2343fa88-d4da-4377-986a-34ba4e8ca628",
     "ownerGroupId": "159a41c5-e67e-4951-b539-05f5ac788139"
 }

@@ -100,7 +100,7 @@ The first two items in the changes list are SingleAddChanges of an **A** record 
 
 Code          | description |
  ------------ | :---------- |
-202           | **Accepted** - The batch change is queued and is returned in the response body. |
+202           | **Accepted** - The batch change is validated and is returned in the response body. Based on `status`, the batch will either be pending backend processing (`PendingProcessing`) or pending manual review (`PendingReview`). |
 400           | **Bad Request** - Error in the batch change. See [Batch Change Errors](../api/batchchange-errors) page. |
 403           | **Forbidden** - The user does not have the access required to perform the action. |
 413           | **Request Entity Too Large** - Cannot request more than <limit> changes in a single batch change request. |
@@ -191,7 +191,7 @@ On success, the response from create batch change includes the fields the user i
             "id": "43dd1226-5a0d-11e8-9c2d-fa7ae01bbebc"
         }
     ], 
-    "status": "Pending", 
+    "status": "PendingProcessing", 
     "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a"
 }
 ```

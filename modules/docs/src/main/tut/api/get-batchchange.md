@@ -83,7 +83,7 @@ approvalStatus | string      | Whether the batch change is currently awaiting ma
             "id": "7573ca11-3e30-45a8-9ba5-791f7d6ae7a7"
         }
     ], 
-    "status": "Pending", 
+    "status": "PendingProcessing", 
     "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a",
     "approvalStatus": "AutoApproved"
 }
