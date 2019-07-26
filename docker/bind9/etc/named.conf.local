@@ -169,3 +169,9 @@ zone "dskey.example.com" {
 	file "/var/bind/dskey.example.com.hosts";
 	allow-update { key "vinyldns."; };
 	};
+
+zone "not.loaded" {
+	type master;
+	file "/var/bind/not.loaded.hosts";
+	allow-update { key "vinyldns."; };
+	};

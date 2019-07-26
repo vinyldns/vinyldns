@@ -12,6 +12,7 @@ class SharedZoneTestContext(object):
         self.ok_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'okAccessKey', 'okSecretKey')
         self.dummy_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'dummyAccessKey', 'dummySecretKey')
         self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'sharedZoneUserAccessKey', 'sharedZoneUserSecretKey')
+        self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'supportUserAccessKey', 'supportUserSecretKey')
 
         self.dummy_group = None
         self.ok_group = None
@@ -24,7 +25,7 @@ class SharedZoneTestContext(object):
                 'name': 'ok-group',
                 'email': 'test@test.com',
                 'description': 'this is a description',
-                'members': [ { 'id': 'ok'} ],
+                'members': [ { 'id': 'ok'}, { 'id': 'support-user-id'} ],
                 'admins': [ { 'id': 'ok'} ]
             }
 

@@ -154,6 +154,19 @@ object TestDataLoader {
     isTest = true
   )
 
+  final val supportUser = User(
+    userName = "support-user",
+    id = "support-user-id",
+    created = DateTime.now.secondOfDay().roundFloorCopy(),
+    accessKey = "supportUserAccessKey",
+    secretKey = "supportUserSecretKey",
+    firstName = Some("support-user"),
+    lastName = Some("support-user"),
+    email = Some("test@test.com"),
+    isSupport = true,
+    isTest = true
+  )
+
   final val sharedZoneGroup = Group(
     name = "testSharedZoneGroup",
     id = "shared-zone-group",
@@ -185,9 +198,9 @@ object TestDataLoader {
       membershipRepo: MembershipRepository): IO[Unit] =
     for {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
-        listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: listOfDummyUsers).map {
-        user =>
-          userRepo.save(user)
+        listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
+        listOfDummyUsers).map { user =>
+        userRepo.save(user)
       }.parSequence
       // if the test shared zones exist already, clean them out
       existingShared <- zoneRepo.getZonesByFilters(Set(nonTestSharedZone.name, sharedZone.name))
