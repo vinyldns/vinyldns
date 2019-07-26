@@ -61,7 +61,8 @@ trait BatchChangeValidationsAlgebra {
 class BatchChangeValidations(
     changeLimit: Int,
     accessValidation: AccessValidationAlgebra,
-    multiRecordEnabled: Boolean = false)
+    multiRecordEnabled: Boolean = false,
+    scheduledChangesEnabled: Boolean = false)
     extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -76,10 +77,13 @@ class BatchChangeValidations(
       existingGroup,
       authPrincipal)
 
-    EitherT.fromEither(
-      validations
+    for {
+      _ <- validations
         .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeInput(nel.toList))
-        .toEither)
+        .toEither
+        .toBatchResult
+      _ <- validateScheduledChange(input, scheduledChangesEnabled).toBatchResult
+    } yield ()
   }
 
   def validateBatchChangeInputSize(input: BatchChangeInput): SingleValidation[Unit] =
@@ -493,4 +497,10 @@ class BatchChangeValidations(
           MissingOwnerGroupId(change.recordName, change.zone.name).invalidNel
       }
     }
+
+  def validateScheduledChange(
+      input: BatchChangeInput,
+      scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    if (scheduledChangesEnabled || input.scheduledTime.isEmpty) Right(())
+    else Left(ScheduledChangesDisabled)
 }

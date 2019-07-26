@@ -233,6 +233,10 @@ class BatchChangeRoutingSpec()
         case Some("validChangeWithCommentsAndScheduled") =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](
             IO.pure(Right(validResponseWithCommentsAndScheduled)))
+        case Some("scheduledDisabledRequest") =>
+          EitherT[IO, BatchChangeErrorResponse, BatchChange](
+            IO.pure(Left(ScheduledChangesDisabled))
+          )
         case Some(_) =>
           EitherT[IO, BatchChangeErrorResponse, BatchChange](IO.pure(Right(genericValidResponse)))
       }
@@ -479,6 +483,18 @@ class BatchChangeRoutingSpec()
         HttpEntity(ContentTypes.`application/json`, emptyBatchRequest)) ~>
         Route.seal(batchChangeRoute) ~> check {
 
+        status shouldBe BadRequest
+      }
+    }
+
+    "return a 400 BadRequest for scheduled change disabled" in {
+      val scheduledDisabledRequest = buildValidBatchChangeInputJson("scheduledDisabledRequest")
+
+      Post("/zones/batchrecordchanges").withEntity(
+        HttpEntity(ContentTypes.`application/json`, scheduledDisabledRequest)) ~>
+        Route.seal(batchChangeRoute) ~> check {
+
+        response.entity.toString should include(ScheduledChangesDisabled.message)
         status shouldBe BadRequest
       }
     }
