@@ -519,6 +519,15 @@ sns {
     signing-region = "us-east-1"
   }
 }
+
+### Batch Manual Review Enabled
+Configuration setting that determines whether process flow and rejection/approval endpoints are active in batch change flow.
+When enabling manual review, the expectation is that a DNS technician is actively querying and addressing batch change
+requests that are in a manual review state. If your process flow does not accommodate this expectation, we advise disabling
+manual review.
+
+```yaml
+manual-batch-review-enabled = true
 ```
 
 ### Full Example Config
@@ -708,6 +717,9 @@ vinyldns {
       signing-region = "us-east-1"
     }
   }
+
+  # true if you want to enable manual review for soft errors
+  manual-batch-review-enabled = true
 }
 
 # Akka settings, these should not need to be modified unless you know akka http really well.

@@ -6,36 +6,45 @@ section: "api"
 
 # Batch Change Errors
 1. [By-Change Accumulated Errors](#by-change-accumulated-errors)
-   - [Permissible Errors](#permissible-errors)
-   - [Fatal Errors](#fatal-errors)
+   - [Soft Errors](#soft-errors)
+   - [Hard Errors](#hard-errors)
 2. [Full-Request Errors](#full-request-errors)
 
 ### BY-CHANGE ACCUMULATED ERRORS <a id="by-change-accumulated-errors" />
 
-Since all of the batch changes are being validated simultaneously, it is possible to encounter a variety of errors for a given change. Each change that is associated with errors will have its own list of **errors** containing one or more errors; any changes without the **errors** list have been fully validated and are good to submit. 
+Since all of the batch changes are being validated simultaneously, it is possible to encounter a variety of errors for a
+given change. Each change that is associated with errors will have its own list of **errors** containing one or more
+errors; any changes without the **errors** list have been fully validated and are good to submit. 
 
-By-change accumulated errors are errors that get collected at different validation stages and correspond to individual change inputs. These types of errors will probably account for the majority of errors that users encounter. By-change accumulated errors are grouped into the following stages:
+By-change accumulated errors are errors that get collected at different validation stages and correspond to individual
+change inputs. These types of errors will probably account for the majority of errors that users encounter. By-change
+accumulated errors are grouped into the following stages:
 
 - Independent input validations: Validate invalid data input formats and values.
 - Record and zone discovery: Resolve record and zone from fully-qualified input name.
 - Dependent context validations: Check for sufficient user access and conflicts with existing records or other submissions within the batch.
 
-Since by-change accumulated errors are collected at different stages, errors at later stages may exist but will not appear unless errors at earlier stages are addressed.
+Since by-change accumulated errors are collected at different stages, errors at later stages may exist but will not
+appear unless errors at earlier stages are addressed.
 
-By-change accumulated errors can be further classified as *permissible* or *fatal* errors. The presence of one or more fatal errors will result in an immediate failure and no changes in the batch being applied. The behavior of permissible errors depends on whether manual review is configured on: if manual review is disabled, permissible errors are treated as fatal errors; if manual review is enabled, batches with only permissible errors will enter a pending review state.
+By-change accumulated errors can be further classified as *soft* or *hard* errors. The presence of one or more hard
+errors will result in an immediate failure and no changes in the batch being applied. The behavior of soft errors depends
+on whether manual review is configured on: if manual review is disabled, soft errors are treated as hard errors; if manual
+review is enabled, batches with only soft errors will enter a pending review state.
 
-The following chart provides a breakdown of batch change status outcome based on a combination of manual review configuration and error types present in the batch change:
+The following chart provides a breakdown of batch change status outcome based on a combination of manual review
+configuration and error types present in the batch change:
 
-Manual Review Enabled? | Errors in Batch?           | Status Outcome |
- :-------------------: | :------------------------- | :------------- |
-Yes                    | Both fatal and permissible | Failed         |
-Yes                    | Fatal only                 | Failed         |
-Yes                    | Permissible only           | PendingReview  |
-Yes                    | No                         | Pending        |
-No                     | Both fatal and permissible | Failed         |
-No                     | Fatal only                 | Failed         |
-No                     | Permissible only           | Failed         |
-No                     | No                         | Pending        |
+Manual Review Enabled? | Errors in Batch?   | Status Outcome |
+ :-------------------: | :----------------- | :------------- |
+Yes                    | Both hard and soft | Failed         |
+Yes                    | Hard only          | Failed         |
+Yes                    | Soft only          | PendingReview  |
+Yes                    | No                 | Pending        |
+No                     | Both hard and soft | Failed         |
+No                     | Hard only          | Failed         |
+No                     | Soft only          | Failed         |
+No                     | No                 | Pending        |
 
 #### EXAMPLE ERROR RESPONSE BY CHANGE <a id="batchchange-error-response-by-change" />
 
@@ -90,10 +99,10 @@ No                     | No                         | Pending        |
 
 #### By-Change Errors
 
-##### Permissible Errors
+##### Soft Errors
 1. [Zone Discovery Failed](#ZoneDiscoveryFailed)
 
-##### Fatal errors
+##### Hard errors
 1. [Invalid Domain Name](#InvalidDomainName)
 2. [Invalid Length](#InvalidLength)
 3. [Invalid Record Type](#InvalidRecordType)
@@ -115,7 +124,10 @@ No                     | No                         | Pending        |
 19. [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
 20. [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
 
-### Permissible Errors <a id="permissible-errors**"></a>
+### Soft Errors <a id="soft-errors**"></a>
+When soft errors are encountered with manual review enabled, the errors will be saved on the corresponding `SingleChange`s.
+The `SingleChange`s will also have a `status` of `NeedsReview`.
+
 #### 1. Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a>
 
 ##### Error Message:
@@ -135,7 +147,7 @@ If this logic cannot find a matching zone in VinylDNS, you will see this error.
 In that case, you need to connect to the zone in VinylDNS.
 Even if the zone already exists outside of VinylDNS, it has to be added to VinylDNS to modify records.
 
-### Fatal errors <a id="fatal-errors"></a>
+### Hard errors <a id="hard-errors"></a>
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
 ##### Error Message:__

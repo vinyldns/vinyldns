@@ -20,8 +20,11 @@ Batch change is an alternative to submitting individual [RecordSet](../api/recor
 -   The ability to accept multiple changes in a single API call.
 -   The ability to include records of multiple record types across multiple zones.
 -   Input names are entered as fully-qualified domain names (or IP addresses for **PTR** records), so users don't have to think in record/zone context.
--   All record validations are processed simultaneously. [Fatal errors](../api/batchchange-errors/#fatal-errors) for any change in the batch will result in a **400** response and none will be applied.
--   Support for manual review where batches that contain only [permissible errors](../api/batchchange-errors/#permissible-errors) enter a pending review state. Batch change will remain in limbo until a system administrator (ie. support or super user) either rejects it resulting in an immediate failure or approves it resulting in revalidation and submission for processing.
+-   All record validations are processed simultaneously. [Hard errors](../api/batchchange-errors/#hard-errors) for any
+change in the batch will result in a **400** response and none will be applied.
+-   Support for manual review if configured on your VinylDNS instance where batches that contain only [soft errors](../api/batchchange-errors/#soft-errors)
+enter a manual review state. Batch change will remain in limbo until a system administrator (ie. support or super user)
+either rejects it resulting in an immediate failure or approves it resulting in revalidation and submission for processing.
 
 A batch change consists of multiple single changes which can be a combination of [SingleAddChanges](#singleaddchange-attributes) and [SingleDeleteChanges](#singledeletechange-attributes).
 
@@ -72,7 +75,7 @@ zoneId        | string        | The unique identifier for the zone. |
 systemMessage | string        | Conditional: Returns system message relevant to corresponding batch change input. |
 recordChangeId| string        | Conditional: The unique identifier for the record change; only returned on successful batch creation. |
 recordSetId   | string        | Conditional: The unique identifier for the record set; only returned on successful batch creation, |
-validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleAddChange. |
+validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleAddChange. *Note: These will only exist on `NeedsReview` or `Rejected` `SingleChange`s* |
 id            | string        | The unique identifier for this change. |
 
 #### SingleDeleteChange <a id="singledeletechange-attributes" />
@@ -89,7 +92,7 @@ zoneId        | string        | The unique identifier for the zone. |
 systemMessage | string        | Conditional: Returns system message relevant to corresponding batch change input. |
 recordChangeId| string        | Conditional: The unique identifier for the record change; only returned on successful batch creation. |
 recordSetId   | string        | Conditional: The unique identifier for the record set; only returned on successful batch creation, |
-validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteChange. |
+validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteChange. *Note: These will only exist on `NeedsReview` or `Rejected` `SingleChange`s* |
 id            | string        | The unique identifier for this change. |
 
 

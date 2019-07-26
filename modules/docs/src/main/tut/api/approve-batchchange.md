@@ -6,7 +6,10 @@ section: "api"
 
 # Approve Batch Change
 
-Manually approves a batch change in pending review status given the batch change ID, resulting in revalidation and submission for backend processing. Only system administrators (ie. support or super user) can manually review a batch change. In the event that a batch change is approved and still encounters permissible errors, it will remain in manual review state until re-approved or rejected.
+Manually approves a batch change in pending review status given the batch change ID, resulting in revalidation and
+submission for backend processing. Only system administrators (ie. support or super user) can manually review a batch
+change. In the event that a batch change is approved and still encounters soft errors, it will remain in manual
+review state until a successful (**202** Accepted) approval or (**200** OK) rejection.
 
 
 #### HTTP REQUEST
@@ -19,6 +22,7 @@ Manually approves a batch change in pending review status given the batch change
 name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 id            | string        | yes         | Unique identifier assigned to each created batch change. |
+reviewComment | string        | no          | Optional comment for why reviewer approved batch change. |
 
 
 #### HTTP RESPONSE TYPES
@@ -43,6 +47,10 @@ changes       | Array of SingleChange | Array of single changes within a batch c
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
+reviewerId    | string      | Unique identifier for the reviewer of the batch change. |
+reviewerUserName  | string      | User name for the reviewer of the batch change. |
+reviewComment | string      | Comment for the reviewer of the batch change, if provided. |
+reviewTimestamp | date-time  | Timestamp (in GMT) of when the batch change was manually reviewed. |
 
 
 #### EXAMPLE RESPONSE
@@ -56,14 +64,14 @@ ownerGroupId  | string      | Conditional: Record ownership assignment, if provi
     "changes": [
         {
             "changeType": "Add",
-            "inputName": "reject.parent.com.",
+            "inputName": "approve.parent.com.",
             "type": "A",
             "ttl": 7200,
             "record": {
                 "address": "1.1.1.1"
             },
             "status": "Pending",
-            "recordName": "reject",
+            "recordName": "approve",
             "zoneName": "parent.com.",
             "zoneId": "876879e5-293d-4092-99ab-9cbdf50c1636",
             "validationErrors": [],
@@ -72,6 +80,10 @@ ownerGroupId  | string      | Conditional: Record ownership assignment, if provi
     ],
     "status": "PendingProcessing",
     "id": "2343fa88-d4da-4377-986a-34ba4e8ca628",
-    "ownerGroupId": "159a41c5-e67e-4951-b539-05f5ac788139"
+    "ownerGroupId": "159a41c5-e67e-4951-b539-05f5ac788139",
+    "reviewerId": "90c11ffc-5a71-4794-97c6-74d19c81af7d ",
+    "reviewComment": "Good to go!",
+    "reviewTimestamp": "2019-07-25T20:10:28Z",
+    "approvalStatus": "ManuallyApproved"
 }
 ```
