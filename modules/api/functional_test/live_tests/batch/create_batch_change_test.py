@@ -287,9 +287,6 @@ def test_create_batch_change_with_scheduled_time_succeeds(shared_zone_test_conte
     }
 
     result = client.create_batch_change(batch_change_input, status=202)
-
-    # This should not process, but rather hang out in a pending state
-    assert_that(result['approvalStatus'], 'PendingApproval')
     assert_that(result['status'], 'Scheduled')
     assert_that(result['scheduledTime'], dt)
 
