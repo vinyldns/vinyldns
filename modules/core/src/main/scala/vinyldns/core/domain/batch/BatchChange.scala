@@ -41,8 +41,14 @@ case class BatchChange(
     val hasPending = singleStatuses.contains(SingleChangeStatus.Pending)
     val hasFailed = singleStatuses.contains(SingleChangeStatus.Failed)
     val hasComplete = singleStatuses.contains(SingleChangeStatus.Complete)
+    val isScheduled = scheduledTime.isDefined
 
-    BatchChangeStatus.calculateBatchStatus(approvalStatus, hasPending, hasFailed, hasComplete)
+    BatchChangeStatus.calculateBatchStatus(
+      approvalStatus,
+      hasPending,
+      hasFailed,
+      hasComplete,
+      isScheduled)
   }
 }
 
@@ -54,21 +60,23 @@ case class BatchChange(
  */
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
-  val Pending, Complete, Failed, PartialFailure = Value
+  val Pending, Complete, Failed, PartialFailure, Scheduled = Value
 
   def calculateBatchStatus(
       approvalStatus: BatchChangeApprovalStatus,
       hasPending: Boolean,
       hasFailed: Boolean,
-      hasComplete: Boolean): BatchChangeStatus =
+      hasComplete: Boolean,
+      isScheduled: Boolean): BatchChangeStatus =
     approvalStatus match {
+      case BatchChangeApprovalStatus.PendingApproval if isScheduled => BatchChangeStatus.Scheduled
       case BatchChangeApprovalStatus.PendingApproval => BatchChangeStatus.Pending
       case BatchChangeApprovalStatus.ManuallyRejected => BatchChangeStatus.Failed
       case _ =>
         (hasPending, hasFailed, hasComplete) match {
           case (true, _, _) => BatchChangeStatus.Pending
-          case (_, true, true) => BatchChangeStatus.PartialFailure
-          case (_, true, false) => BatchChangeStatus.Failed
+          case (false, true, true) => BatchChangeStatus.PartialFailure
+          case (false, true, false) => BatchChangeStatus.Failed
           case _ => BatchChangeStatus.Complete
         }
     }

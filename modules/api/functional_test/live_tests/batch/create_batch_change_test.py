@@ -286,15 +286,12 @@ def test_create_batch_change_with_scheduled_time_succeeds(shared_zone_test_conte
         "scheduledTime": dt
     }
 
-    to_delete = []
-    try:
-        result = client.create_batch_change(batch_change_input, status=202)
-        completed_batch = client.wait_until_batch_change_completed(result)
-        record_set_list = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
-        to_delete = set(record_set_list)
-        assert_that(completed_batch['scheduledTime'], dt)
-    finally:
-        clear_zoneid_rsid_tuple_list(to_delete, client)
+    result = client.create_batch_change(batch_change_input, status=202)
+
+    # This should not process, but rather hang out in a pending state
+    assert_that(result['approvalStatus'], 'PendingApproval')
+    assert_that(result['status'], 'Scheduled')
+    assert_that(result['scheduledTime'], dt)
 
 
 def test_create_batch_change_without_scheduled_time_succeeds(shared_zone_test_context):

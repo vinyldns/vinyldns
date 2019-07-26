@@ -52,7 +52,8 @@ object BatchChangeService {
       batchChangeConverter: BatchChangeConverterAlgebra,
       manualReviewEnabled: Boolean,
       authProvider: AuthPrincipalProvider,
-      notifiers: AllNotifiers): BatchChangeService =
+      notifiers: AllNotifiers,
+      scheduledChangesEnabled: Boolean): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
@@ -63,7 +64,8 @@ object BatchChangeService {
       dataAccessor.userRepository,
       manualReviewEnabled,
       authProvider,
-      notifiers
+      notifiers,
+      scheduledChangesEnabled
     )
 }
 
@@ -77,7 +79,8 @@ class BatchChangeService(
     userRepository: UserRepository,
     manualReviewEnabled: Boolean,
     authProvider: AuthPrincipalProvider,
-    notifiers: AllNotifiers)
+    notifiers: AllNotifiers,
+    scheduledChangesEnabled: Boolean)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -93,7 +96,8 @@ class BatchChangeService(
         batchChangeInput,
         validationOutput.validatedChanges,
         auth,
-        allowManualReview).toBatchResult
+        allowManualReview
+      ).toBatchResult
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
@@ -362,8 +366,13 @@ class BatchChangeService(
       .flatMap(_.toList)
 
     val allNonFatal = allErrors.forall(!_.isFatal)
+    val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
 
-    if (allErrors.isEmpty) {
+    // If someone says "don't manual review" but "schedule it", right now we ignore the former and
+    // just goto manual review.
+    val gotoManualReview = manualReviewEnabled && allNonFatal && (allowManualReview || isScheduled)
+
+    if (allErrors.isEmpty && !isScheduled) {
       val changes = transformed.getValid.map(_.asStoredChange())
       BatchChange(
         auth.userId,
@@ -375,7 +384,7 @@ class BatchChangeService(
         BatchChangeApprovalStatus.AutoApproved,
         scheduledTime = batchChangeInput.scheduledTime
       ).asRight
-    } else if (manualReviewEnabled && allNonFatal && allowManualReview) {
+    } else if (gotoManualReview) {
       // only soft failures, can go to pending state
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>

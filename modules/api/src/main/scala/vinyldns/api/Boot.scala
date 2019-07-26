@@ -141,7 +141,9 @@ object Boot extends App {
         batchChangeConverter,
         VinylDNSConfig.manualBatchReviewEnabled,
         authPrincipalProvider,
-        notifiers)
+        notifiers,
+        VinylDNSConfig.scheduledChangesEnabled
+      )
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
         membershipService,

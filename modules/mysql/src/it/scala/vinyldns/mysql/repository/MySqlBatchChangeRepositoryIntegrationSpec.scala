@@ -291,14 +291,18 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
     "save / get a batch change with scheduled time set" in {
       val savedTs = DateTime.now.secondOfDay().roundFloorCopy()
-      val chg = randomBatchChange().copy(scheduledTime = Some(savedTs))
+      val chg = randomBatchChange().copy(
+        scheduledTime = Some(savedTs),
+        approvalStatus = BatchChangeApprovalStatus.PendingApproval)
 
       val saved =
         for {
           _ <- repo.save(chg)
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
-      saved.unsafeRunSync().get.scheduledTime shouldBe Some(savedTs)
+      val result = saved.unsafeRunSync()
+      result.flatMap(_.scheduledTime) shouldBe Some(savedTs)
+      result.map(_.status) shouldBe Some(BatchChangeStatus.Scheduled)
     }
 
     "save / get a batch change with no scheduled time set" in {
@@ -309,7 +313,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(chg)
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
-      saved.unsafeRunSync().get.scheduledTime shouldBe None
+      val result = saved.unsafeRunSync()
+      result.flatMap(_.scheduledTime) shouldBe None
+      result.map(_.status) shouldBe Some(chg.status)
     }
 
     "get a batch summary with scheduled time set" in {
@@ -324,11 +330,13 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
-            approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved)
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
           )
         } yield retrieved
 
-      all(f.unsafeRunSync().batchChanges.map(_.scheduledTime)) shouldBe Some(ts)
+      val result = f.unsafeRunSync().batchChanges
+      all(result.map(_.scheduledTime)) shouldBe Some(ts)
+      all(result.map(_.status)) shouldBe BatchChangeStatus.Scheduled
     }
 
     "return none if a batch change is not found by ID" in {
