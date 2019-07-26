@@ -50,6 +50,29 @@
                                 </div>
                             </div>
                             }
+                            @if(meta.scheduledBatchChangesEnabled) {
+                            <div class="form-group row">
+                                <div class="col-md-6">
+                                    <label class="h5">Request Date/Time:</label>
+                                    <div class="radio no-top-margin">
+                                        <label>
+                                            <input type="radio" ng-model="scheduledTime" value="Now">
+                                            Now
+                                        </label><br/>
+                                        <label>
+                                            <input type="radio" ng-model="scheduledTime" value="Later">
+                                            Later
+                                        </label><br/>
+                                    </div>
+                                    <input ng-if="scheduledTime == 'Later'" class="form-control" type="datetime-local"
+                                           ng-model="newBatch.scheduledTime"
+                                           [name="string"]
+                                           [min="string"]
+                                           [max="string"]
+                                           [ng-change="string"]>
+                                </div>
+                            </div>
+                            }
                         </div>
                         <div class="panel-body">
                             <h4>Changes</h4>

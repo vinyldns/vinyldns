@@ -21,13 +21,17 @@ case class Meta(
     version: String,
     sharedDisplayEnabled: Boolean,
     batchChangeLimit: Int,
-    defaultTtl: Long)
+    defaultTtl: Long,
+    manualBatchChangeReviewEnabled: Boolean,
+    scheduledBatchChangesEnabled: Boolean)
 object Meta {
   def apply(config: Configuration): Meta =
     Meta(
       config.getOptional[String]("vinyldns.version").getOrElse("unknown"),
       config.getOptional[Boolean]("shared-display-enabled").getOrElse(false),
       config.getOptional[Int]("batch-change-limit").getOrElse(1000),
-      config.getOptional[Long]("default-ttl").getOrElse(7200L)
+      config.getOptional[Long]("default-ttl").getOrElse(7200L),
+      config.getOptional[Boolean]("manual-batch-review-enabled").getOrElse(false),
+      config.getOptional[Boolean]("scheduled-batch-change-enabled").getOrElse(false)
     )
 }

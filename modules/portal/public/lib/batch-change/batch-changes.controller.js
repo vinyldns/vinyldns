@@ -20,6 +20,10 @@
     angular.module('batch-change')
         .controller('BatchChangesController', function($scope, $timeout, batchChangeService, pagingService, utilityService){
             $scope.batchChanges = [];
+            $scope.onlyPendingReview = false;
+            $scope.approvalStatus = undefined;
+            $scope.ignoreAccess = undefined;
+
             // Set default params: empty start from and 100 max items
             var batchChangePaging = pagingService.getNewPagingParams(100);
 
@@ -29,7 +33,7 @@
                 }
 
                 return batchChangeService
-                    .getBatchChanges(maxItems, startFrom)
+                    .getBatchChanges(maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function(error) {
                         handleError(error, 'batchChangesService::getBatchChanges-failure');
@@ -50,7 +54,7 @@
                 }
 
                 return batchChangeService
-                    .getBatchChanges(batchChangePaging.maxItems, undefined)
+                    .getBatchChanges(batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'batchChangesService::getBatchChanges-failure');
@@ -75,7 +79,7 @@
             $scope.prevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(batchChangePaging);
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, startFrom)
+                    .getBatchChanges(batchChangePaging.maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(function(response) {
                         batchChangePaging = pagingService.prevPageUpdate(response.data.nextId, batchChangePaging);
                         $scope.batchChanges = response.data.batchChanges;
@@ -87,7 +91,7 @@
 
             $scope.nextPage = function() {
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next)
+                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(function(response) {
                         var batchChanges = response.data.batchChanges;
                         batchChangePaging = pagingService.nextPageUpdate(batchChanges, response.data.nextId, batchChangePaging);
@@ -100,6 +104,28 @@
                         handleError(error, 'batchChangesService::getBatchChanges-failure');
                     });
             };
+
+            $scope.pendingFilter = function(){
+                if($scope.onlyPendingReview == true) {
+                    $scope.onlyPendingReview = false;
+                    $scope.approvalStatus = undefined;
+                    $scope.refreshBatchChanges();
+                } else {
+                    $scope.onlyPendingReview = true;
+                    $scope.approvalStatus = 'PendingApproval';
+                    $scope.refreshBatchChanges();
+                }
+            }
+
+            $scope.myRequests = function(){
+                $scope.ignoreAccess = false;
+                $scope.refreshBatchChanges();
+            }
+
+            $scope.allRequests = function(){
+                $scope.ignoreAccess = true;
+                $scope.refreshBatchChanges();
+            }
 
             $timeout($scope.refreshBatchChanges, 0);
         });

@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -22,14 +22,38 @@
                 <notification ng-model="alert"></notification>
             </div>
         </div>
-        <div class="row">
+
+        @if(rootAccountAdmin) {
+        <div class="panel panel-default panel-tabs">
+            <ul class="nav nav-tabs bar_tabs">
+                <li class="active"><a href="#myRequests" data-toggle="tab" ng-click="myRequests()">My Requests</a></li>
+                <li><a id="tab2-button" href="#allRequests" data-toggle="tab" ng-click="allRequests()">All Requests</a></li>
+            </ul>
+
+            <div class="panel-body tab-content">
+                <div class="tab-pane active" id="myRequests">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="row">
             <div class="col-md-12">
+                }
                 <!-- SIMPLE DATABLE -->
                 <div class="panel panel-default">
-                    <div class="panel-heading">
+                    <div class="panel-heading vinyldns-panel-top">
                         <div class="btn-group">
                             <a href="/batchchanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New Batch Change</a>
                         </div>
+                        @if(meta.manualBatchChangeReviewEnabled){
+                            <div class="batch-filter">
+                                <form action="">
+                                    <div class="checkbox pull-right">
+                                        <label>
+                                            <input type="checkbox" ng-click="pendingFilter()"> View Pending Review Only
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
+                        }
                     </div>
                     <div class="panel-body">
 
@@ -54,6 +78,9 @@
                                     <th>Change Count</th>
                                     <th>Status</th>
                                     <th class="col-md-3">Description</th>
+                                    @if(meta.scheduledBatchChangesEnabled) {
+                                        <th>Scheduled</th>
+                                    }
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -64,13 +91,16 @@
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
                                         <span ng-if="batchChange.status == 'Complete'" class="label label-success">{{batchChange.status}}</span>
-                                        <span ng-if="batchChange.status == 'Pending' && batchChange.approvalStatus != 'PendingApproval'" class="label label-info">{{batchChange.status}}</span>
+                                        <span ng-if="batchChange.status == 'Failed'" class="label label-danger">{{batchChange.status}}</span>
                                         <span ng-if="batchChange.status == 'PartialFailure'" class="label label-warning">Partial Failure</span>
-                                        <span ng-if="batchChange.status == 'Failed' && batchChange.approvalStatus != 'ManuallyRejected'" class="label label-danger">{{batchChange.status}}</span>
-                                        <span ng-if="batchChange.approvalStatus == 'PendingApproval'" class="label label-warning">Pending Review</span>
-                                        <span ng-if="batchChange.approvalStatus == 'ManuallyRejected'" class="label label-danger">Rejected</span>
+                                        <span ng-if="batchChange.status == 'PendingProcessing'" class="label label-info">Pending Processing</span>
+                                        <span ng-if="batchChange.status == 'PendingReview'" class="label label-warning">Pending Review</span>
+                                        <span ng-if="batchChange.status == 'Rejected'" class="label label-danger">{{batchChange.status}}</span>
                                     </td>
                                     <td ng-bind="batchChange.comments" class="col-md-3"></td>
+                                    @if(meta.scheduledBatchChangesEnabled) {
+                                        <td ng-bind="batchChange.scheduledTime"></td>
+                                    }
                                     <td>
                                         <a type="button" class="btn btn-info btn-rounded"
                                            ng-href="/batchchanges/{{ batchChange.id }}">
@@ -96,8 +126,14 @@
 
                     </div>
                 </div>
+                @if(rootAccountAdmin){
             </div>
         </div>
+        }
+                        </div>
+                    </div>
+                </div>
+            </div>
     </div>
 </div>
 }

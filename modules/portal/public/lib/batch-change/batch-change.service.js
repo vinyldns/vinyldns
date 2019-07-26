@@ -30,10 +30,12 @@
                 return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
             };
 
-            this.getBatchChanges = function (maxItems, startFrom) {
+            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, approvalStatus) {
                 var params = {
                     "maxItems": maxItems,
-                    "startFrom": startFrom
+                    "startFrom": startFrom,
+                    "ignoreAccess": ignoreAccess,
+                    "approvalStatus": approvalStatus
                 };
                 var url = utilityService.urlBuilder('/api/batchchanges', params);
                 return $http.get(url);

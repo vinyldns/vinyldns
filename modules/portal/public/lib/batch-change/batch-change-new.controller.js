@@ -36,6 +36,7 @@
             $scope.batchChangeErrors = false;
             $scope.ownerGroupError = false;
             $scope.formStatus = "pendingSubmit";
+            $scope.scheduledTime = "Now";
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
@@ -62,6 +63,12 @@
                 var payload = $scope.newBatch;
                 if (!$scope.newBatch.ownerGroupId) {
                      delete payload.ownerGroupId
+                }
+
+                if ($scope.scheduledTime == "Later" && $scope.newBatch.scheduledTime) {
+                    payload.scheduledTime = $scope.newBatch.scheduledTime.toISOString().split('.')[0]+"Z";
+                } else {
+                    delete payload.scheduledTime;
                 }
 
                 function formatData(payload) {
