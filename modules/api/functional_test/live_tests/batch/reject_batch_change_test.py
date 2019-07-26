@@ -17,11 +17,18 @@ def test_reject_pending_batch_change_success(shared_zone_test_context):
     result = client.create_batch_change(batch_change_input, status=202)
     get_batch = client.get_batch_change(result['id'])
     assert_that(get_batch['status'], is_('Pending'))
+    assert_that(get_batch['approvalStatus'], is_('PendingApproval'))
     assert_that(get_batch['changes'][0]['status'], is_('NeedsReview'))
+    assert_that(get_batch['changes'][0]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
 
     rejector.reject_batch_change(result['id'], status=200)
     get_batch = client.get_batch_change(result['id'])
+
     assert_that(get_batch['status'], is_('Failed'))
+    assert_that(get_batch['approvalStatus'], is_('ManuallyRejected'))
+    assert_that(get_batch['reviewerId'], is_('support-user-id'))
+    assert_that(get_batch['reviewerUserName'], is_('support-user'))
+    assert_that(get_batch, has_key('reviewTimestamp'))
     assert_that(get_batch['changes'][0]['status'], is_('Rejected'))
 
 @pytest.mark.manual_batch_review
