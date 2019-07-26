@@ -133,4 +133,8 @@ object VinylDNSConfig {
   lazy val manualBatchReviewEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("manual-batch-review-enabled")
     .getOrElse(false)
+
+  lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
+    .as[Option[Boolean]]("scheduled-changes-enabled")
+    .getOrElse(false)
 }

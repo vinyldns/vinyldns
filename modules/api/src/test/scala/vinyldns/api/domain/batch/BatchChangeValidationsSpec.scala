@@ -24,10 +24,10 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{AccessValidations, batch, _}
-import vinyldns.core.domain._
-import vinyldns.core.TestZoneData._
-import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
+import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus}
 import vinyldns.core.domain.record._
@@ -175,6 +175,25 @@ class BatchChangeValidationsSpec
     }
   }
 
+  property(
+    "validateScheduledChange: should fail if batch is scheduled and scheduled change disabled") {
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
+    validateScheduledChange(input, scheduledChangesEnabled = false) should
+      beLeft[BatchChangeErrorResponse](ScheduledChangesDisabled)
+  }
+
+  property(
+    "validateScheduledChange: should succeed if batch is scheduled and scheduled change enabled") {
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
+    validateScheduledChange(input, scheduledChangesEnabled = true) should beRight(())
+  }
+
+  property(
+    "validateScheduledChange: should succeed if batch is not scheduled and scheduled change disabled") {
+    val input = BatchChangeInput(None, List(), scheduledTime = None)
+    validateScheduledChange(input, scheduledChangesEnabled = false) should beRight(())
+  }
+
   property("validateInputChanges: should succeed if all inputs are good") {
     forAll(listOfN(3, validAChangeGen)) { input: List[ChangeInput] =>
       val result = validateInputChanges(input)
@@ -237,7 +256,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateBatchChangeInput: should fail if both input size is valid and owner group ID aew invalid") {
+    "validateBatchChangeInput: should fail if both input size is valid and owner group ID are invalid") {
     forAll(validBatchChangeInput(0, 0)) { batchChangeInput =>
       val result = validateBatchChangeInput(
         batchChangeInput.copy(ownerGroupId = Some(dummyGroup.id)),
@@ -248,6 +267,21 @@ class BatchChangeValidationsSpec
           InvalidBatchChangeInput(
             List(BatchChangeIsEmpty(maxChanges), GroupDoesNotExist(dummyGroup.id))))
     }
+  }
+
+  property(
+    "validateBatchChangeInput: should fail if scheduled is set but scheduled changes disabled") {
+    val input = BatchChangeInput(
+      None,
+      List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
+      scheduledTime = Some(DateTime.now))
+    val bcv = new BatchChangeValidations(
+      maxChanges,
+      AccessValidations,
+      multiRecordEnabled = true,
+      scheduledChangesEnabled = false)
+    bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
+      ScheduledChangesDisabled)
   }
 
   property("validateBatchChangePendingApproval: should succeed if batch change is PendingApproval") {

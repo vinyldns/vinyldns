@@ -23,6 +23,11 @@ def test_get_batch_change_success(shared_zone_test_context):
 
         result = client.get_batch_change(batch_change['id'], status=200)
         assert_that(result, is_(completed_batch))
+        assert_that(result['approvalStatus'], is_('AutoApproved'))
+        assert_that(result, is_not(has_key('reviewerId')))
+        assert_that(result, is_not(has_key('reviewerUserName')))
+        assert_that(result, is_not(has_key('reviewComment')))
+        assert_that(result, is_not(has_key('reviewTimestamp')))
     finally:
         for result_rs in to_delete:
             try:

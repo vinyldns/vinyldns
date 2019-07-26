@@ -32,8 +32,12 @@ case class BatchChangeSummary(
     ownerGroupId: Option[String],
     id: String = UUID.randomUUID().toString,
     ownerGroupName: Option[String] = None,
-    scheduledTime: Option[DateTime] = None
-)
+    approvalStatus: BatchChangeApprovalStatus,
+    reviewerId: Option[String],
+    reviewerName: Option[String],
+    reviewComment: Option[String],
+    reviewTimestamp: Option[DateTime],
+    scheduledTime: Option[DateTime] = None)
 
 object BatchChangeSummary {
   def apply(batchChange: BatchChange): BatchChangeSummary =
@@ -47,6 +51,11 @@ object BatchChangeSummary {
       batchChange.ownerGroupId,
       batchChange.id,
       None,
+      batchChange.approvalStatus,
+      batchChange.reviewerId,
+      None,
+      batchChange.reviewComment,
+      batchChange.reviewTimestamp,
       batchChange.scheduledTime
     )
 
@@ -62,6 +71,11 @@ object BatchChangeSummary {
       ownerGroupId,
       id,
       ownerGroupName,
+      approvalStatus,
+      reviewerId,
+      reviewerUserName,
+      reviewComment,
+      reviewTimestamp,
       batchChangeInfo.scheduledTime
     )
   }

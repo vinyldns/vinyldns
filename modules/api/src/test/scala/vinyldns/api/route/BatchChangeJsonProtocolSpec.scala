@@ -29,7 +29,7 @@ import vinyldns.api.domain.batch.BatchTransformations.{AddChangeForValidation, C
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.TestZoneData.okZone
-import vinyldns.core.domain.{InvalidIpv4Address, InvalidTTL, ZoneDiscoveryError}
+import vinyldns.core.domain.{InvalidIpv4Address, InvalidTTL, SingleChangeError, ZoneDiscoveryError}
 import vinyldns.core.domain.batch.SingleChangeStatus._
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType._
@@ -292,6 +292,7 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
+        List(SingleChangeError(barDiscoveryError)),
         id = "id")
       val result = SingleAddChangeSerializer.toJson(toJson)
 
@@ -306,6 +307,7 @@ class BatchChangeJsonProtocolSpec
         ("systemMessage" -> "systemMessage") ~
         ("recordChangeId" -> decompose(None)) ~
         ("recordSetId" -> decompose(None)) ~
+        ("validationErrors" -> decompose(List(SingleChangeError(barDiscoveryError)))) ~
         ("id" -> "id") ~
         ("changeType" -> "Add")
     }
@@ -323,7 +325,9 @@ class BatchChangeJsonProtocolSpec
         Some("systemMessage"),
         None,
         None,
-        id = "id")
+        List(SingleChangeError(barDiscoveryError)),
+        id = "id"
+      )
       val result = SingleDeleteChangeSerializer.toJson(toJson)
 
       result shouldBe ("zoneId" -> "zoneId") ~
@@ -335,6 +339,7 @@ class BatchChangeJsonProtocolSpec
         ("systemMessage" -> "systemMessage") ~
         ("recordChangeId" -> decompose(None)) ~
         ("recordSetId" -> decompose(None)) ~
+        ("validationErrors" -> decompose(List(SingleChangeError(barDiscoveryError)))) ~
         ("id" -> "id") ~
         ("changeType" -> "DeleteRecordSet")
     }

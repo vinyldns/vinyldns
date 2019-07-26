@@ -33,7 +33,13 @@ import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalS
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 import vinyldns.core.domain.{CnameAtZoneApexError, ZoneDiscoveryError}
-import vinyldns.core.domain.membership.{Group, GroupRepository}
+import vinyldns.core.domain.membership.{
+  Group,
+  GroupRepository,
+  ListUsersResults,
+  User,
+  UserRepository
+}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
@@ -54,6 +60,7 @@ object BatchChangeService {
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
       batchChangeConverter,
+      dataAccessor.userRepository,
       manualReviewEnabled,
       authProvider,
       notifiers
@@ -67,6 +74,7 @@ class BatchChangeService(
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
     batchChangeConverter: BatchChangeConverterAlgebra,
+    userRepository: UserRepository,
     manualReviewEnabled: Boolean,
     authProvider: AuthPrincipalProvider,
     notifiers: AllNotifiers)
@@ -80,6 +88,23 @@ class BatchChangeService(
       auth: AuthPrincipal,
       allowManualReview: Boolean): BatchResult[BatchChange] =
     for {
+      validationOutput <- applyBatchChangeValidationFlow(batchChangeInput, auth)
+      changeForConversion <- buildResponse(
+        batchChangeInput,
+        validationOutput.validatedChanges,
+        auth,
+        allowManualReview).toBatchResult
+      serviceCompleteBatch <- convertOrSave(
+        changeForConversion,
+        validationOutput.existingZones,
+        validationOutput.existingRecordSets,
+        batchChangeInput.ownerGroupId)
+    } yield serviceCompleteBatch
+
+  def applyBatchChangeValidationFlow(
+      batchChangeInput: BatchChangeInput,
+      auth: AuthPrincipal): BatchResult[BatchValidationFlowOutput] =
+    for {
       existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
       _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth)
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes)
@@ -92,17 +117,7 @@ class BatchChangeService(
         recordSets,
         auth,
         batchChangeInput.ownerGroupId)
-      changeForConversion <- buildResponse(
-        batchChangeInput,
-        validatedSingleChanges,
-        auth,
-        allowManualReview).toBatchResult
-      serviceCompleteBatch <- convertOrSave(
-        changeForConversion,
-        zoneMap,
-        recordSets,
-        batchChangeInput.ownerGroupId)
-    } yield serviceCompleteBatch
+    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, recordSets)
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -125,12 +140,26 @@ class BatchChangeService(
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
       _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
-      _ = BatchChangeInput(batchChange)
-      _ <- EitherT.fromOptionF[IO, BatchChangeErrorResponse, AuthPrincipal](
+      asInput = BatchChangeInput(batchChange)
+      requesterAuth <- EitherT.fromOptionF(
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
         BatchRequesterNotFound(batchChange.userId, batchChange.userName)
       )
-    } yield batchChange
+      reviewInfo = BatchChangeReviewInfo(
+        authPrincipal.userId,
+        approveBatchChangeInput.reviewComment)
+      validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth)
+      changeForConversion <- buildResponseForApprover(
+        batchChange,
+        asInput,
+        validationOutput.validatedChanges,
+        reviewInfo).toBatchResult
+      serviceCompleteBatch <- convertOrSave(
+        changeForConversion,
+        validationOutput.existingZones,
+        validationOutput.existingRecordSets,
+        batchChange.ownerGroupId)
+    } yield serviceCompleteBatch
 
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
@@ -138,7 +167,9 @@ class BatchChangeService(
       _ <- canGetBatchChange(batchChange, auth).toBatchResult
       rsOwnerGroup <- getOwnerGroup(batchChange.ownerGroupId)
       rsOwnerGroupName = rsOwnerGroup.map(_.name)
-    } yield BatchChangeInfo(batchChange, rsOwnerGroupName)
+      reviewer <- getReviewer(batchChange.reviewerId)
+      reviewerUserName = reviewer.map(_.userName)
+    } yield BatchChangeInfo(batchChange, rsOwnerGroupName, reviewerUserName)
 
   def getExistingBatchChange(id: String): BatchResult[BatchChange] =
     batchChangeRepo
@@ -235,6 +266,14 @@ class BatchChangeService(
     ownerGroup.value.toBatchResult
   }
 
+  def getReviewer(reviewerId: Option[String]): BatchResult[Option[User]] = {
+    val reviewer = for {
+      uid <- OptionT.fromOption[IO](reviewerId)
+      user <- OptionT(userRepository.getUser(uid))
+    } yield user
+    reviewer.value.toBatchResult
+  }
+
   def zoneDiscovery(
       changes: ValidatedBatch[ChangeInput],
       zoneMap: ExistingZones): ValidatedBatch[ChangeForValidation] =
@@ -325,7 +364,7 @@ class BatchChangeService(
     val allNonFatal = allErrors.forall(!_.isFatal)
 
     if (allErrors.isEmpty) {
-      val changes = transformed.getValid.map(_.asNewStoredChange)
+      val changes = transformed.getValid.map(_.asStoredChange())
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
@@ -341,7 +380,7 @@ class BatchChangeService(
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
-            case Valid(v) => v.asNewStoredChange
+            case Valid(v) => v.asStoredChange()
             case Invalid(e) => input.asNewStoredChange(e)
           }
       }
@@ -359,6 +398,33 @@ class BatchChangeService(
       InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
     }
   }
+
+  def buildResponseForApprover(
+      existingBatchChange: BatchChange,
+      batchChangeInput: BatchChangeInput,
+      transformed: ValidatedBatch[ChangeForValidation],
+      reviewInfo: BatchChangeReviewInfo): Either[BatchChangeErrorResponse, BatchChange] =
+    if (transformed.forall(_.isValid)) {
+      val changes = transformed.getValid.zip(existingBatchChange.changes).map {
+        case (newValidation, existing) => newValidation.asStoredChange(Some(existing.id))
+      }
+
+      BatchChange(
+        existingBatchChange.userId,
+        existingBatchChange.userName,
+        existingBatchChange.comments,
+        existingBatchChange.createdTimestamp,
+        changes,
+        existingBatchChange.ownerGroupId,
+        BatchChangeApprovalStatus.ManuallyApproved,
+        Some(reviewInfo.reviewerId),
+        reviewInfo.reviewComment,
+        Some(reviewInfo.reviewTimestamp),
+        id = existingBatchChange.id
+      ).asRight
+    } else {
+      InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
+    }
 
   def convertOrSave(
       batchChange: BatchChange,
@@ -395,6 +461,15 @@ class BatchChangeService(
       summary.copy(ownerGroupName = groupName)
     }
 
+  def addReviewerUserNamesToSummaries(
+      summaries: List[BatchChangeSummary],
+      reviewers: ListUsersResults): List[BatchChangeSummary] =
+    summaries.map { summary =>
+      val userName =
+        summary.reviewerId.flatMap(userId => reviewers.users.find(_.id == userId).map(_.userName))
+      summary.copy(reviewerName = userName)
+    }
+
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       startFrom: Option[Int] = None,
@@ -412,8 +487,13 @@ class BatchChangeService(
       summariesWithGroupNames = addOwnerGroupNamesToSummaries(
         listResults.batchChanges,
         rsOwnerGroups)
+      reviewerIds = listResults.batchChanges.flatMap(_.reviewerId).toSet
+      reviewerUserNames <- userRepository.getUsers(reviewerIds, None, Some(maxItems)).toBatchResult
+      summariesWithReviewerUserNames = addReviewerUserNamesToSummaries(
+        summariesWithGroupNames,
+        reviewerUserNames)
       listWithGroupNames = listResults.copy(
-        batchChanges = summariesWithGroupNames,
+        batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
         approvalStatus = approvalStatus)
     } yield listWithGroupNames
