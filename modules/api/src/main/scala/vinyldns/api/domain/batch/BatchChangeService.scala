@@ -359,33 +359,12 @@ class BatchChangeService(
       auth: AuthPrincipal,
       allowManualReview: Boolean): Either[BatchChangeErrorResponse, BatchChange] = {
 
-    val allErrors = transformed
-      .collect {
-        case Invalid(e) => e
-      }
-      .flatMap(_.toList)
+    // Respond with a fatal error that kicks the change out to the user
+    def errorResponse =
+      InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
 
-    val allNonFatal = allErrors.forall(!_.isFatal)
-    val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
-
-    // If someone says "don't manual review" but "schedule it", right now we ignore the former and
-    // just goto manual review.
-    val gotoManualReview = manualReviewEnabled && allNonFatal && (allowManualReview || isScheduled)
-
-    if (allErrors.isEmpty && !isScheduled) {
-      val changes = transformed.getValid.map(_.asStoredChange())
-      BatchChange(
-        auth.userId,
-        auth.signedInUser.userName,
-        batchChangeInput.comments,
-        DateTime.now,
-        changes,
-        batchChangeInput.ownerGroupId,
-        BatchChangeApprovalStatus.AutoApproved,
-        scheduledTime = batchChangeInput.scheduledTime
-      ).asRight
-    } else if (gotoManualReview) {
-      // only soft failures, can go to pending state
+    // Respond with a response to advance to manual review
+    def manualReviewResponse = {
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
@@ -403,8 +382,50 @@ class BatchChangeService(
         BatchChangeApprovalStatus.PendingApproval,
         scheduledTime = batchChangeInput.scheduledTime
       ).asRight
+    }
+
+    // Respond with a response to process immediately
+    def processNowResponse = {
+      val changes = transformed.getValid.map(_.asStoredChange())
+      BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        batchChangeInput.comments,
+        DateTime.now,
+        changes,
+        batchChangeInput.ownerGroupId,
+        BatchChangeApprovalStatus.AutoApproved,
+        scheduledTime = batchChangeInput.scheduledTime
+      ).asRight
+    }
+
+    val allErrors = transformed
+      .collect {
+        case Invalid(e) => e
+      }
+      .flatMap(_.toList)
+
+    // Tells us that we have soft errors, and no errors are hard errors
+    val hardErrorsPresent = allErrors.exists(_.isFatal)
+    val noErrors = allErrors.isEmpty
+    val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
+
+    if (hardErrorsPresent) {
+      // Always error out
+      errorResponse
+    } else if (noErrors && !isScheduled) {
+      // There are no errors and this is not scheduled, so process immediately
+      processNowResponse
     } else {
-      InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
+      // we have soft errors
+      // advance to manual review if this is scheduled OR manual review is ok
+      val gotoManualReview = isScheduled || (this.manualReviewEnabled && allowManualReview)
+      if (gotoManualReview) {
+        manualReviewResponse
+      } else {
+        // Cannot go to manual review, and we have soft errors, so just return a failure
+        errorResponse
+      }
     }
   }
 
