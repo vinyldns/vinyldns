@@ -71,5 +71,12 @@ class BatchChangeSpec extends WordSpec with Matchers {
         .copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
         .status shouldBe BatchChangeStatus.Failed
     }
+    "calculate Scheduled status when approval status is PendingApproval and scheduled time is set" in {
+      batchChangeBase
+        .copy(
+          approvalStatus = BatchChangeApprovalStatus.PendingApproval,
+          scheduledTime = Some(DateTime.now))
+        .status shouldBe BatchChangeStatus.Scheduled
+    }
   }
 }

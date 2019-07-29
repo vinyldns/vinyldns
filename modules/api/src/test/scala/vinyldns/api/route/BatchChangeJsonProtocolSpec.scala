@@ -293,7 +293,8 @@ class BatchChangeJsonProtocolSpec
         None,
         None,
         List(SingleChangeError(barDiscoveryError)),
-        id = "id")
+        id = "id"
+      )
       val result = SingleAddChangeSerializer.toJson(toJson)
 
       result shouldBe ("zoneId" -> "zoneId") ~

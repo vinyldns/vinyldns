@@ -319,7 +319,8 @@ class BatchChangeServiceSpec
     TestUserRepo,
     false,
     TestAuth,
-    mockNotifiers)
+    mockNotifiers,
+    false)
 
   private val underTestManualEnabled = new BatchChangeService(
     TestZoneRepo,
@@ -331,7 +332,21 @@ class BatchChangeServiceSpec
     TestUserRepo,
     true,
     TestAuth,
-    mockNotifiers)
+    mockNotifiers,
+    false)
+
+  private val underTestScheduledEnabled = new BatchChangeService(
+    TestZoneRepo,
+    TestRecordSetRepo,
+    TestGroupRepo,
+    validations,
+    batchChangeRepo,
+    EmptyBatchConverter,
+    TestUserRepo,
+    true,
+    TestAuth,
+    mockNotifiers,
+    true)
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -815,7 +830,8 @@ class BatchChangeServiceSpec
         TestUserRepo,
         false,
         TestAuth,
-        mockNotifiers)
+        mockNotifiers,
+        false)
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val possibleZones = List(
@@ -852,7 +868,8 @@ class BatchChangeServiceSpec
         TestUserRepo,
         false,
         TestAuth,
-        mockNotifiers)
+        mockNotifiers,
+        false)
 
       val ip1 = "::1"
       val possibleZones1 = (5 to 16).map(num0s => ("0." * num0s) + "ip6.arpa.")
@@ -1261,6 +1278,116 @@ class BatchChangeServiceSpec
         AddChangeForValidation(baseZone, "non-apex", nonApexAddA))
       ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
     }
+  }
+  "return a BatchChange if all data inputs ok and manual review is enabled with scheduled" in {
+    val result = underTestScheduledEnabled
+      .buildResponse(
+        BatchChangeInput(None, List(apexAddA), scheduledTime = Some(DateTime.now)),
+        List(
+          AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
+        ),
+        okAuth,
+        true
+      )
+      .toOption
+      .get
+
+    result shouldBe a[BatchChange]
+    result.changes.head shouldBe SingleAddChange(
+      Some(apexZone.id),
+      Some(apexZone.name),
+      Some("apex.test.com."),
+      "apex.test.com.",
+      A,
+      ttl.get,
+      AData("1.1.1.1"),
+      SingleChangeStatus.Pending,
+      None,
+      None,
+      None,
+      List.empty,
+      result.changes.head.id
+    )
+  }
+  "return a BatchChange ignoring allowManualReview flag if scheduled" in {
+    val result = underTestScheduledEnabled
+      .buildResponse(
+        BatchChangeInput(None, List(apexAddA), scheduledTime = Some(DateTime.now)),
+        List(
+          AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+          nonFatalError.invalidNel,
+          nonFatalError.invalidNel
+        ),
+        okAuth,
+        allowManualReview = false
+      )
+      .toOption
+      .get
+
+    result shouldBe a[BatchChange]
+    result.changes.head shouldBe SingleAddChange(
+      Some(apexZone.id),
+      Some(apexZone.name),
+      Some("apex.test.com."),
+      "apex.test.com.",
+      A,
+      ttl.get,
+      AData("1.1.1.1"),
+      SingleChangeStatus.Pending,
+      None,
+      None,
+      None,
+      List.empty,
+      result.changes.head.id
+    )
+  }
+  "return a BatchChange in manual review if soft errors and scheduled" in {
+    val result = underTestScheduledEnabled
+      .buildResponse(
+        BatchChangeInput(None, List(apexAddA), scheduledTime = Some(DateTime.now)),
+        List(
+          AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+          nonFatalError.invalidNel,
+          nonFatalError.invalidNel
+        ),
+        okAuth,
+        allowManualReview = true
+      )
+      .toOption
+      .get
+
+    result shouldBe a[BatchChange]
+    result.changes.head shouldBe SingleAddChange(
+      Some(apexZone.id),
+      Some(apexZone.name),
+      Some("apex.test.com."),
+      "apex.test.com.",
+      A,
+      ttl.get,
+      AData("1.1.1.1"),
+      SingleChangeStatus.Pending,
+      None,
+      None,
+      None,
+      List.empty,
+      result.changes.head.id
+    )
+  }
+  "return an error response if hard errors and scheduled" in {
+    val result = underTestScheduledEnabled
+      .buildResponse(
+        BatchChangeInput(None, List(noZoneAddA, nonApexAddA)),
+        List(
+          ZoneDiscoveryError("no.zone.match.", fatal = true).invalidNel,
+          AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel
+        ),
+        okAuth,
+        true
+      )
+      .left
+      .value
+
+    result shouldBe an[InvalidBatchChangeResponses]
   }
   "buildResponseForApprover" should {
     val batchChangeNeedsApproval = BatchChange(

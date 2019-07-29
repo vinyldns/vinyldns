@@ -52,7 +52,8 @@ object BatchChangeService {
       batchChangeConverter: BatchChangeConverterAlgebra,
       manualReviewEnabled: Boolean,
       authProvider: AuthPrincipalProvider,
-      notifiers: AllNotifiers): BatchChangeService =
+      notifiers: AllNotifiers,
+      scheduledChangesEnabled: Boolean): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
@@ -63,7 +64,8 @@ object BatchChangeService {
       dataAccessor.userRepository,
       manualReviewEnabled,
       authProvider,
-      notifiers
+      notifiers,
+      scheduledChangesEnabled
     )
 }
 
@@ -77,7 +79,8 @@ class BatchChangeService(
     userRepository: UserRepository,
     manualReviewEnabled: Boolean,
     authProvider: AuthPrincipalProvider,
-    notifiers: AllNotifiers)
+    notifiers: AllNotifiers,
+    scheduledChangesEnabled: Boolean)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -93,7 +96,8 @@ class BatchChangeService(
         batchChangeInput,
         validationOutput.validatedChanges,
         auth,
-        allowManualReview).toBatchResult
+        allowManualReview
+      ).toBatchResult
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
@@ -355,28 +359,12 @@ class BatchChangeService(
       auth: AuthPrincipal,
       allowManualReview: Boolean): Either[BatchChangeErrorResponse, BatchChange] = {
 
-    val allErrors = transformed
-      .collect {
-        case Invalid(e) => e
-      }
-      .flatMap(_.toList)
+    // Respond with a fatal error that kicks the change out to the user
+    def errorResponse =
+      InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
 
-    val allNonFatal = allErrors.forall(!_.isFatal)
-
-    if (allErrors.isEmpty) {
-      val changes = transformed.getValid.map(_.asStoredChange())
-      BatchChange(
-        auth.userId,
-        auth.signedInUser.userName,
-        batchChangeInput.comments,
-        DateTime.now,
-        changes,
-        batchChangeInput.ownerGroupId,
-        BatchChangeApprovalStatus.AutoApproved,
-        scheduledTime = batchChangeInput.scheduledTime
-      ).asRight
-    } else if (manualReviewEnabled && allNonFatal && allowManualReview) {
-      // only soft failures, can go to pending state
+    // Respond with a response to advance to manual review
+    def manualReviewResponse = {
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
@@ -394,8 +382,50 @@ class BatchChangeService(
         BatchChangeApprovalStatus.PendingApproval,
         scheduledTime = batchChangeInput.scheduledTime
       ).asRight
+    }
+
+    // Respond with a response to process immediately
+    def processNowResponse = {
+      val changes = transformed.getValid.map(_.asStoredChange())
+      BatchChange(
+        auth.userId,
+        auth.signedInUser.userName,
+        batchChangeInput.comments,
+        DateTime.now,
+        changes,
+        batchChangeInput.ownerGroupId,
+        BatchChangeApprovalStatus.AutoApproved,
+        scheduledTime = batchChangeInput.scheduledTime
+      ).asRight
+    }
+
+    val allErrors = transformed
+      .collect {
+        case Invalid(e) => e
+      }
+      .flatMap(_.toList)
+
+    // Tells us that we have soft errors, and no errors are hard errors
+    val hardErrorsPresent = allErrors.exists(_.isFatal)
+    val noErrors = allErrors.isEmpty
+    val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
+
+    if (hardErrorsPresent) {
+      // Always error out
+      errorResponse
+    } else if (noErrors && !isScheduled) {
+      // There are no errors and this is not scheduled, so process immediately
+      processNowResponse
     } else {
-      InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
+      // we have soft errors
+      // advance to manual review if this is scheduled OR manual review is ok
+      val gotoManualReview = this.manualReviewEnabled && (isScheduled || allowManualReview)
+      if (gotoManualReview) {
+        manualReviewResponse
+      } else {
+        // Cannot go to manual review, and we have soft errors, so just return a failure
+        errorResponse
+      }
     }
   }
 

@@ -254,6 +254,8 @@ class MySqlBatchChangeRepository
                 val failed = res.int("fail_count")
                 val complete = res.int("complete_count")
                 val approvalStatus = toApprovalStatus(res.intOpt("approval_status"))
+                val schedTime =
+                  res.timestampOpt("scheduled_time").map(st => new org.joda.time.DateTime(st))
                 BatchChangeSummary(
                   res.string("user_id"),
                   res.string("user_name"),
@@ -261,7 +263,12 @@ class MySqlBatchChangeRepository
                   new org.joda.time.DateTime(res.timestamp("created_time")),
                   pending + failed + complete,
                   BatchChangeStatus
-                    .calculateBatchStatus(approvalStatus, pending > 0, failed > 0, complete > 0),
+                    .calculateBatchStatus(
+                      approvalStatus,
+                      pending > 0,
+                      failed > 0,
+                      complete > 0,
+                      schedTime.isDefined),
                   Option(res.string("owner_group_id")),
                   res.string("id"),
                   None,
@@ -270,7 +277,7 @@ class MySqlBatchChangeRepository
                   None,
                   res.stringOpt("review_comment"),
                   res.timestampOpt("review_timestamp").map(st => new org.joda.time.DateTime(st)),
-                  res.timestampOpt("scheduled_time").map(st => new org.joda.time.DateTime(st))
+                  schedTime
                 )
               }
               .list()
