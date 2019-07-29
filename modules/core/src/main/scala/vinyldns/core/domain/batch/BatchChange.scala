@@ -57,7 +57,7 @@ case class BatchChange(
  - Failed means all changes are in failure state
  - PartialFailure means some have failed, the rest are complete
  - PendingProcessing if at least one change is still in pending state
- - PendingReview if approval status is PendingApproval
+ - PendingReview if approval status is PendingReview
  - Rejected if approval status is ManuallyRejected
  */
 object BatchChangeStatus extends Enumeration {
@@ -71,8 +71,8 @@ object BatchChangeStatus extends Enumeration {
       hasComplete: Boolean,
       isScheduled: Boolean): BatchChangeStatus =
     approvalStatus match {
-      case BatchChangeApprovalStatus.PendingApproval if isScheduled => BatchChangeStatus.Scheduled
-      case BatchChangeApprovalStatus.PendingApproval => BatchChangeStatus.PendingReview
+      case BatchChangeApprovalStatus.PendingReview if isScheduled => BatchChangeStatus.Scheduled
+      case BatchChangeApprovalStatus.PendingReview => BatchChangeStatus.PendingReview
       case BatchChangeApprovalStatus.ManuallyRejected => BatchChangeStatus.Rejected
       case _ =>
         (hasPending, hasFailed, hasComplete) match {
@@ -86,7 +86,7 @@ object BatchChangeStatus extends Enumeration {
 
 object BatchChangeApprovalStatus extends Enumeration {
   type BatchChangeApprovalStatus = Value
-  val AutoApproved, PendingApproval, ManuallyApproved, ManuallyRejected = Value
+  val AutoApproved, PendingReview, ManuallyApproved, ManuallyRejected = Value
 
   private val valueMap =
     BatchChangeApprovalStatus.values.map(v => v.toString.toLowerCase -> v).toMap

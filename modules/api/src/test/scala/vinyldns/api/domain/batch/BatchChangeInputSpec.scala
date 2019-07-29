@@ -133,7 +133,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
         DateTime.now(),
         List(singleAddChange, singleDelChange),
         Some("owner"),
-        BatchChangeApprovalStatus.PendingApproval
+        BatchChangeApprovalStatus.PendingReview
       )
 
       val expectedInput =

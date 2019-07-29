@@ -45,9 +45,9 @@ final case class BatchConversionError(change: SingleChange) extends BatchChangeE
 }
 final case class UnknownConversionError(message: String) extends BatchChangeErrorResponse
 
-final case class BatchChangeNotPendingApproval(id: String) extends BatchChangeErrorResponse {
+final case class BatchChangeNotPendingReview(id: String) extends BatchChangeErrorResponse {
   def message: String =
-    s"""Batch change $id is not pending approval, so it cannot be rejected."""
+    s"""Batch change $id is not pending review, so it cannot be rejected."""
 }
 
 final case class BatchRequesterNotFound(userId: String, userName: String)

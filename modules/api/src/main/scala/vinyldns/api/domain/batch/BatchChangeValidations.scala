@@ -110,20 +110,20 @@ class BatchChangeValidations(
   def validateBatchChangeRejection(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingApproval(
+    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingReview(
       batchChange)
 
   def validateBatchChangeApproval(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingApproval(
+    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingReview(
       batchChange)
 
-  def validateBatchChangePendingApproval(
+  def validateBatchChangePendingReview(
       batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
     batchChange.approvalStatus match {
-      case BatchChangeApprovalStatus.PendingApproval => ().asRight
-      case _ => BatchChangeNotPendingApproval(batchChange.id).asLeft
+      case BatchChangeApprovalStatus.PendingReview => ().asRight
+      case _ => BatchChangeNotPendingReview(batchChange.id).asLeft
     }
 
   def validateAuthorizedReviewer(

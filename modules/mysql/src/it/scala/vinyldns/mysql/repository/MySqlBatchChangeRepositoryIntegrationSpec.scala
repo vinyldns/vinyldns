@@ -125,7 +125,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val timeBase: DateTime = DateTime.now
     val change_one: BatchChange = pendingBatchChange.copy(
       createdTimestamp = timeBase,
-      approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      approvalStatus = BatchChangeApprovalStatus.PendingReview)
     val change_two: BatchChange =
       completeBatchChange.copy(createdTimestamp = timeBase.plus(1000), ownerGroupId = None)
     val otherUserBatchChange: BatchChange =
@@ -253,9 +253,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), Some(testBatch))
     }
 
-    "save/get a batch change with BatchChangeApprovalStatus.PendingApproval" in {
+    "save/get a batch change with BatchChangeApprovalStatus.PendingReview" in {
       val testBatch =
-        randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+        randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingReview)
       val f =
         for {
           _ <- repo.save(testBatch)
@@ -465,7 +465,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             None,
-            approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval))
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview))
         } yield retrieved
 
       // from most recent descending
@@ -657,8 +657,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
       saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.PendingProcessing
     }
-    "properly status check (pendingReview) when approvalStatus is PendingApproval" in {
-      val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+    "properly status check (pendingReview) when approvalStatus is PendingReview" in {
+      val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingReview)
       val saved =
         for {
           _ <- repo.save(chg)

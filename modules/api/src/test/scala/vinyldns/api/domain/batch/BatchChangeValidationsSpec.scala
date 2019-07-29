@@ -148,7 +148,7 @@ class BatchChangeValidationsSpec
     None,
     DateTime.now,
     List(),
-    approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+    approvalStatus = BatchChangeApprovalStatus.PendingReview)
 
   private val invalidPendingBatchChange = BatchChange(
     okUser.id,
@@ -284,13 +284,13 @@ class BatchChangeValidationsSpec
       ScheduledChangesDisabled)
   }
 
-  property("validateBatchChangePendingApproval: should succeed if batch change is PendingApproval") {
-    validateBatchChangePendingApproval(validPendingBatchChange) should be(right)
+  property("validateBatchChangePendingReview: should succeed if batch change is PendingReview") {
+    validateBatchChangePendingReview(validPendingBatchChange) should be(right)
   }
 
-  property("validateBatchChangePendingApproval: should fail if batch change is not PendingApproval") {
-    validateBatchChangePendingApproval(invalidPendingBatchChange) shouldBe
-      Left(BatchChangeNotPendingApproval(invalidPendingBatchChange.id))
+  property("validateBatchChangePendingReview: should fail if batch change is not PendingReview") {
+    validateBatchChangePendingReview(invalidPendingBatchChange) shouldBe
+      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
   }
 
   property("validateAuthorizedReviewer: should succeed if the reviewer is a super user") {
@@ -307,14 +307,14 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateBatchChangeRejection: should succeed if batch change is pending approval and reviewer" +
+    "validateBatchChangeRejection: should succeed if batch change is pending review and reviewer" +
       "is authorized") {
     validateBatchChangeRejection(validPendingBatchChange, supportUserAuth).value should be(right)
   }
 
-  property("validateBatchChangeRejection: should fail if batch change is not pending approval") {
+  property("validateBatchChangeRejection: should fail if batch change is not pending review") {
     validateBatchChangeRejection(invalidPendingBatchChange, supportUserAuth).value shouldBe
-      Left(BatchChangeNotPendingApproval(invalidPendingBatchChange.id))
+      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
   }
 
   property("validateBatchChangeRejection: should fail if reviewer is not authorized") {
@@ -323,7 +323,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateBatchChangeRejection: should fail if batch change is not pending approval and reviewer is not" +
+    "validateBatchChangeRejection: should fail if batch change is not pending review and reviewer is not" +
       "authorized") {
     validateBatchChangeRejection(invalidPendingBatchChange, okAuth).value shouldBe
       Left(UserNotAuthorizedError(invalidPendingBatchChange.id))
