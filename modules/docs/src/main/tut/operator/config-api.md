@@ -475,10 +475,15 @@ Configuration for the e-mail notifier appears like the following:
 
 ```yaml
 email = {
+  # Path to notifier provider implementation
   class-name = "vinyldns.api.notifier.email.EmailNotifierProvider"
+  
   settings = {
+    # Sender address for e-mail notifications
     from = "Sender <do-not-reply@example.sender>"
+
     smtp {
+      # Host SMTP server
       host = "example.host"
   }
 }
@@ -492,12 +497,21 @@ Configuration for the AWS SNS notifier appears like the following:
 
 ```yaml
 sns {
+  # Path to notifier provider implementation
   class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"
+  
   settings {
+    # SNS topic Amazon Resource Name (ARN)
     topic-arn = "arn:aws:sns:us-east-1:000000000000:batchChanges"
+    
+    # AWS access key and secret
     access-key = "vinyldnsTest"
     secret-key = "notNeededForSnsLocal"
+    
+    # Endpoint to access SNS
     service-endpoint = "http://127.0.0.1:19006"
+    
+    # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.
     signing-region = "us-east-1"
   }
 }
@@ -658,21 +672,35 @@ vinyldns {
   notifiers = ["email", "sns"]
 
   email = {
+    # Path to notifier provider implementation
     class-name = "vinyldns.api.notifier.email.EmailNotifierProvider"
+    
     settings = {
+      # Sender address for e-mail notifications
       from = "Sender <do-not-reply@example.sender>"
+  
       smtp {
+        # Host SMTP server
         host = "example.host"
     }
   }
-  
+
   sns {
+    # Path to notifier provider implementation
     class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"
+    
     settings {
+      # SNS topic Amazon Resource Name (ARN)
       topic-arn = "arn:aws:sns:us-east-1:000000000000:batchChanges"
+      
+      # AWS access key and secret
       access-key = "vinyldnsTest"
       secret-key = "notNeededForSnsLocal"
+      
+      # Endpoint to access SNS
       service-endpoint = "http://127.0.0.1:19006"
+      
+      # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.
       signing-region = "us-east-1"
     }
   }
