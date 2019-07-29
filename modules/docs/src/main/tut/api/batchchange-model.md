@@ -25,6 +25,7 @@ change in the batch will result in a **400** response and none will be applied.
 -   Support for manual review if configured on your VinylDNS instance where batches that contain only [soft errors](../api/batchchange-errors/#soft-errors)
 enter a manual review state. Batch change will remain in limbo until a system administrator (ie. support or super user)
 either rejects it resulting in an immediate failure or approves it resulting in revalidation and submission for processing.
+-   Support for [notifications](../operator/config-api#additional-configuration-settings) when a batch change is rejected or implemented.
 
 A batch change consists of multiple single changes which can be a combination of [SingleAddChanges](#singleaddchange-attributes) and [SingleDeleteChanges](#singledeletechange-attributes).
 
