@@ -419,7 +419,7 @@ class BatchChangeService(
     } else {
       // we have soft errors
       // advance to manual review if this is scheduled OR manual review is ok
-      val gotoManualReview = isScheduled || (this.manualReviewEnabled && allowManualReview)
+      val gotoManualReview = this.manualReviewEnabled && (isScheduled || allowManualReview)
       if (gotoManualReview) {
         manualReviewResponse
       } else {
