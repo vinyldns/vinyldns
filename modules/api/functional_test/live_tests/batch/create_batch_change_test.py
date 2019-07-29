@@ -270,7 +270,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
 
-@pytest.mark.manual_batch_review
+@pytest.mark.scheduled_time
 def test_create_batch_change_with_scheduled_time_succeeds(shared_zone_test_context):
     """
     Test successfully creating a batch change with scheduled time set
