@@ -64,12 +64,17 @@
                                             Later
                                         </label><br/>
                                     </div>
-                                    <input ng-if="scheduledTime == 'Later'" class="form-control" type="datetime-local"
-                                           ng-model="newBatch.scheduledTime"
-                                           [name="string"]
-                                           [min="string"]
-                                           [max="string"]
-                                           [ng-change="string"]>
+                                    <div ng-if="scheduledTime == 'Later'" class="form-inline">
+                                        <div ng-if="scheduledTime == 'Later'" class="form-group">
+                                            <input  class="form-control" type="datetime-local"
+                                                   ng-model="newBatch.scheduledTime"
+                                                   [name="string"]
+                                                   [min="string"]
+                                                   [max="string"]
+                                                    [ng-change="string"]>
+                                             <span class="help-block help-block-inline"> {{ getLocalTimeZone() }}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             }

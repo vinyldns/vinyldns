@@ -422,3 +422,7 @@ input[type="file"] {
 .no-top-margin {
     margin-top: 0px;
 }
+
+.help-block-inline {
+    display: inline;
+}

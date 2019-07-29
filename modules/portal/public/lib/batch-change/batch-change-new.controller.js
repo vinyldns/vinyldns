@@ -118,6 +118,10 @@
                 $scope.formStatus = "pendingConfirm";
             }
 
+            $scope.getLocalTimeZone = function() {
+                return new Date().toLocaleString('en-us', {timeZoneName:'short'}).split(' ')[3];
+            }
+
             function handleError(error, type) {
                 var alert = utilityService.failure(error, type);
                 $scope.alerts.push(alert);

@@ -15,6 +15,7 @@
     <!-- PAGE TITLE -->
     <div class="page-title">
         <h3>
+            <span class="fa fa-list-ol"></span> Batch Change
             <span ng-if="batch.status == 'Complete'" class="label label-success">{{batch.status}}</span>
             <span ng-if="batch.status == 'Failed'" class="label label-danger">{{batch.status}}</span>
             <span ng-if="batch.status == 'PartialFailure'" class="label label-warning">Partial Failure</span>
@@ -35,7 +36,7 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                <p><strong>Created:</strong> {{batch.createdTimestamp}}</p>
+                <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
                 <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
                 @if(meta.sharedDisplayEnabled) {
                     <p ng-if="batch.ownerGroupName"><strong>Record Owner Group:</strong> {{batch.ownerGroupName}}</p>
@@ -47,17 +48,17 @@
                         </span>
                     </p>
                 }
-                    <p ng-if="batch.approvalStatus == 'ManuallyApproved'"><strong>Review Status:</strong> Approved</p>
-                    <p ng-if="batch.reviewerUserName"><strong>Reviewer:</strong> {{batch.reviewerUserName}}</p>
-                    <p ng-if="batch.reviewerId && !batch.reviewerUserName">
-                        <strong>Reviewer:</strong>
-                        <span class="text-danger" data-toggle="tooltip" data-placement="top"
-                              title="Reviewer with ID {{batch.reviewerId}} no longer exists.">
-                                    <span class="fa fa-warning"></span> Reviewer deleted
-                                </span>
-                    </p>
-                    <p ng-if="batch.reviewComment"><strong>Review Comment:</strong> {{batch.reviewComment}}</p>
-                    <p ng-if="batch.reviewTimestamp"><strong>Review Time:</strong> {{batch.reviewTimestamp}}</p>
+                <p ng-if="batch.approvalStatus == 'ManuallyApproved'"><strong>Review Status:</strong> Approved</p>
+                <p ng-if="batch.reviewerUserName"><strong>Reviewer:</strong> {{batch.reviewerUserName}}</p>
+                <p ng-if="batch.reviewerId && !batch.reviewerUserName">
+                    <strong>Reviewer:</strong>
+                    <span class="text-danger" data-toggle="tooltip" data-placement="top"
+                          title="Reviewer with ID {{batch.reviewerId}} no longer exists.">
+                                <span class="fa fa-warning"></span> Reviewer deleted
+                            </span>
+                </p>
+                <p ng-if="batch.reviewComment"><strong>Review Comment:</strong> {{batch.reviewComment}}</p>
+                <p ng-if="batch.reviewTimestamp"><strong>Review Time:</strong> {{batch.reviewTimestamp}}</p>
                 @if(meta.scheduledBatchChangesEnabled) {
                     <p ng-if="batch.scheduledTime"><strong>Scheduled Time:</strong> {{batch.scheduledTime}}</p>
                 }

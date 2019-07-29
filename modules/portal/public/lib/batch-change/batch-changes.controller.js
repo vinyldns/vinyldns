@@ -127,6 +127,12 @@
                 $scope.refreshBatchChanges();
             }
 
+            $scope.formatDateTime = function(timeStamp) {
+                if (timeStamp) {
+                    return utilityService.formatDateTime(timeStamp);
+                }
+            }
+
             $timeout($scope.refreshBatchChanges, 0);
         });
 })();
