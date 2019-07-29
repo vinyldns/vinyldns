@@ -96,6 +96,7 @@
                                         <span ng-if="batchChange.status == 'PendingProcessing'" class="label label-info">Pending Processing</span>
                                         <span ng-if="batchChange.status == 'PendingReview'" class="label label-warning">Pending Review</span>
                                         <span ng-if="batchChange.status == 'Rejected'" class="label label-danger">{{batchChange.status}}</span>
+                                        <span ng-if="batchChange.status == 'Scheduled'" class="label label-info">{{batchChange.status}}</span>
                                     </td>
                                     <td ng-bind="batchChange.comments" class="col-md-3"></td>
                                     @if(meta.scheduledBatchChangesEnabled) {
