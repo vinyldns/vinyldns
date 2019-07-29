@@ -19,7 +19,7 @@ Manually rejects a batch change in pending review status given the batch change 
 name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 id            | string        | yes         | Unique identifier assigned to each created batch change. |
-reviewComment | string        | no          | Optional comment for why reviewer rejected batch change. |
+reviewComment | string        | no          | Optional rejection explanation. |
 
 
 #### HTTP RESPONSE TYPES
@@ -43,9 +43,10 @@ changes       | Array of SingleChange | Array of single changes within a batch c
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
+approvalStatus | string      | Whether the batch change is currently awaiting manual review. Will be **Rejected** status when rejecting. |
 reviewerId    | string      | Unique identifier for the reviewer of the batch change. |
 reviewerUserName  | string      | User name for the reviewer of the batch change. |
-reviewComment | string      | Comment for the reviewer of the batch change, if provided. |
+reviewComment | string      | Conditional: Comment from the reviewer of the batch change, if provided. |
 reviewTimestamp | date-time  | Timestamp (in GMT) of when the batch change was manually reviewed. |
 
 
@@ -85,6 +86,6 @@ reviewTimestamp | date-time  | Timestamp (in GMT) of when the batch change was m
     "reviewerId": "90c11ffc-5a71-4794-97c6-74d19c81af7d ",
     "reviewComment": "We can't make *this* change - are you out of your mind?!",
     "reviewTimestamp": "2019-07-25T20:33:41Z",
-    "approvalStatus": "ManuallyRejected"
+    "approvalStatus": "Rejected"
 }
 ```

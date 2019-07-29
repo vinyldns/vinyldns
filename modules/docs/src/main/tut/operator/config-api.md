@@ -521,7 +521,7 @@ sns {
 }
 
 ### Batch Manual Review Enabled
-Configuration setting that determines whether process flow and rejection/approval endpoints are active in batch change flow.
+Configuration setting that determines whether batch changes with errors can be reviewed rather than failing immediately.
 When enabling manual review, the expectation is that a DNS technician is actively querying and addressing batch change
 requests that are in a manual review state. If your process flow does not accommodate this expectation, we advise disabling
 manual review.

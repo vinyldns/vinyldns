@@ -5,30 +5,30 @@ section: "api"
 ---
 
 # Batch Change Errors
-1. [By-Change Accumulated Errors](#by-change-accumulated-errors)
+1. [Single Change Errors](#single-change-errors)
    - [Soft Errors](#soft-errors)
    - [Hard Errors](#hard-errors)
 2. [Full-Request Errors](#full-request-errors)
 
-### BY-CHANGE ACCUMULATED ERRORS <a id="by-change-accumulated-errors" />
+### SINGLE CHANGE ERRORS <a id="single-change-errors" />
 
 Since all of the batch changes are being validated simultaneously, it is possible to encounter a variety of errors for a
 given change. Each change that is associated with errors will have its own list of **errors** containing one or more
 errors; any changes without the **errors** list have been fully validated and are good to submit. 
 
-By-change accumulated errors are errors that get collected at different validation stages and correspond to individual
-change inputs. These types of errors will probably account for the majority of errors that users encounter. By-change
+Single change errors are errors that get collected at different validation stages and correspond to individual
+change inputs. These types of errors will probably account for the majority of errors that users encounter. Single change
 accumulated errors are grouped into the following stages:
 
 - Independent input validations: Validate invalid data input formats and values.
 - Record and zone discovery: Resolve record and zone from fully-qualified input name.
 - Dependent context validations: Check for sufficient user access and conflicts with existing records or other submissions within the batch.
 
-Since by-change accumulated errors are collected at different stages, errors at later stages may exist but will not
+Since single change accumulated errors are collected at different stages, errors at later stages may exist but will not
 appear unless errors at earlier stages are addressed.
 
-By-change accumulated errors can be further classified as *soft* or *hard* errors. The presence of one or more hard
-errors will result in an immediate failure and no changes in the batch being applied. The behavior of soft errors depends
+Single change errors can be further classified as *soft* or *hard* errors. The presence of one or more hard
+errors will result in an immediate failure and no changes in the batch being accepted. The behavior of soft errors depends
 on whether manual review is configured on: if manual review is disabled, soft errors are treated as hard errors; if manual
 review is enabled, batches with only soft errors will enter a pending review state.
 
@@ -40,11 +40,11 @@ Manual Review Enabled? | Errors in Batch?   | Status Outcome |
 Yes                    | Both hard and soft | Failed         |
 Yes                    | Hard only          | Failed         |
 Yes                    | Soft only          | PendingReview  |
-Yes                    | No                 | Pending        |
+Yes                    | No                 | PendingProcessing |
 No                     | Both hard and soft | Failed         |
 No                     | Hard only          | Failed         |
 No                     | Soft only          | Failed         |
-No                     | No                 | Pending        |
+No                     | No                 | PendingProcessing |
 
 #### EXAMPLE ERROR RESPONSE BY CHANGE <a id="batchchange-error-response-by-change" />
 
@@ -97,7 +97,7 @@ No                     | No                 | Pending        |
 ]
 ```
 
-#### By-Change Errors
+#### Single Change Errors
 
 ##### Soft Errors
 1. [Zone Discovery Failed](#ZoneDiscoveryFailed)
@@ -150,7 +150,7 @@ Even if the zone already exists outside of VinylDNS, it has to be added to Vinyl
 ### Hard errors <a id="hard-errors"></a>
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>
 
-##### Error Message:__
+##### Error Message:
 
 ```
 Invalid domain name: "<input>", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminate with a dot.
@@ -515,7 +515,7 @@ The batch ID specified in the [get batch change](../api/get-batchchange) request
 
 ##### DETAILS:
 
-If there are issues with the JSON provided in a batch change request, errors will be returned (not in a by-change format) and none of the batch change validations will run.
+If there are issues with the JSON provided in a batch change request, errors will be returned (not in a single change format) and none of the batch change validations will run.
 
 ##### EXAMPLE ERROR MESSAGES:
 

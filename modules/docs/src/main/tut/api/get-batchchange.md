@@ -42,10 +42,10 @@ changes       | Array of SingleChange | Array of single changes within a batch c
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
-approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingApproval**, **ManuallyApproved** or **ManuallyRejected**. |
+approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved** or **Rejected**. |
 reviewerId    | string      | Conditional: unique identifier for the reviewer of the batch change, if batch change was manually reviewed. |
 reviewerUserName  | string      | Conditional: user name for the reviewer of the batch change, if batch change was manually reviewed. |
-reviewComment | string      | Conditional: comment for the reviewer of the batch change, if provided. |
+reviewComment | string      | Conditional: comment from the reviewer of the batch change, if provided. |
 reviewTimestamp | date-time  | Conditional: timestamp (in GMT) of when the batch change was manually reviewed, if batch change was manually reviewed. |
 
 #### EXAMPLE RESPONSE

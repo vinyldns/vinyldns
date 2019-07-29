@@ -54,7 +54,7 @@ totalChanges  | int         | The total number of single changes within the batc
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupName | string      | Conditional: Record ownership assignment, if provided. |
-approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingApproval**, **ManuallyApproved** or **ManuallyRejected**. |
+approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved** or **Rejected**. |
 
 
 #### EXAMPLE RESPONSE
