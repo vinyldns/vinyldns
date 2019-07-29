@@ -632,7 +632,8 @@ class BatchChangeRoutingSpec()
         resp.maxItems shouldBe 100
         resp.startFrom shouldBe None
         resp.nextId shouldBe None
-        resp.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingReview)
+        resp.approvalStatus.get
+          .getClass() shouldBe Some(BatchChangeApprovalStatus.PendingReview).get.getClass()
       }
     }
 
@@ -681,7 +682,8 @@ class BatchChangeRoutingSpec()
         resp.startFrom shouldBe None
         resp.nextId shouldBe None
         resp.ignoreAccess shouldBe true
-        resp.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingReview)
+        resp.approvalStatus.get
+          .getClass() shouldBe Some(BatchChangeApprovalStatus.PendingReview).get.getClass()
       }
     }
   }
