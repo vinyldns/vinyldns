@@ -53,14 +53,16 @@ case class BatchChange(
 }
 
 /*
- - Pending if at least one change is still in pending state
  - Complete means all changes are in complete state
  - Failed means all changes are in failure state
  - PartialFailure means some have failed, the rest are complete
+ - PendingProcessing if at least one change is still in pending state
+ - PendingReview if approval status is PendingApproval
+ - Rejected if approval status is ManuallyRejected
  */
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
-  val PendingProcessing, PendingReview, Complete, Failed, PartialFailure, Rejected, Scheduled = Value
+  val Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected, Scheduled = Value
 
   def calculateBatchStatus(
       approvalStatus: BatchChangeApprovalStatus,
