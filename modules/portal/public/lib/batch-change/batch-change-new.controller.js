@@ -36,7 +36,7 @@
             $scope.batchChangeErrors = false;
             $scope.ownerGroupError = false;
             $scope.formStatus = "pendingSubmit";
-            $scope.scheduledTime = "Now";
+            $scope.scheduledOption = false;
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
@@ -65,7 +65,7 @@
                      delete payload.ownerGroupId
                 }
 
-                if ($scope.scheduledTime == "Later" && $scope.newBatch.scheduledTime) {
+                if ($scope.scheduledOption && $scope.newBatch.scheduledTime) {
                     payload.scheduledTime = $scope.newBatch.scheduledTime.toISOString().split('.')[0]+"Z";
                 } else {
                     delete payload.scheduledTime;

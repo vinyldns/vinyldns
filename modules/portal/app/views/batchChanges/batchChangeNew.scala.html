@@ -56,22 +56,22 @@
                                     <label class="h5">Request Date/Time:</label>
                                     <div class="radio no-top-margin">
                                         <label>
-                                            <input type="radio" ng-model="scheduledTime" value="Now">
+                                            <input type="radio" ng-model="scheduledOption" ng-value="false">
                                             Now
                                         </label><br/>
                                         <label>
-                                            <input type="radio" ng-model="scheduledTime" value="Later">
+                                            <input type="radio" ng-model="scheduledOption" ng-value="true">
                                             Later
                                         </label><br/>
                                     </div>
-                                    <div ng-if="scheduledTime == 'Later'" class="form-inline">
-                                        <div ng-if="scheduledTime == 'Later'" class="form-group">
+                                    <div ng-if="scheduledOption" class="form-inline">
+                                        <div class="form-group">
                                             <input  class="form-control" type="datetime-local"
                                                    ng-model="newBatch.scheduledTime"
                                                    [name="string"]
                                                    [min="string"]
                                                    [max="string"]
-                                                    [ng-change="string"]>
+                                                   [ng-change="string"]>
                                              <span class="help-block help-block-inline"> {{ getLocalTimeZone() }}</span>
                                         </div>
                                     </div>
