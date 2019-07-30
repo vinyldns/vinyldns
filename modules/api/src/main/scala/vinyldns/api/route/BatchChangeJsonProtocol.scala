@@ -164,7 +164,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("reviewTimestamp" -> Extraction.decompose(bc.reviewTimestamp)) ~
         ("scheduledTime" -> Extraction.decompose(bc.scheduledTime))
   }
-  
+
   case object BatchChangeErrorListSerializer
       extends ValidationSerializer[InvalidBatchChangeResponses] {
     override def toJson(crl: InvalidBatchChangeResponses): JValue =

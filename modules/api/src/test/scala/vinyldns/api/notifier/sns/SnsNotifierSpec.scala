@@ -137,7 +137,8 @@ class SnsNotifierSpec
 
       request
         .getMessage() should be("""{"userId":"test","userName":"testUser","comments":"notes",""" +
-        """"createdTimestamp":"2019-07-22T17:01:19Z","status":"PartialFailure","id":"testBatch"}""")
+        """"createdTimestamp":"2019-07-22T17:01:19Z","status":"PartialFailure","id":"testBatch",""" +
+        """"approvalStatus":"AutoApproved"}""")
 
       verify(mockSns).publish(any[PublishRequest])
 

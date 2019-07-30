@@ -398,6 +398,7 @@ class BatchChangeJsonProtocolSpec
         ("ownerGroupId" -> JNothing) ~
         ("approvalStatus" -> decompose(BatchChangeApprovalStatus.PendingReview)) ~
         ("reviewerId" -> JNothing) ~
+        ("reviewComment" -> JNothing) ~
         ("reviewTimestamp" -> JNothing) ~
         ("scheduledTime" -> JNothing)
     }
