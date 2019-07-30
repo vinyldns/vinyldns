@@ -154,13 +154,13 @@ class BatchChangeRoutingSpec()
     val batchChangeSummaryInfo2 = BatchChangeSummary(
       createBatchChangeResponse(
         Some("second"),
-        approvalStatus = BatchChangeApprovalStatus.PendingApproval))
+        approvalStatus = BatchChangeApprovalStatus.PendingReview))
     val batchChangeSummaryInfo3 = BatchChangeSummary(createBatchChangeResponse(Some("third")))
     val batchChangeSummaryInfo4 = BatchChangeSummary(
       createBatchChangeResponse(
         Some("fourth"),
         auth = dummyAuth,
-        approvalStatus = BatchChangeApprovalStatus.PendingApproval))
+        approvalStatus = BatchChangeApprovalStatus.PendingReview))
 
     val validResponseWithComments: BatchChange = createBatchChangeResponse(
       Some("validChangeWithComments"))
@@ -305,13 +305,13 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, 100, _, Some(BatchChangeApprovalStatus.PendingApproval)) =>
+          case (_, None, 100, _, Some(BatchChangeApprovalStatus.PendingReview)) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
                 startFrom = None,
                 nextId = None,
-                approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+                approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
               )
             )
 
@@ -332,14 +332,14 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, 100, true, Some(BatchChangeApprovalStatus.PendingApproval)) => {
+          case (_, None, 100, true, Some(BatchChangeApprovalStatus.PendingReview)) => {
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2, batchChangeSummaryInfo4),
                 startFrom = None,
                 nextId = None,
                 ignoreAccess = true,
-                approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+                approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
               )
             )
           }
@@ -353,13 +353,13 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, 100, false, Some(BatchChangeApprovalStatus.PendingApproval)) =>
+          case (_, None, 100, false, Some(BatchChangeApprovalStatus.PendingReview)) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(),
                 startFrom = None,
                 nextId = None,
-                approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+                approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
               )
             )
 
@@ -376,7 +376,7 @@ class BatchChangeRoutingSpec()
         case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
         case ("pendingBatchId", false) =>
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
-        case _ => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
+        case _ => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
       }
 
     def approveBatchChange(
@@ -390,7 +390,7 @@ class BatchChangeRoutingSpec()
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
         case ("notFoundUser", _) =>
           EitherT(IO.pure(BatchRequesterNotFound("someid", "somename").asLeft))
-        case (_, _) => EitherT(IO.pure(BatchChangeNotPendingApproval("batchId").asLeft))
+        case (_, _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
       }
   }
 
@@ -621,8 +621,8 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "return user's Pending batch changes if approval status is `PendingApproval`" in {
-      Get("/zones/batchrecordchanges?approvalStatus=pendingapproval") ~>
+    "return user's Pending batch changes if approval status is `PendingReview`" in {
+      Get("/zones/batchrecordchanges?approvalStatus=PendingReview") ~>
         batchChangeRoute ~> check {
         status shouldBe OK
 
@@ -632,7 +632,8 @@ class BatchChangeRoutingSpec()
         resp.maxItems shouldBe 100
         resp.startFrom shouldBe None
         resp.nextId shouldBe None
-        resp.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingApproval)
+        resp.approvalStatus.toString() shouldBe Some(BatchChangeApprovalStatus.PendingReview)
+          .toString()
       }
     }
 
@@ -668,9 +669,9 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "return all Pending batch changes if ignoreAccess is true, approval status is `PendingApproval`," +
+    "return all Pending batch changes if ignoreAccess is true, approval status is `PendingReview`," +
       " and requester is a super user" in {
-      Get("/zones/batchrecordchanges?ignoreAccess=true&approvalStatus=PendingApproval") ~>
+      Get("/zones/batchrecordchanges?ignoreAccess=true&approvalStatus=PendingReview") ~>
         superUserRoute ~> check {
         status shouldBe OK
 
@@ -681,13 +682,14 @@ class BatchChangeRoutingSpec()
         resp.startFrom shouldBe None
         resp.nextId shouldBe None
         resp.ignoreAccess shouldBe true
-        resp.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingApproval)
+        resp.approvalStatus.toString() shouldBe Some(BatchChangeApprovalStatus.PendingReview)
+          .toString()
       }
     }
   }
 
   "POST reject batch change" should {
-    "return OK if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
+    "return OK if review comment is provided, batch change is PendingReview, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
@@ -696,7 +698,7 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "return OK if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
+    "return OK if comments are not provided, batch change is PendingReview, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         supportUserRoute ~> check {
@@ -728,7 +730,7 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "return BadRequest if batch change is not pending approval" in {
+    "return BadRequest if batch change is not pending review" in {
       Post("/zones/batchrecordchanges/batchId/reject").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         supportUserRoute ~> check {
@@ -738,7 +740,7 @@ class BatchChangeRoutingSpec()
   }
 
   "POST approve batch change" should {
-    "return Accepted if review comment is provided, batch change is PendingApproval, and reviewer is authorized" in {
+    "return Accepted if review comment is provided, batch change is PendingReview, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(HttpEntity(
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
@@ -747,7 +749,7 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "return Accepted if comments are not provided, batch change is PendingApproval, and reviewer is authorized" in {
+    "return Accepted if comments are not provided, batch change is PendingReview, and reviewer is authorized" in {
       Post("/zones/batchrecordchanges/pendingBatchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         supportUserRoute ~> check {
@@ -779,7 +781,7 @@ class BatchChangeRoutingSpec()
       }
     }
 
-    "return BadRequest if batch change is not pending approval" in {
+    "return BadRequest if batch change is not pending review" in {
       Post("/zones/batchrecordchanges/batchId/approve").withEntity(
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         supportUserRoute ~> check {

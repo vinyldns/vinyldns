@@ -157,9 +157,9 @@ def test_list_batch_change_summaries_with_pending_status(list_fixture):
     Test listing a limited number of user's batch change summaries with maxItems parameter
     """
     client = list_fixture.client
-    batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingApproval")
+    batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingReview")
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=0, approval_status="PendingApproval")
+    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=0, approval_status="PendingReview")
 
 def test_list_batch_change_summaries_with_list_batch_change_summaries_with_no_changes_passes():
     """

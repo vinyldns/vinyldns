@@ -21,8 +21,8 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
     try:
         result = client.create_batch_change(batch_change_input, status=202)
         get_batch = client.get_batch_change(result['id'])
-        assert_that(get_batch['status'], is_('Pending'))
-        assert_that(get_batch['approvalStatus'], is_('PendingApproval'))
+        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
         assert_that(get_batch['changes'][0]['status'], is_('NeedsReview'))
         assert_that(get_batch['changes'][0]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
 

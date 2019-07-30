@@ -398,7 +398,7 @@ class MySqlBatchChangeRepository
   def fromApprovalStatus(typ: BatchChangeApprovalStatus): Int =
     typ match {
       case BatchChangeApprovalStatus.AutoApproved => 1
-      case BatchChangeApprovalStatus.PendingApproval => 2
+      case BatchChangeApprovalStatus.PendingReview => 2
       case BatchChangeApprovalStatus.ManuallyApproved => 3
       case BatchChangeApprovalStatus.ManuallyRejected => 4
     }
@@ -406,7 +406,7 @@ class MySqlBatchChangeRepository
   def toApprovalStatus(key: Option[Int]): BatchChangeApprovalStatus =
     key match {
       case Some(1) => BatchChangeApprovalStatus.AutoApproved
-      case Some(2) => BatchChangeApprovalStatus.PendingApproval
+      case Some(2) => BatchChangeApprovalStatus.PendingReview
       case Some(3) => BatchChangeApprovalStatus.ManuallyApproved
       case Some(4) => BatchChangeApprovalStatus.ManuallyRejected
       case _ => BatchChangeApprovalStatus.AutoApproved

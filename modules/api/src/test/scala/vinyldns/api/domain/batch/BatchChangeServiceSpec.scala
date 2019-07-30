@@ -420,7 +420,7 @@ class BatchChangeServiceSpec
   }
 
   "rejectBatchChange" should {
-    "succeed if the batchChange is PendingApproval and reviewer is authorized" in {
+    "succeed if the batchChange is PendingReview and reviewer is authorized" in {
       val batchChange =
         BatchChange(
           auth.userId,
@@ -428,7 +428,7 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(pendingChange),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
       batchChangeRepo.save(batchChange)
 
       doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
@@ -442,7 +442,7 @@ class BatchChangeServiceSpec
               RejectBatchChangeInput(Some("review comment")))
             .value)
 
-      result.status shouldBe BatchChangeStatus.Failed
+      result.status shouldBe BatchChangeStatus.Rejected
       result.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyRejected
       result.changes.foreach(_.status shouldBe SingleChangeStatus.Rejected)
       result.reviewComment shouldBe Some("review comment")
@@ -453,7 +453,7 @@ class BatchChangeServiceSpec
       verify(mockNotifier).notify(any[Notification[BatchChange]])
     }
 
-    "fail if the batchChange is not PendingApproval" in {
+    "fail if the batchChange is not PendingReview" in {
       val batchChange =
         BatchChange(
           auth.userId,
@@ -470,7 +470,7 @@ class BatchChangeServiceSpec
             .rejectBatchChange(batchChange.id, supportUserAuth, RejectBatchChangeInput())
             .value)
 
-      result shouldBe BatchChangeNotPendingApproval(batchChange.id)
+      result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
 
     "fail if the batchChange reviewer is not authorized" in {
@@ -481,7 +481,7 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
       batchChangeRepo.save(batchChange)
 
       val result =
@@ -491,7 +491,7 @@ class BatchChangeServiceSpec
       result shouldBe UserNotAuthorizedError(batchChange.id)
     }
 
-    "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Approval" in {
+    "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Review" in {
       val batchChange =
         BatchChange(
           auth.userId,
@@ -518,9 +518,9 @@ class BatchChangeServiceSpec
       DateTime.now,
       List(singleChangeGood, singleChangeNR),
       Some(authGrp.id),
-      BatchChangeApprovalStatus.PendingApproval
+      BatchChangeApprovalStatus.PendingReview
     )
-    "succeed if the batchChange is PendingApproval and reviewer is authorized" in {
+    "succeed if the batchChange is PendingReview and reviewer is authorized" in {
       batchChangeRepo.save(batchChangeNeedsApproval)
 
       val result =
@@ -546,7 +546,7 @@ class BatchChangeServiceSpec
       result.reviewTimestamp shouldBe defined
     }
 
-    "fail if the batchChange is not PendingApproval" in {
+    "fail if the batchChange is not PendingReview" in {
       val batchChange =
         batchChangeNeedsApproval.copy(approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       batchChangeRepo.save(batchChange)
@@ -557,7 +557,7 @@ class BatchChangeServiceSpec
             .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
             .value)
 
-      result shouldBe BatchChangeNotPendingApproval(batchChange.id)
+      result shouldBe BatchChangeNotPendingReview(batchChange.id)
     }
 
     "fail if the batchChange reviewer is not authorized" in {
@@ -572,7 +572,7 @@ class BatchChangeServiceSpec
       result shouldBe UserNotAuthorizedError(batchChangeNeedsApproval.id)
     }
 
-    "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Approval" in {
+    "fail if the batchChange reviewer is not authorized and the batchChange is not Pending Review" in {
       val batchChange =
         batchChangeNeedsApproval.copy(approvalStatus = BatchChangeApprovalStatus.AutoApproved)
       batchChangeRepo.save(batchChange)
@@ -592,7 +592,7 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
       batchChangeRepo.save(batchChange)
 
       val result =
@@ -1397,7 +1397,7 @@ class BatchChangeServiceSpec
       DateTime.now,
       List(singleChangeGood, singleChangeNR),
       Some(authGrp.id),
-      BatchChangeApprovalStatus.PendingApproval
+      BatchChangeApprovalStatus.PendingReview
     )
     val asInput = BatchChangeInput(batchChangeNeedsApproval)
     val asAdds = asInput.changes.collect {
@@ -1549,7 +1549,7 @@ class BatchChangeServiceSpec
           None,
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
       batchChangeRepo.save(batchChangeOne)
 
       val batchChangeTwo = BatchChange(
@@ -1565,14 +1565,14 @@ class BatchChangeServiceSpec
         underTest
           .listBatchChangeSummaries(
             auth,
-            approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval))
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview))
           .value)
 
       result.maxItems shouldBe 100
       result.nextId shouldBe None
       result.startFrom shouldBe None
       result.ignoreAccess shouldBe false
-      result.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingApproval)
+      result.approvalStatus shouldBe Some(BatchChangeApprovalStatus.PendingReview)
 
       result.batchChanges.length shouldBe 1
       result.batchChanges(0).createdTimestamp shouldBe batchChangeOne.createdTimestamp
@@ -1798,7 +1798,7 @@ class BatchChangeServiceSpec
           .value)
       result.reviewComment shouldBe Some("batchSentToConverter")
     }
-    "not send to the converter, save the change if PendingApproval and MA enabled" in {
+    "not send to the converter, save the change if PendingReview and MA enabled" in {
       val batchChange =
         BatchChange(
           auth.userId,
@@ -1806,7 +1806,7 @@ class BatchChangeServiceSpec
           Some("checkConverter"),
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
 
       val result = rightResultOf(
         underTestManualEnabled
@@ -1818,7 +1818,7 @@ class BatchChangeServiceSpec
       // saved in DB
       batchChangeRepo.getBatchChange(batchChange.id).unsafeRunSync() shouldBe defined
     }
-    "error if PendingApproval but MA disabled" in {
+    "error if PendingReview but MA disabled" in {
       val batchChange =
         BatchChange(
           auth.userId,
@@ -1826,7 +1826,7 @@ class BatchChangeServiceSpec
           Some("checkConverter"),
           DateTime.now,
           List(),
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
 
       val result = leftResultOf(
         underTest

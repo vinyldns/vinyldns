@@ -379,7 +379,7 @@ class BatchChangeService(
         DateTime.now,
         changes,
         batchChangeInput.ownerGroupId,
-        BatchChangeApprovalStatus.PendingApproval,
+        BatchChangeApprovalStatus.PendingReview,
         scheduledTime = batchChangeInput.scheduledTime
       ).asRight
     }
@@ -471,7 +471,7 @@ class BatchChangeService(
       batchChangeConverter
         .sendBatchForProcessing(batchChange, existingZones, existingRecordSets, ownerGroupId)
         .map(_.batchChange)
-    case PendingApproval if manualReviewEnabled =>
+    case PendingReview if manualReviewEnabled =>
       // save the change, will need to return to it later on approval
       batchChangeRepo.save(batchChange).toBatchResult
     case _ =>

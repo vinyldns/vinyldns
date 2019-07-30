@@ -18,16 +18,20 @@ package vinyldns.api.notifier.email
 
 import vinyldns.core.notifier.{Notification, Notifier}
 import cats.effect.IO
-import vinyldns.core.domain.batch.BatchChange
+import vinyldns.core.domain.batch.{
+  BatchChange,
+  BatchChangeApprovalStatus,
+  SingleAddChange,
+  SingleChange,
+  SingleDeleteChange
+}
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.domain.membership.User
 import org.slf4j.LoggerFactory
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
+
 import scala.util.Try
-import vinyldns.core.domain.batch.SingleChange
-import vinyldns.core.domain.batch.SingleAddChange
-import vinyldns.core.domain.batch.SingleDeleteChange
 import vinyldns.core.domain.record.AData
 import vinyldns.core.domain.record.AAAAData
 import vinyldns.core.domain.record.CNAMEData
@@ -111,7 +115,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
   def formatStatus(approval: BatchChangeApprovalStatus, status: BatchChangeStatus): String =
     (approval, status) match {
       case (ManuallyRejected, _) => "Rejected"
-      case (PendingApproval, _) => "Pending Approval"
+      case (BatchChangeApprovalStatus.PendingReview, _) => "Pending Review"
       case (_, PartialFailure) => "Partially Failed"
       case (_, status) => status.toString
     }

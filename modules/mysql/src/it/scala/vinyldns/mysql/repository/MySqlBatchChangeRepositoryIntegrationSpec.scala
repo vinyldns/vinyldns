@@ -125,7 +125,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val timeBase: DateTime = DateTime.now
     val change_one: BatchChange = pendingBatchChange.copy(
       createdTimestamp = timeBase,
-      approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+      approvalStatus = BatchChangeApprovalStatus.PendingReview)
     val change_two: BatchChange =
       completeBatchChange.copy(createdTimestamp = timeBase.plus(1000), ownerGroupId = None)
     val otherUserBatchChange: BatchChange =
@@ -253,9 +253,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), Some(testBatch))
     }
 
-    "save/get a batch change with BatchChangeApprovalStatus.PendingApproval" in {
+    "save/get a batch change with BatchChangeApprovalStatus.PendingReview" in {
       val testBatch =
-        randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+        randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingReview)
       val f =
         for {
           _ <- repo.save(testBatch)
@@ -293,7 +293,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       val savedTs = DateTime.now.secondOfDay().roundFloorCopy()
       val chg = randomBatchChange().copy(
         scheduledTime = Some(savedTs),
-        approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+        approvalStatus = BatchChangeApprovalStatus.PendingReview)
 
       val saved =
         for {
@@ -330,7 +330,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
-            approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
           )
         } yield retrieved
 
@@ -465,7 +465,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             None,
-            approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval))
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview))
         } yield retrieved
 
       // from most recent descending
@@ -655,17 +655,17 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
 
-      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Pending
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.PendingProcessing
     }
-    "properly status check (pending) when approvalStatus is PendingApproval" in {
-      val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+    "properly status check (pendingReview) when approvalStatus is PendingReview" in {
+      val chg = randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.PendingReview)
       val saved =
         for {
           _ <- repo.save(chg)
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
 
-      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Pending
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.PendingReview
     }
     "properly status check (complete)" in {
       val chg = randomBatchChange(
@@ -699,7 +699,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
       saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Failed
     }
-    "properly status check (failed) when approval status is ManuallyRejected" in {
+    "properly status check (rejected) when approval status is ManuallyRejected" in {
       val chg =
         randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
       val saved =
@@ -708,7 +708,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           retrieved <- repo.getBatchChange(chg.id)
         } yield retrieved
 
-      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Failed
+      saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Rejected
     }
   }
 }

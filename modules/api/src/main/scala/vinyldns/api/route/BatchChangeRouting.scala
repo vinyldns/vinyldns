@@ -36,7 +36,7 @@ class BatchChangeRoute(
     case cnf: BatchChangeNotFound => complete(StatusCodes.NotFound, cnf.message)
     case una: UserNotAuthorizedError => complete(StatusCodes.Forbidden, una.message)
     case uct: BatchConversionError => complete(StatusCodes.BadRequest, uct)
-    case bcnpa: BatchChangeNotPendingApproval =>
+    case bcnpa: BatchChangeNotPendingReview =>
       complete(StatusCodes.BadRequest, bcnpa.message)
     case uce: UnknownConversionError => complete(StatusCodes.InternalServerError, uce)
     case brnf: BatchRequesterNotFound => complete(StatusCodes.NotFound, brnf.message)

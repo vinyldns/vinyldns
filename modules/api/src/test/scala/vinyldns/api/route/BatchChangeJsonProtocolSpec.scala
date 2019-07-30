@@ -381,7 +381,7 @@ class BatchChangeJsonProtocolSpec
         time,
         List(add, delete),
         None,
-        BatchChangeApprovalStatus.AutoApproved,
+        BatchChangeApprovalStatus.PendingReview,
         None,
         None,
         None,
@@ -393,7 +393,7 @@ class BatchChangeJsonProtocolSpec
         ("comments" -> "these be comments!") ~
         ("createdTimestamp" -> decompose(time)) ~
         ("changes" -> decompose(List(add, delete))) ~
-        ("status" -> decompose(BatchChangeStatus.Pending)) ~
+        ("status" -> decompose(BatchChangeStatus.PendingReview)) ~
         ("id" -> "someId") ~
         ("ownerGroupId" -> JNothing) ~
         ("scheduledTime" -> JNothing)
@@ -451,7 +451,7 @@ class BatchChangeJsonProtocolSpec
         ("comments" -> "these be comments!") ~
         ("createdTimestamp" -> decompose(time)) ~
         ("changes" -> decompose(List(add, delete))) ~
-        ("status" -> decompose(BatchChangeStatus.Pending)) ~
+        ("status" -> decompose(BatchChangeStatus.PendingProcessing)) ~
         ("id" -> "someId") ~
         ("ownerGroupId" -> decompose(Some("groupId"))) ~
         ("ownerGroupName" -> decompose(Some("groupName")))

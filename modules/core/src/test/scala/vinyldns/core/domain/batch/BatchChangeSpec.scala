@@ -46,7 +46,7 @@ class BatchChangeSpec extends WordSpec with Matchers {
 
   "BatchChange" should {
     "calculate Pending status based on SingleChanges" in {
-      batchChangeBase.status shouldBe BatchChangeStatus.Pending
+      batchChangeBase.status shouldBe BatchChangeStatus.PendingProcessing
     }
     "calculate PartialFailure status based on SingleChanges" in {
       batchChangeBase
@@ -61,20 +61,20 @@ class BatchChangeSpec extends WordSpec with Matchers {
         .copy(changes = List(completeChange))
         .status shouldBe BatchChangeStatus.Complete
     }
-    "calculate Pending status when approval status is PendingApproval" in {
+    "calculate Pending status when approval status is PendingReview" in {
       batchChangeBase
-        .copy(approvalStatus = BatchChangeApprovalStatus.PendingApproval)
-        .status shouldBe BatchChangeStatus.Pending
+        .copy(approvalStatus = BatchChangeApprovalStatus.PendingReview)
+        .status shouldBe BatchChangeStatus.PendingReview
     }
     "calculate Failed status when approval status is ManuallyRejected" in {
       batchChangeBase
         .copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
-        .status shouldBe BatchChangeStatus.Failed
+        .status shouldBe BatchChangeStatus.Rejected
     }
-    "calculate Scheduled status when approval status is PendingApproval and scheduled time is set" in {
+    "calculate Scheduled status when approval status is PendingReview and scheduled time is set" in {
       batchChangeBase
         .copy(
-          approvalStatus = BatchChangeApprovalStatus.PendingApproval,
+          approvalStatus = BatchChangeApprovalStatus.PendingReview,
           scheduledTime = Some(DateTime.now))
         .status shouldBe BatchChangeStatus.Scheduled
     }
