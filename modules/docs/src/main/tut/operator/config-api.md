@@ -458,6 +458,68 @@ has multiple records. Create batch will also fail if the user is attempting to m
 enable-multi-record-batch-update = true
 ```
 
+### Notifiers
+VinylDNS provides the ability to send notifications via configured notifiers when a batch change is either implemented
+or rejected. Notifiers in VinylDNS are designed to be pluggable (ie. bring-your-own-implementation), granting users the 
+flexibility to implement their own which can smoothly integrate into their instance.
+
+Setup requires a `notifiers` key which contains all of the configured notifiers that will be used by the running
+instance.
+
+```yaml
+notifiers = ["email", "sns"]
+```
+
+#### E-mail notifier
+Configuration for the e-mail notifier appears like the following:
+
+```yaml
+email = {
+  # Path to notifier provider implementation
+  class-name = "vinyldns.api.notifier.email.EmailNotifierProvider"
+  
+  settings = {
+    # Sender address for e-mail notifications
+    from = "Sender <do-not-reply@example.sender>"
+
+    smtp {
+      # Host SMTP server
+      host = "example.host"
+  }
+}
+```
+
+Note that `settings.from` and `settings.smtp` are both required, though the `smtp` values requirements depend on the specific
+exchange service that you are interfacing with.
+
+Below is an example e-mail notification:
+
+![Sample E-mail Notification](../img/sample-email-nofitication.png)
+
+#### AWD Simple Notification Service (SNS) notifier
+Configuration for the AWS SNS notifier appears like the following:
+
+```yaml
+sns {
+  # Path to notifier provider implementation
+  class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"
+  
+  settings {
+    # SNS topic Amazon Resource Name (ARN)
+    topic-arn = "arn:aws:sns:us-east-1:000000000000:batchChanges"
+    
+    # AWS access key and secret
+    access-key = "vinyldnsTest"
+    secret-key = "notNeededForSnsLocal"
+    
+    # Endpoint to access SNS
+    service-endpoint = "http://127.0.0.1:19006"
+    
+    # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.
+    signing-region = "us-east-1"
+  }
+}
+```
 
 ### Full Example Config
 ```yaml
@@ -609,6 +671,43 @@ vinyldns {
   
   # true if you want to allow batch changes to update/delete multi-record recordsets, false if not.
   enable-multi-record-batch-update = true
+  
+  # notifier configuration
+  notifiers = ["email", "sns"]
+
+  email = {
+    # Path to notifier provider implementation
+    class-name = "vinyldns.api.notifier.email.EmailNotifierProvider"
+    
+    settings = {
+      # Sender address for e-mail notifications
+      from = "Sender <do-not-reply@example.sender>"
+  
+      smtp {
+        # Host SMTP server
+        host = "example.host"
+    }
+  }
+
+  sns {
+    # Path to notifier provider implementation
+    class-name = "vinyldns.api.notifier.sns.SnsNotifierProvider"
+    
+    settings {
+      # SNS topic Amazon Resource Name (ARN)
+      topic-arn = "arn:aws:sns:us-east-1:000000000000:batchChanges"
+      
+      # AWS access key and secret
+      access-key = "vinyldnsTest"
+      secret-key = "notNeededForSnsLocal"
+      
+      # Endpoint to access SNS
+      service-endpoint = "http://127.0.0.1:19006"
+      
+      # Regional endpoint to make your requests (eg. 'us-west-2', 'us-east-1', etc.). This is the region where your SNS is housed.
+      signing-region = "us-east-1"
+    }
+  }
 }
 
 # Akka settings, these should not need to be modified unless you know akka http really well.
