@@ -12,7 +12,8 @@ def test_reject_pending_batch_change_success(shared_zone_test_context):
     batch_change_input = {
         "changes": [
             get_change_A_AAAA_json("zone.discovery.failure.", address="4.3.2.1")
-        ]
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
     }
     result = client.create_batch_change(batch_change_input, status=202)
     get_batch = client.get_batch_change(result['id'])

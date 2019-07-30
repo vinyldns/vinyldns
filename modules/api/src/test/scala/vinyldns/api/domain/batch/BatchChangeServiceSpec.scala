@@ -62,7 +62,7 @@ class BatchChangeServiceSpec
 
   implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-  private val nonFatalError = ZoneDiscoveryError("test", fatal = false)
+  private val nonFatalError = ZoneDiscoveryError("test")
 
   private val validations = new BatchChangeValidations(10, AccessValidations)
   private val ttl = Some(200L)
@@ -1158,11 +1158,12 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
-    "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled" in {
+    "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled and owner group ID " +
+      "is provided" in {
       val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTestManualEnabled
         .buildResponse(
-          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete), Some("owner-group-ID")),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             nonFatalError.invalidNel,
@@ -1219,6 +1220,22 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
+    "return a ManualReviewRequiresOwnerGroup error if all data inputs are valid/soft failures and manual review is " +
+      "enabled and owner group ID is missing" in {
+      val result = underTestManualEnabled
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA), None),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth,
+          true
+        )
+
+      result.value shouldBe Left(ManualReviewRequiresOwnerGroup)
+    }
+
     "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
       val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTest
