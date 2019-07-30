@@ -271,9 +271,9 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
 
 
 @pytest.mark.manual_batch_review
-def test_create_batch_change_with_scheduled_time_succeeds(shared_zone_test_context):
+def test_create_batch_change_with_scheduled_time_and_owner_group_succeeds(shared_zone_test_context):
     """
-    Test successfully creating a batch change with scheduled time set
+    Test successfully creating a batch change with scheduled time and owner group set
     """
     client = shared_zone_test_context.ok_vinyldns_client
     dt = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -283,12 +283,34 @@ def test_create_batch_change_with_scheduled_time_succeeds(shared_zone_test_conte
         "changes": [
             get_change_A_AAAA_json("parent.com.", address="4.5.6.7"),
         ],
-        "scheduledTime": dt
+        "scheduledTime": dt,
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
     }
 
     result = client.create_batch_change(batch_change_input, status=202)
     assert_that(result['status'], 'Scheduled')
     assert_that(result['scheduledTime'], dt)
+
+
+@pytest.mark.manual_batch_review
+def test_create_scheduled_batch_change_with_zone_discovery_error_without_owner_group_fails(shared_zone_test_context):
+    """
+    Test creating a scheduled batch without owner group ID fails if there is a zone discovery error
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    dt = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("no-owner-group.scheduled.parent.com.", address="4.5.6.7"),
+        ],
+        "scheduledTime": dt
+    }
+
+    errors = client.create_batch_change(batch_change_input, status=400)
+
+    assert_that(errors, is_("Batch change requires owner group for manual review/scheduled changes."))
 
 
 def test_create_batch_change_without_scheduled_time_succeeds(shared_zone_test_context):
@@ -312,6 +334,24 @@ def test_create_batch_change_without_scheduled_time_succeeds(shared_zone_test_co
         assert_that(completed_batch, is_not(has_key('scheduledTime')))
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
+
+
+@pytest.mark.manual_batch_review
+def test_create_batch_change_with_zone_discovery_error_without_owner_group_fails(shared_zone_test_context):
+    """
+    Test creating a batch change with zone discovery error fails if no owner group ID is provided
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("some.non-existent.zone.", address="1.1.1.1")
+        ]
+    }
+
+    errors = client.create_batch_change(batch_change_input, status=400)
+
+    assert_that(errors, is_("Batch change requires owner group for manual review/scheduled changes."))
 
 
 def test_create_batch_change_with_updates_deletes_success(shared_zone_test_context):

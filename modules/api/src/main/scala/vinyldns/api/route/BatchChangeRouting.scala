@@ -40,6 +40,8 @@ class BatchChangeRoute(
       complete(StatusCodes.BadRequest, bcnpa.message)
     case uce: UnknownConversionError => complete(StatusCodes.InternalServerError, uce)
     case brnf: BatchRequesterNotFound => complete(StatusCodes.NotFound, brnf.message)
+    case ManualReviewRequiresOwnerGroup =>
+      complete(StatusCodes.BadRequest, ManualReviewRequiresOwnerGroup.message)
     case ScheduledChangesDisabled =>
       complete(StatusCodes.BadRequest, ScheduledChangesDisabled.message)
     case scnpd: ScheduledChangeNotDue => complete(StatusCodes.Forbidden, scnpd.message)
