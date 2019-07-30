@@ -155,8 +155,12 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("createdTimestamp" -> Extraction.decompose(bc.createdTimestamp)) ~
         ("changes" -> Extraction.decompose(bc.changes)) ~
         ("status" -> bc.status.toString) ~
+        ("approvalStatus" -> bc.approvalStatus.toString) ~
         ("id" -> bc.id) ~
         ("ownerGroupId" -> bc.ownerGroupId) ~
+        ("approvalStatus" -> bc.approvalStatus.toString) ~
+        ("reviewerId" -> bc.reviewerId) ~
+        ("reviewTimestamp" -> Extraction.decompose(bc.reviewTimestamp)) ~
         ("scheduledTime" -> Extraction.decompose(bc.scheduledTime))
   }
 

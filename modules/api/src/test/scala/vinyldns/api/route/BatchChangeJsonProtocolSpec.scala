@@ -396,9 +396,13 @@ class BatchChangeJsonProtocolSpec
         ("status" -> decompose(BatchChangeStatus.PendingReview)) ~
         ("id" -> "someId") ~
         ("ownerGroupId" -> JNothing) ~
+        ("approvalStatus" -> decompose(BatchChangeApprovalStatus.PendingReview)) ~
+        ("reviewerId" -> JNothing) ~
+        ("reviewTimestamp" -> JNothing) ~
         ("scheduledTime" -> JNothing)
     }
   }
+
   "Serializing BatchChangeErrorList" should {
     "serialize changes for valid inputs" in {
       val onlyValid = List(
