@@ -19,7 +19,7 @@ package vinyldns.api.notifier.sns
 import vinyldns.core.notifier.{Notification, Notifier}
 import cats.effect.IO
 import cats.syntax.functor._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeInfo}
+import vinyldns.core.domain.batch.BatchChange
 import vinyldns.api.route.VinylDNSJsonProtocol
 import org.json4s.jackson.JsonMethods._
 import com.amazonaws.services.sns.AmazonSNS
@@ -33,15 +33,14 @@ class SnsNotifier(config: SnsNotifierConfig, sns: AmazonSNS)
 
   def notify(notification: Notification[_]): IO[Unit] =
     notification.change match {
-      case bc: BatchChange => sendBatchChangeNotification(BatchChangeInfo(bc))
+      case bc: BatchChange => sendBatchChangeNotification(bc)
       case _ => IO.unit
     }
 
-  def sendBatchChangeNotification(bc: BatchChangeInfo): IO[Unit] =
+  def sendBatchChangeNotification(bc: BatchChange): IO[Unit] =
     IO {
       val message =
-        compact(
-          render(BatchChangeInfoSerializer.toJson(bc).replace(List("changes"), JNull)).noNulls)
+        compact(render(BatchChangeSerializer.toJson(bc).replace(List("changes"), JNull)).noNulls)
       val request = new PublishRequest(config.topicArn, message)
       request.addMessageAttributesEntry(
         "userName",

@@ -160,19 +160,6 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("scheduledTime" -> Extraction.decompose(bc.scheduledTime))
   }
 
-  case object BatchChangeInfoSerializer extends ValidationSerializer[BatchChangeInfo] {
-    override def toJson(bc: BatchChangeInfo): JValue =
-      ("userId" -> bc.userId) ~
-        ("userName" -> bc.userName) ~
-        ("comments" -> bc.comments) ~
-        ("createdTimestamp" -> Extraction.decompose(bc.createdTimestamp)) ~
-        ("changes" -> Extraction.decompose(bc.changes)) ~
-        ("status" -> bc.status.toString) ~
-        ("id" -> bc.id) ~
-        ("ownerGroupId" -> bc.ownerGroupId) ~
-        ("ownerGroupName" -> bc.ownerGroupName)
-  }
-
   case object BatchChangeErrorListSerializer
       extends ValidationSerializer[InvalidBatchChangeResponses] {
     override def toJson(crl: InvalidBatchChangeResponses): JValue =
