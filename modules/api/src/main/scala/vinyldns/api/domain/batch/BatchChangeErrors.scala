@@ -16,6 +16,7 @@
 
 package vinyldns.api.domain.batch
 
+import org.joda.time.DateTime
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.ChangeForValidation
 import vinyldns.core.domain.DomainValidationError
@@ -59,4 +60,9 @@ final case class BatchRequesterNotFound(userId: String, userName: String)
 case object ScheduledChangesDisabled extends BatchChangeErrorResponse {
   val message: String =
     "Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance."
+}
+
+final case class ScheduledChangeNotDue(scheduledTime: DateTime) extends BatchChangeErrorResponse {
+  val message: String =
+    s"Cannot process scheduled change as it is not past the scheduled date of $scheduledTime"
 }

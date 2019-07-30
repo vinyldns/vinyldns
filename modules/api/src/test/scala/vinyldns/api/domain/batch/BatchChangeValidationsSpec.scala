@@ -293,6 +293,23 @@ class BatchChangeValidationsSpec
       Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
   }
 
+  property("validateScheduledApproval: should fail if scheduled time is not due") {
+    val dt = DateTime.now.plusDays(2)
+    val change = validPendingBatchChange.copy(scheduledTime = Some(dt))
+    validateScheduledApproval(change) shouldBe Left(ScheduledChangeNotDue(dt))
+  }
+
+  property("validateScheduledApproval: should succeed if scheduled time is due") {
+    val dt = DateTime.now.minusDays(2)
+    val change = validPendingBatchChange.copy(scheduledTime = Some(dt))
+    validateScheduledApproval(change) should be(right)
+  }
+
+  property("validateScheduledApproval: should succeed if scheduled time is not set") {
+    val change = validPendingBatchChange.copy(scheduledTime = None)
+    validateScheduledApproval(change) should be(right)
+  }
+
   property("validateAuthorizedReviewer: should succeed if the reviewer is a super user") {
     validateAuthorizedReviewer(superUserAuth, validPendingBatchChange) should be(right)
   }

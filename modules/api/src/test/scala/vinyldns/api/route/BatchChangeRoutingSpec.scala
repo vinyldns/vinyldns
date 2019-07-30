@@ -390,6 +390,8 @@ class BatchChangeRoutingSpec()
           EitherT(IO.pure(UserNotAuthorizedError("notAuthedID").asLeft))
         case ("notFoundUser", _) =>
           EitherT(IO.pure(BatchRequesterNotFound("someid", "somename").asLeft))
+        case ("schedNotPastDue", _) =>
+          EitherT(IO.pure(ScheduledChangeNotDue(DateTime.now).asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
       }
   }
@@ -762,6 +764,15 @@ class BatchChangeRoutingSpec()
         HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
         batchChangeRoute ~> check {
         status shouldBe Forbidden
+      }
+    }
+
+    "return Forbidden if scheduled change is not past due" in {
+      Post("/zones/batchrecordchanges/schedNotPastDue/approve").withEntity(
+        HttpEntity(ContentTypes.`application/json`, compact(render("")))) ~>
+        batchChangeRoute ~> check {
+        status shouldBe Forbidden
+        response.entity.toString should include("scheduled date")
       }
     }
 

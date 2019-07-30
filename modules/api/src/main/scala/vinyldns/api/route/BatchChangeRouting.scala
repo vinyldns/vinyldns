@@ -42,6 +42,7 @@ class BatchChangeRoute(
     case brnf: BatchRequesterNotFound => complete(StatusCodes.NotFound, brnf.message)
     case ScheduledChangesDisabled =>
       complete(StatusCodes.BadRequest, ScheduledChangesDisabled.message)
+    case scnpd: ScheduledChangeNotDue => complete(StatusCodes.Forbidden, scnpd.message)
   }
 
   final private val MAX_ITEMS_LIMIT: Int = 100
