@@ -113,7 +113,7 @@ class SnsNotifierIntegrationSpec
       val notification = parse(messages.get(0).getBody)
       (notification \ "Message").extract[String] should be(
         """{"userId":"ok","userName":"ok","createdTimestamp":"2019-07-22T19:38:23Z",""" +
-          """"status":"Complete","id":"a615e2bb-8b35-4a39-8947-1edd0e653afa"}""")
+          """"status":"Complete","id":"a615e2bb-8b35-4a39-8947-1edd0e653afa","approvalStatus":"AutoApproved"}""")
     }
 
   }
