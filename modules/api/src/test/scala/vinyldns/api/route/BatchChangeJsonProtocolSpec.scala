@@ -399,65 +399,6 @@ class BatchChangeJsonProtocolSpec
         ("scheduledTime" -> JNothing)
     }
   }
-
-  "Serializing BatchChangeInfo to JSON" should {
-    "successfully serialize" in {
-      val delete = SingleDeleteChange(
-        Some("zoneId"),
-        Some("zoneName"),
-        Some("recordName"),
-        "fqdn",
-        A,
-        Pending,
-        Some("systemMessage"),
-        None,
-        None,
-        id = "id")
-      val add = SingleAddChange(
-        Some("zoneId"),
-        Some("zoneName"),
-        Some("recordName"),
-        "fqdn",
-        A,
-        30,
-        AData("1.1.1.1"),
-        Pending,
-        Some("systemMessage"),
-        None,
-        None,
-        id = "id")
-
-      val time = DateTime.now
-      val batchChange = BatchChange(
-        "someUserId",
-        "someUserName",
-        Some("these be comments!"),
-        time,
-        List(add, delete),
-        Some("groupId"),
-        BatchChangeApprovalStatus.AutoApproved,
-        None,
-        None,
-        None,
-        "someId"
-      )
-
-      val batchChangeInfo = BatchChangeInfo(batchChange, Some("groupName"))
-
-      val result = BatchChangeInfoSerializer.toJson(batchChangeInfo)
-
-      result shouldBe ("userId" -> "someUserId") ~
-        ("userName" -> "someUserName") ~
-        ("comments" -> "these be comments!") ~
-        ("createdTimestamp" -> decompose(time)) ~
-        ("changes" -> decompose(List(add, delete))) ~
-        ("status" -> decompose(BatchChangeStatus.PendingProcessing)) ~
-        ("id" -> "someId") ~
-        ("ownerGroupId" -> decompose(Some("groupId"))) ~
-        ("ownerGroupName" -> decompose(Some("groupName")))
-    }
-  }
-
   "Serializing BatchChangeErrorList" should {
     "serialize changes for valid inputs" in {
       val onlyValid = List(
