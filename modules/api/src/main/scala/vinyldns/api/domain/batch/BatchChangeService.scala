@@ -379,7 +379,7 @@ class BatchChangeService(
         DateTime.now,
         changes,
         batchChangeInput.ownerGroupId,
-        BatchChangeApprovalStatus.PendingApproval,
+        BatchChangeApprovalStatus.PendingReview,
         scheduledTime = batchChangeInput.scheduledTime
       ).asRight
     }

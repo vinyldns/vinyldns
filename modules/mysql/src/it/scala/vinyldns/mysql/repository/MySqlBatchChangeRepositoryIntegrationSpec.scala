@@ -293,7 +293,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       val savedTs = DateTime.now.secondOfDay().roundFloorCopy()
       val chg = randomBatchChange().copy(
         scheduledTime = Some(savedTs),
-        approvalStatus = BatchChangeApprovalStatus.PendingApproval)
+        approvalStatus = BatchChangeApprovalStatus.PendingReview)
 
       val saved =
         for {
@@ -330,7 +330,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
-            approvalStatus = Some(BatchChangeApprovalStatus.PendingApproval)
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
           )
         } yield retrieved
 

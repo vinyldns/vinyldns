@@ -62,7 +62,8 @@ case class BatchChange(
  */
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
-  val Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected, Scheduled = Value
+  val Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected, Scheduled =
+    Value
 
   def calculateBatchStatus(
       approvalStatus: BatchChangeApprovalStatus,
