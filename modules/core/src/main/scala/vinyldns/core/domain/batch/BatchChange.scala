@@ -59,6 +59,7 @@ case class BatchChange(
  - PendingProcessing if at least one change is still in pending state
  - PendingReview if approval status is PendingReview
  - Rejected if approval status is ManuallyRejected
+ - Scheduled if approval status is PendingReview and batch change is scheduled
  */
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
