@@ -66,3 +66,8 @@ final case class ScheduledChangeNotDue(scheduledTime: DateTime) extends BatchCha
   val message: String =
     s"Cannot process scheduled change as it is not past the scheduled date of $scheduledTime"
 }
+
+case object ManualReviewRequiresOwnerGroup extends BatchChangeErrorResponse {
+  val message: String =
+    "Batch change requires owner group for manual review/scheduled changes."
+}

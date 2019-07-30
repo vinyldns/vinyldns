@@ -421,7 +421,11 @@ class BatchChangeService(
       // advance to manual review if this is scheduled OR manual review is ok
       val gotoManualReview = this.manualReviewEnabled && (isScheduled || allowManualReview)
       if (gotoManualReview) {
-        manualReviewResponse
+        if (batchChangeInput.ownerGroupId.isDefined) {
+          manualReviewResponse
+        } else {
+          ManualReviewRequiresOwnerGroup.asLeft
+        }
       } else {
         // Cannot go to manual review, and we have soft errors, so just return a failure
         errorResponse
