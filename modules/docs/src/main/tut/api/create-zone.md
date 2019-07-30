@@ -40,12 +40,12 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-status        | string       | status of zone change |
-zone          | map          | refer to [zone model](../api/zone-model)  |
-created       | string        | the time (GMT) the change was initiated |
-changeType    | string        | type of change requested (Create, Update, Sync, Delete); in this case Create |
-userId        | string        | the user id that initiated the change |
-id            | string        |  the id of the change.  This is not the id of the zone |
+status        | string       | Status of zone change |
+zone          | map          | Refer to [zone model](../api/zone-model)  |
+created       | string        | The timestamp (UTC) the change was initiated |
+changeType    | string        | Type of change requested (Create, Update, Sync, Delete); in this case Create |
+userId        | string        | The user id that initiated the change |
+id            | string        | The ID of the change.  This is not the ID of the zone |
 
 #### EXAMPLE RESPONSE
 

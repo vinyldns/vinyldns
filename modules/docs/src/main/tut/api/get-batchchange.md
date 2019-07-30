@@ -36,17 +36,12 @@ name          | type        | description |
  ------------ | :---------- | :---------- |
 userId        | string      | The unique identifier of the user that created the batch change. |
 userName      | string      | The username of the user that created the batch change. |
-comments      | string      | Conditional: comments about the batch change, if provided. |
-createdTimestamp | date-time      | The timestamp (in GMT) when the batch change was created. |
+comments      | string      | Optional comments about the batch change. |
+createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteChange](../api/batchchange-model/#singledeletechange-). |
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
-ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
-approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved** or **Rejected**. |
-reviewerId    | string      | Conditional: unique identifier for the reviewer of the batch change, if batch change was manually reviewed. |
-reviewerUserName  | string      | Conditional: user name for the reviewer of the batch change, if batch change was manually reviewed. |
-reviewComment | string      | Conditional: comment from the reviewer of the batch change, if provided. |
-reviewTimestamp | date-time  | Conditional: timestamp (in GMT) of when the batch change was manually reviewed, if batch change was manually reviewed. |
+
 
 #### EXAMPLE RESPONSE
 
@@ -86,8 +81,7 @@ reviewTimestamp | date-time  | Conditional: timestamp (in GMT) of when the batch
             "id": "7573ca11-3e30-45a8-9ba5-791f7d6ae7a7"
         }
     ], 
-    "status": "PendingProcessing", 
-    "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a",
-    "approvalStatus": "AutoApproved"
+    "status": "Pending", 
+    "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a"
 }
 ```

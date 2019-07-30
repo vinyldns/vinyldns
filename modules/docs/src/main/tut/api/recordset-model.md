@@ -21,8 +21,8 @@ name          | string      | The name of the RecordSet |
 type          | string      | Type of DNS record, supported records are currently: A, AAAA, CNAME, DS, MX, NAPTR, NS, PTR, SOA, SRV, TXT, SSHFP, and SPF. Unsupported types will be given the type UNKNOWN |
 ttl           | long        |  the TTL in seconds for the recordset |
 status        | string      | *Active* - RecordSet is added is created and ready for use, *Inactive* - RecordSet effects are not applied, *Pending* - RecordSet is queued for creation, *PendingUpdate* - RecordSet is queued for update, *PendingDelete* - RecordSet is queued for delete |
-created       | date-time   | the timestamp GMT when the recordset was created   |
-updated       | date-time   | the timestamp GMT when the recordset was last updated |
+created       | date-time   | The timestamp (UTC) when the recordset was created   |
+updated       | date-time   | The timestamp (UTC) when the recordset was last updated |
 records       | Array of [RecordData](#record-data) | Array of record data, a single RecordSet can have multiple DNS records as long as they are all the same type|
 id            | string      |  the id of the recordset.  This is important as you will use it for other recordset operations |
 account       | string      | **DEPRECATED** The account that created the RecordSet |

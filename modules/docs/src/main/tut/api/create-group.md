@@ -60,10 +60,10 @@ id            | string        | Unique UUID of the group |
 name          | string           | The name of the group |
 email         | string        | The email distribution list of the group |
 description   | string        | The group description, the group will not have this attribute if it was not included in the create request |
-created       | string        | The time (GMT) the group was created |
+created       | string        | The timestamp (UTC) the group was created |
 status        | string        | **Active** or **Deleted**, in this case **Active** |
-members       | Array of User Id objects        | Ids of members of the group including admins |
-admins        | Array of User Id objects        | Ids of admins of the group |
+members       | Array of User ID objects        | IDs of members of the group including admins |
+admins        | Array of User ID objects        | IDs of admins of the group |
 
 #### EXAMPLE RESPONSE
 

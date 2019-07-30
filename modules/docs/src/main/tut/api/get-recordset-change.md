@@ -26,14 +26,14 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-zone          | map           | contains information about the zone when the change was created |
-recordSet     | map           | contains the recordset model |
-userId        | string        | the user id that initiated the change |
-changeType    | string        | type of change requested (Create, Update, or Delete) |
-created       | string        | the time (GMT) the change was initiated |
-id            | string        | the id of the change.  This is not the id of the recordset |
-status        | RecordSetChangeStatus        | the status of the change (Pending, Complete, or Failed) |
-singleBatchChangeIds |  array of SingleBatchChange Id objects  | if the recordset change was part of a batch change, the IDs of the single changes that comprise the recordset change
+zone          | map           | Contains information about the zone when the change was created |
+recordSet     | map           | Contains the recordset model |
+userId        | string        | The user ID that initiated the change |
+changeType    | string        | Type of change requested (Create, Update, or Delete) |
+created       | string        | The timestamp (UTC) the change was initiated |
+id            | string        | The ID of the change.  This is not the ID of the recordset |
+status        | RecordSetChangeStatus        | The status of the change (Pending, Complete, or Failed) |
+singleBatchChangeIds |  array of SingleBatchChange ID objects  | If the recordset change was part of a batch change, the IDs of the single changes that comprise the recordset change
 
 #### EXAMPLE RESPONSE
 

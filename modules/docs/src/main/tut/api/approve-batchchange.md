@@ -31,7 +31,7 @@ Code          | description |
  ------------ | :---------- |
 202           | **OK** Batch change is approved and is returned in response body. Batch change is submitted for backend processing. |
 400           | **BadRequest** Batch change is not in pending approval status. |
-403           | **Forbidden** User is not a system administrator (ie. support or super user). |
+403           | **Forbidden** User is not a system administrator (ie. support or super user) or is attempting to approve a scheduled batch prior to its scheduled due date. |
 404           | **NotFound** Batch change does not exist. |
 
 

@@ -18,18 +18,18 @@ errors; any changes without the **errors** list have been fully validated and ar
 
 Single change errors are errors that get collected at different validation stages and correspond to individual
 change inputs. These types of errors will probably account for the majority of errors that users encounter. Single change
-accumulated errors are grouped into the following stages:
+errors are grouped into the following stages:
 
 - Independent input validations: Validate invalid data input formats and values.
 - Record and zone discovery: Resolve record and zone from fully-qualified input name.
 - Dependent context validations: Check for sufficient user access and conflicts with existing records or other submissions within the batch.
 
-Since single change accumulated errors are collected at different stages, errors at later stages may exist but will not
+Since single change errors are collected at different stages, errors at later stages may exist but will not
 appear unless errors at earlier stages are addressed.
 
 Single change errors can be further classified as *soft* or *hard* errors. The presence of one or more hard
-errors will result in an immediate failure and no changes in the batch being accepted. The behavior of soft errors depends
-on whether manual review is configured on: if manual review is disabled, soft errors are treated as hard errors; if manual
+errors will result in an immediate failure and no changes in the batch will be accepted. The behavior of soft errors depends
+on whether [manual review is configured on](../operator/config-api#additional-configuration-settings): if manual review is disabled, soft errors are treated as hard errors; if manual
 review is enabled, batches with only soft errors will enter a pending review state.
 
 The following chart provides a breakdown of batch change status outcome based on a combination of manual review
@@ -146,6 +146,8 @@ For PTR records, there is logic to determine the appropriate reverse zone from t
 If this logic cannot find a matching zone in VinylDNS, you will see this error.
 In that case, you need to connect to the zone in VinylDNS.
 Even if the zone already exists outside of VinylDNS, it has to be added to VinylDNS to modify records.
+VinylDNS also does not support dotted records for forward zones (eg. record `baz.foo.bar.` in zone `bar.`), so encountering
+this error could indicate that a zone needs to be created outside of VinylDNS and then connected to within VinylDNS.
 
 ### Hard errors <a id="hard-errors"></a>
 #### 1. Invalid Domain Name <a id="InvalidDomainName"></a>

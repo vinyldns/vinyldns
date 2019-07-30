@@ -16,14 +16,14 @@ Updates a Group in VinylDNS
 
 name          | type          | required?   | description |
  ------------ | ------------- | ----------- | :---------- |
-id            | string        | yes         | The id of the group |
+id            | string        | yes         | The ID of the group |
 name          | string        | yes         | The name of the group. Should be one word, use hyphens if needed but no spaces |
 email         | string        | yes         | The email distribution list for the group |
 description   | string        | no          | A short description of the group, if more info is needed other than the name |
-created       | date-time     | yes         | The timestamp GMT when the group was created |
+created       | date-time     | yes         | The timestamp (UTC) when the group was created |
 status        | string        | yes         | **Active** or **Deleted**, should not be changed in an update, a delete request will handle deleting a group |
-members       | Array of User id objects    | yes         | Set of User ids in the group |
-admins        | Array of User id objects    | yes         | Set of User ids that are admins of the group. All admin user ids should also be in the members array |
+members       | Array of User ID objects    | yes         | Set of User IDs in the group |
+admins        | Array of User ID objects    | yes         | Set of User IDs that are admins of the group. All admin user ids should also be in the members array |
 
 #### EXAMPLE HTTP REQUEST
 
@@ -69,7 +69,7 @@ id            | string        | Unique UUID of the group |
 name          | map           | The name of the group |
 email         | string        | The email distribution list of the group |
 description   | string        | The group description, the group will not have this attribute if it was not included in the update request and already did not exist |
-created       | string        | The time (GMT) the group was created |
+created       | string        | The timestamp (UTC) the group was created |
 status        | string        | **Active** or **Deleted**, in this case **Active** |
 members       | Array of User Id objects        | Ids of members of the group including admins |
 admins        | Array of User Id objects        | Ids of admins of the group |

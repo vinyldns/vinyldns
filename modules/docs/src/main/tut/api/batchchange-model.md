@@ -26,6 +26,7 @@ change in the batch will result in a **400** response and none will be applied.
 enter a manual review state. Batch change will remain in limbo until a system administrator (ie. support or super user)
 either rejects it resulting in an immediate failure or approves it resulting in revalidation and submission for processing.
 -   Support for [notifications](../operator/config-api#additional-configuration-settings) when a batch change is rejected or implemented.
+-   Support for [scheduled changes](../operator/config-api#additional-configuration-settings) by setting a scheduled time field if scheduled changes are configured for your VinylDNS instance.
 
 A batch change consists of multiple single changes which can be a combination of [SingleAddChanges](#singleaddchange-attributes) and [SingleDeleteChanges](#singledeletechange-attributes).
 
@@ -45,7 +46,7 @@ name          | type        | description |
 userId        | string      | The unique identifier of the user that created the batch change. |
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Optional comments about the batch change. |
-createdTimestamp | date-time      | The timestamp (in GMT) when the batch change was created. |
+createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](#singleaddchange-attributes) or a [SingleDeleteChange](#singledeletechange-attributes). |
 status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
 id            | string      | The unique identifier for this batch change. |
@@ -54,7 +55,7 @@ approvalStatus | string      | Whether the batch change is currently awaiting ma
 reviewerId    | string      | Optional unique identifier for the reviewer of the batch change. Required if batch change was manually rejected or approved. |
 reviewerUserName  | string      | Optional user name for the reviewer of the batch change. Required if batch change was manually rejected or approved. |
 reviewComment | string      | Optional comment for the reviewer of the batch change. Only applicable if batch change was manually rejected or approved. |
-reviewTimestamp | date-time  | Optional timestamp (in GMT) of when the batch change was manually reviewed. Required if batch change was manually rejected or approved. |
+reviewTimestamp | date-time  | Optional timestamp (UTC) of when the batch change was manually reviewed. Required if batch change was manually rejected or approved. |
 
 #### SINGLE CHANGE ATTRIBUTES <a id="singlechange-attributes" />
 
