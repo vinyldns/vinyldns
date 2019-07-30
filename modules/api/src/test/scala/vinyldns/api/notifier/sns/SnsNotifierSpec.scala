@@ -136,9 +136,10 @@ class SnsNotifierSpec
       userNameAttribute.getStringValue() should be("testUser")
 
       request
-        .getMessage() should be("""{"userId":"test","userName":"testUser","comments":"notes",""" +
-        """"createdTimestamp":"2019-07-22T17:01:19Z","status":"PartialFailure","id":"testBatch",""" +
-        """"approvalStatus":"AutoApproved"}""")
+        .getMessage() should be(
+        """{"userId":"test","userName":"testUser","comments":"notes",""" +
+          """"createdTimestamp":"2019-07-22T17:01:19Z","status":"PartialFailure","approvalStatus":"AutoApproved",""" +
+          """"id":"testBatch"}""")
 
       verify(mockSns).publish(any[PublishRequest])
 
