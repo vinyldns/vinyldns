@@ -22,7 +22,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import cats.implicits._
 import org.joda.time.DateTime
-import vinyldns.core.domain.DomainValidationError
+import vinyldns.core.domain.{DomainValidationError, DomainValidationErrorType}
 import vinyldns.api.domain.batch.ChangeInputType._
 import vinyldns.api.domain.batch._
 import vinyldns.core.domain.batch._
@@ -36,6 +36,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     JsonEnumV(SingleChangeStatus),
     JsonEnumV(BatchChangeStatus),
     JsonEnumV(BatchChangeApprovalStatus),
+    JsonEnumV(DomainValidationErrorType),
     BatchChangeInputSerializer,
     ChangeInputSerializer,
     AddChangeInputSerializer,
@@ -158,7 +159,6 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("approvalStatus" -> bc.approvalStatus.toString) ~
         ("id" -> bc.id) ~
         ("ownerGroupId" -> bc.ownerGroupId) ~
-        ("approvalStatus" -> bc.approvalStatus.toString) ~
         ("reviewerId" -> bc.reviewerId) ~
         ("reviewTimestamp" -> Extraction.decompose(bc.reviewTimestamp)) ~
         ("scheduledTime" -> Extraction.decompose(bc.scheduledTime))
