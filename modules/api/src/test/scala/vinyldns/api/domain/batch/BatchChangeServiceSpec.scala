@@ -1299,7 +1299,11 @@ class BatchChangeServiceSpec
   "return a BatchChange if all data inputs ok and manual review is enabled with scheduled" in {
     val result = underTestScheduledEnabled
       .buildResponse(
-        BatchChangeInput(None, List(apexAddA), scheduledTime = Some(DateTime.now)),
+        BatchChangeInput(
+          None,
+          List(apexAddA),
+          Some("owner-group-id"),
+          scheduledTime = Some(DateTime.now)),
         List(
           AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
         ),
@@ -1329,7 +1333,7 @@ class BatchChangeServiceSpec
   "return a BatchChange ignoring allowManualReview flag if scheduled" in {
     val result = underTestScheduledEnabled
       .buildResponse(
-        BatchChangeInput(None, List(apexAddA), scheduledTime = Some(DateTime.now)),
+        BatchChangeInput(None, List(apexAddA), Some("owner-group-id"), Some(DateTime.now)),
         List(
           AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
           nonFatalError.invalidNel,
@@ -1361,7 +1365,7 @@ class BatchChangeServiceSpec
   "return a BatchChange in manual review if soft errors and scheduled" in {
     val result = underTestScheduledEnabled
       .buildResponse(
-        BatchChangeInput(None, List(apexAddA), scheduledTime = Some(DateTime.now)),
+        BatchChangeInput(None, List(apexAddA), Some("owner-group-id"), Some(DateTime.now)),
         List(
           AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
           nonFatalError.invalidNel,
