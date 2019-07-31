@@ -20,7 +20,6 @@
     angular.module('batch-change')
         .controller('BatchChangesController', function($scope, $timeout, batchChangeService, pagingService, utilityService){
             $scope.batchChanges = [];
-            $scope.onlyPendingReview = false;
             $scope.approvalStatus = undefined;
             $scope.ignoreAccess = undefined;
 
@@ -104,18 +103,6 @@
                         handleError(error, 'batchChangesService::getBatchChanges-failure');
                     });
             };
-
-            $scope.pendingFilter = function(){
-                if($scope.onlyPendingReview == true) {
-                    $scope.onlyPendingReview = false;
-                    $scope.approvalStatus = undefined;
-                    $scope.refreshBatchChanges();
-                } else {
-                    $scope.onlyPendingReview = true;
-                    $scope.approvalStatus = 'PendingApproval';
-                    $scope.refreshBatchChanges();
-                }
-            }
 
             $scope.myRequests = function(){
                 $scope.ignoreAccess = false;
