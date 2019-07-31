@@ -25,8 +25,8 @@ change in the batch will result in a **400** response and none will be applied.
 -   Support for manual review if configured on your VinylDNS instance where batches that contain only [soft errors](../api/batchchange-errors/#soft-errors)
 enter a manual review state. Batch change will remain in limbo until a system administrator (ie. support or super user)
 either rejects it resulting in an immediate failure or approves it resulting in revalidation and submission for processing.
--   Support for [notifications](../operator/config-api#additional-configuration-settings) when a batch change is rejected or implemented.
--   Support for [scheduled changes](../operator/config-api#additional-configuration-settings) by setting a scheduled time field if scheduled changes are configured for your VinylDNS instance.
+-   Support for [notifications](../../operator/config-api#additional-configuration-settings) when a batch change is rejected or implemented.
+-   Support for [scheduled changes](../../operator/config-api#additional-configuration-settings) by setting a scheduled time field if scheduled changes are configured for your VinylDNS instance.
 
 A batch change consists of multiple single changes which can be a combination of [SingleAddChanges](#singleaddchange-attributes) and [SingleDeleteChanges](#singledeletechange-attributes).
 
@@ -48,7 +48,7 @@ userName      | string      | The username of the user that created the batch ch
 comments      | string      | Optional comments about the batch change. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](#singleaddchange-attributes) or a [SingleDeleteChange](#singledeletechange-attributes). |
-status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
+status        | BatchChangeStatus | **PendingProcessing** - at least one change in batch in still in pending processing state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete; **PendingReview** - one or more changes requires manual [approval](../api/approve-batchchange)/[rejection](../api/reject-batchchange) by a system administrator (ie. super or support user) to proceed ; **Rejected** - the batch change was rejected by a system administrator (ie. super or support user) and no changes were applied; **Scheduled** - the batch change is scheduled for a later date at which it needs to be approved to proceed. |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Record ownership assignment. Required if any records in the batch change are in shared zones and are new or unowned. |
 approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved** or **Rejected**. |

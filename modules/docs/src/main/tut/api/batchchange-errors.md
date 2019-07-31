@@ -11,14 +11,9 @@ section: "api"
 2. [Full-Request Errors](#full-request-errors)
 
 ### SINGLE CHANGE ERRORS <a id="single-change-errors" />
-
-Since all of the batch changes are being validated simultaneously, it is possible to encounter a variety of errors for a
-given change. Each change that is associated with errors will have its own list of **errors** containing one or more
-errors; any changes without the **errors** list have been fully validated and are good to submit. 
-
 Single change errors are errors that get collected at different validation stages and correspond to individual
-change inputs. These types of errors will probably account for the majority of errors that users encounter. Single change
-errors are grouped into the following stages:
+change inputs. These types of errors will probably account for the majority of errors that users encounter. Each change
+can have its own list of one or more errors. Single change errors are grouped into the following stages:
 
 - Independent input validations: Validate invalid data input formats and values.
 - Record and zone discovery: Resolve record and zone from fully-qualified input name.
@@ -26,25 +21,6 @@ errors are grouped into the following stages:
 
 Since single change errors are collected at different stages, errors at later stages may exist but will not
 appear unless errors at earlier stages are addressed.
-
-Single change errors can be further classified as *soft* or *hard* errors. The presence of one or more hard
-errors will result in an immediate failure and no changes in the batch will be accepted. The behavior of soft errors depends
-on whether [manual review is configured on](../operator/config-api#additional-configuration-settings): if manual review is disabled, soft errors are treated as hard errors; if manual
-review is enabled, batches with only soft errors will enter a pending review state.
-
-The following chart provides a breakdown of batch change status outcome based on a combination of manual review
-configuration and error types present in the batch change:
-
-Manual Review Enabled? | Errors in Batch?   | Status Outcome |
- :-------------------: | :----------------- | :------------- |
-Yes                    | Both hard and soft | Failed         |
-Yes                    | Hard only          | Failed         |
-Yes                    | Soft only          | PendingReview  |
-Yes                    | No                 | PendingProcessing |
-No                     | Both hard and soft | Failed         |
-No                     | Hard only          | Failed         |
-No                     | Soft only          | Failed         |
-No                     | No                 | PendingProcessing |
 
 #### EXAMPLE ERROR RESPONSE BY CHANGE <a id="batchchange-error-response-by-change" />
 
@@ -98,6 +74,25 @@ No                     | No                 | PendingProcessing |
 ```
 
 #### Single Change Errors
+Single change errors can be further classified as *soft* or *hard* errors. The presence of one or more hard
+errors will result in an immediate failure and no changes in the batch will be accepted. The behavior of soft errors depends
+on whether [manual review is configured on](../../operator/config-api#additional-configuration-settings): if manual review
+is disabled, soft errors are treated as hard errors; if manual review is enabled, batches with only soft errors will enter
+a pending review state.
+
+The following chart provides a breakdown of batch change status outcome based on a combination of manual review
+configuration and error types present in the batch change:
+
+Manual Review Enabled? | Errors in Batch?   | Status Outcome |
+ :-------------------: | :----------------- | :------------- |
+Yes                    | Both hard and soft | Failed         |
+Yes                    | Hard only          | Failed         |
+Yes                    | Soft only          | PendingReview  |
+Yes                    | No                 | PendingProcessing |
+No                     | Both hard and soft | Failed         |
+No                     | Hard only          | Failed         |
+No                     | Soft only          | Failed         |
+No                     | No                 | PendingProcessing |
 
 ##### Soft Errors
 1. [Zone Discovery Failed](#ZoneDiscoveryFailed)
@@ -323,7 +318,7 @@ Record "<input>" Does Not Exist: cannot delete a record that does not exist.
 ##### Details:
 
 A record with the given name could not be found in VinylDNS.
-If the record exists in DNS, then you should [sync the zone](../api/vinyl-basics/#syncingZone) for that record to bring VinylDNS up to date with what is in the DNS backend.
+If the record exists in DNS, then you should [sync the zone](../api/sync-zone) for that record to bring VinylDNS up to date with what is in the DNS backend.
 
 
 #### 11. CNAME Conflict <a id="CNAMEConflict"></a>

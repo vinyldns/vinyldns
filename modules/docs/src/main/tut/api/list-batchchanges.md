@@ -51,7 +51,7 @@ userName      | string      | The username of the user that created the batch ch
 comments      | string      | Conditional: comments about the batch change, if provided. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
 totalChanges  | int         | The total number of single changes within the batch change. |
-status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
+status        | BatchChangeStatus | [Status of the batch change](../api/batchchange-model#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupName | string      | Conditional: Record ownership assignment, if provided. |
 approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved** or **Rejected**. |

@@ -9,7 +9,7 @@ section: "api"
 Manually approves a batch change in pending review status given the batch change ID, resulting in revalidation and
 submission for backend processing. Only system administrators (ie. support or super user) can manually review a batch
 change. In the event that a batch change is approved and still encounters soft errors, it will remain in manual
-review state until a successful (**202** Accepted) approval or (**200** OK) rejection.
+review state until a successful approval (**202** Accepted) or [rejection](../api/reject-batchchange) (**200** OK).
 
 
 #### HTTP REQUEST
@@ -32,7 +32,7 @@ Code          | description |
 202           | **OK** Batch change is approved and is returned in response body. Batch change is submitted for backend processing. |
 400           | **BadRequest** Batch change is not in pending approval status. |
 403           | **Forbidden** User is not a system administrator (ie. support or super user) or is attempting to approve a scheduled batch prior to its scheduled due date. |
-404           | **NotFound** Batch change does not exist. |
+404           | **NotFound** Batch change does not exist. Since we re-run validations upon successful approval, the [create batch error codes](../api/create-batchchange#http-response-types) still hold, so it is possible to see them as well. |
 
 
 #### HTTP RESPONSE ATTRIBUTES <a id="http-response-attributes" />
@@ -44,7 +44,7 @@ userName      | string      | The username of the user that created the batch ch
 comments      | string      | Conditional: comments about the batch change, if provided. |
 createdTimestamp | date-time      | The timestamp (in GMT) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteChange](../api/batchchange-model/#singledeletechange-). |
-status        | BatchChangeStatus | **Pending** - at least one change in batch in still in pending state; **Complete** - all changes are in complete state; **Failed** - all changes are in failure state; **PartialFailure** - some changes have failed and the rest are complete. |
+status        | BatchChangeStatus | [Status of the batch change](../api/batchchange-model#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
 approvalStatus | string      | Whether the batch change is currently awaiting manual review. Will be **ManuallyApproved** status when approving. |
@@ -52,6 +52,14 @@ reviewerId    | string      | Unique identifier for the reviewer of the batch ch
 reviewerUserName  | string      | User name for the reviewer of the batch change. |
 reviewComment | string      | Conditional: Comment from the reviewer of the batch change, if provided. |
 reviewTimestamp | date-time  | Timestamp (in GMT) of when the batch change was manually reviewed. |
+
+
+#### EXAMPLE HTTP REQUEST
+```
+{
+    "reviewComment": "Comments are optional."
+}
+```
 
 
 #### EXAMPLE RESPONSE
