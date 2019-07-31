@@ -20,8 +20,6 @@
     angular.module('batch-change')
         .controller('BatchChangesController', function($scope, $timeout, batchChangeService, pagingService, utilityService){
             $scope.batchChanges = [];
-            $scope.approvalStatus = undefined;
-            $scope.ignoreAccess = undefined;
 
             // Set default params: empty start from and 100 max items
             var batchChangePaging = pagingService.getNewPagingParams(100);
@@ -49,17 +47,15 @@
 
                 function formatBatchChanges(batchChanges) {
                     var formattedBatchChanges = [];
-                    for(var i = 0; i < batchChanges.length; i++) {
-                        var formattedResponse = batchChanges[i]
-                        formattedResponse.createdTimestamp = utilityService.formatDateTime(batchChanges[i].createdTimestamp);
-                        formattedBatchChanges.push(formattedResponse)
-                    }
                     return formattedBatchChanges;
                 }
 
                 function success(response) {
                     batchChangePaging.next = response.data.nextId;
-                    $scope.batchChanges = formatBatchChanges(response.data.batchChanges);
+                    $scope.batchChanges = response.data.batchChanges;
+                    for(var i = 0; i < $scope.batchChanges.length; i++) {
+                        $scope.batchChanges[i].createdTimestamp = utilityService.formatDateTime($scope.batchChanges[i].createdTimestamp);
+                    }
                 }
 
                 return batchChangeService
