@@ -62,7 +62,7 @@ class MetaSpec extends Specification with Mockito {
       Meta(Configuration.from(config)).scheduledBatchChangesEnabled must beFalse
     }
     "set to true if scheduled-batch-change-enabled is true in config" in {
-      val config = Map("scheduled-batch-change-enabled" -> true)
+      val config = Map("scheduled-changes-enabled" -> true)
       Meta(Configuration.from(config)).scheduledBatchChangesEnabled must beTrue
     }
   }

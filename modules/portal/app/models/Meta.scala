@@ -32,6 +32,6 @@ object Meta {
       config.getOptional[Int]("batch-change-limit").getOrElse(1000),
       config.getOptional[Long]("default-ttl").getOrElse(7200L),
       config.getOptional[Boolean]("manual-batch-review-enabled").getOrElse(false),
-      config.getOptional[Boolean]("scheduled-batch-change-enabled").getOrElse(false)
+      config.getOptional[Boolean]("scheduled-changes-enabled").getOrElse(false)
     )
 }
