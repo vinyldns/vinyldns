@@ -47,9 +47,19 @@
             $scope.refreshBatchChanges = function() {
                 batchChangePaging = pagingService.resetPaging(batchChangePaging);
 
+                function formatBatchChanges(batchChanges) {
+                    var formattedBatchChanges = [];
+                    for(var i = 0; i < batchChanges.length; i++) {
+                        var formattedResponse = batchChanges[i]
+                        formattedResponse.createdTimestamp = utilityService.formatDateTime(batchChanges[i].createdTimestamp);
+                        formattedBatchChanges.push(formattedResponse)
+                    }
+                    return formattedBatchChanges;
+                }
+
                 function success(response) {
                     batchChangePaging.next = response.data.nextId;
-                    $scope.batchChanges = response.data.batchChanges;
+                    $scope.batchChanges = formatBatchChanges(response.data.batchChanges);
                 }
 
                 return batchChangeService

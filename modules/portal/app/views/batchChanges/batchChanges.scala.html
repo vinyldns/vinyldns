@@ -78,15 +78,12 @@
                                     <th>Change Count</th>
                                     <th>Status</th>
                                     <th class="col-md-3">Description</th>
-                                    @if(meta.scheduledBatchChangesEnabled) {
-                                        <th>Scheduled</th>
-                                    }
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr ng-repeat="batchChange in batchChanges|filter:query">
-                                    <td>{{ formatDateTime(batchChange.createdTimestamp) }}</td>
+                                    <td>{{batchChange.createdTimestamp}}</td>
                                     <td><a href="/batchchanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
@@ -99,9 +96,6 @@
                                         <span ng-if="batchChange.status == 'Scheduled'" class="label label-info">{{batchChange.status}}</span>
                                     </td>
                                     <td ng-bind="batchChange.comments" class="col-md-3"></td>
-                                    @if(meta.scheduledBatchChangesEnabled) {
-                                        <td>{{ formatDateTime(batchChange.scheduledTime) }}</td>
-                                    }
                                     <td>
                                         <a type="button" class="btn btn-info btn-rounded"
                                            ng-href="/batchchanges/{{ batchChange.id }}">
