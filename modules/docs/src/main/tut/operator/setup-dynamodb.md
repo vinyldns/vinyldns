@@ -105,17 +105,9 @@ also should have higher settings, as usage, especially on writes, can be rather 
 | SORT | `<none>` |
 
 **Indexes**
-* `zone_id_change_status_index` - Global Secondary Index
-    * HASH = `zone_id`
-    * SORT = `change_set_status`
-    * Projection Type = `ALL`
 * `zone_id_record_set_change_id_index` - Global Secondary Index
     * HASH = `zone_id`
     * SORT = `record_set_change_id`
-    * Projection Type = `ALL`
-* `change_status_index` - Global Secondary Index
-    * HASH = `change_set_status`
-    * SORT = `zone_id`
     * Projection Type = `ALL`
 * `zone_id_created_index` - Global Secondary Index
     * HASH = `zone_id`
