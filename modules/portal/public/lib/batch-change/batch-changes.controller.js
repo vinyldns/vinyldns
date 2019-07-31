@@ -114,20 +114,9 @@
                     });
             };
 
-            $scope.myRequests = function(){
-                $scope.ignoreAccess = false;
+            $scope.getAllRequests = function(ignoreAccess){
+                $scope.ignoreAccess = ignoreAccess;
                 $scope.refreshBatchChanges();
-            }
-
-            $scope.allRequests = function(){
-                $scope.ignoreAccess = true;
-                $scope.refreshBatchChanges();
-            }
-
-            $scope.formatDateTime = function(timeStamp) {
-                if (timeStamp) {
-                    return utilityService.formatDateTime(timeStamp);
-                }
             }
 
             $timeout($scope.refreshBatchChanges, 0);

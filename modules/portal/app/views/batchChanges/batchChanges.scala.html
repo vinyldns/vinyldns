@@ -26,8 +26,8 @@
         @if(rootAccountAdmin) {
         <div class="panel panel-default panel-tabs">
             <ul class="nav nav-tabs bar_tabs">
-                <li class="active"><a href="#myRequests" data-toggle="tab" ng-click="myRequests()">My Requests</a></li>
-                <li><a id="tab2-button" href="#allRequests" data-toggle="tab" ng-click="allRequests()">All Requests</a></li>
+                <li class="active"><a href="#myRequests" data-toggle="tab" ng-click="getAllRequests(false)">My Requests</a></li>
+                <li><a href="#allRequests" data-toggle="tab" ng-click="getAllRequests(true)">All Requests</a></li>
             </ul>
 
             <div class="panel-body tab-content">
@@ -83,7 +83,7 @@
                             </thead>
                             <tbody>
                                 <tr ng-repeat="batchChange in batchChanges|filter:query">
-                                    <td>{{batchChange.createdTimestamp}}</td>
+                                    <td ng-bind="batchChange.createdTimestamp"></td>
                                     <td><a href="/batchchanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
