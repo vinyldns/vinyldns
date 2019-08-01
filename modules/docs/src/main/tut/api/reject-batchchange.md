@@ -22,6 +22,14 @@ id            | string        | yes         | Unique identifier assigned to each
 reviewComment | string        | no          | Optional rejection explanation. |
 
 
+#### EXAMPLE HTTP REQUEST
+```
+{
+    "reviewComment": "Comments are optional."
+}
+```
+
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
@@ -48,14 +56,6 @@ reviewerId    | string      | Unique identifier for the reviewer of the batch ch
 reviewerUserName  | string      | User name for the reviewer of the batch change. |
 reviewComment | string      | Conditional: Comment from the reviewer of the batch change, if provided. |
 reviewTimestamp | date-time  | Timestamp (in GMT) of when the batch change was manually reviewed. |
-
-
-#### EXAMPLE HTTP REQUEST
-```
-{
-    "reviewComment": "Comments are optional."
-}
-```
 
 
 #### EXAMPLE RESPONSE

@@ -70,6 +70,7 @@ approvalStatus | string      | Whether the batch change is currently awaiting ma
             "totalChanges": 5, 
             "status": "Complete", 
             "id": "bd03175c-6fd7-419e-991c-3d5d1441d995",
+            "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
             "ownerGroupName": "some owner group name",
             "approvalStatus": "AutoApproved"
         }, 
@@ -79,7 +80,9 @@ approvalStatus | string      | Whether the batch change is currently awaiting ma
             "comments": "this is optional", 
             "createdTimestamp": "2018-05-11T18:12:12Z", 
             "totalChanges": 10, 
-            "status": "Complete", 
+            "status": "Complete",
+            "id": "743cbd16-5440-4cf7-bca9-20319df9b651",
+            "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
             "ownerGroupName": "some owner group name",
             "approvalStatus": "ManuallyApproved"
         },
@@ -91,7 +94,10 @@ approvalStatus | string      | Whether the batch change is currently awaiting ma
             "totalChanges": 7, 
             "status": "Complete", 
             "id": "2b827a33-7c4f-4623-8dd9-277c6fba0e54",
-            "approvalStatus": "ManuallyRejected"
+            "approvalStatus": "Rejected",
+            "reviewerId": "270ba4b3-f5eb-4043-a283-1a6cec0993f3",
+            "reviewerName": "some reviewer",
+            "reviewTimestamp": "2018-05-13T13:12:10Z"
         }
     ],
     "maxItems": 100,
