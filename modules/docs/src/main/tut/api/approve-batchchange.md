@@ -11,6 +11,9 @@ submission for backend processing. Only system administrators (ie. support or su
 change. In the event that a batch change is approved and still encounters non-fatal errors, it will remain in manual
 review state until a successful approval (**202** Accepted) or [rejection](../api/reject-batchchange) (**200** OK).
 
+Note: If [manual review is disabled](../../operator/config-api#additional-configuration-settings) in the VinylDNS instance,
+users trying to access this endpoint will encounter a **404 Not Found** response since it will not exist. 
+
 
 #### HTTP REQUEST
 
