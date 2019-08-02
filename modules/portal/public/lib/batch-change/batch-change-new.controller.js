@@ -96,7 +96,7 @@
                 return batchChangeService.createBatchChange(payload)
                     .then(success)
                     .catch(function (error){
-                        if(error.data.errors || error.status !== 400){
+                        if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
                             handleError(error, 'batchChangesService::createBatchChange-failure');
                         } else {
                             $scope.newBatch.changes = error.data;
