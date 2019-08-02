@@ -72,6 +72,7 @@
                                                 ng-selected="updateZoneInfo.adminGroupName == group.name">
                                             {{group.name}} ({{group.description}})</option>
                                     </select>
+                                    <a href="/groups/{{ updateZoneInfo.adminGroupId  }}">View group</a>
                                 </div>
                             </div>
 
@@ -271,7 +272,8 @@
             <tbody>
                 <tr ng-repeat="rule in aclRules track by $index">
                     <td class="wrap-long-text">
-                        {{rule.displayName}}
+                        <a ng-if="rule.groupId != undefined" href="/groups/{{rule.groupId}}">{{rule.displayName}}</a>
+                        <span ng-if="rule.groupId == undefined">{{rule.displayName}}</span>
                     </td>
 
                     <td>
