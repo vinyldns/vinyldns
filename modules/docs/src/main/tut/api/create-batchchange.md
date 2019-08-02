@@ -14,7 +14,7 @@ This does not apply to zone administrators or users with specific ACL access rul
 
 #### HTTP REQUEST
 
-> POST /zones/batchrecordchanges
+> POST /zones/batchrecordchanges?allowManualReview={true &#124; false}
 
 Note that the batch change request inputs are a subset of the full [batch change model](../api/batchchange-model/#batchchange-attributes).
 
@@ -25,6 +25,7 @@ name          | type          | required?   | description |
 comments      | string        | no          | Optional comments about the batch change. |
 changes       | Array of ChangeInput| yes         | Set of *ChangeInput*s in the batch change. A *ChangeInput*  is an [AddChangeInput](#addchangeinput-attributes) or [DeleteChangeInput](#deletechangeinput-attributes). Type is inferred from specified *changeType*.|
 ownerGroupId  | string        | sometimes   | Record ownership assignment. Required if any records in the batch change are in [shared zones](../api/zone-model#shared-zones) and are new or unowned. |
+allowManualReview | boolean       | no          | Optional override to control whether manual review is enabled for the batch change request. Default value is `true`. |
 
 ##### AddChangeInput <a id="addchangeinput-attributes" />
 
@@ -99,7 +100,7 @@ The first two items in the changes list are SingleAddChanges of an **A** record 
 
 Code          | description |
  ------------ | :---------- |
-202           | **Accepted** - The batch change is queued and is returned in the response body. |
+202           | **Accepted** - The batch change is validated and is returned in the response body. Based on `status`, the batch will either be sent for immediate backend processing (`PendingProcessing`) or pending manual review (`PendingReview`). |
 400           | **Bad Request** - Error in the batch change. See [Batch Change Errors](../api/batchchange-errors) page. |
 403           | **Forbidden** - The user does not have the access required to perform the action. |
 413           | **Request Entity Too Large** - Cannot request more than <limit> changes in a single batch change request. |
@@ -134,8 +135,7 @@ On success, the response from create batch change includes the fields the user i
             "recordName": "example.com.", 
             "zoneName": "example.com.", 
             "zoneId": "74e93bfc-7296-4b86-83d3-1ffcb0eb3d13",
-            "recordChangeId": "255063ce-5f82-11e8-9c2d-fa7ae01bbebc",
-            "recordSetId": "25506676-5f82-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
             "id": "7573ca11-3e30-45a8-9ba5-791f7d6ae7a7"
         }, 
         {
@@ -150,8 +150,7 @@ On success, the response from create batch change includes the fields the user i
             "recordName": "195", 
             "zoneName": "2.0.192.in-addr.arpa.", 
             "zoneId": "7fd52634-5a0c-11e8-9c2d-fa7ae01bbebc",
-            "recordChangeId": "25506a9a-5f82-11e8-9c2d-fa7ae01bbebc",
-            "recordSetId": "25506c84-5f82-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
             "id": "bece5338-5a0c-11e8-9c2d-fa7ae01bbebc"
         }, 
         {
@@ -162,8 +161,7 @@ On success, the response from create batch change includes the fields the user i
             "recordName": "cname", 
             "zoneName": "example.com.", 
             "zoneId": "74e93bfc-7296-4b86-83d3-1ffcb0eb3d13",
-            "recordChangeId": "25506ee6-5f82-11e8-9c2d-fa7ae01bbebc",
-            "recordSetId": "25506676-5f82-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
             "id": "02048500-5a0d-11e8-a10f-fa7ae01bbebc" 
         }, 
         {
@@ -174,8 +172,7 @@ On success, the response from create batch change includes the fields the user i
             "recordName": "update", 
             "zoneName": "example.com.", 
             "zoneId": "74e93bfc-7296-4b86-83d3-1ffcb0eb3d13",
-            "recordChangeId": "25507238-5f82-11e8-9c2d-fa7ae01bbebc",
-            "recordSetId": "25506676-5f82-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
             "id": "1cee1c78-5a0d-11e8-9c2d-fa7ae01bbebc" 
         }, 
         {
@@ -190,12 +187,11 @@ On success, the response from create batch change includes the fields the user i
             "recordName": "update", 
             "zoneName": "another.example.com.", 
             "zoneId": "7fd52634-5a0c-11e8-9c2d-fa7ae01bbebc",
-            "recordChangeId": "25507490-5f82-11e8-9c2d-fa7ae01bbebc",
-            "recordSetId": "25506842-5f82-11e8-9c2d-fa7ae01bbebc",
+            "validationErrors": [],
             "id": "43dd1226-5a0d-11e8-9c2d-fa7ae01bbebc"
         }
     ], 
-    "status": "Pending", 
+    "status": "PendingProcessing", 
     "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a"
 }
 ```

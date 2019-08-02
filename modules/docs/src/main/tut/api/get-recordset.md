@@ -26,19 +26,19 @@ The returned json object has all the fields from the RecordSet as well as an add
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-type          | string        | type of record set |
-zoneId        | string        | the zone the record is stored in |
-name          | string        | the name of the record set |
-ttl           | integer       | the TTL of the record set in seconds |
-status        | string        | the status of the record set |
-created       | string        | the time (GMT) the change was initiated |
-updated       | string        | the time (GMT) the change was last updated |
-records       | array of record data | array of record data objects |
-id            | string        | the unique id of the record set |
-account       | string        | **DEPRECATED** the id of the account that created the record set |
+type          | string        | Type of record set |
+zoneId        | string        | The zone the record is stored in |
+name          | string        | The name of the record set |
+ttl           | integer       | The TTL of the record set in seconds |
+status        | string        | The status of the record set |
+created       | string        | The timestamp (UTC) the change was initiated |
+updated       | string        | The timestamp (UTC) the change was last updated |
+records       | array of record data | Array of record data objects |
+id            | string        | The unique ID of the record set |
+account       | string        | **DEPRECATED** the ID of the account that created the record set |
 accessLevel   | string        | accessLevel that user has to record set based off acl rules and whether or not user is in Zone Admin Group |
 ownerGroupId  | string        | Record ownership assignment, if found, applicable if the recordset is in a [shared zone](../api/zone-model#shared-zones) |
-ownerGroupName   | string        | name of assigned owner group, if found |
+ownerGroupName   | string        | Name of assigned owner group, if found |
 
 #### EXAMPLE RESPONSE
 

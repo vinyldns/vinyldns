@@ -28,7 +28,7 @@ id            | string        | Unique UUID of the group |
 name          | map           | The name of the group |
 email         | string        | The email distribution list of the group |
 description   | string        | The group description, the group may not have this field if it was not set |
-created       | string        | The time (GMT) the group was created |
+created       | string        | The timestamp (UTC) the group was created |
 status        | string        | **Active** or **Deleted** |
 members       | Array of User Id objects        | Ids of members of the group including admins |
 admins       | Array of User Id objects        | Ids of admins of the group |

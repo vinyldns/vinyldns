@@ -54,12 +54,12 @@ Code          | description |
 
 name          | type          | description |
  ------------ | ------------- | :---------- |
-zone          | map          | zone sent with update request, refer to [zone model](../api/zone-model)  |
-userId        | string        | the user id that initiated the change |
-changeType    | string        | type of change requested (Create, Update, Sync, Delete); in this case Update |
-created       | string        | the time (GMT) the change was initiated |
-id            | string        | the id of the change.  This is not the id of the zone |
-status        | string        | the status of the zone change
+zone          | map          | Zone sent with update request, refer to [zone model](../api/zone-model)  |
+userId        | string        | The user id that initiated the change |
+changeType    | string        | Type of change requested (Create, Update, Sync, Delete); in this case Update |
+created       | string        | The timestamp (UTC) the change was initiated |
+id            | string        | The ID of the change.  This is not the ID of the zone |
+status        | string        | The status of the zone change
 
 #### EXAMPLE RESPONSE
 

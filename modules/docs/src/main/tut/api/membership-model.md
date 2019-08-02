@@ -31,7 +31,7 @@ name          | string      | This should be a single word name used for the gro
 email         | string      | The email distribution list for the group |
 description   | string      | A short description of the group, if more info is needed other than the name. The group will not have this attribute if it was not included in the create request |
 id            | string      | Unique UUID of the group |
-created       | date-time   | The timestamp GMT when the group was created |
+created       | date-time   | The timestamp (UTC) when the group was created |
 status        | string      | **Active** or **Deleted** |
 members       | Array of User id objects | Set of User ids in the group |
 admins        | Array of User id objects | Set of User ids that are admins of the group. All admin user ids should also be in the members array |
@@ -72,7 +72,7 @@ userName      | string      | This should be the AD username of the user |
 firstName     | string      | First name of the user |
 lastName      | string      | Last name of the user |
 email         | string      | Email address of the user |
-created       | date-time   | The timestamp GMT when the user was created |
+created       | date-time   | The timestamp (UTC) when the user was created |
 id            | string      | Unique UUID of the user |
 isTest        | boolean     | Defaults to **false**. Used for restricted access during VinylDNS testing, can be ignored by clients |
 

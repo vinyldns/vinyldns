@@ -184,6 +184,12 @@ options:
     - title: Batch Change Errors
       url: api/batchchange-errors.html
       menu_section: batchchangeapireference
+    - title: Approve Batch Change
+      url: api/approve-batchchange.html
+      menu_section: batchchangeapireference
+    - title: Reject Batch Change
+      url: api/reject-batchchange.html
+      menu_section: batchchangeapireference
 
   - title: Membership
     url: api/membership-model.html
