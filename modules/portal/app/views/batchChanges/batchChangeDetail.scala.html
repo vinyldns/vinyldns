@@ -37,6 +37,7 @@
         </div>
         <div class="row">
             <div class="col-md-12">
+                <p><strong>ID:</strong> {{batch.id}}</p>
                 <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
                 <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
                 @if(meta.sharedDisplayEnabled) {
