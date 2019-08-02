@@ -46,7 +46,7 @@ name          | type        | description |
 userId        | string      | The unique identifier of the user that created the batch change. |
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Conditional: comments about the batch change, if provided. |
-createdTimestamp | date-time      | The timestamp (in GMT) when the batch change was created. |
+createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteChange](../api/batchchange-model/#singledeletechange-). |
 status        | BatchChangeStatus | [Status of the batch change](../api/batchchange-model#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
@@ -55,7 +55,7 @@ approvalStatus | string      | Whether the batch change is currently awaiting ma
 reviewerId    | string      | Unique identifier for the reviewer of the batch change. |
 reviewerUserName  | string      | User name for the reviewer of the batch change. |
 reviewComment | string      | Conditional: Comment from the reviewer of the batch change, if provided. |
-reviewTimestamp | date-time  | Timestamp (in GMT) of when the batch change was manually reviewed. |
+reviewTimestamp | date-time  | The timestamp (UTC) of when the batch change was manually reviewed. |
 
 
 #### EXAMPLE RESPONSE

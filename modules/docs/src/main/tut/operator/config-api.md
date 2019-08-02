@@ -521,7 +521,7 @@ sns {
 }
 
 ### Batch Manual Review Enabled
-Configuration setting that determines whether batch changes with soft errors can be reviewed rather than failing immediately.
+Configuration setting that determines whether batch changes with non-fatal errors can be reviewed rather than failing immediately.
 When enabling manual review, the expectation is that a DNS technician is actively querying and addressing batch change
 requests that are in a manual review state. If your process flow does not accommodate this expectation, we advise disabling
 manual review.
@@ -718,7 +718,7 @@ vinyldns {
     }
   }
 
-  # true if you want to enable manual review for soft errors
+  # true if you want to enable manual review for non-fatal errors
   manual-batch-review-enabled = true
 }
 

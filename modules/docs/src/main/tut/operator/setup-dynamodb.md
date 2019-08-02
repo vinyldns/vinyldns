@@ -93,9 +93,9 @@ also should have higher settings, as usage, especially on writes, can be rather 
 | `record_set_change_id` | String(UUID) | the id for the record set change |
 | `zone_id` | String(UUID) | the zone this record change was made for |
 | `change_set_status` | Number | a number representing the status of the change (Pending = 0 ; Processing = 1 ; Complete = 2 ; Applied = 100) |
-| `created_timestamp` | String | a string representing the GMT formatted date/time when the change set was created |
+| `created_timestamp` | String | the timestamp (UTC) when the change set was created |
 | `record_set_change_created_timestamp` | Number | a number in EPOCH millis when the change was created |
-| `processing_timestamp` | String | a string representing the GMT formatted date/time when the record set change was processed |
+| `processing_timestamp` | String | the timestamp (UTC) when the change was processed |
 | `record_set_change_blob` | Binary |  the protobuf serialized bytes that represent the entire record set change |
 
 **Table Keys**

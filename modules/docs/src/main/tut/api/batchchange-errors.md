@@ -6,8 +6,8 @@ section: "api"
 
 # Batch Change Errors
 - [Single Change Errors](#single-change-errors)
-   - [Soft Errors](#soft-errors)
-   - [Hard Errors](#hard-errors)
+   - [Non-Fatal Errors](#non-fatal-errors)
+   - [Fatal Errors](#fatal-errors)
 - [Full-Request Errors](#full-request-errors)
 
 ### SINGLE CHANGE ERRORS <a id="single-change-errors" />
@@ -75,33 +75,36 @@ in the DNS backend.
 ```
 
 #### Single Change Errors
-Single change errors can be further classified as *soft* or *hard* errors. The presence of one or more hard
-errors will result in an immediate failure (ie. hard stop) and no changes in the batch will be accepted. The behavior of soft errors depends
+Single change errors can be further classified as *non-fatal* or *fatal* errors. The presence of one or more fatal
+errors will result in an immediate failure (ie. hard stop) and no changes in the batch will be accepted. The behavior of non-fatal errors depends
 on whether [manual review is configured on](../../operator/config-api#additional-configuration-settings): if manual review
-is disabled, soft errors are treated as hard errors; if manual review is enabled, batches with only soft errors will enter
+is disabled, non-fatal errors are treated as fatal errors; if manual review is enabled, batches with only non-fatal errors will enter
 a pending review state.
+
+When non-fatal errors are encountered with manual review enabled, the errors will be saved on the corresponding `SingleChange`s.
+The `SingleChange`s will also have a `status` of `NeedsReview`.
 
 The following chart provides a breakdown of batch change status outcome based on a combination of manual review
 configuration and error types present in the batch change:
 
-Manual Review Enabled? | Errors in Batch?   | Status Outcome |
- :-------------------: | :----------------- | :------------- |
-Yes                    | Both hard and soft | Hard stop      |
-Yes                    | Hard only          | Hard stop      |
-Yes                    | Soft only          | PendingReview  |
-Yes                    | No                 | PendingProcessing |
-No                     | Both hard and soft | Hard stop      |
-No                     | Hard only          | Hard stop      |
-No                     | Soft only          | Failed         |
-No                     | No                 | PendingProcessing |
+Manual Review Enabled? | Errors in Batch?         | Status Outcome |
+ :-------------------: | :----------------------- | :------------- |
+Yes                    | Both fatal and non-fatal | Hard stop      |
+Yes                    | Fatal only               | Hard stop      |
+Yes                    | Non-fatal only           | PendingReview  |
+Yes                    | No                       | PendingProcessing (will be or is being auto-processed) |
+No                     | Both fatal and non-fatal | Hard stop      |
+No                     | Fatal only               | Hard stop      |
+No                     | Non-fatal only           | Failed         |
+No                     | No                       | PendingProcessing (will be or is being auto-processed) |
 
 Note: if a user submits a batch change with `allowManualReview` set to false, the request will treat the request as though
 the VinylDNS instance is configured to have manual review disabled. 
 
-##### Soft Errors
+##### Non-Fatal Errors
 - [Zone Discovery Failed](#ZoneDiscoveryFailed)
 
-##### Hard errors
+##### Fatal Errors
 - [Invalid Domain Name](#InvalidDomainName)
 - [Invalid Length](#InvalidLength)
 - [Invalid Record Type](#InvalidRecordType)
@@ -123,10 +126,7 @@ the VinylDNS instance is configured to have manual review disabled.
 - [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
 - [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
 
-### Soft Errors <a id="soft-errors**"></a>
-When soft errors are encountered with manual review enabled, the errors will be saved on the corresponding `SingleChange`s.
-The `SingleChange`s will also have a `status` of `NeedsReview`.
-
+### Non-Fatal Errors <a id="non-fatal-errors**"></a>
 #### Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a>
 
 ##### Error Message:
@@ -148,7 +148,7 @@ Even if the zone already exists outside of VinylDNS, it has to be added to Vinyl
 VinylDNS also does not support dotted records for forward zones (eg. record `baz.foo.bar.` in zone `bar.`), so encountering
 this error could indicate that a zone needs to be created outside of VinylDNS and then connected to within VinylDNS.
 
-### Hard errors <a id="hard-errors"></a>
+### Fatal Errors <a id="fatal-errors"></a>
 #### Invalid Domain Name <a id="InvalidDomainName"></a>
 
 ##### Error Message:
