@@ -45,11 +45,6 @@
             $scope.refreshBatchChanges = function() {
                 batchChangePaging = pagingService.resetPaging(batchChangePaging);
 
-                function formatBatchChanges(batchChanges) {
-                    var formattedBatchChanges = [];
-                    return formattedBatchChanges;
-                }
-
                 function success(response) {
                     batchChangePaging.next = response.data.nextId;
                     $scope.batchChanges = response.data.batchChanges;

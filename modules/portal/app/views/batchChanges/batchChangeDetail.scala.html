@@ -49,20 +49,25 @@
                         </span>
                     </p>
                 }
-                <p ng-if="batch.approvalStatus == 'ManuallyApproved'"><strong>Review Status:</strong> Approved</p>
-                <p ng-if="batch.reviewerUserName"><strong>Reviewer:</strong> {{batch.reviewerUserName}}</p>
-                <p ng-if="batch.reviewerId && !batch.reviewerUserName">
-                    <strong>Reviewer:</strong>
-                    <span class="text-danger" data-toggle="tooltip" data-placement="top"
-                          title="Reviewer with ID {{batch.reviewerId}} no longer exists.">
+
+                <p ng-if="batch.scheduledTime"><strong>Request Date/Time:</strong> {{batch.scheduledTime}}</p>
+
+                <p ng-if="batch.approvalStatus == 'NeedsReview'"><strong>Review Status: </strong><span class="label label-warning">Needs Review</span></p>
+                <p ng-if="batch.approvalStatus == 'ManuallyApproved'"><strong>Review Status: </strong><span class="label label-success">Approved</span></p>
+                <p ng-if="batch.approvalStatus == 'ManuallyRejected'"><strong>Review Status: </strong><span class="label label-danger">Rejected</span></p>
+
+                <div ng-if="batch.approvalStatus == 'ManuallyApproved' || batch.approvalStatus == 'ManuallyRejected'">
+                    <p ng-if="batch.reviewerUserName"><strong>Reviewer:</strong> {{batch.reviewerUserName}}</p>
+                    <p ng-if="batch.reviewerId && !batch.reviewerUserName">
+                        <strong>Reviewer:</strong>
+                        <span class="text-danger" data-toggle="tooltip" data-placement="top"
+                              title="Reviewer with ID {{batch.reviewerId}} no longer exists.">
                                 <span class="fa fa-warning"></span> Reviewer deleted
                             </span>
-                </p>
-                <p ng-if="batch.reviewComment"><strong>Review Comment:</strong> {{batch.reviewComment}}</p>
-                <p ng-if="batch.reviewTimestamp"><strong>Review Time:</strong> {{batch.reviewTimestamp}}</p>
-                @if(meta.scheduledBatchChangesEnabled) {
-                    <p ng-if="batch.scheduledTime"><strong>Request Date/Time:</strong> {{batch.scheduledTime}}</p>
-                }
+                    </p>
+                    <p><strong>Review Comment:</strong> {{batch.reviewComment}}</p>
+                    <p><strong>Review Time:</strong> {{batch.reviewTimestamp}}</p>
+                </div>
 
             </div>
         </div>
