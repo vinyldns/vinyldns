@@ -27,6 +27,10 @@ angular.module('service.utility', [])
         }
     }
 
+    this.formatDateTime = function(timeStamp) {
+        return new Date(timeStamp).toLocaleString('en-us',{month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName:'short'});
+    }
+
     this.failure = function (error, type) {
         var msg = "HTTP " + error.status + " (" + error.statusText + "): ";
         if (typeof error.data == "object") {

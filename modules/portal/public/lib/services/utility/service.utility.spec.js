@@ -92,4 +92,17 @@ describe('Service: utilityService', function () {
         var expectedHeader = {};
         expect(header).toEqual(expectedHeader);
     });
+
+    it('returns formatted timeStamp', function() {
+        /* Only verifying month, year and time zone format since running this test in different time zones
+        will yield different days and times. */
+        var timeZone = new Date().toLocaleString('en-us', {timeZoneName:'short'}).split(' ')[3];
+        var timeStamp = new Date("2019-07-26T01:36:01Z");
+        var value = this.utilityService.formatDateTime(timeStamp);
+        var splitValue = value.split(' ');
+
+        expect(splitValue[0]).toEqual('Jul');
+        expect(splitValue[2]).toEqual('2019,');
+        expect(splitValue[5]).toEqual(timeZone);
+    })
 });

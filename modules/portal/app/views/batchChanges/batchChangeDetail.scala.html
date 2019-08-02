@@ -16,9 +16,13 @@
     <div class="page-title">
         <h3>
             <span class="fa fa-list-ol"></span> Batch Change
-            <span ng-if="batch.status =='Complete'" class="label label-success">{{batch.status}}</span>
-            <span ng-if="batch.status =='PartialFailure'" class="label label-warning">Partial Failure</span>
-            <span ng-if="batch.status =='Failed'" class="label label-danger">{{batch.status}}</span>
+            <span ng-if="batch.status == 'Complete'" class="label label-success">{{batch.status}}</span>
+            <span ng-if="batch.status == 'Failed'" class="label label-danger">{{batch.status}}</span>
+            <span ng-if="batch.status == 'PartialFailure'" class="label label-warning">Partial Failure</span>
+            <span ng-if="batch.status == 'PendingProcessing'" class="label label-info">Pending Processing</span>
+            <span ng-if="batch.status == 'PendingReview'" class="label label-warning">Pending Review</span>
+            <span ng-if="batch.status == 'Rejected'" class="label label-danger">{{batch.status}}</span>
+            <span ng-if="batch.status == 'Scheduled'" class="label label-info">{{batch.status}}</span>
         </h3>
     </div>
     <!-- END PAGE TITLE -->
@@ -33,7 +37,8 @@
         </div>
         <div class="row">
             <div class="col-md-12">
-                <p><strong>Created:</strong> {{batch.createdTimestamp}}</p>
+                <p><strong>ID:</strong> {{batch.id}}</p>
+                <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
                 <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
                 @if(meta.sharedDisplayEnabled) {
                     <p ng-if="batch.ownerGroupName"><strong>Record Owner Group:</strong> {{batch.ownerGroupName}}</p>
@@ -45,6 +50,26 @@
                         </span>
                     </p>
                 }
+
+                <p ng-if="batch.scheduledTime"><strong>Request Date/Time:</strong> {{batch.scheduledTime}}</p>
+
+                <p ng-if="batch.approvalStatus == 'NeedsReview'"><strong>Review Status: </strong><span class="label label-warning">Needs Review</span></p>
+                <p ng-if="batch.approvalStatus == 'ManuallyApproved'"><strong>Review Status: </strong><span class="label label-success">Approved</span></p>
+                <p ng-if="batch.approvalStatus == 'ManuallyRejected'"><strong>Review Status: </strong><span class="label label-danger">Rejected</span></p>
+
+                <div ng-if="batch.approvalStatus == 'ManuallyApproved' || batch.approvalStatus == 'ManuallyRejected'">
+                    <p ng-if="batch.reviewerUserName"><strong>Reviewer:</strong> {{batch.reviewerUserName}}</p>
+                    <p ng-if="batch.reviewerId && !batch.reviewerUserName">
+                        <strong>Reviewer:</strong>
+                        <span class="text-danger" data-toggle="tooltip" data-placement="top"
+                              title="Reviewer with ID {{batch.reviewerId}} no longer exists.">
+                                <span class="fa fa-warning"></span> Reviewer deleted
+                            </span>
+                    </p>
+                    <p><strong>Review Comment:</strong> {{batch.reviewComment}}</p>
+                    <p><strong>Review Time:</strong> {{batch.reviewTimestamp}}</p>
+                </div>
+
             </div>
         </div>
         <br>
@@ -115,11 +140,17 @@
                                 <td>{{change.ttl}}</td>
                                 <td>
                                     <span ng-if="change.status =='Complete'" class="label label-success">{{change.status}}</span>
-                                    <span ng-if="change.status =='Pending'" class="label label-warning">{{change.status}}</span>
+                                    <span ng-if="change.status =='Pending'" class="label label-info">{{change.status}}</span>
+                                    <span ng-if="change.status =='NeedsReview'" class="label label-warning">Needs Review</span>
                                     <span ng-if="change.status =='Failed'" class="label label-danger">{{change.status}}</span>
-
+                                    <span ng-if="change.status =='Rejected'" class="label label-danger">{{change.status}}</span>
                                 </td>
-                                <td class="wrap-long-text">{{change.systemMessage}}</td>
+                                <td class="wrap-long-text">
+                                    <p ng-repeat="error in change.validationErrors">
+                                        {{error.message}}
+                                    </p>
+                                    {{change.systemMessage}}
+                                </td>
                             </tr>
                             </tbody>
                         </table>

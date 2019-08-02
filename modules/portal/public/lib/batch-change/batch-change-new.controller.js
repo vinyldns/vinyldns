@@ -36,6 +36,7 @@
             $scope.batchChangeErrors = false;
             $scope.ownerGroupError = false;
             $scope.formStatus = "pendingSubmit";
+            $scope.scheduledOption = false;
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
@@ -64,6 +65,12 @@
                      delete payload.ownerGroupId
                 }
 
+                if ($scope.scheduledOption && $scope.newBatch.scheduledTime) {
+                    payload.scheduledTime = $scope.newBatch.scheduledTime.toISOString().split('.')[0]+"Z";
+                } else {
+                    delete payload.scheduledTime;
+                }
+
                 function formatData(payload) {
                     for (var i = 0; i < payload.changes.length; i++) {
                         var entry = payload.changes[i]
@@ -89,7 +96,7 @@
                 return batchChangeService.createBatchChange(payload)
                     .then(success)
                     .catch(function (error){
-                        if(error.data.errors || error.status !== 400){
+                        if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
                             handleError(error, 'batchChangesService::createBatchChange-failure');
                         } else {
                             $scope.newBatch.changes = error.data;
@@ -109,6 +116,10 @@
 
             $scope.submitChange = function() {
                 $scope.formStatus = "pendingConfirm";
+            }
+
+            $scope.getLocalTimeZone = function() {
+                return new Date().toLocaleString('en-us', {timeZoneName:'short'}).split(' ')[3];
             }
 
             function handleError(error, type) {

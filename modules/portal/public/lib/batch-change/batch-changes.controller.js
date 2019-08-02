@@ -20,6 +20,7 @@
     angular.module('batch-change')
         .controller('BatchChangesController', function($scope, $timeout, batchChangeService, pagingService, utilityService){
             $scope.batchChanges = [];
+
             // Set default params: empty start from and 100 max items
             var batchChangePaging = pagingService.getNewPagingParams(100);
 
@@ -29,7 +30,7 @@
                 }
 
                 return batchChangeService
-                    .getBatchChanges(maxItems, startFrom)
+                    .getBatchChanges(maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function(error) {
                         handleError(error, 'batchChangesService::getBatchChanges-failure');
@@ -47,10 +48,13 @@
                 function success(response) {
                     batchChangePaging.next = response.data.nextId;
                     $scope.batchChanges = response.data.batchChanges;
+                    for(var i = 0; i < $scope.batchChanges.length; i++) {
+                        $scope.batchChanges[i].createdTimestamp = utilityService.formatDateTime($scope.batchChanges[i].createdTimestamp);
+                    }
                 }
 
                 return batchChangeService
-                    .getBatchChanges(batchChangePaging.maxItems, undefined)
+                    .getBatchChanges(batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'batchChangesService::getBatchChanges-failure');
@@ -75,7 +79,7 @@
             $scope.prevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(batchChangePaging);
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, startFrom)
+                    .getBatchChanges(batchChangePaging.maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(function(response) {
                         batchChangePaging = pagingService.prevPageUpdate(response.data.nextId, batchChangePaging);
                         $scope.batchChanges = response.data.batchChanges;
@@ -87,7 +91,7 @@
 
             $scope.nextPage = function() {
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next)
+                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next, $scope.ignoreAccess, $scope.approvalStatus)
                     .then(function(response) {
                         var batchChanges = response.data.batchChanges;
                         batchChangePaging = pagingService.nextPageUpdate(batchChanges, response.data.nextId, batchChangePaging);
@@ -100,6 +104,11 @@
                         handleError(error, 'batchChangesService::getBatchChanges-failure');
                     });
             };
+
+            $scope.getAllRequests = function(ignoreAccess){
+                $scope.ignoreAccess = ignoreAccess;
+                $scope.refreshBatchChanges();
+            }
 
             $timeout($scope.refreshBatchChanges, 0);
         });

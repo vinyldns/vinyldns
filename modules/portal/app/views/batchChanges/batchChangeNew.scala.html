@@ -50,6 +50,34 @@
                                 </div>
                             </div>
                             }
+                            @if(meta.scheduledBatchChangesEnabled) {
+                            <div class="form-group row">
+                                <div class="col-md-6">
+                                    <label class="h5">Request Date/Time:</label>
+                                    <div class="radio no-top-margin">
+                                        <label>
+                                            <input type="radio" ng-model="scheduledOption" ng-value="false">
+                                            Now
+                                        </label><br/>
+                                        <label>
+                                            <input type="radio" ng-model="scheduledOption" ng-value="true">
+                                            Later
+                                        </label><br/>
+                                    </div>
+                                    <div ng-if="scheduledOption" class="form-inline">
+                                        <div class="form-group">
+                                            <input  class="form-control" type="datetime-local"
+                                                   ng-model="newBatch.scheduledTime"
+                                                   [name="string"]
+                                                   [min="string"]
+                                                   [max="string"]
+                                                   [ng-change="string"]>
+                                             <span class="help-block help-block-inline"> {{ getLocalTimeZone() }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            }
                         </div>
                         <div class="panel-body">
                             <h4>Changes</h4>

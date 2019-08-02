@@ -49,5 +49,21 @@ class MetaSpec extends Specification with Mockito {
       val config = Map("vinyldns.version" -> "foo-bar")
       Meta(Configuration.from(config)).defaultTtl must beEqualTo(7200)
     }
+    "default to false if manual-batch-review-enabled is not found" in {
+      val config = Map("vinyldns.version" -> "foo-bar")
+      Meta(Configuration.from(config)).manualBatchChangeReviewEnabled must beFalse
+    }
+    "set to true if manual-batch-review-enabled is true in config" in {
+      val config = Map("manual-batch-review-enabled" -> true)
+      Meta(Configuration.from(config)).manualBatchChangeReviewEnabled must beTrue
+    }
+    "default to false if scheduled-batch-change-enabled is not found" in {
+      val config = Map("vinyldns.version" -> "foo-bar")
+      Meta(Configuration.from(config)).scheduledBatchChangesEnabled must beFalse
+    }
+    "set to true if scheduled-batch-change-enabled is true in config" in {
+      val config = Map("scheduled-changes-enabled" -> true)
+      Meta(Configuration.from(config)).scheduledBatchChangesEnabled must beTrue
+    }
   }
 }

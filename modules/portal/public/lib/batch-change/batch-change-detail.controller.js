@@ -26,6 +26,13 @@
             $scope.getBatchChange = function(batchChangeId) {
                 function success(response) {
                     $scope.batch = response.data;
+                    $scope.batch.createdTimestamp = utilityService.formatDateTime(response.data.createdTimestamp);
+                    if (response.data.scheduledTime) {
+                        $scope.batch.scheduledTime = utilityService.formatDateTime(response.data.scheduledTime);
+                    }
+                    if (response.data.reviewTimestamp) {
+                        $scope.batch.reviewTimestamp = utilityService.formatDateTime(response.data.reviewTimestamp);
+                    }
                 }
 
                 return batchChangeService

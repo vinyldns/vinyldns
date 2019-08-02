@@ -418,3 +418,11 @@ input[type="file"] {
 .vinyldns_zones_page_number {
     margin-right: 10px;
 }
+
+.no-top-margin {
+    margin-top: 0px;
+}
+
+.help-block-inline {
+    display: inline;
+}
