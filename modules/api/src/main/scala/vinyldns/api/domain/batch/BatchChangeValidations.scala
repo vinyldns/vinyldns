@@ -181,7 +181,7 @@ class BatchChangeValidations(
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
-    typedChecks |+| isNotHighValueDomain(change)
+    typedChecks |+| isNotHighValueDomain(change) |+| doesNotRequireManualReview(change)
   }
 
   def validatePtrIp(ip: String): SingleValidation[Unit] = {
@@ -486,6 +486,18 @@ class BatchChangeValidations(
       case _ =>
         ZoneRecordValidations.isNotHighValueFqdn(
           VinylDNSConfig.highValueRegexList,
+          change.inputName)
+    }
+
+  def doesNotRequireManualReview(change: ChangeInput): SingleValidation[Unit] =
+    change.typ match {
+      case RecordType.PTR =>
+        ZoneRecordValidations.ipDoesNotRequireManualReview(
+          VinylDNSConfig.ipListRequiringManualReview,
+          change.inputName)
+      case _ =>
+        ZoneRecordValidations.domainDoesNotRequireManualReview(
+          VinylDNSConfig.domainListRequiringManualReview,
           change.inputName)
     }
 

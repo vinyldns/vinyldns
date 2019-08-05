@@ -137,4 +137,11 @@ object VinylDNSConfig {
   lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("scheduled-changes-enabled")
     .getOrElse(false)
+
+  lazy val domainListRequiringManualReview: List[Regex] =
+    ZoneRecordValidations.toCaseIgnoredRegexList(
+      getOptionalStringList("domains-requiring-manual-review.domain-list"))
+
+  lazy val ipListRequiringManualReview: List[IpAddress] =
+    getOptionalStringList("domains-requiring-manual-review.ip-list").flatMap(ip => IpAddress(ip))
 }

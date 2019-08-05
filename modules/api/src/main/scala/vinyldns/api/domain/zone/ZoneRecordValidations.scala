@@ -20,7 +20,11 @@ import cats.implicits._
 import cats.data._
 import com.comcast.ip4s.IpAddress
 import com.comcast.ip4s.interop.cats.implicits._
-import vinyldns.core.domain.{DomainValidationError, HighValueDomainError}
+import vinyldns.core.domain.{
+  DomainValidationError,
+  HighValueDomainError,
+  RecordRequiresManualReview
+}
 import vinyldns.core.domain.record.{NSData, RecordSet}
 
 import scala.util.matching.Regex
@@ -75,5 +79,23 @@ object ZoneRecordValidations {
       ().validNel
     } else {
       HighValueDomainError(ip).invalidNel
+    }
+
+  def domainDoesNotRequireManualReview(
+      regexList: List[Regex],
+      fqdn: String): ValidatedNel[DomainValidationError, Unit] =
+    if (!isStringInRegexList(regexList, fqdn)) {
+      ().validNel
+    } else {
+      RecordRequiresManualReview(fqdn).invalidNel
+    }
+
+  def ipDoesNotRequireManualReview(
+      regexList: List[IpAddress],
+      ip: String): ValidatedNel[DomainValidationError, Unit] =
+    if (!isIpInIpList(regexList, ip)) {
+      {}.validNel
+    } else {
+      RecordRequiresManualReview(ip).invalidNel
     }
 }

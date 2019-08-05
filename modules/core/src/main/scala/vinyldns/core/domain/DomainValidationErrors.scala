@@ -169,4 +169,13 @@ final case class NewMultiRecordError(changeName: String, changeType: RecordType)
 final case class CnameAtZoneApexError(zoneName: String) extends DomainValidationError {
   def message: String = s"""CNAME cannot be the same name as zone "$zoneName"."""
 }
+
+final case class RecordRequiresManualReview(fqdn: String, fatal: Boolean = false)
+    extends DomainValidationError(fatal) {
+  def message: String =
+    s"""Record set with name "$fqdn" is configured to require manual review, but manual review is
+       |not enabled.""".stripMargin
+      .replaceAll("\n", " ")
+}
+
 // $COVERAGE-ON$
