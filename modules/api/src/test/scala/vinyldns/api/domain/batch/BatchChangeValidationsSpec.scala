@@ -380,6 +380,24 @@ class BatchChangeValidationsSpec
       HighValueDomainError("fd69:27cc:fe91:0:0:0:0:ffff"))
   }
 
+  property("""validateInputName: should fail with a RecordRequiresManualReview
+             |if inputName is matches domain requiring manual review""".stripMargin) {
+    val changeA = AddChangeInput("needs-review.foo.", RecordType.A, ttl, AData("1.1.1.1"))
+    val changeIpV4 = AddChangeInput("192.0.2.254", RecordType.PTR, ttl, PTRData("test."))
+    val changeIpV6 =
+      AddChangeInput("fd69:27cc:fe91:0:0:0:ffff:1", RecordType.PTR, ttl, PTRData("test."))
+
+    val resultA = validateInputName(changeA)
+    val resultIpV4 = validateInputName(changeIpV4)
+    val resultIpV6 = validateInputName(changeIpV6)
+
+    resultA should haveInvalid[DomainValidationError](
+      RecordRequiresManualReview("needs-review.foo."))
+    resultIpV4 should haveInvalid[DomainValidationError](RecordRequiresManualReview("192.0.2.254"))
+    resultIpV6 should haveInvalid[DomainValidationError](
+      RecordRequiresManualReview("fd69:27cc:fe91:0:0:0:ffff:1"))
+  }
+
   property("""validateInputName: should fail with a DomainValidationError for deletes
       |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = DeleteChangeInput("invalidDomainName$", RecordType.A)
@@ -392,8 +410,8 @@ class BatchChangeValidationsSpec
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = DeleteChangeInput(invalidDomainName, RecordType.AAAA)
     val result = validateInputName(change)
-    result should (haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
-      .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255))))
+    result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
+      .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255)))
   }
 
   property("""validateInputName: PTR should fail with InvalidIPAddress for deletes
