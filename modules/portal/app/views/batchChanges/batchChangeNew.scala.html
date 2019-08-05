@@ -7,13 +7,13 @@
     <!-- BREADCRUMB -->
     <ul class="breadcrumb">
         <li><a href="/">Home</a></li>
-        <li><a href="/batchchanges">Batch Changes</a></li>
-        <li class="active">New Batch Change</li>
+        <li><a href="/batchchanges">DNS Changes</a></li>
+        <li class="active">New DNS Change</li>
     </ul>
     <!-- END BREADCRUMB -->
 
     <!-- PAGE TITLE -->
-    <div class="page-title"><h3><span class="fa fa-list-ol"></span> New Batch Change</h3></div>
+    <div class="page-title"><h3><span class="fa fa-list-ol"></span> New DNS Change</h3></div>
     <!-- END PAGE TITLE -->
 
 
@@ -39,7 +39,7 @@
                             <div class="form-group row" ng-class="{ownerGroupError: ownerGroupError}">
                                 <div class="col-md-6">
                                     <label class="h5" for="recordOwnerGroup">Record Owner Group
-                                        <span data-toggle="tooltip" data-placement="top" title="Record Owner Group is required if any records in the batch change are in shared zones and not already owned.">
+                                        <span data-toggle="tooltip" data-placement="top" title="Record Owner Group is required if any records in the DNS change are in shared zones and not already owned.">
                                             <span class="fa fa-question-circle"></span>
                                         </span>
                                     </label>
@@ -224,14 +224,14 @@
                                 <input type="file" id="batchChangeCsv" ng-model="csvInput" name="batchChangeCsv" class="batchChangeCsv" ng-change="uploadCSV(createBatchChangeForm.batchChangeCsv.$viewValue)" batch-change-file>
                                 <p><a href="https://www.vinyldns.io/portal/batch-changes#batch-change-csv-import" target="_blank" rel="noopener noreferrer">See documentation for sample CSV</a></p>
                             </div>
-                            <p ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per batch change.</p>
+                            <p ng-if="newBatch.changes.length >= batchChangeLimit">Limit reached. Cannot add more than {{batchChangeLimit}} records per DNS change.</p>
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="formStatus=='pendingSubmit'" class="pull-right">
                                 <button type="button" id="create-batch-changes-button" class="btn btn-primary" ng-click="submitChange()">Submit</button>
                             </div>
                             <div ng-if="formStatus=='pendingConfirm'" class="pull-right">
-                                <span>Are you sure you want to submit this batch change request?</span>
+                                <span>Are you sure you want to submit this DNS change request?</span>
                                 <button class="btn btn-default" ng-click="cancelSubmit()">Cancel</button>
                                 <button class="btn btn-success" type="submit" ng-click="confirmSubmit(createBatchChangeForm)">Confirm</button>
                             </div>
@@ -246,4 +246,4 @@
 
 @plugins = {}
 
-@main(rootAccountName)("BatchChangeNewController")("New Batch Change")(content)(plugins)
+@main(rootAccountName)("BatchChangeNewController")("New DNS Change")(content)(plugins)
