@@ -80,7 +80,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         generateSingleAddChange(
           A,
           AData("1.2.3.4"),
-          Pending,
+          NeedsReview,
           List(SingleChangeError(ZoneDiscoveryError("test err")))),
         generateSingleAddChange(A, AData("1.2.3.40"), Complete),
         generateSingleAddChange(AAAA, AAAAData("2001:558:feed:beef:0:0:0:1"), Pending),
@@ -121,6 +121,10 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         ++ randomBatchChange().changes.drop(2).map(_.withFailureMessage("failed"))
     ).copy(createdTimestamp = DateTime.now.plusMillis(1000000))
 
+    val rejectedBatchChange: BatchChange = randomBatchChangeWithList(
+      randomBatchChange().changes.map(_.reject))
+      .copy(createdTimestamp = DateTime.now.plusMillis(10000000))
+
     // listing/ordering changes
     val timeBase: DateTime = DateTime.now
     val change_one: BatchChange = pendingBatchChange.copy(
@@ -133,6 +137,9 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     val change_three: BatchChange = failedBatchChange.copy(createdTimestamp = timeBase.plus(100000))
     val change_four: BatchChange =
       partialFailureBatchChange.copy(createdTimestamp = timeBase.plus(1000000))
+    val change_five: BatchChange =
+      rejectedBatchChange.copy(createdTimestamp = timeBase.plus(10000000),
+        approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
   }
 
   import TestData._
@@ -436,6 +443,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(change_two)
           _ <- repo.save(change_three)
           _ <- repo.save(change_four)
+          _ <- repo.save(change_five)
           _ <- repo.save(otherUserBatchChange)
 
           retrieved <- repo.getBatchChangeSummaries(None)
@@ -444,6 +452,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       // from most recent descending
       val expectedChanges = BatchChangeSummaryList(
         List(
+          BatchChangeSummary(change_five),
           BatchChangeSummary(change_four),
           BatchChangeSummary(change_three),
           BatchChangeSummary(otherUserBatchChange),
