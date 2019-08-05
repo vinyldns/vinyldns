@@ -152,14 +152,28 @@ def test_list_batch_change_summaries_with_next_id(list_fixture):
     list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=1, start_from=batch_change_summaries_result['nextId'])
 
 
-def test_list_batch_change_summaries_with_pending_status(list_fixture):
+def test_list_batch_change_summaries_with_pending_status(shared_zone_test_context):
     """
-    Test listing a limited number of user's batch change summaries with maxItems parameter
+    Test listing a limited number of user's batch change summaries with approvalStatus filter
     """
-    client = list_fixture.client
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    group = shared_zone_test_context.shared_record_group
+    batch_change_input = {
+        "comments": '',
+        "changes": [
+            get_change_A_AAAA_json("listing-batch-with-owner-group.non-existent-zone.", address="1.1.1.1")
+        ],
+        "ownerGroupId": group['id']
+    }
+
+    client.create_batch_change(batch_change_input, status=202)
+
     batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingReview")
 
-    list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=0, approval_status="PendingReview")
+    for batchChange in batch_change_summaries_result['batchChanges']:
+        assert_that(batchChange['approvalStatus'], is_('PendingReview'))
+        assert_that(batchChange['status'], is_('PendingReview'))
+        assert_that(batchChange['totalChanges'], equal_to(1))
 
 def test_list_batch_change_summaries_with_list_batch_change_summaries_with_no_changes_passes():
     """

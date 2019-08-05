@@ -88,8 +88,8 @@ class MySqlBatchChangeRepository
     """
          |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
          |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time,
-         |              SUM( case sc.status when 'Failed' then 1 else 0 end ) AS fail_count,
-         |              SUM( case sc.status when 'Pending' then 1 else 0 end ) AS pending_count,
+         |              SUM( case when sc.status like 'Failed' or sc.status like 'Rejected' then 1 else 0 end ) AS fail_count,
+         |              SUM( case when sc.status like 'Pending' or sc.status like 'NeedsReview' then 1 else 0 end ) AS pending_count,
          |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count
          |         FROM single_change sc
          |         JOIN batch_change bc
