@@ -1229,7 +1229,7 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[1], input_name="bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_data="1.2.3.4",
                                             error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                             'Invalid domain name: "bad-ttl-and-invalid-name$.parent.com.", '
-                                                            'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                            'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[2], input_name="reverse-zone.10.10.in-addr.arpa.", record_data="1.2.3.4",
                                             error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.10.10.in-addr.arpa.\" and type \"A\" is not allowed in a reverse zone."])
 
@@ -1322,13 +1322,13 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
 
         # input validations failures
         assert_failed_change_in_error_response(response[3], input_name="$invalid.host.name.", change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "$invalid.host.name.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "$invalid.host.name.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[4], input_name="reverse.zone.in-addr.arpa.", change_type="DeleteRecordSet",
                                                error_messages=['Invalid Record Type In Reverse Zone: record with name "reverse.zone.in-addr.arpa." and type "A" is not allowed in a reverse zone.'])
         assert_failed_change_in_error_response(response[5], input_name="$another.invalid.host.name.", ttl=300,
-                                               error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[6], input_name="$another.invalid.host.name.", change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[7], input_name="another.reverse.zone.in-addr.arpa.", ttl=10,
                                                error_messages=['Invalid Record Type In Reverse Zone: record with name "another.reverse.zone.in-addr.arpa." and type "A" is not allowed in a reverse zone.',
                                                                'Invalid TTL: "10", must be a number between 30 and 2147483647.'])
@@ -1403,7 +1403,7 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[1], input_name="bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_type="AAAA", record_data="1::1",
                                             error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                             'Invalid domain name: "bad-ttl-and-invalid-name$.parent.com.", '
-                                                            'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                            'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[2], input_name="reverse-zone.1.2.3.ip6.arpa.", record_type="AAAA", record_data="1::1",
                                             error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.1.2.3.ip6.arpa.\" and type \"AAAA\" is not allowed in a reverse zone."])
 
@@ -1494,14 +1494,14 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
 
         # input validations failures: invalid input name, reverse zone error, invalid ttl
         assert_failed_change_in_error_response(response[3], input_name="invalid-name$.ok.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "invalid-name$.ok.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "invalid-name$.ok.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[4], input_name="reverse.zone.in-addr.arpa.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse.zone.in-addr.arpa.\" and type \"AAAA\" is not allowed in a reverse zone."])
         assert_failed_change_in_error_response(response[5], input_name="bad-ttl-and-invalid-name$-update.ok.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "bad-ttl-and-invalid-name$-update.ok.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "bad-ttl-and-invalid-name$-update.ok.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[6], input_name="bad-ttl-and-invalid-name$-update.ok.", ttl=29, record_type="AAAA", record_data="1:2:3:4:5:6:7:8",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
-                                                               'Invalid domain name: "bad-ttl-and-invalid-name$-update.ok.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                               'Invalid domain name: "bad-ttl-and-invalid-name$-update.ok.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
@@ -1598,10 +1598,10 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[6], input_name="bad-ttl-and-invalid-name$.parent.com.", ttl=29, record_type="CNAME", record_data="also$bad.name.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "bad-ttl-and-invalid-name$.parent.com.", '
-                                                               'valid domain names must be letters, numbers, and hyphens, '
+                                                               'valid domain names must be letters, numbers, underscores, and hyphens, '
                                                                'joined by dots, and terminated with a dot.',
                                                                'Invalid domain name: "also$bad.name.", '
-                                                               'valid domain names must be letters, numbers, and hyphens, '
+                                                               'valid domain names must be letters, numbers, underscores, and hyphens, '
                                                                'joined by dots, and terminated with a dot.'])
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.com.", record_type="CNAME", record_data="test.com.",
@@ -1718,13 +1718,13 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
 
         # ttl, domain name, data
         assert_failed_change_in_error_response(response[6], input_name="$invalid.host.name.", record_type="CNAME", change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "$invalid.host.name.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "$invalid.host.name.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[7], input_name="$another.invalid.host.name.", record_type="CNAME", change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[8], input_name="$another.invalid.host.name.", ttl=20, record_type="CNAME", record_data="$another.invalid.cname.",
                                                error_messages=['Invalid TTL: "20", must be a number between 30 and 2147483647.',
-                                                               'Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.',
-                                                               'Invalid domain name: "$another.invalid.cname.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                               'Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.',
+                                                               'Invalid domain name: "$another.invalid.cname.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[9], input_name="zone.discovery.error.", record_type="CNAME", change_type="DeleteRecordSet",
@@ -1857,7 +1857,7 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[3], input_name="4.5.6.7", ttl=29, record_type="PTR", record_data="-1.2.3.4.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "-1.2.3.4.", '
-                                                               'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                               'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # delegated and non-delegated PTR duplicate name checks
         assert_successful_change_in_error_response(response[4], input_name="192.0.2.196", record_type="PTR", record_data="test.com.")
@@ -1984,7 +1984,7 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[9], ttl=29, input_name="192.0.2.", record_type="PTR", record_data="failed-update$.ptr.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid IP address: "192.0.2.".',
-                                                               'Invalid domain name: "failed-update$.ptr.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                               'Invalid domain name: "failed-update$.ptr.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[10], input_name="192.0.1.25", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
@@ -2044,7 +2044,7 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[1], input_name="fd69:27cc:fe91::abe", ttl=29, record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
         assert_failed_change_in_error_response(response[2], input_name="fd69:27cc:fe91::bae", record_type="PTR", record_data="$malformed.hostname.",
-                                               error_messages=['Invalid domain name: "$malformed.hostname.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "$malformed.hostname.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data="malformed.ip.address.",
                                                error_messages=['Invalid IP address: "fd69:27cc:fe91de::ab".'])
 
@@ -2117,7 +2117,7 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[5], ttl=29, input_name="fd69:27cc:fe91de::ba", record_type="PTR", record_data="failed-update$.ptr.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid IP address: "fd69:27cc:fe91de::ba".',
-                                                               'Invalid domain name: "failed-update$.ptr.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                               'Invalid domain name: "failed-update$.ptr.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[6], input_name="fedc:ba98:7654::abc", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
@@ -2185,7 +2185,7 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[3], input_name="bad-ttl-and-invalid-name$.ok.", ttl=29, record_type="TXT", record_data="test",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "bad-ttl-and-invalid-name$.ok.", '
-                                                               'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                               'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="TXT", record_data="test",
@@ -2271,7 +2271,7 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
 
         # input validations failures: invalid input name, reverse zone error, invalid ttl
         assert_failed_change_in_error_response(response[3], input_name="invalid-name$.ok.", record_type="TXT", record_data="test", change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "invalid-name$.ok.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "invalid-name$.ok.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[4], input_name="delete.ok.", ttl=29, record_type="TXT", record_data="bad-ttl",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
 
@@ -2349,9 +2349,9 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
         assert_failed_change_in_error_response(response[1], input_name="bad-ttl-and-invalid-name$.ok.", ttl=29, record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "bad-ttl-and-invalid-name$.ok.", '
-                                                               'valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                                               'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[2], input_name="bad-exchange.ok.", record_type="MX", record_data={"preference": 1, "exchange": "foo$.bar."},
-                                               error_messages=['Invalid domain name: "foo$.bar.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "foo$.bar.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[3], input_name="mx.2.0.192.in-addr.arpa.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
                                        error_messages=['Invalid Record Type In Reverse Zone: record with name "mx.2.0.192.in-addr.arpa." and type "MX" is not allowed in a reverse zone.'])
 
@@ -2443,11 +2443,11 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
 
         # input validations failures: invalid input name, reverse zone error, invalid ttl
         assert_failed_change_in_error_response(response[3], input_name="invalid-name$.ok.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."}, change_type="DeleteRecordSet",
-                                               error_messages=['Invalid domain name: "invalid-name$.ok.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "invalid-name$.ok.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[4], input_name="delete.ok.", ttl=29, record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
         assert_failed_change_in_error_response(response[5], input_name="bad-exchange.ok.", record_type="MX", record_data={"preference": 1, "exchange": "foo$.bar."},
-                                               error_messages=['Invalid domain name: "foo$.bar.", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminated with a dot.'])
+                                               error_messages=['Invalid domain name: "foo$.bar.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[6], input_name="mx.2.0.192.in-addr.arpa.", record_type="MX", record_data={"preference": 1, "exchange": "foo.bar."},
                                                error_messages=['Invalid Record Type In Reverse Zone: record with name "mx.2.0.192.in-addr.arpa." and type "MX" is not allowed in a reverse zone.'])
 

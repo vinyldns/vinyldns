@@ -58,6 +58,7 @@ class DomainValidationsSpec
   property("Domain names beginning with invalid characters should fail with InvalidDomainName") {
     validateHostName("/slash.domain.name.").failWith[InvalidDomainName]
     validateHostName("-hyphen.domain.name.").failWith[InvalidDomainName]
+    validateHostName("_underscore.domain.name.").isValid
   }
 
   property("Valid Ipv4 addresses should pass property-based testing") {
