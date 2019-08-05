@@ -32,7 +32,7 @@ The Groups section of the portal is for managing high level user access and abil
 
 [Learn More](groups)
 
-### Batch Changes
-The Batch Changes section of the portal allows users to implement multiple record changes simultaneously and across different zones. To access Batch Changes in the portal select the Batch Changes link in the left column navigation.
+### DNS changes
+The DNS changes section of the portal allows users to implement multiple record changes simultaneously and across different zones. To access DNS changes in the portal select the DNS changes link in the left column navigation.
 
-[Learn More](batch-changes)
+[Learn More](dns-changes)
