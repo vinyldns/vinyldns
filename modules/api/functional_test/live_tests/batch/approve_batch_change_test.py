@@ -11,7 +11,8 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
     approver = shared_zone_test_context.support_user_client
     batch_change_input = {
         "changes": [
-            get_change_A_AAAA_json("test-approve-success.not.loaded.", address="4.3.2.1")
+            get_change_A_AAAA_json("test-approve-success.not.loaded.", address="4.3.2.1"),
+            get_change_A_AAAA_json("needs-review.not.loaded.", address="4.3.2.1"),
         ],
         "ownerGroupId": shared_zone_test_context.ok_group['id']
     }
@@ -25,6 +26,8 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         assert_that(get_batch['approvalStatus'], is_('PendingReview'))
         assert_that(get_batch['changes'][0]['status'], is_('NeedsReview'))
         assert_that(get_batch['changes'][0]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
+        assert_that(get_batch['changes'][1]['status'], is_('NeedsReview'))
+        assert_that(get_batch['changes'][1]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
 
         # need to create the zone so the change can succeed
         zone = {
@@ -43,12 +46,13 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
 
         assert_that(completed_batch['status'], is_('Complete'))
-        assert_that(completed_batch['changes'][0]['status'], is_('Complete'))
+        for i in xrange(len(completed_batch['changes'])):
+            assert_that(completed_batch['changes'][i]['status'], is_('Complete'))
+            assert_that(len(completed_batch['changes'][i]['validationErrors']), is_(0))
         assert_that(completed_batch['approvalStatus'], is_('ManuallyApproved'))
         assert_that(completed_batch['reviewerId'], is_('support-user-id'))
         assert_that(completed_batch['reviewerUserName'], is_('support-user'))
         assert_that(completed_batch, has_key('reviewTimestamp'))
-        assert_that(len(completed_batch['changes'][0]['validationErrors']), is_(0))
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
         if to_disconnect is not None:
