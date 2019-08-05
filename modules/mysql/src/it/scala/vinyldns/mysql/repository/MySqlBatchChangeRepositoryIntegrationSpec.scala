@@ -183,6 +183,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     actual.userName shouldBe expected.userName
     actual.createdTimestamp.getMillis shouldBe expected.createdTimestamp.getMillis +- 2000
     actual.ownerGroupId shouldBe expected.ownerGroupId
+    actual.totalChanges shouldBe expected.totalChanges
   }
 
   private def areSame(
