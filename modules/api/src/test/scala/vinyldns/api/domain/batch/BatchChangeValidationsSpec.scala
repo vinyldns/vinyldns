@@ -196,7 +196,7 @@ class BatchChangeValidationsSpec
 
   property("validateInputChanges: should succeed if all inputs are good") {
     forAll(listOfN(3, validAChangeGen)) { input: List[ChangeInput] =>
-      val result = validateInputChanges(input)
+      val result = validateInputChanges(input, false)
       result.map(_ shouldBe valid)
     }
   }
@@ -355,7 +355,9 @@ class BatchChangeValidationsSpec
     val invalidIpv6Input =
       AddChangeInput("testbad.example.com.", RecordType.AAAA, ttl, AAAAData("invalidIpv6:123"))
     val result =
-      validateInputChanges(List(goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input))
+      validateInputChanges(
+        List(goodInput, goodAAAAInput, invalidDomainNameInput, invalidIpv6Input),
+        false)
     result(0) shouldBe valid
     result(1) shouldBe valid
     result(2) should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
@@ -369,9 +371,9 @@ class BatchChangeValidationsSpec
     val changeIpV6 =
       AddChangeInput("fd69:27cc:fe91:0:0:0:0:ffff", RecordType.PTR, ttl, PTRData("test."))
 
-    val resultA = validateInputName(changeA)
-    val resultIpV4 = validateInputName(changeIpV4)
-    val resultIpV6 = validateInputName(changeIpV6)
+    val resultA = validateInputName(changeA, false)
+    val resultIpV4 = validateInputName(changeIpV4, false)
+    val resultIpV6 = validateInputName(changeIpV6, false)
 
     resultA should haveInvalid[DomainValidationError](
       HighValueDomainError("high-value-domain.foo."))
@@ -387,9 +389,9 @@ class BatchChangeValidationsSpec
     val changeIpV6 =
       AddChangeInput("fd69:27cc:fe91:0:0:0:ffff:1", RecordType.PTR, ttl, PTRData("test."))
 
-    val resultA = validateInputName(changeA)
-    val resultIpV4 = validateInputName(changeIpV4)
-    val resultIpV6 = validateInputName(changeIpV6)
+    val resultA = validateInputName(changeA, false)
+    val resultIpV4 = validateInputName(changeIpV4, false)
+    val resultIpV6 = validateInputName(changeIpV6, false)
 
     resultA should haveInvalid[DomainValidationError](
       RecordRequiresManualReview("needs-review.foo."))
@@ -398,10 +400,15 @@ class BatchChangeValidationsSpec
       RecordRequiresManualReview("fd69:27cc:fe91:0:0:0:ffff:1"))
   }
 
+  property("doesNotRequireManualReview: should succeed if user is reviewing") {
+    val changeA = AddChangeInput("needs-review.foo.", RecordType.A, ttl, AData("1.1.1.1"))
+    validateInputName(changeA, true) should beValid(())
+  }
+
   property("""validateInputName: should fail with a DomainValidationError for deletes
       |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = DeleteChangeInput("invalidDomainName$", RecordType.A)
-    val result = validateInputName(change)
+    val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
@@ -409,7 +416,7 @@ class BatchChangeValidationsSpec
       |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = DeleteChangeInput(invalidDomainName, RecordType.AAAA)
-    val result = validateInputName(change)
+    val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
       .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255)))
   }
@@ -418,13 +425,13 @@ class BatchChangeValidationsSpec
       |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidIp.111"
     val change = DeleteChangeInput(invalidIp, RecordType.PTR)
-    val result = validateInputName(change)
+    val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidIPAddress(invalidIp))
   }
 
   property("validateAddChangeInput: should succeed if single addChangeInput is good for A Record") {
     forAll(validAChangeGen) { input: AddChangeInput =>
-      val result = validateAddChangeInput(input)
+      val result = validateAddChangeInput(input, false)
       result shouldBe valid
     }
   }
@@ -432,7 +439,7 @@ class BatchChangeValidationsSpec
   property(
     "validateAddChangeInput: should succeed if single addChangeInput is good for AAAA Record") {
     forAll(validAAAAChangeGen) { input: AddChangeInput =>
-      val result = validateAddChangeInput(input)
+      val result = validateAddChangeInput(input, false)
       result shouldBe valid
     }
   }
@@ -440,7 +447,7 @@ class BatchChangeValidationsSpec
   property("""validateAddChangeInput: should fail with a DomainValidationError
       |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = AddChangeInput("invalidDomainName$", RecordType.A, ttl, AData("1.1.1.1"))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
 
@@ -448,7 +455,7 @@ class BatchChangeValidationsSpec
       |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
     val change = AddChangeInput(invalidDomainName, RecordType.A, ttl, AData("1.1.1.1"))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
       .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255)))
   }
@@ -458,7 +465,7 @@ class BatchChangeValidationsSpec
     forAll(choose[Long](0, 29)) { invalidTTL: Long =>
       val change =
         AddChangeInput("test.comcast.com.", RecordType.A, Some(invalidTTL), AData("1.1.1.1"))
-      val result = validateAddChangeInput(change)
+      val result = validateAddChangeInput(change, false)
       result should haveInvalid[DomainValidationError](
         InvalidTTL(invalidTTL, DomainValidations.TTL_MIN_LENGTH, DomainValidations.TTL_MAX_LENGTH))
     }
@@ -468,7 +475,7 @@ class BatchChangeValidationsSpec
       |if validateRecordData fails for an invalid ipv4 address""".stripMargin) {
     val invalidIpv4 = "invalidIpv4:123"
     val change = AddChangeInput("test.comcast.com.", RecordType.A, ttl, AData(invalidIpv4))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
     result should haveInvalid[DomainValidationError](InvalidIpv4Address(invalidIpv4))
   }
 
@@ -476,14 +483,14 @@ class BatchChangeValidationsSpec
       |if validateRecordData fails for an invalid ipv6 address""".stripMargin) {
     val invalidIpv6 = "invalidIpv6:123"
     val change = AddChangeInput("test.comcast.com.", RecordType.AAAA, ttl, AAAAData(invalidIpv6))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
     result should haveInvalid[DomainValidationError](InvalidIpv6Address(invalidIpv6))
   }
 
   property("validateAddChangeInput: should fail if A inputName includes a reverse zone address") {
     val invalidInputName = "test.1.2.3.in-addr.arpa."
     val badAChange = AddChangeInput(invalidInputName, RecordType.A, ttl, AData("1.1.1.1"))
-    val result = validateAddChangeInput(badAChange)
+    val result = validateAddChangeInput(badAChange, false)
     result should haveInvalid[DomainValidationError](
       RecordInReverseZoneError(invalidInputName, RecordType.A.toString))
   }
@@ -492,7 +499,7 @@ class BatchChangeValidationsSpec
     val invalidInputName = "test.1.2.3.ip6.arpa."
     val badAAAAChange =
       AddChangeInput(invalidInputName, RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8"))
-    val result = validateAddChangeInput(badAAAAChange)
+    val result = validateAddChangeInput(badAAAAChange, false)
     result should haveInvalid[DomainValidationError](
       RecordInReverseZoneError(invalidInputName, RecordType.AAAA.toString))
   }
@@ -502,7 +509,7 @@ class BatchChangeValidationsSpec
     val invalidCNAMERecordData = "$$$"
     val change =
       AddChangeInput("test.comcast.com.", RecordType.CNAME, ttl, CNAMEData(invalidCNAMERecordData))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
 
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidCNAMERecordData."))
   }
@@ -512,7 +519,7 @@ class BatchChangeValidationsSpec
     val invalidCNAMERecordData = "s" * 256
     val change =
       AddChangeInput("test.comcast.com.", RecordType.CNAME, ttl, CNAMEData(invalidCNAMERecordData))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
 
     result should haveInvalid[DomainValidationError](
       InvalidLength(s"$invalidCNAMERecordData.", 2, 255))
@@ -522,7 +529,7 @@ class BatchChangeValidationsSpec
       |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidip.111."
     val change = AddChangeInput(invalidIp, RecordType.PTR, ttl, PTRData("test.comcast.com"))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
 
     result should haveInvalid[DomainValidationError](InvalidIPAddress(invalidIp))
   }
@@ -530,7 +537,7 @@ class BatchChangeValidationsSpec
   property("validateAddChangeInput: should fail with InvalidDomainName for invalid PTR record data") {
     val invalidPTRDname = "*invalidptrdname"
     val change = AddChangeInput("4.5.6.7", RecordType.PTR, ttl, PTRData(invalidPTRDname))
-    val result = validateAddChangeInput(change)
+    val result = validateAddChangeInput(change, false)
 
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidPTRDname."))
   }
@@ -1423,13 +1430,13 @@ class BatchChangeValidationsSpec
 
   property("validateAddChangeInput: should succeed for a valid TXT addChangeInput") {
     val input = AddChangeInput("txt.ok.", RecordType.TXT, ttl, TXTData("test"))
-    val result = validateAddChangeInput(input)
+    val result = validateAddChangeInput(input, false)
     result shouldBe valid
   }
 
   property("validateAddChangeInput: should fail for a TXT addChangeInput with empty TXTData") {
     val input = AddChangeInput("txt.ok.", RecordType.TXT, ttl, TXTData(""))
-    val result = validateAddChangeInput(input)
+    val result = validateAddChangeInput(input, false)
     result should haveInvalid[DomainValidationError](InvalidLength("", 1, 64764))
   }
 
@@ -1437,21 +1444,21 @@ class BatchChangeValidationsSpec
     "validateAddChangeInput: should fail for a TXT addChangeInput with TXTData that is too many characters") {
     val txtData = "x" * 64765
     val input = AddChangeInput("txt.ok.", RecordType.TXT, ttl, TXTData(txtData))
-    val result = validateAddChangeInput(input)
+    val result = validateAddChangeInput(input, false)
     result should haveInvalid[DomainValidationError](InvalidLength(txtData, 1, 64764))
   }
 
   property("validateAddChangeInput: should succeed for a valid MX addChangeInput") {
     val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(1, "foo.bar."))
-    val result = validateAddChangeInput(input)
+    val result = validateAddChangeInput(input, false)
     result shouldBe valid
   }
 
   property("validateAddChangeInput: should fail for a MX addChangeInput with invalid preference") {
     val inputSmall = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(-1, "foo.bar."))
     val inputLarge = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(1000000, "foo.bar."))
-    val resultSmall = validateAddChangeInput(inputSmall)
-    val resultLarge = validateAddChangeInput(inputLarge)
+    val resultSmall = validateAddChangeInput(inputSmall, false)
+    val resultLarge = validateAddChangeInput(inputLarge, false)
 
     resultSmall should haveInvalid[DomainValidationError](
       InvalidMxPreference(
@@ -1467,14 +1474,14 @@ class BatchChangeValidationsSpec
 
   property("validateAddChangeInput: should fail for a MX addChangeInput with invalid exchange") {
     val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(1, "foo$.bar."))
-    val result = validateAddChangeInput(input)
+    val result = validateAddChangeInput(input, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("foo$.bar."))
   }
 
   property(
     "validateAddChangeInput: should fail for a MX addChangeInput with invalid preference and exchange") {
     val input = AddChangeInput("mx.ok.", RecordType.MX, ttl, MXData(-1, "foo$.bar."))
-    val result = validateAddChangeInput(input)
+    val result = validateAddChangeInput(input, false)
     result should haveInvalid[DomainValidationError](
       InvalidMxPreference(
         -1,

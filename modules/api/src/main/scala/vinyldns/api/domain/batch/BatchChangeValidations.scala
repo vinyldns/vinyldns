@@ -37,7 +37,9 @@ trait BatchChangeValidationsAlgebra {
       existingGroup: Option[Group],
       authPrincipal: AuthPrincipal): BatchResult[Unit]
 
-  def validateInputChanges(input: List[ChangeInput]): ValidatedBatch[ChangeInput]
+  def validateInputChanges(
+      input: List[ChangeInput],
+      isReviewing: Boolean): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
@@ -143,16 +145,20 @@ class BatchChangeValidations(
 
   /* input validations */
 
-  def validateInputChanges(input: List[ChangeInput]): ValidatedBatch[ChangeInput] =
+  def validateInputChanges(
+      input: List[ChangeInput],
+      isReviewing: Boolean): ValidatedBatch[ChangeInput] =
     input.map {
-      case a: AddChangeInput => validateAddChangeInput(a).map(_ => a)
-      case d: DeleteChangeInput => validateInputName(d).map(_ => d)
+      case a: AddChangeInput => validateAddChangeInput(a, isReviewing).map(_ => a)
+      case d: DeleteChangeInput => validateInputName(d, isReviewing).map(_ => d)
     }
 
-  def validateAddChangeInput(addChangeInput: AddChangeInput): SingleValidation[Unit] = {
+  def validateAddChangeInput(
+      addChangeInput: AddChangeInput,
+      isReviewing: Boolean): SingleValidation[Unit] = {
     val validTTL = addChangeInput.ttl.map(validateTTL(_).asUnit).getOrElse(().valid)
     val validRecord = validateRecordData(addChangeInput.record)
-    val validInput = validateInputName(addChangeInput)
+    val validInput = validateInputName(addChangeInput, isReviewing)
 
     validTTL |+| validRecord |+| validInput
   }
@@ -170,7 +176,7 @@ class BatchChangeValidations(
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
 
-  def validateInputName(change: ChangeInput): SingleValidation[Unit] = {
+  def validateInputName(change: ChangeInput, isReviewing: Boolean): SingleValidation[Unit] = {
     val typedChecks = change.typ match {
       case A | AAAA | MX =>
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
@@ -181,7 +187,7 @@ class BatchChangeValidations(
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
-    typedChecks |+| isNotHighValueDomain(change) |+| doesNotRequireManualReview(change)
+    typedChecks |+| isNotHighValueDomain(change) |+| doesNotRequireManualReview(change, isReviewing)
   }
 
   def validatePtrIp(ip: String): SingleValidation[Unit] = {
@@ -489,16 +495,23 @@ class BatchChangeValidations(
           change.inputName)
     }
 
-  def doesNotRequireManualReview(change: ChangeInput): SingleValidation[Unit] =
-    change.typ match {
-      case RecordType.PTR =>
-        ZoneRecordValidations.ipDoesNotRequireManualReview(
-          VinylDNSConfig.ipListRequiringManualReview,
-          change.inputName)
-      case _ =>
-        ZoneRecordValidations.domainDoesNotRequireManualReview(
-          VinylDNSConfig.domainListRequiringManualReview,
-          change.inputName)
+  def doesNotRequireManualReview(
+      change: ChangeInput,
+      isReviewing: Boolean): SingleValidation[Unit] =
+    if (isReviewing) {
+      // If we are reviewing, don't need to check whether DNS change needs review
+      ().validNel
+    } else {
+      change.typ match {
+        case RecordType.PTR =>
+          ZoneRecordValidations.ipDoesNotRequireManualReview(
+            VinylDNSConfig.ipListRequiringManualReview,
+            change.inputName)
+        case _ =>
+          ZoneRecordValidations.domainDoesNotRequireManualReview(
+            VinylDNSConfig.domainListRequiringManualReview,
+            change.inputName)
+      }
     }
 
   def ownerGroupProvidedIfNeeded(

@@ -94,7 +94,7 @@ object ZoneRecordValidations {
       regexList: List[IpAddress],
       ip: String): ValidatedNel[DomainValidationError, Unit] =
     if (!isIpInIpList(regexList, ip)) {
-      {}.validNel
+      ().validNel
     } else {
       RecordRequiresManualReview(ip).invalidNel
     }

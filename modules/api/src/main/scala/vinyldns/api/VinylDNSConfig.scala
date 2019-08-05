@@ -140,8 +140,8 @@ object VinylDNSConfig {
 
   lazy val domainListRequiringManualReview: List[Regex] =
     ZoneRecordValidations.toCaseIgnoredRegexList(
-      getOptionalStringList("domains-requiring-manual-review.domain-list"))
+      getOptionalStringList("manual-review-domains.domain-list"))
 
   lazy val ipListRequiringManualReview: List[IpAddress] =
-    getOptionalStringList("domains-requiring-manual-review.ip-list").flatMap(ip => IpAddress(ip))
+    getOptionalStringList("manual-review-domains.ip-list").flatMap(ip => IpAddress(ip))
 }

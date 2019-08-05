@@ -892,6 +892,13 @@ def test_create_batch_change_with_domains_requiring_review_succeeds(shared_zone_
 
     try:
         response = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(response['id'])
+        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
+        for i in xrange(1, 11):
+            assert_that(get_batch['changes'][i]['status'], is_('NeedsReview'))
+            assert_that(get_batch['changes'][i]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
+        assert_that(get_batch['changes'][12]['validationErrors'], empty())
 
     finally:
         # Clean up so data doesn't change
