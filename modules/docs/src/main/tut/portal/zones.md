@@ -13,7 +13,7 @@ The All Zones tab is intended as a reference, it includes zones you have access 
 If needed, you can use the contact information in the list to reach out to the owners of the zones you don't have access to.
 
 **Note** you may have access to specific records in shared zones, but you are not permitted to access those zones in this area.
-Those records are accessible via the [DNS change](dns-changes) area of the portal.
+Those records are accessible via the [DNS Changes](dns-changes) area of the portal.
 
 * [Search Zones](search-zones)
 * [Connect to your zone](connect-to-zone)

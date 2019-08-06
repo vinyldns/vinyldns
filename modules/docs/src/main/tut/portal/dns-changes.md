@@ -1,11 +1,11 @@
 ---
 layout: docs
-title:  "DNS changes"
+title:  "DNS Changes"
 section: "portal_menu"
 ---
 
-## DNS changes
-DNS change is an alternative to submitting individual RecordSet changes and provides the following:
+## DNS Changes
+DNS Changes is an alternative to submitting individual RecordSet changes and provides the following:
 
 * The ability to include records of multiple record types across multiple zones.
 * Input names are entered as fully-qualified domain names (or IP addresses for **PTR** records), so users don't have to think in record/zone context.
@@ -28,27 +28,27 @@ This does not apply to zone administrators or users with specific ACL access rul
 * When creating a new record in a shared zone, or updating an existing unowned record, a record owner group is required. Once the owner group is assigned only users in that group, zone admins, and users with ACL permissions can modify the record.
 
 ---
-### Create a DNS change
-1. Go to the DNS changes section of the site.
-1. Select the *New DNS change* button.
+### Create a DNS Change
+1. Go to the DNS Changes section of the site.
+1. Select the *New DNS Change* button.
 1. Add a description.
 1. Add record changes in one of two ways:
  - Select the *Add a Change* button to add additional rows for data entry as needed.
- - Select the *Import CSV* button to choose and upload a CSV file of the record changes. See [DNS change CSV Import](#dns-change-csv-import) for more information.
+ - Select the *Import CSV* button to choose and upload a CSV file of the record changes. See [DNS Change CSV Import](#dns-change-csv-import) for more information.
 1. Select the submit button. Confirm your submission.
- - If your submission was successful you'll redirect to the DNS change summary page where you will see the status of the DNS change request overall and of the individual records in the DNS change.
- - If there are errors in the DNS change you will remain on the form with prompts to correct errors before you attempt to submit again.
+ - If your submission was successful you'll redirect to the DNS Change summary page where you will see the status of the DNS Change request overall and of the individual records in the DNS Change.
+ - If there are errors in the DNS Change you will remain on the form with prompts to correct errors before you attempt to submit again.
 
-[![DNS change main page screenshot](../img/portal/dns-change-main-annotated.png){: .screenshot}](../img/portal/dns-change-main-annotated.png)
-[![New DNS change form screenshot](../img/portal/dns-change-new-annotated.png){: .screenshot}](../img/portal/dns-change-new-annotated.png)
-[![Submitted DNS change screenshot](../img/portal/dns-change-summary.png){: .screenshot}](../img/portal/dns-change-summary.png)
+[![DNS Changes main page screenshot](../img/portal/dns-change-main-annotated.png){: .screenshot}](../img/portal/dns-change-main-annotated.png)
+[![New DNS Change form screenshot](../img/portal/dns-change-new-annotated.png){: .screenshot}](../img/portal/dns-change-new-annotated.png)
+[![Submitted DNS Change screenshot](../img/portal/dns-change-summary.png){: .screenshot}](../img/portal/dns-change-summary.png)
 
-#### DNS change CSV Import
+#### DNS Change CSV Import
 [Download a sample CSV here](../static/dns-changes-csv-sample.csv)
 * The header row is required. The order of the columns is `Change Type, Record Type, Input Name, TTL, Record Data`.
 * The TTL field is optional for each record, but the column is still required. If TTL is empty VinylDNS will use the existing TTL value for record updates or the default TTL value for new records.
 
-### Review a DNS change
-You can review your submitted DNS change requests by selecting the linked Batch ID or View button for the DNS change on the main page of the DNS change section in the portal.
+### Review a DNS Change
+You can review your submitted DNS Change requests by selecting the linked Batch ID or View button for the DNS Change on the main page of the DNS Change section in the portal.
 
-[![List of DNS change requests screenshot](../img/portal/dns-change-list-annotated.png){: .screenshot}](../img/portal/dns-change-annotated.png)
+[![List of DNS Change requests screenshot](../img/portal/dns-change-list-annotated.png){: .screenshot}](../img/portal/dns-change-annotated.png)

@@ -93,7 +93,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
         }
-        "render the DNS changes page when the user is logged in" in new WithApplication(app) {
+        "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
             underTest.index()(
               FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
@@ -115,7 +115,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
         }
-        "render the DNS changes page when the user is logged in" in new WithApplication(app) {
+        "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
             oidcUnderTest.index()(
               FakeRequest(GET, "/index").withSession(VinylDNS.ID_TOKEN -> "test").withCSRFToken)
