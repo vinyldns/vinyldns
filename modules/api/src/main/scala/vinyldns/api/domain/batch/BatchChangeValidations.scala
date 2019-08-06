@@ -107,12 +107,6 @@ class BatchChangeValidations(
         else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
     }
 
-//  def validateScheduledTime(scheduledTime: Option[DateTime]): SingleValidation[Unit] =
-//    (scheduledTime) match {
-//      case Some(dt) if dt.isBeforeNow => ScheduledTimeMustBeInFuture().invalidNel
-//      case _ => ().validNel
-//    }
-
   def validateBatchChangeRejection(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
@@ -513,11 +507,10 @@ class BatchChangeValidations(
   def validateScheduledChange(
       input: BatchChangeInput,
       scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
-    (scheduledChangesEnabled, input.scheduledTime.isEmpty) match {
-      case (_, true) => Right(())
-      case (true, false) if input.scheduledTime.get.isAfterNow() => Right(())
-      case (true, false) if !input.scheduledTime.get.isAfterNow() =>
-        Left(ScheduledTimeMustBeInFuture)
-      case (false, false) => Left(ScheduledChangesDisabled)
+    (scheduledChangesEnabled, input.scheduledTime) match {
+      case (_, None) => Right(())
+      case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
+      case (true, _) => Left(ScheduledTimeMustBeInFuture)
+      case (false, _) => Left(ScheduledChangesDisabled)
     }
 }
