@@ -34,7 +34,7 @@ before_cache:
 jobs:
   include:
   - name: Validate and verify modules
-    script: sbt -d ++$TRAVIS_SCALA_VERSION ";validate; verify" && bash <(curl -s https://codecov.io/bash)
+    script: sbt -v ++$TRAVIS_SCALA_VERSION ";validate; verify" && bash <(curl -s https://codecov.io/bash)
   - name: Run API and portal functional tests
     script: "./bin/func-test-portal.sh && ./bin/func-test-api-travis.sh"
   - stage: Deploy
