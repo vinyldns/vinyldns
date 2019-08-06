@@ -2,7 +2,7 @@ import sbt._
 object Dependencies {
 
   lazy val akkaHttpV = "10.1.9"
-  lazy val akkaV = "2.5.12"
+  lazy val akkaV = "2.5.23"
   lazy val jettyV = "8.1.12.v20130726"
   lazy val pureConfigV = "0.9.2"
   lazy val metricsScalaV = "3.5.9"
