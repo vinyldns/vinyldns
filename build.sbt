@@ -46,7 +46,7 @@ def scalaStyleSettings: Seq[Def.Setting[_]] = scalaStyleCompile ++ scalaStyleTes
 // settings that should be inherited by all projects
 lazy val sharedSettings = Seq(
   organization := "vinyldns",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.9",
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
