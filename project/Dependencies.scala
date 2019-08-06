@@ -1,7 +1,7 @@
 import sbt._
 object Dependencies {
 
-  lazy val akkaHttpV = "10.1.5"
+  lazy val akkaHttpV = "10.1.9"
   lazy val akkaV = "2.5.12"
   lazy val jettyV = "8.1.12.v20130726"
   lazy val pureConfigV = "0.9.2"
@@ -12,7 +12,7 @@ object Dependencies {
   lazy val scalikejdbcV = "3.3.1"
   lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
-  lazy val playV = "2.6.19"
+  lazy val playV = "2.7.3"
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
@@ -104,7 +104,7 @@ object Dependencies {
   )
 
   lazy val portalDependencies = Seq(
-    "com.typesafe.play"         %% "play-json"                      % "2.6.10",
+    "com.typesafe.play"         %% "play-json"                      % "2.7.4",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
