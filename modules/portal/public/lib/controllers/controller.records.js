@@ -391,7 +391,6 @@ angular.module('controller.records', [])
         return $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
-
     /**
       * Global data-updating functions
       */
