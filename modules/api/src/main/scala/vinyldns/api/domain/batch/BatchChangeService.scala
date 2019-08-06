@@ -94,7 +94,7 @@ class BatchChangeService(
       validationOutput <- applyBatchChangeValidationFlow(
         batchChangeInput,
         auth,
-        isReviewing = false)
+        isApproved = false)
       changeForConversion <- buildResponse(
         batchChangeInput,
         validationOutput.validatedChanges,
@@ -111,11 +111,11 @@ class BatchChangeService(
   def applyBatchChangeValidationFlow(
       batchChangeInput: BatchChangeInput,
       auth: AuthPrincipal,
-      isReviewing: Boolean): BatchResult[BatchValidationFlowOutput] =
+      isApproved: Boolean): BatchResult[BatchValidationFlowOutput] =
     for {
       existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
       _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth)
-      inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes, isReviewing)
+      inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes, isApproved)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
@@ -156,7 +156,7 @@ class BatchChangeService(
       reviewInfo = BatchChangeReviewInfo(
         authPrincipal.userId,
         approveBatchChangeInput.reviewComment)
-      validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isReviewing = true)
+      validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isApproved = true)
       changeForConversion <- buildResponseForApprover(
         batchChange,
         asInput,

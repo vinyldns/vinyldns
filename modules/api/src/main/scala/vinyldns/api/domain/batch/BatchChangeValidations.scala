@@ -39,7 +39,7 @@ trait BatchChangeValidationsAlgebra {
 
   def validateInputChanges(
       input: List[ChangeInput],
-      isReviewing: Boolean): ValidatedBatch[ChangeInput]
+      isApproved: Boolean): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
@@ -147,18 +147,18 @@ class BatchChangeValidations(
 
   def validateInputChanges(
       input: List[ChangeInput],
-      isReviewing: Boolean): ValidatedBatch[ChangeInput] =
+      isApproved: Boolean): ValidatedBatch[ChangeInput] =
     input.map {
-      case a: AddChangeInput => validateAddChangeInput(a, isReviewing).map(_ => a)
-      case d: DeleteChangeInput => validateInputName(d, isReviewing).map(_ => d)
+      case a: AddChangeInput => validateAddChangeInput(a, isApproved).map(_ => a)
+      case d: DeleteChangeInput => validateInputName(d, isApproved).map(_ => d)
     }
 
   def validateAddChangeInput(
       addChangeInput: AddChangeInput,
-      isReviewing: Boolean): SingleValidation[Unit] = {
+      isApproved: Boolean): SingleValidation[Unit] = {
     val validTTL = addChangeInput.ttl.map(validateTTL(_).asUnit).getOrElse(().valid)
     val validRecord = validateRecordData(addChangeInput.record)
-    val validInput = validateInputName(addChangeInput, isReviewing)
+    val validInput = validateInputName(addChangeInput, isApproved)
 
     validTTL |+| validRecord |+| validInput
   }
@@ -176,7 +176,7 @@ class BatchChangeValidations(
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
 
-  def validateInputName(change: ChangeInput, isReviewing: Boolean): SingleValidation[Unit] = {
+  def validateInputName(change: ChangeInput, isApproved: Boolean): SingleValidation[Unit] = {
     val typedChecks = change.typ match {
       case A | AAAA | MX =>
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
@@ -187,7 +187,7 @@ class BatchChangeValidations(
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
-    typedChecks |+| isNotHighValueDomain(change) |+| doesNotRequireManualReview(change, isReviewing)
+    typedChecks |+| isNotHighValueDomain(change) |+| doesNotRequireManualReview(change, isApproved)
   }
 
   def validatePtrIp(ip: String): SingleValidation[Unit] = {
@@ -497,8 +497,8 @@ class BatchChangeValidations(
 
   def doesNotRequireManualReview(
       change: ChangeInput,
-      isReviewing: Boolean): SingleValidation[Unit] =
-    if (isReviewing) {
+      isApproved: Boolean): SingleValidation[Unit] =
+    if (isApproved) {
       // If we are reviewing, don't need to check whether DNS change needs review
       ().validNel
     } else {

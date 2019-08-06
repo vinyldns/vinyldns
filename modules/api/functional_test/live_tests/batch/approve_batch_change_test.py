@@ -46,9 +46,9 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         to_delete = [(change['zoneId'], change['recordSetId']) for change in completed_batch['changes']]
 
         assert_that(completed_batch['status'], is_('Complete'))
-        for i in xrange(len(completed_batch['changes'])):
-            assert_that(completed_batch['changes'][i]['status'], is_('Complete'))
-            assert_that(len(completed_batch['changes'][i]['validationErrors']), is_(0))
+        for change in completed_batch['changes']:
+            assert_that(change['status'], is_('Complete'))
+            assert_that(len(change['validationErrors']), is_(0))
         assert_that(completed_batch['approvalStatus'], is_('ManuallyApproved'))
         assert_that(completed_batch['reviewerId'], is_('support-user-id'))
         assert_that(completed_batch['reviewerUserName'], is_('support-user'))
