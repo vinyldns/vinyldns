@@ -86,7 +86,7 @@
                     var alert = utilityService.success('Successfully Created Batch Change', response, 'createBatchChange: createBatchChange successful');
                     $scope.alerts.push(alert);
                     $timeout(function(){
-                        location.href = "/batchchanges/" + response.data.id;
+                        location.href = "/dnschanges/" + response.data.id;
                      }, 2000);
                     $scope.batch = response.data;
                 }

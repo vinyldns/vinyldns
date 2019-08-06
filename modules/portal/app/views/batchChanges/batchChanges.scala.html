@@ -41,7 +41,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading vinyldns-panel-top">
                         <div class="btn-group">
-                            <a href="/batchchanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New DNS Change</a>
+                            <a href="/dnschanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New DNS Change</a>
                         </div>
                         @if(meta.manualBatchChangeReviewEnabled){
                             <div class="batch-filter">
@@ -84,7 +84,7 @@
                             <tbody>
                                 <tr ng-repeat="batchChange in batchChanges|filter:query">
                                     <td ng-bind="batchChange.createdTimestamp"></td>
-                                    <td><a href="/batchchanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
+                                    <td><a href="/dnschanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
                                         <span ng-if="batchChange.status == 'Complete'" class="label label-success">{{batchChange.status}}</span>
@@ -98,7 +98,7 @@
                                     <td ng-bind="batchChange.comments" class="col-md-3"></td>
                                     <td>
                                         <a type="button" class="btn btn-info btn-rounded"
-                                           ng-href="/batchchanges/{{ batchChange.id }}">
+                                           ng-href="/dnschanges/{{ batchChange.id }}">
                                             View
                                         </a>
                                     </td>
