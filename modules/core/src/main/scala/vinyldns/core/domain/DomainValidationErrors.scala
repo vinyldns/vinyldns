@@ -35,6 +35,7 @@ final case class BatchChangeIsEmpty(limit: Int) extends DomainValidationError {
 final case class GroupDoesNotExist(id: String) extends DomainValidationError {
   def message: String = s"""Group with ID "$id" was not found"""
 }
+
 final case class NotAMemberOfOwnerGroup(ownerGroupId: String, userName: String)
     extends DomainValidationError {
   def message: String =

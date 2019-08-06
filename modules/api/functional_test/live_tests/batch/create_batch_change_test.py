@@ -298,7 +298,7 @@ def test_create_scheduled_batch_change_with_zone_discovery_error_without_owner_g
     Test creating a scheduled batch without owner group ID fails if there is a zone discovery error
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    dt = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+    dt = (datetime.datetime.now() + datetime.timedelta(1)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     batch_change_input = {
         "comments": "this is optional",
@@ -311,6 +311,28 @@ def test_create_scheduled_batch_change_with_zone_discovery_error_without_owner_g
     errors = client.create_batch_change(batch_change_input, status=400)
 
     assert_that(errors, is_("Batch change requires owner group for manual review/scheduled changes."))
+
+
+@pytest.mark.manual_batch_review
+def test_create_scheduled_batch_change_with_scheduled_time_in_the_past_fails(shared_zone_test_context):
+    """
+    Test creating a scheduled batch with a scheduled time in the past
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    yesterday = (datetime.datetime.now() - datetime.timedelta(1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("no-owner-group.scheduled.parent.com.", address="4.5.6.7"),
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id'],
+        "scheduledTime": yesterday
+    }
+
+    errors = client.create_batch_change(batch_change_input, status=400)
+
+    assert_that(errors, is_("Scheduled time must be in the future."))
 
 
 def test_create_batch_change_without_scheduled_time_succeeds(shared_zone_test_context):
