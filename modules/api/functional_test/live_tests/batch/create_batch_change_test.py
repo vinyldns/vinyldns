@@ -276,7 +276,7 @@ def test_create_batch_change_with_scheduled_time_and_owner_group_succeeds(shared
     Test successfully creating a batch change with scheduled time and owner group set
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    dt = (datetime.datetime.now() + datetime.timedelta(1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    dt = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     batch_change_input = {
         "comments": "this is optional",
@@ -298,7 +298,7 @@ def test_create_scheduled_batch_change_with_zone_discovery_error_without_owner_g
     Test creating a scheduled batch without owner group ID fails if there is a zone discovery error
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    dt = (datetime.datetime.now() + datetime.timedelta(1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    dt = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     batch_change_input = {
         "comments": "this is optional",
@@ -319,7 +319,7 @@ def test_create_scheduled_batch_change_with_scheduled_time_in_the_past_fails(sha
     Test creating a scheduled batch with a scheduled time in the past
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    yesterday = (datetime.datetime.now() - datetime.timedelta(1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     batch_change_input = {
         "comments": "this is optional",
