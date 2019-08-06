@@ -100,6 +100,7 @@ object Dependencies {
 
   lazy val apiTestDependencies = commonTestDependencies ++ Seq(
     "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
+    "com.typesafe.akka"         %% "akka-stream-testkit"            % akkaV,
     "junit"                     %  "junit"                          % "4.12"
   )
 
