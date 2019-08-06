@@ -154,13 +154,13 @@ this error could indicate that a zone needs to be created outside of VinylDNS an
 ##### Error Message:
 
 ```
-Invalid domain name: "<input>", valid domain names must be letters, numbers, and hyphens, joined by dots, and terminate with a dot.
+Invalid domain name: "<input>", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminate with a dot.
 ```
 
 ##### Details:
 
 Fully qualified domain names, must be comprised of **labels**, separated by dots.
-A **label** is a combination of letters, digits, and hyphens.
+A **label** is a combination of letters, digits, underscores, and hyphens.
 They must also be absolute, which means they end with a dot.
 
 Syntax:

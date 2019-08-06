@@ -60,6 +60,12 @@ class DomainValidationsSpec
     validateHostName("-hyphen.domain.name.").failWith[InvalidDomainName]
   }
 
+  property("Domain names with underscores should pass property-based testing") {
+    validateHostName("_underscore.domain.name.").isValid
+    validateHostName("under_score.domain.name.").isValid
+    validateHostName("underscore._domain.name.").isValid
+  }
+
   property("Valid Ipv4 addresses should pass property-based testing") {
     forAll(validIpv4Gen) { validIp: String =>
       val res = validateIpv4Address(validIp)

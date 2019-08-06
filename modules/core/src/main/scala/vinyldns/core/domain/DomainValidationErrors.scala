@@ -43,7 +43,7 @@ final case class NotAMemberOfOwnerGroup(ownerGroupId: String, userName: String)
 
 final case class InvalidDomainName(param: String) extends DomainValidationError {
   def message: String =
-    s"""Invalid domain name: "$param", valid domain names must be letters, numbers, and hyphens, """ +
+    s"""Invalid domain name: "$param", valid domain names must be letters, numbers, underscores, and hyphens, """ +
       "joined by dots, and terminated with a dot."
 }
 
