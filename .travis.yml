@@ -1,6 +1,6 @@
 language: scala
 scala:
-- 2.12.8
+- 2.12.9
 python:
 - 2.7
 sudo: false
