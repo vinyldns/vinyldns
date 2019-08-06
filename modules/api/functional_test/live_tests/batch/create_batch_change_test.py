@@ -276,7 +276,7 @@ def test_create_batch_change_with_scheduled_time_and_owner_group_succeeds(shared
     Test successfully creating a batch change with scheduled time and owner group set
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    dt = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+    dt = (datetime.datetime.now() + datetime.timedelta(1)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     batch_change_input = {
         "comments": "this is optional",
