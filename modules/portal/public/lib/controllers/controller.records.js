@@ -365,7 +365,12 @@ angular.module('controller.records', [])
     function determineAdmin(){
         $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
         $scope.canReadZone = canReadZone();
-        $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || $scope.zoneInfo.shared || canCreateRecords();
+        $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || $scope.zoneInfo.shared ||
+            canCreateRecordsViaAcl();
+
+        function canCreateRecordsViaAcl() {
+            return $scope.zoneInfo.acl.rules.some(b => b.accessLevel == "Write" || b.accessLevel == "Delete")
+        };
     }
 
     function isInAdminGroup() {
@@ -386,9 +391,6 @@ angular.module('controller.records', [])
         return $scope.myGroupIds.indexOf(groupId) > -1;
     };
 
-    function canCreateRecords() {
-        return $scope.zoneInfo.acl.rules.some(b => b.accessLevel == "Write" || b.accessLevel == "Delete")
-    };
 
     /**
       * Global data-updating functions
