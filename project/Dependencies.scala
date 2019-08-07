@@ -112,6 +112,9 @@ object Dependencies {
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
     "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    // Netty is to get past a ClassNotFoundError for UnixChannelOption
+    // https://discuss.lightbend.com/t/integration-tests-using-play-2-7-2-are-using-the-nettyserver/4458/3
+    "io.netty"                  %  "netty-transport-native-unix-common" % "4.1.37.Final" % "test",
     "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0",
     "co.fs2"                    %% "fs2-core"                       % fs2V
