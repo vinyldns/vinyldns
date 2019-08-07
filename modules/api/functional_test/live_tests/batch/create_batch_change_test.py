@@ -882,6 +882,52 @@ def test_create_batch_change_with_high_value_domain_fails(shared_zone_test_conte
     assert_that(response[12], is_not(has_key("errors")))
 
 
+@pytest.mark.manual_batch_review
+def test_create_batch_change_with_domains_requiring_review_succeeds(shared_zone_test_context):
+    """
+    Test creating a batch change with an input name requiring review is accepted
+    """
+
+    rejecter = shared_zone_test_context.support_user_client
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "ownerGroupId": shared_zone_test_context.ok_group['id'],
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("needs-review-add.ok."),
+            get_change_A_AAAA_json("needs-review-update.ok.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("needs-review-update.ok."),
+            get_change_A_AAAA_json("needs-review-delete.ok.", change_type="DeleteRecordSet"),
+            get_change_PTR_json("192.0.2.254"),
+            get_change_PTR_json("192.0.2.255", change_type="DeleteRecordSet"), # 255 exists already
+            get_change_PTR_json("192.0.2.255"),
+            get_change_PTR_json("192.0.2.255", change_type="DeleteRecordSet"),
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:1"),
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:2", change_type="DeleteRecordSet"), # ffff:2 exists already
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:2"),
+            get_change_PTR_json("fd69:27cc:fe91:0:0:0:ffff:2", change_type="DeleteRecordSet"),
+
+            get_change_A_AAAA_json("i-can-be-touched.ok.", address="1.1.1.1")
+        ]
+    }
+    response = None
+
+    try:
+        response = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(response['id'])
+        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
+        for i in xrange(1, 11):
+            assert_that(get_batch['changes'][i]['status'], is_('NeedsReview'))
+            assert_that(get_batch['changes'][i]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
+        assert_that(get_batch['changes'][12]['validationErrors'], empty())
+
+    finally:
+        # Clean up so data doesn't change
+        if response:
+            rejecter.reject_batch_change(response['id'], status=200)
+
+
 def test_create_batch_change_with_invalid_record_type_fails(shared_zone_test_context):
     """
     Test creating a batch change with invalid record type fails

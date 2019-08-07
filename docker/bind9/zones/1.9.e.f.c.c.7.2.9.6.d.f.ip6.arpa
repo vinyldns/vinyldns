@@ -9,3 +9,4 @@ $ttl 38400
 4.2.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0	IN	PTR	www.vinyldns.
 5.2.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0	IN	PTR	mail.vinyldns.
 0.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0 IN  PTR high.value.domain.ip6.
+2.0.0.0.f.f.f.f.0.0.0.0.0.0.0.0.0.0.0.0 IN  PTR needs.review.domain.ip6.
