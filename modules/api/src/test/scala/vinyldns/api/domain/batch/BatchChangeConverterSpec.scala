@@ -57,7 +57,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
   private def makeSingleDeleteChange(name: String, typ: RecordType, zone: Zone = okZone) = {
     val fqdn = s"$name.${zone.name}"
-    SingleDeleteChange(
+    SingleDeleteSetChange(
       Some(zone.id),
       Some(zone.name),
       Some(name),

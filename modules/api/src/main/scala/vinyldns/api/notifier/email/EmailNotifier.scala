@@ -23,7 +23,7 @@ import vinyldns.core.domain.batch.{
   BatchChangeApprovalStatus,
   SingleAddChange,
   SingleChange,
-  SingleDeleteChange
+  SingleDeleteSetChange
 }
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.domain.membership.User
@@ -138,7 +138,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       s"""<tr><td>${index + 1}</td><td>Add</td><td>$typ</td><td>$inputName</td>
         |     <td>$ttl</td><td>${formatRecordData(recordData)}</td><td>$status</td>
         |     <td>${systemMessage.getOrElse("")}</td></tr>"""
-    case SingleDeleteChange(_, _, _, inputName, typ, status, systemMessage, _, _, _, _) =>
+    case SingleDeleteSetChange(_, _, _, inputName, typ, status, systemMessage, _, _, _, _) =>
       s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>
         |     <td></td><td></td><td>$status</td><td>${systemMessage.getOrElse("")}</td></tr>"""
   }

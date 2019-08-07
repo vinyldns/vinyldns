@@ -34,7 +34,7 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch.SingleChange
 import vinyldns.core.domain.batch.SingleAddChange
-import vinyldns.core.domain.batch.SingleDeleteChange
+import vinyldns.core.domain.batch.SingleDeleteSetChange
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
 import _root_.vinyldns.core.domain.batch.SingleChangeStatus
@@ -180,7 +180,7 @@ class EmailNotifierSpec
           None,
           None,
           List.empty),
-        SingleDeleteChange(
+        SingleDeleteSetChange(
           Some(""),
           Some(""),
           Some(""),
@@ -223,7 +223,7 @@ class EmailNotifierSpec
               case _ => row.contains(ac.recordData) should be(true)
             }
             row.contains(ac.ttl.toString) should be(true)
-          case _: SingleDeleteChange =>
+          case _: SingleDeleteSetChange =>
             row.contains("Delete") should be(true)
         }
       }

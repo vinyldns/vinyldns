@@ -316,7 +316,7 @@ class BatchChangeJsonProtocolSpec
 
   "Serializing SingleDeleteChange to JSON" should {
     "successfully serialize" in {
-      val toJson = SingleDeleteChange(
+      val toJson = SingleDeleteSetChange(
         Some("zoneId"),
         Some("zoneName"),
         Some("recordName"),
@@ -329,7 +329,7 @@ class BatchChangeJsonProtocolSpec
         List(SingleChangeError(barDiscoveryError)),
         id = "id"
       )
-      val result = SingleDeleteChangeSerializer.toJson(toJson)
+      val result = SingleDeleteSetChangeSerializer.toJson(toJson)
 
       result shouldBe ("zoneId" -> "zoneId") ~
         ("zoneName" -> "zoneName") ~
@@ -348,7 +348,7 @@ class BatchChangeJsonProtocolSpec
 
   "Serializing BatchChange to JSON" should {
     "successfully serialize" in {
-      val delete = SingleDeleteChange(
+      val delete = SingleDeleteSetChange(
         Some("zoneId"),
         Some("zoneName"),
         Some("recordName"),

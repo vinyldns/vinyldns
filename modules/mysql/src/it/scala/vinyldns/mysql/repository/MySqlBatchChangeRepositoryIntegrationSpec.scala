@@ -63,8 +63,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
         None,
         errors)
 
-    val deleteChange: SingleDeleteChange =
-      SingleDeleteChange(
+    val deleteChange: SingleDeleteSetChange =
+      SingleDeleteSetChange(
         Some(okZone.id),
         Some(okZone.name),
         Some("delete"),
@@ -213,7 +213,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       val singleChanges = batchChange.changes.map {
         case sad: SingleAddChange =>
           sad.copy(recordName = sad.recordName.map(name => s"updated-$name"))
-        case sdc: SingleDeleteChange =>
+        case sdc: SingleDeleteSetChange =>
           sdc.copy(recordName = sdc.recordName.map(name => s"updated-$name"))
       }
       val updatedBatch = batchChange.copy(

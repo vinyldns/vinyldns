@@ -22,7 +22,7 @@ import vinyldns.core.domain.batch.{
   SingleAddChange,
   SingleChange,
   SingleChangeStatus,
-  SingleDeleteChange
+  SingleDeleteSetChange
 }
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.protobuf.SingleChangeType.{SingleAddType, SingleChangeType, SingleDeleteType}
@@ -30,13 +30,16 @@ import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
 
+/*
+    SingleAddType: adding an individual record
+ */
 object SingleChangeType extends Enumeration {
   type SingleChangeType = Value
   val SingleAddType, SingleDeleteType = Value
 
   def from(singleChange: SingleChange): SingleChangeType = singleChange match {
     case _: SingleAddChange => SingleChangeType.SingleAddType
-    case _: SingleDeleteChange => SingleChangeType.SingleDeleteType
+    case _: SingleDeleteSetChange => SingleChangeType.SingleDeleteType
   }
 }
 
@@ -68,7 +71,7 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
             change.getId
           )
         case SingleDeleteType =>
-          SingleDeleteChange(
+          SingleDeleteSetChange(
             if (change.hasZoneId) Some(change.getZoneId) else None,
             if (change.hasZoneName) Some(change.getZoneName) else None,
             if (change.hasRecordName) Some(change.getRecordName) else None,
@@ -118,7 +121,7 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       sc.build()
     }
 
-  def toPB(change: SingleDeleteChange): Either[Throwable, VinylDNSProto.SingleChange] =
+  def toPB(change: SingleDeleteSetChange): Either[Throwable, VinylDNSProto.SingleChange] =
     Either.catchNonFatal {
       val sc = VinylDNSProto.SingleChange
         .newBuilder()
@@ -157,6 +160,6 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
   def toPB(change: SingleChange): Either[Throwable, VinylDNSProto.SingleChange] =
     change match {
       case sac: SingleAddChange => toPB(sac)
-      case sdc: SingleDeleteChange => toPB(sdc)
+      case sdc: SingleDeleteSetChange => toPB(sdc)
     }
 }

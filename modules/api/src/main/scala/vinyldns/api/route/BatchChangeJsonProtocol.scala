@@ -42,7 +42,7 @@ trait BatchChangeJsonProtocol extends JsonValidation {
     AddChangeInputSerializer,
     DeleteChangeInputSerializer,
     SingleAddChangeSerializer,
-    SingleDeleteChangeSerializer,
+    SingleDeleteSetChangeSerializer,
     BatchChangeSerializer,
     BatchChangeErrorListSerializer,
     BatchChangeErrorSerializer,
@@ -132,8 +132,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
   }
 
   // recordName, zoneName, zoneId used to be required; getOrElse to maintain backwards compatability with clients
-  case object SingleDeleteChangeSerializer extends ValidationSerializer[SingleDeleteChange] {
-    override def toJson(sac: SingleDeleteChange): JValue =
+  case object SingleDeleteSetChangeSerializer extends ValidationSerializer[SingleDeleteSetChange] {
+    override def toJson(sac: SingleDeleteSetChange): JValue =
       ("changeType" -> "DeleteRecordSet") ~
         ("inputName" -> sac.inputName) ~
         ("type" -> Extraction.decompose(sac.typ)) ~
