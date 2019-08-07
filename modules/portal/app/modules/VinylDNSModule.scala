@@ -53,7 +53,7 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
   implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.Implicits.global)
 
-  def configure(): Unit = {
+  override def configure(): Unit = {
     val startApp = for {
       cryptoConf <- settings.cryptoConfig
       crypto <- CryptoAlgebra.load(cryptoConf)

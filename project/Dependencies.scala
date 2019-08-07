@@ -1,8 +1,8 @@
 import sbt._
 object Dependencies {
 
-  lazy val akkaHttpV = "10.1.5"
-  lazy val akkaV = "2.5.12"
+  lazy val akkaHttpV = "10.1.9"
+  lazy val akkaV = "2.5.23"
   lazy val jettyV = "8.1.12.v20130726"
   lazy val pureConfigV = "0.9.2"
   lazy val metricsScalaV = "3.5.9"
@@ -12,7 +12,7 @@ object Dependencies {
   lazy val scalikejdbcV = "3.3.1"
   lazy val scalaTestV = "3.0.4"
   lazy val scodecV = "1.1.5"
-  lazy val playV = "2.6.19"
+  lazy val playV = "2.7.3"
   lazy val awsV = "1.11.423"
   lazy val jaxbV = "2.3.0"
   lazy val ip4sV = "1.1.1"
@@ -100,17 +100,21 @@ object Dependencies {
 
   lazy val apiTestDependencies = commonTestDependencies ++ Seq(
     "com.typesafe.akka"         %% "akka-http-testkit"              % akkaHttpV,
+    "com.typesafe.akka"         %% "akka-stream-testkit"            % akkaV,
     "junit"                     %  "junit"                          % "4.12"
   )
 
   lazy val portalDependencies = Seq(
-    "com.typesafe.play"         %% "play-json"                      % "2.6.10",
+    "com.typesafe.play"         %% "play-json"                      % "2.7.4",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.amazonaws"             %  "aws-java-sdk-dynamodb"          % awsV withSources(),
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
     "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    // Netty is to get past a ClassNotFoundError for UnixChannelOption
+    // https://discuss.lightbend.com/t/integration-tests-using-play-2-7-2-are-using-the-nettyserver/4458/3
+    "io.netty"                  %  "netty-transport-native-unix-common" % "4.1.37.Final" % "test",
     "com.nimbusds"              % "oauth2-oidc-sdk"                 % "6.5",
     "com.nimbusds"              % "nimbus-jose-jwt"                 % "7.0",
     "co.fs2"                    %% "fs2-core"                       % fs2V
