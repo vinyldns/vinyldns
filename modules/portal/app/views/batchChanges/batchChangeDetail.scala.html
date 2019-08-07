@@ -7,7 +7,7 @@
     <!-- BREADCRUMB -->
     <ul class="breadcrumb">
         <li><a href="/">Home</a></li>
-        <li><a href="/batchchanges">Batch Changes</a></li>
+        <li><a href="/dnschanges">DNS Changes</a></li>
         <li class="active">{{batch.id}}</li>
     </ul>
     <!-- END BREADCRUMB -->
@@ -15,7 +15,7 @@
     <!-- PAGE TITLE -->
     <div class="page-title">
         <h3>
-            <span class="fa fa-list-ol"></span> Batch Change
+            <span class="fa fa-list-ol"></span> DNS Change
             <span ng-if="batch.status == 'Complete'" class="label label-success">{{batch.status}}</span>
             <span ng-if="batch.status == 'Failed'" class="label label-danger">{{batch.status}}</span>
             <span ng-if="batch.status == 'PartialFailure'" class="label label-warning">Partial Failure</span>
@@ -164,4 +164,4 @@
 
 @plugins = {}
 
-@main(rootAccountName)("BatchChangeDetailController")("Batch Change")(content)(plugins)
+@main(rootAccountName)("BatchChangeDetailController")("DNS Change")(content)(plugins)

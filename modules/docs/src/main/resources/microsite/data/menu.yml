@@ -44,8 +44,8 @@ options:
     - title: Manage Membership
       url: portal/manage-membership
 
-  - title: Batch Changes
-    url: portal/batch-changes
+  - title: DNS Changes
+    url: portal/dns-changes
     menu_type: portal_menu
     menu_section: portal_section
 

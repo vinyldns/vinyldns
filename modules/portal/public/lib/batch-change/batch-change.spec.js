@@ -316,7 +316,7 @@ describe('BatchChange', function(){
         }));
 
         it('http backend gets called properly when getting a batch changes', function () {
-            this.$httpBackend.expectGET('/api/batchchanges/123').respond('batch change returned');
+            this.$httpBackend.expectGET('/api/dnschanges/123').respond('batch change returned');
             this.batchChangeService.getBatchChange('123')
                 .then(function(response) {
                     expect(response.data).toBe('batch change returned');
@@ -325,7 +325,7 @@ describe('BatchChange', function(){
         });
 
         it('http backend gets called properly when creating a batch change', function () {
-            this.$httpBackend.expectPOST('/api/batchchanges').respond('batch change created');
+            this.$httpBackend.expectPOST('/api/dnschanges').respond('batch change created');
             this.batchChangeService.createBatchChange({comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]})
                 .then(function(response) {
                     expect(response.data).toBe('batch change created');
