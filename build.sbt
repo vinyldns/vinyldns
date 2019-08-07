@@ -166,7 +166,7 @@ lazy val portalDockerSettings = Seq(
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
     ExecCmd("RUN", "apk", "add", "--update", "--no-cache", "netcat-openbsd", "bash"),
-    Cmd("USER", "1001:0") // switch back to the daemon user
+    Cmd("USER", "1001:0") // switch back to the user that runs the process
   ),
 
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))
