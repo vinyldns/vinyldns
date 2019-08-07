@@ -28,13 +28,16 @@ sealed abstract class DomainValidationError(val isFatal: Boolean = true) {
 final case class ChangeLimitExceeded(limit: Int) extends DomainValidationError {
   def message: String = s"Cannot request more than $limit changes in a single batch change request"
 }
+
 final case class BatchChangeIsEmpty(limit: Int) extends DomainValidationError {
   def message: String =
     s"Batch change contained no changes. Batch change must have at least one change, up to a maximum of $limit changes."
 }
+
 final case class GroupDoesNotExist(id: String) extends DomainValidationError {
   def message: String = s"""Group with ID "$id" was not found"""
 }
+
 final case class NotAMemberOfOwnerGroup(ownerGroupId: String, userName: String)
     extends DomainValidationError {
   def message: String =
@@ -43,7 +46,7 @@ final case class NotAMemberOfOwnerGroup(ownerGroupId: String, userName: String)
 
 final case class InvalidDomainName(param: String) extends DomainValidationError {
   def message: String =
-    s"""Invalid domain name: "$param", valid domain names must be letters, numbers, and hyphens, """ +
+    s"""Invalid domain name: "$param", valid domain names must be letters, numbers, underscores, and hyphens, """ +
       "joined by dots, and terminated with a dot."
 }
 

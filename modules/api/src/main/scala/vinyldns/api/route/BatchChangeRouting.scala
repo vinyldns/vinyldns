@@ -44,6 +44,8 @@ class BatchChangeRoute(
       complete(StatusCodes.BadRequest, ManualReviewRequiresOwnerGroup.message)
     case ScheduledChangesDisabled =>
       complete(StatusCodes.BadRequest, ScheduledChangesDisabled.message)
+    case ScheduledTimeMustBeInFuture =>
+      complete(StatusCodes.BadRequest, ScheduledTimeMustBeInFuture.message)
     case scnpd: ScheduledChangeNotDue => complete(StatusCodes.Forbidden, scnpd.message)
   }
 

@@ -532,6 +532,10 @@ class BatchChangeValidations(
   def validateScheduledChange(
       input: BatchChangeInput,
       scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
-    if (scheduledChangesEnabled || input.scheduledTime.isEmpty) Right(())
-    else Left(ScheduledChangesDisabled)
+    (scheduledChangesEnabled, input.scheduledTime) match {
+      case (_, None) => Right(())
+      case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
+      case (true, _) => Left(ScheduledTimeMustBeInFuture)
+      case (false, _) => Left(ScheduledChangesDisabled)
+    }
 }
