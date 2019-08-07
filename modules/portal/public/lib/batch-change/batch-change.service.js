@@ -21,12 +21,12 @@
         .service('batchChangeService', function ($http, utilityService) {
 
             this.getBatchChange = function (id) {
-                var url = '/api/batchchanges/' + id;
+                var url = '/api/dnschanges/' + id;
                 return $http.get(url);
             };
 
             this.createBatchChange = function (data) {
-                var url = '/api/batchchanges';
+                var url = '/api/dnschanges';
                 return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
             };
 
@@ -37,7 +37,7 @@
                     "ignoreAccess": ignoreAccess,
                     "approvalStatus": approvalStatus
                 };
-                var url = utilityService.urlBuilder('/api/batchchanges', params);
+                var url = utilityService.urlBuilder('/api/dnschanges', params);
                 return $http.get(url);
             };
 

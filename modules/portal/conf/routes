@@ -13,6 +13,9 @@ GET           /groups                            @controllers.FrontendController
 GET           /groups/:gid                       @controllers.FrontendController.viewGroup(gid: String)
 GET           /zones                             @controllers.FrontendController.viewAllZones
 GET           /zones/:zid                        @controllers.FrontendController.viewZone(zid: String)
+GET           /batchchanges                      @controllers.FrontendController.viewAllBatchChanges
+GET           /batchchanges/new                  @controllers.FrontendController.viewNewBatchChange
+GET           /batchchanges/:id                  @controllers.FrontendController.viewBatchChange(id: String)
 GET           /dnschanges                        @controllers.FrontendController.viewAllBatchChanges
 GET           /dnschanges/new                    @controllers.FrontendController.viewNewBatchChange
 GET           /dnschanges/:id                    @controllers.FrontendController.viewBatchChange(id: String)
@@ -52,9 +55,9 @@ GET           /api/users/lookupuser/:uname       @controllers.VinylDNS.getUserDa
 PUT           /api/users/:uid/lock               @controllers.VinylDNS.lockUser(uid: String)
 PUT           /api/users/:uid/unlock             @controllers.VinylDNS.unlockUser(uid: String)
 
-GET           /api/batchchanges/:id              @controllers.VinylDNS.getBatchChange(id: String)
-GET           /api/batchchanges                  @controllers.VinylDNS.listBatchChanges
-POST          /api/batchchanges                  @controllers.VinylDNS.newBatchChange
+GET           /api/dnschanges/:id                @controllers.VinylDNS.getBatchChange(id: String)
+GET           /api/dnschanges                    @controllers.VinylDNS.listBatchChanges
+POST          /api/dnschanges                    @controllers.VinylDNS.newBatchChange
 
 GET           /callback/:id                      @controllers.VinylDNS.oidcCallback(id: String)
 GET           /callback/set-oidc-session/:id              @controllers.VinylDNS.setOidcSession(id: String)
