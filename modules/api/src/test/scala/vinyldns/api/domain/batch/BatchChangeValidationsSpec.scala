@@ -184,7 +184,7 @@ class BatchChangeValidationsSpec
 
   property(
     "validateScheduledChange: should succeed if batch is scheduled and scheduled change enabled") {
-    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now))
+    val input = BatchChangeInput(None, List(), scheduledTime = Some(DateTime.now.plusHours(1)))
     validateScheduledChange(input, scheduledChangesEnabled = true) should beRight(())
   }
 
@@ -282,6 +282,21 @@ class BatchChangeValidationsSpec
       scheduledChangesEnabled = false)
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledChangesDisabled)
+  }
+
+  property(
+    "validateBatchChangeInput: should fail if scheduled changes is enabled but scheduled time is in the past") {
+    val input = BatchChangeInput(
+      None,
+      List(AddChangeInput("private-create", RecordType.A, ttl, AData("1.1.1.1"))),
+      scheduledTime = Some(DateTime.now.minusHours(1)))
+    val bcv = new BatchChangeValidations(
+      maxChanges,
+      AccessValidations,
+      multiRecordEnabled = true,
+      scheduledChangesEnabled = true)
+    bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
+      ScheduledTimeMustBeInFuture)
   }
 
   property("validateBatchChangePendingReview: should succeed if batch change is PendingReview") {
