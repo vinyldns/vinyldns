@@ -495,9 +495,7 @@ class BatchChangeValidations(
           change.inputName)
     }
 
-  def doesNotRequireManualReview(
-      change: ChangeInput,
-      isApproved: Boolean): SingleValidation[Unit] =
+  def doesNotRequireManualReview(change: ChangeInput, isApproved: Boolean): SingleValidation[Unit] =
     if (isApproved) {
       // If we are reviewing, don't need to check whether DNS change needs review
       ().validNel

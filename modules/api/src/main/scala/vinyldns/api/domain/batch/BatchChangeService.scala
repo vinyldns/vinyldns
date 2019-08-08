@@ -91,10 +91,7 @@ class BatchChangeService(
       auth: AuthPrincipal,
       allowManualReview: Boolean): BatchResult[BatchChange] =
     for {
-      validationOutput <- applyBatchChangeValidationFlow(
-        batchChangeInput,
-        auth,
-        isApproved = false)
+      validationOutput <- applyBatchChangeValidationFlow(batchChangeInput, auth, isApproved = false)
       changeForConversion <- buildResponse(
         batchChangeInput,
         validationOutput.validatedChanges,
