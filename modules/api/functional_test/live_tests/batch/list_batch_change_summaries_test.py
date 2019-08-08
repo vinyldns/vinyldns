@@ -152,6 +152,7 @@ def test_list_batch_change_summaries_with_next_id(list_fixture):
     list_fixture.check_batch_change_summaries_page_accuracy(next_page_result, size=1, start_from=batch_change_summaries_result['nextId'])
 
 
+@pytest.mark.manual_batch_review
 def test_list_batch_change_summaries_with_pending_status(shared_zone_test_context):
     """
     Test listing a limited number of user's batch change summaries with approvalStatus filter

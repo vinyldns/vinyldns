@@ -2412,7 +2412,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               crypto)
             val result =
               underTest.getBatchChange(hobbitZoneId)(
-                FakeRequest(GET, s"/api/batchchanges/$hobbitZoneId")
+                FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
                   .withJsonBody(hobbitZoneRequest))
 
             status(result) mustEqual 401
@@ -2438,7 +2438,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               components,
               crypto)
             val result = underTest.getBatchChange(hobbitZoneId)(
-              FakeRequest(GET, s"/api/batchchanges/$hobbitZoneId")
+              FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
                 .withJsonBody(hobbitZoneRequest)
                 .withSession(
                   "username" -> lockedFrodoUser.userName,
@@ -2471,7 +2471,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               crypto)
             val result =
               underTest.newBatchChange()(
-                FakeRequest(POST, s"/api/batchchanges").withJsonBody(hobbitZoneRequest))
+                FakeRequest(POST, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
 
             status(result) mustEqual 401
             hasCacheHeaders(result)
@@ -2496,7 +2496,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               components,
               crypto)
             val result = underTest.newBatchChange()(
-              FakeRequest(POST, s"/api/batchchanges")
+              FakeRequest(POST, s"/api/dnschanges")
                 .withJsonBody(hobbitZoneRequest)
                 .withSession(
                   "username" -> lockedFrodoUser.userName,
@@ -2529,7 +2529,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               crypto)
             val result =
               underTest.listBatchChanges()(
-                FakeRequest(GET, s"/api/batchchanges").withJsonBody(hobbitZoneRequest))
+                FakeRequest(GET, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
 
             status(result) mustEqual 401
             hasCacheHeaders(result)
@@ -2554,7 +2554,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               components,
               crypto)
             val result = underTest.listBatchChanges()(
-              FakeRequest(GET, s"/api/batchchanges")
+              FakeRequest(GET, s"/api/dnschanges")
                 .withJsonBody(hobbitZoneRequest)
                 .withSession(
                   "username" -> lockedFrodoUser.userName,

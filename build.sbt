@@ -46,7 +46,7 @@ def scalaStyleSettings: Seq[Def.Setting[_]] = scalaStyleCompile ++ scalaStyleTes
 // settings that should be inherited by all projects
 lazy val sharedSettings = Seq(
   organization := "vinyldns",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.9",
   organizationName := "Comcast Cable Communications Management, LLC",
   startYear := Some(2018),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -121,7 +121,7 @@ lazy val apiDockerSettings = Seq(
   dockerExposedVolumes := Seq("/opt/docker/conf"), // mount extra config to the classpath
 
   // add extra libs to class path via mount
-  scriptClasspath in bashScriptDefines ~= (cp => cp :+ "/opt/docker/lib_extra/*"),
+  scriptClasspath in bashScriptDefines ~= (cp => cp :+ "${app_home}/../lib_extra/*"),
 
   // adds config file to mount
   bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
@@ -134,7 +134,7 @@ lazy val apiDockerSettings = Seq(
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
     ExecCmd("RUN", "apk", "add", "--update", "--no-cache", "netcat-openbsd", "bash"),
-    Cmd("USER", "daemon") // switch back to the daemon user
+    Cmd("USER", "1001:0") // switch back to the daemon user
   ),
   composeFile := baseDirectory.value.getAbsolutePath + "/../../docker/docker-compose.yml"
 )
@@ -148,21 +148,25 @@ lazy val portalDockerSettings = Seq(
   dockerExposedVolumes := Seq("/opt/docker/conf"), // mount extra config to the classpath
 
   // add extra libs to class path via mount
-  scriptClasspath in bashScriptDefines ~= (cp => cp :+ "/opt/docker/lib_extra/*"),
+  scriptClasspath in bashScriptDefines ~= (cp => cp :+ "${app_home}/../lib_extra/*"),
 
   // adds config file to mount
-  bashScriptExtraDefines += """addJava "-Dconfig.file=/opt/docker/conf/application.conf"""",
-  bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"""",
+  bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+  bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""",
 
   // this is the default version, can be overridden
   bashScriptExtraDefines += s"""addJava "-Dvinyldns.base-version=${(version in ThisBuild).value}"""",
 
+  // needed to avoid access issue in play for the RUNNING_PID
+  // https://github.com/lightbend/sbt-reactive-app/issues/177
+  bashScriptExtraDefines += s"""addJava "-Dplay.server.pidfile.path=/dev/null"""",
+
   // wait for mysql
-  bashScriptExtraDefines += "(cd /opt/docker/ && ./wait-for-dependencies.sh && cd -)",
+  bashScriptExtraDefines += "(cd ${app_home}/../ && ls && ./wait-for-dependencies.sh && cd -)",
   dockerCommands ++= Seq(
     Cmd("USER", "root"), // switch to root so we can install netcat
     ExecCmd("RUN", "apk", "add", "--update", "--no-cache", "netcat-openbsd", "bash"),
-    Cmd("USER", "daemon") // switch back to the daemon user
+    Cmd("USER", "1001:0") // switch back to the user that runs the process
   ),
 
   credentials in Docker := Seq(Credentials(Path.userHome / ".ivy2" / ".dockerCredentials"))

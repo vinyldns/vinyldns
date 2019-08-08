@@ -14,7 +14,7 @@ addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.0.0")
 
 addSbtPlugin("org.wartremover" % "sbt-wartremover" % "2.3.7")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.23")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.25")
 
 addSbtPlugin("com.tapad" % "sbt-docker-compose" % "1.0.34")
 
@@ -24,7 +24,7 @@ addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.8")
 
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.6.15")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.7.3")
 
 addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "1.5.1")
 

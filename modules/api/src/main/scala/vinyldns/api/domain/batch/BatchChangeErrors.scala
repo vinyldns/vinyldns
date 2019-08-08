@@ -62,6 +62,10 @@ case object ScheduledChangesDisabled extends BatchChangeErrorResponse {
     "Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance."
 }
 
+case object ScheduledTimeMustBeInFuture extends BatchChangeErrorResponse {
+  val message: String = "Scheduled time must be in the future."
+}
+
 final case class ScheduledChangeNotDue(scheduledTime: DateTime) extends BatchChangeErrorResponse {
   val message: String =
     s"Cannot process scheduled change as it is not past the scheduled date of $scheduledTime"

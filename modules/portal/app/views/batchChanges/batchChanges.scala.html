@@ -7,12 +7,12 @@
     <!-- BREADCRUMB -->
     <ul class="breadcrumb">
         <li><a href="/">Home</a></li>
-        <li class="active">Batch Changes</li>
+        <li class="active">DNS Changes</li>
     </ul>
     <!-- END BREADCRUMB -->
 
     <!-- PAGE TITLE -->
-    <div class="page-title"><h3><span class="fa fa-list-ol"></span> Batch Changes {{ getPageTitle() }}</h3></div>
+    <div class="page-title"><h3><span class="fa fa-list-ol"></span> DNS Changes {{ getPageTitle() }}</h3></div>
     <!-- END PAGE TITLE -->
 
     <!-- PAGE CONTENT WRAPPER -->
@@ -41,7 +41,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading vinyldns-panel-top">
                         <div class="btn-group">
-                            <a href="/batchchanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New Batch Change</a>
+                            <a href="/dnschanges/new" class="btn btn-default"><span class="fa fa-plus"></span> New DNS Change</a>
                         </div>
                         @if(meta.manualBatchChangeReviewEnabled){
                             <div class="batch-filter">
@@ -74,7 +74,7 @@
                             <thead>
                                 <tr>
                                     <th>Submitted</th>
-                                    <th>Batch ID</th>
+                                    <th>ID</th>
                                     <th>Change Count</th>
                                     <th>Status</th>
                                     <th class="col-md-3">Description</th>
@@ -84,7 +84,7 @@
                             <tbody>
                                 <tr ng-repeat="batchChange in batchChanges|filter:query">
                                     <td ng-bind="batchChange.createdTimestamp"></td>
-                                    <td><a href="/batchchanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
+                                    <td><a href="/dnschanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
                                         <span ng-if="batchChange.status == 'Complete'" class="label label-success">{{batchChange.status}}</span>
@@ -98,7 +98,7 @@
                                     <td ng-bind="batchChange.comments" class="col-md-3"></td>
                                     <td>
                                         <a type="button" class="btn btn-info btn-rounded"
-                                           ng-href="/batchchanges/{{ batchChange.id }}">
+                                           ng-href="/dnschanges/{{ batchChange.id }}">
                                             View
                                         </a>
                                     </td>
@@ -135,4 +135,4 @@
 
 @plugins = {}
 
-@main(rootAccountName)("BatchChangesController")("Batch Changes")(content)(plugins)
+@main(rootAccountName)("BatchChangesController")("DNS Changes")(content)(plugins)

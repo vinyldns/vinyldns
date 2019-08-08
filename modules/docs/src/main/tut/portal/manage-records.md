@@ -4,7 +4,7 @@ title:  "Manage Records"
 section: "portal_menu"
 ---
 ## Manage Records <a id="managingRecords"></a>
-There are currently two ways to manage records in the VinylDNS portal. This covers managing individual records through their associated zone. To manage multiple records at once, possibly across zones, and records in shared zones you can use the [Batch Change](batch-changes) area of the portal.
+There are currently two ways to manage records in the VinylDNS portal. This covers managing individual records through their associated zone. To manage multiple records at once, possibly across zones, and records in shared zones you can use the [DNS Changes](dns-changes) area of the portal.
 
 #### Access
 Only zone administrators and users with ACL rules can manage records this way.

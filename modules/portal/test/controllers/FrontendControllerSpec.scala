@@ -93,14 +93,14 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
         }
-        "render the batch changes page when the user is logged in" in new WithApplication(app) {
+        "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
             underTest.index()(
               FakeRequest(GET, "/index").withSession("username" -> "frodo").withCSRFToken)
           status(result) must beEqualTo(OK)
           contentType(result) must beSome.which(_ == "text/html")
           contentAsString(result) must contain("Are you sure you want to log out")
-          contentAsString(result) must contain("Batch Changes | VinylDNS")
+          contentAsString(result) must contain("DNS Changes | VinylDNS")
         }
         "redirect to the no access page when a user is locked out" in new WithApplication(app) {
           val result =
@@ -115,7 +115,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
         }
-        "render the batch changes page when the user is logged in" in new WithApplication(app) {
+        "render the DNS Changes page when the user is logged in" in new WithApplication(app) {
           val result =
             oidcUnderTest.index()(
               FakeRequest(GET, "/index").withSession(VinylDNS.ID_TOKEN -> "test").withCSRFToken)
@@ -123,7 +123,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           status(result) must beEqualTo(OK)
           contentType(result) must beSome.which(_ == "text/html")
           contentAsString(result) must contain("Are you sure you want to log out")
-          contentAsString(result) must contain("Batch Changes | VinylDNS")
+          contentAsString(result) must contain("DNS Changes | VinylDNS")
         }
       }
     }
@@ -308,7 +308,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       }
     }
 
-    "Get for '/batchchanges'" should {
+    "Get for '/dnschanges'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = route(app, FakeRequest(GET, "/zones")).get
         status(result) must equalTo(SEE_OTHER)
@@ -317,65 +317,65 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       "render the batch changes view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewAllBatchChanges()(
-            FakeRequest(GET, "/batchchanges").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/dnschanges").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
-        contentAsString(result) must contain("Batch Changes | VinylDNS")
+        contentAsString(result) must contain("DNS Changes | VinylDNS")
       }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.viewAllBatchChanges()(
-            FakeRequest(GET, "/batchchanges")
+            FakeRequest(GET, "/dnschanges")
               .withSession("username" -> "lockedFbaggins")
               .withCSRFToken)
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
 
-    "Get for '/batchchanges/id'" should {
+    "Get for '/dnschanges/id'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/batchchanges/some-id")).get
+        val result = route(app, FakeRequest(GET, "/dnschanges/some-id")).get
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
-      "render the batch change view page when the user is logged in" in new WithApplication(app) {
+      "render the DNS change view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewBatchChange("some-id")(
-            FakeRequest(GET, "/batchchanges/some-id")
+            FakeRequest(GET, "/dnschanges/some-id")
               .withSession("username" -> "frodo")
               .withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
-        contentAsString(result) must contain("Batch Change | VinylDNS")
+        contentAsString(result) must contain("DNS Change | VinylDNS")
       }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.viewBatchChange("some-id")(
-            FakeRequest(GET, "/batchchanges/some-id")
+            FakeRequest(GET, "/dnschanges/some-id")
               .withSession("username" -> "lockedFbaggins")
               .withCSRFToken)
         headers(result) must contain("Location" -> "/noaccess")
       }
     }
 
-    "Get for '/batchchanges/new'" should {
+    "Get for '/dnschanges/new'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/batchchanges/new")).get
+        val result = route(app, FakeRequest(GET, "/dnschanges/new")).get
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
       "render the new batch change view page when the user is logged in" in new WithApplication(app) {
         val result =
           underTest.viewNewBatchChange()(
-            FakeRequest(GET, "/batchchanges/new").withSession("username" -> "frodo").withCSRFToken)
+            FakeRequest(GET, "/dnschanges/new").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
-        contentAsString(result) must contain("New Batch Change | VinylDNS")
+        contentAsString(result) must contain("New DNS Change | VinylDNS")
       }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.viewNewBatchChange()(
-            FakeRequest(GET, "/batchchanges/new")
+            FakeRequest(GET, "/dnschanges/new")
               .withSession("username" -> "lockedFbaggins")
               .withCSRFToken)
         headers(result) must contain("Location" -> "/noaccess")

@@ -20,9 +20,8 @@ import actions.FrontendAction
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
 import org.slf4j.LoggerFactory
-import play.api.Logger
-import play.api.mvc._
 import play.api.Configuration
+import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -59,7 +58,7 @@ class FrontendController @Inject()(
         case Some(_) => Redirect("/index")
         case None =>
           val flash = request.flash
-          Logger.error(s"$flash")
+          logger.error(s"$flash")
           VinylDNS.Alerts.fromFlash(flash) match {
             case Some(VinylDNS.Alert("danger", message)) =>
               Ok(views.html.login(Some(message)))
