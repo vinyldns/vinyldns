@@ -90,7 +90,8 @@ class MySqlBatchChangeRepository
          |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time,
          |              SUM( case when sc.status like 'Failed' or sc.status like 'Rejected' then 1 else 0 end ) AS fail_count,
          |              SUM( case when sc.status like 'Pending' or sc.status like 'NeedsReview' then 1 else 0 end ) AS pending_count,
-         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count
+         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count,
+         |              SUM( case sc.status when 'Cancelled' then 1 else 0 end ) AS cancelled_count
          |         FROM single_change sc
          |         JOIN batch_change bc
          |           ON sc.batch_change_id = bc.id
@@ -253,6 +254,7 @@ class MySqlBatchChangeRepository
                 val pending = res.int("pending_count")
                 val failed = res.int("fail_count")
                 val complete = res.int("complete_count")
+                val cancelled = res.int("cancelled_count")
                 val approvalStatus = toApprovalStatus(res.intOpt("approval_status"))
                 val schedTime =
                   res.timestampOpt("scheduled_time").map(st => new org.joda.time.DateTime(st))
@@ -261,7 +263,7 @@ class MySqlBatchChangeRepository
                   res.string("user_name"),
                   Option(res.string("comments")),
                   new org.joda.time.DateTime(res.timestamp("created_time")),
-                  pending + failed + complete,
+                  pending + failed + complete + cancelled,
                   BatchChangeStatus
                     .calculateBatchStatus(
                       approvalStatus,
@@ -401,6 +403,7 @@ class MySqlBatchChangeRepository
       case BatchChangeApprovalStatus.PendingReview => 2
       case BatchChangeApprovalStatus.ManuallyApproved => 3
       case BatchChangeApprovalStatus.ManuallyRejected => 4
+      case BatchChangeApprovalStatus.Cancelled => 5
     }
 
   def toApprovalStatus(key: Option[Int]): BatchChangeApprovalStatus =
@@ -409,6 +412,7 @@ class MySqlBatchChangeRepository
       case Some(2) => BatchChangeApprovalStatus.PendingReview
       case Some(3) => BatchChangeApprovalStatus.ManuallyApproved
       case Some(4) => BatchChangeApprovalStatus.ManuallyRejected
+      case Some(5) => BatchChangeApprovalStatus.Cancelled
       case _ => BatchChangeApprovalStatus.AutoApproved
     }
 

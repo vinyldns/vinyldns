@@ -78,6 +78,11 @@ sealed trait SingleChange {
     case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
     case sdc: SingleDeleteRRSetChange => sdc.copy(status = SingleChangeStatus.Rejected)
   }
+
+  def cancel: SingleChange = this match {
+    case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Cancelled)
+    case sdc: SingleDeleteChange => sdc.copy(status = SingleChangeStatus.Cancelled)
+  }
 }
 
 final case class SingleAddChange(
@@ -116,10 +121,11 @@ final case class SingleDeleteRRSetChange(
  - Failed had some error (see systemMessage) - may have recordChangeId, not required
  - NeedsReview means there was a validation error and it needs manual review
  - Rejected means the reviewer has rejected this batch change
+ - Cancelled means the batch change creator decided to stop the batch change before it's reviewed
  */
 object SingleChangeStatus extends Enumeration {
   type SingleChangeStatus = Value
-  val Pending, Complete, Failed, NeedsReview, Rejected = Value
+  val Pending, Complete, Failed, NeedsReview, Rejected, Cancelled = Value
 }
 
 case class RecordKey(zoneId: String, recordName: String, recordType: RecordType)

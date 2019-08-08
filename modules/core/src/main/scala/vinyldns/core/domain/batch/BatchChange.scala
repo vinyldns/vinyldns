@@ -63,7 +63,8 @@ case class BatchChange(
  */
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
-  val Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected, Scheduled =
+  val Cancelled, Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected,
+  Scheduled =
     Value
 
   def calculateBatchStatus(
@@ -76,6 +77,7 @@ object BatchChangeStatus extends Enumeration {
       case BatchChangeApprovalStatus.PendingReview if isScheduled => BatchChangeStatus.Scheduled
       case BatchChangeApprovalStatus.PendingReview => BatchChangeStatus.PendingReview
       case BatchChangeApprovalStatus.ManuallyRejected => BatchChangeStatus.Rejected
+      case BatchChangeApprovalStatus.Cancelled => BatchChangeStatus.Cancelled
       case _ =>
         (hasPending, hasFailed, hasComplete) match {
           case (true, _, _) => BatchChangeStatus.PendingProcessing
@@ -88,7 +90,7 @@ object BatchChangeStatus extends Enumeration {
 
 object BatchChangeApprovalStatus extends Enumeration {
   type BatchChangeApprovalStatus = Value
-  val AutoApproved, PendingReview, ManuallyApproved, ManuallyRejected = Value
+  val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, PendingReview = Value
 
   private val valueMap =
     BatchChangeApprovalStatus.values.map(v => v.toString.toLowerCase -> v).toMap

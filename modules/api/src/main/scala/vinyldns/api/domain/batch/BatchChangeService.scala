@@ -166,6 +166,16 @@ class BatchChangeService(
         batchChange.ownerGroupId)
     } yield serviceCompleteBatch
 
+  def cancelBatchChange(
+      batchChangeId: String,
+      authPrincipal: AuthPrincipal): BatchResult[BatchChange] =
+    for {
+      batchChange <- getExistingBatchChange(batchChangeId)
+      _ <- validateBatchChangeCancellation(batchChange, authPrincipal).toBatchResult
+      cancelledBatchChange <- cancelBatchChange(batchChange)
+      _ <- notifiers.notify(Notification(cancelledBatchChange)).toBatchResult
+    } yield cancelledBatchChange
+
   def getBatchChange(id: String, auth: AuthPrincipal): BatchResult[BatchChangeInfo] =
     for {
       batchChange <- getExistingBatchChange(id)
@@ -550,5 +560,17 @@ class BatchChangeService(
     )
 
     batchChangeRepo.save(rejectedBatch).toBatchResult
+  }
+
+  def cancelBatchChange(batchChange: BatchChange): BatchResult[BatchChange] = {
+    val cancelledSingleChanges = batchChange.changes.map(_.cancel)
+
+    // Update rejection attributes and single changes for batch change
+    val cancelledBatch = batchChange.copy(
+      approvalStatus = BatchChangeApprovalStatus.Cancelled,
+      changes = cancelledSingleChanges
+    )
+
+    batchChangeRepo.save(cancelledBatch).toBatchResult
   }
 }

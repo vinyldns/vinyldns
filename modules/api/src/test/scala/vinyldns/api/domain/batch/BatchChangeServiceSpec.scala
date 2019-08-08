@@ -605,6 +605,87 @@ class BatchChangeServiceSpec
     }
   }
 
+  "cancelBatchChange" should {
+    "succeed if the batchChange is PendingReview and user is the batch change creator" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(pendingChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        rightResultOf(
+          underTest
+            .cancelBatchChange(batchChange.id, auth)
+            .value)
+
+      result.status shouldBe BatchChangeStatus.Cancelled
+      result.approvalStatus shouldBe BatchChangeApprovalStatus.Cancelled
+      result.changes.foreach(_.status shouldBe SingleChangeStatus.Cancelled)
+    }
+
+    "fail if the batchChange is PendingReview but user is not the batch change creator" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(pendingChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(underTest.cancelBatchChange(batchChange.id, supportUserAuth).value)
+
+      result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
+
+    "fail if the batchChange was created by the user but is not PendingReview" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(
+          underTest
+            .cancelBatchChange(batchChange.id, auth)
+            .value)
+
+      result shouldBe BatchChangeNotPendingReview(batchChange.id)
+    }
+
+    "fail if the batchChange is not PendingReview and the user did not create it" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved)
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        leftResultOf(
+          underTest
+            .cancelBatchChange(batchChange.id, supportUserAuth)
+            .value)
+
+      result shouldBe BatchChangeNotPendingReview(batchChange.id)
+    }
+  }
+
   "getBatchChange" should {
     "Succeed if batchChange id exists" in {
       val batchChange =
