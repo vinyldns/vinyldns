@@ -110,6 +110,23 @@
                 $scope.refreshBatchChanges();
             }
 
+            $scope.cancelChange = function(changeId) {
+                batchChangePaging = pagingService.resetPaging(batchChangePaging);
+
+                function success(response) {
+                    var alert = utilityService.success('Successfully cancelled DNS Change', response, 'cancelBatchChange: cancelBatchChange successful');
+                    $scope.alerts.push(alert);
+                    $scope.refreshBatchChanges();
+                }
+
+                return batchChangeService
+                    .cancelBatchChange(changeId)
+                    .then(success)
+                    .catch(function (error){
+                        handleError(error, 'batchChangesService::cancelBatchChange-failure');
+                    });
+            };
+
             $timeout($scope.refreshBatchChanges, 0);
         });
 })();

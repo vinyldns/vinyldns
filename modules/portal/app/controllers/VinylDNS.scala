@@ -616,6 +616,21 @@ class VinylDNS @Inject()(
     // $COVERAGE-ON$
   }
 
+  def cancelBatchChange(batchChangeId: String): Action[AnyContent] = userAction.async {
+    implicit request =>
+      // $COVERAGE-OFF$
+      val vinyldnsRequest =
+        new VinylDNSRequest(
+          "POST",
+          s"$vinyldnsServiceBackend",
+          s"zones/batchrecordchanges/$batchChangeId/cancel")
+      executeRequest(vinyldnsRequest, request.user).map(response => {
+        Status(response.status)(response.body)
+          .withHeaders(cacheHeaders: _*)
+      })
+      // $COVERAGE-ON$
+  }
+
   def lockUser(userId: String): Action[AnyContent] = userAction.async { implicit request =>
     if (request.user.isSuper) {
       val vinyldnsRequest =
