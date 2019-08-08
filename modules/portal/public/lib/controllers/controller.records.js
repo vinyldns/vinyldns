@@ -71,6 +71,7 @@ angular.module('controller.records', [])
 
     $scope.isZoneAdmin = false;
     $scope.canReadZone = false;
+    $scope.canCreateRecords = false;
 
     // paging status for recordsets
     var recordsPaging = pagingService.getNewPagingParams(100);
@@ -362,8 +363,14 @@ angular.module('controller.records', [])
     }
 
     function determineAdmin(){
-        $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup()
-        $scope.canReadZone = canReadZone()
+        $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
+        $scope.canReadZone = canReadZone();
+        $scope.canCreateRecords = $scope.zoneInfo.accessLevel == 'Delete' || $scope.zoneInfo.shared ||
+            canCreateRecordsViaAcl();
+
+        function canCreateRecordsViaAcl() {
+            return $scope.zoneInfo.acl.rules.some(b => b.accessLevel == "Write" || b.accessLevel == "Delete")
+        };
     }
 
     function isInAdminGroup() {
