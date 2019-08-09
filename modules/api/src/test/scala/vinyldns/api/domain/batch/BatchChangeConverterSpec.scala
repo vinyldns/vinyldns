@@ -55,9 +55,9 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       None)
   }
 
-  private def makeSingleDeleteChange(name: String, typ: RecordType, zone: Zone = okZone) = {
+  private def makeSingleDeleteRRSetChange(name: String, typ: RecordType, zone: Zone = okZone) = {
     val fqdn = s"$name.${zone.name}"
-    SingleDeleteChange(
+    SingleDeleteRRSetChange(
       Some(zone.id),
       Some(zone.name),
       Some(name),
@@ -82,21 +82,21 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
   )
 
   private val deleteSingleChangesGood = List(
-    makeSingleDeleteChange("aToDelete", A),
-    makeSingleDeleteChange("cnameToDelete", CNAME),
-    makeSingleDeleteChange("cnameToDelete", CNAME), // duplicate should basically be ignored
-    makeSingleDeleteChange("txtToDelete", TXT),
-    makeSingleDeleteChange("mxToDelete", MX)
+    makeSingleDeleteRRSetChange("aToDelete", A),
+    makeSingleDeleteRRSetChange("cnameToDelete", CNAME),
+    makeSingleDeleteRRSetChange("cnameToDelete", CNAME), // duplicate should basically be ignored
+    makeSingleDeleteRRSetChange("txtToDelete", TXT),
+    makeSingleDeleteRRSetChange("mxToDelete", MX)
   )
 
   private val updateSingleChangesGood = List(
-    makeSingleDeleteChange("aToUpdate", A),
+    makeSingleDeleteRRSetChange("aToUpdate", A),
     makeSingleAddChange("aToUpdate", AData("1.1.1.1")),
-    makeSingleDeleteChange("cnameToUpdate", CNAME),
+    makeSingleDeleteRRSetChange("cnameToUpdate", CNAME),
     makeSingleAddChange("cnameToUpdate", CNAMEData("newcname.com."), CNAME),
-    makeSingleDeleteChange("txtToUpdate", TXT),
+    makeSingleDeleteRRSetChange("txtToUpdate", TXT),
     makeSingleAddChange("txtToUpdate", TXTData("update"), TXT),
-    makeSingleDeleteChange("mxToUpdate", MX),
+    makeSingleDeleteRRSetChange("mxToUpdate", MX),
     makeSingleAddChange("mxToUpdate", MXData(1, "update.com."), MX)
   )
 
@@ -461,7 +461,7 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
 
   "generateUpdateChange" should {
     val addChange = makeSingleAddChange("aaaa", AAAAData("2:3:4:5:6:7:8:9"), AAAA, sharedZone)
-    val deleteChange = makeSingleDeleteChange("aaaa", AAAA, sharedZone)
+    val deleteChange = makeSingleDeleteRRSetChange("aaaa", AAAA, sharedZone)
 
     "not overwrite existing owner group ID for existing record set in shared zone" in {
       val result =

@@ -29,7 +29,7 @@ import org.joda.time.DateTime
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch.SingleChange
 import vinyldns.core.domain.batch.SingleAddChange
-import vinyldns.core.domain.batch.SingleDeleteChange
+import vinyldns.core.domain.batch.SingleDeleteRRSetChange
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
 import _root_.vinyldns.core.domain.batch.SingleChangeStatus
@@ -112,7 +112,7 @@ class SnsNotifierSpec
           None,
           None,
           List.empty),
-        SingleDeleteChange(
+        SingleDeleteRRSetChange(
           Some(""),
           Some(""),
           Some(""),

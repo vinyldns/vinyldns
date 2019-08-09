@@ -157,7 +157,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     }
     val deletes = NonEmptyList.fromList {
       changes.collect {
-        case del: SingleDeleteChange if SupportedBatchChangeRecordTypes.get.contains(del.typ) => del
+        case del: SingleDeleteRRSetChange if SupportedBatchChangeRecordTypes.get.contains(del.typ) => del
       }
     }
 
@@ -172,12 +172,12 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   }
 
   def generateUpdateChange(
-      deleteChanges: NonEmptyList[SingleDeleteChange],
-      addChanges: NonEmptyList[SingleAddChange],
-      existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
-      userId: String,
-      ownerGroupId: Option[String]): Option[RecordSetChange] =
+                            deleteChanges: NonEmptyList[SingleDeleteRRSetChange],
+                            addChanges: NonEmptyList[SingleAddChange],
+                            existingZones: ExistingZones,
+                            existingRecordSets: ExistingRecordSets,
+                            userId: String,
+                            ownerGroupId: Option[String]): Option[RecordSetChange] =
     for {
       deleteChange <- Some(deleteChanges.head)
       zoneName <- deleteChange.zoneName
@@ -202,10 +202,10 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         changeIds.toList)
 
   def generateDeleteChange(
-      deleteChanges: NonEmptyList[SingleDeleteChange],
-      existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
-      userId: String): Option[RecordSetChange] =
+                            deleteChanges: NonEmptyList[SingleDeleteRRSetChange],
+                            existingZones: ExistingZones,
+                            existingRecordSets: ExistingRecordSets,
+                            userId: String): Option[RecordSetChange] =
     for {
       deleteChange <- Some(deleteChanges.head)
       zoneName <- deleteChange.zoneName

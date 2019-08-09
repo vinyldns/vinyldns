@@ -130,7 +130,7 @@ object BatchTransformations {
       inputChange: DeleteChangeInput)
       extends ChangeForValidation {
     def asStoredChange(changeId: Option[String] = None): SingleChange =
-      SingleDeleteChange(
+      SingleDeleteRRSetChange(
         Some(zone.id),
         Some(zone.name),
         Some(recordName),

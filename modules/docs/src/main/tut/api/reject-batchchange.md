@@ -51,7 +51,7 @@ userId        | string      | The unique identifier of the user that created the
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Conditional: comments about the batch change, if provided. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
-changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteChange](../api/batchchange-model/#singledeletechange-). |
+changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteRRSetChange](../api/batchchange-model/#singledeleterrsetchange-). |
 status        | BatchChangeStatus | [Status of the batch change](../api/batchchange-model#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Conditional: Record ownership assignment, if provided. |
