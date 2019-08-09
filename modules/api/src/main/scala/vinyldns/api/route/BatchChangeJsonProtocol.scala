@@ -162,7 +162,8 @@ trait BatchChangeJsonProtocol extends JsonValidation {
         ("reviewerId" -> bc.reviewerId) ~
         ("reviewComment" -> bc.reviewComment) ~
         ("reviewTimestamp" -> Extraction.decompose(bc.reviewTimestamp)) ~
-        ("scheduledTime" -> Extraction.decompose(bc.scheduledTime))
+        ("scheduledTime" -> Extraction.decompose(bc.scheduledTime)) ~
+        ("cancelledTimestamp" -> Extraction.decompose(bc.cancelledTimestamp))
   }
 
   case object BatchChangeErrorListSerializer

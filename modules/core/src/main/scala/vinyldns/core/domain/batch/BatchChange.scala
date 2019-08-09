@@ -34,7 +34,8 @@ case class BatchChange(
     reviewComment: Option[String] = None,
     reviewTimestamp: Option[DateTime] = None,
     id: String = UUID.randomUUID().toString,
-    scheduledTime: Option[DateTime] = None
+    scheduledTime: Option[DateTime] = None,
+    cancelledTimestamp: Option[DateTime] = None
 ) {
   val status: BatchChangeStatus = {
     val singleStatuses = changes.map(_.status)
@@ -114,7 +115,8 @@ case class BatchChangeInfo(
     reviewerUserName: Option[String],
     reviewComment: Option[String],
     reviewTimestamp: Option[DateTime],
-    scheduledTime: Option[DateTime]
+    scheduledTime: Option[DateTime],
+    cancelledTimestamp: Option[DateTime]
 )
 
 object BatchChangeInfo {
@@ -138,7 +140,8 @@ object BatchChangeInfo {
       reviewerUserName,
       reviewComment,
       reviewTimestamp,
-      scheduledTime
+      scheduledTime,
+      cancelledTimestamp
     )
   }
 }

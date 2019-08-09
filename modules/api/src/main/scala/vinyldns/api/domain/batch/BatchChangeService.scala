@@ -568,6 +568,7 @@ class BatchChangeService(
     // Update rejection attributes and single changes for batch change
     val cancelledBatch = batchChange.copy(
       approvalStatus = BatchChangeApprovalStatus.Cancelled,
+      cancelledTimestamp = Some(DateTime.now),
       changes = cancelledSingleChanges
     )
 

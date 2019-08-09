@@ -626,6 +626,7 @@ class BatchChangeServiceSpec
       result.status shouldBe BatchChangeStatus.Cancelled
       result.approvalStatus shouldBe BatchChangeApprovalStatus.Cancelled
       result.changes.foreach(_.status shouldBe SingleChangeStatus.Cancelled)
+      result.cancelledTimestamp shouldBe defined
     }
 
     "fail if the batchChange is PendingReview but user is not the batch change creator" in {

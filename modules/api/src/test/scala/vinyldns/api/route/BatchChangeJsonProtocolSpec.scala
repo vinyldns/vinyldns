@@ -400,7 +400,8 @@ class BatchChangeJsonProtocolSpec
         ("reviewerId" -> JNothing) ~
         ("reviewComment" -> JNothing) ~
         ("reviewTimestamp" -> JNothing) ~
-        ("scheduledTime" -> JNothing)
+        ("scheduledTime" -> JNothing) ~
+        ("cancelledTimestamp" -> JNothing)
     }
   }
 
