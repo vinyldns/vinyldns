@@ -30,7 +30,6 @@ import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
 
-
 object SingleChangeType extends Enumeration {
   type SingleChangeType = Value
   val SingleAddType, SingleDeleteType = Value

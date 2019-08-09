@@ -81,7 +81,7 @@ sealed trait SingleChange {
 
   def cancel: SingleChange = this match {
     case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Cancelled)
-    case sdc: SingleDeleteChange => sdc.copy(status = SingleChangeStatus.Cancelled)
+    case sdc: SingleDeleteRRSetChange => sdc.copy(status = SingleChangeStatus.Cancelled)
   }
 }
 
