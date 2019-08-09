@@ -1206,7 +1206,7 @@ class BatchChangeServiceSpec
         List(SingleChangeError(nonFatalError)),
         result.changes(1).id
       )
-      result.changes(2) shouldBe SingleDeleteSetChange(
+      result.changes(2) shouldBe SingleDeleteRRSetChange(
         None,
         None,
         None,

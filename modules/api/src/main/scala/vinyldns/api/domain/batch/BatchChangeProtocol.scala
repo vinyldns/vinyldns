@@ -35,7 +35,7 @@ object BatchChangeInput {
   def apply(batchChange: BatchChange): BatchChangeInput = {
     val changes = batchChange.changes.map {
       case add: SingleAddChange => AddChangeInput(add)
-      case del: SingleDeleteSetChange => DeleteChangeInput(del)
+      case del: SingleDeleteRRSetChange => DeleteChangeInput(del)
     }
     new BatchChangeInput(batchChange.comments, changes, batchChange.ownerGroupId)
   }
@@ -75,7 +75,7 @@ final case class AddChangeInput(
 
 final case class DeleteChangeInput(inputName: String, typ: RecordType) extends ChangeInput {
   def asNewStoredChange(errors: NonEmptyList[DomainValidationError]): SingleChange =
-    SingleDeleteSetChange(
+    SingleDeleteRRSetChange(
       None,
       None,
       None,
@@ -115,7 +115,7 @@ object DeleteChangeInput {
     new DeleteChangeInput(transformName, typ)
   }
 
-  def apply(sc: SingleDeleteSetChange): DeleteChangeInput =
+  def apply(sc: SingleDeleteRRSetChange): DeleteChangeInput =
     DeleteChangeInput(sc.inputName, sc.typ)
 }
 

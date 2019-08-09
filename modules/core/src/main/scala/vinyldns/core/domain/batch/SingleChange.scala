@@ -43,7 +43,7 @@ sealed trait SingleChange {
   def withFailureMessage(error: String): SingleChange = this match {
     case add: SingleAddChange =>
       add.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
-    case delete: SingleDeleteSetChange =>
+    case delete: SingleDeleteRRSetChange =>
       delete.copy(status = SingleChangeStatus.Failed, systemMessage = Some(error))
   }
 
@@ -54,7 +54,7 @@ sealed trait SingleChange {
           status = SingleChangeStatus.Failed,
           systemMessage = message,
           recordChangeId = Some(failedRecordChangeId))
-      case delete: SingleDeleteSetChange =>
+      case delete: SingleDeleteRRSetChange =>
         delete.copy(
           status = SingleChangeStatus.Failed,
           systemMessage = message,
@@ -67,7 +67,7 @@ sealed trait SingleChange {
         status = SingleChangeStatus.Complete,
         recordChangeId = Some(completeRecordChangeId),
         recordSetId = Some(recordSetId))
-    case delete: SingleDeleteSetChange =>
+    case delete: SingleDeleteRRSetChange =>
       delete.copy(
         status = SingleChangeStatus.Complete,
         recordChangeId = Some(completeRecordChangeId),
@@ -76,7 +76,7 @@ sealed trait SingleChange {
 
   def reject: SingleChange = this match {
     case sad: SingleAddChange => sad.copy(status = SingleChangeStatus.Rejected)
-    case sdc: SingleDeleteSetChange => sdc.copy(status = SingleChangeStatus.Rejected)
+    case sdc: SingleDeleteRRSetChange => sdc.copy(status = SingleChangeStatus.Rejected)
   }
 }
 
@@ -96,7 +96,7 @@ final case class SingleAddChange(
     id: String = UUID.randomUUID().toString)
     extends SingleChange
 
-final case class SingleDeleteSetChange(
+final case class SingleDeleteRRSetChange(
     zoneId: Option[String],
     zoneName: Option[String],
     recordName: Option[String],

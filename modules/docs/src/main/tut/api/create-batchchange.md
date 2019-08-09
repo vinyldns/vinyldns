@@ -6,7 +6,7 @@ section: "api"
 
 # Create Batch Change
 
-Creates a batch change with [SingleAddChanges](../api/batchchange-model/#singleaddchange-attributes) and/or [SingleDeleteChanges](../api/batchchange-model/#singledeletechange-attributes) across different zones.  A delete and add of the same record will be treated as an update on that record set. Regardless of the input order in the batch change, all deletes for the same recordset will be logically applied before the adds. 
+Creates a batch change with [SingleAddChanges](../api/batchchange-model/#singleaddchange-attributes) and/or [SingleDeleteRRSetChanges](../api/batchchange-model/#singledeleterrsetchange-attributes) across different zones.  A delete and add of the same record will be treated as an update on that record set. Regardless of the input order in the batch change, all deletes for the same recordset will be logically applied before the adds. 
                                                                                                 
 Current supported record types for creating a batch change are: **A**, **AAAA**, **CNAME**, **MX**, **PTR**, **TXT**. A batch must contain at least one change and no more than 20 changes.
 Supported record types for records in shared zones may vary. Contact your VinylDNS administrators to find the allowed record types.

@@ -90,7 +90,7 @@ class BatchChangeRoutingSpec()
             None,
             None,
             id = "singleAddChangeId"),
-          SingleDeleteSetChange(
+          SingleDeleteRRSetChange(
             Some("zoneId"),
             Some("zoneName"),
             Some("recordName"),
@@ -176,7 +176,7 @@ class BatchChangeRoutingSpec()
     val genericValidResponse: BatchChange = createBatchChangeResponse(
       Some("generic valid response"))
 
-    val backwardsCompatibleDel = SingleDeleteSetChange(
+    val backwardsCompatibleDel = SingleDeleteRRSetChange(
       None,
       None,
       None,
@@ -187,7 +187,7 @@ class BatchChangeRoutingSpec()
       None,
       None,
       id = "singleDeleteChangeId")
-    val backwardsCompatibleAdd = SingleDeleteSetChange(
+    val backwardsCompatibleAdd = SingleDeleteRRSetChange(
       None,
       None,
       None,

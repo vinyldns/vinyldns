@@ -19,7 +19,7 @@ package vinyldns.core.protobuf
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
 import vinyldns.core.domain.{HighValueDomainError, SingleChangeError, ZoneDiscoveryError}
-import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteSetChange}
+import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteRRSetChange}
 import vinyldns.core.domain.record.{AData, RecordType}
 
 class BatchChangeProtobufConversionsSpec
@@ -46,7 +46,7 @@ class BatchChangeProtobufConversionsSpec
     List(testDVError),
     "id"
   )
-  private val testDeleteChange = SingleDeleteSetChange(
+  private val testDeleteChange = SingleDeleteRRSetChange(
     Some("zoneId"),
     Some("zoneName"),
     Some("recordName"),
@@ -99,7 +99,7 @@ class BatchChangeProtobufConversionsSpec
     }
 
     "round trip single delete changes when optional values are not present" in {
-      val tst = SingleDeleteSetChange(
+      val tst = SingleDeleteRRSetChange(
         None,
         None,
         None,
@@ -120,7 +120,7 @@ class BatchChangeProtobufConversionsSpec
     }
 
     "round trip single changes in NeedsReview state" in {
-      val tst = SingleDeleteSetChange(
+      val tst = SingleDeleteRRSetChange(
         None,
         None,
         None,
@@ -141,7 +141,7 @@ class BatchChangeProtobufConversionsSpec
     }
 
     "round trip single changes in Rejected state" in {
-      val tst = SingleDeleteSetChange(
+      val tst = SingleDeleteRRSetChange(
         None,
         None,
         None,

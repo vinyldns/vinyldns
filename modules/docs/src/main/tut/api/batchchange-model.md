@@ -27,7 +27,7 @@ Batch change will remain in limbo until a system administrator (ie. support or s
 an immediate failure or approves it resulting in revalidation and submission for processing.
 -   Support for [notifications](../../operator/config-api#additional-configuration-settings) when a batch change is rejected or implemented.
 
-A batch change consists of multiple single changes which can be a combination of [SingleAddChanges](#singleaddchange-attributes) and [SingleDeleteChanges](#singledeletechange-attributes).
+A batch change consists of multiple single changes which can be a combination of [SingleAddChanges](#singleaddchange-attributes) and [SingleDeleteRRSetChanges](#singledeleterrsetchange-attributes).
 
 To update an existing record, you must delete the record first and add the record again with the updated changes.
 
@@ -46,7 +46,7 @@ userId        | string      | The unique identifier of the user that created the
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Optional comments about the batch change. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
-changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](#singleaddchange-attributes) or a [SingleDeleteChange](#singledeletechange-attributes). |
+changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](#singleaddchange-attributes) or a [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes). |
 status        | BatchChangeStatus | **PendingProcessing** - at least one change in batch has not finished processing; **Complete** - all changes have been processed successfully; **Failed** - all changes failed during processing; **PartialFailure** - some changes have failed and the rest were successful; **PendingReview** - one or more changes requires manual [approval](../api/approve-batchchange)/[rejection](../api/reject-batchchange) by a system administrator (ie. super or support user) to proceed ; **Rejected** - the batch change was rejected by a system administrator (ie. super or support user) and no changes were applied; **Scheduled** - the batch change is scheduled for a later date at which it needs to be approved to proceed. |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Record ownership assignment. Required if any records in the batch change are in shared zones and are new or unowned. |
@@ -58,7 +58,7 @@ reviewTimestamp | date-time  | Optional timestamp (UTC) of when the batch change
 
 #### SINGLE CHANGE ATTRIBUTES <a id="singlechange-attributes" />
 
-A successful batch change response consists of a corresponding [SingleAddChange](#singleaddchange-attributes) or [SingleDeleteChange](#singledeletechange-attributes) for each batch change input. See the [batch change create](../api/create-batchchange) page for details on constructing a batch change request.
+A successful batch change response consists of a corresponding [SingleAddChange](#singleaddchange-attributes) or [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes) for each batch change input. See the [batch change create](../api/create-batchchange) page for details on constructing a batch change request.
 
 #### SingleAddChange <a id="singleaddchange-attributes" />
 
@@ -79,7 +79,7 @@ recordSetId   | string        | Conditional: The unique identifier for the recor
 validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleAddChange. *Note: These will only exist on `NeedsReview` or `Rejected` `SingleChange`s* |
 id            | string        | The unique identifier for this change. |
 
-#### SingleDeleteChange <a id="singledeletechange-attributes" />
+#### SingleDeleteRRSetChange <a id="singledeleterrsetchange-attributes" />
 
 name          | type          | description |
  ------------ | :------------ | :---------- |
@@ -93,13 +93,13 @@ zoneId        | string        | The unique identifier for the zone. |
 systemMessage | string        | Conditional: Returns system message relevant to corresponding batch change input. |
 recordChangeId| string        | Conditional: The unique identifier for the record change; only returned on successful batch creation. |
 recordSetId   | string        | Conditional: The unique identifier for the record set; only returned on successful batch creation, |
-validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteChange. *Note: These will only exist on `NeedsReview` or `Rejected` `SingleChange`s* |
+validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteRRSetChange. *Note: These will only exist on `NeedsReview` or `Rejected` `SingleChange`s* |
 id            | string        | The unique identifier for this change. |
 
 
 #### BATCH CHANGE EXAMPLE <a id="batchchange-example" />
 
-Successful batch change response example with a [SingleAddChange](#singleaddchange-attributes) and a [SingleDeleteChange](#singledeletechange-attributes). 
+Successful batch change response example with a [SingleAddChange](#singleaddchange-attributes) and a [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes). 
 
 ```
 {
