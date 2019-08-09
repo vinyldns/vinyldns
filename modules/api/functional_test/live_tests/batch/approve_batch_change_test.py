@@ -53,6 +53,7 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         assert_that(completed_batch['reviewerId'], is_('support-user-id'))
         assert_that(completed_batch['reviewerUserName'], is_('support-user'))
         assert_that(completed_batch, has_key('reviewTimestamp'))
+        assert_that(get_batch, not(has_key('cancelledTimestamp')))
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
         if to_disconnect is not None:

@@ -28,6 +28,10 @@ def test_cancel_batch_change_success(shared_zone_test_context):
     assert_that(get_batch['approvalStatus'], is_('Cancelled'))
     assert_that(get_batch['changes'][0]['status'], is_('Cancelled'))
     assert_that(get_batch, has_key('cancelledTimestamp'))
+    assert_that(get_batch, not(has_key('reviewTimestamp')))
+    assert_that(get_batch, not(has_key('reviewerId')))
+    assert_that(get_batch, not(has_key('reviewerUserName')))
+    assert_that(get_batch, not(has_key('reviewComment')))
 
 @pytest.mark.manual_batch_review
 def test_cancel_batch_change_fails_for_non_creator(shared_zone_test_context):

@@ -31,6 +31,7 @@ def test_reject_pending_batch_change_success(shared_zone_test_context):
     assert_that(get_batch['reviewerUserName'], is_('support-user'))
     assert_that(get_batch, has_key('reviewTimestamp'))
     assert_that(get_batch['changes'][0]['status'], is_('Rejected'))
+    assert_that(get_batch, not(has_key('cancelledTimestamp')))
 
 @pytest.mark.manual_batch_review
 def test_reject_batch_change_with_invalid_batch_change_id_fails(shared_zone_test_context):
