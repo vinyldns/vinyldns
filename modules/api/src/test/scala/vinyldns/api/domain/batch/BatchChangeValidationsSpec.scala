@@ -361,6 +361,26 @@ class BatchChangeValidationsSpec
       Left(UserNotAuthorizedError(invalidPendingBatchChange.id))
   }
 
+  property(
+    "validateBatchChangeCancellation: should succeed if batch change is pending review" +
+      " and user was the creator") {
+    validateBatchChangeCancellation(validPendingBatchChange, okAuth).value should be(right)
+  }
+
+  property(
+    "validateBatchChangeCancellation: should fail if user was the creator" +
+      " but batch change is not pending review") {
+    validateBatchChangeCancellation(invalidPendingBatchChange, okAuth).value shouldBe
+      Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
+  }
+
+  property(
+    "validateBatchChangeCancellation: should fail if batch change is pending review" +
+      " but user was not the creator") {
+    validateBatchChangeCancellation(validPendingBatchChange, supportUserAuth).value shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
+  }
+
   property("validateInputChanges: should fail with mix of success and failure inputs") {
     val goodInput = AddChangeInput("test.example.com.", RecordType.A, ttl, AData("1.1.1.1"))
     val goodAAAAInput =

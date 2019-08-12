@@ -58,6 +58,10 @@ trait BatchChangeValidationsAlgebra {
   def validateBatchChangeApproval(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+
+  def validateBatchChangeCancellation(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 }
 
 class BatchChangeValidations(
@@ -121,6 +125,13 @@ class BatchChangeValidations(
     validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingReview(
       batchChange) |+| validateScheduledApproval(batchChange)
 
+  def validateBatchChangeCancellation(
+      batchChange: BatchChange,
+      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    validateBatchChangePendingReview(batchChange) |+| validateCreatorCancellation(
+      batchChange,
+      authPrincipal)
+
   def validateBatchChangePendingReview(
       batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
     batchChange.approvalStatus match {
@@ -143,6 +154,14 @@ class BatchChangeValidations(
       case _ => Right(())
     }
 
+  def validateCreatorCancellation(
+      batchChange: BatchChange,
+      auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
+    if (batchChange.userId == auth.userId) {
+      ().asRight
+    } else {
+      UserNotAuthorizedError(batchChange.id).asLeft
+    }
   /* input validations */
 
   def validateInputChanges(

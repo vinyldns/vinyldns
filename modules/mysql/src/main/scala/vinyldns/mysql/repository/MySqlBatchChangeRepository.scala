@@ -49,12 +49,12 @@ class MySqlBatchChangeRepository
     sql"""
        |            INSERT INTO batch_change(id, user_id, user_name, created_time, comments, owner_group_id,
        |                                     approval_status, reviewer_id, review_comment, review_timestamp,
-       |                                     scheduled_time)
-       |                 VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId},
-       |                        {approvalStatus}, {reviewerId}, {reviewComment}, {reviewTimestamp}, {scheduledTime})
+       |                                     scheduled_time, cancelled_timestamp)
+       |                 VALUES ({id}, {userId}, {userName}, {createdTime}, {comments}, {ownerGroupId}, {approvalStatus},
+       |                 {reviewerId}, {reviewComment}, {reviewTimestamp}, {scheduledTime}, {cancelledTimestamp})
        |ON DUPLICATE KEY UPDATE comments={comments}, owner_group_id={ownerGroupId}, approval_status={approvalStatus},
-       |                        reviewer_id={reviewerId}, review_comment={reviewComment},
-       |                        review_timestamp={reviewTimestamp}, scheduled_time={scheduledTime}
+       |                        reviewer_id={reviewerId}, review_comment={reviewComment}, review_timestamp={reviewTimestamp},
+       |                        scheduled_time={scheduledTime}, cancelled_timestamp={cancelledTimestamp}
        """.stripMargin
 
   private final val PUT_SINGLE_CHANGE =
@@ -70,15 +70,15 @@ class MySqlBatchChangeRepository
   private final val GET_BATCH_CHANGE_METADATA =
     sql"""
          |SELECT user_id, user_name, created_time, comments, owner_group_id,
-         |       approval_status, reviewer_id, review_comment, review_timestamp, scheduled_time
+         |       approval_status, reviewer_id, review_comment, review_timestamp, scheduled_time, cancelled_timestamp
          |  FROM batch_change bc
          | WHERE bc.id = ?
         """.stripMargin
 
   private final val GET_BATCH_CHANGE_METADATA_FROM_SINGLE_CHANGE =
     sql"""
-         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
-         |       bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time
+         |SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status,
+         |       bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time, bc.cancelled_timestamp
          |  FROM batch_change bc
          |  JOIN (SELECT id, batch_change_id from single_change where id = ?) sc
          |    ON sc.batch_change_id = bc.id
@@ -86,11 +86,12 @@ class MySqlBatchChangeRepository
 
   private final val GET_BATCH_CHANGE_SUMMARY_BASE =
     """
-         |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id,
-         |              bc.approval_status, bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time,
+         |       SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status,
+         |              bc.reviewer_id, bc.review_comment, bc.review_timestamp, bc.scheduled_time, bc.cancelled_timestamp,
          |              SUM( case when sc.status like 'Failed' or sc.status like 'Rejected' then 1 else 0 end ) AS fail_count,
          |              SUM( case when sc.status like 'Pending' or sc.status like 'NeedsReview' then 1 else 0 end ) AS pending_count,
-         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count
+         |              SUM( case sc.status when 'Complete' then 1 else 0 end ) AS complete_count,
+         |              SUM( case sc.status when 'Cancelled' then 1 else 0 end ) AS cancelled_count
          |         FROM single_change sc
          |         JOIN batch_change bc
          |           ON sc.batch_change_id = bc.id
@@ -253,15 +254,18 @@ class MySqlBatchChangeRepository
                 val pending = res.int("pending_count")
                 val failed = res.int("fail_count")
                 val complete = res.int("complete_count")
+                val cancelled = res.int("cancelled_count")
                 val approvalStatus = toApprovalStatus(res.intOpt("approval_status"))
                 val schedTime =
                   res.timestampOpt("scheduled_time").map(st => new org.joda.time.DateTime(st))
+                val cancelledTimestamp =
+                  res.timestampOpt("cancelled_timestamp").map(st => new org.joda.time.DateTime(st))
                 BatchChangeSummary(
                   res.string("user_id"),
                   res.string("user_name"),
                   Option(res.string("comments")),
                   new org.joda.time.DateTime(res.timestamp("created_time")),
-                  pending + failed + complete,
+                  pending + failed + complete + cancelled,
                   BatchChangeStatus
                     .calculateBatchStatus(
                       approvalStatus,
@@ -277,7 +281,8 @@ class MySqlBatchChangeRepository
                   None,
                   res.stringOpt("review_comment"),
                   res.timestampOpt("review_timestamp").map(st => new org.joda.time.DateTime(st)),
-                  schedTime
+                  schedTime,
+                  cancelledTimestamp
                 )
               }
               .list()
@@ -324,7 +329,8 @@ class MySqlBatchChangeRepository
         result.stringOpt("review_comment"),
         result.timestampOpt("review_timestamp").map(toDateTime),
         batchChangeId.getOrElse(result.string("id")),
-        result.timestampOpt("scheduled_time").map(toDateTime)
+        result.timestampOpt("scheduled_time").map(toDateTime),
+        result.timestampOpt("cancelled_timestamp").map(toDateTime)
       )
   }
 
@@ -343,7 +349,8 @@ class MySqlBatchChangeRepository
           'reviewerId -> batchChange.reviewerId,
           'reviewComment -> batchChange.reviewComment,
           'reviewTimestamp -> batchChange.reviewTimestamp,
-          'scheduledTime -> batchChange.scheduledTime
+          'scheduledTime -> batchChange.scheduledTime,
+          'cancelledTimestamp -> batchChange.cancelledTimestamp
         ): _*
       )
       .update()
@@ -401,6 +408,7 @@ class MySqlBatchChangeRepository
       case BatchChangeApprovalStatus.PendingReview => 2
       case BatchChangeApprovalStatus.ManuallyApproved => 3
       case BatchChangeApprovalStatus.ManuallyRejected => 4
+      case BatchChangeApprovalStatus.Cancelled => 5
     }
 
   def toApprovalStatus(key: Option[Int]): BatchChangeApprovalStatus =
@@ -409,6 +417,7 @@ class MySqlBatchChangeRepository
       case Some(2) => BatchChangeApprovalStatus.PendingReview
       case Some(3) => BatchChangeApprovalStatus.ManuallyApproved
       case Some(4) => BatchChangeApprovalStatus.ManuallyRejected
+      case Some(5) => BatchChangeApprovalStatus.Cancelled
       case _ => BatchChangeApprovalStatus.AutoApproved
     }
 
