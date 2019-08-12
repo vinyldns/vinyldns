@@ -139,18 +139,19 @@ object VinylDNSConfig {
   // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
   lazy val v6DiscoveryBoundries: IO[(Int, Int)] = IO {
     val v6zoneNibbleMin: Int =
-      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-min").getOrElse(20)
+      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-min").getOrElse(5)
     val v6zoneNibbleMax: Int =
-      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(64)
+      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(16)
     assert(v6zoneNibbleMin <= v6zoneNibbleMax)
     (v6zoneNibbleMin, v6zoneNibbleMax)
   }.flatMap {
-    case (min, max) =>
-      if (min <= max) IO.pure(min, max)
-      else
-        IO.raiseError(
-          VinylDNSConfigLoadError(
-            s"v6zoneNibbleMin ($min) cannot be less than v6zoneNibbleMax ($max)"))
+    case (min, _) if min < 1 => IO.raiseError(
+      VinylDNSConfigLoadError(s"v6zoneNibbleMin ($min) cannot be less than 1"))
+    case (_, max) if max > 32 => IO.raiseError(
+      VinylDNSConfigLoadError(s"v6zoneNibbleMax ($max) cannot be greater than 32"))
+    case (min, max) if min > max => IO.raiseError(
+      VinylDNSConfigLoadError(s"v6zoneNibbleMin ($min) cannot be greater than v6zoneNibbleMax ($max)"))
+    case (min, max) => IO.pure((min, max))
   }
 
   lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
