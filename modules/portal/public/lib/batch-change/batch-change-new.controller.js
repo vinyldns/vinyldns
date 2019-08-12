@@ -35,6 +35,7 @@
             $scope.alerts = [];
             $scope.batchChangeErrors = false;
             $scope.ownerGroupError = false;
+            $scope.softErrors = false;
             $scope.formStatus = "pendingSubmit";
             $scope.scheduledOption = false;
             $scope.allowManualReview = false;
@@ -49,6 +50,8 @@
 
             $scope.cancelSubmit = function() {
                 $scope.formStatus = "pendingSubmit";
+                $scope.allowManualReview = false;
+                $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
             };
 
             $scope.confirmSubmit = function(form) {
@@ -106,13 +109,15 @@
                             $scope.batchChangeErrors = true;
                             $scope.listOfErrors = error.data.flatMap(d => d.errors)
                             $scope.ownerGroupError = $scope.listOfErrors.some(e => e.includes('owner group ID must be specified for record'));
-                            var hardErrors = $scope.listOfErrors.every(e => ['Zone Discovery Failed'].includes(e));
+                            var hardErrors = $scope.listOfErrors.every(e => ['Zone Discovery Failed', 'Record set with name'].includes(e));
                             if ($scope.manualReviewEnabled && !hardErrors) {
                                 $scope.allowManualReview = true;
+                                $scope.softErrors = true;
                                 $scope.formStatus = "pendingConfirm";
-                                $scope.alerts.push({type: 'warning', content: 'Issues found. Please correct or submit for review.'});
+                                $scope.alerts.push({type: 'warning', content: 'Issues found that require manual review. Please correct or confirm submission for review.'});
                                 $scope.confirmationPrompt = "Would you like to submit this change for review?"
                             } else {
+                                $scope.softErrors = false;
                                 $scope.formStatus = "pendingSubmit";
                                 $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
                             }
