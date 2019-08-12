@@ -34,7 +34,8 @@ case class BatchChange(
     reviewComment: Option[String] = None,
     reviewTimestamp: Option[DateTime] = None,
     id: String = UUID.randomUUID().toString,
-    scheduledTime: Option[DateTime] = None
+    scheduledTime: Option[DateTime] = None,
+    cancelledTimestamp: Option[DateTime] = None
 ) {
   val status: BatchChangeStatus = {
     val singleStatuses = changes.map(_.status)
@@ -63,7 +64,8 @@ case class BatchChange(
  */
 object BatchChangeStatus extends Enumeration {
   type BatchChangeStatus = Value
-  val Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected, Scheduled =
+  val Cancelled, Complete, Failed, PartialFailure, PendingProcessing, PendingReview, Rejected,
+  Scheduled =
     Value
 
   def calculateBatchStatus(
@@ -76,6 +78,7 @@ object BatchChangeStatus extends Enumeration {
       case BatchChangeApprovalStatus.PendingReview if isScheduled => BatchChangeStatus.Scheduled
       case BatchChangeApprovalStatus.PendingReview => BatchChangeStatus.PendingReview
       case BatchChangeApprovalStatus.ManuallyRejected => BatchChangeStatus.Rejected
+      case BatchChangeApprovalStatus.Cancelled => BatchChangeStatus.Cancelled
       case _ =>
         (hasPending, hasFailed, hasComplete) match {
           case (true, _, _) => BatchChangeStatus.PendingProcessing
@@ -88,7 +91,7 @@ object BatchChangeStatus extends Enumeration {
 
 object BatchChangeApprovalStatus extends Enumeration {
   type BatchChangeApprovalStatus = Value
-  val AutoApproved, PendingReview, ManuallyApproved, ManuallyRejected = Value
+  val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, PendingReview = Value
 
   private val valueMap =
     BatchChangeApprovalStatus.values.map(v => v.toString.toLowerCase -> v).toMap
@@ -112,7 +115,8 @@ case class BatchChangeInfo(
     reviewerUserName: Option[String],
     reviewComment: Option[String],
     reviewTimestamp: Option[DateTime],
-    scheduledTime: Option[DateTime]
+    scheduledTime: Option[DateTime],
+    cancelledTimestamp: Option[DateTime]
 )
 
 object BatchChangeInfo {
@@ -136,7 +140,8 @@ object BatchChangeInfo {
       reviewerUserName,
       reviewComment,
       reviewTimestamp,
-      scheduledTime
+      scheduledTime,
+      cancelledTimestamp
     )
   }
 }

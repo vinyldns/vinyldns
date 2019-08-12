@@ -71,6 +71,11 @@ class BatchChangeSpec extends WordSpec with Matchers {
         .copy(approvalStatus = BatchChangeApprovalStatus.ManuallyRejected)
         .status shouldBe BatchChangeStatus.Rejected
     }
+    "calculate Cancelled status when approval status is Cancelled" in {
+      batchChangeBase
+        .copy(approvalStatus = BatchChangeApprovalStatus.Cancelled)
+        .status shouldBe BatchChangeStatus.Cancelled
+    }
     "calculate Scheduled status when approval status is PendingReview and scheduled time is set" in {
       batchChangeBase
         .copy(

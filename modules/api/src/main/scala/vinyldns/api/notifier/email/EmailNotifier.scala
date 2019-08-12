@@ -102,6 +102,10 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
           s"<b>Time reviewed:</b> ${reviewTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"))
     }
 
+    bc.cancelledTimestamp.foreach(cancelledTimestamp =>
+      sb.append(
+        s"<b>Time cancelled:</b> ${cancelledTimestamp.toString(DateTimeFormat.fullDateTime)} <br/>"))
+
     // Single change data table
     sb.append(s"""<br/><table border = "1">
       |   <tr><th>#</th><th>Change Type</th><th>Record Type</th><th>Input Name</th>

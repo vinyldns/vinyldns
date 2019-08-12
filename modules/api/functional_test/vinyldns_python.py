@@ -595,6 +595,16 @@ class VinylDNSClient(object):
         _, data = self.make_request(url, u'POST', self.headers, json.dumps(approve_batch_change_input), **kwargs)
         return data
 
+    def cancel_batch_change(self, batch_change_id, **kwargs):
+        """
+        Cancels an existing batch change pending manual review
+        :param batch_change_id: ID of the batch change to cancel
+        :return: the content of the response
+        """
+        url = urljoin(self.index_url, u'/zones/batchrecordchanges/{0}/cancel'.format(batch_change_id))
+        _, data = self.make_request(url, u'POST', self.headers, **kwargs)
+        return data
+
     def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None, **kwargs):
         """
         Gets list of user's batch change summaries

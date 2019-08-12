@@ -394,6 +394,16 @@ class BatchChangeRoutingSpec()
           EitherT(IO.pure(ScheduledChangeNotDue(DateTime.now).asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
       }
+
+    def cancelBatchChange(
+        batchChangeId: String,
+        authPrincipal: AuthPrincipal): EitherT[IO, BatchChangeErrorResponse, BatchChange] =
+      (batchChangeId, authPrincipal.userId.equals("ok")) match {
+        case ("pendingBatchId", true) => EitherT(IO.pure(genericValidResponse.asRight))
+        case ("pendingBatchId", false) => EitherT(IO.pure(UserNotAuthorizedError("support").asLeft))
+        case ("batchId", _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
+        case (_, _) => EitherT(IO.pure(BatchChangeNotFound("notFoundId").asLeft))
+      }
   }
 
   "POST batch change" should {
@@ -805,6 +815,32 @@ class BatchChangeRoutingSpec()
         ContentTypes.`application/json`,
         compact(render("comments" -> "some comments")))) ~>
         supportUserRoute ~> check {
+        status shouldBe NotFound
+      }
+    }
+  }
+
+  "POST cancel batch change" should {
+    "return OK if batch is pending and user created it" in {
+      Post("/zones/batchrecordchanges/pendingBatchId/cancel") ~> batchChangeRoute ~> check {
+        status shouldBe OK
+      }
+    }
+
+    "return Forbidden if user is not the creator of the batch change" in {
+      Post("/zones/batchrecordchanges/pendingBatchId/cancel") ~> supportUserRoute ~> check {
+        status shouldBe Forbidden
+      }
+    }
+
+    "return BadRequest if batch change is not pending review" in {
+      Post("/zones/batchrecordchanges/batchId/cancel") ~> batchChangeRoute ~> check {
+        status shouldBe BadRequest
+      }
+    }
+
+    "return NotFound if batch change does not exist" in {
+      Post("/zones/batchrecordchanges/notFoundId/cancel") ~> batchChangeRoute ~> check {
         status shouldBe NotFound
       }
     }

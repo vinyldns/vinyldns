@@ -130,6 +130,13 @@ class BatchChangeRoute(
             // TODO: Update response entity to return modified batch change
             }
           }
+        } ~
+        path("zones" / "batchrecordchanges" / Segment / "cancel") { id =>
+          (post & monitor("Endpoint.approveBatchChange")) {
+            authenticateAndExecute(batchChangeService.cancelBatchChange(id, _)) { chg =>
+              complete(StatusCodes.OK, chg)
+            }
+          }
         }
 
     if (VinylDNSConfig.manualBatchReviewEnabled) standardBatchChangeRoutes ~ manualBatchReviewRoutes
