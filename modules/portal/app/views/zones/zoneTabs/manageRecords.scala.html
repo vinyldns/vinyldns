@@ -2,7 +2,7 @@
 
     <!-- START ACCORDION -->
     <!-- START RECENT RECORDSET CHANGES TABLE PANEL -->
-<div class="panel panel-default x_panel" ng-init="sharedDisplayEnabled = @meta.sharedDisplayEnabled">
+<div class="panel panel-default x_panel" ng-init="sharedDisplayEnabled = @meta.sharedDisplayEnabled; defaultTtl = @meta.defaultTtl"">
     <div class="panel-heading">
         <h3 class="panel-title">
             <a class="collapse-link">
@@ -66,7 +66,7 @@
       <div class="vinyldns-panel-top">
         <div class="btn-group">
             <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
-            <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord()"><span class="fa fa-plus"></span> Create Record Set</button>
+            <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
             <button id="zone-sync-button" class="btn btn-default mb-control" ng-if="zoneInfo.accessLevel=='Delete'" data-toggle="modal" data-target="#mb-sync"><span class="fa fa-exchange"></span> Sync Zone</button>
         </div>
 
