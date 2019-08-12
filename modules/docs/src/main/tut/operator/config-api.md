@@ -530,6 +530,20 @@ manual review.
 manual-batch-review-enabled = true
 ```
 
+### IPv6 Zone Discovery Boundries
+Configuration setting that determines the range that will be searched for in reverse IPv6 Zone Discovery. This allows you
+to limit the search for what is appropriate for your organization. For example, min = 2, max = 3 will only search in
+zones in the form `X.X.ip6.arpa.` and `X.X.X.ip6.arpa.`. Note the following constraints: 0 < min <= max <= 32. If your
+organization only makes zone cuts at one point, you may set min == max.
+
+The default values if omitted are min = 5, max = 20.
+
+```yaml
+batch-v6-discovery-nibble-min = 5
+batch-v6-discovery-nibble-max = 16
+
+```
+
 ### Full Example Config
 ```yaml
 # The default application.conf is not intended to be used in production.  It assumes a docker-compose
@@ -720,6 +734,44 @@ vinyldns {
 
   # true if you want to enable manual review for non-fatal errors
   manual-batch-review-enabled = true
+  
+  
+  # types of unowned records that users can access in shared zones
+  shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
+      
+  # FQDNs / IPs that cannot be modified via VinylDNS
+  # regex-list: list of regular expressions matching any FQDN that are not allowed to be modified by this VinylDNS instance
+  # ip-list: list of IP addresses that cannot be modified by this VinylDNS instance
+  high-value-domains = {
+      regex-list = [
+        "high-value-domain.*"
+      ip-list = [
+        "192.0.2.252",
+        "192.0.2.253",
+        "fd69:27cc:fe91:0:0:0:0:ffff",
+        "fd69:27cc:fe91:0:0:0:ffff:0"
+      ]
+  }
+  
+  # Zone Connection Data
+  backends = [
+      {
+        id = "test-backend-id"
+        zone-connection {
+          name = "vinyldns."
+          key-name = "vinyldns."
+          key = "nzisn+4G2ldMn0q1CV3vsg=="
+          primary-server = "127.0.0.1:19001"
+        }
+        transfer-connection {
+          name = "vinyldns."
+          key-name = "vinyldns."
+          key = "nzisn+4G2ldMn0q1CV3vsg=="
+          primary-server = "127.0.0.1:19001"
+        }
+      }
+  ]
+
 }
 
 # Akka settings, these should not need to be modified unless you know akka http really well.
@@ -745,40 +797,4 @@ akka.http {
     illegal-header-warnings = on
   }
 }
-
-# types of unowned records that users can access in shared zones
-shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
-    
-# FQDNs / IPs that cannot be modified via VinylDNS
-# regex-list: list of regular expressions matching any FQDN that are not allowed to be modified by this VinylDNS instance
-# ip-list: list of IP addresses that cannot be modified by this VinylDNS instance
-high-value-domains = {
-    regex-list = [
-      "high-value-domain.*"
-    ip-list = [
-      "192.0.2.252",
-      "192.0.2.253",
-      "fd69:27cc:fe91:0:0:0:0:ffff",
-      "fd69:27cc:fe91:0:0:0:ffff:0"
-    ]
-}
-
-# Zone Connection Data
-backends = [
-    {
-      id = "test-backend-id"
-      zone-connection {
-        name = "vinyldns."
-        key-name = "vinyldns."
-        key = "nzisn+4G2ldMn0q1CV3vsg=="
-        primary-server = "127.0.0.1:19001"
-      }
-      transfer-connection {
-        name = "vinyldns."
-        key-name = "vinyldns."
-        key = "nzisn+4G2ldMn0q1CV3vsg=="
-        primary-server = "127.0.0.1:19001"
-      }
-    }
-]
 ```
