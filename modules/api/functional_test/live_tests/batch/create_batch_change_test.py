@@ -74,7 +74,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
     ok_zone = shared_zone_test_context.ok_zone
     classless_delegation_zone = shared_zone_test_context.classless_zone_delegation_zone
     classless_base_zone = shared_zone_test_context.classless_base_zone
-    ip6_reverse_zone = shared_zone_test_context.ip6_reverse_zone
+    ip6_reverse_zone = shared_zone_test_context.ip6_16_nibble_zone
 
     batch_change_input = {
         "comments": "this is optional",
@@ -87,7 +87,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
             get_change_CNAME_json("4.2.0.192.in-addr.arpa.", cname="4.4/30.2.0.192.in-addr.arpa."),
             get_change_PTR_json("192.0.2.193", ptrdname="www.vinyldns"),
             get_change_PTR_json("192.0.2.44"),
-            get_change_PTR_json("fd69:27cc:fe91::60", ptrdname="www.vinyldns"),
+            get_change_PTR_json("fd69:27cc:fe91:1000::60", ptrdname="www.vinyldns"),
             get_change_TXT_json("txt.ok."),
             get_change_TXT_json("ok."),
             get_change_TXT_json("txt-unique-characters.ok.", text='a\\\\`=` =\\"Cat\\"\nattr=val'),
@@ -127,8 +127,8 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
                                               input_name="192.0.2.193", record_data="www.vinyldns.", record_type="PTR")
         assert_change_success_response_values(result['changes'], zone=classless_base_zone, index=7, record_name="44",
                                               input_name="192.0.2.44", record_data="test.com.", record_type="PTR")
-        assert_change_success_response_values(result['changes'], zone=ip6_reverse_zone, index=8, record_name="0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
-                                              input_name="fd69:27cc:fe91::60", record_data="www.vinyldns.", record_type="PTR")
+        assert_change_success_response_values(result['changes'], zone=ip6_reverse_zone, index=8, record_name="0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
+                                              input_name="fd69:27cc:fe91:1000::60", record_data="www.vinyldns.", record_type="PTR")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=9, record_name="txt",
                                               input_name="txt.ok.", record_data="test", record_type="TXT")
         assert_change_success_response_values(result['changes'], zone=ok_zone, index=10, record_name="ok.",
@@ -211,7 +211,7 @@ def test_create_batch_change_with_adds_success(shared_zone_test_context):
         verify_recordset(rs9, expected9)
 
         rs10 = client.get_recordset(record_set_list[8][0], record_set_list[8][1])['recordSet']
-        expected10 = {'name': '0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
+        expected10 = {'name': '0.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0',
                      'zoneId': ip6_reverse_zone['id'],
                      'type': 'PTR',
                      'ttl': 200,
@@ -1833,15 +1833,15 @@ def test_ptr_recordtype_auth_checks(shared_zone_test_context):
     ok_client = shared_zone_test_context.ok_vinyldns_client
 
     no_auth_ipv4 = get_recordset_json(shared_zone_test_context.classless_base_zone, "25", "PTR", [{"ptrdname": "ptrdname.data."}], 200)
-    no_auth_ipv6 = get_recordset_json(shared_zone_test_context.ip6_reverse_zone, "4.3.2.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "ptrdname.data."}], 200)
+    no_auth_ipv6 = get_recordset_json(shared_zone_test_context.ip6_16_nibble_zone, "4.3.2.1.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "ptrdname.data."}], 200)
 
     batch_change_input = {
         "changes": [
             get_change_PTR_json("192.0.2.5", ptrdname="not.authorized.ipv4.ptr.base."),
             get_change_PTR_json("192.0.2.196", ptrdname="not.authorized.ipv4.ptr.classless.delegation."),
-            get_change_PTR_json("fd69:27cc:fe91::1234", ptrdname="not.authorized.ipv6.ptr."),
+            get_change_PTR_json("fd69:27cc:fe91:1000::1234", ptrdname="not.authorized.ipv6.ptr."),
             get_change_PTR_json("192.0.2.25", change_type="DeleteRecordSet"),
-            get_change_PTR_json("fd69:27cc:fe91::1234", change_type="DeleteRecordSet")
+            get_change_PTR_json("fd69:27cc:fe91:1000::1234", change_type="DeleteRecordSet")
         ]
     }
 
@@ -1859,11 +1859,11 @@ def test_ptr_recordtype_auth_checks(shared_zone_test_context):
                                                error_messages=["User \"dummy\" is not authorized."])
         assert_failed_change_in_error_response(errors[1], input_name="192.0.2.196", record_type="PTR", record_data="not.authorized.ipv4.ptr.classless.delegation.",
                                                error_messages=["User \"dummy\" is not authorized."])
-        assert_failed_change_in_error_response(errors[2], input_name="fd69:27cc:fe91::1234", record_type="PTR", record_data="not.authorized.ipv6.ptr.",
+        assert_failed_change_in_error_response(errors[2], input_name="fd69:27cc:fe91:1000::1234", record_type="PTR", record_data="not.authorized.ipv6.ptr.",
                                                error_messages=["User \"dummy\" is not authorized."])
         assert_failed_change_in_error_response(errors[3], input_name="192.0.2.25", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"dummy\" is not authorized."])
-        assert_failed_change_in_error_response(errors[4], input_name="fd69:27cc:fe91::1234", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
+        assert_failed_change_in_error_response(errors[4], input_name="fd69:27cc:fe91:1000::1234", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"dummy\" is not authorized."])
     finally:
         clear_recordset_list(to_delete, ok_client)
@@ -2076,23 +2076,23 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    existing_ptr = get_recordset_json(shared_zone_test_context.ip6_reverse_zone, "a.a.a.a.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "test.com."}], 100)
+    existing_ptr = get_recordset_json(shared_zone_test_context.ip6_16_nibble_zone, "a.a.a.a.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "test.com."}], 100)
 
     batch_change_input = {
         "changes": [
             # valid change
-            get_change_PTR_json("fd69:27cc:fe91::1234"),
+            get_change_PTR_json("fd69:27cc:fe91:1000::1234"),
 
             # input validation failures
-            get_change_PTR_json("fd69:27cc:fe91::abe", ttl=29),
-            get_change_PTR_json("fd69:27cc:fe91::bae", ptrdname="$malformed.hostname."),
+            get_change_PTR_json("fd69:27cc:fe91:1000::abe", ttl=29),
+            get_change_PTR_json("fd69:27cc:fe91:1000::bae", ptrdname="$malformed.hostname."),
             get_change_PTR_json("fd69:27cc:fe91de::ab", ptrdname="malformed.ip.address."),
 
             # zone discovery failure
             get_change_PTR_json("fedc:ba98:7654::abc", ptrdname="zone.discovery.error."),
 
             # context validation failures
-            get_change_PTR_json("fd69:27cc:fe91::aaaa", ptrdname="existing.ptr.")
+            get_change_PTR_json("fd69:27cc:fe91:1000::aaaa", ptrdname="existing.ptr.")
         ]
     }
 
@@ -2106,12 +2106,12 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         response = client.create_batch_change(batch_change_input, status=400)
 
         # successful changes
-        assert_successful_change_in_error_response(response[0], input_name="fd69:27cc:fe91::1234", record_type="PTR", record_data="test.com.")
+        assert_successful_change_in_error_response(response[0], input_name="fd69:27cc:fe91:1000::1234", record_type="PTR", record_data="test.com.")
 
         # independent validations: bad TTL, malformed host name/IP address, duplicate record
-        assert_failed_change_in_error_response(response[1], input_name="fd69:27cc:fe91::abe", ttl=29, record_type="PTR", record_data="test.com.",
+        assert_failed_change_in_error_response(response[1], input_name="fd69:27cc:fe91:1000::abe", ttl=29, record_type="PTR", record_data="test.com.",
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
-        assert_failed_change_in_error_response(response[2], input_name="fd69:27cc:fe91::bae", record_type="PTR", record_data="$malformed.hostname.",
+        assert_failed_change_in_error_response(response[2], input_name="fd69:27cc:fe91:1000::bae", record_type="PTR", record_data="$malformed.hostname.",
                                                error_messages=['Invalid domain name: "$malformed.hostname.", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data="malformed.ip.address.",
                                                error_messages=['Invalid IP address: "fd69:27cc:fe91de::ab".'])
@@ -2121,8 +2121,8 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
                                                error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validations: existing record sets pre-request
-        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91::aaaa", record_type="PTR", record_data="existing.ptr.",
-                                                   error_messages=["Record \"fd69:27cc:fe91::aaaa\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
+        assert_failed_change_in_error_response(response[5], input_name="fd69:27cc:fe91:1000::aaaa", record_type="PTR", record_data="existing.ptr.",
+                                                   error_messages=["Record \"fd69:27cc:fe91:1000::aaaa\" Already Exists: cannot add an existing record; to update it, issue a DeleteRecordSet then an Add."])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -2133,19 +2133,19 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
     Test all update and delete validations performed on ipv6 PTR records submitted in batch changes
     """
     ok_client = shared_zone_test_context.ok_vinyldns_client
-    ip6_reverse_zone = shared_zone_test_context.ip6_reverse_zone
+    ip6_reverse_zone = shared_zone_test_context.ip6_16_nibble_zone
 
-    rs_delete_ipv6 = get_recordset_json(ip6_reverse_zone, "a.a.a.a.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "delete.ptr."}], 200)
-    rs_update_ipv6 = get_recordset_json(ip6_reverse_zone, "2.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "update.ptr."}], 200)
-    rs_update_ipv6_fail = get_recordset_json(ip6_reverse_zone, "8.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "failed-update.ptr."}], 200)
+    rs_delete_ipv6 = get_recordset_json(ip6_reverse_zone, "a.a.a.a.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "delete.ptr."}], 200)
+    rs_update_ipv6 = get_recordset_json(ip6_reverse_zone, "2.6.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "update.ptr."}], 200)
+    rs_update_ipv6_fail = get_recordset_json(ip6_reverse_zone, "8.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0", "PTR", [{"ptrdname": "failed-update.ptr."}], 200)
 
     batch_change_input = {
         "comments": "this is optional",
         "changes": [
             # valid changes ipv6
-            get_change_PTR_json("fd69:27cc:fe91::aaaa", change_type="DeleteRecordSet"),
-            get_change_PTR_json("fd69:27cc:fe91::62", ttl=300, ptrdname="has-updated.ptr."),
-            get_change_PTR_json("fd69:27cc:fe91::62", change_type="DeleteRecordSet"),
+            get_change_PTR_json("fd69:27cc:fe91:1000::aaaa", change_type="DeleteRecordSet"),
+            get_change_PTR_json("fd69:27cc:fe91:1000::62", ttl=300, ptrdname="has-updated.ptr."),
+            get_change_PTR_json("fd69:27cc:fe91:1000::62", change_type="DeleteRecordSet"),
 
             # input validations failures
             get_change_PTR_json("fd69:27cc:fe91de::ab", change_type="DeleteRecordSet"),
@@ -2156,9 +2156,9 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_PTR_json("fedc:ba98:7654::abc", change_type="DeleteRecordSet"),
 
             # context validation failures
-            get_change_PTR_json("fd69:27cc:fe91::60", change_type="DeleteRecordSet"),
-            get_change_PTR_json("fd69:27cc:fe91::65", ttl=300, ptrdname="has-updated.ptr."),
-            get_change_PTR_json("fd69:27cc:fe91::65", change_type="DeleteRecordSet")
+            get_change_PTR_json("fd69:27cc:fe91:1000::60", change_type="DeleteRecordSet"),
+            get_change_PTR_json("fd69:27cc:fe91:1000::65", ttl=300, ptrdname="has-updated.ptr."),
+            get_change_PTR_json("fd69:27cc:fe91:1000::65", change_type="DeleteRecordSet")
         ]
     }
 
@@ -2173,9 +2173,9 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         response = ok_client.create_batch_change(batch_change_input, status=400)
 
         # successful changes
-        assert_successful_change_in_error_response(response[0], input_name="fd69:27cc:fe91::aaaa", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
-        assert_successful_change_in_error_response(response[1], ttl=300, input_name="fd69:27cc:fe91::62", record_type="PTR", record_data="has-updated.ptr.")
-        assert_successful_change_in_error_response(response[2], input_name="fd69:27cc:fe91::62", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[0], input_name="fd69:27cc:fe91:1000::aaaa", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
+        assert_successful_change_in_error_response(response[1], ttl=300, input_name="fd69:27cc:fe91:1000::62", record_type="PTR", record_data="has-updated.ptr.")
+        assert_successful_change_in_error_response(response[2], input_name="fd69:27cc:fe91:1000::62", record_type="PTR", record_data=None, change_type="DeleteRecordSet")
 
         # input validations failures: invalid IP, ttl, and record data
         assert_failed_change_in_error_response(response[3], input_name="fd69:27cc:fe91de::ab", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
@@ -2192,12 +2192,12 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, failure on update with double add
-        assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91::60", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Record \"fd69:27cc:fe91::60\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[8], ttl=300, input_name="fd69:27cc:fe91::65", record_type="PTR", record_data="has-updated.ptr.",
-                                                   error_messages=["Record \"fd69:27cc:fe91::65\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[9], input_name="fd69:27cc:fe91::65", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Record \"fd69:27cc:fe91::65\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91:1000::60", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
+                                               error_messages=["Record \"fd69:27cc:fe91:1000::60\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_failed_change_in_error_response(response[8], ttl=300, input_name="fd69:27cc:fe91:1000::65", record_type="PTR", record_data="has-updated.ptr.",
+                                                   error_messages=["Record \"fd69:27cc:fe91:1000::65\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_failed_change_in_error_response(response[9], input_name="fd69:27cc:fe91:1000::65", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
+                                               error_messages=["Record \"fd69:27cc:fe91:1000::65\" Does Not Exist: cannot delete a record that does not exist."])
 
 
     finally:

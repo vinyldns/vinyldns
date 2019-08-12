@@ -120,6 +120,18 @@ class SharedZoneTestContext(object):
             )
             self.ip6_reverse_zone = ip6_reverse_zone_change['zone']
 
+            ip6_16_nibble_zone_change = self.ok_vinyldns_client.create_zone(
+                {
+                    'name': '0.0.0.1.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.',
+                    'email': 'test@test.com',
+                    'shared': False,
+                    'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
+                    'backendId': 'func-test-backend'
+                }, status=202
+            )
+            self.ip6_16_nibble_zone = ip6_16_nibble_zone_change['zone']
+
             ip4_reverse_zone_change = self.ok_vinyldns_client.create_zone(
                 {
                     'name': '10.10.in-addr.arpa.',
@@ -284,6 +296,7 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_active(ok_zone_change[u'zone'][u'id'])
             self.dummy_vinyldns_client.wait_until_zone_active(dummy_zone_change[u'zone'][u'id'])
             self.ok_vinyldns_client.wait_until_zone_active(ip6_reverse_zone_change[u'zone'][u'id'])
+            self.ok_vinyldns_client.wait_until_zone_active(ip6_16_nibble_zone_change[u'zone'][u'id'])
             self.ok_vinyldns_client.wait_until_zone_active(ip4_reverse_zone_change[u'zone'][u'id'])
             self.ok_vinyldns_client.wait_until_zone_active(classless_base_zone_change[u'zone'][u'id'])
             self.ok_vinyldns_client.wait_until_zone_active(classless_zone_delegation_change[u'zone'][u'id'])
@@ -301,7 +314,7 @@ class SharedZoneTestContext(object):
             zones = self.dummy_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(2))
             zones = self.ok_vinyldns_client.list_zones()['zones']
-            assert_that(len(zones), is_(8))
+            assert_that(len(zones), is_(9))
             zones = self.shared_zone_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(2))
 

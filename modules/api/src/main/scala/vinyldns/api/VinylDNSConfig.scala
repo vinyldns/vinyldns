@@ -142,7 +142,7 @@ object VinylDNSConfig {
     val v6zoneNibbleMin: Int =
       vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-min").getOrElse(5)
     val v6zoneNibbleMax: Int =
-      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(1)
+      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(16)
 
     V6DiscoveryNibbleBoundries(v6zoneNibbleMin, v6zoneNibbleMax)
   }.flatMap {
