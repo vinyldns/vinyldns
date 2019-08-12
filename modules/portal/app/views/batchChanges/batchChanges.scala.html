@@ -103,10 +103,21 @@
                                             View
                                         </a>
                                         <a type="button" ng-if="batchChange.approvalStatus == 'PendingReview'" class="btn btn-warning btn-rounded"
-                                           ng-click="cancelChange(batchChange.id)">
+                                           ng-click="cancelChange(batchChange)">
                                             Cancel
                                         </a>
                                     </td>
+                                    <modal modal-id="cancel_batch_change" modal-title="Cancel DNS Change" modal-size="modal-md">
+                                        <modal-body>
+                                            <p>Are you sure you want to cancel DNS Change {{ currentBatchChange.id }}?</p>
+                                        </modal-body>
+                                        <modal-footer>
+                                            <span>
+                                                <button class="btn btn-default" ng-click="cancelCancel()">Decline</button>
+                                                <button class="btn btn-success" ng-click="confirmCancel()">Confirm</button>
+                                            </span>
+                                        </modal-footer>
+                                    </modal>
                                 </tr>
                             </tbody>
                         </table>
@@ -128,6 +139,7 @@
                 </div>
                 @if(rootAccountSuperAdmin || rootAccountSupportAdmin){
             </div>
+        </div>
         </div>
         }
                         </div>

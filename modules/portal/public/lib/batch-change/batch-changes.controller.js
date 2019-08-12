@@ -20,6 +20,7 @@
     angular.module('batch-change')
         .controller('BatchChangesController', function($scope, $timeout, batchChangeService, pagingService, utilityService){
             $scope.batchChanges = [];
+            $scope.currentBatchChange;
 
             // Set default params: empty start from and 100 max items
             var batchChangePaging = pagingService.getNewPagingParams(100);
@@ -110,8 +111,15 @@
                 $scope.refreshBatchChanges();
             }
 
-            $scope.cancelChange = function(changeId) {
+            $scope.cancelChange = function(batchChange) {
+                $scope.currentBatchChange = batchChange;
+                $("#cancel_batch_change").modal("show");
+
+            }
+
+            $scope.confirmCancel = function() {
                 batchChangePaging = pagingService.resetPaging(batchChangePaging);
+                $("#cancel_batch_change").modal("hide");
 
                 function success(response) {
                     var alert = utilityService.success('Successfully cancelled DNS Change', response, 'cancelBatchChange: cancelBatchChange successful');
@@ -120,12 +128,17 @@
                 }
 
                 return batchChangeService
-                    .cancelBatchChange(changeId)
+                    .cancelBatchChange($scope.currentBatchChange.id)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'batchChangesService::cancelBatchChange-failure');
                     });
             };
+
+            $scope.cancelCancel = function() {
+                $("#cancel_batch_change").modal("hide");
+                $scope.currentBatchChange = null;
+            }
 
             $timeout($scope.refreshBatchChanges, 0);
         });

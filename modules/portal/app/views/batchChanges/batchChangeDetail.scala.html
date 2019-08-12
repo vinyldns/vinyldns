@@ -59,13 +59,6 @@
                 <p ng-if="batch.approvalStatus == 'ManuallyRejected'"><strong>Review Status: </strong><span class="label label-danger">Rejected</span></p>
                 <p ng-if="batch.approvalStatus == 'Cancelled'"><strong>Review Status: </strong><span class="label label-default">Cancelled</span></p>
 
-                <p ng-if="batch.approvalStatus == 'PendingReview'">
-                    <a type="button" class="btn btn-warning btn-sm btn-rounded"
-                       ng-click="cancelChange()">
-                        Cancel DNS Change
-                    </a>
-                </p>
-
                 <div ng-if="batch.approvalStatus == 'ManuallyApproved' || batch.approvalStatus == 'ManuallyRejected'">
                     <p ng-if="batch.reviewerUserName"><strong>Reviewer:</strong> {{batch.reviewerUserName}}</p>
                     <p ng-if="batch.reviewerId && !batch.reviewerUserName">
@@ -92,7 +85,12 @@
                     <div class="panel-body">
                         <!-- SEARCH BOX -->
                         <div class="clearfix">
-                            <button class="btn btn-default" ng-click="refresh()"><span class="fa fa-refresh"></span> Refresh</button>
+                            <div class="btn-group">
+                                <button class="btn btn-default" ng-click="refresh()"><span class="fa fa-refresh"></span> Refresh</button>
+                                <button  ng-if="batch.approvalStatus == 'PendingReview'" class="btn btn-default" ng-click="cancelChange()">
+                                    Cancel DNS Change
+                                </button>
+                            </div>
                             <form class="input-group pull-right col-md-3">
                                 <div class="input-group">
                                     <span class="input-group-btn">
@@ -169,6 +167,17 @@
         </div>
     </div>
 </div>
+<modal modal-id="cancel_batch_change" modal-title="Cancel DNS Change" modal-size="modal-sm">
+    <modal-body>
+        <p>Are you sure you want to cancel this DNS Change?</p>
+    </modal-body>
+    <modal-footer>
+            <span>
+                <button class="btn btn-default" ng-click="cancelCancel()">Decline</button>
+                <button class="btn btn-success" ng-click="confirmCancel()">Confirm</button>
+            </span>
+    </modal-footer>
+</modal>
 }
 
 @plugins = {}
