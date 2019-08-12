@@ -121,6 +121,8 @@ class BatchChangeServiceSpec
     "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
     ptrV6Add)
 
+  private val defaultv6Discovery = new V6DiscoveryNibbleBoundries(5, 16)
+
   private val pendingChange = SingleAddChange(
     Some("zoneid"),
     Some("zonename"),
@@ -336,7 +338,9 @@ class BatchChangeServiceSpec
     false,
     TestAuth,
     mockNotifiers,
-    false)
+    false,
+    defaultv6Discovery
+  )
 
   private val underTestManualEnabled = new BatchChangeService(
     TestZoneRepo,
@@ -349,7 +353,9 @@ class BatchChangeServiceSpec
     true,
     TestAuth,
     mockNotifiers,
-    false)
+    false,
+    defaultv6Discovery
+  )
 
   private val underTestScheduledEnabled = new BatchChangeService(
     TestZoneRepo,
@@ -362,7 +368,9 @@ class BatchChangeServiceSpec
     true,
     TestAuth,
     mockNotifiers,
-    true)
+    true,
+    defaultv6Discovery
+  )
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -386,8 +394,7 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        16,
-        17
+        new V6DiscoveryNibbleBoundries(16, 17)
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -416,8 +423,7 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        16,
-        16
+        new V6DiscoveryNibbleBoundries(16, 16)
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -989,7 +995,9 @@ class BatchChangeServiceSpec
         false,
         TestAuth,
         mockNotifiers,
-        false)
+        false,
+        defaultv6Discovery
+      )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val possibleZones = List(
@@ -1028,8 +1036,7 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        16,
-        16
+        new V6DiscoveryNibbleBoundries(16, 16)
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
@@ -1053,7 +1060,9 @@ class BatchChangeServiceSpec
         false,
         TestAuth,
         mockNotifiers,
-        false)
+        false,
+        defaultv6Discovery
+      )
 
       val ip1 = "::1"
       val possibleZones1 = (5 to 16).map(num0s => ("0." * num0s) + "ip6.arpa.")

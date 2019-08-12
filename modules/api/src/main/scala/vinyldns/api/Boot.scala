@@ -144,8 +144,7 @@ object Boot extends App {
         authPrincipalProvider,
         notifiers,
         VinylDNSConfig.scheduledChangesEnabled,
-        v6DiscoveryBoundries._1,
-        v6DiscoveryBoundries._2
+        v6DiscoveryBoundries
       )
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
