@@ -38,6 +38,8 @@ describe('BatchChange', function(){
             deferred = $q.defer();
 
             spyOn(batchChangeService, 'getBatchChange').and.returnValue(deferred.promise);
+            spyOn(batchChangeService, 'approveBatchChange').and.returnValue(deferred.promise);
+            spyOn(batchChangeService, 'rejectBatchChange').and.returnValue(deferred.promise);
         }));
 
         describe('$scope.getBatchChange', function() {
@@ -75,6 +77,58 @@ describe('BatchChange', function(){
 
                 expect(this.scope.batch).toEqual({});
                 expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'HTTP 404 (undefined): Batch change with id wow cannot be found' }]);
+            }));
+        });
+
+        describe('$scope.confirmApprove', function() {
+            it('should resolve the promise', inject(function(batchChangeService) {
+
+                this.scope.confirmApprove("17350028-b2b8-428d-9f10-dbb518a0364d", "great");
+
+                expect(batchChangeService.approveBatchChange).toHaveBeenCalled();
+
+                deferred.resolve({data: {reviewComment: "great"}});
+                this.rootScope.$apply();
+
+                expect(this.scope.reviewConfirmationMsg).toEqual(null);
+                expect(this.scope.reviewType).toEqual(null);
+            }));
+
+            it('should reject the promise', inject(function(batchChangeService) {
+                this.scope.confirmApprove("notPendingBatchChange", "great");
+
+                expect(batchChangeService.approveBatchChange).toHaveBeenCalled();
+
+                deferred.reject({data: "Batch change with id notPendingBatchChange is not pending review.", status: 400});
+                this.rootScope.$apply();
+
+                expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'HTTP 400 (undefined): Batch change with id notPendingBatchChange is not pending review.' }]);
+            }));
+        });
+
+        describe('$scope.confirmReject', function() {
+            it('should resolve the promise', inject(function(batchChangeService) {
+
+                this.scope.confirmReject("17350028-b2b8-428d-9f10-dbb518a0364d", "great");
+
+                expect(batchChangeService.rejectBatchChange).toHaveBeenCalled();
+
+                deferred.resolve({data: {reviewComment: "no bueno"}});
+                this.rootScope.$apply();
+
+                expect(this.scope.reviewConfirmationMsg).toEqual(null);
+                expect(this.scope.reviewType).toEqual(null);
+            }));
+
+            it('should reject the promise', inject(function(batchChangeService) {
+                this.scope.confirmReject("notPendingBatchChange", "no bueno");
+
+                expect(batchChangeService.rejectBatchChange).toHaveBeenCalled();
+
+                deferred.reject({data: "Batch change with id notPendingBatchChange is not pending review.", status: 400});
+                this.rootScope.$apply();
+
+                expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'HTTP 400 (undefined): Batch change with id notPendingBatchChange is not pending review.' }]);
             }));
         });
     });
@@ -327,6 +381,24 @@ describe('BatchChange', function(){
         it('http backend gets called properly when creating a batch change', function () {
             this.$httpBackend.expectPOST('/api/dnschanges').respond('batch change created');
             this.batchChangeService.createBatchChange({comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]})
+                .then(function(response) {
+                    expect(response.data).toBe('batch change created');
+                });
+            this.$httpBackend.flush();
+        });
+
+        it('http backend gets called properly when approving a batch change', function () {
+            this.$httpBackend.expectPOST('/api/dnschanges/123/approve').respond('batch change created');
+            this.batchChangeService.approveBatchChange("123", "good")
+                .then(function(response) {
+                    expect(response.data).toBe('batch change created');
+                });
+            this.$httpBackend.flush();
+        });
+
+        it('http backend gets called properly when rejecting a batch change', function () {
+            this.$httpBackend.expectPOST('/api/dnschanges/123/reject').respond('batch change created');
+            this.batchChangeService.rejectBatchChange("123", "bad")
                 .then(function(response) {
                     expect(response.data).toBe('batch change created');
                 });

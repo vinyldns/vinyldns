@@ -129,7 +129,9 @@ class FrontendController @Inject()(
 
   def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View Batch Change for $batchId")
-    Future(Ok(views.html.batchChanges.batchChangeDetail(request.user.userName)))
+    Future(
+      Ok(views.html.batchChanges
+        .batchChangeDetail(request.user.userName, request.user.isSuper, request.user.isSupport)))
   }
 
   def viewNewBatchChange(): Action[AnyContent] = userAction.async { implicit request =>

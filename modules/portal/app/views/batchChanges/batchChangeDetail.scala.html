@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountSuperAdmin: Boolean, rootAccountSupportAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -163,6 +163,29 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+                @if(rootAccountSuperAdmin || rootAccountSupportAdmin) {
+                    <div ng-if="batch.approvalStatus == 'PendingReview'" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Review DNS Change</h3>
+                        </div>
+                        <div class="panel-body">
+                            <label>Review Comment (optional):</label> <input type="text" ng-model="reviewComment">
+                        </div>
+                        <div class="panel-footer clearfix">
+                            <div ng-if="!reviewType" class="pull-right">
+                                <button class="btn btn-success" ng-click="approve()">Approve</button>
+                                <button class="btn btn-danger" ng-click="reject()">Reject</button>
+                            </div>
+                            <div ng-if="reviewType" class="pull-right">
+                                <span>{{ reviewConfirmationMsg }}</span>
+                                <button class="btn btn-default" ng-click="cancelReview()">Cancel Review</button>
+                                <button ng-if="reviewType == 'approve'" class="btn btn-success" ng-click="confirmApprove()">Confirm Approval</button>
+                                <button ng-if="reviewType == 'reject'" class="btn btn-danger" ng-click="confirmReject()">Confirm Rejection</button>
+                            </div>
+                        </div>
+                    </div>
+                }
                 </div>
             </div>
         </div>
