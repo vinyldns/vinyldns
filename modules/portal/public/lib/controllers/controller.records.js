@@ -96,10 +96,10 @@ angular.module('controller.records', [])
         $("#record_modal").modal("show");
     };
 
-    $scope.createRecord = function() {
+    $scope.createRecord = function(defaultTtl) {
         record = {
             type: "A",
-            ttl: 300,
+            ttl: defaultTtl,
             dsItems: [{keytag:'', algorithm: '', digesttype: '', digest: ''}],
             mxItems: [{preference:'', exchange:''}],
             srvItems: [{priority:'', weight:'', port:'', target:''}],
