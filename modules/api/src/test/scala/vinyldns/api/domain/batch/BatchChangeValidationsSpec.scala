@@ -115,31 +115,31 @@ class BatchChangeValidationsSpec
     "private-update",
     AddChangeInput("private-update", RecordType.A, ttl, AAAAData("1.2.3.4")))
 
-  private val updatePrivateDeleteChange = DeleteChangeForValidation(
+  private val updatePrivateDeleteChange = DeleteRRSetChangeForValidation(
     okZone,
     "private-update",
-    DeleteChangeInput("private-update", RecordType.A))
+    DeleteRRSetChangeInput("private-update", RecordType.A))
 
   private val updateSharedAddChange = AddChangeForValidation(
     sharedZone,
     "shared-update",
     AddChangeInput("shared-update", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
 
-  private val updateSharedDeleteChange = DeleteChangeForValidation(
+  private val updateSharedDeleteChange = DeleteRRSetChangeForValidation(
     sharedZone,
     "shared-update",
-    DeleteChangeInput("shared-update", RecordType.AAAA))
+    DeleteRRSetChangeInput("shared-update", RecordType.AAAA))
 
-  private val deletePrivateChange = DeleteChangeForValidation(
+  private val deletePrivateChange = DeleteRRSetChangeForValidation(
     okZone,
     "private-delete",
-    DeleteChangeInput("private-delete", RecordType.A)
+    DeleteRRSetChangeInput("private-delete", RecordType.A)
   )
 
-  private val deleteSharedChange = DeleteChangeForValidation(
+  private val deleteSharedChange = DeleteRRSetChangeForValidation(
     sharedZone,
     "shared-delete",
-    DeleteChangeInput("shared-delete", RecordType.AAAA)
+    DeleteRRSetChangeInput("shared-delete", RecordType.AAAA)
   )
 
   private val validPendingBatchChange = BatchChange(
@@ -494,7 +494,7 @@ class BatchChangeValidationsSpec
 
   property("""validateInputName: should fail with a DomainValidationError for deletes
       |if validateHostName fails for an invalid domain name""".stripMargin) {
-    val change = DeleteChangeInput("invalidDomainName$", RecordType.A)
+    val change = DeleteRRSetChangeInput("invalidDomainName$", RecordType.A)
     val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName("invalidDomainName$."))
   }
@@ -502,7 +502,7 @@ class BatchChangeValidationsSpec
   property("""validateInputName: should fail with a DomainValidationError for deletes
       |if validateHostName fails for an invalid domain name length""".stripMargin) {
     val invalidDomainName = Random.alphanumeric.take(256).mkString
-    val change = DeleteChangeInput(invalidDomainName, RecordType.AAAA)
+    val change = DeleteRRSetChangeInput(invalidDomainName, RecordType.AAAA)
     val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidDomainName(s"$invalidDomainName."))
       .and(haveInvalid[DomainValidationError](InvalidLength(s"$invalidDomainName.", 2, 255)))
@@ -511,7 +511,7 @@ class BatchChangeValidationsSpec
   property("""validateInputName: PTR should fail with InvalidIPAddress for deletes
       |if inputName is not a valid ipv4 or ipv6 address""".stripMargin) {
     val invalidIp = "invalidIp.111"
-    val change = DeleteChangeInput(invalidIp, RecordType.PTR)
+    val change = DeleteRRSetChangeInput(invalidIp, RecordType.PTR)
     val result = validateInputName(change, false)
     result should haveInvalid[DomainValidationError](InvalidIPAddress(invalidIp))
   }
@@ -704,7 +704,10 @@ class BatchChangeValidationsSpec
       "update",
       AddChangeInput("update.ok.", RecordType.A, ttl, AData("1.2.3.4")))
     val deleteUpdateA =
-      DeleteChangeForValidation(okZone, "Update", DeleteChangeInput("update.ok.", RecordType.A))
+      DeleteRRSetChangeForValidation(
+        okZone,
+        "Update",
+        DeleteRRSetChangeInput("update.ok.", RecordType.A))
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
@@ -723,10 +726,10 @@ class BatchChangeValidationsSpec
       okZone.addACLRule(writeAcl),
       "update",
       AddChangeInput("update.ok.", RecordType.A, ttl, AData("1.2.3.4")))
-    val deleteUpdateA = DeleteChangeForValidation(
+    val deleteUpdateA = DeleteRRSetChangeForValidation(
       okZone.addACLRule(writeAcl),
       "update",
-      DeleteChangeInput("update.ok.", RecordType.A))
+      DeleteRRSetChangeInput("update.ok.", RecordType.A))
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
@@ -747,10 +750,10 @@ class BatchChangeValidationsSpec
       okZone.addACLRule(readAcl),
       "update",
       AddChangeInput("update.ok.", RecordType.A, ttl, AData("1.2.3.4")))
-    val deleteUpdateA = DeleteChangeForValidation(
+    val deleteUpdateA = DeleteRRSetChangeForValidation(
       okZone.addACLRule(readAcl),
       "update",
-      DeleteChangeInput("update.ok.", RecordType.A))
+      DeleteRRSetChangeInput("update.ok.", RecordType.A))
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
@@ -769,10 +772,10 @@ class BatchChangeValidationsSpec
       okZone,
       "does-not-exist",
       AddChangeInput("does-not-exist.ok.", RecordType.A, ttl, AData("1.2.3.4")))
-    val deleteUpdateA = DeleteChangeForValidation(
+    val deleteUpdateA = DeleteRRSetChangeForValidation(
       okZone,
       "does-not-exist",
-      DeleteChangeInput("does-not-exist.ok.", RecordType.A))
+      DeleteRRSetChangeInput("does-not-exist.ok.", RecordType.A))
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List()),
@@ -796,7 +799,10 @@ class BatchChangeValidationsSpec
       "mx",
       AddChangeInput("mx.shared.", RecordType.MX, ttl, MXData(200, "mx")))
     val deleteUpdateA =
-      DeleteChangeForValidation(sharedZone, "mx", DeleteChangeInput("mx.shared.", RecordType.MX))
+      DeleteRRSetChangeForValidation(
+        sharedZone,
+        "mx",
+        DeleteRRSetChangeInput("mx.shared.", RecordType.MX))
     val result = validateChangesWithContext(
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
@@ -815,10 +821,10 @@ class BatchChangeValidationsSpec
       okZone,
       "existing",
       AddChangeInput("existing.ok.", RecordType.A, ttl, AData("1.2.3.4")))
-    val deleteCname = DeleteChangeForValidation(
+    val deleteCname = DeleteRRSetChangeForValidation(
       okZone,
       "existing",
-      DeleteChangeInput("existing.ok.", RecordType.CNAME))
+      DeleteRRSetChangeInput("existing.ok.", RecordType.CNAME))
     val result = validateChangesWithContext(
       List(addA.validNel, deleteCname.validNel),
       ExistingRecordSets(List(existingCname)),
@@ -906,10 +912,10 @@ class BatchChangeValidationsSpec
       validZone,
       "existingCname",
       AddChangeInput("existingCname.ok.", RecordType.CNAME, ttl, CNAMEData("cname")))
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       validZone,
       "existingCname",
-      DeleteChangeInput("existingCname.ok.", RecordType.A))
+      DeleteRRSetChangeInput("existingCname.ok.", RecordType.A))
     val existingA = rsOk.copy(zoneId = addCname.zone.id, name = addCname.recordName)
     val newRecordSetList = existingA :: recordSetList
     val result = validateChangesWithContext(
@@ -949,10 +955,10 @@ class BatchChangeValidationsSpec
       "30",
       AddChangeInput("30.2.0.192.in-addr.arpa.", RecordType.CNAME, ttl, CNAMEData("cname"))
     )
-    val deletePtr = DeleteChangeForValidation(
+    val deletePtr = DeleteRRSetChangeForValidation(
       validIp4ReverseZone,
       "30",
-      DeleteChangeInput("192.0.2.30", RecordType.PTR))
+      DeleteRRSetChangeInput("192.0.2.30", RecordType.PTR))
     val ptr4 = ptrIp4.copy(zoneId = validIp4ReverseZone.id)
     val result = validateChangesWithContext(
       List(addCname.validNel, deletePtr.validNel),
@@ -1188,10 +1194,10 @@ class BatchChangeValidationsSpec
 
   property(
     "validateChangesWithContext: should succeed for DeleteChangeForValidation if record exists") {
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       validZone,
       "Record-exists",
-      DeleteChangeInput("record-exists.ok.", RecordType.A))
+      DeleteRRSetChangeInput("record-exists.ok.", RecordType.A))
     val existingDeleteRecord =
       rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName.toLowerCase)
     val result = validateChangesWithContext(
@@ -1207,10 +1213,10 @@ class BatchChangeValidationsSpec
   property(
     """validateChangesWithContext: should fail DeleteChangeForValidation with RecordDoesNotExist
       |if record does not exist""".stripMargin) {
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       validZone,
       "record-does-not-exist",
-      DeleteChangeInput("record-does-not-exist.ok.", RecordType.A))
+      DeleteRRSetChangeInput("record-does-not-exist.ok.", RecordType.A))
     val result =
       validateChangesWithContext(
         List(deleteA.validNel),
@@ -1225,10 +1231,10 @@ class BatchChangeValidationsSpec
 
   property("""validateChangesWithContext: should succeed for DeleteChangeForValidation
       |if record set status is Active""".stripMargin) {
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       validZone,
       "Active-record-status",
-      DeleteChangeInput("active-record-status", RecordType.A))
+      DeleteRRSetChangeInput("active-record-status", RecordType.A))
     val existingDeleteRecord = rsOk.copy(
       zoneId = deleteA.zone.id,
       name = deleteA.recordName.toLowerCase,
@@ -1246,7 +1252,10 @@ class BatchChangeValidationsSpec
   property("""validateChangesWithContext: should succeed for DeleteChangeForValidation
       |if user has group admin access"""".stripMargin) {
     val deleteA =
-      DeleteChangeForValidation(validZone, "valid", DeleteChangeInput("valid.ok.", RecordType.A))
+      DeleteRRSetChangeForValidation(
+        validZone,
+        "valid",
+        DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
       List(deleteA.validNel),
@@ -1261,7 +1270,10 @@ class BatchChangeValidationsSpec
   property(""" validateChangesWithContext: should fail for DeleteChangeForValidation
       | if user is superUser with no other access""".stripMargin) {
     val deleteA =
-      DeleteChangeForValidation(validZone, "valid", DeleteChangeInput("valid.ok.", RecordType.A))
+      DeleteRRSetChangeForValidation(
+        validZone,
+        "valid",
+        DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
       List(deleteA.validNel),
@@ -1275,11 +1287,11 @@ class BatchChangeValidationsSpec
 
   property(
     "validateChangesWithContext: should succeed for DeleteChangeForValidation if user has necessary ACL rule") {
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       validZone.addACLRule(
         ACLRule(accessLevel = AccessLevel.Delete, userId = Some(notAuth.userId))),
       "valid",
-      DeleteChangeInput("valid.ok.", RecordType.A))
+      DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
       List(deleteA.validNel),
@@ -1294,10 +1306,10 @@ class BatchChangeValidationsSpec
   property(
     """validateChangesWithContext: should fail DeleteChangeForValidation with UserIsNotAuthorized if user
       |is not a superuser, doesn't have group admin access, or doesn't have necessary ACL rule""".stripMargin) {
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       validZone.addACLRule(ACLRule(accessLevel = AccessLevel.Write, userId = Some(notAuth.userId))),
       "valid",
-      DeleteChangeInput("valid.ok.", RecordType.A))
+      DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
       List(deleteA.validNel),
@@ -1322,7 +1334,10 @@ class BatchChangeValidationsSpec
       AddChangeInput("test.com.", RecordType.CNAME, ttl, CNAMEData("thing.com.")))
 
     val deleteA =
-      DeleteChangeForValidation(okZone, "delete", DeleteChangeInput("delete.ok.", RecordType.A))
+      DeleteRRSetChangeForValidation(
+        okZone,
+        "delete",
+        DeleteRRSetChangeInput("delete.ok.", RecordType.A))
     val addCname = AddChangeForValidation(
       okZone,
       "delete",
@@ -1331,10 +1346,10 @@ class BatchChangeValidationsSpec
       okZone,
       "delete-this",
       AddChangeInput("delete-this.ok.", RecordType.A, ttl, AData("10.1.1.1")))
-    val deleteCname = DeleteChangeForValidation(
+    val deleteCname = DeleteRRSetChangeForValidation(
       okZone,
       "delete",
-      DeleteChangeInput("delete-this.ok.", RecordType.CNAME))
+      DeleteRRSetChangeInput("delete-this.ok.", RecordType.CNAME))
     val existingA = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val existingCname =
       rsOk.copy(zoneId = deleteCname.zone.id, name = deleteCname.recordName, typ = RecordType.CNAME)
@@ -1365,7 +1380,7 @@ class BatchChangeValidationsSpec
     val existingA = rsOk.copy(name = "new")
 
     val deleteA =
-      DeleteChangeForValidation(okZone, "new", DeleteChangeInput("new.ok.", RecordType.A))
+      DeleteRRSetChangeForValidation(okZone, "new", DeleteRRSetChangeInput("new.ok.", RecordType.A))
     val addA = AddChangeForValidation(
       okZone,
       "test",
@@ -1397,7 +1412,10 @@ class BatchChangeValidationsSpec
       rsOk.copy(name = "new", typ = RecordType.CNAME, records = List(CNAMEData("hey.ok.")))
 
     val deleteCname =
-      DeleteChangeForValidation(okZone, "new", DeleteChangeInput("new.ok.", RecordType.CNAME))
+      DeleteRRSetChangeForValidation(
+        okZone,
+        "new",
+        DeleteRRSetChangeInput("new.ok.", RecordType.CNAME))
     val addA = AddChangeForValidation(
       okZone,
       "test",
@@ -1426,7 +1444,10 @@ class BatchChangeValidationsSpec
       rsOk.copy(name = "new", typ = RecordType.CNAME, records = List(CNAMEData("hey.ok.")))
 
     val deleteCname =
-      DeleteChangeForValidation(okZone, "new", DeleteChangeInput("new.ok.", RecordType.CNAME))
+      DeleteRRSetChangeForValidation(
+        okZone,
+        "new",
+        DeleteRRSetChangeInput("new.ok.", RecordType.CNAME))
     val addCname = AddChangeForValidation(
       okZone,
       "new",
@@ -1447,10 +1468,10 @@ class BatchChangeValidationsSpec
       typ = RecordType.CNAME,
       records = List(CNAMEData("existing.cname.")))
 
-    val deleteUpdateCname = DeleteChangeForValidation(
+    val deleteUpdateCname = DeleteRRSetChangeForValidation(
       okZone,
       "name-conflict",
-      DeleteChangeInput("existing.ok.", RecordType.CNAME))
+      DeleteRRSetChangeInput("existing.ok.", RecordType.CNAME))
     val addUpdateCname = AddChangeForValidation(
       okZone,
       "name-conflict",
@@ -1481,10 +1502,10 @@ class BatchChangeValidationsSpec
       typ = RecordType.PTR,
       records = List(PTRData("hey.there.")))
 
-    val deletePtr = DeleteChangeForValidation(
+    val deletePtr = DeleteRRSetChangeForValidation(
       validIp4ReverseZone,
       "193",
-      DeleteChangeInput("192.0.2.193", RecordType.PTR))
+      DeleteRRSetChangeInput("192.0.2.193", RecordType.PTR))
     val addCname = AddChangeForValidation(
       validIp4ReverseZone,
       "193",
@@ -1507,10 +1528,10 @@ class BatchChangeValidationsSpec
       typ = RecordType.PTR,
       records = List(PTRData("hey.ok.")))
 
-    val deletePtr = DeleteChangeForValidation(
+    val deletePtr = DeleteRRSetChangeForValidation(
       validIp4ReverseZone,
       "193",
-      DeleteChangeInput("192.0.2.193", RecordType.PTR))
+      DeleteRRSetChangeInput("192.0.2.193", RecordType.PTR))
     val addPtr = AddChangeForValidation(
       validIp4ReverseZone,
       "193",
@@ -1531,10 +1552,10 @@ class BatchChangeValidationsSpec
       typ = RecordType.PTR,
       records = List(PTRData("existing.ptr.")))
 
-    val deleteUpdatePtr = DeleteChangeForValidation(
+    val deleteUpdatePtr = DeleteRRSetChangeForValidation(
       validIp4ReverseZone,
       "193",
-      DeleteChangeInput("192.0.2.193", RecordType.PTR))
+      DeleteRRSetChangeInput("192.0.2.193", RecordType.PTR))
     val addUpdatePtr = AddChangeForValidation(
       validIp4ReverseZone,
       "193",
@@ -1662,10 +1683,10 @@ class BatchChangeValidationsSpec
       name = "name-conflict",
       typ = RecordType.MX,
       records = List(MXData(1, "foo.bar.")))
-    val deleteMx = DeleteChangeForValidation(
+    val deleteMx = DeleteRRSetChangeForValidation(
       okZone,
       "name-conflict",
-      DeleteChangeInput("name-conflict", RecordType.MX))
+      DeleteRRSetChangeInput("name-conflict", RecordType.MX))
     val addMx = AddChangeForValidation(
       okZone,
       "name-conflict",
@@ -2000,26 +2021,26 @@ class BatchChangeValidationsSpec
     val existingCname = cname.copy(name = "existing.dotted.cname")
     val existingMX = mx.copy(name = "existing.dotted.mx")
     val existingTXT = txt.copy(name = "existing.dotted.txt")
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.a",
-      DeleteChangeInput("existing.dotted.a.ok.", RecordType.A))
-    val deleteAAAA = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.a.ok.", RecordType.A))
+    val deleteAAAA = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.aaaa",
-      DeleteChangeInput("existing.dotted.aaaa.ok.", RecordType.AAAA))
-    val deleteCname = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.aaaa.ok.", RecordType.AAAA))
+    val deleteCname = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.cname",
-      DeleteChangeInput("existing.dotted.cname.ok.", RecordType.CNAME))
-    val deleteMX = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.cname.ok.", RecordType.CNAME))
+    val deleteMX = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.mx",
-      DeleteChangeInput("existing.dotted.mx.ok.", RecordType.MX))
-    val deleteTXT = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.mx.ok.", RecordType.MX))
+    val deleteTXT = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.txt",
-      DeleteChangeInput("existing.dotted.txt.ok.", RecordType.TXT))
+      DeleteRRSetChangeInput("existing.dotted.txt.ok.", RecordType.TXT))
     val result = validateChangesWithContext(
       List(
         deleteA.validNel,
@@ -2048,26 +2069,26 @@ class BatchChangeValidationsSpec
     val existingMX = mx.copy(name = "existing.dotted.mx")
     val existingTXT = txt.copy(name = "existing.dotted.txt")
 
-    val deleteA = DeleteChangeForValidation(
+    val deleteA = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.a",
-      DeleteChangeInput("existing.dotted.a.ok.", RecordType.A))
-    val deleteAAAA = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.a.ok.", RecordType.A))
+    val deleteAAAA = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.aaaa",
-      DeleteChangeInput("existing.dotted.aaaa.ok.", RecordType.AAAA))
-    val deleteCname = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.aaaa.ok.", RecordType.AAAA))
+    val deleteCname = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.cname",
-      DeleteChangeInput("existing.dotted.cname.ok.", RecordType.CNAME))
-    val deleteMX = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.cname.ok.", RecordType.CNAME))
+    val deleteMX = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.mx",
-      DeleteChangeInput("existing.dotted.mx.ok.", RecordType.MX))
-    val deleteTXT = DeleteChangeForValidation(
+      DeleteRRSetChangeInput("existing.dotted.mx.ok.", RecordType.MX))
+    val deleteTXT = DeleteRRSetChangeForValidation(
       okZone,
       "existing.dotted.txt",
-      DeleteChangeInput("existing.dotted.txt.ok.", RecordType.TXT))
+      DeleteRRSetChangeInput("existing.dotted.txt.ok.", RecordType.TXT))
 
     val addUpdateA = AddChangeForValidation(
       okZone,

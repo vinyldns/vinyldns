@@ -180,6 +180,10 @@ message SingleAddChange {
   required RecordData recordData = 2;
 }
 
+message SingleDeleteRecordChange {
+  required RecordData recordData = 1;
+}
+
 message SingleChangeData {
   required bytes data = 1;
 }

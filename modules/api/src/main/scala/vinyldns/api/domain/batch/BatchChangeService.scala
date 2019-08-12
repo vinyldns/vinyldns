@@ -267,7 +267,7 @@ class BatchChangeService(
           }
           .getOrElse(add)
           .validNel
-      case del: DeleteChangeForValidation => del.validNel
+      case del: DeleteRRSetChangeForValidation => del.validNel
     }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {

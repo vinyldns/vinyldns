@@ -42,7 +42,8 @@ class BatchChangeJsonProtocolSpec
     with ValidatedValues
     with ValidatedMatchers {
 
-  val serializers: Seq[Serializer[_]] = batchChangeSerializers
+  // TODO: Remove DeleteRecordChangeInputSerializer
+  val serializers: Seq[Serializer[_]] = batchChangeSerializers :+ DeleteRecordChangeInputSerializer
 
   def buildAddChangeInputJson(
       inputName: Option[String] = None,
@@ -58,7 +59,7 @@ class BatchChangeJsonProtocolSpec
         record.map("record" -> decompose(_))
       ).flatten)
 
-  def buildDeleteChangeInputJson(
+  def buildDeleteRRSetInputJson(
       inputName: Option[String] = None,
       typ: Option[RecordType] = None): JObject =
     JObject(
@@ -66,6 +67,18 @@ class BatchChangeJsonProtocolSpec
         Some("changeType" -> decompose(DeleteRecordSet)),
         inputName.map("inputName" -> JString(_)),
         typ.map("type" -> decompose(_))).flatten)
+
+  def buildDeleteRecordInputJson(
+      inputName: Option[String] = None,
+      typ: Option[RecordType] = None,
+      record: Option[RecordData] = None): JObject =
+    JObject(
+      List(
+        Some("changeType" -> decompose(DeleteRecord)),
+        inputName.map("inputName" -> JString(_)),
+        typ.map("type" -> decompose(_)),
+        record.map("record" -> decompose(_))
+      ).flatten)
 
   val addAChangeInputJson: JObject =
     buildAddChangeInputJson(Some("foo."), Some(A), Some(3600), Some(AData("1.1.1.1")))
@@ -79,7 +92,10 @@ class BatchChangeJsonProtocolSpec
   val addPTRChangeInputJson: JObject =
     buildAddChangeInputJson(Some("4.5.6.7"), Some(PTR), Some(200), Some(PTRData("test.com.")))
 
-  val deleteAChangeInputJson: JObject = buildDeleteChangeInputJson(Some("foo."), Some(A))
+  val deleteAChangeInputJson: JObject = buildDeleteRRSetInputJson(Some("foo."), Some(A))
+
+  val deleteRecordChangeInputJson: JObject =
+    buildDeleteRecordInputJson(Some("foo."), Some(A), Some(AData("1.2.3.4")))
 
   val addChangeList: JObject = "changes" -> List(
     addAChangeInputJson,
@@ -98,14 +114,14 @@ class BatchChangeJsonProtocolSpec
   val addBatchChangeInputWithOwnerGroupId: JObject = ("ownerGroupId" -> Some("owner-group-id")) ~~
     addBatchChangeInputWithComment
 
-  val changeInputWithManualReviewDisabled: JObject = ("changes" -> List(
+  val changeInputWithManualReviewDisabled: JObject = "changes" -> List(
     deleteAChangeInputJson,
     addAAAAChangeInputJson,
-    addCNAMEChangeInputJson))
+    addCNAMEChangeInputJson)
 
   val addAChangeInput = AddChangeInput("foo.", A, Some(3600), AData("1.1.1.1"))
 
-  val deleteAChangeInput = DeleteChangeInput("foo.", A)
+  val deleteAChangeInput = DeleteRRSetChangeInput("foo.", A)
 
   val addAAAAChangeInput = AddChangeInput("bar.", AAAA, Some(1200), AAAAData("1:2:3:4:5:6:7:8"))
 
@@ -118,6 +134,8 @@ class BatchChangeJsonProtocolSpec
   val barDiscoveryError = ZoneDiscoveryError("bar.")
 
   val validChangeString = "Valid change."
+
+  val deleteARecordChangeInput = DeleteRecordChangeInput("foo.", A, AData("1.2.3.4"))
 
   "De-serializing ChangeInputSerializer from JSON" should {
     "successfully serialize valid add change data" in {
@@ -143,6 +161,12 @@ class BatchChangeJsonProtocolSpec
       val result = ChangeInputSerializer.fromJson(json).value
 
       result shouldBe deleteAChangeInput
+    }
+
+    "successfully serialize valid data for DeleteRecord" in {
+      ChangeInputSerializer
+        .fromJson(deleteRecordChangeInputJson)
+        .value shouldBe deleteARecordChangeInput
     }
 
     "return an error if changeType is not specified" in {
@@ -336,6 +360,40 @@ class BatchChangeJsonProtocolSpec
         ("recordName" -> "recordName") ~
         ("inputName" -> "fqdn") ~
         ("type" -> decompose(A)) ~
+        ("status" -> decompose(Pending)) ~
+        ("systemMessage" -> "systemMessage") ~
+        ("recordChangeId" -> decompose(None)) ~
+        ("recordSetId" -> decompose(None)) ~
+        ("validationErrors" -> decompose(List(SingleChangeError(barDiscoveryError)))) ~
+        ("id" -> "id") ~
+        ("changeType" -> "DeleteRecordSet")
+    }
+  }
+
+  "Serializing SingleDeleteRecordChange to JSON" should {
+    "successfully serialize" in {
+      val toJson = SingleDeleteRecordChange(
+        Some("zoneId"),
+        Some("zoneName"),
+        Some("recordName"),
+        "fqdn",
+        A,
+        AData("1.2.3.4"),
+        Pending,
+        Some("systemMessage"),
+        None,
+        None,
+        List(SingleChangeError(barDiscoveryError)),
+        id = "id"
+      )
+      val result = SingleDeleteRecordChangeSerializer.toJson(toJson)
+
+      result shouldBe ("zoneId" -> "zoneId") ~
+        ("zoneName" -> "zoneName") ~
+        ("recordName" -> "recordName") ~
+        ("inputName" -> "fqdn") ~
+        ("type" -> decompose(A)) ~
+        ("record" -> decompose(AData("1.2.3.4"))) ~
         ("status" -> decompose(Pending)) ~
         ("systemMessage" -> "systemMessage") ~
         ("recordChangeId" -> decompose(None)) ~

@@ -490,7 +490,7 @@ class BatchChangeServiceSpec
       val noTtl = AddChangeInput("no-ttl-add.test.com", RecordType.A, None, AData("1.1.1.1"))
       val withTtl =
         AddChangeInput("with-ttl-add-2.test.com", RecordType.A, Some(900), AData("1.1.1.1"))
-      val noTtlDel = DeleteChangeInput("non-apex.test.com.", RecordType.TXT)
+      val noTtlDel = DeleteRRSetChangeInput("non-apex.test.com.", RecordType.TXT)
       val noTtlUpdate =
         AddChangeInput("non-apex.test.com.", RecordType.TXT, None, TXTData("hello"))
 
@@ -1544,7 +1544,7 @@ class BatchChangeServiceSpec
 
     "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled and owner group ID " +
       "is provided" in {
-      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTestManualEnabled
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete), Some("owner-group-ID")),
@@ -1666,7 +1666,7 @@ class BatchChangeServiceSpec
     }
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
-      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTest
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
@@ -1731,7 +1731,7 @@ class BatchChangeServiceSpec
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures, manual review is enabled, " +
       "but batch change allowManualReview attribute is false" in {
-      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTestManualEnabled
         .buildResponse(
           BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),

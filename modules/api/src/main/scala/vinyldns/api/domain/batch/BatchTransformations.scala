@@ -88,7 +88,12 @@ object BatchTransformations {
     def apply(zone: Zone, recordName: String, changeInput: ChangeInput): ChangeForValidation =
       changeInput match {
         case a: AddChangeInput => AddChangeForValidation(zone, recordName, a)
-        case d: DeleteChangeInput => DeleteChangeForValidation(zone, recordName, d)
+        case d: DeleteRRSetChangeInput =>
+          DeleteRRSetChangeForValidation(zone, recordName, d)
+        // TODO: Support DeleteRecordChangeInput in ChangeForValidation
+        case _: DeleteRecordChangeInput =>
+          throw new UnsupportedOperationException(
+            "DeleteRecordChangeInput is not yet implemented/supported in VinylDNS.")
       }
   }
 
@@ -124,10 +129,10 @@ object BatchTransformations {
     def isDeleteChangeForValidation: Boolean = false
   }
 
-  final case class DeleteChangeForValidation(
+  final case class DeleteRRSetChangeForValidation(
       zone: Zone,
       recordName: String,
-      inputChange: DeleteChangeInput)
+      inputChange: DeleteRRSetChangeInput)
       extends ChangeForValidation {
     def asStoredChange(changeId: Option[String] = None): SingleChange =
       SingleDeleteRRSetChange(

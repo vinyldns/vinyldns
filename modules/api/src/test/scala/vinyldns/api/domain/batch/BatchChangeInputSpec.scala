@@ -73,7 +73,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       asAdd.recordSetId shouldBe None
     }
     "Convert a DeleteChangeInput into SingleDeleteRRSetChange" in {
-      val changeA = DeleteChangeInput("some.test.com", A)
+      val changeA = DeleteRRSetChangeInput("some.test.com", A)
       val converted = changeA.asNewStoredChange(NonEmptyList.of(ZoneDiscoveryError("test")))
 
       converted shouldBe a[SingleDeleteRRSetChange]
@@ -124,7 +124,7 @@ class BatchChangeInputSpec extends WordSpec with Matchers {
       )
 
       val expectedDelChange =
-        DeleteChangeInput("testRname.testZoneName.", A)
+        DeleteRRSetChangeInput("testRname.testZoneName.", A)
 
       val change = BatchChange(
         "userId",

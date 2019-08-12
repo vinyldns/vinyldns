@@ -215,6 +215,8 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           sad.copy(recordName = sad.recordName.map(name => s"updated-$name"))
         case sdc: SingleDeleteRRSetChange =>
           sdc.copy(recordName = sdc.recordName.map(name => s"updated-$name"))
+        case sdc: SingleDeleteRecordChange =>
+          sdc.copy(recordName = sdc.recordName.map(name => s"updated-$name"))
       }
       val updatedBatch = batchChange.copy(
         comments = Some("updated comments"),

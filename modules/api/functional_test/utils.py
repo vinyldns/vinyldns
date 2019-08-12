@@ -418,11 +418,21 @@ def get_change_A_AAAA_json(input_name, record_type="A", ttl=200, address="1.1.1.
             }
         }
     else:
-        json = {
-            "changeType": "DeleteRecordSet",
-            "inputName": input_name,
-            "type": record_type
-        }
+        if change_type == "DeleteRecord":
+            json = {
+                "changeType": "DeleteRecord",
+                "inputName": input_name,
+                "type": record_type,
+                "record": {
+                    "address": address
+                }
+            }
+        else:
+            json = {
+                "changeType": "DeleteRecordSet",
+                "inputName": input_name,
+                "type": record_type
+            }
     return json
 
 def get_change_CNAME_json(input_name, ttl=200, cname="test.com", change_type="Add"):
