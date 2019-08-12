@@ -151,6 +151,7 @@
                                     <span ng-if="change.status =='NeedsReview'" class="label label-warning">Needs Review</span>
                                     <span ng-if="change.status =='Failed'" class="label label-danger">{{change.status}}</span>
                                     <span ng-if="change.status =='Rejected'" class="label label-danger">{{change.status}}</span>
+                                    <span ng-if="change.status == 'Cancelled'" class="label label-default">{{batch.status}}</span>
                                 </td>
                                 <td class="wrap-long-text">
                                     <p ng-repeat="error in change.validationErrors">
