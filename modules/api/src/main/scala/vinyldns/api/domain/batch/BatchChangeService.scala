@@ -53,7 +53,9 @@ object BatchChangeService {
       manualReviewEnabled: Boolean,
       authProvider: AuthPrincipalProvider,
       notifiers: AllNotifiers,
-      scheduledChangesEnabled: Boolean): BatchChangeService =
+      scheduledChangesEnabled: Boolean,
+      v6zoneNibbleMin: Int,
+      v6zoneNibbleMax: Int): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
@@ -65,7 +67,9 @@ object BatchChangeService {
       manualReviewEnabled,
       authProvider,
       notifiers,
-      scheduledChangesEnabled
+      scheduledChangesEnabled,
+      v6zoneNibbleMin,
+      v6zoneNibbleMax
     )
 }
 
@@ -80,7 +84,9 @@ class BatchChangeService(
     manualReviewEnabled: Boolean,
     authProvider: AuthPrincipalProvider,
     notifiers: AllNotifiers,
-    scheduledChangesEnabled: Boolean)
+    scheduledChangesEnabled: Boolean,
+    v6zoneNibbleMin: Int = 20,
+    v6zoneNibbleMax: Int = 64)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -202,16 +208,8 @@ class BatchChangeService(
 
     // zone name possibilities for ipv6 PTR
     def getPossiblePtrIpv6ZoneNames(ipv6ptr: List[ChangeInput]): Set[String] = {
-      // TODO - should move min/max into config at some point. For now, only look for /20 through /64 zones by name
-      val zoneCidrSmallest = 64 // largest CIDR means smaller zone
-      val zoneCidrLargest = 20
-
-      /*
-        Logic here is tricky. Each digit is 4 bits, and there are 128 bits total.
-        For a /20 zone, you need to keep 20/4 = 5 bits. That means you should drop (128 - 20)/4 = 27 characters
-       */
-      val toDropSmallest = (128 - zoneCidrSmallest) / 4
-      val toDropLargest = (128 - zoneCidrLargest) / 4
+      val toDropSmallest = 32 - v6zoneNibbleMin
+      val toDropLargest = 32 - v6zoneNibbleMax
 
       val ipv6ptrFullReverseNames =
         ipv6ptr.flatMap(input => getIPv6FullReverseName(input.inputName)).toSet

@@ -68,6 +68,7 @@ object Boot extends App {
     for {
       banner <- vinyldnsBanner()
       crypto <- IO(Crypto.instance) // load crypto
+      v6DiscoveryBoundries <- VinylDNSConfig.v6DiscoveryBoundries
       repoConfigs <- VinylDNSConfig.dataStoreConfigs
       loaderResponse <- DataStoreLoader
         .loadAll[ApiDataAccessor](repoConfigs, crypto, ApiDataAccessorProvider)
@@ -142,7 +143,9 @@ object Boot extends App {
         VinylDNSConfig.manualBatchReviewEnabled,
         authPrincipalProvider,
         notifiers,
-        VinylDNSConfig.scheduledChangesEnabled
+        VinylDNSConfig.scheduledChangesEnabled,
+        v6DiscoveryBoundries._1,
+        v6DiscoveryBoundries._2
       )
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(

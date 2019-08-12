@@ -36,6 +36,7 @@ import vinyldns.core.repository.DataStoreConfig
 import vinyldns.core.notifier.NotifierConfig
 
 object VinylDNSConfig {
+  final case class VinylDNSConfigLoadError(msg: String) extends Throwable(msg)
 
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
@@ -133,6 +134,24 @@ object VinylDNSConfig {
   lazy val manualBatchReviewEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("manual-batch-review-enabled")
     .getOrElse(false)
+
+  // defines nibble boundary for ipv6 zone discovery
+  // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
+  lazy val v6DiscoveryBoundries: IO[(Int, Int)] = IO {
+    val v6zoneNibbleMin: Int =
+      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-min").getOrElse(20)
+    val v6zoneNibbleMax: Int =
+      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(64)
+    assert(v6zoneNibbleMin <= v6zoneNibbleMax)
+    (v6zoneNibbleMin, v6zoneNibbleMax)
+  }.flatMap {
+    case (min, max) =>
+      if (min <= max) IO.pure(min, max)
+      else
+        IO.raiseError(
+          VinylDNSConfigLoadError(
+            s"v6zoneNibbleMin ($min) cannot be less than v6zoneNibbleMax ($max)"))
+  }
 
   lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("scheduled-changes-enabled")
