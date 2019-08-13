@@ -530,7 +530,7 @@ manual review.
 manual-batch-review-enabled = true
 ```
 
-### IPv6 Zone Discovery Boundries
+### IPv6 Zone Discovery Boundaries
 Configuration setting that determines the range that will be searched for in reverse IPv6 Zone Discovery. This allows you
 to limit the search for what is appropriate for your organization. For example, min = 2, max = 3 will only search in
 zones in the form `X.X.ip6.arpa.` and `X.X.X.ip6.arpa.`. Note the following constraints: 0 < min <= max <= 32. If your

@@ -54,7 +54,7 @@ object BatchChangeService {
       authProvider: AuthPrincipalProvider,
       notifiers: AllNotifiers,
       scheduledChangesEnabled: Boolean,
-      v6DiscoveryNibbleBoundries: V6DiscoveryNibbleBoundries): BatchChangeService =
+      v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
@@ -67,7 +67,7 @@ object BatchChangeService {
       authProvider,
       notifiers,
       scheduledChangesEnabled,
-      v6DiscoveryNibbleBoundries
+      v6DiscoveryNibbleBoundaries
     )
 }
 
@@ -83,7 +83,7 @@ class BatchChangeService(
     authProvider: AuthPrincipalProvider,
     notifiers: AllNotifiers,
     scheduledChangesEnabled: Boolean,
-    v6zoneNibbleBoundries: V6DiscoveryNibbleBoundries)
+    v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries)
     extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -205,8 +205,8 @@ class BatchChangeService(
 
     // zone name possibilities for ipv6 PTR
     def getPossiblePtrIpv6ZoneNames(ipv6ptr: List[ChangeInput]): Set[String] = {
-      val toDropSmallest = 32 - v6zoneNibbleBoundries.max
-      val toDropLargest = 32 - v6zoneNibbleBoundries.min
+      val toDropSmallest = 32 - v6zoneNibbleBoundaries.max
+      val toDropLargest = 32 - v6zoneNibbleBoundaries.min
 
       val ipv6ptrFullReverseNames =
         ipv6ptr.flatMap(input => getIPv6FullReverseName(input.inputName)).toSet

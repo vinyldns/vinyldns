@@ -20,22 +20,22 @@ import cats.scalatest.EitherMatchers
 import org.scalatest.{Matchers, WordSpec}
 import vinyldns.api.VinylDNSConfig.VinylDNSConfigLoadError
 
-class V6DiscoveryNibbleBoundriesSpec extends WordSpec with Matchers with EitherMatchers {
-  "V6DiscoveryNibbleBoundries" should {
+class V6DiscoveryNibbleBoundariesSpec extends WordSpec with Matchers with EitherMatchers {
+  "V6DiscoveryNibbleBoundaries" should {
     "Succeed with valid input" in {
-      V6DiscoveryNibbleBoundries(2, 10) should beRight(new V6DiscoveryNibbleBoundries(2, 10))
+      V6DiscoveryNibbleBoundaries(2, 10) should beRight(new V6DiscoveryNibbleBoundaries(2, 10))
     }
     "Succeed if min == max" in {
-      V6DiscoveryNibbleBoundries(10, 10) should beRight(new V6DiscoveryNibbleBoundries(10, 10))
+      V6DiscoveryNibbleBoundaries(10, 10) should beRight(new V6DiscoveryNibbleBoundaries(10, 10))
     }
     "error if min <= 0" in {
-      V6DiscoveryNibbleBoundries(0, 10) shouldBe left[VinylDNSConfigLoadError]
+      V6DiscoveryNibbleBoundaries(0, 10) shouldBe left[VinylDNSConfigLoadError]
     }
     "error if max > 32" in {
-      V6DiscoveryNibbleBoundries(1, 33) shouldBe left[VinylDNSConfigLoadError]
+      V6DiscoveryNibbleBoundaries(1, 33) shouldBe left[VinylDNSConfigLoadError]
     }
     "error if min > max" in {
-      V6DiscoveryNibbleBoundries(10, 9) shouldBe left[VinylDNSConfigLoadError]
+      V6DiscoveryNibbleBoundaries(10, 9) shouldBe left[VinylDNSConfigLoadError]
     }
   }
 }

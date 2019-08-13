@@ -25,7 +25,7 @@ import vinyldns.api.crypto.Crypto
 import com.comcast.ip4s._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
-import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundries
+import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record.RecordType
 
@@ -138,13 +138,13 @@ object VinylDNSConfig {
 
   // defines nibble boundary for ipv6 zone discovery
   // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
-  lazy val v6DiscoveryBoundries: IO[V6DiscoveryNibbleBoundries] = IO {
+  lazy val v6DiscoveryBoundaries: IO[V6DiscoveryNibbleBoundaries] = IO {
     val v6zoneNibbleMin: Int =
       vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-min").getOrElse(5)
     val v6zoneNibbleMax: Int =
-      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(16)
+      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(20)
 
-    V6DiscoveryNibbleBoundries(v6zoneNibbleMin, v6zoneNibbleMax)
+    V6DiscoveryNibbleBoundaries(v6zoneNibbleMin, v6zoneNibbleMax)
   }.flatMap {
     case Right(x) => IO.pure(x)
     case Left(e) => IO.raiseError(e)

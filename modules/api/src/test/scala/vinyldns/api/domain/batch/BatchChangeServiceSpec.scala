@@ -121,7 +121,7 @@ class BatchChangeServiceSpec
     "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
     ptrV6Add)
 
-  private val defaultv6Discovery = new V6DiscoveryNibbleBoundries(5, 16)
+  private val defaultv6Discovery = new V6DiscoveryNibbleBoundaries(5, 16)
 
   private val pendingChange = SingleAddChange(
     Some("zoneid"),
@@ -394,7 +394,7 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        new V6DiscoveryNibbleBoundries(16, 17)
+        new V6DiscoveryNibbleBoundaries(16, 17)
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -423,7 +423,7 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        new V6DiscoveryNibbleBoundries(16, 16)
+        new V6DiscoveryNibbleBoundaries(16, 16)
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -1036,7 +1036,7 @@ class BatchChangeServiceSpec
         TestAuth,
         mockNotifiers,
         false,
-        new V6DiscoveryNibbleBoundries(16, 16)
+        new V6DiscoveryNibbleBoundaries(16, 16)
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
