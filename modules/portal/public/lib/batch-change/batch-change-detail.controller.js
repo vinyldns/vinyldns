@@ -83,6 +83,8 @@
                                 if (error.data[i].errors) {
                                     $scope.batch.changes[i].validationErrors = error.data[i].errors
                                     $scope.batch.changes[i].outstandingErrors = true
+                                } else {
+                                    $scope.batch.changes[i].validationErrors = []
                                 }
                             }
                             var errorAlert = {data: "Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change.", status: error.status}

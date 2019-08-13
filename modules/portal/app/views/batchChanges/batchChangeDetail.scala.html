@@ -1,4 +1,4 @@
-@(rootAccountName: String, rootAccountSuperAdmin: Boolean, rootAccountSupportAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountCanReview: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -164,7 +164,7 @@
                         </table>
                     </div>
                 </div>
-                @if(rootAccountSuperAdmin || rootAccountSupportAdmin) {
+                @if(rootAccountCanReview) {
                     <div ng-if="batch.approvalStatus == 'PendingReview'" class="panel panel-default">
                         <div class="panel-heading">
                             <h3 class="panel-title">Review DNS Change</h3>
@@ -190,7 +190,6 @@
             </div>
         </div>
     </div>
-</div>
 <modal modal-id="cancel_batch_change" modal-title="Cancel DNS Change" modal-size="modal-sm">
     <modal-body>
         <p>Are you sure you want to cancel this DNS Change?</p>
@@ -202,6 +201,7 @@
             </span>
     </modal-footer>
 </modal>
+</div>
 }
 
 @plugins = {}
