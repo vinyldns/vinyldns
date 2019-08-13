@@ -539,8 +539,10 @@ organization only makes zone cuts at one point, you may set min == max.
 The default values if omitted are min = 5, max = 20.
 
 ```yaml
-batch-v6-discovery-nibble-min = 5
-batch-v6-discovery-nibble-max = 16
+v6-discovery-nibble-boundaries {
+  min = 5
+  max = 20
+}
 
 ```
 

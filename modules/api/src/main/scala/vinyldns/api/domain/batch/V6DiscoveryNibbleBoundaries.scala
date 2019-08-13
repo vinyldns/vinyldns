@@ -16,21 +16,8 @@
 
 package vinyldns.api.domain.batch
 
-import vinyldns.api.VinylDNSConfig.VinylDNSConfigLoadError
-
-final case class V6DiscoveryNibbleBoundaries(min: Int, max: Int)
-
-object V6DiscoveryNibbleBoundaries {
-  def apply(min: Int, max: Int): Either[VinylDNSConfigLoadError, V6DiscoveryNibbleBoundaries] =
-    if (min < 1) {
-      Left(VinylDNSConfigLoadError(s"v6zoneNibbleMin ($min) cannot be less than 1"))
-    } else if (max > 32) {
-      Left(VinylDNSConfigLoadError(s"v6zoneNibbleMax ($max) cannot be greater than 32"))
-    } else if (min > max) {
-      Left(
-        VinylDNSConfigLoadError(
-          s"v6zoneNibbleMin ($min) cannot be greater than v6zoneNibbleMax ($max)"))
-    } else {
-      Right(new V6DiscoveryNibbleBoundaries(min, max))
-    }
+final case class V6DiscoveryNibbleBoundaries(min: Int, max: Int) {
+  assert(min <= max)
+  assert(min > 0)
+  assert(max <= 32)
 }
