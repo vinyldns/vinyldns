@@ -118,7 +118,7 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr ng-repeat="change in batch.changes|filter:query">
+                            <tr ng-repeat="change in batch.changes|filter:query" ng-class="{changeError: change.outstandingErrors}">
                                 <td ng-bind="change.changeType"></td>
                                 <td class="wrap-long-text">{{change.inputName}}</td>
                                 <td class="wrap-long-text">{{change.recordName}}</td>
@@ -170,7 +170,7 @@
                             <h3 class="panel-title">Review DNS Change</h3>
                         </div>
                         <div class="panel-body">
-                            <label>Review Comment (optional):</label> <input type="text" ng-model="reviewComment">
+                            <label>Review Comment (optional):</label> <input type="text" ng-model="$parent.reviewComment">
                         </div>
                         <div class="panel-footer clearfix">
                             <div ng-if="!reviewType" class="pull-right">
