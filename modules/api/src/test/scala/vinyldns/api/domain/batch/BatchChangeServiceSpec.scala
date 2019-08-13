@@ -104,6 +104,12 @@ class BatchChangeServiceSpec
   private val delegatedPTRZone = Zone("64/25.55.144.10.in-addr.arpa.", "email", id = "delegatedPTR")
   private val otherPTRZone = Zone("56.144.10.in-addr.arpa.", "email", id = "otherPTR")
   private val ipv6PTRZone = Zone("0.1.0.0.2.ip6.arpa.", "email", id = "ipv6PTR")
+  private val ipv6PTR16Zone =
+    Zone("1.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa.", "email", shared = true)
+  private val ipv6PTR17Zone =
+    Zone("0.1.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa.", "email", shared = true)
+  private val ipv6PTR18Zone =
+    Zone("0.0.1.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa.", "email", shared = true)
 
   private val apexAddForVal = AddChangeForValidation(apexZone, "apex.test.com.", apexAddA)
   private val nonApexAddForVal = AddChangeForValidation(baseZone, "non-apex", nonApexAddA)
@@ -114,6 +120,8 @@ class BatchChangeServiceSpec
     ipv6PTRZone,
     "9.2.3.8.2.4.0.0.0.0.f.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0",
     ptrV6Add)
+
+  private val defaultv6Discovery = new V6DiscoveryNibbleBoundaries(5, 16)
 
   private val pendingChange = SingleAddChange(
     Some("zoneid"),
@@ -274,7 +282,17 @@ class BatchChangeServiceSpec
 
   object TestZoneRepo extends EmptyZoneRepo {
     val dbZones: Set[Zone] =
-      Set(apexZone, baseZone, onlyApexZone, onlyBaseZone, ptrZone, delegatedPTRZone, otherPTRZone)
+      Set(
+        apexZone,
+        baseZone,
+        onlyApexZone,
+        onlyBaseZone,
+        ptrZone,
+        delegatedPTRZone,
+        otherPTRZone,
+        ipv6PTR16Zone,
+        ipv6PTR17Zone,
+        ipv6PTR18Zone)
 
     override def getZonesByNames(zoneNames: Set[String]): IO[Set[Zone]] =
       IO.pure(dbZones.filter(zn => zoneNames.contains(zn.name)))
@@ -320,7 +338,9 @@ class BatchChangeServiceSpec
     false,
     TestAuth,
     mockNotifiers,
-    false)
+    false,
+    defaultv6Discovery
+  )
 
   private val underTestManualEnabled = new BatchChangeService(
     TestZoneRepo,
@@ -333,7 +353,9 @@ class BatchChangeServiceSpec
     true,
     TestAuth,
     mockNotifiers,
-    false)
+    false,
+    defaultv6Discovery
+  )
 
   private val underTestScheduledEnabled = new BatchChangeService(
     TestZoneRepo,
@@ -346,7 +368,9 @@ class BatchChangeServiceSpec
     true,
     TestAuth,
     mockNotifiers,
-    true)
+    true,
+    defaultv6Discovery
+  )
 
   "applyBatchChange" should {
     "succeed if all inputs are good" in {
@@ -355,6 +379,64 @@ class BatchChangeServiceSpec
       val result = rightResultOf(underTest.applyBatchChange(input, auth, true).value)
 
       result.changes.length shouldBe 2
+    }
+
+    "properly adhere to v6 octet boundary range" in {
+      val underTest = new BatchChangeService(
+        TestZoneRepo,
+        TestRecordSetRepo,
+        TestGroupRepo,
+        validations,
+        batchChangeRepo,
+        EmptyBatchConverter,
+        TestUserRepo,
+        false,
+        TestAuth,
+        mockNotifiers,
+        false,
+        new V6DiscoveryNibbleBoundaries(16, 17)
+      )
+      val ptr = AddChangeInput(
+        "2001:0000:0000:0001:0000:ff00:0042:8329",
+        RecordType.PTR,
+        ttl,
+        PTRData("ptr"))
+
+      val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
+
+      val result = rightResultOf(underTest.applyBatchChange(input, auth, false).value)
+
+      result.changes.length shouldBe 1
+      result.changes.head.zoneId shouldBe Some(ipv6PTR17Zone.id)
+    }
+
+    "properly adhere to v6 octet boundary - single entry" in {
+      val underTest = new BatchChangeService(
+        TestZoneRepo,
+        TestRecordSetRepo,
+        TestGroupRepo,
+        validations,
+        batchChangeRepo,
+        EmptyBatchConverter,
+        TestUserRepo,
+        false,
+        TestAuth,
+        mockNotifiers,
+        false,
+        new V6DiscoveryNibbleBoundaries(16, 16)
+      )
+      val ptr = AddChangeInput(
+        "2001:0000:0000:0001:0000:ff00:0042:8329",
+        RecordType.PTR,
+        ttl,
+        PTRData("ptr"))
+
+      val input = BatchChangeInput(None, List(ptr), Some(authGrp.id))
+
+      val result = rightResultOf(underTest.applyBatchChange(input, auth, false).value)
+
+      result.changes.length shouldBe 1
+      result.changes.head.zoneId shouldBe Some(ipv6PTR16Zone.id)
     }
 
     "fail if conversion cannot process" in {
@@ -913,7 +995,9 @@ class BatchChangeServiceSpec
         false,
         TestAuth,
         mockNotifiers,
-        false)
+        false,
+        defaultv6Discovery
+      )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
       val possibleZones = List(
@@ -938,6 +1022,31 @@ class BatchChangeServiceSpec
       zoneNames should contain theSameElementsAs possibleZones
     }
 
+    "return all possible zones given an IPv6 PTR with a single search range" in {
+      // returning all zones to validate we are searching for the right items
+      val underTest = new BatchChangeService(
+        AlwaysExistsZoneRepo,
+        TestRecordSetRepo,
+        TestGroupRepo,
+        validations,
+        batchChangeRepo,
+        EmptyBatchConverter,
+        TestUserRepo,
+        false,
+        TestAuth,
+        mockNotifiers,
+        false,
+        new V6DiscoveryNibbleBoundaries(16, 16)
+      )
+
+      val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
+      val ptr = AddChangeInput(ip, RecordType.PTR, ttl, PTRData("ptr.")).validNel
+      val underTestPTRZonesList: ExistingZones = await(underTest.getZonesForRequest(List(ptr)))
+
+      val zoneNames = underTestPTRZonesList.zones.map(_.name)
+      zoneNames shouldBe Set("0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.")
+    }
+
     "return all possible zones given short form IPv6 PTRs" in {
       // returning all zones to validate we are searching for the right items
       val underTest = new BatchChangeService(
@@ -951,7 +1060,9 @@ class BatchChangeServiceSpec
         false,
         TestAuth,
         mockNotifiers,
-        false)
+        false,
+        defaultv6Discovery
+      )
 
       val ip1 = "::1"
       val possibleZones1 = (5 to 16).map(num0s => ("0." * num0s) + "ip6.arpa.")

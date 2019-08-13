@@ -25,6 +25,7 @@ import vinyldns.api.crypto.Crypto
 import com.comcast.ip4s._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
+import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record.RecordType
 
@@ -36,7 +37,6 @@ import vinyldns.core.repository.DataStoreConfig
 import vinyldns.core.notifier.NotifierConfig
 
 object VinylDNSConfig {
-
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
@@ -133,6 +133,11 @@ object VinylDNSConfig {
   lazy val manualBatchReviewEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("manual-batch-review-enabled")
     .getOrElse(false)
+
+  // defines nibble boundary for ipv6 zone discovery
+  // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
+  lazy val v6DiscoveryBoundaries: IO[V6DiscoveryNibbleBoundaries] =
+    loadConfigF[IO, V6DiscoveryNibbleBoundaries](vinyldnsConfig, "v6-discovery-nibble-boundaries")
 
   lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("scheduled-changes-enabled")

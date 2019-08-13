@@ -92,6 +92,12 @@ zone "1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa" {
 	allow-update { key "vinyldns."; };
 	};
 
+zone "0.0.0.1.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa" {
+	type master;
+	file "/var/bind/0.0.0.1.1.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa";
+	allow-update { key "vinyldns."; };
+	};
+
 zone "one-time" {
 	type master;
 	file "/var/bind/one-time.hosts";
