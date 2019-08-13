@@ -155,7 +155,7 @@
                                 </td>
                                 <td class="wrap-long-text">
                                     <p ng-repeat="error in change.validationErrors">
-                                        {{error.message}}
+                                        {{error.message ? error.message : error}}
                                     </p>
                                     {{change.systemMessage}}
                                 </td>

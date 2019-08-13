@@ -78,7 +78,15 @@
                     .approveBatchChange($scope.batch.id, $scope.reviewComment)
                     .then(success)
                     .catch(function (error) {
-                        handleError(error, 'batchChangesService::approveBatchChange-failure');
+                        if (error.data) {
+                            for(var i = 0; i < $scope.batch.changes.length; i++) {
+                                if (error.data[i].errors) {
+                                    $scope.batch.changes[i].validationErrors = error.data[i].errors
+                                }
+                            }
+                        } else {
+                            handleError(error, 'batchChangesService::approveBatchChange-failure');
+                        }
                     });
             };
 
