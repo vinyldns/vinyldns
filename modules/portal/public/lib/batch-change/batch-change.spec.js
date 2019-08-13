@@ -99,10 +99,13 @@ describe('BatchChange', function(){
 
                 expect(batchChangeService.approveBatchChange).toHaveBeenCalled();
 
-                deferred.reject({data: "Batch change with id notPendingBatchChange is not pending review.", status: 400});
+                var errorData = {data: [{changeType: "Add", inputName: "onofe.ok.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}},
+                {changeType: "Add", inputName: "wfonef.wfoefn.", type: "A", ttl: 7200, record: {address: "1.1.1.1"}, errors: ['Zone Discovery Failed: zone for "wfonef.wfoefn." doesn\'t exists']}]}
+
+                deferred.reject({data: errorData, status: 400});
                 this.rootScope.$apply();
 
-                expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'HTTP 400 (undefined): Batch change with id notPendingBatchChange is not pending review.' }]);
+                expect(this.scope.alerts).toEqual([{ type: 'danger', content: "HTTP 400 (undefined): Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change." }]);
             }));
         });
 

@@ -78,12 +78,14 @@
                     .approveBatchChange($scope.batch.id, $scope.reviewComment)
                     .then(success)
                     .catch(function (error) {
-                        if (error.data) {
-                            for(var i = 0; i < $scope.batch.changes.length; i++) {
+                        if (typeof error.data == "object") {
+                            for(var i = 0; i < error.data.length; i++) {
                                 if (error.data[i].errors) {
                                     $scope.batch.changes[i].validationErrors = error.data[i].errors
                                 }
                             }
+                            var errorAlert = {data: "Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change.", status: error.status}
+                            handleError(errorAlert, 'batchChangesService::approveBatchChange-failure');
                         } else {
                             handleError(error, 'batchChangesService::approveBatchChange-failure');
                         }
