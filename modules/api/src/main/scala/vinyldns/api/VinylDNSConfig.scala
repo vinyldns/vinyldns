@@ -140,15 +140,12 @@ object VinylDNSConfig {
   // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
   lazy val v6DiscoveryBoundaries: IO[V6DiscoveryNibbleBoundaries] = IO {
     val v6zoneNibbleMin: Int =
-      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-min").getOrElse(5)
+      vinyldnsConfig.as[Int]("batch-v6-discovery-nibble-min")
     val v6zoneNibbleMax: Int =
-      vinyldnsConfig.as[Option[Int]]("batch-v6-discovery-nibble-max").getOrElse(20)
+      vinyldnsConfig.as[Int]("batch-v6-discovery-nibble-max")
 
     V6DiscoveryNibbleBoundaries(v6zoneNibbleMin, v6zoneNibbleMax)
-  }.flatMap {
-    case Right(x) => IO.pure(x)
-    case Left(e) => IO.raiseError(e)
-  }
+  }.flatMap(IO.fromEither(_))
 
   lazy val scheduledChangesEnabled: Boolean = vinyldnsConfig
     .as[Option[Boolean]]("scheduled-changes-enabled")
