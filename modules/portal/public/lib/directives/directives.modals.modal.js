@@ -22,8 +22,12 @@ angular.module('directives.modals.modal.module', [])
       transclude: true,
       scope: {
         'modalId': '@',
-        'modalTitle': '@'
+        'modalTitle': '@',
+        'modalSize': '@'
       },
-      templateUrl: "/public/templates/modal.html"
+      templateUrl: "/public/templates/modal.html",
+      controller: function($scope){
+        $scope.modalSize = angular.isDefined($scope.modalSize) ? $scope.modalSize : 'modal-lg'
+      }
     }
   });

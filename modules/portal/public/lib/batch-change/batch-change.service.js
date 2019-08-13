@@ -41,5 +41,10 @@
                 return $http.get(url);
             };
 
+            this.cancelBatchChange = function (id) {
+                var url = '/api/dnschanges/' + id + '/cancel';
+                return $http.post(url, null, {headers: utilityService.getCsrfHeader()});
+            };
+
         });
 })();

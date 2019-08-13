@@ -55,6 +55,30 @@
                 $scope.alerts.push(alert);
             }
 
+            $scope.cancelChange = function() {
+                $("#cancel_batch_change").modal("show");
+            }
+
+            $scope.confirmCancel = function() {
+                $("#cancel_batch_change").modal("hide");
+                function success(response) {
+                    var alert = utilityService.success('Successfully cancelled DNS Change', response, 'cancelBatchChange: cancelBatchChange successful');
+                    $scope.alerts.push(alert);
+                    $scope.refresh();
+                }
+
+                return batchChangeService
+                    .cancelBatchChange($scope.batch.id)
+                    .then(success)
+                    .catch(function (error){
+                        handleError(error, 'batchChangesService::cancelBatchChange-failure');
+                    });
+            };
+
+            $scope.cancelCancel = function() {
+                $("#cancel_batch_change").modal("hide");
+            }
+
             $timeout($scope.refresh, 0);
     });
 })();

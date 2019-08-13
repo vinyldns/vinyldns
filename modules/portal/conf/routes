@@ -58,6 +58,7 @@ PUT           /api/users/:uid/unlock             @controllers.VinylDNS.unlockUse
 GET           /api/dnschanges/:id                @controllers.VinylDNS.getBatchChange(id: String)
 GET           /api/dnschanges                    @controllers.VinylDNS.listBatchChanges
 POST          /api/dnschanges                    @controllers.VinylDNS.newBatchChange
+POST          /api/dnschanges/:id/cancel         @controllers.VinylDNS.cancelBatchChange(id: String)
 
 GET           /callback/:id                      @controllers.VinylDNS.oidcCallback(id: String)
 GET           /callback/set-oidc-session/:id              @controllers.VinylDNS.setOidcSession(id: String)
