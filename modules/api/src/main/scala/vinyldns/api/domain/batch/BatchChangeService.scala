@@ -133,7 +133,8 @@ class BatchChangeService(
       rejectBatchChangeInput: RejectBatchChangeInput): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
-      _ <- validateBatchChangeRejection(batchChange, authPrincipal).toBatchResult
+      bypassTestCheck <- getBypassTestCheckForReject(authPrincipal, batchChange)
+      _ <- validateBatchChangeRejection(batchChange, authPrincipal, bypassTestCheck).toBatchResult
       rejectedBatchChange <- rejectBatchChange(
         batchChange,
         rejectBatchChangeInput.reviewComment,
@@ -147,12 +148,12 @@ class BatchChangeService(
       approveBatchChangeInput: ApproveBatchChangeInput): BatchResult[BatchChange] =
     for {
       batchChange <- getExistingBatchChange(batchChangeId)
-      _ <- validateBatchChangeApproval(batchChange, authPrincipal).toBatchResult
-      asInput = BatchChangeInput(batchChange)
       requesterAuth <- EitherT.fromOptionF(
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
         BatchRequesterNotFound(batchChange.userId, batchChange.userName)
       )
+      _ <- validateBatchChangeApproval(batchChange, authPrincipal, requesterAuth.isTestUser).toBatchResult
+      asInput = BatchChangeInput(batchChange)
       reviewInfo = BatchChangeReviewInfo(
         authPrincipal.userId,
         approveBatchChangeInput.reviewComment)
@@ -569,4 +570,22 @@ class BatchChangeService(
 
     batchChangeRepo.save(cancelledBatch).toBatchResult
   }
+
+  def getBypassTestCheckForReject(
+      rejecterAuth: AuthPrincipal,
+      batchChange: BatchChange): BatchResult[Boolean] =
+    if (!rejecterAuth.isTestUser) {
+      // if the rejecting user isnt a test user, we dont need to get the batch creator's info, can just pass along
+      // true to bypass the test check
+      true.toRightBatchResult
+    } else {
+      val err: BatchChangeErrorResponse =
+        BatchRequesterNotFound(batchChange.userId, batchChange.userName)
+      EitherT
+        .fromOptionF(
+          authProvider.getAuthPrincipalByUserId(batchChange.userId),
+          err
+        )
+        .map(_.isTestUser)
+    }
 }

@@ -53,11 +53,13 @@ trait BatchChangeValidationsAlgebra {
 
   def validateBatchChangeRejection(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+      authPrincipal: AuthPrincipal,
+      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit]
 
   def validateBatchChangeApproval(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
+      authPrincipal: AuthPrincipal,
+      isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit]
 
   def validateBatchChangeCancellation(
       batchChange: BatchChange,
@@ -115,14 +117,16 @@ class BatchChangeValidations(
 
   def validateBatchChangeRejection(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingReview(
+      authPrincipal: AuthPrincipal,
+      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    validateAuthorizedReviewer(authPrincipal, batchChange, bypassTestValidation) |+| validateBatchChangePendingReview(
       batchChange)
 
   def validateBatchChangeApproval(
       batchChange: BatchChange,
-      authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    validateAuthorizedReviewer(authPrincipal, batchChange) |+| validateBatchChangePendingReview(
+      authPrincipal: AuthPrincipal,
+      isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    validateAuthorizedReviewer(authPrincipal, batchChange, isTestChange) |+| validateBatchChangePendingReview(
       batchChange) |+| validateScheduledApproval(batchChange)
 
   def validateBatchChangeCancellation(
@@ -141,8 +145,10 @@ class BatchChangeValidations(
 
   def validateAuthorizedReviewer(
       auth: AuthPrincipal,
-      batchChange: BatchChange): Either[BatchChangeErrorResponse, Unit] =
-    if (auth.isSystemAdmin) {
+      batchChange: BatchChange,
+      bypassTestValidation: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    if (auth.isSystemAdmin && (bypassTestValidation || !auth.isTestUser)) {
+      // bypassTestValidation = true for a test change
       ().asRight
     } else {
       UserNotAuthorizedError(batchChange.id).asLeft
