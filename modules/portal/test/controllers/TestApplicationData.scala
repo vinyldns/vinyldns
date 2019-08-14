@@ -216,6 +216,19 @@ trait TestApplicationData { this: Mockito =>
       | }
     """.stripMargin)
 
+  val hobbitBatchChange: JsValue = Json.parse(s"""{
+      | "userId":               "vinyl",
+      | "userName":             "vinyl201",
+      | "comments":             "this is optional",
+      | "createdTimestamp":     "2018-05-08T18:46:34Z",
+      | "ownerGroupId":         "f42385e4-5675-38c0-b42f-64105e743bfe",
+      | "changes":              [],
+      | "status":               "Complete",
+      | "id":                   "937191c4-b1fd-4ab5-abb4-9553a65b44ab",
+      | "approvalStatus":       "AutoApproved"
+      | }
+    """.stripMargin)
+
   val groupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup))
   val emptyGroupList: JsObject = Json.obj("groups" -> Json.arr())
 

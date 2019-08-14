@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountCanReview: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -118,7 +118,7 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr ng-repeat="change in batch.changes|filter:query">
+                            <tr ng-repeat="change in batch.changes|filter:query" ng-class="{changeError: change.outstandingErrors}">
                                 <td ng-bind="change.changeType"></td>
                                 <td class="wrap-long-text">{{change.inputName}}</td>
                                 <td class="wrap-long-text">{{change.recordName}}</td>
@@ -155,7 +155,7 @@
                                 </td>
                                 <td class="wrap-long-text">
                                     <p ng-repeat="error in change.validationErrors">
-                                        {{error.message}}
+                                        {{error.message ? error.message : error}}
                                     </p>
                                     {{change.systemMessage}}
                                 </td>
@@ -164,10 +164,32 @@
                         </table>
                     </div>
                 </div>
+                @if(rootAccountCanReview) {
+                    <div ng-if="batch.approvalStatus == 'PendingReview'" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Review DNS Change</h3>
+                        </div>
+                        <div class="panel-body">
+                            <label>Review Comment (optional):</label> <input type="text" ng-model="$parent.reviewComment">
+                        </div>
+                        <div class="panel-footer clearfix">
+                            <div ng-if="!reviewType" class="pull-right">
+                                <button class="btn btn-success" ng-click="approve()">Approve</button>
+                                <button class="btn btn-danger" ng-click="reject()">Reject</button>
+                            </div>
+                            <div ng-if="reviewType" class="pull-right">
+                                <span>{{ reviewConfirmationMsg }}</span>
+                                <button class="btn btn-default" ng-click="cancelReview()">Cancel Review</button>
+                                <button ng-if="reviewType == 'approve'" class="btn btn-success" ng-click="confirmApprove()">Confirm Approval</button>
+                                <button ng-if="reviewType == 'reject'" class="btn btn-danger" ng-click="confirmReject()">Confirm Rejection</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                </div>
             </div>
         </div>
     </div>
-</div>
 <modal modal-id="cancel_batch_change" modal-title="Cancel DNS Change" modal-size="modal-sm">
     <modal-body>
         <p>Are you sure you want to cancel this DNS Change?</p>
@@ -179,6 +201,7 @@
             </span>
     </modal-footer>
 </modal>
+</div>
 }
 
 @plugins = {}

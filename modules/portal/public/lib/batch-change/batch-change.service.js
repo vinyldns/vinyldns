@@ -49,5 +49,16 @@
                 return $http.post(url, null, {headers: utilityService.getCsrfHeader()});
             };
 
+            this.approveBatchChange = function (id, reviewComment) {
+                var url = '/api/dnschanges/' + id + '/approve';
+                var data = reviewComment ? {'reviewComment': reviewComment} : {};
+                return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
+            };
+
+            this.rejectBatchChange = function (id, reviewComment) {
+                var url = '/api/dnschanges/' + id + '/reject';
+                var data = reviewComment ? {'reviewComment': reviewComment} : {};
+                return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
+            };
         });
 })();

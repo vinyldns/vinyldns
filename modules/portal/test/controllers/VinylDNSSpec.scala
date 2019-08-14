@@ -2511,6 +2511,174 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".cancelBatchChange" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges/123/cancel") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitBatchChange)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.cancelBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/cancel"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges/123/cancel") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitBatchChange)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockLockedUserAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.cancelBatchChange("123")(
+              FakeRequest(POST, s"/api/dnschanges/123/cancel")
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
+          }
+        }
+      }
+    }
+
+    ".approveBatchChange" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges/123/approve") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitBatchChange)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.approveBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/approve"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges/123/approve") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitBatchChange)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockLockedUserAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.approveBatchChange("123")(
+              FakeRequest(POST, s"/api/dnschanges/123/approve")
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
+          }
+        }
+      }
+    }
+
+    ".rejectBatchChange" should {
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges/123/reject") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitBatchChange)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockUserAccessor,
+              client,
+              components,
+              crypto)
+            val result =
+              underTest.rejectBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/reject"))
+
+            status(result) mustEqual 401
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              "You are not logged in. Please login to continue.")
+          }
+        }
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {
+          case backendPOST(p"/batchrecordchanges/123/reject") =>
+            defaultActionBuilder {
+              Results.Ok(hobbitBatchChange)
+            }
+        } { implicit port =>
+          WsTestClient.withClient { client =>
+            val underTest = TestVinylDNS(
+              testConfigLdap,
+              mockLdapAuthenticator,
+              mockLockedUserAccessor,
+              client,
+              components,
+              crypto)
+            val result = underTest.rejectBatchChange("123")(
+              FakeRequest(POST, s"/api/dnschanges/123/reject")
+                .withSession(
+                  "username" -> lockedFrodoUser.userName,
+                  "accessKey" -> lockedFrodoUser.accessKey))
+
+            status(result) mustEqual 403
+            hasCacheHeaders(result)
+            contentAsString(result) must beEqualTo(
+              s"User account for `${lockedFrodoUser.userName}` is locked.")
+          }
+        }
+      }
+    }
+
     ".listBatchChanges" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
         Server.withRouter(ServerConfig(port = Some(simulatedBackendPort), mode = Mode.Test)) {

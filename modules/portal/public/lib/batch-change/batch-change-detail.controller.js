@@ -22,6 +22,9 @@
 
             $scope.batch = {};
             $scope.alerts = [];
+            $scope.reviewComment;
+            $scope.reviewConfirmationMsg;
+            $scope.reviewType;
 
             $scope.getBatchChange = function(batchChangeId) {
                 function success(response) {
@@ -48,6 +51,61 @@
                 id = id.substring(id.lastIndexOf('/') + 1);
 
                 $scope.getBatchChange(id);
+                $scope.cancelReview();
+            };
+
+            $scope.approve = function() {
+                $scope.reviewConfirmationMsg = "Are you sure you want to approve this DNS Change?"
+                $scope.reviewType = "approve";
+            }
+
+            $scope.reject = function() {
+                $scope.reviewConfirmationMsg = "Are you sure you want to reject this DNS Change?"
+                $scope.reviewType = "reject";
+            }
+
+            $scope.cancelReview = function() {
+                $scope.reviewConfirmationMsg = null;
+                $scope.reviewType = null;
+            }
+
+            $scope.confirmApprove = function() {
+                function success(response) {
+                    $scope.refresh();
+                }
+
+                return batchChangeService
+                    .approveBatchChange($scope.batch.id, $scope.reviewComment)
+                    .then(success)
+                    .catch(function (error) {
+                        if (typeof error.data == "object") {
+                            for(var i = 0; i < error.data.length; i++) {
+                                if (error.data[i].errors) {
+                                    $scope.batch.changes[i].validationErrors = error.data[i].errors
+                                    $scope.batch.changes[i].outstandingErrors = true
+                                } else {
+                                    $scope.batch.changes[i].validationErrors = []
+                                }
+                            }
+                            var errorAlert = {data: "Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change.", status: error.status}
+                            handleError(errorAlert, 'batchChangesService::approveBatchChange-failure');
+                        } else {
+                            handleError(error, 'batchChangesService::approveBatchChange-failure');
+                        }
+                    });
+            };
+
+            $scope.confirmReject = function() {
+                function success(response) {
+                    $scope.refresh();
+                }
+
+                return batchChangeService
+                    .rejectBatchChange($scope.batch.id, $scope.reviewComment)
+                    .then(success)
+                    .catch(function (error) {
+                        handleError(error, 'batchChangesService::rejectBatchChange-failure');
+                    });
             };
 
             function handleError(error, type) {

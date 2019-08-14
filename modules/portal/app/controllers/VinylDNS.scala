@@ -637,8 +637,44 @@ class VinylDNS @Inject()(
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
+    // $COVERAGE-ON$
+  }
+
+  def approveBatchChange(batchChangeId: String): Action[AnyContent] = userAction.async {
+    implicit request =>
+      // $COVERAGE-OFF$
+      val json = request.body.asJson
+      val payload = json.map(Json.stringify)
+      val vinyldnsRequest =
+        new VinylDNSRequest(
+          "POST",
+          s"$vinyldnsServiceBackend",
+          s"zones/batchrecordchanges/$batchChangeId/approve",
+          payload)
+      executeRequest(vinyldnsRequest, request.user).map(response => {
+        Status(response.status)(response.body)
+          .withHeaders(cacheHeaders: _*)
+      })
       // $COVERAGE-ON$
   }
+
+  def rejectBatchChange(batchChangeId: String): Action[AnyContent] =
+    userAction.async { implicit request =>
+      // $COVERAGE-OFF$
+      val json = request.body.asJson
+      val payload = json.map(Json.stringify)
+      val vinyldnsRequest =
+        new VinylDNSRequest(
+          "POST",
+          s"$vinyldnsServiceBackend",
+          s"zones/batchrecordchanges/$batchChangeId/reject",
+          payload)
+      executeRequest(vinyldnsRequest, request.user).map(response => {
+        Status(response.status)(response.body)
+          .withHeaders(cacheHeaders: _*)
+      })
+      // $COVERAGE-ON$
+    }
 
   def lockUser(userId: String): Action[AnyContent] = userAction.async { implicit request =>
     if (request.user.isSuper) {
