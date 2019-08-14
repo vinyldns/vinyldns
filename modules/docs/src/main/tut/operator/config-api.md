@@ -530,6 +530,24 @@ manual review.
 manual-batch-review-enabled = true
 ```
 
+### Manual Review Domains
+Configuration setting that determines what Batch Change/DNS Change input names require manual review if `manual-batch-review-enabled` is set to `true`.
+If `manual-batch-review-enabled` is set to `false` any input names that match entries in the configured list will be treated as fatal errors.
+
+```yaml
+manual-review-domains = {
+  domain-list = [
+    "needs-review.*"
+  ]
+  ip-list = [
+    "192.0.2.254",
+    "192.0.2.255",
+    "fd69:27cc:fe91:0:0:0:ffff:1",
+    "fd69:27cc:fe91:0:0:0:ffff:2"
+  ]
+}
+```
+
 ### IPv6 Zone Discovery Boundaries
 Configuration setting that determines the range that will be searched for in reverse IPv6 Zone Discovery. This allows you
 to limit the search for what is appropriate for your organization. For example, min = 2, max = 3 will only search in
@@ -753,6 +771,20 @@ vinyldns {
         "fd69:27cc:fe91:0:0:0:0:ffff",
         "fd69:27cc:fe91:0:0:0:ffff:0"
       ]
+  }
+  
+  # FQDNS / IPs that require manual review when submitted through Batch Change/DNS Change
+  # Treated as a fatal error if manual review is not enabled
+  manual-review-domains = {
+    domain-list = [
+      "needs-review.*"
+    ]
+    ip-list = [
+      "192.0.2.254",
+      "192.0.2.255",
+      "fd69:27cc:fe91:0:0:0:ffff:1",
+      "fd69:27cc:fe91:0:0:0:ffff:2"
+    ]
   }
   
   # Zone Connection Data
