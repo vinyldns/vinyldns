@@ -579,13 +579,13 @@ class BatchChangeService(
       // true to bypass the test check
       true.toRightBatchResult
     } else {
-      val err: BatchChangeErrorResponse =
-        BatchRequesterNotFound(batchChange.userId, batchChange.userName)
-      EitherT
-        .fromOptionF(
-          authProvider.getAuthPrincipalByUserId(batchChange.userId),
-          err
-        )
-        .map(_.isTestUser)
+      for {
+        user <- userRepository.getUser(batchChange.userId).toBatchResult
+        isTest <- user match {
+          case Some(u) => u.isTest.toRightBatchResult
+          case None =>
+            BatchRequesterNotFound(batchChange.userId, batchChange.userName).toLeftBatchResult
+        }
+      } yield isTest
     }
 }
