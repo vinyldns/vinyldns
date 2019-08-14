@@ -376,6 +376,10 @@ label.switch {
     background: rgba(255, 0, 0, 0.32);
 }
 
+.softError {
+    background: rgb(240,173,78, 0.32);
+}
+
 .batch-label {
     color: #73879C;
 }
