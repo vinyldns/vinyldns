@@ -127,7 +127,7 @@ the VinylDNS instance is configured to have manual review disabled.
 - [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
 - [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
 
-### Non-Fatal Errors <a id="non-fatal-errors**"></a>
+### Non-Fatal Errors <a id="non-fatal-errors"></a>
 #### Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a>
 
 ##### Error Message:

@@ -49,6 +49,6 @@ This does not apply to zone administrators or users with specific ACL access rul
 * The TTL field is optional for each record, but the column is still required. If TTL is empty VinylDNS will use the existing TTL value for record updates or the default TTL value for new records.
 
 ### Review a DNS Change
-You can review your submitted DNS Change requests by selecting the linked Batch ID or View button for the DNS Change on the main page of the DNS Change section in the portal.
+You can review your submitted DNS Change requests by selecting the linked DNS Change ID or View button for the DNS Change on the main page of the DNS Changes section in the portal.
 
 [![List of DNS Change requests screenshot](../img/portal/dns-change-list-annotated.png){: .screenshot}](../img/portal/dns-change-annotated.png)

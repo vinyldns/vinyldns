@@ -6,7 +6,7 @@ section: "api"
 
 # Get Batch Change
 
-Retrieves a batch change given the batch change ID. Only the user who created a batch change will have access to get it.
+Retrieves a batch change given the batch change ID. Only the user who created a batch change and VinylDNS administrators will have access to get it.
 
 
 #### HTTP REQUEST
@@ -41,7 +41,12 @@ createdTimestamp | date-time      | The timestamp (UTC) when the batch change wa
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteRRSetChange](../api/batchchange-model/#singledeleterrsetchange-). |
 status        | BatchChangeStatus | [Status of the batch change](../api/batchchange-model#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
-
+scheduledTime | dateTime    | Optional requested date and time to process the batch change. |
+approvalStatus| BatchChangeApprovalStatus      |[Approval status of the batch change](../api/batchchange-model#batchchange-attributes). |
+reviewerId    | string      | Optional identifier of reviewer if batch change required manual review |
+reviewComment | string      | Optional comment by reviewer if batch change required manual review |
+reviewTimestamp | dateTime   | Optional timestamp (UTC) when the batch change was reviewed if manaul review was required. |
+cancelledTimestamp | dateTime | Optional timestamp (UTC) if the batch change was cancelled by the creator |
 
 #### EXAMPLE RESPONSE
 

@@ -45,16 +45,18 @@ name          | type        | description |
 userId        | string      | The unique identifier of the user that created the batch change. |
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Optional comments about the batch change. |
-createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
+createdTimestamp | dateTime      | The timestamp (UTC) when the batch change was created. |
 changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](#singleaddchange-attributes) or a [SingleDeleteRRSetChange](#singledeleterrsetchange-attributes). |
-status        | BatchChangeStatus | **PendingProcessing** - at least one change in batch has not finished processing; **Complete** - all changes have been processed successfully; **Failed** - all changes failed during processing; **PartialFailure** - some changes have failed and the rest were successful; **PendingReview** - one or more changes requires manual [approval](../api/approve-batchchange)/[rejection](../api/reject-batchchange) by a system administrator (ie. super or support user) to proceed ; **Rejected** - the batch change was rejected by a system administrator (ie. super or support user) and no changes were applied; **Scheduled** - the batch change is scheduled for a later date at which it needs to be approved to proceed. |
+status        | BatchChangeStatus | **PendingProcessing** - at least one change in batch has not finished processing; **Complete** - all changes have been processed successfully; **Failed** - all changes failed during processing; **PartialFailure** - some changes have failed and the rest were successful; **PendingReview** - one or more changes requires manual [approval](../api/approve-batchchange)/[rejection](../api/reject-batchchange) by a system administrator (ie. super or support user) to proceed ; **Rejected** - the batch change was rejected by a system administrator (ie. super or support user) and no changes were applied; **Scheduled** - the batch change is scheduled for a later date at which time it needs to be approved to proceed. **Cancelled** - the PendingReview batch change was cancelled by its creator before review.|
 id            | string      | The unique identifier for this batch change. |
 ownerGroupId  | string      | Record ownership assignment. Required if any records in the batch change are in shared zones and are new or unowned. |
-approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved** or **Rejected**. |
+approvalStatus | BatchChangeApprovalStatus | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved**, **Rejected**, or **Cancelled**. |
 reviewerId    | string      | Optional unique identifier for the reviewer of the batch change. Required if batch change was manually rejected or approved. |
 reviewerUserName  | string      | Optional user name for the reviewer of the batch change. Required if batch change was manually rejected or approved. |
 reviewComment | string      | Optional comment for the reviewer of the batch change. Only applicable if batch change was manually rejected or approved. |
-reviewTimestamp | date-time  | Optional timestamp (UTC) of when the batch change was manually reviewed. Required if batch change was manually rejected or approved. |
+reviewTimestamp | dateTime  | Optional timestamp (UTC) of when the batch change was manually reviewed. Required if batch change was manually rejected or approved. |
+scheduledTime  | dateTime   | Optional requested date and time to process the batch change. |
+cancelledTimestamp | dateTime | Optional date and time a batch change was cancelled by its creator. |
 
 #### SINGLE CHANGE ATTRIBUTES <a id="singlechange-attributes" />
 
@@ -93,7 +95,7 @@ zoneId        | string        | The unique identifier for the zone. |
 systemMessage | string        | Conditional: Returns system message relevant to corresponding batch change input. |
 recordChangeId| string        | Conditional: The unique identifier for the record change; only returned on successful batch creation. |
 recordSetId   | string        | Conditional: The unique identifier for the record set; only returned on successful batch creation, |
-validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteRRSetChange. *Note: These will only exist on `NeedsReview` or `Rejected` `SingleChange`s* |
+validationErrors | Array of BatchChangeError | Array containing any validation errors associated with this SingleDeleteRRSetChange. *Note: These will only exist on `NeedsReview` or `Rejected` SingleChanges* |
 id            | string        | The unique identifier for this change. |
 
 

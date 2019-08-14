@@ -49,6 +49,11 @@ options:
     menu_type: portal_menu
     menu_section: portal_section
 
+    nested_options:
+      - title: Manual Review & Scheduling
+        url: portal/manual-review-scheduling
+        menu_section: portal_section
+
   - title: Credentials
     url: portal/credentials
     menu_type: portal_menu
@@ -183,6 +188,9 @@ options:
       menu_section: batchchangeapireference
     - title: Batch Change Errors
       url: api/batchchange-errors.html
+      menu_section: batchchangeapireference
+    - title: Cancel Batch Change
+      url: api/cancel-batchchange.html
       menu_section: batchchangeapireference
     - title: Approve Batch Change
       url: api/approve-batchchange.html
