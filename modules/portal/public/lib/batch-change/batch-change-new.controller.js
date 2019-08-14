@@ -35,8 +35,12 @@
             $scope.alerts = [];
             $scope.batchChangeErrors = false;
             $scope.ownerGroupError = false;
+            $scope.softErrors = false;
             $scope.formStatus = "pendingSubmit";
             $scope.scheduledOption = false;
+            $scope.allowManualReview = false;
+            $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
+            $scope.manualReviewEnabled;
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
@@ -46,6 +50,8 @@
 
             $scope.cancelSubmit = function() {
                 $scope.formStatus = "pendingSubmit";
+                $scope.allowManualReview = false;
+                $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
             };
 
             $scope.confirmSubmit = function(form) {
@@ -93,7 +99,7 @@
 
                 formatData(payload);
 
-                return batchChangeService.createBatchChange(payload)
+                return batchChangeService.createBatchChange(payload, $scope.allowManualReview)
                     .then(success)
                     .catch(function (error){
                         if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
@@ -101,10 +107,20 @@
                         } else {
                             $scope.newBatch.changes = error.data;
                             $scope.batchChangeErrors = true;
-                            $scope.ownerGroupError = error.data.flatMap(d => d.errors)
-                                .some(e => e.includes('owner group ID must be specified for record'));
-                            $scope.formStatus = "pendingSubmit";
-                            $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
+                            $scope.listOfErrors = error.data.flatMap(d => d.errors)
+                            $scope.ownerGroupError = $scope.listOfErrors.some(e => e.includes('owner group ID must be specified for record'));
+                            var hardErrors = $scope.listOfErrors.every(e => ['Zone Discovery Failed', 'Record set with name'].includes(e));
+                            if ($scope.manualReviewEnabled && !hardErrors) {
+                                $scope.allowManualReview = true;
+                                $scope.softErrors = true;
+                                $scope.formStatus = "pendingConfirm";
+                                $scope.alerts.push({type: 'warning', content: 'Issues found that require manual review. Please correct or confirm submission for review.'});
+                                $scope.confirmationPrompt = "Would you like to submit this change for review?"
+                            } else {
+                                $scope.softErrors = false;
+                                $scope.formStatus = "pendingSubmit";
+                                $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
+                            }
                         }
                     });
             };
@@ -114,8 +130,9 @@
                 $scope.newBatch.changes.splice(changeNumber, 1);
             };
 
-            $scope.submitChange = function() {
+            $scope.submitChange = function(manualReviewEnabled) {
                 $scope.formStatus = "pendingConfirm";
+                $scope.manualReviewEnabled = manualReviewEnabled;
             }
 
             $scope.getLocalTimeZone = function() {

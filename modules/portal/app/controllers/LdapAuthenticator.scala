@@ -289,11 +289,18 @@ class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
     Some("test@test.test"),
     Some("Test"),
     Some("User"))
+  private val supportTestUserDetails = LdapUserDetails(
+    "O=test,OU=testdata,CN=supportTestUser",
+    "support-user",
+    Some("test@test.test"),
+    Some("Support"),
+    Some("User"))
 
   def authenticate(username: String, password: String): Either[LdapException, LdapUserDetails] =
     (username, password) match {
       case ("recordPagingTestUser", "testpassword") => Right(recordPagingTestUserDetails)
       case ("testuser", "testpassword") => Right(testUserDetails)
+      case ("supportUser", "testpassword") => Right(supportTestUserDetails)
       case _ => authenticator.authenticate(username, password)
     }
 
@@ -301,6 +308,7 @@ class TestAuthenticator(authenticator: Authenticator) extends Authenticator {
     username match {
       case "recordPagingTestUser" => Right(recordPagingTestUserDetails)
       case "testuser" => Right(testUserDetails)
+      case "supportUser" => Right(supportTestUserDetails)
       case _ => authenticator.lookup(username)
     }
 
