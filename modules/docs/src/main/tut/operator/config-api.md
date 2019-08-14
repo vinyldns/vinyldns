@@ -755,6 +755,8 @@ vinyldns {
   # true if you want to enable manual review for non-fatal errors
   manual-batch-review-enabled = true
   
+  # true if you want to allow Batch Changes to be scheduled.  manual-batch-review-enabled must also be true.
+  scheduled-changes-enabled = true
   
   # types of unowned records that users can access in shared zones
   shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
