@@ -16,6 +16,7 @@ module.exports = function(config) {
         files: [
             'gentelella/vendors/jquery/dist/jquery.min.js',
             'gentelella/vendors/bootstrap/dist/js/bootstrap.min.js',
+            'gentelella/vendors/bootstrap-datetimepicker.js',
             'javascripts/angular.min.js',
             'test_frameworks/*.js',
             'lib/services/**/*.js',

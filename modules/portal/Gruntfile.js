@@ -35,6 +35,8 @@ module.exports = function (grunt) {
                     'app/views/main.scala.html': [
                         'public/gentelella/vendors/jquery/dist/jquery.min.js',
                         'public/gentelella/vendors/bootstrap/dist/js/bootstrap.min.js',
+                        'public/bower_components/moment/moment.js',
+                        'public/gentelella/vendors/bootstrap-daterangepicker/daterangepicker.js',
                         'public/javascripts/ui-bootstrap.min.js',
                         'public/javascripts/angular.min.js',
                         'public/lib/**/*.module.js',

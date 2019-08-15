@@ -31,7 +31,8 @@
                 });
 
             $scope.batch = {};
-            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}]};
+            var hourFromNow = moment().startOf('hour').add(1, 'hour');
+            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}], scheduledTime: hourFromNow.format('LL hh:mm A')};
             $scope.alerts = [];
             $scope.batchChangeErrors = false;
             $scope.ownerGroupError = false;
@@ -67,17 +68,17 @@
                 $scope.processing = true;
 
                 var payload = $scope.newBatch;
-                if (!$scope.newBatch.ownerGroupId) {
-                     delete payload.ownerGroupId
-                }
-
-                if ($scope.scheduledOption && $scope.newBatch.scheduledTime) {
-                    payload.scheduledTime = $scope.newBatch.scheduledTime.toISOString().split('.')[0]+"Z";
-                } else {
-                    delete payload.scheduledTime;
-                }
 
                 function formatData(payload) {
+                    if (!$scope.newBatch.ownerGroupId) {
+                         delete payload.ownerGroupId
+                    }
+
+                    if ($scope.scheduledOption && $scope.newBatch.scheduledTime) {
+                        payload.scheduledTime = moment($scope.newBatch.scheduledTime, 'LL hh:mm A').utc().format();
+                    } else {
+                        delete payload.scheduledTime;
+                    }
                     for (var i = 0; i < payload.changes.length; i++) {
                         var entry = payload.changes[i]
                         if(entry.type == 'A+PTR' || entry.type == 'AAAA+PTR') {
@@ -102,6 +103,9 @@
                 return batchChangeService.createBatchChange(payload, $scope.allowManualReview)
                     .then(success)
                     .catch(function (error){
+                        if(payload.scheduledTime) {
+                         $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
+                        }
                         if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
                             handleError(error, 'batchChangesService::createBatchChange-failure');
                         } else {
@@ -203,5 +207,15 @@
                     $scope.newBatch.changes.push(change);
                 }
             }
+
+            $('input[name="scheduledTime"]').daterangepicker({
+                singleDatePicker: true,
+                timePicker: true,
+                startDate: hourFromNow,
+                locale: {
+                  format: 'LL hh:mm A'
+                }
+              });
+
         });
 })();
