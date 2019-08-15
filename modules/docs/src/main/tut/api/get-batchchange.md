@@ -45,7 +45,7 @@ scheduledTime | date-time    | Optional requested date and time to process the b
 approvalStatus| BatchChangeApprovalStatus      |[Approval status of the batch change](../api/batchchange-model#batchchange-attributes). |
 reviewerId    | string      | Optional identifier of reviewer if batch change required manual review |
 reviewComment | string      | Optional comment by reviewer if batch change required manual review |
-reviewTimestamp | date-time   | Optional timestamp (UTC) when the batch change was reviewed if manaul review was required. |
+reviewTimestamp | date-time   | Optional timestamp (UTC) when the batch change was reviewed if manual review was required. |
 cancelledTimestamp | date-time | Optional timestamp (UTC) if the batch change was cancelled by the creator |
 
 #### EXAMPLE RESPONSE
@@ -86,7 +86,7 @@ cancelledTimestamp | date-time | Optional timestamp (UTC) if the batch change wa
             "id": "7573ca11-3e30-45a8-9ba5-791f7d6ae7a7"
         }
     ], 
-    "status": "Pending", 
+    "status": "PendingProcessing",
     "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a"
 }
 ```

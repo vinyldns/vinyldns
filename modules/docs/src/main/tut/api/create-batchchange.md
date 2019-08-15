@@ -25,7 +25,7 @@ name          | type          | required?   | description |
 comments      | string        | no          | Optional comments about the batch change. |
 changes       | Array of ChangeInput| yes   | Set of *ChangeInput*s in the batch change. A *ChangeInput*  is an [AddChangeInput](#addchangeinput-attributes) or [DeleteChangeInput](#deletechangeinput-attributes). Type is inferred from specified *changeType*.|
 ownerGroupId  | string        | sometimes   | Record ownership assignment. Required if any records in the batch change are in [shared zones](../api/zone-model#shared-zones) and are new or unowned. |
-scheduledTime | date-time      | no          | Optional datetime. Stored as UTC. Batch change will not be processed until after the scheduled time. Required format is `%Y-%m-%dT%H:%M:%SZ`|
+scheduledTime | date-time      | no          | Optional datetime. Stored as UTC. Batch change will not be processed until after the scheduled time. Required format is an ISO 8601 date time string.|
 allowManualReview | boolean   | no          | Optional override to control whether manual review is enabled for the batch change request. Default value is `true`. Must be passed in as a query parameter, not in the request body. |
 
 ##### AddChangeInput <a id="addchangeinput-attributes" />
@@ -90,8 +90,7 @@ type          | RecordType    | yes         | Type of DNS record. Supported reco
                 "address": "1:2:3:4:5:6:7:8"
             }
         }
-    ],
-    "scheduledTime": "2025-02-03T12:00:00Z"
+    ]
 }
 ```
 

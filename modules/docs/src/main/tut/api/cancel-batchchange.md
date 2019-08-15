@@ -13,7 +13,7 @@ users trying to access this endpoint will encounter a **404 Not Found** response
 
 #### HTTP REQUEST
 
-> POST /zones/batchrecordchanges/{id}
+> POST /zones/batchrecordchanges/{id}/cancel
 
 
 #### HTTP REQUEST PARAMS

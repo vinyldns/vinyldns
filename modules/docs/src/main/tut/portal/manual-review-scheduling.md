@@ -8,7 +8,7 @@ section: "portal_menu"
 
 <span class="important">**Configuration Note:**</span> DNS Change manual review and scheduling are configured features in VinylDNS. Check with your VinylDNS administrators to determine if they are enabled in your instance.**
 
-* [Manaul Review](#manual-review)
+* [Manual Review](#manual-review)
 * [Scheduling](#scheduling)
 * [Filter by Open Requests](#filtering)
 * [Cancelling DNS Changes](#cancelling)
@@ -26,7 +26,7 @@ After the review your DNS Change will include the review details, including the 
 
 ## Scheduling <a id="scheduling" />
 
-VinylDNS processes DNS Changes immediately, unless they have a Request Date and Time. The day and time must be in the future. 
+VinylDNS processes DNS Changes immediately, unless they have a Request Date and Time. The day and time must be in the future. The portal accepts and returns the Request Date and Time as your local time.
 A VinylDNS administrator will review the DNS Change after the requested time and either approve or reject it for processing. 
 [![New DNS Change form with scheduling field](../img/portal/dns-change-schedule-annotated.png){: .screenshot}](../img/portal/dns-change-schedule-annotated.png)
 
