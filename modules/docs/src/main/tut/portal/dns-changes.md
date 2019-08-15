@@ -10,6 +10,8 @@ DNS Changes is an alternative to submitting individual RecordSet changes and pro
 * The ability to include records of multiple record types across multiple zones.
 * Input names are entered as fully-qualified domain names (or IP addresses for **PTR** records), so users don't have to think in record/zone context.
 
+**Note**: DNS Change is portal-only terminology. The API equivalent is [batch change](../api/batchchange-model).
+
 #### Access
 * Access permissions will follow existing rules (admin group or ACL access). Note that an update (delete and add of the same record name, zone and record type combination) requires **Write** or **Delete** access.
 * <span class="important">**NEW**</span> **Records in shared zones.** All users are permitted to create new records or update unowned records in shared zones.

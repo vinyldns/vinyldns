@@ -520,7 +520,7 @@ sns {
   }
 }
 
-### Batch Manual Review Enabled
+### Batch Manual Review Enabled <a id="manual-review" />
 Configuration setting that determines whether batch changes with non-fatal errors can be reviewed rather than failing immediately.
 When enabling manual review, the expectation is that a DNS technician is actively querying and addressing batch change
 requests that are in a manual review state. If your process flow does not accommodate this expectation, we advise disabling
@@ -546,6 +546,14 @@ manual-review-domains = {
     "fd69:27cc:fe91:0:0:0:ffff:2"
   ]
 }
+```
+
+### Scheduled Batch Changes Enabled
+Configuration setting that determines if users are able to make Batch Changes with a scheduled time. `manual-batch-review-enabled` must be enabled as well.
+If enabled, a VinylDNS administrator cannot approve the Batch Change until after the scheduled time. An administrator could also reject the Batch Change.
+
+```yaml
+scheduled-changes-enabled = true
 ```
 
 ### IPv6 Zone Discovery Boundaries

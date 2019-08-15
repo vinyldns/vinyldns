@@ -18,7 +18,6 @@ options:
     url: portal/zones
     menu_type: portal_menu
     menu_section: portal_section
-
     nested_options:
     - title: Connect to your Zone
       url: portal/connect-to-zone
@@ -37,7 +36,6 @@ options:
     url: portal/groups
     menu_type: portal_menu
     menu_section: portal_section
-
     nested_options:
     - title: Create a Group
       url: portal/create-a-group
@@ -48,7 +46,6 @@ options:
     url: portal/dns-changes
     menu_type: portal_menu
     menu_section: portal_section
-
     nested_options:
       - title: Manual Review & Scheduling
         url: portal/manual-review-scheduling
@@ -107,7 +104,6 @@ options:
     url: api/zone-model.html
     menu_type: api
     menu_section: zoneapireference
-
     nested_options:
     - title: Zone Model
       url: api/zone-model.html
@@ -141,7 +137,6 @@ options:
     url: api/recordset-model.html
     menu_type: api
     menu_section: recordsetapireference
-
     nested_options:
     - title: RecordSet Model
       url: api/recordset-model.html
@@ -172,7 +167,6 @@ options:
     url: api/batchchange-model.html
     menu_type: api
     menu_section: batchchangeapireference
-
     nested_options:
     - title: Batch Change Model
       url: api/batchchange-model.html
@@ -203,7 +197,6 @@ options:
     url: api/membership-model.html
     menu_type: api
     menu_section: membershipapireference
-
     nested_options:
     - title: Membership Model
       url: api/membership-model.html

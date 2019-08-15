@@ -8,6 +8,8 @@ section: "api"
 
 Cancels a batch change that is PendingReview. Only the user who created the batch change can cancel it.
 
+Note: If [manual review is disabled](../../operator/config-api#manual-review) in the VinylDNS instance,
+users trying to access this endpoint will encounter a **404 Not Found** response since it will not exist.
 
 #### HTTP REQUEST
 
