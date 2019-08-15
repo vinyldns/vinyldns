@@ -176,8 +176,7 @@ final case class CnameAtZoneApexError(zoneName: String) extends DomainValidation
 final case class RecordRequiresManualReview(fqdn: String, fatal: Boolean = false)
     extends DomainValidationError(fatal) {
   def message: String =
-    s"""Record set with name "$fqdn" is configured to require manual review, but manual review is
-       |not enabled.""".stripMargin
+    s"""Record set with name "$fqdn" requires manual review."""
       .replaceAll("\n", " ")
 }
 
