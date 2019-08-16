@@ -31,8 +31,8 @@
                 });
 
             $scope.batch = {};
-            var hourFromNow = moment().startOf('hour').add(1, 'hour');
-            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}], scheduledTime: hourFromNow.format('LL hh:mm A')};
+            var tomorrow = moment().startOf('hour').add(1, 'day');
+            $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}], scheduledTime: tomorrow.format('LL hh:mm A')};
             $scope.alerts = [];
             $scope.batchChangeErrors = false;
             $scope.ownerGroupError = false;
@@ -211,7 +211,7 @@
             $('input[name="scheduledTime"]').daterangepicker({
                 singleDatePicker: true,
                 timePicker: true,
-                startDate: hourFromNow,
+                startDate: tomorrow,
                 locale: {
                   format: 'LL hh:mm A'
                 }

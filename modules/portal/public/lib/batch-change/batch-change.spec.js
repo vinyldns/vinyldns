@@ -137,6 +137,8 @@ describe('BatchChange', function(){
     });
 
     describe('Controller: BatchChangeNewController', function(){
+        var tomorrow = moment().startOf('hour').add(1, 'day').format('LL hh:mm A');
+
         beforeEach(function () {
             module('ngMock')
         });
@@ -171,7 +173,7 @@ describe('BatchChange', function(){
             it('adds a change to the changes array', function() {
                this.scope.addSingleChange();
 
-               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}, {changeType: "Add", type: "A+PTR"}]})
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}, {changeType: "Add", type: "A+PTR"}], scheduledTime: tomorrow})
             });
         });
 
@@ -179,7 +181,7 @@ describe('BatchChange', function(){
             it('removes a change from the changes array', function() {
                this.scope.deleteSingleChange(0);
 
-               expect(this.scope.newBatch).toEqual({comments: "", changes: []})
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [], scheduledTime: tomorrow})
             });
         });
 
@@ -200,7 +202,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1);
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}], scheduledTime: tomorrow});
                     done();
                 }, 2000);
             })
@@ -212,7 +214,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}], scheduledTime: tomorrow});
                     done();
                 }, 1000);
             })
@@ -224,7 +226,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecordSet", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecordSet", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}], scheduledTime: tomorrow});
                     done();
                 }, 1000);
             })
@@ -236,7 +238,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecordSet", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecordSet", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}], scheduledTime: tomorrow});
                     done();
                 }, 1000);
             })
@@ -249,7 +251,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}], scheduledTime: tomorrow});
                     done();
                 }, 1000);
             })
@@ -261,7 +263,7 @@ describe('BatchChange', function(){
 
                 setTimeout(function() {
                     expect(batchChange.changes.length).toEqual(1)
-                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecordSet", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}]});
+                    expect(batchChange).toEqual({comments: "", changes: [{changeType: "DeleteRecordSet", type: "A+PTR", inputName: "test.example.", ttl: 200, record: {address: "1.1.1.1"}}], scheduledTime: tomorrow});
                     done();
                 }, 1000);
             })
@@ -269,7 +271,7 @@ describe('BatchChange', function(){
             it('does not import non-CSV format files', function() {
                var newFile = new Blob([], {type: 'any'});
                this.scope.uploadCSV(newFile);
-               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}]});
+               expect(this.scope.newBatch).toEqual({comments: "", changes: [{changeType: "Add", type: "A+PTR"}], scheduledTime: tomorrow});
             });
         });
 
