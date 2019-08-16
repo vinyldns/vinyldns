@@ -19,7 +19,11 @@ package vinyldns.api.domain.zone
 import cats.scalatest.ValidatedMatchers
 import com.comcast.ip4s._
 import org.scalatest.{Matchers, WordSpec}
-import vinyldns.core.domain.{DomainValidationError, HighValueDomainError}
+import vinyldns.core.domain.{
+  DomainValidationError,
+  HighValueDomainError,
+  RecordRequiresManualReview
+}
 import vinyldns.core.domain.record._
 import vinyldns.core.TestRecordSetData._
 
@@ -201,6 +205,25 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
       isStringInRegexList(regexList, "FIZBUZ") shouldBe true
       isStringInRegexList(regexList, "foo.high-value.test.com") shouldBe true
       isStringInRegexList(regexList, "foo.HIGH-VALUE.test.com") shouldBe true
+    }
+  }
+
+  "zoneDoesNotRequireManualReview" should {
+    val zoneNameList = List(
+      "foo.bar.",
+      "bizz.bazz."
+    )
+
+    "match zone name regardless of casing" in {
+      zoneDoesNotRequireManualReview(zoneNameList, "FOO.bar.", "some.FOO.bar.") should
+        haveInvalid[DomainValidationError](RecordRequiresManualReview("some.FOO.bar."))
+      zoneDoesNotRequireManualReview(zoneNameList, "bizz.bazz.", "some.bizz.bazz.")
+      haveInvalid[DomainValidationError](RecordRequiresManualReview("some.bizz.bazz."))
+    }
+
+    "match zone regardless of terminating dot" in {
+      zoneDoesNotRequireManualReview(zoneNameList, "foo.bar", "no-dot.foo.bar.") should
+        haveInvalid[DomainValidationError](RecordRequiresManualReview("no-dot.foo.bar."))
     }
   }
 }
