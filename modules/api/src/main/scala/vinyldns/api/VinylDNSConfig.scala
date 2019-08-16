@@ -27,6 +27,7 @@ import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.api.domain.zone.ZoneRecordValidations
+import vinyldns.core.domain.DomainHelpers
 import vinyldns.core.domain.record.RecordType
 
 import scala.collection.JavaConverters._
@@ -149,4 +150,8 @@ object VinylDNSConfig {
 
   lazy val ipListRequiringManualReview: List[IpAddress] =
     getOptionalStringList("manual-review-domains.ip-list").flatMap(ip => IpAddress(ip))
+
+  lazy val zoneNameListRequiringManualReview: List[String] =
+    getOptionalStringList("manual-review-domains.zone-name-list").map(zn =>
+      DomainHelpers.ensureTrailingDot(zn.toLowerCase))
 }
