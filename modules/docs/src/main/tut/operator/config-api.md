@@ -546,7 +546,7 @@ manual-review-domains = {
     "fd69:27cc:fe91:0:0:0:ffff:2"
   ]
   zone-name-list = [
-    "Non.test.shared"
+    "non.test.shared"
   ]
 }
 ```
@@ -799,7 +799,7 @@ vinyldns {
       "fd69:27cc:fe91:0:0:0:ffff:2"
     ]
     zone-name-list = [
-      "Non.test.shared"
+      "non.test.shared"
     ]
   }
   
