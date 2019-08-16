@@ -169,6 +169,12 @@ describe('BatchChange', function(){
             expect(this.scope.myGroups).toBe("all my groups");
         });
 
+        it("test that we set a default scheduledTime when loading BatchChangeNewController", function(){
+            this.scope.$digest();
+            expect(this.scope.newBatch.scheduledTime).toBe(tomorrow);
+        });
+
+
         describe('$scope.addSingleChange', function() {
             it('adds a change to the changes array', function() {
                this.scope.addSingleChange();
@@ -324,6 +330,29 @@ describe('BatchChange', function(){
                     changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone for "blah.dummy." does not exist in Vinyl.']}]
                 });
                 expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Errors found. Please correct and submit again.'}]);
+            }));
+
+            it('should format the batch change data', inject(function(batchChangeService) {
+
+                this.scope.newBatch = {
+                    comments: "this is a comment.",
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A+PTR", ttl: 200, record: {address: "1.1.1.2"}}],
+                    scheduledTime: tomorrow,
+                };
+
+                this.scope.createBatchChange();
+
+                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+
+                deferred.resolve({data: {}});
+                this.rootScope.$apply();
+
+                expect(this.scope.newBatch.ownerGroupId).toBeUndefined();
+                expect(this.scope.newBatch.scheduledTime).toBeUndefined();
+                expect(this.scope.newBatch.changes).toEqual([
+                    {changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}},
+                    {changeType: "Add", inputName: '1.1.1.2', type: "PTR", ttl: 200, record: {ptrdname: "blah.dummy."}}
+                ]);
             }));
         });
     });
