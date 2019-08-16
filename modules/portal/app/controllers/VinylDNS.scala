@@ -637,7 +637,7 @@ class VinylDNS @Inject()(
         Status(response.status)(response.body)
           .withHeaders(cacheHeaders: _*)
       })
-    // $COVERAGE-ON$
+      // $COVERAGE-ON$
   }
 
   def approveBatchChange(batchChangeId: String): Action[AnyContent] = userAction.async {
