@@ -15,20 +15,30 @@
  */
 
 package actions
-import controllers.{OidcAuthenticator, VinylDNS}
-import javax.inject.{Inject, Singleton}
+import controllers.{OidcAuthenticator, UserAccountAccessor, VinylDNS}
+import javax.inject.Inject
 import models.{CustomLinks, Meta}
 import org.slf4j.LoggerFactory
 import play.api.Configuration
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents, RequestHeader}
+import play.api.mvc._
 
-class LegacyFrontendActions @Inject()(
+class LegacySecuritySupport @Inject()(
     components: ControllerComponents,
+    userAccountAccessor: UserAccountAccessor,
     configuration: Configuration,
     oidcAuthenticator: OidcAuthenticator)
     extends AbstractController(components)
-    with FrontendActions {
-  private val logger = LoggerFactory.getLogger(classOf[LegacyFrontendActions])
+    with SecuritySupport {
+  private val logger = LoggerFactory.getLogger(classOf[LegacySecuritySupport])
+
+  def frontendAction: FrontendActionBuilder =
+    new LegacyFrontendAction(
+      userAccountAccessor.get,
+      oidcAuthenticator,
+      components.parsers.anyContent)
+
+  def apiAction: ApiActionBuilder =
+    new LegacyApiAction(userAccountAccessor.get, oidcAuthenticator, components.parsers.anyContent)
 
   def loginPage()(implicit links: CustomLinks, meta: Meta): Action[AnyContent] = Action {
     implicit request =>

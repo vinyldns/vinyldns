@@ -18,10 +18,9 @@ package actions
 
 import cats.effect.IO
 import controllers.{CacheHeader, OidcAuthenticator, VinylDNS}
-import javax.inject.{Inject, Singleton}
 import org.slf4j.LoggerFactory
-import play.api.mvc.{AnyContent, BodyParser, Result}
 import play.api.mvc.Results.Redirect
+import play.api.mvc.{AnyContent, BodyParser, Result}
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,15 +32,15 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, redirect to login screen
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class FrontendAction @Inject()(
+class LegacyFrontendAction(
     val userLookup: String => IO[Option[User]],
     val oidcAuthenticator: OidcAuthenticator,
     val parser: BodyParser[AnyContent])
     extends VinylDnsAction
-    with CacheHeader
-    with FrontendActionBuilder {
+    with FrontendActionBuilder
+    with CacheHeader {
 
-  override val logger = LoggerFactory.getLogger(classOf[FrontendAction])
+  override val logger = LoggerFactory.getLogger(classOf[LegacyFrontendAction])
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   def notLoggedInResult: Future[Result] =

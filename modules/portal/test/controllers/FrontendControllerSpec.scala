@@ -16,19 +16,19 @@
 
 package controllers
 
-import actions.{FrontendAction, FrontendActionBuilder, FrontendActions, LegacyFrontendActions}
+import actions.{LegacySecuritySupport, SecuritySupport}
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import org.junit.runner.RunWith
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import play.api.{Configuration, Environment}
-import play.api.test.Helpers._
-import play.api.test._
-import vinyldns.core.domain.membership.User
 import play.api.mvc.{AnyContent, BodyParser, ControllerComponents}
 import play.api.test.CSRFTokenHelper._
+import play.api.test.Helpers._
+import play.api.test._
+import play.api.{Configuration, Environment}
+import vinyldns.core.domain.membership.User
 
 import scala.concurrent.ExecutionContext
 
@@ -49,37 +49,30 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   enabledOidcAuthenticator.oidcLogoutUrl.returns("http://logout-test.com")
   enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
-  val disabledOidcActions: FrontendActions =
-    new LegacyFrontendActions(components, config, disabledOidcAuthenticator)
-  val enabledOidcActions: FrontendActions =
-    new LegacyFrontendActions(components, config, enabledOidcAuthenticator)
-
-  val disabledOidcActionBuilder: FrontendActionBuilder =
-    new FrontendAction(userAccessor.get, disabledOidcAuthenticator, parser)
-  val enabledOidcActionBuilder: FrontendActionBuilder =
-    new FrontendAction(userAccessor.get, enabledOidcAuthenticator, parser)
-  val lockedOidcActionBuilder: FrontendActionBuilder =
-    new FrontendAction(lockedUserAccessor.get, disabledOidcAuthenticator, parser)
+  val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
+  val disabledOidcSec: SecuritySupport =
+    new LegacySecuritySupport(components, userAccessor, config, disabledOidcAuthenticator)
+  val enabledOidcSec: SecuritySupport =
+    new LegacySecuritySupport(components, userAccessor, config, enabledOidcAuthenticator)
+  val lockedSec: SecuritySupport =
+    new LegacySecuritySupport(components, lockedUserAccessor, config, disabledOidcAuthenticator)
 
   val underTest = new FrontendController(
     components,
     config,
-    disabledOidcActionBuilder,
-    disabledOidcActions
+    disabledOidcSec
   )
-  val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
+
   val lockedUserUnderTest = new FrontendController(
     components,
     config,
-    lockedOidcActionBuilder,
-    disabledOidcActions
+    lockedSec
   )
 
   val oidcUnderTest = new FrontendController(
     components,
     oidcConfig,
-    enabledOidcActionBuilder,
-    enabledOidcActions
+    enabledOidcSec
   )
 
   "FrontendController" should {

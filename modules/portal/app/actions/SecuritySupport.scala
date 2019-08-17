@@ -16,13 +16,13 @@
 
 package actions
 
-import com.google.inject.ImplementedBy
 import models.{CustomLinks, Meta}
 import play.api.mvc.{Action, AnyContent}
 
-@ImplementedBy(classOf[LegacyFrontendActions])
-trait FrontendActions {
+trait SecuritySupport {
   def loginPage()(implicit links: CustomLinks, meta: Meta): Action[AnyContent]
   def logout(): Action[AnyContent]
   def noAccess()(implicit links: CustomLinks, meta: Meta): Action[AnyContent]
+  def frontendAction: FrontendActionBuilder
+  def apiAction: ApiActionBuilder
 }

@@ -15,7 +15,7 @@
  */
 
 package controllers
-import actions.{ApiActionBuilder, FrontendActionBuilder, FrontendActions}
+import actions.{ApiActionBuilder, FrontendActionBuilder, SecuritySupport}
 import akka.io.dns.RecordType
 import cats.effect.IO
 import org.joda.time.DateTime
@@ -250,7 +250,7 @@ trait TestApplicationData { this: Mockito =>
   mockUserRepo.getUser(anyString).returns(IO.pure(Some(frodoUser)))
   mockUserChangeRepo.save(any[UserChange]).returns(IO.pure(newFrodoLog))
 
-  val mockFrontendActions: FrontendActions = mock[FrontendActions]
+  val mockFrontendActions: SecuritySupport = mock[SecuritySupport]
   val mockFrontendActionBuilder: FrontendActionBuilder = mock[FrontendActionBuilder]
   val mockApiActionBuilder: ApiActionBuilder = mock[ApiActionBuilder]
 
@@ -263,7 +263,7 @@ trait TestApplicationData { this: Mockito =>
         bind[UserChangeRepository].to(mockUserChangeRepo),
         bind[CryptoAlgebra].to(new NoOpCrypto()),
         bind[HealthService].to(new HealthService(List())),
-        bind[FrontendActions].to(mockFrontendActions),
+        bind[SecuritySupport].to(mockFrontendActions),
         bind[FrontendActionBuilder].to(mockFrontendActionBuilder),
         bind[ApiActionBuilder].to(mockApiActionBuilder)
       )

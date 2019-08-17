@@ -16,7 +16,7 @@
 
 package controllers
 
-import actions.{FrontendActionBuilder, FrontendActions}
+import actions.SecuritySupport
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
 import org.slf4j.LoggerFactory
@@ -33,19 +33,19 @@ import scala.concurrent.Future
 class FrontendController @Inject()(
     components: ControllerComponents,
     configuration: Configuration,
-    userAction: FrontendActionBuilder,
-    frontendActions: FrontendActions
+    securitySupport: SecuritySupport
 ) extends AbstractController(components) {
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
+  private val userAction = securitySupport.frontendAction
 
-  def loginPage(): Action[AnyContent] = frontendActions.loginPage()
+  def loginPage(): Action[AnyContent] = securitySupport.loginPage()
 
-  def noAccess(): Action[AnyContent] = frontendActions.noAccess()
+  def noAccess(): Action[AnyContent] = securitySupport.noAccess()
 
-  def logout(): Action[AnyContent] = frontendActions.logout()
+  def logout(): Action[AnyContent] = securitySupport.logout()
 
   def index(): Action[AnyContent] = userAction.async { implicit request =>
     val canReview = request.user.isSuper || request.user.isSupport

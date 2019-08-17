@@ -21,7 +21,7 @@ import controllers.{CacheHeader, OidcAuthenticator}
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import play.api.mvc.Results.{Forbidden, NotFound, Unauthorized}
-import play.api.mvc.{AnyContent, BodyParser, Result}
+import play.api.mvc.{ActionFunction, AnyContent, BodyParser, ControllerComponents, Request, Result}
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,15 +33,15 @@ import scala.concurrent.{ExecutionContext, Future}
   * If the user is locked out, return Forbidden message
   * Otherwise, load the account into a custom UserAccountRequest and pass into the action
   */
-class ApiAction @Inject()(
+class LegacyApiAction @Inject()(
     val userLookup: String => IO[Option[User]],
     val oidcAuthenticator: OidcAuthenticator,
     val parser: BodyParser[AnyContent])
     extends VinylDnsAction
-    with CacheHeader
-    with ApiActionBuilder {
+    with ApiActionBuilder
+    with CacheHeader {
 
-  override val logger = LoggerFactory.getLogger(classOf[ApiAction])
+  override val logger = LoggerFactory.getLogger(classOf[LegacyApiAction])
   implicit val executionContext: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   def notLoggedInResult: Future[Result] =
