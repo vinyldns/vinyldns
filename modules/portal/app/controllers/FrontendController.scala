@@ -16,7 +16,7 @@
 
 package controllers
 
-import actions.FrontendAction
+import actions.{FrontendActionBuilder, FrontendActions}
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta}
 import org.slf4j.LoggerFactory
@@ -33,70 +33,19 @@ import scala.concurrent.Future
 class FrontendController @Inject()(
     components: ControllerComponents,
     configuration: Configuration,
-    userAccountAccessor: UserAccountAccessor,
-    oidcAuthenticator: OidcAuthenticator
+    userAction: FrontendActionBuilder,
+    frontendActions: FrontendActions
 ) extends AbstractController(components) {
-
-  private val oidcEnabled: Boolean = oidcAuthenticator.oidcEnabled
-  private val userAction =
-    Action.andThen(new FrontendAction(userAccountAccessor.get, oidcAuthenticator))
 
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
 
-  def loginPage(): Action[AnyContent] = Action { implicit request =>
-    if (oidcEnabled) {
-      request.session.get(VinylDNS.ID_TOKEN) match {
-        case Some(_) => Redirect("/index")
-        case None =>
-          logger.info(s"No ${VinylDNS.ID_TOKEN} in session; Initializing oidc login")
-          Redirect(oidcAuthenticator.getCodeCall.toString, 302)
-      }
-    } else {
-      request.session.get("username") match {
-        case Some(_) => Redirect("/index")
-        case None =>
-          val flash = request.flash
-          logger.error(s"$flash")
-          VinylDNS.Alerts.fromFlash(flash) match {
-            case Some(VinylDNS.Alert("danger", message)) =>
-              Ok(views.html.login(Some(message)))
-            case _ =>
-              Ok(views.html.login())
-          }
-      }
-    }
-  }
+  def loginPage(): Action[AnyContent] = frontendActions.loginPage()
 
-  private def getLoggedInUser(request: RequestHeader) =
-    if (oidcEnabled) {
-      request.session
-        .get(VinylDNS.ID_TOKEN)
-        .flatMap {
-          oidcAuthenticator.getValidUsernameFromToken
-        }
-    } else {
-      request.session.get("username")
-    }.getOrElse("No user in session")
+  def noAccess(): Action[AnyContent] = frontendActions.noAccess()
 
-  def logout(): Action[AnyContent] = Action { implicit request =>
-    logger.info(s"Initializing logout for user [${getLoggedInUser(request)}]")
-    if (oidcEnabled) {
-      Redirect(oidcAuthenticator.oidcLogoutUrl).withNewSession
-    } else {
-      Redirect("/login").withNewSession
-    }
-  }
-
-  def noAccess(): Action[AnyContent] = Action { implicit request =>
-    logger.info(s"User account for '${getLoggedInUser(request)}' is locked.")
-    Unauthorized(
-      views.html.systemMessage(
-        """
-        |Account locked. Please contact your VinylDNS administrators for more information.
-      """.stripMargin))
-  }
+  def logout(): Action[AnyContent] = frontendActions.logout()
 
   def index(): Action[AnyContent] = userAction.async { implicit request =>
     val canReview = request.user.isSuper || request.user.isSupport

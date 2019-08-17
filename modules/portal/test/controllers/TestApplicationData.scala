@@ -15,20 +15,19 @@
  */
 
 package controllers
+import actions.{ApiActionBuilder, FrontendActionBuilder, FrontendActions}
 import akka.io.dns.RecordType
 import cats.effect.IO
 import org.joda.time.DateTime
 import org.specs2.mock.Mockito
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.{Application, Configuration, Environment}
 import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.{Application, Configuration, Environment}
 import vinyldns.core.crypto.{CryptoAlgebra, NoOpCrypto}
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record._
 import vinyldns.core.health.HealthService
-
-import scala.util.Success
 
 trait TestApplicationData { this: Mockito =>
   val frodoDetails = LdapUserDetails(
@@ -251,6 +250,10 @@ trait TestApplicationData { this: Mockito =>
   mockUserRepo.getUser(anyString).returns(IO.pure(Some(frodoUser)))
   mockUserChangeRepo.save(any[UserChange]).returns(IO.pure(newFrodoLog))
 
+  val mockFrontendActions: FrontendActions = mock[FrontendActions]
+  val mockFrontendActionBuilder: FrontendActionBuilder = mock[FrontendActionBuilder]
+  val mockApiActionBuilder: ApiActionBuilder = mock[ApiActionBuilder]
+
   def app: Application =
     GuiceApplicationBuilder()
       .disable[modules.VinylDNSModule]
@@ -259,7 +262,10 @@ trait TestApplicationData { this: Mockito =>
         bind[UserRepository].to(mockUserRepo),
         bind[UserChangeRepository].to(mockUserChangeRepo),
         bind[CryptoAlgebra].to(new NoOpCrypto()),
-        bind[HealthService].to(new HealthService(List()))
+        bind[HealthService].to(new HealthService(List())),
+        bind[FrontendActions].to(mockFrontendActions),
+        bind[FrontendActionBuilder].to(mockFrontendActionBuilder),
+        bind[ApiActionBuilder].to(mockApiActionBuilder)
       )
       .configure(testConfigLdap)
       .build()

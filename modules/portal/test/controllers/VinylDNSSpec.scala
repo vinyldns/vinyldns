@@ -16,6 +16,7 @@
 
 package controllers
 
+import actions.{ApiAction, ApiActionBuilder, FrontendAction, FrontendActionBuilder}
 import cats.effect.IO
 import controllers.VinylDNS.Alert
 import org.junit.runner._
@@ -51,12 +52,24 @@ import scala.util.{Failure, Success}
 class VinylDNSSpec extends Specification with Mockito with TestApplicationData with BeforeEach {
 
   val components: ControllerComponents = Helpers.stubControllerComponents()
-  val defaultActionBuilder = DefaultActionBuilder(Helpers.stubBodyParser())
+  val parser: BodyParser[AnyContent] = Helpers.stubBodyParser()
+  val defaultActionBuilder = DefaultActionBuilder(parser)
   val crypto: CryptoAlgebra = spy(new NoOpCrypto())
   val config: Configuration = Configuration.load(Environment.simple())
   val mockOidcAuth: OidcAuthenticator = mock[OidcAuthenticator]
   val authenticator: LdapAuthenticator = mock[LdapAuthenticator]
   val userAccessor: UserAccountAccessor = mock[UserAccountAccessor]
+  val apiActionBuilder: ApiActionBuilder = new ApiAction(mockUserAccessor.get, mockOidcAuth, parser)
+  val frontendActionBuilder: FrontendActionBuilder =
+    new FrontendAction(mockUserAccessor.get, mockOidcAuth, parser)
+  val lockedApiActionBuilder: ApiActionBuilder =
+    new ApiAction(mockLockedUserAccessor.get, mockOidcAuth, parser)
+  val lockedFrontendActionBuilder: FrontendActionBuilder =
+    new FrontendAction(mockLockedUserAccessor.get, mockOidcAuth, parser)
+  val multiApiActionBuilder: ApiActionBuilder =
+    new ApiAction(mockMultiUserAccessor.get, mockOidcAuth, parser)
+  val multiFrontendActionBuilder: FrontendActionBuilder =
+    new FrontendAction(mockMultiUserAccessor.get, mockOidcAuth, parser)
 
   protected def before: Any = org.mockito.Mockito.reset(crypto, authenticator, userAccessor)
 
@@ -67,7 +80,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       wsClient: WSClient = ws,
       components: ControllerComponents = components,
       crypto: CryptoAlgebra = crypto,
-      oidcAuthenticator: OidcAuthenticator = mockOidcAuth): VinylDNS =
+      oidcAuthenticator: OidcAuthenticator = mockOidcAuth,
+      userAction: ApiActionBuilder = apiActionBuilder,
+      frontendAction: FrontendActionBuilder = frontendActionBuilder): VinylDNS =
     new VinylDNS(
       configuration,
       authenticator,
@@ -75,7 +90,9 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       wsClient,
       components,
       crypto,
-      oidcAuthenticator)
+      oidcAuthenticator,
+      userAction,
+      frontendAction)
 
   val vinyldnsPortal: VinylDNS = TestVinylDNS()
 
@@ -121,9 +138,20 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "return Not found if the current logged in user was not found" in new WithApplication(app) {
         userAccessor.get(frodoUser.userName).returns(IO.pure(None))
-
+        val apiBuilder: ApiActionBuilder = new ApiAction(userAccessor.get, mockOidcAuth, parser)
+        val feBuilder: FrontendActionBuilder =
+          new FrontendAction(userAccessor.get, mockOidcAuth, parser)
         val vinyldnsPortal =
-          TestVinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
+          TestVinylDNS(
+            config,
+            mockLdapAuthenticator,
+            userAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            apiBuilder,
+            feBuilder)
         val result = vinyldnsPortal
           .getAuthenticatedUserData()
           .apply(
@@ -135,6 +163,21 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return Forbidden if the current user account is locked" in new WithApplication(app) {
         authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
         userAccessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
+        val apiBuilder: ApiActionBuilder = new ApiAction(userAccessor.get, mockOidcAuth, parser)
+        val feBuilder: FrontendActionBuilder =
+          new FrontendAction(userAccessor.get, mockOidcAuth, parser)
+
+        val vinyldnsPortal =
+          TestVinylDNS(
+            config,
+            authenticator,
+            userAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            apiBuilder,
+            feBuilder)
 
         val result = vinyldnsPortal
           .getAuthenticatedUserData()
@@ -181,6 +224,21 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "fail if user is not found" in new WithApplication(app) {
         userAccessor.get("fbaggins").returns(IO.pure(None))
         authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
+        val apiBuilder: ApiActionBuilder = new ApiAction(userAccessor.get, mockOidcAuth, parser)
+        val feBuilder: FrontendActionBuilder =
+          new FrontendAction(userAccessor.get, mockOidcAuth, parser)
+
+        val vinyldnsPortal =
+          TestVinylDNS(
+            config,
+            authenticator,
+            userAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            apiBuilder,
+            feBuilder)
 
         val result = vinyldnsPortal
           .regenerateCreds()
@@ -193,6 +251,17 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return forbidden (403) if user account is locked" in new WithApplication(app) {
         authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
         userAccessor.get(lockedFrodoUser.userName).returns(IO.pure(Some(lockedFrodoUser)))
+        val vinyldnsPortal =
+          TestVinylDNS(
+            config,
+            authenticator,
+            userAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            lockedApiActionBuilder,
+            lockedFrontendActionBuilder)
 
         val result = vinyldnsPortal
           .regenerateCreds()
@@ -655,7 +724,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result = underTest.newGroup()(
               FakeRequest(POST, "/groups")
                 .withJsonBody(hobbitGroupRequest)
@@ -685,7 +757,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result = underTest.newGroup()(FakeRequest(POST, "/groups")
               .withJsonBody(hobbitGroupRequest))
 
@@ -799,7 +874,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result =
               underTest.getGroup(hobbitGroupId)(
                 FakeRequest(GET, s"/groups/$hobbitGroupId")
@@ -912,7 +990,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result =
               underTest.deleteGroup(hobbitGroupId)(
                 FakeRequest(DELETE, s"/groups/$hobbitGroupId")
@@ -1089,7 +1170,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup)
@@ -1270,7 +1354,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/data/groups/$hobbitGroupId/members"))
 
@@ -1296,7 +1383,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
                 .withSession(
@@ -1467,7 +1557,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockLockedUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                lockedApiActionBuilder,
+                lockedFrontendActionBuilder)
             val result = underTest.getGroups()(
               FakeRequest(GET, s"/api/groups")
                 .withSession(
@@ -1552,7 +1645,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockLockedUserAccessor,
             ws,
             components,
-            crypto)
+            crypto,
+            mockOidcAuth,
+            lockedApiActionBuilder,
+            lockedFrontendActionBuilder)
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
           FakeRequest(GET, s"/download-creds-file/credsfile.csv")
@@ -1566,8 +1662,20 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "redirect to login if user account is not found" in new WithApplication(app) {
         import play.api.mvc.Result
         userAccessor.get(frodoUser.userName).returns(IO.pure(None))
+        val apiBuilder: ApiActionBuilder = new ApiAction(userAccessor.get, mockOidcAuth, parser)
+        val feBuilder: FrontendActionBuilder =
+          new FrontendAction(userAccessor.get, mockOidcAuth, parser)
         val underTest =
-          TestVinylDNS(config, mockLdapAuthenticator, userAccessor, ws, components, crypto)
+          TestVinylDNS(
+            config,
+            mockLdapAuthenticator,
+            userAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            apiBuilder,
+            feBuilder)
 
         val result: Future[Result] = underTest.serveCredsFile("credsfile.csv")(
           FakeRequest(GET, s"/download-creds-file/credsfile.csv")
@@ -1588,6 +1696,20 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val lookupValue = "someNTID"
         authenticator.lookup(lookupValue).returns(Right(frodoDetails))
         userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
+        val apiBuilder: ApiActionBuilder = new ApiAction(userAccessor.get, mockOidcAuth, parser)
+        val feBuilder: FrontendActionBuilder =
+          new FrontendAction(userAccessor.get, mockOidcAuth, parser)
+        val vinyldnsPortal =
+          TestVinylDNS(
+            config,
+            authenticator,
+            userAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            apiBuilder,
+            feBuilder)
 
         val expected = Json.toJson(VinylDNS.UserInfo.fromUser(frodoUser))
 
@@ -1606,7 +1728,16 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         authenticator.lookup(lookupValue).returns(Right(frodoDetails))
 
         val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, mockLockedUserAccessor, ws, components, crypto)
+          TestVinylDNS(
+            config,
+            authenticator,
+            mockLockedUserAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            lockedApiActionBuilder,
+            lockedFrontendActionBuilder)
         val result = vinyldnsPortal
           .getUserDataByUsername(lookupValue)
           .apply(FakeRequest(GET, s"/api/users/lookupuser/$lookupValue"))
@@ -1621,7 +1752,16 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         authenticator.lookup(lookupValue).returns(Right(frodoDetails))
 
         val vinyldnsPortal =
-          TestVinylDNS(config, authenticator, mockLockedUserAccessor, ws, components, crypto)
+          TestVinylDNS(
+            config,
+            authenticator,
+            mockLockedUserAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            lockedApiActionBuilder,
+            lockedFrontendActionBuilder)
         val result = vinyldnsPortal
           .getUserDataByUsername(lookupValue)
           .apply(
@@ -1640,6 +1780,20 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         authenticator
           .lookup(frodoUser.userName)
           .returns(Left(UserDoesNotExistException("not found")))
+        val apiBuilder: ApiActionBuilder = new ApiAction(userAccessor.get, mockOidcAuth, parser)
+        val feBuilder: FrontendActionBuilder =
+          new FrontendAction(userAccessor.get, mockOidcAuth, parser)
+        val vinyldnsPortal =
+          TestVinylDNS(
+            config,
+            authenticator,
+            userAccessor,
+            ws,
+            components,
+            crypto,
+            mockOidcAuth,
+            apiBuilder,
+            feBuilder)
 
         val result = vinyldnsPortal
           .getUserDataByUsername(frodoUser.userName)
@@ -1692,7 +1846,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.getZones()(
               FakeRequest(GET, s"/api/zones").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -1747,7 +1904,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.getZone(hobbitZoneId)(
               FakeRequest(GET, s"/api/zones/$hobbitZoneId").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -1863,7 +2023,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.getZoneByName(hobbitZoneName)(
               FakeRequest(GET, s"/api/zones/name/$hobbitZoneName").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -1918,7 +2081,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.syncZone(hobbitZoneId)(
               FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -1974,7 +2140,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.getRecordSets(hobbitZoneId)(
               FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -2030,7 +2199,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.listRecordSetChanges(hobbitZoneId)(
               FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -2085,7 +2257,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.addZone()(
               FakeRequest(POST, s"/api/zones")
                 .withJsonBody(hobbitZoneRequest)
@@ -2143,7 +2318,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.updateZone(hobbitZoneId)(
               FakeRequest(PUT, s"/api/zones/$hobbitZoneId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2202,7 +2380,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.addRecordSet(hobbitRecordSetId)(
               FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
                 .withJsonBody(hobbitZoneRequest)
@@ -2260,7 +2441,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.deleteZone(hobbitZoneId)(
               FakeRequest(DELETE, s"/api/zones/$hobbitZoneId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2319,7 +2503,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
               FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2377,7 +2564,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
               FakeRequest(DELETE, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2436,7 +2626,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.getBatchChange(hobbitZoneId)(
               FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2494,7 +2687,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.newBatchChange()(
               FakeRequest(POST, s"/api/dnschanges")
                 .withJsonBody(hobbitZoneRequest)
@@ -2551,7 +2747,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.cancelBatchChange("123")(
               FakeRequest(POST, s"/api/dnschanges/123/cancel")
                 .withSession(
@@ -2607,7 +2806,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.approveBatchChange("123")(
               FakeRequest(POST, s"/api/dnschanges/123/approve")
                 .withSession(
@@ -2663,7 +2865,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.rejectBatchChange("123")(
               FakeRequest(POST, s"/api/dnschanges/123/reject")
                 .withSession(
@@ -2720,7 +2925,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.listBatchChanges()(
               FakeRequest(GET, s"/api/dnschanges")
                 .withJsonBody(hobbitZoneRequest)
@@ -2753,7 +2961,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockMultiUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                multiApiActionBuilder,
+                multiFrontendActionBuilder)
             val result = underTest.lockUser(frodoUser.id)(
               FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
                 .withSession(
@@ -2781,7 +2992,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockMultiUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                multiApiActionBuilder,
+                multiFrontendActionBuilder)
             val result =
               underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock"))
 
@@ -2836,7 +3050,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 mockMultiUserAccessor,
                 client,
                 components,
-                crypto)
+                crypto,
+                mockOidcAuth,
+                multiApiActionBuilder,
+                multiFrontendActionBuilder)
             val result = underTest.unlockUser(lockedFrodoUser.id)(
               FakeRequest(PUT, s"/users/${lockedFrodoUser.id}/unlock")
                 .withSession(
@@ -2943,7 +3160,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               mockLockedUserAccessor,
               client,
               components,
-              crypto)
+              crypto,
+              mockOidcAuth,
+              lockedApiActionBuilder,
+              lockedFrontendActionBuilder)
             val result = underTest.getBackendIds()(
               FakeRequest(GET, "/zones/backendids")
                 .withSession(

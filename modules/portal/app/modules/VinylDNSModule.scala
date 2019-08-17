@@ -32,6 +32,14 @@ package modules
  * limitations under the License.
  */
 
+import actions.{
+  ApiAction,
+  ApiActionBuilder,
+  FrontendAction,
+  FrontendActionBuilder,
+  FrontendActions,
+  LegacyFrontendActions
+}
 import cats.effect.{ContextShift, IO, Timer}
 import com.google.inject.AbstractModule
 import controllers._
@@ -79,6 +87,9 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
           .start
       } else IO.unit
     } yield {
+      bind(classOf[FrontendActions]).to(classOf[LegacyFrontendActions])
+      bind(classOf[ApiActionBuilder]).to(classOf[ApiAction])
+      bind(classOf[FrontendActionBuilder]).to(classOf[FrontendAction])
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
       bind(classOf[Authenticator]).toInstance(auth)
       bind(classOf[UserRepository]).toInstance(repositories.userRepository)

@@ -19,7 +19,7 @@ package controllers
 import java.util
 import java.util.HashMap
 
-import actions.{ApiAction, FrontendAction}
+import actions.{ApiAction, ApiActionBuilder, FrontendAction, FrontendActionBuilder}
 import cats.data.EitherT
 import cats.effect.IO
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
@@ -100,7 +100,9 @@ class VinylDNS @Inject()(
     wsClient: WSClient,
     components: ControllerComponents,
     crypto: CryptoAlgebra,
-    oidcAuthenticator: OidcAuthenticator)
+    oidcAuthenticator: OidcAuthenticator,
+    userAction: ApiActionBuilder,
+    frontendAction: FrontendActionBuilder)
     extends AbstractController(components)
     with CacheHeader {
 
@@ -113,12 +115,6 @@ class VinylDNS @Inject()(
     configuration
       .getOptional[String]("portal.vinyldns.backend.url")
       .getOrElse("http://localhost:9000")
-
-  // Need this guy for user actions, brings the session username and user account into the Action
-  private val userAction =
-    Action.andThen(new ApiAction(userAccountAccessor.get, oidcAuthenticator))
-  private val frontendAction =
-    Action.andThen(new FrontendAction(userAccountAccessor.get, oidcAuthenticator))
 
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {
