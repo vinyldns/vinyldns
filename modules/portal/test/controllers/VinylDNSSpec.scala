@@ -96,6 +96,25 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
   val vinyldnsPortal: VinylDNS = TestVinylDNS()
 
+  private def withClient(client: WSClient) =
+    TestVinylDNS(
+      testConfigLdap,
+      mockLdapAuthenticator,
+      mockUserAccessor,
+      client,
+      components,
+      crypto)
+
+  private def withLockedClient(client: WSClient) =
+    TestVinylDNS(
+      testConfigLdap,
+      mockLdapAuthenticator,
+      mockLockedUserAccessor,
+      client,
+      components,
+      crypto,
+      mockOidcAuth)
+
   "VinylDNS.Alerts" should {
     "return alertType and alertMessage are given" in {
       VinylDNS.Alerts.fromFlash(
@@ -564,14 +583,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.newGroup()(
               FakeRequest(POST, "/groups")
                 .withJsonBody(hobbitGroupRequest)
@@ -594,14 +606,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.newGroup()(
               FakeRequest(POST, "/groups")
                 .withJsonBody(invalidHobbitGroup)
@@ -624,14 +629,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.newGroup()(
               FakeRequest(POST, s"/groups")
                 .withJsonBody(hobbitGroupRequest)
@@ -653,14 +651,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.newGroup()(
               FakeRequest(POST, "/groups")
                 .withJsonBody(hobbitGroupRequest)
@@ -743,14 +734,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -773,14 +757,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -801,14 +778,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.getGroup("not-hobbits")(FakeRequest(GET, "/groups/not-hobbits")
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
@@ -856,14 +826,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getGroup(hobbitGroupId)(FakeRequest(GET, s"/groups/$hobbitGroupId"))
 
@@ -888,14 +851,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -913,14 +869,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId"))
 
@@ -974,14 +923,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1003,14 +945,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
 
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.deleteGroup(hobbitGroupId)(FakeRequest(DELETE, s"/groups/$hobbitGroupId")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1031,14 +966,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.deleteGroup("not-hobbits")(FakeRequest(DELETE, "/groups/not-hobbits")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1063,14 +991,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup)
@@ -1090,14 +1011,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.updateGroup(hobbitGroupId)(FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup))
@@ -1152,14 +1066,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(invalidHobbitGroup)
@@ -1181,14 +1088,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup)
@@ -1211,14 +1111,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.updateGroup(hobbitGroupId)(
               FakeRequest(PUT, s"/groups/$hobbitGroupId")
                 .withJsonBody(hobbitGroup)
@@ -1241,14 +1134,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.updateGroup("not-hobbits")(
               FakeRequest(PUT, "/groups/not-hobbits")
                 .withJsonBody(hobbitGroup)
@@ -1273,14 +1159,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/data/groups/$hobbitGroupId/members")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1360,14 +1239,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/groups/$hobbitGroupId/members?maxItems=0")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1388,14 +1260,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/groups/$hobbitGroupId/members")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1417,14 +1282,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.getMemberList(hobbitGroupId)(
               FakeRequest(GET, s"/groups/$hobbitGroupId/members")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1448,14 +1306,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups")
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
@@ -1473,14 +1324,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups"))
 
             status(result) mustEqual 401
@@ -1541,7 +1385,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 client,
                 components,
                 crypto)
-            val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups")
+            val result = underTest.getMyGroups()(FakeRequest(GET, s"/api/groups")
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)
@@ -1729,13 +1573,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result = underTest.getZones()(FakeRequest(GET, s"/api/zones"))
 
             status(result) mustEqual 401
@@ -1753,14 +1591,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.getZones()(
               FakeRequest(GET, s"/api/zones").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -1784,13 +1615,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getZone(hobbitZoneId)(FakeRequest(GET, s"/api/zones/$hobbitZoneId"))
 
@@ -1809,14 +1634,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.getZone(hobbitZoneId)(
               FakeRequest(GET, s"/api/zones/$hobbitZoneId").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -1843,14 +1661,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getZoneByName(hobbitZoneName)(
                 FakeRequest(GET, s"/zones/name/$hobbitZoneName")
@@ -1875,14 +1686,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             val mockUserAccessor = mock[UserAccountAccessor]
             mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
             mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getZoneByName("not-hobbits")(FakeRequest(GET, "/zones/name/not-hobbits")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -1900,13 +1704,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getZoneByName(hobbitZoneName)(
                 FakeRequest(GET, s"/api/zones/name/$hobbitZoneName"))
@@ -1926,14 +1724,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.getZoneByName(hobbitZoneName)(
               FakeRequest(GET, s"/api/zones/name/$hobbitZoneName").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -1957,13 +1748,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.syncZone(hobbitZoneId)(FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync"))
 
@@ -1982,14 +1767,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.syncZone(hobbitZoneId)(
               FakeRequest(POST, s"/api/zones/$hobbitZoneId/sync").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -2013,13 +1791,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getRecordSets(hobbitZoneId)(
                 FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
@@ -2039,14 +1811,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.getRecordSets(hobbitZoneId)(
               FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -2070,13 +1835,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.listRecordSetChanges(hobbitZoneId)(
                 FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets"))
@@ -2096,14 +1855,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.listRecordSetChanges(hobbitZoneId)(
               FakeRequest(GET, s"/api/zones/$hobbitZoneId/recordsets").withSession(
                 "username" -> lockedFrodoUser.userName,
@@ -2127,13 +1879,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.addZone()(FakeRequest(POST, s"/api/zones").withJsonBody(hobbitZoneRequest))
 
@@ -2152,14 +1898,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.addZone()(
               FakeRequest(POST, s"/api/zones")
                 .withJsonBody(hobbitZoneRequest)
@@ -2185,13 +1924,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.updateZone(hobbitZoneId)(
                 FakeRequest(PUT, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
@@ -2211,14 +1944,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.updateZone(hobbitZoneId)(
               FakeRequest(PUT, s"/api/zones/$hobbitZoneId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2244,13 +1970,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.addRecordSet(hobbitRecordSetId)(
                 FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
@@ -2271,14 +1991,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.addRecordSet(hobbitRecordSetId)(
               FakeRequest(POST, s"/api/zones/$hobbitZoneId/recordsets")
                 .withJsonBody(hobbitZoneRequest)
@@ -2304,13 +2017,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.deleteZone(hobbitZoneId)(
                 FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
@@ -2330,14 +2037,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.deleteZone(hobbitZoneId)(
               FakeRequest(DELETE, s"/api/zones/$hobbitZoneId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2363,13 +2063,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
                 FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
@@ -2390,14 +2084,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.updateRecordSet(hobbitZoneId, hobbitRecordSetId)(
               FakeRequest(PUT, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2423,13 +2110,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
                 FakeRequest(DELETE, s"/api/zones/$hobbitZoneId").withJsonBody(hobbitZoneRequest))
@@ -2449,14 +2130,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.deleteRecordSet(hobbitZoneId, hobbitRecordSetId)(
               FakeRequest(DELETE, s"/api/zones/$hobbitZoneId/recordsets/$hobbitRecordSetId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2482,13 +2156,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getBatchChange(hobbitZoneId)(
                 FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
@@ -2509,14 +2177,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.getBatchChange(hobbitZoneId)(
               FakeRequest(GET, s"/api/dnschanges/$hobbitZoneId")
                 .withJsonBody(hobbitZoneRequest)
@@ -2542,13 +2203,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.newBatchChange()(
                 FakeRequest(POST, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
@@ -2568,14 +2223,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.newBatchChange()(
               FakeRequest(POST, s"/api/dnschanges")
                 .withJsonBody(hobbitZoneRequest)
@@ -2601,13 +2249,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.cancelBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/cancel"))
 
@@ -2626,14 +2268,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.cancelBatchChange("123")(
               FakeRequest(POST, s"/api/dnschanges/123/cancel")
                 .withSession(
@@ -2658,13 +2293,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.approveBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/approve"))
 
@@ -2683,14 +2312,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.approveBatchChange("123")(
               FakeRequest(POST, s"/api/dnschanges/123/approve")
                 .withSession(
@@ -2715,13 +2337,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.rejectBatchChange("123")(FakeRequest(POST, s"/api/dnschanges/123/reject"))
 
@@ -2740,14 +2356,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.rejectBatchChange("123")(
               FakeRequest(POST, s"/api/dnschanges/123/reject")
                 .withSession(
@@ -2772,13 +2381,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.listBatchChanges()(
                 FakeRequest(GET, s"/api/dnschanges").withJsonBody(hobbitZoneRequest))
@@ -2798,14 +2401,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.listBatchChanges()(
               FakeRequest(GET, s"/api/dnschanges")
                 .withJsonBody(hobbitZoneRequest)
@@ -2887,14 +2483,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/lock")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -2945,14 +2534,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.lockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/unlock"))
 
@@ -2971,14 +2553,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest =
-              TestVinylDNS(
-                testConfigLdap,
-                mockLdapAuthenticator,
-                mockUserAccessor,
-                client,
-                components,
-                crypto)
+            val underTest = withClient(client)
             val result =
               underTest.unlockUser(frodoUser.id)(FakeRequest(PUT, s"/users/${frodoUser.id}/unlock")
                 .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
@@ -3000,13 +2575,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockUserAccessor,
-              client,
-              components,
-              crypto)
+            val underTest = withClient(client)
             val result =
               underTest.getBackendIds()(FakeRequest(GET, "/zones/backendids"))
 
@@ -3025,14 +2594,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             }
         } { implicit port =>
           WsTestClient.withClient { client =>
-            val underTest = TestVinylDNS(
-              testConfigLdap,
-              mockLdapAuthenticator,
-              mockLockedUserAccessor,
-              client,
-              components,
-              crypto,
-              mockOidcAuth)
+            val underTest = withLockedClient(client)
             val result = underTest.getBackendIds()(
               FakeRequest(GET, "/zones/backendids")
                 .withSession(

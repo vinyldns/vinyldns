@@ -21,7 +21,7 @@ import controllers.{CacheHeader, OidcAuthenticator}
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import play.api.mvc.Results.{Forbidden, NotFound, Unauthorized}
-import play.api.mvc.{ActionFunction, AnyContent, BodyParser, ControllerComponents, Request, Result}
+import play.api.mvc.{AnyContent, BodyParser, Result}
 import vinyldns.core.domain.membership.User
 
 import scala.concurrent.{ExecutionContext, Future}
