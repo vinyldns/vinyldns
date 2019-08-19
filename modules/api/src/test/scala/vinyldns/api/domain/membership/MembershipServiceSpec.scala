@@ -617,14 +617,16 @@ class MembershipServiceSpec
           GroupInfo(dummyGroup),
           GroupInfo(okGroup))
       }
-      "return member groups from the database for super users" in {
-        doReturn(IO.pure(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
+      "return all groups from the database for super users even if ignoreAccess is false" in {
+        doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
           rightResultOf(underTest.listMyGroups(None, None, 100, superUserAuth, false).value)
-        verify(mockGroupRepo, never()).getAllGroups()
-        result.groups should contain theSameElementsAs Seq()
+        verify(mockGroupRepo).getAllGroups()
+        result.groups should contain theSameElementsAs Seq(
+          GroupInfo(dummyGroup),
+          GroupInfo(okGroup))
       }
-      "return groups from the database for super users" in {
+      "return all groups from the database for super users if ignoreAccess is true" in {
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
           rightResultOf(underTest.listMyGroups(None, None, 100, superUserAuth, true).value)
@@ -633,15 +635,17 @@ class MembershipServiceSpec
           GroupInfo(dummyGroup),
           GroupInfo(okGroup))
       }
-      "return member groups from the database for support users" in {
+      "return all groups from the database for support users even if ignoreAccess is false" in {
         val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
-        doReturn(IO.pure(Set())).when(mockGroupRepo).getGroups(any[Set[String]])
+        doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =
           rightResultOf(underTest.listMyGroups(None, None, 100, supportAuth, false).value)
-        verify(mockGroupRepo, never()).getAllGroups()
-        result.groups should contain theSameElementsAs Seq()
+        verify(mockGroupRepo).getAllGroups()
+        result.groups should contain theSameElementsAs Seq(
+          GroupInfo(dummyGroup),
+          GroupInfo(okGroup))
       }
-      "return groups from the database for support users" in {
+      "return all groups from the database for support users if ignoreAccess is true" in {
         val supportAuth = AuthPrincipal(okUser.copy(isSupport = true), Seq())
         doReturn(IO.pure(Set(okGroup, dummyGroup))).when(mockGroupRepo).getAllGroups()
         val result: ListMyGroupsResponse =

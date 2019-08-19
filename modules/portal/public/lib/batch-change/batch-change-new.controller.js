@@ -19,7 +19,7 @@
 
     angular.module('batch-change')
         .controller('BatchChangeNewController', function($scope, $log, $location, $timeout, $q, batchChangeService, utilityService, groupsService){
-            groupsService.getMyGroups()
+            groupsService.getGroups()
                 .then(function (results) {
                     $scope.myGroups = results['data']['groups'];
                     if ($scope.myGroups.length == 1) {
@@ -27,7 +27,7 @@
                     }
                 })
                 .catch(function (error) {
-                    handleError(error, 'groupsService::getMyGroups-failure');
+                    handleError(error, 'groupsService::getGroups-failure');
                 });
 
             $scope.batch = {};

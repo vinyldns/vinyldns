@@ -192,7 +192,7 @@ class MembershipRoutingSpec
           ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100, false)))
         .when(membershipService)
         .listMyGroups(None, None, 100, okAuth, false)
-      Get("/groups") ~> Route.seal(membershipRoute(okAuth)) ~> check {
+      Get("/groups") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.OK
 
         val result = responseAs[ListMyGroupsResponse]

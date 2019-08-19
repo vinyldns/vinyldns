@@ -21,10 +21,9 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     });
 
     $scope.groups = { items: [] };
-    $scope.allGroups = { items: [] };
     $scope.groupsLoaded = false;
-    $scope.allGroupsLoaded = false;
     $scope.alerts = [];
+    $scope.ignoreAccess = false;
 
     function handleError(error, type) {
         var alert = utilityService.failure(error, type);
@@ -103,32 +102,21 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             });
     };
 
-    $scope.refresh = function () {
-        //get users groups
-        function mySuccess(result) {
-            $log.log('getMyGroups:refresh-success', result);
+    $scope.refresh = function (ignoreAccess = null) {
+        if(typeof ignoreAccess === "boolean"){
+            $scope.ignoreAccess = ignoreAccess;
+        }
+        function success(result) {
+            $log.log('getGroups:refresh-success', result);
             //update groups
             $scope.groups.items = result.groups;
             $scope.groupsLoaded = true;
             return result;
         }
-        function allSuccess(result) {
-            $log.log('getAllGroups:refresh-success', result);
-            //update groups
-            $scope.allGroups.items = result.groups;
-            $scope.allGroupsLoaded = true;
-            return result;
-        }
-        getMyGroups()
-            .then(mySuccess)
+        getGroups($scope.ignoreAccess)
+            .then(success)
             .catch(function (error) {
-                handleError(error, 'getMyGroups::refresh-failure');
-            });
-
-        getAllGroups()
-            .then(allSuccess)
-            .catch(function (error) {
-               handleError(error, 'getAllGroups::refresh-failure');
+                handleError(error, 'getGroups::refresh-failure');
             });
     };
 
@@ -146,29 +134,16 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         return true;
     };
 
-    function getMyGroups() {
+    function getGroups() {
         function success(response) {
-            $log.log('groupsService::getMyGroups-success');
+            $log.log('groupsService::getGroups-success');
             return response.data;
         }
         return groupsService
-            .getMyGroups()
+            .getGroups($scope.ignoreAccess)
             .then(success)
             .catch(function (error){
-                handleError(error, 'groupsService::getMyGroups-failure');
-        });
-    }
-
-    function getAllGroups() {
-        function success(response) {
-            $log.log('groupsService::getAllGroups-success');
-            return response.data;
-        }
-        return groupsService
-            .getMyGroups(true)
-            .then(success)
-            .catch(function (error){
-                handleError(error, 'groupsService::getAllGroups-failure');
+                handleError(error, 'groupsService::getGroups-failure');
         });
     }
 
@@ -264,8 +239,11 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         return (isAdmin || isSuper) ? true : false;
     }
 
-    $scope.groupMember = function(group) {
-        return group.members.some(x => x.id === $scope.profile.id);
+    $scope.canSeeGroup = function(group) {
+        var isMember = group.members.some(x => x.id === $scope.profile.id);
+        var isSupport = $scope.profile.isSupport;
+        var isSuper = $scope.profile.isSuper;
+        return (isMember || isSupport || isSuper) ? true : false;
     }
 
     //get user data on groups view load

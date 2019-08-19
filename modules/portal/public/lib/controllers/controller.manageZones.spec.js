@@ -33,7 +33,7 @@ describe('Controller: ManageZonesController', function () {
         this.recordsService = recordsService;
         this.profileService = profileService;
         this.q = $q;
-        this.groupsService.getMyGroups = function () {
+        this.groupsService.getGroups = function () {
             return $q.when({
                 data: {
                     groups: "all my groups"

@@ -50,7 +50,7 @@ angular.module('controller.zones', [])
         $scope.currentZone.transferConnection = {};
     };
 
-    groupsService.getMyGroups().then(function (results) {
+    groupsService.getGroups().then(function (results) {
         if (results.data) {
             $scope.myGroups = results.data.groups;
             $scope.myGroupIds = results.data.groups.map(function(grp) {return grp['id']});
