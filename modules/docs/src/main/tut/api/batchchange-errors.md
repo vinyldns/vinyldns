@@ -103,6 +103,7 @@ the VinylDNS instance is configured to have manual review disabled.
 
 ##### Non-Fatal Errors
 - [Zone Discovery Failed](#ZoneDiscoveryFailed)
+- [Record Requires Manual Review](#RecordRequiresManualReview)
 
 ##### Fatal Errors
 - [Invalid Domain Name](#InvalidDomainName)
@@ -126,7 +127,7 @@ the VinylDNS instance is configured to have manual review disabled.
 - [Cannot Create a RecordSet with Multiple Records](#NewMultiRecordError)
 - [CNAME Cannot be the Same Name as Zone Name]("CnameApexError")
 
-### Non-Fatal Errors <a id="non-fatal-errors**"></a>
+### Non-Fatal Errors <a id="non-fatal-errors"></a>
 #### Zone Discovery Failed <a id="ZoneDiscoveryFailed"></a>
 
 ##### Error Message:
@@ -147,6 +148,18 @@ In that case, you need to connect to the zone in VinylDNS.
 Even if the zone already exists outside of VinylDNS, it has to be added to VinylDNS to modify records.
 VinylDNS also does not support dotted records for forward zones (eg. record `baz.foo.bar.` in zone `bar.`), so encountering
 this error could indicate that a zone needs to be created outside of VinylDNS and then connected to within VinylDNS.
+
+#### Record Requires Manual Review <a id="RecordRequiresManualReview"></a>
+
+##### Error Message:
+
+```
+Record set with name <input> requires manual review.
+```
+
+##### Details:
+
+Based on a [configurable list](../operator/config-api#manual-review-domains), VinylDNS will determine if the given inputName requires manual review before it can be processed.
 
 ### Fatal Errors <a id="fatal-errors"></a>
 #### Invalid Domain Name <a id="InvalidDomainName"></a>

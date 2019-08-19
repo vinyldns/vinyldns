@@ -6,7 +6,7 @@ section: "api"
 
 # Get Batch Change
 
-Retrieves a batch change given the batch change ID. Only the user who created a batch change will have access to get it.
+Retrieves a batch change given the batch change ID. Only the user who created a batch change and VinylDNS administrators will have access to get it.
 
 
 #### HTTP REQUEST
@@ -38,10 +38,15 @@ userId        | string      | The unique identifier of the user that created the
 userName      | string      | The username of the user that created the batch change. |
 comments      | string      | Optional comments about the batch change. |
 createdTimestamp | date-time      | The timestamp (UTC) when the batch change was created. |
-changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model/#singleaddchange-attributes) or a [SingleDeleteRRSetChange](../api/batchchange-model/#singledeleterrsetchange-). |
+changes       | Array of SingleChange | Array of single changes within a batch change. A *SingleChange* can either be a [SingleAddChange](../api/batchchange-model#singleaddchange-attributes) or a [SingleDeleteRRSetChange](../api/batchchange-model#singledeleterrsetchange-). |
 status        | BatchChangeStatus | [Status of the batch change](../api/batchchange-model#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
-
+scheduledTime | date-time    | Optional requested date and time to process the batch change. |
+approvalStatus| BatchChangeApprovalStatus      |[Approval status of the batch change](../api/batchchange-model#batchchange-attributes). |
+reviewerId    | string      | Optional identifier of reviewer if batch change required manual review |
+reviewComment | string      | Optional comment by reviewer if batch change required manual review |
+reviewTimestamp | date-time   | Optional timestamp (UTC) when the batch change was reviewed if manual review was required. |
+cancelledTimestamp | date-time | Optional timestamp (UTC) if the batch change was cancelled by the creator |
 
 #### EXAMPLE RESPONSE
 
@@ -81,7 +86,7 @@ id            | string      | The unique identifier for this batch change. |
             "id": "7573ca11-3e30-45a8-9ba5-791f7d6ae7a7"
         }
     ], 
-    "status": "Pending", 
+    "status": "PendingProcessing",
     "id": "02bd95f4-a32c-443b-82eb-54dbaa55b31a"
 }
 ```

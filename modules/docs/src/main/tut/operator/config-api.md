@@ -520,7 +520,7 @@ sns {
   }
 }
 
-### Batch Manual Review Enabled
+### Batch Manual Review Enabled <a id="manual-review" />
 Configuration setting that determines whether batch changes with non-fatal errors can be reviewed rather than failing immediately.
 When enabling manual review, the expectation is that a DNS technician is actively querying and addressing batch change
 requests that are in a manual review state. If your process flow does not accommodate this expectation, we advise disabling
@@ -528,6 +528,32 @@ manual review.
 
 ```yaml
 manual-batch-review-enabled = true
+```
+
+### Manual Review Domains
+Configuration setting that determines what Batch Change/DNS Change input names require manual review if `manual-batch-review-enabled` is set to `true`.
+If `manual-batch-review-enabled` is set to `false` any input names that match entries in the configured list will be treated as fatal errors.
+
+```yaml
+manual-review-domains = {
+  domain-list = [
+    "needs-review.*"
+  ]
+  ip-list = [
+    "192.0.2.254",
+    "192.0.2.255",
+    "fd69:27cc:fe91:0:0:0:ffff:1",
+    "fd69:27cc:fe91:0:0:0:ffff:2"
+  ]
+}
+```
+
+### Scheduled Batch Changes Enabled
+Configuration setting that determines if users are able to make Batch Changes with a scheduled time. `manual-batch-review-enabled` must be enabled as well.
+If enabled, a VinylDNS administrator cannot approve the Batch Change until after the scheduled time. An administrator could also reject the Batch Change.
+
+```yaml
+scheduled-changes-enabled = true
 ```
 
 ### IPv6 Zone Discovery Boundaries
@@ -737,6 +763,8 @@ vinyldns {
   # true if you want to enable manual review for non-fatal errors
   manual-batch-review-enabled = true
   
+  # true if you want to allow Batch Changes to be scheduled.  manual-batch-review-enabled must also be true.
+  scheduled-changes-enabled = true
   
   # types of unowned records that users can access in shared zones
   shared-approved-types = ["A", "AAAA", "CNAME", "PTR", "TXT"]
@@ -753,6 +781,20 @@ vinyldns {
         "fd69:27cc:fe91:0:0:0:0:ffff",
         "fd69:27cc:fe91:0:0:0:ffff:0"
       ]
+  }
+  
+  # FQDNS / IPs that require manual review when submitted through Batch Change/DNS Change
+  # Treated as a fatal error if manual review is not enabled
+  manual-review-domains = {
+    domain-list = [
+      "needs-review.*"
+    ]
+    ip-list = [
+      "192.0.2.254",
+      "192.0.2.255",
+      "fd69:27cc:fe91:0:0:0:ffff:1",
+      "fd69:27cc:fe91:0:0:0:ffff:2"
+    ]
   }
   
   # Zone Connection Data
