@@ -101,7 +101,7 @@ object ZoneRecordValidations {
     }
 
   def zoneDoesNotRequireManualReview(
-      zonesRequiringReview: List[String],
+      zonesRequiringReview: Set[String],
       zoneName: String,
       fqdn: String): ValidatedNel[DomainValidationError, Unit] =
     if (!zonesRequiringReview.contains(DomainHelpers.ensureTrailingDot(zoneName.toLowerCase))) {

@@ -212,7 +212,7 @@ class ZoneRecordValidationsSpec extends WordSpec with Matchers with ValidatedMat
     val zoneNameList = List(
       "foo.bar.",
       "bizz.bazz."
-    )
+    ).toSet
 
     "match zone name regardless of casing" in {
       zoneDoesNotRequireManualReview(zoneNameList, "FOO.bar.", "some.FOO.bar.") should
