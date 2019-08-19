@@ -326,38 +326,67 @@ class BatchChangeValidationsSpec
   }
 
   property("validateAuthorizedReviewer: should succeed if the reviewer is a super user") {
-    validateAuthorizedReviewer(superUserAuth, validPendingBatchChange) should be(right)
+    validateAuthorizedReviewer(superUserAuth, validPendingBatchChange, false) should be(right)
   }
 
   property("validateAuthorizedReviewer: should succeed if the reviewer is a support user") {
-    validateAuthorizedReviewer(supportUserAuth, validPendingBatchChange) should be(right)
+    validateAuthorizedReviewer(supportUserAuth, validPendingBatchChange, false) should be(right)
+  }
+
+  property(
+    "validateAuthorizedReviewer: should fail if a test reviewer tries to approve a non-test change") {
+    val testSupport = supportUser.copy(isTest = true)
+    validateAuthorizedReviewer(AuthPrincipal(testSupport, List()), validPendingBatchChange, false).value shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
+  }
+
+  property(
+    "validateAuthorizedReviewer: should succeed if a test reviewer tries to approve a test change") {
+    val testSupport = supportUser.copy(isTest = true)
+    validateAuthorizedReviewer(AuthPrincipal(testSupport, List()), validPendingBatchChange, true).value should be(
+      right)
   }
 
   property("validateAuthorizedReviewer: should fail if the reviewer is not a super or support user") {
-    validateAuthorizedReviewer(okAuth, validPendingBatchChange) shouldBe
+    validateAuthorizedReviewer(okAuth, validPendingBatchChange, false) shouldBe
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
   property(
     "validateBatchChangeRejection: should succeed if batch change is pending review and reviewer" +
       "is authorized") {
-    validateBatchChangeRejection(validPendingBatchChange, supportUserAuth).value should be(right)
+    validateBatchChangeRejection(validPendingBatchChange, supportUserAuth, false).value should be(
+      right)
+  }
+
+  property(
+    "validateBatchChangeRejection: should fail if a test reviewer tries to reject a non-test change") {
+    val testSupport = supportUser.copy(isTest = true)
+    validateBatchChangeRejection(validPendingBatchChange, AuthPrincipal(testSupport, List()), false).value shouldBe
+      Left(UserNotAuthorizedError(validPendingBatchChange.id))
+  }
+
+  property(
+    "validateBatchChangeRejection: should succeed if a test reviewer tries to reject a test change") {
+    val testSupport = supportUser.copy(isTest = true)
+    validateBatchChangeRejection(validPendingBatchChange, AuthPrincipal(testSupport, List()), true).value should be(
+      right)
   }
 
   property("validateBatchChangeRejection: should fail if batch change is not pending review") {
-    validateBatchChangeRejection(invalidPendingBatchChange, supportUserAuth).value shouldBe
+    validateBatchChangeRejection(invalidPendingBatchChange, supportUserAuth, false).value shouldBe
       Left(BatchChangeNotPendingReview(invalidPendingBatchChange.id))
   }
 
   property("validateBatchChangeRejection: should fail if reviewer is not authorized") {
-    validateBatchChangeRejection(validPendingBatchChange, okAuth).value shouldBe
+    validateBatchChangeRejection(validPendingBatchChange, okAuth, false).value shouldBe
       Left(UserNotAuthorizedError(validPendingBatchChange.id))
   }
 
   property(
     "validateBatchChangeRejection: should fail if batch change is not pending review and reviewer is not" +
       "authorized") {
-    validateBatchChangeRejection(invalidPendingBatchChange, okAuth).value shouldBe
+    validateBatchChangeRejection(invalidPendingBatchChange, okAuth, false).value shouldBe
       Left(UserNotAuthorizedError(invalidPendingBatchChange.id))
   }
 

@@ -302,11 +302,13 @@ class BatchChangeServiceSpec
   }
 
   object TestAuth extends AuthPrincipalProvider {
+    val testAuth = AuthPrincipal(okUser.copy(isTest = true), List())
     def getAuthPrincipal(accessKey: String): IO[Option[AuthPrincipal]] = IO.pure(None)
 
     def getAuthPrincipalByUserId(userId: String): IO[Option[AuthPrincipal]] =
       userId match {
         case okAuth.userId => IO.pure(Some(okAuth))
+        case "testuser" => IO.pure(Some(testAuth))
         case _ => IO.pure(None)
       }
   }
@@ -316,10 +318,11 @@ class BatchChangeServiceSpec
       IO.pure {
         userId match {
           case superUser.id => Some(superUser)
+          case auth.userId => Some(okUser)
+          case "testuser" => Some(okUser.copy(isTest = true))
           case _ => None
         }
       }
-
     override def getUsers(
         userIds: Set[String],
         startFrom: Option[String],
@@ -534,7 +537,46 @@ class BatchChangeServiceSpec
       // Verify that notification is sent
       verify(mockNotifier).notify(any[Notification[BatchChange]])
     }
+    "succeed if a test batchChange is PendingReview and reviewer is support but test" in {
+      val batchChange =
+        BatchChange(
+          "testuser",
+          "testname",
+          None,
+          DateTime.now,
+          List(pendingChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      batchChangeRepo.save(batchChange)
+      val rejectAuth = AuthPrincipal(supportUser.copy(isTest = true), List())
 
+      val result =
+        rightResultOf(
+          underTestManualEnabled
+            .rejectBatchChange(batchChange.id, rejectAuth, RejectBatchChangeInput(Some("bad")))
+            .value)
+
+      result.status shouldBe BatchChangeStatus.Rejected
+    }
+    "fail if a non-test batchChange is PendingReview and reviewer is support but test" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          DateTime.now,
+          List(pendingChange),
+          approvalStatus = BatchChangeApprovalStatus.PendingReview)
+      batchChangeRepo.save(batchChange)
+      val rejectAuth = AuthPrincipal(supportUser.copy(isTest = true), List())
+
+      val result =
+        leftResultOf(
+          underTestManualEnabled
+            .rejectBatchChange(batchChange.id, rejectAuth, RejectBatchChangeInput(Some("bad")))
+            .value)
+
+      result shouldBe UserNotAuthorizedError(batchChange.id)
+    }
     "fail if the batchChange is not PendingReview" in {
       val batchChange =
         BatchChange(
@@ -627,7 +669,21 @@ class BatchChangeServiceSpec
       result.reviewComment shouldBe Some("reviewed!")
       result.reviewTimestamp shouldBe defined
     }
+    "fail if a non-test batchChange is PendingReview and reviewer is support but test" in {
+      batchChangeRepo.save(batchChangeNeedsApproval)
+      val auth = AuthPrincipal(supportUser.copy(isTest = true), List())
 
+      val result =
+        leftResultOf(
+          underTestManualEnabled
+            .approveBatchChange(
+              batchChangeNeedsApproval.id,
+              auth,
+              ApproveBatchChangeInput(Some("reviewed!")))
+            .value)
+
+      result shouldBe UserNotAuthorizedError(batchChangeNeedsApproval.id)
+    }
     "fail if the batchChange is not PendingReview" in {
       val batchChange =
         batchChangeNeedsApproval.copy(approvalStatus = BatchChangeApprovalStatus.AutoApproved)
