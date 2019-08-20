@@ -181,3 +181,9 @@ zone "not.loaded" {
 	file "/var/bind/not.loaded.hosts";
 	allow-update { key "vinyldns."; };
 	};
+
+zone "zone.requires.review" {
+	type master;
+	file "/var/bind/zone.requires.review.hosts";
+	allow-update { key "vinyldns."; };
+	};

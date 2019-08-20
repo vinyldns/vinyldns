@@ -281,6 +281,29 @@ class SharedZoneTestContext(object):
                 }, status=202)
             self.ds_zone = ds_zone_change['zone']
 
+            # zone with name configured for manual review
+            requires_review_zone_change = self.ok_vinyldns_client.create_zone(
+                {
+                    'name': 'zone.requires.review.',
+                    'email': 'test@test.com',
+                    'shared': False,
+                    'adminGroupId': self.ok_group['id'],
+                    'isTest': True,
+                    'connection': {
+                        'name': 'review.',
+                        'keyName': VinylDNSTestContext.dns_key_name,
+                        'key': VinylDNSTestContext.dns_key,
+                        'primaryServer': VinylDNSTestContext.dns_ip
+                    },
+                    'transferConnection': {
+                        'name': 'review.',
+                        'keyName': VinylDNSTestContext.dns_key_name,
+                        'key': VinylDNSTestContext.dns_key,
+                        'primaryServer': VinylDNSTestContext.dns_ip
+                    }
+                }, status=202)
+            self.requires_review_zone = requires_review_zone_change['zone']
+
             get_shared_zones = self.shared_zone_vinyldns_client.list_zones(status=200)['zones']
             shared_zone = [zone for zone in get_shared_zones if zone['name'] == "shared."]
             non_test_shared_zone = [zone for zone in get_shared_zones if zone['name'] == "non.test.shared."]
@@ -303,6 +326,7 @@ class SharedZoneTestContext(object):
             self.ok_vinyldns_client.wait_until_zone_active(system_test_zone_change[u'zone'][u'id'])
             self.ok_vinyldns_client.wait_until_zone_active(parent_zone_change[u'zone'][u'id'])
             self.ok_vinyldns_client.wait_until_zone_active(ds_zone_change[u'zone'][u'id'])
+            self.ok_vinyldns_client.wait_until_zone_active(requires_review_zone_change[u'zone'][u'id'])
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(shared_zone_change)
             shared_sync_change = self.shared_zone_vinyldns_client.sync_zone(self.shared_zone['id'])
             self.shared_zone_vinyldns_client.wait_until_zone_change_status_synced(non_test_shared_zone_change)
@@ -314,7 +338,7 @@ class SharedZoneTestContext(object):
             zones = self.dummy_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(2))
             zones = self.ok_vinyldns_client.list_zones()['zones']
-            assert_that(len(zones), is_(9))
+            assert_that(len(zones), is_(10))
             zones = self.shared_zone_vinyldns_client.list_zones()['zones']
             assert_that(len(zones), is_(2))
 

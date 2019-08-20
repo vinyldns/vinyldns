@@ -2547,8 +2547,7 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
 
 def test_user_validation_ownership(shared_zone_test_context):
     """
-    Confirm that test users cannot add/edit/delete records in non-test zones (via zone admin group) and individual
-    changes get correctly flagged for manual review
+    Confirm that test users cannot add/edit/delete records in non-test zones (via zone admin group)
     """
     client = shared_zone_test_context.shared_zone_vinyldns_client
     batch_change_input = {
@@ -2566,18 +2565,15 @@ def test_user_validation_ownership(shared_zone_test_context):
         "ownerGroupId": "shared-zone-group"
     }
 
-    def err(name):
-        return ['Record set with name "{}" requires manual review.'.format(name), 'User "sharedZoneUser" is not authorized.']
-
     response = client.create_batch_change(batch_change_input, status=400)
     assert_failed_change_in_error_response(response[0], input_name="add-test-batch.non.test.shared.", record_data="1.1.1.1",
-                                           error_messages=err("add-test-batch.non.test.shared."))
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
     assert_failed_change_in_error_response(response[1], input_name="update-test-batch.non.test.shared.", change_type="DeleteRecordSet",
-                                           error_messages=err("update-test-batch.non.test.shared."))
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
     assert_failed_change_in_error_response(response[2], input_name="update-test-batch.non.test.shared.", record_data="1.1.1.1",
-                                           error_messages=err("update-test-batch.non.test.shared."))
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
     assert_failed_change_in_error_response(response[3], input_name="delete-test-batch.non.test.shared.", change_type="DeleteRecordSet",
-                                           error_messages=err("delete-test-batch.non.test.shared."))
+                                           error_messages=["User \"sharedZoneUser\" is not authorized."])
 
     assert_successful_change_in_error_response(response[4], input_name="add-test-batch.shared.")
     assert_successful_change_in_error_response(response[5], input_name="update-test-batch.shared.", change_type="DeleteRecordSet")
@@ -2588,8 +2584,7 @@ def test_user_validation_ownership(shared_zone_test_context):
 
 def test_user_validation_shared(shared_zone_test_context):
     """
-    Confirm that test users cannot add/edit/delete records in non-test zones (via shared access) and individual
-    changes get correctly flagged for manual review
+    Confirm that test users cannot add/edit/delete records in non-test zones (via shared access)
     """
     client = shared_zone_test_context.ok_vinyldns_client
     batch_change_input = {
@@ -2602,18 +2597,15 @@ def test_user_validation_shared(shared_zone_test_context):
         "ownerGroupId": shared_zone_test_context.ok_group['id']
     }
 
-    def err(name):
-        return ['Record set with name "{}" requires manual review.'.format(name), 'User "ok" is not authorized.']
-
     response = client.create_batch_change(batch_change_input, status=400)
     assert_failed_change_in_error_response(response[0], input_name="add-test-batch.non.test.shared.", record_data="1.1.1.1",
-                                           error_messages=err("add-test-batch.non.test.shared."))
+                                           error_messages=["User \"ok\" is not authorized."])
     assert_failed_change_in_error_response(response[1], input_name="update-test-batch.non.test.shared.", change_type="DeleteRecordSet",
-                                           error_messages=err("update-test-batch.non.test.shared."))
+                                           error_messages=["User \"ok\" is not authorized."])
     assert_failed_change_in_error_response(response[2], input_name="update-test-batch.non.test.shared.", record_data="1.1.1.1",
-                                           error_messages=err("update-test-batch.non.test.shared."))
+                                           error_messages=["User \"ok\" is not authorized."])
     assert_failed_change_in_error_response(response[3], input_name="delete-test-batch.non.test.shared.", change_type="DeleteRecordSet",
-                                           error_messages=err("delete-test-batch.non.test.shared."))
+                                           error_messages=["User \"ok\" is not authorized."])
 
 def test_create_batch_change_does_not_save_owner_group_id_for_non_shared_zone(shared_zone_test_context):
     """
@@ -3153,3 +3145,36 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
         assert_error(response[7], error_messages=[existing_err("multi-txt-del.ok.", "TXT")])
     finally:
         clear_recordset_list(to_delete, client)
+
+@pytest.mark.manual_batch_review
+def test_zone_name_requiring_manual_review(shared_zone_test_context):
+    """
+    Confirm that individual changes matching zone names requiring review get correctly flagged for manual review
+    """
+    rejecter = shared_zone_test_context.support_user_client
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("add-test-batch.zone.requires.review.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.zone.requires.review.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-test-batch.zone.requires.review.", address="1.1.1.1"),
+            get_change_A_AAAA_json("delete-test-batch.zone.requires.review.", change_type="DeleteRecordSet")
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+
+    response = None
+
+    try:
+        response = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(response['id'])
+        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
+        for i in xrange(0, 3):
+            assert_that(get_batch['changes'][i]['status'], is_('NeedsReview'))
+            assert_that(get_batch['changes'][i]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
+
+    finally:
+        # Clean up so data doesn't change
+        if response:
+            rejecter.reject_batch_change(response['id'], status=200)
