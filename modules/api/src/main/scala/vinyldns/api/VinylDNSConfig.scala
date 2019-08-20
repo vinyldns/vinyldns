@@ -37,8 +37,6 @@ import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
 import vinyldns.core.notifier.NotifierConfig
 
-import scala.collection.immutable.HashSet
-
 object VinylDNSConfig {
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
@@ -153,8 +151,8 @@ object VinylDNSConfig {
   lazy val ipListRequiringManualReview: List[IpAddress] =
     getOptionalStringList("manual-review-domains.ip-list").flatMap(ip => IpAddress(ip))
 
-  lazy val zoneNameListRequiringManualReview: HashSet[String] = {
-    HashSet[String]() ++ getOptionalStringList("manual-review-domains.zone-name-list").map(zn =>
+  lazy val zoneNameListRequiringManualReview: Set[String] = {
+    Set() ++ getOptionalStringList("manual-review-domains.zone-name-list").map(zn =>
       DomainHelpers.ensureTrailingDot(zn.toLowerCase))
   }
 }
