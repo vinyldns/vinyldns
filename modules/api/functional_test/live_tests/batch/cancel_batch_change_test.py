@@ -39,7 +39,7 @@ def test_cancel_batch_change_fails_for_non_creator(shared_zone_test_context):
     Test cancelling a batch change fails for a user who didn't make the batch change
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    rejector = shared_zone_test_context.support_user_client
+    rejecter = shared_zone_test_context.support_user_client
     batch_change_input = {
         "changes": [
             get_change_A_AAAA_json("zone.discovery.failure.", address="4.3.2.1")
@@ -55,7 +55,7 @@ def test_cancel_batch_change_fails_for_non_creator(shared_zone_test_context):
         assert_that(get_batch['changes'][0]['status'], is_('NeedsReview'))
         assert_that(get_batch['changes'][0]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
 
-        error = rejector.cancel_batch_change(get_batch['id'], status=403)
+        error = rejecter.cancel_batch_change(get_batch['id'], status=403)
         assert_that(error, is_("User does not have access to item " + get_batch['id']))
     finally:
         if result:
