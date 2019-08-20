@@ -469,6 +469,29 @@ class BatchChangeValidationsSpec
     validateInputName(changeA, true) should beValid(())
   }
 
+  property("""zoneDoesNotRequireManualReview: should fail with RecordRequiresManualReview
+              |if zone name matches domain requiring manual review""".stripMargin) {
+    val addChangeInput =
+      AddChangeInput("not-allowed.zone.NEEDS.review", RecordType.A, ttl, AData("1.1.1.1"))
+    val addChangeForValidation = AddChangeForValidation(
+      Zone("Zone.needs.review", "some@email.com"),
+      "not-allowed",
+      addChangeInput)
+    zoneDoesNotRequireManualReview(addChangeForValidation, false) should
+      haveInvalid[DomainValidationError](
+        RecordRequiresManualReview("not-allowed.zone.NEEDS.review."))
+  }
+
+  property("""zoneDoesNotRequireManualReview: should succeed if user is reviewing""") {
+    val addChangeInput =
+      AddChangeInput("not-allowed.zone.NEEDS.review", RecordType.A, ttl, AData("1.1.1.1"))
+    val addChangeForValidation = AddChangeForValidation(
+      Zone("Zone.needs.review", "some@email.com"),
+      "not-allowed",
+      addChangeInput)
+    zoneDoesNotRequireManualReview(addChangeForValidation, true) shouldBe valid
+  }
+
   property("""validateInputName: should fail with a DomainValidationError for deletes
       |if validateHostName fails for an invalid domain name""".stripMargin) {
     val change = DeleteChangeInput("invalidDomainName$", RecordType.A)
@@ -657,6 +680,7 @@ class BatchChangeValidationsSpec
         duplicateNamePTR.validNel),
       ExistingRecordSets(existingRsList),
       okAuth,
+      false,
       None
     )
 
@@ -685,6 +709,7 @@ class BatchChangeValidationsSpec
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -706,6 +731,7 @@ class BatchChangeValidationsSpec
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
       notAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -729,6 +755,7 @@ class BatchChangeValidationsSpec
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
       notAuth,
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](
@@ -750,6 +777,7 @@ class BatchChangeValidationsSpec
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List()),
       okAuth,
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](
@@ -773,6 +801,7 @@ class BatchChangeValidationsSpec
       List(addUpdateA.validNel, deleteUpdateA.validNel),
       ExistingRecordSets(List(existingRecord)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -794,6 +823,7 @@ class BatchChangeValidationsSpec
       List(addA.validNel, deleteCname.validNel),
       ExistingRecordSets(List(existingCname)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -814,6 +844,7 @@ class BatchChangeValidationsSpec
           List(input.validNel),
           ExistingRecordSets(newRecordSetList),
           okAuth,
+          false,
           None)
 
         result(0) should haveInvalid[DomainValidationError](
@@ -829,6 +860,7 @@ class BatchChangeValidationsSpec
           List(input.validNel),
           ExistingRecordSets(recordSetList),
           okAuth,
+          false,
           None)
 
       result(0) shouldBe valid
@@ -843,6 +875,7 @@ class BatchChangeValidationsSpec
           List(input.validNel),
           ExistingRecordSets(recordSetList),
           okAuth,
+          false,
           None)
         result(0) shouldBe valid
       }
@@ -859,6 +892,7 @@ class BatchChangeValidationsSpec
         List(input.validNel),
         ExistingRecordSets(existingRecordSetList),
         okAuth,
+        false,
         None)
 
       result(0) should haveInvalid[DomainValidationError](
@@ -882,6 +916,7 @@ class BatchChangeValidationsSpec
       List(addCname.validNel, deleteA.validNel),
       ExistingRecordSets(newRecordSetList),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -900,6 +935,7 @@ class BatchChangeValidationsSpec
       List(addCname.validNel),
       ExistingRecordSets(newRecordSetList),
       okAuth,
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](
@@ -922,6 +958,7 @@ class BatchChangeValidationsSpec
       List(addCname.validNel, deletePtr.validNel),
       ExistingRecordSets(List(ptr4)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -944,6 +981,7 @@ class BatchChangeValidationsSpec
       List(addCname.validNel),
       ExistingRecordSets(List(existingRecordPTR)),
       okAuth,
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](
@@ -968,6 +1006,7 @@ class BatchChangeValidationsSpec
       List(addA.validNel, addAAAA.validNel, addCname.validNel),
       ExistingRecordSets(List()),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -993,6 +1032,7 @@ class BatchChangeValidationsSpec
       List(addA.validNel, addAAAA.validNel, addDuplicateCname.validNel),
       ExistingRecordSets(List()),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1021,6 +1061,7 @@ class BatchChangeValidationsSpec
       List(addA.validNel, addCname.validNel, addDuplicateCname.validNel),
       ExistingRecordSets(List()),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1050,6 +1091,7 @@ class BatchChangeValidationsSpec
       List(addA.validNel, addPtr.validNel, addDuplicatePtr.validNel),
       ExistingRecordSets(List()),
       okAuth,
+      false,
       None)
 
     result.map(_ shouldBe valid)
@@ -1066,6 +1108,7 @@ class BatchChangeValidationsSpec
         List(addA.validNel),
         ExistingRecordSets(recordSetList),
         okAuth,
+        false,
         None)
 
     result(0) shouldBe valid
@@ -1081,6 +1124,7 @@ class BatchChangeValidationsSpec
       List(addA.validNel),
       ExistingRecordSets(recordSetList),
       AuthPrincipal(superUser, Seq.empty),
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
@@ -1098,6 +1142,7 @@ class BatchChangeValidationsSpec
         List(addA.validNel),
         ExistingRecordSets(recordSetList),
         notAuth,
+        false,
         None)
 
     result(0) shouldBe valid
@@ -1112,6 +1157,7 @@ class BatchChangeValidationsSpec
           List(input.validNel),
           ExistingRecordSets(recordSetList),
           notAuth,
+          false,
           None)
 
       result(0) should haveInvalid[DomainValidationError](
@@ -1133,6 +1179,7 @@ class BatchChangeValidationsSpec
       List(addCname.validNel, addPtr.validNel),
       ExistingRecordSets(List()),
       okAuth,
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1151,6 +1198,7 @@ class BatchChangeValidationsSpec
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1168,6 +1216,7 @@ class BatchChangeValidationsSpec
         List(deleteA.validNel),
         ExistingRecordSets(recordSetList),
         okAuth,
+        false,
         None)
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1188,6 +1237,7 @@ class BatchChangeValidationsSpec
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1202,6 +1252,7 @@ class BatchChangeValidationsSpec
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1216,6 +1267,7 @@ class BatchChangeValidationsSpec
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
       AuthPrincipal(superUser, Seq.empty),
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](UserIsNotAuthorized(superUser.userName))
@@ -1233,6 +1285,7 @@ class BatchChangeValidationsSpec
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
       notAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1250,6 +1303,7 @@ class BatchChangeValidationsSpec
       List(deleteA.validNel),
       ExistingRecordSets(List(existingDeleteRecord)),
       notAuth,
+      false,
       None)
 
     result(0) should haveInvalid[DomainValidationError](
@@ -1294,6 +1348,7 @@ class BatchChangeValidationsSpec
         deleteCname.validNel),
       ExistingRecordSets(List(existingA, existingCname)),
       okAuth,
+      false,
       None
     )
 
@@ -1331,6 +1386,7 @@ class BatchChangeValidationsSpec
       List(deleteA.validNel, addA.validNel, addAAAA.validNel, addCname.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingA)),
       okAuth,
+      false,
       None)
     result.map(_ shouldBe valid)
   }
@@ -1359,6 +1415,7 @@ class BatchChangeValidationsSpec
       List(deleteCname.validNel, addA.validNel, addAAAA.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingCname)),
       okAuth,
+      false,
       None)
     result.map(_ shouldBe valid)
   }
@@ -1378,6 +1435,7 @@ class BatchChangeValidationsSpec
       List(deleteCname.validNel, addCname.validNel),
       ExistingRecordSets(List(existingCname)),
       okAuth,
+      false,
       None)
     result.map(_ shouldBe valid)
   }
@@ -1406,6 +1464,7 @@ class BatchChangeValidationsSpec
       List(deleteUpdateCname.validNel, addUpdateCname.validNel, addCname.validNel),
       ExistingRecordSets(List(existingCname)),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1435,6 +1494,7 @@ class BatchChangeValidationsSpec
       List(deletePtr.validNel, addCname.validNel),
       ExistingRecordSets(List(existingPtr)),
       okAuth,
+      false,
       None)
     result.map(_ shouldBe valid)
   }
@@ -1459,6 +1519,7 @@ class BatchChangeValidationsSpec
       List(deletePtr.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingPtr)),
       okAuth,
+      false,
       None)
     result.map(_ shouldBe valid)
   }
@@ -1487,6 +1548,7 @@ class BatchChangeValidationsSpec
       List(deleteUpdatePtr.validNel, addUpdatePtr.validNel, addPtr.validNel),
       ExistingRecordSets(List(existingPtr)),
       okAuth,
+      false,
       None)
 
     result.map(_ shouldBe valid)
@@ -1570,6 +1632,7 @@ class BatchChangeValidationsSpec
         List(addMX.validNel),
         ExistingRecordSets(List(existingMX)),
         okAuth,
+        false,
         None)
     result(0) should haveInvalid[DomainValidationError](RecordAlreadyExists("name-conflict."))
   }
@@ -1588,6 +1651,7 @@ class BatchChangeValidationsSpec
       List(addMx.validNel, addMx2.validNel),
       ExistingRecordSets(List()),
       okAuth,
+      false,
       None)
     result(0) shouldBe valid
   }
@@ -1611,6 +1675,7 @@ class BatchChangeValidationsSpec
       List(deleteMx.validNel, addMx.validNel),
       ExistingRecordSets(List(existingMx)),
       okAuth,
+      false,
       None)
     result(0) shouldBe valid
   }
@@ -1635,6 +1700,7 @@ class BatchChangeValidationsSpec
           sharedZoneRecord.copy(name = "shared-delete")
         )),
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
+      false,
       Some("some-owner-group-id")
     )
 
@@ -1661,6 +1727,7 @@ class BatchChangeValidationsSpec
           sharedZoneRecord.copy(name = "shared-delete")
         )),
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
+      false,
       None
     )
 
@@ -1684,6 +1751,7 @@ class BatchChangeValidationsSpec
       List(deleteSharedChange.validNel),
       ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
       dummyAuth,
+      false,
       None)
 
     result(0) should
@@ -1696,6 +1764,7 @@ class BatchChangeValidationsSpec
       List(deleteSharedChange.validNel),
       ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
       okAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1706,6 +1775,7 @@ class BatchChangeValidationsSpec
       List(deleteSharedChange.validNel),
       ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
       sharedAuth,
+      false,
       None)
 
     result(0) shouldBe valid
@@ -1735,6 +1805,7 @@ class BatchChangeValidationsSpec
       ),
       ExistingRecordSets(existing),
       okAuth,
+      false,
       Some(okGroup.id)
     )
 
@@ -1771,6 +1842,7 @@ class BatchChangeValidationsSpec
       ),
       ExistingRecordSets(existing),
       okAuth,
+      false,
       Some(okGroup.id)
     )
 
@@ -1816,6 +1888,7 @@ class BatchChangeValidationsSpec
       ),
       ExistingRecordSets(existing),
       okAuth,
+      false,
       Some(okGroup.id)
     )
 
@@ -1861,6 +1934,7 @@ class BatchChangeValidationsSpec
       ),
       ExistingRecordSets(existing),
       okAuth,
+      false,
       Some(okGroup.id)
     )
 
@@ -1909,6 +1983,7 @@ class BatchChangeValidationsSpec
         List(addA.validNel, addAAAA.validNel, addCNAME.validNel, addMX.validNel, addTXT.validNel),
         ExistingRecordSets(List()),
         okAuth,
+        false,
         None)
 
     result(0) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.a.ok."))
@@ -1954,6 +2029,7 @@ class BatchChangeValidationsSpec
         deleteTXT.validNel),
       ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT)),
       okAuth,
+      false,
       None
     )
 
@@ -2033,6 +2109,7 @@ class BatchChangeValidationsSpec
       ),
       ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT)),
       okAuth,
+      false,
       None
     )
 

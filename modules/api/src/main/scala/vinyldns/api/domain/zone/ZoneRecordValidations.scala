@@ -21,6 +21,7 @@ import cats.data._
 import com.comcast.ip4s.IpAddress
 import com.comcast.ip4s.interop.cats.implicits._
 import vinyldns.core.domain.{
+  DomainHelpers,
   DomainValidationError,
   HighValueDomainError,
   RecordRequiresManualReview
@@ -97,5 +98,15 @@ object ZoneRecordValidations {
       ().validNel
     } else {
       RecordRequiresManualReview(ip).invalidNel
+    }
+
+  def zoneDoesNotRequireManualReview(
+      zonesRequiringReview: Set[String],
+      zoneName: String,
+      fqdn: String): ValidatedNel[DomainValidationError, Unit] =
+    if (!zonesRequiringReview.contains(DomainHelpers.ensureTrailingDot(zoneName.toLowerCase))) {
+      ().validNel
+    } else {
+      RecordRequiresManualReview(fqdn).invalidNel
     }
 }

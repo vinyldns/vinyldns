@@ -45,6 +45,7 @@ trait BatchChangeValidationsAlgebra {
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
+      isApproved: Boolean,
       batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation]
 
   def canGetBatchChange(
@@ -233,6 +234,7 @@ class BatchChangeValidations(
       changes: ValidatedBatch[ChangeForValidation],
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
+      isApproved: Boolean,
       batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation] = {
     val changeGroups = ChangeForValidationMap(changes.getValid)
 
@@ -245,13 +247,21 @@ class BatchChangeValidations(
           changeGroups,
           existingRecords,
           auth,
+          isApproved,
           batchOwnerGroupId)
       case add: AddChangeForValidation =>
-        validateAddWithContext(add, changeGroups, existingRecords, auth, batchOwnerGroupId)
+        validateAddWithContext(
+          add,
+          changeGroups,
+          existingRecords,
+          auth,
+          isApproved,
+          batchOwnerGroupId)
       case deleteUpdate: DeleteChangeForValidation
           if changeGroups.containsAddChangeForValidation(deleteUpdate.recordKey) =>
-        validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth)
-      case del: DeleteChangeForValidation => validateDeleteWithContext(del, existingRecords, auth)
+        validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth, isApproved)
+      case del: DeleteChangeForValidation =>
+        validateDeleteWithContext(del, existingRecords, auth, isApproved)
     }
   }
 
@@ -284,12 +294,14 @@ class BatchChangeValidations(
   def validateDeleteWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      isApproved: Boolean): SingleValidation[ChangeForValidation] = {
     val validations =
       existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
         case Some(rs) =>
           userCanDeleteRecordSet(change, auth, rs.ownerGroupId) |+|
-            existingRecordSetIsNotMulti(change, rs)
+            existingRecordSetIsNotMulti(change, rs) |+|
+            zoneDoesNotRequireManualReview(change, isApproved)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
     validations.map(_ => change)
@@ -300,6 +312,7 @@ class BatchChangeValidations(
       changeGroups: ChangeForValidationMap,
       existingRecordSets: ExistingRecordSets,
       auth: AuthPrincipal,
+      isApproved: Boolean,
       batchOwnerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     // Updates require checking against other batch changes since multiple adds
     // could potentially be grouped with a single delete
@@ -308,7 +321,7 @@ class BatchChangeValidations(
       case _ => newRecordSetIsNotMulti(change, changeGroups)
     }
 
-    val authAndOwnerGroupValidations: SingleValidation[Unit] =
+    val commonValidations: SingleValidation[Unit] =
       existingRecordSets.get(change.recordKey) match {
         case Some(rs) =>
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
@@ -316,12 +329,13 @@ class BatchChangeValidations(
               change,
               existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
               batchOwnerGroupId) |+|
-            existingRecordSetIsNotMulti(change, rs)
+            existingRecordSetIsNotMulti(change, rs) |+|
+            zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
-    val validations = typedValidations |+| authAndOwnerGroupValidations
+    val validations = typedValidations |+| commonValidations
 
     validations.map(_ => change)
   }
@@ -329,12 +343,14 @@ class BatchChangeValidations(
   def validateDeleteUpdateWithContext(
       change: DeleteChangeForValidation,
       existingRecords: ExistingRecordSets,
-      auth: AuthPrincipal): SingleValidation[ChangeForValidation] = {
+      auth: AuthPrincipal,
+      isApproved: Boolean): SingleValidation[ChangeForValidation] = {
     val validations =
       existingRecords.get(change.zone.id, change.recordName, change.inputChange.typ) match {
         case Some(rs) =>
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
-            existingRecordSetIsNotMulti(change, rs)
+            existingRecordSetIsNotMulti(change, rs) |+|
+            zoneDoesNotRequireManualReview(change, isApproved)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
@@ -346,6 +362,7 @@ class BatchChangeValidations(
       changeGroups: ChangeForValidationMap,
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
+      isApproved: Boolean,
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
@@ -387,7 +404,8 @@ class BatchChangeValidations(
           change.inputChange.inputName,
           change.inputChange.typ,
           existingRecords) |+|
-        ownerGroupProvidedIfNeeded(change, None, ownerGroupId)
+        ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
+        zoneDoesNotRequireManualReview(change, isApproved)
 
     validations.map(_ => change)
   }
@@ -560,5 +578,18 @@ class BatchChangeValidations(
       case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
       case (true, _) => Left(ScheduledTimeMustBeInFuture)
       case (false, _) => Left(ScheduledChangesDisabled)
+    }
+
+  def zoneDoesNotRequireManualReview(
+      change: ChangeForValidation,
+      isApproved: Boolean): SingleValidation[Unit] =
+    if (isApproved) {
+      ().validNel
+    } else {
+      ZoneRecordValidations.zoneDoesNotRequireManualReview(
+        VinylDNSConfig.zoneNameListRequiringManualReview,
+        change.zone.name,
+        change.inputChange.inputName
+      )
     }
 }
