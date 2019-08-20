@@ -124,6 +124,7 @@ class BatchChangeService(
         withTtl,
         recordSets,
         auth,
+        isApproved,
         batchChangeInput.ownerGroupId)
     } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, recordSets)
 
@@ -309,7 +310,7 @@ class BatchChangeService(
     }
 
     zone match {
-      case Some(zn) if (zn.name == change.inputName && change.typ == CNAME) =>
+      case Some(zn) if zn.name == change.inputName && change.typ == CNAME =>
         CnameAtZoneApexError(zn.name).invalidNel
       case Some(zn) =>
         ChangeForValidation(zn, relativize(change.inputName, zn.name), change).validNel

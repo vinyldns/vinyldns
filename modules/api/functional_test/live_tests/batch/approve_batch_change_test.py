@@ -13,6 +13,7 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         "changes": [
             get_change_A_AAAA_json("test-approve-success.not.loaded.", address="4.3.2.1"),
             get_change_A_AAAA_json("needs-review.not.loaded.", address="4.3.2.1"),
+            get_change_A_AAAA_json("zone-name-flagged-for-manual-review.zone.requires.review.")
         ],
         "ownerGroupId": shared_zone_test_context.ok_group['id']
     }
@@ -28,6 +29,8 @@ def test_approve_pending_batch_change_success(shared_zone_test_context):
         assert_that(get_batch['changes'][0]['validationErrors'][0]['errorType'], is_('ZoneDiscoveryError'))
         assert_that(get_batch['changes'][1]['status'], is_('NeedsReview'))
         assert_that(get_batch['changes'][1]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
+        assert_that(get_batch['changes'][2]['status'], is_('NeedsReview'))
+        assert_that(get_batch['changes'][2]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
 
         # need to create the zone so the change can succeed
         zone = {

@@ -3150,3 +3150,36 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
         assert_error(response[7], error_messages=[existing_err("multi-txt-del.ok.", "TXT")])
     finally:
         clear_recordset_list(to_delete, client)
+
+@pytest.mark.manual_batch_review
+def test_zone_name_requiring_manual_review(shared_zone_test_context):
+    """
+    Confirm that individual changes matching zone names requiring review get correctly flagged for manual review
+    """
+    rejecter = shared_zone_test_context.support_user_client
+    client = shared_zone_test_context.ok_vinyldns_client
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("add-test-batch.zone.requires.review.", address="1.1.1.1"),
+            get_change_A_AAAA_json("update-test-batch.zone.requires.review.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("update-test-batch.zone.requires.review.", address="1.1.1.1"),
+            get_change_A_AAAA_json("delete-test-batch.zone.requires.review.", change_type="DeleteRecordSet")
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+
+    response = None
+
+    try:
+        response = client.create_batch_change(batch_change_input, status=202)
+        get_batch = client.get_batch_change(response['id'])
+        assert_that(get_batch['status'], is_('PendingReview'))
+        assert_that(get_batch['approvalStatus'], is_('PendingReview'))
+        for i in xrange(0, 3):
+            assert_that(get_batch['changes'][i]['status'], is_('NeedsReview'))
+            assert_that(get_batch['changes'][i]['validationErrors'][0]['errorType'], is_('RecordRequiresManualReview'))
+
+    finally:
+        # Clean up so data doesn't change
+        if response:
+            rejecter.reject_batch_change(response['id'], status=200)

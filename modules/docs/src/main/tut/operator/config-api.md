@@ -545,6 +545,9 @@ manual-review-domains = {
     "fd69:27cc:fe91:0:0:0:ffff:1",
     "fd69:27cc:fe91:0:0:0:ffff:2"
   ]
+  zone-name-list = [
+    "zone.requires.review."
+  ]
 }
 ```
 
@@ -783,7 +786,7 @@ vinyldns {
       ]
   }
   
-  # FQDNS / IPs that require manual review when submitted through Batch Change/DNS Change
+  # FQDNS / IPs / zone names that require manual review when submitted through Batch Change/DNS Change
   # Treated as a fatal error if manual review is not enabled
   manual-review-domains = {
     domain-list = [
@@ -794,6 +797,9 @@ vinyldns {
       "192.0.2.255",
       "fd69:27cc:fe91:0:0:0:ffff:1",
       "fd69:27cc:fe91:0:0:0:ffff:2"
+    ]
+    zone-name-list = [
+      "zone.requires.review."
     ]
   }
   
