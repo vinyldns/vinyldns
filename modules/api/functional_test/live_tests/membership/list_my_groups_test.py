@@ -30,6 +30,15 @@ class ListGroupsSearchContext(object):
                 pass
             raise
 
+    def verify_ignore_access(self, results):
+        assert_that(results, has_length(3))  # 3 fields
+
+        assert_that(len(results['groups']), greater_than(50))
+        assert_that(results, is_not(has_key('groupNameFilter')))
+        assert_that(results, is_not(has_key('startFrom')))
+        assert_that(results, is_not(has_key('nextId')))
+        assert_that(results['maxItems'], is_(100))
+
     def tear_down(self):
         clear_zones(self.client)
         clear_groups(self.client)
@@ -171,13 +180,7 @@ def test_list_my_groups_with_ignore_access_true(list_my_groups_context):
 
     results = list_my_groups_context.client.list_my_groups(ignore_access=True, status=200)
 
-    assert_that(results, has_length(3))  # 3 fields
-
-    assert_that(len(results['groups']), greater_than(50))
-    assert_that(results, is_not(has_key('groupNameFilter')))
-    assert_that(results, is_not(has_key('startFrom')))
-    assert_that(results, is_not(has_key('nextId')))
-    assert_that(results['maxItems'], is_(100))
+    list_my_groups_context.verify_ignore_access(results)
 
     my_results = list_my_groups_context.client.list_my_groups(status=200)
     my_results['groups'] = sorted(my_results['groups'], key=lambda x: x['name'])
@@ -192,13 +195,7 @@ def test_list_my_groups_as_support_user(list_my_groups_context):
 
     results = list_my_groups_context.support_user_client.list_my_groups(status=200)
 
-    assert_that(results, has_length(3))  # 3 fields
-
-    assert_that(len(results['groups']), greater_than(50))
-    assert_that(results, is_not(has_key('groupNameFilter')))
-    assert_that(results, is_not(has_key('startFrom')))
-    assert_that(results, is_not(has_key('nextId')))
-    assert_that(results['maxItems'], is_(100))
+    list_my_groups_context.verify_ignore_access(results)
 
 def test_list_my_groups_as_support_user_with_ignore_access_true(list_my_groups_context):
     """
@@ -207,10 +204,4 @@ def test_list_my_groups_as_support_user_with_ignore_access_true(list_my_groups_c
 
     results = list_my_groups_context.support_user_client.list_my_groups(ignore_access=True, status=200)
 
-    assert_that(results, has_length(3))  # 3 fields
-
-    assert_that(len(results['groups']), greater_than(50))
-    assert_that(results, is_not(has_key('groupNameFilter')))
-    assert_that(results, is_not(has_key('startFrom')))
-    assert_that(results, is_not(has_key('nextId')))
-    assert_that(results['maxItems'], is_(100))
+    list_my_groups_context.verify_ignore_access(results)
