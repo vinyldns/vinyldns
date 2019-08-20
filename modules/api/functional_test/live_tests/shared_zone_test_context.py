@@ -289,18 +289,7 @@ class SharedZoneTestContext(object):
                     'shared': False,
                     'adminGroupId': self.ok_group['id'],
                     'isTest': True,
-                    'connection': {
-                        'name': 'review.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    },
-                    'transferConnection': {
-                        'name': 'review.',
-                        'keyName': VinylDNSTestContext.dns_key_name,
-                        'key': VinylDNSTestContext.dns_key,
-                        'primaryServer': VinylDNSTestContext.dns_ip
-                    }
+                    'backendId': 'func-test-backend'
                 }, status=202)
             self.requires_review_zone = requires_review_zone_change['zone']
 
