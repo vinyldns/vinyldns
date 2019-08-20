@@ -286,10 +286,15 @@ def test_create_batch_change_with_scheduled_time_and_owner_group_succeeds(shared
         "scheduledTime": dt,
         "ownerGroupId": shared_zone_test_context.ok_group['id']
     }
-
-    result = client.create_batch_change(batch_change_input, status=202)
-    assert_that(result['status'], 'Scheduled')
-    assert_that(result['scheduledTime'], dt)
+    result = None
+    try:
+        result = client.create_batch_change(batch_change_input, status=202)
+        assert_that(result['status'], 'Scheduled')
+        assert_that(result['scheduledTime'], dt)
+    finally:
+        if result:
+            rejecter = shared_zone_test_context.support_user_client
+            rejecter.reject_batch_change(result['id'], status=200)
 
 
 @pytest.mark.manual_batch_review
