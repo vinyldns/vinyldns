@@ -102,10 +102,17 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             });
     };
 
-    $scope.refresh = function (ignoreAccess = null) {
-        if(typeof ignoreAccess === "boolean"){
-            $scope.ignoreAccess = ignoreAccess;
-        }
+    $scope.allGroups = function() {
+        $scope.ignoreAccess = true;
+        $scope.refresh();
+    }
+
+    $scope.myGroups = function() {
+        $scope.ignoreAccess = false;
+        $scope.refresh();
+    }
+
+    $scope.refresh = function () {
         function success(result) {
             $log.log('getGroups:refresh-success', result);
             //update groups
