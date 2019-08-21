@@ -243,14 +243,14 @@ angular.module('controller.groups', []).controller('GroupsController', function 
           return x.id === $scope.profile.id;
         });
         var isSuper = $scope.profile.isSuper;
-        return (isAdmin || isSuper) ? true : false;
+        return isAdmin || isSuper;
     }
 
     $scope.canSeeGroup = function(group) {
         var isMember = group.members.some(x => x.id === $scope.profile.id);
         var isSupport = $scope.profile.isSupport;
         var isSuper = $scope.profile.isSuper;
-        return (isMember || isSupport || isSuper) ? true : false;
+        return isMember || isSupport || isSuper;
     }
 
     //get user data on groups view load
