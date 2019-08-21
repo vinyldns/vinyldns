@@ -3182,16 +3182,13 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
         def existing_err(name, type):
             return 'RecordSet with name {} and type {} cannot be updated in a single '.format(name, type) +\
                    'Batch Change because it contains multiple DNS records (2).'
-        def new_err(name, type):
-            return 'Multi-record recordsets are not enabled for this instance of VinylDNS. ' \
-               'Cannot create a new record set with multiple records for inputName {} and type {}.'.format(name, type)
 
         assert_error(response[0], error_messages=[existing_err("multi.ok.", "A")])
-        assert_error(response[1], error_messages=[existing_err("multi.ok.", "A"), new_err("multi.ok.", "A")])
-        assert_error(response[2], error_messages=[existing_err("multi.ok.", "A"), new_err("multi.ok.", "A")])
+        assert_successful_change_in_error_response(response[1], input_name="multi.ok.", record_data="1.2.3.4")
+        assert_successful_change_in_error_response(response[2], input_name="multi.ok.", record_data="4.5.6.7")
         assert_error(response[3], error_messages=[existing_err("multi-txt.ok.", "TXT")])
-        assert_error(response[4], error_messages=[existing_err("multi-txt.ok.", "TXT"), new_err("multi-txt.ok.", "TXT")])
-        assert_error(response[5], error_messages=[existing_err("multi-txt.ok.", "TXT"), new_err("multi-txt.ok.", "TXT")])
+        assert_successful_change_in_error_response(response[4], input_name="multi-txt.ok.", record_type="TXT", record_data="some-multi-text")
+        assert_successful_change_in_error_response(response[5], input_name="multi-txt.ok.", record_type="TXT", record_data="more-multi-text")
         assert_error(response[6], error_messages=[existing_err("multi-del.ok.", "A")])
         assert_error(response[7], error_messages=[existing_err("multi-txt-del.ok.", "TXT")])
     finally:
