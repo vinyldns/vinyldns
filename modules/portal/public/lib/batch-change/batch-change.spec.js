@@ -153,7 +153,7 @@ describe('BatchChange', function(){
             deferred = $q.defer();
 
             spyOn(batchChangeService, 'createBatchChange').and.returnValue(deferred.promise);
-            groupsService.getMyGroups = function() {
+            groupsService.getGroups = function() {
                 return $q.when({
                     data: {
                         groups: "all my groups"

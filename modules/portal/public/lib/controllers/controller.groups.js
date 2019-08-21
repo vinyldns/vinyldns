@@ -23,6 +23,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.groups = { items: [] };
     $scope.groupsLoaded = false;
     $scope.alerts = [];
+    $scope.ignoreAccess = false;
 
     function handleError(error, type) {
         var alert = utilityService.failure(error, type);
@@ -101,19 +102,28 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             });
     };
 
+    $scope.allGroups = function() {
+        $scope.ignoreAccess = true;
+        $scope.refresh();
+    }
+
+    $scope.myGroups = function() {
+        $scope.ignoreAccess = false;
+        $scope.refresh();
+    }
+
     $scope.refresh = function () {
-        //get users groups
         function success(result) {
-            $log.log('getMyGroups:refresh-success', result);
+            $log.log('getGroups:refresh-success', result);
             //update groups
             $scope.groups.items = result.groups;
             $scope.groupsLoaded = true;
             return result;
         }
-        return getMyGroups()
+        getGroups($scope.ignoreAccess)
             .then(success)
             .catch(function (error) {
-                handleError(error, 'getMyGroups::refresh-failure');
+                handleError(error, 'getGroups::refresh-failure');
             });
     };
 
@@ -131,16 +141,16 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         return true;
     };
 
-    function getMyGroups() {
+    function getGroups() {
         function success(response) {
-            $log.log('groupsService::getMyGroups-success');
+            $log.log('groupsService::getGroups-success');
             return response.data;
         }
         return groupsService
-            .getMyGroups()
+            .getGroups($scope.ignoreAccess)
             .then(success)
             .catch(function (error){
-                handleError(error, 'groupsService::getMyGroups-failure');
+                handleError(error, 'groupsService::getGroups-failure');
         });
     }
 
@@ -233,7 +243,14 @@ angular.module('controller.groups', []).controller('GroupsController', function 
           return x.id === $scope.profile.id;
         });
         var isSuper = $scope.profile.isSuper;
-        return (isAdmin || isSuper) ? true : false;
+        return isAdmin || isSuper;
+    }
+
+    $scope.canSeeGroup = function(group) {
+        var isMember = group.members.some(x => x.id === $scope.profile.id);
+        var isSupport = $scope.profile.isSupport;
+        var isSuper = $scope.profile.isSuper;
+        return isMember || isSupport || isSuper;
     }
 
     //get user data on groups view load

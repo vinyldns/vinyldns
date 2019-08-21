@@ -1418,7 +1418,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 client,
                 components,
                 crypto)
-            val result = underTest.getMyGroups()(FakeRequest(GET, s"/api/groups")
+            val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups")
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(OK)
@@ -1443,7 +1443,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 client,
                 components,
                 crypto)
-            val result = underTest.getMyGroups()(FakeRequest(GET, s"/api/groups"))
+            val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups"))
 
             status(result) mustEqual 401
             contentAsString(result) must beEqualTo(
@@ -1468,7 +1468,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 client,
                 components,
                 crypto)
-            val result = underTest.getMyGroups()(
+            val result = underTest.getGroups()(
               FakeRequest(GET, s"/api/groups")
                 .withSession(
                   "username" -> lockedFrodoUser.userName,
@@ -1500,7 +1500,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
                 client,
                 components,
                 crypto)
-            val result = underTest.getMyGroups()(FakeRequest(GET, s"/api/groups")
+            val result = underTest.getGroups()(FakeRequest(GET, s"/api/groups")
               .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey))
 
             status(result) must beEqualTo(UNAUTHORIZED)

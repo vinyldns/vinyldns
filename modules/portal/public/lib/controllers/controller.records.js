@@ -350,7 +350,7 @@ angular.module('controller.records', [])
 
     function getMembership(){
         groupsService
-        .getMyGroupsStored()
+        .getGroupsStored()
         .then(
             function (results) {
                 $scope.myGroups = results.groups;
@@ -358,7 +358,7 @@ angular.module('controller.records', [])
                 determineAdmin()
             })
         .catch(function (error){
-            handleError(error, 'groupsService::getMyGroupsStored-failure');
+            handleError(error, 'groupsService::getGroupsStored-failure');
         });
     }
 

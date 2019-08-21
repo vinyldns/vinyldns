@@ -42,7 +42,8 @@ trait MembershipServiceAlgebra {
       groupNameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListMyGroupsResponse]
+      authPrincipal: AuthPrincipal,
+      ignoreAccess: Boolean): Result[ListMyGroupsResponse]
 
   def listMembers(
       groupId: String,

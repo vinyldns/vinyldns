@@ -135,16 +135,17 @@ class MembershipService(
       groupNameFilter: Option[String],
       startFrom: Option[String],
       maxItems: Int,
-      authPrincipal: AuthPrincipal): Result[ListMyGroupsResponse] = {
+      authPrincipal: AuthPrincipal,
+      ignoreAccess: Boolean): Result[ListMyGroupsResponse] = {
     val groupsCall =
-      if (authPrincipal.isSystemAdmin) {
+      if (authPrincipal.isSystemAdmin || ignoreAccess) {
         groupRepo.getAllGroups()
       } else {
         groupRepo.getGroups(authPrincipal.memberGroupIds.toSet)
       }
 
     groupsCall.map { grp =>
-      pageListGroupsResponse(grp.toList, groupNameFilter, startFrom, maxItems)
+      pageListGroupsResponse(grp.toList, groupNameFilter, startFrom, maxItems, ignoreAccess)
     }
   }.toResult
 
@@ -152,7 +153,8 @@ class MembershipService(
       allGroups: Seq[Group],
       groupNameFilter: Option[String],
       startFrom: Option[String],
-      maxItems: Int): ListMyGroupsResponse = {
+      maxItems: Int,
+      ignoreAccess: Boolean): ListMyGroupsResponse = {
     val allMyGroups = allGroups
       .filter(_.status == GroupStatus.Active)
       .sortBy(_.id)
@@ -165,7 +167,7 @@ class MembershipService(
     val nextId = if (filtered.length > maxItems) Some(filtered(maxItems - 1).id) else None
     val groups = filtered.take(maxItems)
 
-    ListMyGroupsResponse(groups, groupNameFilter, startFrom, nextId, maxItems)
+    ListMyGroupsResponse(groups, groupNameFilter, startFrom, nextId, maxItems, ignoreAccess)
   }
 
   def getGroupActivity(

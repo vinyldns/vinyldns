@@ -226,12 +226,13 @@ class VinylDNSClient(object):
 
         return data
 
-    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=None, **kwargs):
+    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=None, ignore_access=False, **kwargs):
         """
         Retrieves my groups
         :param start_from: the start key of the page
         :param max_items: the page limit
         :param group_name_filter: only returns groups whose names contain filter string
+        :param ignore_access: determines if groups should be retrieved based on requester's membership
         :return: the content of the response
         """
 
@@ -242,6 +243,8 @@ class VinylDNSClient(object):
             args.append(u'startFrom={0}'.format(start_from))
         if max_items is not None:
             args.append(u'maxItems={0}'.format(max_items))
+        if ignore_access is not False:
+            args.append(u'ignoreAccess={0}'.format(ignore_access))
 
         url = urljoin(self.index_url, u'/groups') + u'?' + u'&'.join(args)
         response, data = self.make_request(url, u'GET', self.headers, **kwargs)

@@ -38,7 +38,7 @@ describe('Controller: ZonesController', function () {
         profileService.getAuthenticatedUserData = function() {
             return $q.when({data: {}});
         };
-        groupsService.getMyGroups = function() {
+        groupsService.getGroups = function() {
             return $q.when({
                 data: {
                     groups: [{id: "all my groups"}]

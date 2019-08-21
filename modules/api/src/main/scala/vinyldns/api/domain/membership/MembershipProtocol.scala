@@ -140,7 +140,8 @@ final case class ListMyGroupsResponse(
     groupNameFilter: Option[String] = None,
     startFrom: Option[String] = None,
     nextId: Option[String] = None,
-    maxItems: Int)
+    maxItems: Int,
+    ignoreAccess: Boolean)
 
 final case class GroupNotFoundError(msg: String) extends Throwable(msg)
 

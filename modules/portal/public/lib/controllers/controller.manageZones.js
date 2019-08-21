@@ -18,7 +18,7 @@ angular.module('controller.manageZones', [])
     .controller('ManageZonesController', function ($scope, $timeout, $log, recordsService, zonesService, groupsService,
                                                    profileService, utilityService) {
 
-    groupsService.getMyGroupsStored()
+    groupsService.getGroupsStored()
         .then(function (results) {
             $scope.myGroups = results.groups;
         })

@@ -126,7 +126,7 @@ describe('Controller: RecordsController', function () {
         spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when({ data: {zone: mockZone}}));
-        spyOn(this.groupsService, 'getMyGroups')
+        spyOn(this.groupsService, 'getGroups')
             .and.stub()
             .and.returnValue(this.q.when(mockGroups));
         this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
@@ -166,7 +166,7 @@ describe('Controller: RecordsController', function () {
         spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when({ data: {zone: mockZone}}));
-        spyOn(this.groupsService, 'getMyGroups')
+        spyOn(this.groupsService, 'getGroups')
             .and.stub()
             .and.returnValue(this.q.when(mockGroups));
         this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
@@ -206,7 +206,7 @@ describe('Controller: RecordsController', function () {
         spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when({ data: {zone: mockZone}}));
-        spyOn(this.groupsService, 'getMyGroups')
+        spyOn(this.groupsService, 'getGroups')
             .and.stub()
             .and.returnValue(this.q.when(mockGroups));
         this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
@@ -246,7 +246,7 @@ describe('Controller: RecordsController', function () {
         spyOn(this.recordsService, 'getZone')
             .and.stub()
             .and.returnValue(this.q.when({ data: {zone: mockZone}}));
-        spyOn(this.groupsService, 'getMyGroups')
+        spyOn(this.groupsService, 'getGroups')
             .and.stub()
             .and.returnValue(this.q.when(mockGroups));
         this.$httpBackend.when('GET', '/api/users/currentuser').respond({});

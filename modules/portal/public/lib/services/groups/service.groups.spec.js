@@ -432,26 +432,26 @@ describe('Service: groupsService', function () {
         this.$httpBackend.flush();
     });
 
-    it('getMyGroups method should return 200 with valid groups', function (done) {
+    it('getGroups method should return 200 with valid groups', function (done) {
         var url = '/api/groups';
         this.$httpBackend.whenRoute('GET', url).respond(200, getJSONFixture('mockGroupList.json'));
-        this.groupsService.getMyGroups()
+        this.groupsService.getGroups()
             .then(function (response) {
                 expect(response.status).toBe(200);
                 done();
             }, function (error) {
-                fail('getMyGroups expected 200, but got ' + response.status.toString());
+                fail('getGroups expected 200, but got ' + response.status.toString());
                 done();
             });
         this.$httpBackend.flush();
     });
 
-    it('getMyGroups method should return 401 with invalid credentials', function (done) {
+    it('getGroups method should return 401 with invalid credentials', function (done) {
         var url = '/api/groups';
         this.$httpBackend.whenRoute('GET', url).respond(401, "The resource requires authentication, which was not supplied with the request");
-        this.groupsService.getMyGroups()
+        this.groupsService.getGroups()
             .then(function (response) {
-                fail("getMyGroups expected 401, but got " + response.status.toString());
+                fail("getGroups expected 401, but got " + response.status.toString());
                 done();
             }, function (error) {
                 expect(error.status).toBe(401);
@@ -460,14 +460,14 @@ describe('Service: groupsService', function () {
         this.$httpBackend.flush();
     });
 
-    it('getMyGroupsStored should only call the api on its 1st call', function (done) {
+    it('getGroupsStored should only call the api on its 1st call', function (done) {
         var url = '/api/groups';
         var groupsResult = getJSONFixture('mockGroupList.json');
         this.$httpBackend.whenRoute('GET', url).respond(200, groupsResult);
-        var getMyGroupsCalls = spyOn(this.groupsService, 'getMyGroups').and.callThrough();
-        var getMyGroupsStoredCalls = spyOn(this.groupsService, 'getMyGroupsStored').and.callThrough();
+        var getGroupsCalls = spyOn(this.groupsService, 'getGroups').and.callThrough();
+        var getGroupsStoredCalls = spyOn(this.groupsService, 'getGroupsStored').and.callThrough();
 
-        this.groupsService.getMyGroupsStored().then(function (response) {
+        this.groupsService.getGroupsStored().then(function (response) {
             expect(response).toEqual(groupsResult);
         }, function (error) {
             fail('getGroup expected 202 with json, but got' + error.status.toString());
@@ -475,42 +475,42 @@ describe('Service: groupsService', function () {
 
         this.$httpBackend.flush();
 
-        this.groupsService.getMyGroupsStored().then(function (response) {
+        this.groupsService.getGroupsStored().then(function (response) {
             expect(response).toEqual(groupsResult);
         }, function (error) {
             fail('getGroup expected 202 with json, but got' + error.status.toString());
         });
 
-        expect(getMyGroupsStoredCalls.calls.count()).toBe(2);
-        expect(getMyGroupsCalls.calls.count()).toBe(1);
+        expect(getGroupsStoredCalls.calls.count()).toBe(2);
+        expect(getGroupsCalls.calls.count()).toBe(1);
         done();
 
     });
 
-    it('getMyGroupsStored should call the api twice when there is an error', function (done) {
+    it('getGroupsStored should call the api twice when there is an error', function (done) {
         var url = '/api/groups';
         this.$httpBackend.whenRoute('GET', url).respond(401, "The resource requires authentication, which was not supplied with the request");
-        var getMyGroupsCalls = spyOn(this.groupsService, 'getMyGroups').and.callThrough();
-        var getMyGroupsStoredCalls = spyOn(this.groupsService, 'getMyGroupsStored').and.callThrough();
+        var getGroupsCalls = spyOn(this.groupsService, 'getGroups').and.callThrough();
+        var getGroupsStoredCalls = spyOn(this.groupsService, 'getGroupsStored').and.callThrough();
 
-        this.groupsService.getMyGroupsStored().then(function (response) {
-            fail("getMyGroups expected 401, but got " + response.status.toString());
+        this.groupsService.getGroupsStored().then(function (response) {
+            fail("getGroups expected 401, but got " + response.status.toString());
         }, function (error) {
             expect(error.status).toBe(401);
         });
 
         this.$httpBackend.flush();
 
-        this.groupsService.getMyGroupsStored().then(function (response) {
-            fail("getMyGroups expected 401, but got " + response.status.toString());
+        this.groupsService.getGroupsStored().then(function (response) {
+            fail("getGroups expected 401, but got " + response.status.toString());
         }, function (error) {
             expect(error.status).toBe(401);
         });
 
         this.$httpBackend.flush();
 
-        expect(getMyGroupsStoredCalls.calls.count()).toBe(2);
-        expect(getMyGroupsCalls.calls.count()).toBe(2);
+        expect(getGroupsStoredCalls.calls.count()).toBe(2);
+        expect(getGroupsCalls.calls.count()).toBe(2);
         done();
 
     });

@@ -67,6 +67,7 @@ object VinylDNS {
       lastName: Option[String],
       email: Option[String],
       isSuper: Boolean,
+      isSupport: Boolean,
       id: String,
       lockStatus: LockStatus)
   object UserInfo {
@@ -77,6 +78,7 @@ object VinylDNS {
         lastName = user.lastName,
         email = user.email,
         isSuper = user.isSuper,
+        isSupport = user.isSupport,
         id = user.id,
         lockStatus = user.lockStatus
       )
@@ -218,7 +220,7 @@ class VinylDNS @Inject()(
     })
   }
 
-  def getMyGroups(): Action[AnyContent] = userAction.async { implicit request =>
+  def getGroups(): Action[AnyContent] = userAction.async { implicit request =>
     val queryParameters = new HashMap[String, java.util.List[String]]()
     for {
       (name, values) <- request.queryString

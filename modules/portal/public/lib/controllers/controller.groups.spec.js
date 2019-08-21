@@ -31,7 +31,7 @@ describe('Controller: GroupsController', function () {
         profileService.getAuthenticatedUserData = function() {
             return $q.when('data')
         };
-        this.groupsService.getMyGroups = function() {
+        this.groupsService.getGroups = function() {
             return $q.when({
                 data: {
                     group: 'mock group'
@@ -57,14 +57,14 @@ describe('Controller: GroupsController', function () {
                 groups: "all my groups"
             }
         };
-        var getMyGroups = spyOn(this.groupsService, 'getMyGroups')
+        var getGroups = spyOn(this.groupsService, 'getGroups')
             .and.stub()
             .and.returnValue(this.q.when(response));
 
         this.scope.refresh();
         this.scope.$digest();
 
-        expect(getMyGroups.calls.count()).toBe(1);
+        expect(getGroups.calls.count()).toBe(1);
         expect(this.scope.groups.items).toBe("all my groups");
     });
 
