@@ -3,6 +3,7 @@ __pycache__
 *.pyc
 /func_test/.virtualenv
 node_modules/
+public/bower_components/
 public/javascripts/
 public/stylesheets/
 public/test_frameworks/

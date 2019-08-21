@@ -14,9 +14,9 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
+            'javascripts/moment.min.js',
             'gentelella/vendors/jquery/dist/jquery.min.js',
             'gentelella/vendors/bootstrap/dist/js/bootstrap.min.js',
-            'bower_components/moment/moment.js',
             'gentelella/vendors/bootstrap-daterangepicker/daterangepicker.js',
             'javascripts/angular.min.js',
             'test_frameworks/*.js',

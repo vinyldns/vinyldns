@@ -17,6 +17,7 @@ module.exports = function (grunt) {
                     { expand: true, flatten: true, src: ['node_modules/angular-ui-router/release/angular-ui-router.min.js'], dest: 'public/javascripts' },
                     { expand: true, flatten: true, src: ['node_modules/bootstrap/dist/css/bootstrap.min.css'], dest: 'public/stylesheets' },
                     { expand: true, flatten: true, src: ['node_modules/font-awesome/css/font-awesome.min.css'], dest: 'public/stylesheets' },
+                    { expand: true, flatten: true, src: ['node_modules/moment/min/moment.min.js'], dest: 'public/javascripts' },
                     { expand: true, cwd: 'node_modules/gentelella', dest: 'public/gentelella', src: '**'},
                     { expand: true, flatten: true, src: ['public/custom/**/*.js', '!public/custom/**/*.spec.js'], dest: 'public/javascripts' },
                     { expand: true, flatten: true, src: ['public/custom/**/*.css'], dest: 'public/stylesheets' }
@@ -33,9 +34,9 @@ module.exports = function (grunt) {
             local_dependencies: {
                 files: {
                     'app/views/main.scala.html': [
+                        'public/javascripts/moment.min.js',
                         'public/gentelella/vendors/jquery/dist/jquery.min.js',
                         'public/gentelella/vendors/bootstrap/dist/js/bootstrap.min.js',
-                        'public/bower_components/moment/moment.js',
                         'public/gentelella/vendors/bootstrap-daterangepicker/daterangepicker.js',
                         'public/javascripts/ui-bootstrap.min.js',
                         'public/javascripts/angular.min.js',
