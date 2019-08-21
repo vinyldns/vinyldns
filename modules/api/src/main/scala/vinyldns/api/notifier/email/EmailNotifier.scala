@@ -23,7 +23,8 @@ import vinyldns.core.domain.batch.{
   BatchChangeApprovalStatus,
   SingleAddChange,
   SingleChange,
-  SingleDeleteRRSetChange
+  SingleDeleteRRSetChange,
+  SingleDeleteRecordChange
 }
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.domain.membership.User
@@ -145,6 +146,22 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     case SingleDeleteRRSetChange(_, _, _, inputName, typ, status, systemMessage, _, _, _, _) =>
       s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>
         |     <td></td><td></td><td>$status</td><td>${systemMessage.getOrElse("")}</td></tr>"""
+    case SingleDeleteRecordChange(
+        _,
+        _,
+        _,
+        inputName,
+        typ,
+        recordData,
+        status,
+        systemMessage,
+        _,
+        _,
+        _,
+        _) =>
+      s"""<tr><td>${index + 1}</td><td>Delete</td><td>$typ</td><td>$inputName</td>
+         |     <td></td><td>$recordData</td><td>$status</td><td>${systemMessage
+        .getOrElse("")}</td></tr>"""
   }
 
   def formatRecordData(rd: RecordData): String = rd match {

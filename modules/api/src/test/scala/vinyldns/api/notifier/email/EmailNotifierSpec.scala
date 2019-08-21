@@ -20,6 +20,7 @@ import org.scalatest.mockito.MockitoSugar
 import vinyldns.api.CatsHelpers
 import javax.mail.{Provider, Session, Transport, URLName}
 import java.util.Properties
+
 import vinyldns.core.domain.membership.UserRepository
 import vinyldns.core.notifier.Notification
 import javax.mail.internet.InternetAddress
@@ -29,17 +30,13 @@ import org.mockito.ArgumentCaptor
 import cats.effect.IO
 import javax.mail.{Address, Message}
 import vinyldns.core.domain.membership.User
-import vinyldns.core.domain.batch.BatchChange
+import _root_.vinyldns.core.domain.batch._
 import org.joda.time.DateTime
-import vinyldns.core.domain.batch.BatchChangeApprovalStatus
-import vinyldns.core.domain.batch.SingleChange
-import vinyldns.core.domain.batch.SingleAddChange
-import vinyldns.core.domain.batch.SingleDeleteRRSetChange
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.AData
-import _root_.vinyldns.core.domain.batch.SingleChangeStatus
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
 import scala.collection.JavaConverters._
 import vinyldns.core.notifier.NotifierConfig
 
@@ -225,6 +222,9 @@ class EmailNotifierSpec
             row.contains(ac.ttl.toString) should be(true)
           case _: SingleDeleteRRSetChange =>
             row.contains("Delete") should be(true)
+          case dc: SingleDeleteRecordChange =>
+            row.contains("Delete") should be(true)
+            row.contains(dc.recordData) should be(true)
         }
       }
 

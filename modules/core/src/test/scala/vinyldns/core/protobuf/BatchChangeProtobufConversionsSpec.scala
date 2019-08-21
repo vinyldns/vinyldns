@@ -19,7 +19,12 @@ package vinyldns.core.protobuf
 import cats.scalatest.EitherMatchers
 import org.scalatest.{EitherValues, Matchers, WordSpec}
 import vinyldns.core.domain.{HighValueDomainError, SingleChangeError, ZoneDiscoveryError}
-import vinyldns.core.domain.batch.{SingleAddChange, SingleChangeStatus, SingleDeleteRRSetChange}
+import vinyldns.core.domain.batch.{
+  SingleAddChange,
+  SingleChangeStatus,
+  SingleDeleteRRSetChange,
+  SingleDeleteRecordChange
+}
 import vinyldns.core.domain.record.{AData, RecordType}
 
 class BatchChangeProtobufConversionsSpec
@@ -46,12 +51,26 @@ class BatchChangeProtobufConversionsSpec
     List(testDVError),
     "id"
   )
-  private val testDeleteChange = SingleDeleteRRSetChange(
+  private val testDeleteRRSetChange = SingleDeleteRRSetChange(
     Some("zoneId"),
     Some("zoneName"),
     Some("recordName"),
     "inputName",
     RecordType.A,
+    SingleChangeStatus.Pending,
+    Some("systemMessage"),
+    Some("recordChangeId"),
+    Some("recordSetId"),
+    List(testDVError, SingleChangeError(HighValueDomainError("hvd"))),
+    "id"
+  )
+  private val testDeleteRecordChange = SingleDeleteRecordChange(
+    Some("zoneId"),
+    Some("zoneName"),
+    Some("recordName"),
+    "inputName",
+    RecordType.A,
+    AData("1.1.1.1"),
     SingleChangeStatus.Pending,
     Some("systemMessage"),
     Some("recordChangeId"),
@@ -69,10 +88,13 @@ class BatchChangeProtobufConversionsSpec
     }
 
     "round trip single delete changes with all values provided" in {
-      val pb = toPB(testDeleteChange)
-      val roundTrip = fromPB(pb.toOption.get)
+      val rrSetPb = toPB(testDeleteRRSetChange)
+      val recordPb = toPB(testDeleteRecordChange)
+      val rrSetRoundTrip = fromPB(rrSetPb.toOption.get)
+      val recordRoundTrip = fromPB(recordPb.toOption.get)
 
-      roundTrip shouldBe Right(testDeleteChange)
+      rrSetRoundTrip shouldBe Right(testDeleteRRSetChange)
+      recordRoundTrip shouldBe Right(testDeleteRecordChange)
     }
 
     "round trip single add changes when optional values are not present" in {

@@ -24,19 +24,26 @@ import vinyldns.core.domain.batch.{
   SingleChangeStatus,
   SingleDeleteRRSetChange
 }
+import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.RecordType
-import vinyldns.core.protobuf.SingleChangeType.{SingleAddType, SingleChangeType, SingleDeleteType}
+import vinyldns.core.protobuf.SingleChangeType.{
+  SingleAddType,
+  SingleChangeType,
+  SingleDeleteRecordType,
+  SingleDeleteType
+}
 import vinyldns.proto.VinylDNSProto
 
 import scala.collection.JavaConverters._
 
 object SingleChangeType extends Enumeration {
   type SingleChangeType = Value
-  val SingleAddType, SingleDeleteType = Value
+  val SingleAddType, SingleDeleteType, SingleDeleteRecordType = Value
 
   def from(singleChange: SingleChange): SingleChangeType = singleChange match {
     case _: SingleAddChange => SingleChangeType.SingleAddType
     case _: SingleDeleteRRSetChange => SingleChangeType.SingleDeleteType
+    case _: SingleDeleteRecordChange => SingleChangeType.SingleDeleteRecordType
   }
 }
 
@@ -74,6 +81,25 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
             if (change.hasRecordName) Some(change.getRecordName) else None,
             change.getInputName,
             RecordType.withName(change.getRecordType),
+            SingleChangeStatus.withName(change.getStatus),
+            if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
+            if (change.hasRecordChangeId) Some(change.getRecordChangeId) else None,
+            if (change.hasRecordSetId) Some(change.getRecordSetId) else None,
+            errors,
+            change.getId
+          )
+        case SingleDeleteRecordType =>
+          val changeData =
+            VinylDNSProto.SingleDeleteRecordChange.parseFrom(change.getChangeData.getData)
+          val recordData =
+            fromPB(changeData.getRecordData, RecordType.withName(change.getRecordType))
+          SingleDeleteRecordChange(
+            if (change.hasZoneId) Some(change.getZoneId) else None,
+            if (change.hasZoneName) Some(change.getZoneName) else None,
+            if (change.hasRecordName) Some(change.getRecordName) else None,
+            change.getInputName,
+            RecordType.withName(change.getRecordType),
+            recordData,
             SingleChangeStatus.withName(change.getStatus),
             if (change.hasSystemMessage) Some(change.getSystemMessage) else None,
             if (change.hasRecordChangeId) Some(change.getRecordChangeId) else None,
@@ -128,6 +154,22 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
       sc.build()
     }
 
+  def toPB(change: SingleDeleteRecordChange): Either[Throwable, VinylDNSProto.SingleChange] =
+    Either.catchNonFatal {
+      val rd = toRecordData(change.recordData)
+      val sdrc =
+        VinylDNSProto.SingleDeleteRecordChange.newBuilder().setRecordData(rd).build()
+      val scd = VinylDNSProto.SingleChangeData.newBuilder().setData(sdrc.toByteString)
+
+      val sc = VinylDNSProto.SingleChange
+        .newBuilder()
+        .setChangeData(scd)
+        .setChangeType(SingleDeleteRecordType.toString)
+
+      addCommonSingleChangeFields(sc, change)
+      sc.build()
+    }
+
   def addCommonSingleChangeFields(
       sc: VinylDNSProto.SingleChange.Builder,
       change: SingleChange): Unit = {
@@ -158,5 +200,6 @@ trait BatchChangeProtobufConversions extends ProtobufConversions {
     change match {
       case sac: SingleAddChange => toPB(sac)
       case sdc: SingleDeleteRRSetChange => toPB(sdc)
+      case sdrc: SingleDeleteRecordChange => toPB(sdrc)
     }
 }

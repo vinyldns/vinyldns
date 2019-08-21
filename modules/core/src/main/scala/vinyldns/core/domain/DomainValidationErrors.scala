@@ -180,4 +180,8 @@ final case class RecordRequiresManualReview(fqdn: String, fatal: Boolean = false
       .replaceAll("\n", " ")
 }
 
+final case class UnsupportedOperation(operation: String) extends DomainValidationError {
+  def message: String = s"$operation is not yet implemented/supported in VinylDNS."
+}
+
 // $COVERAGE-ON$
