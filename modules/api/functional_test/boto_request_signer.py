@@ -67,6 +67,11 @@ class BotoRequestSigner(object):
         credential_scope = u'/'.join([request.timestamp, request.region_name, request.service_name, u'aws4_request'])
 
         canonical_request = auth_handler.canonical_request(request)
+        split_request = canonical_request.split('\n')
+
+        if params != {} and split_request[2] == '':
+            split_request[2] = self.generate_canonical_query_string(params)
+            canonical_request = '\n'.join(split_request)
         hashed_request = sha256(canonical_request.encode(u'utf-8')).hexdigest()
 
         string_to_sign = u'\n'.join([u'AWS4-HMAC-SHA256', timestamp, credential_scope, hashed_request])
@@ -79,3 +84,20 @@ class BotoRequestSigner(object):
             u'Signature=%s' % signature])
 
         return auth_header
+
+    @staticmethod
+    def generate_canonical_query_string(params):
+        """
+        Using in place of canonical_query_string from boto/auth.py to support POST requests with query parameters
+        """
+        post_params = []
+        for param in sorted(params):
+            value = params[param].encode('utf-8')
+            import urllib
+            try:
+                post_params.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
+                                              urllib.parse.quote(value, safe='-_.~')))
+            except:
+                post_params.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
+                                              urllib.quote(value, safe='-_.~')))
+        return '&'.join(post_params)

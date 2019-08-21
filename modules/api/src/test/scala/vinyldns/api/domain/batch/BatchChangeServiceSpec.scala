@@ -1407,6 +1407,141 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
+
+    "return a BatchChange if all data inputs are valid ignoring allowManualReview" in {
+      val result = underTest
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, cnameAdd)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA).validNel,
+            AddChangeForValidation(baseZone, "cname", cnameAdd).validNel
+          ),
+          okAuth,
+          false
+        )
+        .toOption
+        .get
+
+      result shouldBe a[BatchChange]
+      result.changes.head shouldBe SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        List.empty,
+        result.changes.head.id
+      )
+      result.changes(1) shouldBe SingleAddChange(
+        Some(onlyBaseZone.id),
+        Some(onlyBaseZone.name),
+        Some("have"),
+        "have.only.base.",
+        AAAA,
+        ttl.get,
+        AAAAData("1:2:3:4:5:6:7:8"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        List.empty,
+        result.changes(1).id
+      )
+      result.changes(2) shouldBe SingleAddChange(
+        Some(baseZone.id),
+        Some(baseZone.name),
+        Some("cname"),
+        "cname.test.com.",
+        CNAME,
+        ttl.get,
+        CNAMEData("testing.test.com."),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        List.empty,
+        result.changes(2).id
+      )
+    }
+
+    "return a BatchChange if all data inputs ok and manual review is enabled with scheduled" in {
+      val result = underTestScheduledEnabled
+        .buildResponse(
+          BatchChangeInput(
+            None,
+            List(apexAddA),
+            Some("owner-group-id"),
+            scheduledTime = Some(DateTime.now.plusMinutes(1))),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
+          ),
+          okAuth,
+          true
+        )
+        .toOption
+        .get
+
+      result shouldBe a[BatchChange]
+      result.changes.head shouldBe SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        List.empty,
+        result.changes.head.id
+      )
+    }
+
+    "return a BatchChange if all data inputs ok and manual review is enabled with scheduled " +
+      "without owner group ID if not needed" in {
+      val result = underTestScheduledEnabled
+        .buildResponse(
+          BatchChangeInput(
+            None,
+            List(apexAddA),
+            None,
+            scheduledTime = Some(DateTime.now.plusMinutes(1))),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
+          ),
+          okAuth,
+          true
+        )
+        .toOption
+        .get
+
+      result shouldBe a[BatchChange]
+      result.changes.head shouldBe SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        List.empty,
+        result.changes.head.id
+      )
+    }
+
     "return a BatchChange if all data inputs are valid/soft failures and manual review is enabled and owner group ID " +
       "is provided" in {
       val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
@@ -1469,59 +1604,44 @@ class BatchChangeServiceSpec
         result.changes(2).id
       )
     }
-    "return a ManualReviewRequiresOwnerGroup error if all data inputs are valid/soft failures and manual review is " +
-      "enabled and owner group ID is missing" in {
-      val result = underTestManualEnabled
-        .buildResponse(
-          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA), None),
-          List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            nonFatalError.invalidNel
-          ),
-          okAuth,
-          true
-        )
 
-      result.value shouldBe Left(ManualReviewRequiresOwnerGroup)
-    }
-
-    "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
-      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
-      val result = underTest
+    "return a BatchChange in manual review if soft errors and scheduled" in {
+      val result = underTestScheduledEnabled
         .buildResponse(
-          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          BatchChangeInput(
+            None,
+            List(apexAddA),
+            Some("owner-group-id"),
+            Some(DateTime.now.plusMinutes(1))),
           List(
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
             nonFatalError.invalidNel,
             nonFatalError.invalidNel
           ),
           okAuth,
-          true
+          allowManualReview = true
         )
-        .left
-        .value
+        .toOption
+        .get
 
-      result shouldBe an[InvalidBatchChangeResponses]
+      result shouldBe a[BatchChange]
+      result.changes.head shouldBe SingleAddChange(
+        Some(apexZone.id),
+        Some(apexZone.name),
+        Some("apex.test.com."),
+        "apex.test.com.",
+        A,
+        ttl.get,
+        AData("1.1.1.1"),
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        List.empty,
+        result.changes.head.id
+      )
     }
-    "return a BatchChangeErrorList if all data inputs are valid/soft failures, manual review is enabled, " +
-      "but batch change allowManualReview attribute is false" in {
-      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
-      val result = underTestManualEnabled
-        .buildResponse(
-          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
-          List(
-            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-            nonFatalError.invalidNel,
-            nonFatalError.invalidNel
-          ),
-          okAuth,
-          false
-        )
-        .left
-        .value
 
-      result shouldBe an[InvalidBatchChangeResponses]
-    }
     "return a BatchChangeErrorList if any data inputs are invalid" in {
       val result = underTest
         .buildResponse(
@@ -1544,121 +1664,131 @@ class BatchChangeServiceSpec
         AddChangeForValidation(baseZone, "non-apex", nonApexAddA))
       ibcr.changeRequestResponses(2) should haveInvalid[DomainValidationError](nonFatalError)
     }
-  }
-  "return a BatchChange if all data inputs ok and manual review is enabled with scheduled" in {
-    val result = underTestScheduledEnabled
-      .buildResponse(
-        BatchChangeInput(
-          None,
-          List(apexAddA),
-          Some("owner-group-id"),
-          scheduledTime = Some(DateTime.now)),
-        List(
-          AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel
-        ),
-        okAuth,
-        true
-      )
-      .toOption
-      .get
 
-    result shouldBe a[BatchChange]
-    result.changes.head shouldBe SingleAddChange(
-      Some(apexZone.id),
-      Some(apexZone.name),
-      Some("apex.test.com."),
-      "apex.test.com.",
-      A,
-      ttl.get,
-      AData("1.1.1.1"),
-      SingleChangeStatus.Pending,
-      None,
-      None,
-      None,
-      List.empty,
-      result.changes.head.id
-    )
-  }
-  "return a BatchChange ignoring allowManualReview flag if scheduled" in {
-    val result = underTestScheduledEnabled
-      .buildResponse(
-        BatchChangeInput(None, List(apexAddA), Some("owner-group-id"), Some(DateTime.now)),
-        List(
-          AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-          nonFatalError.invalidNel,
-          nonFatalError.invalidNel
-        ),
-        okAuth,
-        allowManualReview = false
-      )
-      .toOption
-      .get
+    "return a BatchChangeErrorList if all data inputs are valid/soft failures and manual review is disabled" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTest
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth,
+          true
+        )
+        .left
+        .value
 
-    result shouldBe a[BatchChange]
-    result.changes.head shouldBe SingleAddChange(
-      Some(apexZone.id),
-      Some(apexZone.name),
-      Some("apex.test.com."),
-      "apex.test.com.",
-      A,
-      ttl.get,
-      AData("1.1.1.1"),
-      SingleChangeStatus.Pending,
-      None,
-      None,
-      None,
-      List.empty,
-      result.changes.head.id
-    )
-  }
-  "return a BatchChange in manual review if soft errors and scheduled" in {
-    val result = underTestScheduledEnabled
-      .buildResponse(
-        BatchChangeInput(None, List(apexAddA), Some("owner-group-id"), Some(DateTime.now)),
-        List(
-          AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
-          nonFatalError.invalidNel,
-          nonFatalError.invalidNel
-        ),
-        okAuth,
-        allowManualReview = true
-      )
-      .toOption
-      .get
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
 
-    result shouldBe a[BatchChange]
-    result.changes.head shouldBe SingleAddChange(
-      Some(apexZone.id),
-      Some(apexZone.name),
-      Some("apex.test.com."),
-      "apex.test.com.",
-      A,
-      ttl.get,
-      AData("1.1.1.1"),
-      SingleChangeStatus.Pending,
-      None,
-      None,
-      None,
-      List.empty,
-      result.changes.head.id
-    )
-  }
-  "return an error response if hard errors and scheduled" in {
-    val result = underTestScheduledEnabled
-      .buildResponse(
-        BatchChangeInput(None, List(noZoneAddA, nonApexAddA)),
-        List(
-          ZoneDiscoveryError("no.zone.match.", fatal = true).invalidNel,
-          AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel
-        ),
-        okAuth,
-        true
-      )
-      .left
-      .value
+    "return a BatchChangeErrorList if all data inputs are valid/soft failures, scheduled, " +
+      "and manual review is disabled" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTest
+        .buildResponse(
+          BatchChangeInput(
+            None,
+            List(apexAddA, onlyBaseAddAAAA, delete),
+            None,
+            Some(DateTime.now.plusMinutes(1))),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth,
+          true
+        )
+        .left
+        .value
 
-    result shouldBe an[InvalidBatchChangeResponses]
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
+
+    "return a BatchChangeErrorList if hard errors and scheduled" in {
+      val result = underTestScheduledEnabled
+        .buildResponse(
+          BatchChangeInput(
+            None,
+            List(noZoneAddA, nonApexAddA),
+            None,
+            Some(DateTime.now.plusMinutes(1))),
+          List(
+            ZoneDiscoveryError("no.zone.match.", fatal = true).invalidNel,
+            AddChangeForValidation(baseZone, "non-apex", nonApexAddA).validNel
+          ),
+          okAuth,
+          true
+        )
+        .left
+        .value
+
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
+
+    "return a BatchChangeErrorList if all data inputs are valid/soft failures, manual review is enabled, " +
+      "but batch change allowManualReview attribute is false" in {
+      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val result = underTestManualEnabled
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA, delete)),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth,
+          false
+        )
+        .left
+        .value
+
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
+
+    "return a BatchChangeErrorList if manual review is enabled, all data inputs are only valid/soft failures, " +
+      "with scheduledTime and allowManualReview is false" in {
+      val result = underTestScheduledEnabled
+        .buildResponse(
+          BatchChangeInput(
+            None,
+            List(apexAddA),
+            Some("owner-group-id"),
+            Some(DateTime.now.plusMinutes(1))),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth,
+          allowManualReview = false
+        )
+        .left
+        .value
+
+      result shouldBe an[InvalidBatchChangeResponses]
+    }
+
+    "return a ManualReviewRequiresOwnerGroup error if all data inputs are valid/soft failures and manual review is " +
+      "enabled and owner group ID is missing" in {
+      val result = underTestManualEnabled
+        .buildResponse(
+          BatchChangeInput(None, List(apexAddA, onlyBaseAddAAAA), None),
+          List(
+            AddChangeForValidation(apexZone, "apex.test.com.", apexAddA).validNel,
+            nonFatalError.invalidNel
+          ),
+          okAuth,
+          true
+        )
+
+      result.value shouldBe Left(ManualReviewRequiresOwnerGroup)
+    }
   }
+
   "buildResponseForApprover" should {
     val batchChangeNeedsApproval = BatchChange(
       auth.userId,

@@ -424,20 +424,20 @@ class BatchChangeService(
     } else if (noErrors && !isScheduled) {
       // There are no errors and this is not scheduled, so process immediately
       processNowResponse
-    } else {
+    } else if (this.manualReviewEnabled && noErrors && isScheduled) {
+      // There are no errors and this is scheduled, so advance to manual review
+      manualReviewResponse
+    } else if (this.manualReviewEnabled && allowManualReview) {
       // we have soft errors
-      // advance to manual review if this is scheduled OR manual review is ok
-      val gotoManualReview = this.manualReviewEnabled && (isScheduled || allowManualReview)
-      if (gotoManualReview) {
-        if (batchChangeInput.ownerGroupId.isDefined) {
-          manualReviewResponse
-        } else {
-          ManualReviewRequiresOwnerGroup.asLeft
-        }
+      // advance to manual review if manual review is ok
+      if (batchChangeInput.ownerGroupId.isDefined) {
+        manualReviewResponse
       } else {
-        // Cannot go to manual review, and we have soft errors, so just return a failure
-        errorResponse
+        ManualReviewRequiresOwnerGroup.asLeft
       }
+    } else {
+      // Cannot go to manual review, and we have soft errors, so just return a failure
+      errorResponse
     }
   }
 

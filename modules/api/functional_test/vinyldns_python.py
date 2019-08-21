@@ -553,13 +553,16 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, u'GET', self.headers, **kwargs)
         return data
 
-    def create_batch_change(self, batch_change_input, **kwargs):
+    def create_batch_change(self, batch_change_input, allow_manual_review=True, **kwargs):
         """
         Creates a new batch change
         :param batch_change_input: the batchchange to be created
+        :param allow_manual_review: if true and manual review is enabled soft failure are treated as hard failures
         :return: the content of the response
         """
         url = urljoin(self.index_url, u'/zones/batchrecordchanges')
+        if allow_manual_review is not None:
+            url = url + (u'?' + u'allowManualReview={0}'.format(allow_manual_review))
         response, data = self.make_request(url, u'POST', self.headers, json.dumps(batch_change_input), **kwargs)
         return data
 
