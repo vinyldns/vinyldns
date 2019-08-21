@@ -557,7 +557,7 @@ class VinylDNSClient(object):
         """
         Creates a new batch change
         :param batch_change_input: the batchchange to be created
-        :param allow_manual_review: if true and manual review is enabled soft failure are treated as hard failures
+        :param allow_manual_review: if true and manual review is enabled soft failures are treated as hard failures
         :return: the content of the response
         """
         url = urljoin(self.index_url, u'/zones/batchrecordchanges')
