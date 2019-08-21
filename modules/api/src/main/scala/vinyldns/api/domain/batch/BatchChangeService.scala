@@ -424,13 +424,11 @@ class BatchChangeService(
     } else if (noErrors && !isScheduled) {
       // There are no errors and this is not scheduled, so process immediately
       processNowResponse
-    } else if (this.manualReviewEnabled && noErrors && isScheduled) {
-      // There are no errors and this is scheduled, so advance to manual review
-      manualReviewResponse
     } else if (this.manualReviewEnabled && allowManualReview) {
-      // we have soft errors
-      // advance to manual review if manual review is ok
-      if (batchChangeInput.ownerGroupId.isDefined) {
+      if ((noErrors && isScheduled) || batchChangeInput.ownerGroupId.isDefined) {
+        // There are no errors and this is scheduled
+        // or we have soft errors and owner group is defined
+        // advance to manual review if manual review is ok
         manualReviewResponse
       } else {
         ManualReviewRequiresOwnerGroup.asLeft
