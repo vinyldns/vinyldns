@@ -12,7 +12,7 @@ The max number of batch changes that are returned from a single request has been
 
 #### HTTP REQUEST
 
-> GET zones/batchrecordchanges?startFrom={response.nextId}&maxItems={1-100}&ignoreAccess={true &#124; false}
+> GET zones/batchrecordchanges?startFrom={response.nextId}&maxItems={1-100}&ignoreAccess={true &#124; false}&approval_status={BatchChangeApprovalStatus}
 
 #### HTTP REQUEST PARAMS
 
@@ -21,6 +21,7 @@ name          | type          | required?   | description |
 startFrom     | int           | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response. It is up to the client to maintain previous pages if the client wishes to advance forward and backward. If not specified, will return the first page of results. |
 maxItems      | int           | no          | The number of items to return in the page. Valid values are 1 - 100.  Defaults to 100 if not provided. |
 ignoreAccess  | boolean       | no          | Flag determining whether to retrieve only batch changes made by calling user or to retrieve all changes. Only affects system administrators (ie. support and super users). Defaults to `false` if not provided. |
+approvalStatus| BatchChangeApprovalStatus| no | Filter batch changes based on approval status. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved**, **Rejected**, or **Cancelled**. |
 
 #### HTTP RESPONSE TYPES
 
@@ -40,7 +41,7 @@ startFrom     | int         | `startFrom` sent in request, will not be returned 
 nextId        | int         | `startFrom` parameter of next page request, will not be returned if record sets are exhausted. |
 maxItems      | integer     | `maxItems` sent in request, default is 100. |
 ignoreAccess  | boolean     | `ignoreAccess` sent in request, default is `false`. |
-
+approvalStatus | BatchChangeApprovalStatus | `approvalStatus` sent in request, will not be returned if not provided. |
 
 ##### BatchChangeSummary <a id="batchchangesummary-info" />
 
@@ -54,7 +55,7 @@ totalChanges  | int         | The total number of single changes within the batc
 status        | BatchChangeStatus | [Status of the batch change](../api/batchchange-model#batchchange-attributes). |
 id            | string      | The unique identifier for this batch change. |
 ownerGroupName | string      | Conditional: Record ownership assignment, if provided. |
-approvalStatus | string      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved** or **Rejected**. |
+approvalStatus | BatchChangeApprovalStatus      | Whether the batch change is currently awaiting manual review. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved**, **Rejected**, or **Cancelled**. |
 
 
 #### EXAMPLE RESPONSE
