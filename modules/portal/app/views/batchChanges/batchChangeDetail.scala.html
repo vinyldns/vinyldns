@@ -40,6 +40,7 @@
             <div class="col-md-12">
                 <p><strong>ID:</strong> {{batch.id}}</p>
                 <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
+                <p ng-if="'@rootAccountName' != batch.userName"><strong>Submitter:</strong> {{batch.userName}}</p>
                 <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
                 @if(meta.sharedDisplayEnabled) {
                     <p ng-if="batch.ownerGroupName"><strong>Record Owner Group:</strong> {{batch.ownerGroupName}}</p>
@@ -87,7 +88,7 @@
                         <div class="clearfix">
                             <div class="btn-group">
                                 <button class="btn btn-default" ng-click="refresh()"><span class="fa fa-refresh"></span> Refresh</button>
-                                <button  ng-if="batch.approvalStatus == 'PendingReview'" class="btn btn-default" ng-click="cancelChange()">
+                                <button ng-if="batch.approvalStatus == 'PendingReview' && '@rootAccountName' == batch.userName" class="btn btn-default" ng-click="cancelChange()">
                                     Cancel Changes
                                 </button>
                             </div>

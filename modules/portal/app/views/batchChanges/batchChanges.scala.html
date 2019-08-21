@@ -74,6 +74,7 @@
                             <thead>
                                 <tr>
                                     <th>Submitted</th>
+                                    <th ng-if="ignoreAccess">Submitter</th>
                                     <th>ID</th>
                                     <th>Change Count</th>
                                     <th>Status</th>
@@ -84,6 +85,7 @@
                             <tbody>
                                 <tr ng-repeat="batchChange in batchChanges|filter:query">
                                     <td ng-bind="batchChange.createdTimestamp"></td>
+                                    <td ng-if="ignoreAccess" ng-bind="batchChange.userName"></td>
                                     <td><a href="/dnschanges/{{batchChange.id}}">{{batchChange.id}}</a></td>
                                     <td ng-bind="batchChange.totalChanges"></td>
                                     <td>
@@ -102,7 +104,7 @@
                                            ng-href="/dnschanges/{{ batchChange.id }}">
                                             View
                                         </a>
-                                        <a type="button" ng-if="batchChange.approvalStatus == 'PendingReview'" class="btn btn-warning btn-rounded"
+                                        <a type="button" ng-if="canCancelBatchChange(batchChange, '@rootAccountName')" class="btn btn-warning btn-rounded"
                                            ng-click="cancelChange(batchChange)">
                                             Cancel
                                         </a>

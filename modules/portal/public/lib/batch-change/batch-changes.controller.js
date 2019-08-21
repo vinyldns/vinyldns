@@ -140,6 +140,10 @@
                 $scope.currentBatchChange = null;
             }
 
+            $scope.canCancelBatchChange = function(batchChange, accountName) {
+                return batchChange.approvalStatus == 'PendingReview' && accountName == batchChange.userName;
+            }
+
             $timeout($scope.refreshBatchChanges, 0);
         });
 })();
