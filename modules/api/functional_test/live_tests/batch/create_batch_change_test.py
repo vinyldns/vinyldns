@@ -340,6 +340,28 @@ def test_create_scheduled_batch_change_with_scheduled_time_in_the_past_fails(sha
     assert_that(errors, is_("Scheduled time must be in the future."))
 
 
+@pytest.mark.manual_batch_review
+def test_create_batch_change_with_soft_failures_scheduled_time_and_allow_manual_review_disabled_fails(shared_zone_test_context):
+    """
+    Test creating a batch change with soft errors, scheduled time, and allowManualReview disabled results in hard failure
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    dt = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("non.existent", address="4.5.6.7"),
+        ],
+        "scheduledTime": dt,
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+
+    response = client.create_batch_change(batch_change_input, False, status=400)
+    assert_failed_change_in_error_response(response[0], input_name="non.existent.", record_type="A", record_data="4.5.6.7",
+                                           error_messages=["Zone Discovery Failed: zone for \"non.existent.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
+
+
 def test_create_batch_change_without_scheduled_time_succeeds(shared_zone_test_context):
     """
     Test successfully creating a batch change without scheduled time set
@@ -551,6 +573,7 @@ def test_create_batch_change_without_comments_succeeds(shared_zone_test_context)
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
 
+
 def test_create_batch_change_with_owner_group_id_succeeds(shared_zone_test_context):
     """
     Test successfully creating a batch change with owner group ID specified
@@ -576,6 +599,7 @@ def test_create_batch_change_with_owner_group_id_succeeds(shared_zone_test_conte
 
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)
+
 
 def test_create_batch_change_without_owner_group_id_succeeds(shared_zone_test_context):
     """
@@ -719,6 +743,7 @@ def test_create_batch_change_failed(shared_zone_test_context):
         dns_delete(shared_zone_test_context.ok_zone, "backend-foo", "A")
         dns_delete(shared_zone_test_context.ok_zone, "backend-already-exists", "A")
 
+
 def test_empty_batch_fails(shared_zone_test_context):
     """
     Test creating batch without any changes fails with
@@ -731,6 +756,7 @@ def test_empty_batch_fails(shared_zone_test_context):
 
     errors = shared_zone_test_context.ok_vinyldns_client.create_batch_change(batch_change_input, status=400)['errors']
     assert_that(errors[0], contains_string("Batch change contained no changes. Batch change must have at least one change, up to a maximum of"))
+
 
 def test_create_batch_change_without_changes_fails(shared_zone_test_context):
     """
@@ -932,6 +958,26 @@ def test_create_batch_change_with_domains_requiring_review_succeeds(shared_zone_
         if response:
             rejecter.reject_batch_change(response['id'], status=200)
 
+
+@pytest.mark.manual_batch_review
+def test_create_batch_change_with_soft_failures_and_allow_manual_review_disabled_fails(shared_zone_test_context):
+    """
+    Test creating a batch change with soft errors and allowManualReview disabled results in hard failure
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    dt = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    batch_change_input = {
+        "comments": "this is optional",
+        "changes": [
+            get_change_A_AAAA_json("non.existent", address="4.5.6.7"),
+        ],
+        "ownerGroupId": shared_zone_test_context.ok_group['id']
+    }
+
+    response = client.create_batch_change(batch_change_input, False, status=400)
+    assert_failed_change_in_error_response(response[0], input_name="non.existent.", record_type="A", record_data="4.5.6.7",
+                                           error_messages=["Zone Discovery Failed: zone for \"non.existent.\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS."])
 
 def test_create_batch_change_with_invalid_record_type_fails(shared_zone_test_context):
     """
