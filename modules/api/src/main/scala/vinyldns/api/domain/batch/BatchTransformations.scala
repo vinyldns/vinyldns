@@ -81,7 +81,8 @@ object BatchTransformations {
     val recordKey = RecordKey(zone.id, recordName, inputChange.typ)
     def asStoredChange(changeId: Option[String] = None): SingleChange
     def isAddChangeForValidation: Boolean
-    def isDeleteChangeForValidation: Boolean
+    def isDeleteRRSetChangeForValidation: Boolean
+    def isDeleteRecordChangeForValidation: Boolean
   }
 
   object ChangeForValidation {
@@ -126,7 +127,9 @@ object BatchTransformations {
 
     def isAddChangeForValidation: Boolean = true
 
-    def isDeleteChangeForValidation: Boolean = false
+    def isDeleteRRSetChangeForValidation: Boolean = false
+
+    def isDeleteRecordChangeForValidation: Boolean = false
   }
 
   final case class DeleteRRSetChangeForValidation(
@@ -151,7 +154,37 @@ object BatchTransformations {
 
     def isAddChangeForValidation: Boolean = false
 
-    def isDeleteChangeForValidation: Boolean = true
+    def isDeleteRRSetChangeForValidation: Boolean = true
+
+    def isDeleteRecordChangeForValidation: Boolean = false
+  }
+
+  final case class DeleteRecordChangeForValidation(
+      zone: Zone,
+      recordName: String,
+      inputChange: DeleteRecordChangeInput)
+      extends ChangeForValidation {
+    def asStoredChange(changeId: Option[String] = None): SingleChange =
+      SingleDeleteRecordChange(
+        Some(zone.id),
+        Some(zone.name),
+        Some(recordName),
+        inputChange.inputName,
+        inputChange.typ,
+        inputChange.record,
+        SingleChangeStatus.Pending,
+        None,
+        None,
+        None,
+        List.empty,
+        changeId.getOrElse(UUID.randomUUID().toString)
+      )
+
+    def isAddChangeForValidation: Boolean = false
+
+    def isDeleteRRSetChangeForValidation: Boolean = false
+
+    def isDeleteRecordChangeForValidation: Boolean = true
   }
 
   final case class BatchConversionOutput(
@@ -171,7 +204,7 @@ object BatchTransformations {
 
     def containsDeleteChangeForValidation(recordKey: RecordKey): Boolean = {
       val changeList = getList(recordKey)
-      changeList.nonEmpty && changeList.exists(_.isDeleteChangeForValidation)
+      changeList.nonEmpty && changeList.exists(_.isDeleteRRSetChangeForValidation)
     }
   }
 
