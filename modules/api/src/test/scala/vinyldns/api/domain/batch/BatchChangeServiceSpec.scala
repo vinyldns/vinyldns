@@ -1686,7 +1686,7 @@ class BatchChangeServiceSpec
 
     "return a BatchChangeErrorList if all data inputs are valid/soft failures, scheduled, " +
       "and manual review is disabled" in {
-      val delete = DeleteChangeInput("some.test.delete.", RecordType.TXT)
+      val delete = DeleteRRSetChangeInput("some.test.delete.", RecordType.TXT)
       val result = underTest
         .buildResponse(
           BatchChangeInput(
