@@ -167,14 +167,21 @@ def test_list_batch_change_summaries_with_pending_status(shared_zone_test_contex
         "ownerGroupId": group['id']
     }
 
-    client.create_batch_change(batch_change_input, status=202)
+    pending_bc = None
+    try:
+        pending_bc = client.create_batch_change(batch_change_input, status=202)
 
-    batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingReview")
+        batch_change_summaries_result = client.list_batch_change_summaries(status=200, approval_status="PendingReview")
 
-    for batchChange in batch_change_summaries_result['batchChanges']:
-        assert_that(batchChange['approvalStatus'], is_('PendingReview'))
-        assert_that(batchChange['status'], is_('PendingReview'))
-        assert_that(batchChange['totalChanges'], equal_to(1))
+        for batchChange in batch_change_summaries_result['batchChanges']:
+            assert_that(batchChange['approvalStatus'], is_('PendingReview'))
+            assert_that(batchChange['status'], is_('PendingReview'))
+            assert_that(batchChange['totalChanges'], equal_to(1))
+    finally:
+        if pending_bc:
+            rejecter = shared_zone_test_context.support_user_client
+            rejecter.reject_batch_change(pending_bc['id'], status=200)
+
 
 def test_list_batch_change_summaries_with_list_batch_change_summaries_with_no_changes_passes():
     """
