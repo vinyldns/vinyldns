@@ -25,6 +25,7 @@
                 <notification ng-model="alert"></notification>
             </div>
         </div>
+
         <form novalidate name="createBatchChangeForm" class="createBatchChangeForm" ng-submit="createBatchChangeForm.$valid && createBatchChange(newBatch)">
             <div class="row">
                 <div class="col-md-12">
@@ -53,7 +54,7 @@
                             }
                             @if(meta.scheduledBatchChangesEnabled) {
                             <div class="form-group row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="h5">Request Date/Time:</label>
                                     <div class="radio no-top-margin">
                                         <label>
@@ -65,15 +66,10 @@
                                             Later
                                         </label><br/>
                                     </div>
-                                    <div ng-if="scheduledOption" class="form-inline">
-                                        <div class="form-group">
-                                            <input  class="form-control" type="datetime-local"
-                                                   ng-model="newBatch.scheduledTime"
-                                                   [name="string"]
-                                                   [min="string"]
-                                                   [max="string"]
-                                                   [ng-change="string"]>
-                                             <span class="help-block help-block-inline"> {{ getLocalTimeZone() }}</span>
+                                    <div ng-show="scheduledOption" class="form-group">
+                                        <div class="input-group">
+                                            <input type="text" name="scheduledTime" class="form-control" ng-model="newBatch.scheduledTime" />
+                                            <div class="input-group-addon">{{ getLocalTimeZone() }}</div>
                                         </div>
                                     </div>
                                 </div>
