@@ -100,7 +100,7 @@
 
                 formatData(payload);
 
-                return batchChangeService.createBatchChange(payload, $scope.allowManualReview)
+                return batchChangeService.createBatchChange(payload, true)
                     .then(success)
                     .catch(function (error){
                         if(payload.scheduledTime) {
@@ -112,21 +112,10 @@
                             $scope.newBatch.changes = error.data;
                             $scope.batchChangeErrors = true;
                             $scope.listOfErrors = error.data.flatMap(d => d.errors)
-                            $scope.ownerGroupError = $scope.listOfErrors.some(e =>  e == undefined || e.includes('owner group ID must be specified for record'));
-                            var onlySoftErrors = $scope.listOfErrors.every(e =>
-                                e == undefined || e.includes('Zone Discovery Failed') || e.includes('requires manual review')
-                             );
-                            if ($scope.manualReviewEnabled && onlySoftErrors) {
-                                $scope.allowManualReview = true;
-                                $scope.softErrors = true;
-                                $scope.formStatus = "pendingConfirm";
-                                $scope.alerts.push({type: 'warning', content: 'Issues found that require manual review. Please correct or confirm submission for review.'});
-                                $scope.confirmationPrompt = "Would you like to submit this change for review?"
-                            } else {
-                                $scope.softErrors = false;
-                                $scope.formStatus = "pendingSubmit";
-                                $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
-                            }
+                            $scope.ownerGroupError = $scope.listOfErrors.some(e => e.includes('owner group ID must be specified for record'));
+                            $scope.softErrors = false;
+                            $scope.formStatus = "pendingSubmit";
+                            $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
                         }
                     });
             };
