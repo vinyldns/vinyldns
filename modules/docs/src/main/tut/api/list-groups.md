@@ -10,7 +10,7 @@ Retrieves a list of groups that you are a part of
 
 #### HTTP REQUEST
 
-> GET /groups?startFrom={response.nextId}&maxItems={1 - 100}&groupNameFilter={filter}
+> GET /groups?startFrom={response.nextId}&maxItems={1 - 100}&groupNameFilter={filter}&ignoreAccess={true  &#124; false}
 
 #### HTTP REQUEST PARAMS
 
