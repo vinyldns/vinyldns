@@ -112,8 +112,10 @@
                             $scope.newBatch.changes = error.data;
                             $scope.batchChangeErrors = true;
                             $scope.listOfErrors = error.data.flatMap(d => d.errors)
-                            $scope.ownerGroupError = $scope.listOfErrors.some(e => e.includes('owner group ID must be specified for record'));
-                            var onlySoftErrors = $scope.listOfErrors.every(e => e.includes('Zone Discovery Failed' || 'requires manual review'));
+                            $scope.ownerGroupError = $scope.listOfErrors.some(e =>  e == undefined || e.includes('owner group ID must be specified for record'));
+                            var onlySoftErrors = $scope.listOfErrors.every(e =>
+                                e == undefined || e.includes('Zone Discovery Failed') || e.includes('requires manual review')
+                             );
                             if ($scope.manualReviewEnabled && onlySoftErrors) {
                                 $scope.allowManualReview = true;
                                 $scope.softErrors = true;
