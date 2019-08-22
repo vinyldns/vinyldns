@@ -31,13 +31,9 @@ class ListGroupsSearchContext(object):
             raise
 
     def verify_ignore_access(self, results):
-        assert_that(results, has_length(3))  # 3 fields
-
         assert_that(len(results['groups']), greater_than(50))
-        assert_that(results, is_not(has_key('groupNameFilter')))
-        assert_that(results, is_not(has_key('startFrom')))
-        assert_that(results, is_not(has_key('nextId')))
         assert_that(results['maxItems'], is_(100))
+        assert_that(results['ignoreAccess'], is_(True))
 
     def tear_down(self):
         clear_zones(self.client)
