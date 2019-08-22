@@ -11,4 +11,5 @@ section: "portal_menu"
 
 [![Groups main screenshot](../img/portal/groups-main.png){: .screenshot}](../img/portal/groups-main.png)
 [![Groups form screenshot](../img/portal/create-group.png){: .screenshot}](../img/portal/create-group.png)
-[![Created group listed screenshot](../img/portal/groups-listed.png){: .screenshot}](../img/portal/groups-listed.png)
+[![Created group listed in "My Groups" tab screenshot](../img/portal/groups-listed.png){: .screenshot}](../img/portal/groups-listed.png)
+[![Created group listed in "All Groups" tab screenshot](../img/portal/groups-listed-all.png){: .screenshot}](../img/portal/groups-listed-all.png)
