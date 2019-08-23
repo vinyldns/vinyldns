@@ -42,9 +42,7 @@ trait BatchChangeValidationsAlgebra {
       isApproved: Boolean): ValidatedBatch[ChangeInput]
 
   def validateChangesWithContext(
-      changes: ValidatedBatch[ChangeForValidation],
       changeGroups: ChangeForValidationMap,
-      existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation]
@@ -235,20 +233,18 @@ class BatchChangeValidations(
   /* context validations */
 
   def validateChangesWithContext(
-      changes: ValidatedBatch[ChangeForValidation],
       changeGroups: ChangeForValidationMap,
-      existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
-    changes.mapValid {
+    changeGroups.changes.mapValid {
       case addUpdate: AddChangeForValidation
           if changeGroups.getChangeForValidationChanges(addUpdate.recordKey).containsDeletes =>
         validateAddUpdateWithContext(
           addUpdate,
           changeGroups,
-          existingRecords,
+          changeGroups.existingRecordSets,
           auth,
           isApproved,
           batchOwnerGroupId)
@@ -256,15 +252,19 @@ class BatchChangeValidations(
         validateAddWithContext(
           add,
           changeGroups,
-          existingRecords,
+          changeGroups.existingRecordSets,
           auth,
           isApproved,
           batchOwnerGroupId)
       case deleteUpdate: DeleteRRSetChangeForValidation
           if changeGroups.containsAddChanges(deleteUpdate.recordKey) =>
-        validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth, isApproved)
+        validateDeleteUpdateWithContext(
+          deleteUpdate,
+          changeGroups.existingRecordSets,
+          auth,
+          isApproved)
       case del: DeleteRRSetChangeForValidation =>
-        validateDeleteWithContext(del, existingRecords, auth, isApproved)
+        validateDeleteWithContext(del, changeGroups.existingRecordSets, auth, isApproved)
     }
 
   def existingRecordSetIsNotMulti(
