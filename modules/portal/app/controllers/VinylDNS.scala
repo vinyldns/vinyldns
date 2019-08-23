@@ -19,7 +19,7 @@ package controllers
 import java.util
 import java.util.HashMap
 
-import actions.{ApiAction, FrontendAction}
+import actions.SecuritySupport
 import cats.data.EitherT
 import cats.effect.IO
 import com.amazonaws.auth.{BasicAWSCredentials, SignerFactory}
@@ -27,12 +27,12 @@ import controllers.OidcAuthenticator.ErrorResponse
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, Meta, SignableVinylDNSRequest, VinylDNSRequest}
 import org.slf4j.LoggerFactory
+import play.api._
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.mvc._
-import play.api.{Logger, _}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.membership.{LockStatus, User}
@@ -100,7 +100,8 @@ class VinylDNS @Inject()(
     wsClient: WSClient,
     components: ControllerComponents,
     crypto: CryptoAlgebra,
-    oidcAuthenticator: OidcAuthenticator)
+    oidcAuthenticator: OidcAuthenticator,
+    securitySupport: SecuritySupport)
     extends AbstractController(components)
     with CacheHeader {
 
@@ -114,12 +115,6 @@ class VinylDNS @Inject()(
       .getOptional[String]("portal.vinyldns.backend.url")
       .getOrElse("http://localhost:9000")
 
-  // Need this guy for user actions, brings the session username and user account into the Action
-  private val userAction =
-    Action.andThen(new ApiAction(userAccountAccessor.get, oidcAuthenticator))
-  private val frontendAction =
-    Action.andThen(new FrontendAction(userAccountAccessor.get, oidcAuthenticator))
-
   implicit val lockStatusFormat: Format[LockStatus] = new Format[LockStatus] {
     def reads(json: JsValue): JsResult[LockStatus] = json match {
       case JsString(v) => JsSuccess(LockStatus.withName(v))
@@ -132,6 +127,9 @@ class VinylDNS @Inject()(
   implicit val userInfoWrites: Writes[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
   implicit lazy val customLinks: CustomLinks = CustomLinks(configuration)
   implicit lazy val meta: Meta = Meta(configuration)
+
+  private val userAction = securitySupport.apiAction
+  private val frontendAction = securitySupport.frontendAction
 
   def oidcCallback(loginId: String): Action[AnyContent] = Action.async { implicit request =>
     logger.info(s"Received callback for LoginId [$loginId]")

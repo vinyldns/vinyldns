@@ -32,6 +32,7 @@ package modules
  * limitations under the License.
  */
 
+import actions._
 import cats.effect.{ContextShift, IO, Timer}
 import com.google.inject.AbstractModule
 import controllers._
@@ -63,15 +64,13 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       auth = authenticator()
       healthService = new HealthService(auth.healthCheck() :: loaderResponse.healthChecks)
       repositories = loaderResponse.accessor
+      userAccessor = new UserAccountAccessor(
+        repositories.userRepository,
+        repositories.userChangeRepository)
       _ <- if (settings.ldapSyncEnabled) {
         TaskScheduler
           .schedule(
-            new UserSyncTask(
-              new UserAccountAccessor(
-                repositories.userRepository,
-                repositories.userChangeRepository),
-              auth,
-              settings.ldapSyncPollingInterval),
+            new UserSyncTask(userAccessor, auth, settings.ldapSyncPollingInterval),
             repositories.taskRepository
           )
           .compile
@@ -79,6 +78,7 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
           .start
       } else IO.unit
     } yield {
+      bind(classOf[SecuritySupport]).to(classOf[LegacySecuritySupport])
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
       bind(classOf[Authenticator]).toInstance(auth)
       bind(classOf[UserRepository]).toInstance(repositories.userRepository)

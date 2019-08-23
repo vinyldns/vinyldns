@@ -16,54 +16,63 @@
 
 package controllers
 
+import actions.{LegacySecuritySupport, SecuritySupport}
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import org.junit.runner.RunWith
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import play.api.{Configuration, Environment}
+import play.api.mvc.{AnyContent, BodyParser, ControllerComponents}
+import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._
 import play.api.test._
+import play.api.{Configuration, Environment}
 import vinyldns.core.domain.membership.User
-import play.api.mvc.ControllerComponents
-import play.api.test.CSRFTokenHelper._
+
+import scala.concurrent.ExecutionContext
 
 @RunWith(classOf[JUnitRunner])
 class FrontendControllerSpec extends Specification with Mockito with TestApplicationData {
 
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   val components: ControllerComponents = Helpers.stubControllerComponents()
+  val parser: BodyParser[AnyContent] = Helpers.stubBodyParser()
   val config: Configuration = Configuration.load(Environment.simple())
   val oidcConfig: Configuration = config ++ Configuration.from(Map("oidc.enabled" -> true))
   val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
   val disabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
-
   val mockOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
-  val underTest = new FrontendController(
-    components,
-    config,
-    userAccessor,
-    disabledOidcAuthenticator
-  )
-  val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
-  val lockedUserUnderTest = new FrontendController(
-    components,
-    config,
-    lockedUserAccessor,
-    disabledOidcAuthenticator
-  )
-
   val enabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   enabledOidcAuthenticator.oidcEnabled.returns(true)
   enabledOidcAuthenticator.getCodeCall.returns(Uri("http://test.com"))
   enabledOidcAuthenticator.oidcLogoutUrl.returns("http://logout-test.com")
   enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
+  val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
+  val disabledOidcSec: SecuritySupport =
+    new LegacySecuritySupport(components, userAccessor, config, disabledOidcAuthenticator)
+  val enabledOidcSec: SecuritySupport =
+    new LegacySecuritySupport(components, userAccessor, config, enabledOidcAuthenticator)
+  val lockedSec: SecuritySupport =
+    new LegacySecuritySupport(components, lockedUserAccessor, config, disabledOidcAuthenticator)
+
+  val underTest = new FrontendController(
+    components,
+    config,
+    disabledOidcSec
+  )
+
+  val lockedUserUnderTest = new FrontendController(
+    components,
+    config,
+    lockedSec
+  )
+
   val oidcUnderTest = new FrontendController(
     components,
     oidcConfig,
-    userAccessor,
-    enabledOidcAuthenticator
+    enabledOidcSec
   )
 
   "FrontendController" should {
@@ -73,7 +82,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/")).get
+        val result = underTest.index()(FakeRequest(GET, "/"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -89,7 +98,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     "Get for '/index'" should {
       "with ldap enabled" should {
         "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-          val result = route(app, FakeRequest(GET, "/index")).get
+          val result = underTest.index()(FakeRequest(GET, "/index"))
           status(result) must equalTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
         }
@@ -130,7 +139,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/groups'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/groups")).get
+        val result = underTest.viewAllGroups()(FakeRequest(GET, "/groups"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -152,7 +161,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/groups/id'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/groups/some-id")).get
+        val result = underTest.viewGroup("some-id")(FakeRequest(GET, "/groups/some-id"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -174,7 +183,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/zones'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/zones")).get
+        val result = underTest.viewAllZones()(FakeRequest(GET, "/zones"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -196,7 +205,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/zones/id'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/zones/some-id")).get
+        val result = underTest.viewZone("some-id")(FakeRequest(GET, "/zones/some-id"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -221,17 +230,15 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     "Get for login" should {
       "with ldap enabled" should {
         "render the login page when the user is not logged in" in new WithApplication(app) {
-          val result = route(app, FakeRequest(GET, "/login")).get
+          val result = underTest.loginPage()(FakeRequest(GET, "/login").withCSRFToken)
           contentType(result) must beSome.which(_ == "text/html")
           contentAsString(result) must contain("Username")
           contentAsString(result) must contain("Password")
         }
         "redirect to the index page when the user is logged in" in new WithApplication(app) {
           val username = "LoggedInUser"
-          val result = route(
-            app,
-            FakeRequest(GET, "/login")
-              .withSession(("username", username))).get
+          val result = underTest.loginPage()(FakeRequest(GET, "/login")
+            .withSession(("username", username)))
           status(result) must beEqualTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/index")
         }
@@ -267,7 +274,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     "Get for logout" should {
       "with ldap enabled" should {
         "redirect to the login page" in new WithApplication(app) {
-          val result = route(app, FakeRequest(GET, "/logout")).get
+          val result = underTest.logout()(FakeRequest(GET, "/logout"))
 
           status(result) must beEqualTo(SEE_OTHER)
           headers(result) must contain("Location" -> "/login")
@@ -275,10 +282,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         "clear the session cookie" in new WithApplication(app) {
           // TODO: cookie behavior is radically different in play 2.6, so we cannot look for a Set-Cookie header
           val username = "LoggedInUser"
-          val result = route(
-            app,
-            FakeRequest(GET, "/logout")
-              .withSession(("username", username))).get
+          val result = underTest.logout()(FakeRequest(GET, "/logout")
+            .withSession(("username", username)))
           headers(result) must contain("Location" -> "/login")
         }
       }
@@ -310,7 +315,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/dnschanges'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/zones")).get
+        val result = underTest.viewAllBatchChanges()(FakeRequest(GET, "/dnschanges"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -334,7 +339,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/dnschanges/id'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/dnschanges/some-id")).get
+        val result = underTest.viewBatchChange("some-id")(FakeRequest(GET, "/dnschanges/some-id"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -360,7 +365,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "Get for '/dnschanges/new'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/dnschanges/new")).get
+        val result = underTest.viewNewBatchChange()(FakeRequest(GET, "/dnschanges/new"))
         status(result) must equalTo(SEE_OTHER)
         headers(result) must contain("Location" -> "/login")
       }
@@ -384,7 +389,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
 
     "CustomLinks" should {
       "be displayed on login screen if login screen flag is true" in new WithApplication(app) {
-        val result = route(app, FakeRequest(GET, "/login")).get
+        val result = underTest.loginPage()(FakeRequest(GET, "/login").withCSRFToken)
         contentType(result) must beSome.which(_ == "text/html")
         status(result) must equalTo(OK)
         contentAsString(result) must contain("test link login")
