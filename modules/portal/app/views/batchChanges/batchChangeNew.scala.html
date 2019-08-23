@@ -47,8 +47,8 @@
                                     </label>
                                     <select class="form-control" id="recordOwnerGroup" ng-model="newBatch.ownerGroupId" ng-options="group.id as group.name for group in myGroups | orderBy: 'name'">
                                     </select>
-                                    <p ng-if="ownerGroupError"><strong>Record Owner Group is required for records in shared zones.</strong></p>
                                     <p class="help-block"><a href="/groups">Or you can create a new group from the Groups page.</a></p>
+                                    <p ng-if="ownerGroupError"><strong>{{ownerGroupError}}</strong></p>
                                 </div>
                             </div>
                             }
@@ -95,7 +95,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr ng-repeat="change in newBatch.changes track by $index" ng-class="{changeError: change.errors.length > 0 && !softErrors, softError: change.errors.length > 0 && softErrors}">
+                                <tr ng-repeat="change in newBatch.changes track by $index" ng-class="{changeError: singleChangeErrors && change.errorType == 'hard', softError: singleChangeErrors && change.errorType == 'soft'}">
                                     <td><span>{{$index + 1}}</span></td>
                                     <td>
                                         <select class="form-control changeType" ng-model="change.changeType">
@@ -204,9 +204,9 @@
                                         </p>
                                     </td>
                                     <!--end record data name based on record type and change type-->
-                                    <td class="col-md-3" ng-if="batchChangeErrors">
-                                        <p ng-repeat="batchError in change.errors">
-                                            {{batchError}}
+                                    <td class="col-md-3" ng-if="singleChangeErrors">
+                                        <p ng-repeat="singleChangeError in change.errors">
+                                            {{singleChangeError}}
                                         </p>
                                     </td>
                                     <td><button type="button" class="btn btn-danger batch-change-delete" ng-click="deleteSingleChange($index)">Delete</button></td>

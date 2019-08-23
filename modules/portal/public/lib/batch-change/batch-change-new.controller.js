@@ -33,34 +33,14 @@
             $scope.batch = {};
             var tomorrow = moment().startOf('hour').add(1, 'day');
             $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}], scheduledTime: tomorrow.format('LL hh:mm A')};
-            $scope.alerts = [];
-            $scope.batchChangeErrors = false;
-            $scope.ownerGroupError = false;
-            $scope.softErrors = false;
-            $scope.formStatus = "pendingSubmit";
             $scope.scheduledOption = false;
-            $scope.allowManualReview = false;
+            $scope.formStatus = "pendingSubmit";
             $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
-            $scope.manualReviewEnabled;
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
                 var changesLength = $scope.newBatch.changes.length;
                 $timeout(function() {document.getElementsByClassName("changeType")[changesLength - 1].focus()});
-            };
-
-            $scope.cancelSubmit = function() {
-                $scope.formStatus = "pendingSubmit";
-                $scope.allowManualReview = false;
-                $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
-            };
-
-            $scope.confirmSubmit = function(form) {
-                console.log(form.$error)
-                if(form.$invalid){
-                    form.$setSubmitted();
-                    $scope.formStatus = "pendingSubmit";
-                }
             };
 
             $scope.createBatchChange = function() {
@@ -89,6 +69,29 @@
                     }
                 }
 
+                function parseSingleChangeResponse(singleChanges) {
+                    $scope.allowManualReview = true;
+                    $scope.ownerGroupError = null;
+                    $scope.newBatch.changes = singleChanges;
+                    for(var i = 0; i < $scope.newBatch.changes.length; i++) {
+                        if ($scope.newBatch.changes[i].errors) {
+                            $scope.singleChangeErrors = true;
+                            if (
+                              $scope.manualReviewEnabled
+                              && ($scope.newBatch.changes[i].errors.every(e => e.includes('Zone Discovery Failed') || e.includes('requires manual review')))
+                            ) {
+                                $scope.newBatch.changes[i].errorType = "soft";
+                            } else {
+                                $scope.anyHardErrors = true;
+                                $scope.newBatch.changes[i].errorType = "hard";
+                                $scope.ownerGroupError = $scope.newBatch.changes[i].errors.filter(e => e.includes('owner group ID must be specified for record'))[0]
+                            }
+                        } else {
+                            $scope.newBatch.changes[i].errorType = null;
+                        }
+                    }
+                }
+
                 function success(response) {
                     var alert = utilityService.success('Successfully created DNS Change', response, 'createBatchChange: createBatchChange successful');
                     $scope.alerts.push(alert);
@@ -102,35 +105,30 @@
 
                 return batchChangeService.createBatchChange(payload, true)
                     .then(success)
-                    .catch(function (error){
-                        if(payload.scheduledTime) {
-                         $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
+                    .catch(function(error){
+                        if (payload.scheduledTime) {
+                            $scope.newBatch.scheduledTime = moment(payload.scheduledTime).local().format('LL hh:mm A')
                         }
-                        if(error.data.errors || error.status !== 400 || typeof error.data == "string"){
+                        if (error.data.errors || typeof error.data == "string") {
+                            if (typeof error.data == "string" && error.data.includes('requires owner group for manual review')) {
+                                $scope.ownerGroupError = JSON.parse(error.data); //JSON.parse to remove extra set of quotes.
+                            } else {
+                                $scope.ownerGroupError = null;
+                            }
                             handleError(error, 'batchChangesService::createBatchChange-failure');
                         } else {
-                            $scope.newBatch.changes = error.data;
-                            $scope.batchChangeErrors = true;
-                            $scope.listOfErrors = error.data.flatMap(d => d.errors)
-                            $scope.ownerGroupError = $scope.listOfErrors.length > 0 && !$scope.listOfErrors.every(e => e == undefined) && $scope.listOfErrors.some(e => e == undefined && e.includes('owner group ID must be specified for record'));
-                            var noErrors = $scope.listOfErrors.every(e => e == undefined);
-                            var onlySoftErrors = !noErrors && $scope.listOfErrors.every(e => e == undefined || e.includes('Zone Discovery Failed') || e.includes('requires manual review'));
-                            var hardErrors = !noErrors && !onlySoftErrors
-                            if ($scope.manualReviewEnabled && onlySoftErrors) {
-                                $scope.allowManualReview = true;
-                                $scope.softErrors = true;
-                                $scope.formStatus = "pendingConfirm";
-                                $scope.alerts.push({type: 'warning', content: 'Issues found that require manual review. Please correct or confirm submission for review.'});
-                                $scope.confirmationPrompt = "Would you like to submit this change for review?"
-                            } else if ($scope.manualReviewEnabled && noErrors) {
-                                $scope.allowManualReview = true;
-                                $scope.softErrors = false;
-                                $scope.batchChangeErrors = false;
-                                $scope.createBatchChange();
+                            parseSingleChangeResponse(error.data);
+                            if (!$scope.singleChangeErrors) {
+                                $scope.confirmationPrompt = "Would you like to submit this change to be processed at your requested time?"
+                                $scope.alerts.push({type: 'success', content: 'No errors found! DNS Change can be submitted.'});
                             } else {
-                                $scope.softErrors = false;
-                                $scope.formStatus = "pendingSubmit";
-                                $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
+                                if ($scope.manualReviewEnabled && !$scope.anyHardErrors) {
+                                    $scope.confirmationPrompt = "Would you like to submit this change for review?"
+                                    $scope.alerts.push({type: 'warning', content: 'Issues found that require manual review. Please correct or confirm submission for review.'});
+                                } else {
+                                    $scope.cancelSubmit();
+                                    $scope.alerts.push({type: 'danger', content: 'Errors found. Please correct and submit again.'});
+                                }
                             }
                         }
                     });
@@ -141,9 +139,26 @@
                 $scope.newBatch.changes.splice(changeNumber, 1);
             };
 
+            $scope.cancelSubmit = function() {
+                setReviewParam();
+                $scope.formStatus = "pendingSubmit";
+                $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
+            };
+
+            $scope.confirmSubmit = function(form) {
+                if(form.$invalid){
+                    form.$setSubmitted();
+                    $scope.formStatus = "pendingSubmit";
+                }
+            };
+
             $scope.submitChange = function(manualReviewEnabled) {
                 $scope.formStatus = "pendingConfirm";
                 $scope.manualReviewEnabled = manualReviewEnabled;
+                $scope.singleChangeErrors = false;
+                $scope.anyHardErrors = false;
+                $scope.ownerGroupError = null;
+                setReviewParam();
             }
 
             $scope.getLocalTimeZone = function() {
@@ -153,6 +168,10 @@
             function handleError(error, type) {
                 var alert = utilityService.failure(error, type);
                 $scope.alerts.push(alert);
+            }
+
+            function setReviewParam() {
+                $scope.allowManualReview = $scope.manualReviewEnabled ? false : null;
             }
 
             $scope.uploadCSV = function(file) {
