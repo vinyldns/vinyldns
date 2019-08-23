@@ -104,7 +104,7 @@ class BatchChangeService(
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
-        validationOutput.existingRecordSets,
+        validationOutput.changeGroups.existingRecordSets,
         batchChangeInput.ownerGroupId)
     } yield serviceCompleteBatch
 
@@ -120,15 +120,13 @@ class BatchChangeService(
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
-      changeGroups = ChangeForValidationMap(withTtl.getValid, recordSets)
+      changeGroups = ChangeForValidationMap(withTtl, recordSets)
       validatedSingleChanges = validateChangesWithContext(
-        withTtl,
         changeGroups,
-        recordSets,
         auth,
         isApproved,
         batchChangeInput.ownerGroupId)
-    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, recordSets, changeGroups)
+    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, changeGroups)
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -169,7 +167,7 @@ class BatchChangeService(
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
-        validationOutput.existingRecordSets,
+        validationOutput.changeGroups.existingRecordSets,
         batchChange.ownerGroupId)
     } yield serviceCompleteBatch
 

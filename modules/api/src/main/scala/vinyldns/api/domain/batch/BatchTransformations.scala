@@ -178,10 +178,12 @@ object BatchTransformations {
       recordSetChanges: List[RecordSetChange])
 
   final case class ChangeForValidationMap(
-      changes: List[ChangeForValidation],
+      changes: ValidatedBatch[ChangeForValidation],
       existingRecordSets: ExistingRecordSets) {
+    import BatchChangeInterfaces._
+
     val innerMap: Map[RecordKey, ValidationChanges] = {
-      changes.groupBy(_.recordKey).map { keyChangesTuple =>
+      changes.getValid.groupBy(_.recordKey).map { keyChangesTuple =>
         val (recordKey, changeList) = keyChangesTuple
         val (addChanges, deleteChangeList) =
           changeList.partition(_.isAddChangeForValidation)
@@ -254,7 +256,6 @@ object BatchTransformations {
   final case class BatchValidationFlowOutput(
       validatedChanges: ValidatedBatch[ChangeForValidation],
       existingZones: ExistingZones,
-      existingRecordSets: ExistingRecordSets,
       changeGroups: ChangeForValidationMap
   )
 }
