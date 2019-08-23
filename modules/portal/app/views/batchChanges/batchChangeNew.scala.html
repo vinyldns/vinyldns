@@ -95,7 +95,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr ng-repeat="change in newBatch.changes track by $index" ng-class="{changeError: change.errors && !softErrors, softError: softErrors}">
+                                <tr ng-repeat="change in newBatch.changes track by $index" ng-class="{changeError: change.errors.length > 0 && !softErrors, softError: change.errors.length > 0 && softErrors}">
                                     <td><span>{{$index + 1}}</span></td>
                                     <td>
                                         <select class="form-control changeType" ng-model="change.changeType">
