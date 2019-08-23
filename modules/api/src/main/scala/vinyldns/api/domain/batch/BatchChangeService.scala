@@ -120,13 +120,15 @@ class BatchChangeService(
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
+      changeGroups = ChangeForValidationMap(withTtl.getValid, recordSets)
       validatedSingleChanges = validateChangesWithContext(
         withTtl,
+        changeGroups,
         recordSets,
         auth,
         isApproved,
         batchChangeInput.ownerGroupId)
-    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, recordSets)
+    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, recordSets, changeGroups)
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -268,6 +270,7 @@ class BatchChangeService(
           .getOrElse(add)
           .validNel
       case del: DeleteRRSetChangeForValidation => del.validNel
+      case del: DeleteRecordChangeForValidation => del.validNel
     }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {

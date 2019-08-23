@@ -43,6 +43,7 @@ trait BatchChangeValidationsAlgebra {
 
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
+      changeGroups: ChangeForValidationMap,
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
       isApproved: Boolean,
@@ -235,16 +236,15 @@ class BatchChangeValidations(
 
   def validateChangesWithContext(
       changes: ValidatedBatch[ChangeForValidation],
+      changeGroups: ChangeForValidationMap,
       existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
       isApproved: Boolean,
-      batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation] = {
-    val changeGroups = ChangeForValidationMap(changes.getValid)
-
+      batchOwnerGroupId: Option[String]): ValidatedBatch[ChangeForValidation] =
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     changes.mapValid {
       case addUpdate: AddChangeForValidation
-          if changeGroups.containsDeleteChangeForValidation(addUpdate.recordKey) =>
+          if changeGroups.getChangeForValidationChanges(addUpdate.recordKey).containsDeletes =>
         validateAddUpdateWithContext(
           addUpdate,
           changeGroups,
@@ -261,12 +261,11 @@ class BatchChangeValidations(
           isApproved,
           batchOwnerGroupId)
       case deleteUpdate: DeleteRRSetChangeForValidation
-          if changeGroups.containsAddChangeForValidation(deleteUpdate.recordKey) =>
+          if changeGroups.containsAddChanges(deleteUpdate.recordKey) =>
         validateDeleteUpdateWithContext(deleteUpdate, existingRecords, auth, isApproved)
       case del: DeleteRRSetChangeForValidation =>
         validateDeleteWithContext(del, existingRecords, auth, isApproved)
     }
-  }
 
   def existingRecordSetIsNotMulti(
       change: ChangeForValidation,
@@ -279,11 +278,8 @@ class BatchChangeValidations(
       change: AddChangeForValidation,
       changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
     lazy val matchingAddRecords = changeGroups
-      .getList(change.recordKey)
-      .collect {
-        case add: AddChangeForValidation => add
-      }
-    if (!multiRecordEnabled && matchingAddRecords.length > 1)
+      .getChangeForValidationAdds(change.recordKey)
+    if (!multiRecordEnabled && matchingAddRecords.size > 1)
       NewMultiRecordError(change.inputChange.inputName, change.inputChange.typ).invalidNel
     else ().validNel
   }
@@ -324,7 +320,7 @@ class BatchChangeValidations(
       case _ => newRecordSetIsNotMulti(change, changeGroups)
     }
 
-    val commonValidations: SingleValidation[Unit] =
+    val commonValidations: SingleValidation[Unit] = {
       existingRecordSets.get(change.recordKey) match {
         case Some(rs) =>
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
@@ -337,6 +333,7 @@ class BatchChangeValidations(
         case None =>
           RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
+    }
 
     val validations = typedValidations |+| commonValidations
 
@@ -354,7 +351,8 @@ class BatchChangeValidations(
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
-        case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
+        case None =>
+          RecordDoesNotExist(change.inputChange.inputName).invalidNel
       }
 
     validations.map(_ => change)
@@ -416,10 +414,16 @@ class BatchChangeValidations(
   def cnameHasUniqueNameInBatch(
       cnameChange: AddChangeForValidation,
       changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
-    val duplicateNameChangeInBatch = RecordType.values.toList.exists { recordType =>
-      changeGroups
-        .getList(RecordKey(cnameChange.zone.id, cnameChange.recordName, recordType))
-        .exists(chg => chg.isAddChangeForValidation && chg != cnameChange)
+    val duplicateNameChangeInBatch = RecordType.values.toList.exists {
+      case CNAME =>
+        // CNAME can only have one cname data; multiple entries means non-uniqueness in batch
+        changeGroups
+          .addChangesNotUnique(RecordKey(cnameChange.zone.id, cnameChange.recordName, CNAME))
+      case nonCname =>
+        changeGroups
+          .getChangeForValidationAdds(
+            RecordKey(cnameChange.zone.id, cnameChange.recordName, nonCname))
+          .nonEmpty
     }
 
     if (duplicateNameChangeInBatch) {
@@ -429,15 +433,11 @@ class BatchChangeValidations(
 
   def recordIsUniqueInBatch(
       change: AddChangeForValidation,
-      changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
-    val duplicateNameChangeInBatch = changeGroups
-      .getList(change.recordKey)
-      .exists(chg => chg.isAddChangeForValidation && chg != change)
-
-    if (duplicateNameChangeInBatch) {
+      changeGroups: ChangeForValidationMap): SingleValidation[Unit] =
+    // Ignore true duplicates, but identify multi-records
+    if (changeGroups.addChangesNotUnique(change.recordKey)) {
       RecordNameNotUniqueInBatch(change.inputChange.inputName, change.inputChange.typ).invalidNel
     } else ().validNel
-  }
 
   def recordDoesNotExist(
       zoneId: String,
@@ -457,8 +457,9 @@ class BatchChangeValidations(
       existingRecordSets: ExistingRecordSets,
       changeGroups: ChangeForValidationMap): SingleValidation[Unit] = {
     val cnameExists = existingRecordSets.get(zoneId, recordName, CNAME).isDefined
-    val matchList = changeGroups.getList(RecordKey(zoneId, recordName, CNAME))
-    val isBeingDeleted = matchList.forall(_.isDeleteChangeForValidation) && matchList.nonEmpty
+
+    val isBeingDeleted = changeGroups
+      .containsValidDeleteChanges(RecordKey(zoneId, recordName, CNAME))
 
     (cnameExists, isBeingDeleted) match {
       case (false, _) => ().validNel
@@ -476,8 +477,8 @@ class BatchChangeValidations(
     val existingRecordSetsMatch = existingRecordSets.getRecordSetMatch(zoneId, recordName)
 
     val hasNonDeletedExistingRs = existingRecordSetsMatch.find { rs =>
-      val matchList = changeGroups.getList(RecordKey(rs.zoneId, rs.name, rs.typ))
-      matchList.exists(!_.isDeleteChangeForValidation) || matchList.isEmpty
+      !changeGroups
+        .containsValidDeleteChanges(RecordKey(zoneId, recordName.toLowerCase, rs.typ))
     }
 
     hasNonDeletedExistingRs match {
