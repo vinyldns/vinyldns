@@ -18,6 +18,7 @@ package vinyldns.api.domain
 
 import cats.implicits._
 import cats.data._
+import com.comcast.ip4s.{Ipv4Address, Ipv6Address}
 import vinyldns.api.domain.ValidationImprovements._
 import vinyldns.core.domain._
 
@@ -29,25 +30,7 @@ import scala.util.matching.Regex
 object DomainValidations {
   val validFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z_]{1,63}|[0-9a-zA-Z_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z_]{1})\.)*$""".r
-  val validIpv4Regex: Regex =
-    """^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$""".r
-  val validIpv6Regex: Regex =
-    """^(
-      #([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|
-      #([0-9a-fA-F]{1,4}:){1,7}:|
-      #([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|
-      #([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|
-      #([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|
-      #([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|
-      #([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|
-      #[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|
-      #:((:[0-9a-fA-F]{1,4}){1,7}|:)|
-      #fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|
-      #::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|
-      #(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|
-      #([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]
-      #|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])
-      #)$""".stripMargin('#').replaceAll("\n", "").r
+
   val HOST_MIN_LENGTH: Int = 2
   val HOST_MAX_LENGTH: Int = 255
   val TTL_MAX_LENGTH: Int = 2147483647
@@ -81,16 +64,10 @@ object DomainValidations {
   }
 
   def validateIpv4Address(address: String): ValidatedNel[DomainValidationError, String] =
-    validIpv4Regex
-      .findFirstIn(address)
-      .map(_.validNel)
-      .getOrElse(InvalidIpv4Address(address).invalidNel)
+    Ipv4Address(address).map(_.toString.validNel).getOrElse(InvalidIpv4Address(address).invalidNel)
 
   def validateIpv6Address(address: String): ValidatedNel[DomainValidationError, String] =
-    validIpv6Regex
-      .findFirstIn(address)
-      .map(_.validNel)
-      .getOrElse(InvalidIpv6Address(address).invalidNel)
+    Ipv6Address(address).map(_.toString.validNel).getOrElse(InvalidIpv6Address(address).invalidNel)
 
   def validateStringLength(
       value: Option[String],

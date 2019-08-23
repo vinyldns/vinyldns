@@ -812,7 +812,7 @@ class AccessValidationsSpec
         RecordSet("id", "255.255", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
 
       accessValidationTest.ruleAppliesToRecordName(rsTrue.name, rsTrue.typ, znTrue, aclRule) shouldBe true
-      accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe false
+      accessValidationTest.ruleAppliesToRecordName(rsFalse.name, rsFalse.typ, znFalse, aclRule) shouldBe true
     }
 
     "filter in/out record set based on CIDR rule of 8" in {

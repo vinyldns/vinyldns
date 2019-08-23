@@ -23,6 +23,8 @@ import org.scalatest.prop._
 import vinyldns.api.ValidationTestImprovements._
 import vinyldns.core.domain.{InvalidDomainName, InvalidLength}
 
+import scala.util.matching.Regex
+
 class DomainValidationsSpec
     extends PropSpec
     with Matchers
@@ -33,6 +35,9 @@ class DomainValidationsSpec
   import vinyldns.api.domain.DomainValidations._
   import vinyldns.api.DomainGenerator._
   import vinyldns.api.IpAddressGenerator._
+
+  val validIpv4Regex: Regex =
+    """^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$""".r
 
   property("Shortest domain name should be valid") {
     validateHostName("a.") shouldBe valid

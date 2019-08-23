@@ -24,7 +24,6 @@ object Dependencies {
     "de.heikoseeberger"         %% "akka-http-json4s"               % "1.21.0",
     "com.typesafe.akka"         %% "akka-slf4j"                     % akkaV,
     "com.typesafe.akka"         %% "akka-actor"                     % akkaV,
-    "com.aaronbedra"            %  "orchard"                        % "0.1.1",
     "com.amazonaws"             %  "aws-java-sdk-core"              % awsV withSources(),
     "com.github.ben-manes.caffeine" % "caffeine"                    % "2.2.7",
     "com.github.cb372"          %% "scalacache-caffeine"            % "0.9.4",

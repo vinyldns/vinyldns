@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import com.aaronbedra.orchard.CIDR
+import com.comcast.ip4s.Cidr
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.ACLRule
 
@@ -58,10 +58,11 @@ object ACLRuleOrdering extends ACLRuleOrdering {
 
 object PTRACLRuleOrdering extends ACLRuleOrdering {
   def sortableRecordMaskValue(rule: ACLRule): Int = {
-    val slash = rule.recordMask match {
-      case Some(cidrRule) => CIDR.valueOf(cidrRule).getMask
-      case None => 0
-    }
-    128 - slash
+    val prefix = for {
+      mask <- rule.recordMask
+      c <- Cidr.fromString(mask)
+    } yield c.prefixBits
+
+    128 - prefix.getOrElse(0)
   }
 }

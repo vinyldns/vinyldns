@@ -17,7 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.syntax.either._
-import com.aaronbedra.orchard.CIDR
+import com.comcast.ip4s.Cidr
 import org.joda.time.DateTime
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.membership.User
@@ -56,10 +56,10 @@ class ZoneValidations(syncDelayMillis: Int) {
   def aclRuleMaskIsValid(rule: ACLRule): Either[Throwable, Unit] =
     rule.recordMask match {
       case Some(mask) if rule.recordTypes == Set(RecordType.PTR) =>
-        Try(CIDR.valueOf(mask)) match {
-          case Success(_) => Right(())
-          case Failure(e) =>
-            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask: ${e.getMessage}").asLeft
+        Cidr.fromString(mask) match {
+          case Some(_) => Right(())
+          case None =>
+            InvalidRequest(s"PTR types must have no mask or a valid CIDR mask").asLeft
         }
       case Some(_) if rule.recordTypes.contains(RecordType.PTR) =>
         InvalidRequest("Multiple record types including PTR must have no mask").asLeft

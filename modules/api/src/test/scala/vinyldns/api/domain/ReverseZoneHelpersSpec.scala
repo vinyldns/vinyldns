@@ -122,7 +122,7 @@ class ReverseZoneHelpersSpec
             RecordSet("id", "255.255", RecordType.PTR, 200, RecordSetStatus.Active, DateTime.now)
 
           ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znTrue, rsTrue.name) shouldBe true
-          ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe false
+          ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, znFalse, rsFalse.name) shouldBe true
         }
 
         "filter in/out record set based on CIDR rule of 8" in {

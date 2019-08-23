@@ -65,7 +65,7 @@ class ZoneValidationsSpec
         recordTypes = Set(RecordType.PTR))
       val error = leftValue(isValidAclRule(ACLRule(invalidPtrAclRuleInfo)))
       error shouldBe a[InvalidRequest]
-      error.getMessage shouldBe "PTR types must have no mask or a valid CIDR mask: Invalid CIDR block"
+      error.getMessage shouldBe "PTR types must have no mask or a valid CIDR mask"
     }
 
     "fail if there are multiple record types including PTR and mask is regex" in {

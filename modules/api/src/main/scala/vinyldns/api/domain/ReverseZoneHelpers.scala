@@ -17,12 +17,10 @@
 package vinyldns.api.domain
 
 import cats.implicits._
-import com.aaronbedra.orchard.CIDR
+import com.comcast.ip4s.{Cidr, Ipv4Address, Ipv6Address}
 import vinyldns.api.domain.zone.InvalidRequest
 import vinyldns.core.domain.zone.Zone
 import vinyldns.api.domain.dns.DnsConversions._
-
-import scala.util.Try
 
 object ReverseZoneHelpers {
 
@@ -30,8 +28,9 @@ object ReverseZoneHelpers {
     if (zone.isIPv4) {
       recordsetIsWithinCidrMaskIpv4(mask: String, zone: Zone, recordName: String)
     } else {
-      val ipAddr = convertPTRtoIPv6(zone, recordName)
-      Try(CIDR.valueOf(mask).contains(ipAddr)).getOrElse(false)
+      Ipv6Address(convertPTRtoIPv6(zone, recordName)).flatMap { ip =>
+        Cidr.fromString(mask).map(_.contains(ip))
+      }.getOrElse(false)
     }
 
   // NOTE: this will not work for zones with less than 3 octets
@@ -85,22 +84,26 @@ object ReverseZoneHelpers {
       zone: Zone,
       recordName: String): Boolean = {
     val recordIpAddr = convertPTRtoIPv4(zone, recordName)
+    val parsedMask = mask.split('/').toList
 
-    Try {
-      // make sure mask contains 4 octets, expand if not
-      val ipMaskOctets = CIDR.parseBlock(mask).head.split('.').toList
-
-      val fullIp = ipMaskOctets.length match {
-        case 1 => (ipMaskOctets ++ List("0", "0", "0")).mkString(".")
-        case 2 => (ipMaskOctets ++ List("0", "0")).mkString(".")
-        case 3 => (ipMaskOctets ++ List("0")).mkString(".")
-        case 4 => ipMaskOctets.mkString(".")
+    // make sure mask contains 4 octets, expand if not
+    val cidrIp = parsedMask.headOption.map { ip =>
+      val octets = ip.split('.').toList
+      octets.length match {
+        case 1 => (octets ++ List("0", "0", "0")).mkString(".")
+        case 2 => (octets ++ List("0", "0")).mkString(".")
+        case 3 => (octets ++ List("0")).mkString(".")
+        case 4 => octets.mkString(".")
       }
+    }
+    val matches = for {
+      cip <- cidrIp
+      fullCidrString = cip + "/" + parsedMask.tail.mkString
+      cidr <- Cidr.fromString4(fullCidrString)
+      ipAddr <- Ipv4Address(recordIpAddr)
+    } yield cidr.contains(ipAddr)
 
-      val updatedMask = fullIp + "/" + CIDR.valueOf(mask).getMask
-
-      CIDR.valueOf(updatedMask).contains(recordIpAddr)
-    }.getOrElse(false)
+    matches.getOrElse(false)
   }
 
   private def ipv4ReverseSplitByOctets(string: String): List[String] =
