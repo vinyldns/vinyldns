@@ -225,8 +225,14 @@ object BatchTransformations {
         }
         .flatten
 
+      val hasFullRecordSetDelete = changes.contains {
+        case _: DeleteRRSetChangeForValidation => true
+        case _ => false
+      }
+
       new ValidationChanges(addChangeRecordDataList.toSet,
         deleteChangeSet,
+        hasFullRecordSetDelete,
         existingRecords,
         addChangeTtlList.toSet.flatten)
     }
@@ -235,6 +241,7 @@ object BatchTransformations {
   final case class ValidationChanges(
                                       proposedAdds: Set[RecordData],
                                       proposedDeletes: Set[RecordData],
+                                      hasFullRecordSetDelete: Boolean,
                                       existingRecords: Set[RecordData],
                                       ttls: Set[Long])
 
