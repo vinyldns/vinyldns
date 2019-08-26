@@ -11,4 +11,6 @@ Groups are the primary way users are granted access to zones. Users can create g
 * [Create a group](create-a-group)
 * [Manage membership](manage-membership)
 
-[![Groups main screenshot](../img/portal/groups-main.png){:.screenshot}](../img/portal/groups-main.png)
+[![Groups main "My Groups" tab screenshot](../img/portal/groups-main.png){:.screenshot}](../img/portal/groups-main.png)
+
+[![Groups main "All Groups" tab screenshot](../img/portal/groups-main-all.png){:.screenshot}](../img/portal/groups-main-all.png)
