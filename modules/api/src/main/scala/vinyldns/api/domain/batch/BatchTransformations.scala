@@ -189,24 +189,25 @@ object BatchTransformations {
       }
     }
 
-    def getChangeForValidationAdds(recordKey: RecordKey): Set[RecordData] =
+    def getProposedAdds(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedAdds).toSet.flatten
 
-    def addChangesNotUnique(recordKey: RecordKey): Boolean = {
-      val validationChanges = innerMap.get(recordKey)
-      validationChanges.exists { c =>
-        c.proposedAdds.size > 1 || c.proposedAddTtls.size > 1
-      }
-    }
+    def getProposedAddTtls(recordKey: RecordKey): Set[Long] =
+      innerMap.get(recordKey).map(_.proposedAddTtls).toSet.flatten
 
-    def containsAddChanges(recordKey: RecordKey): Boolean =
-      getChangeForValidationAdds(recordKey).nonEmpty
+    def getProposedDeletes(recordKey: RecordKey): Set[RecordData] =
+      innerMap.get(recordKey).map(_.proposedDeletes).toSet.flatten
 
-    // There is a distinction between having a delete in the batch and having a valid delete
-    def containsValidDeleteChanges(recordKey: RecordKey): Boolean =
-      innerMap.get(recordKey).exists(_.proposedDeletes.nonEmpty)
+    def getExistingRecordSets(recordKey: RecordKey): Set[RecordData] =
+      innerMap.get(recordKey).map(_.existingRecords).toSet.flatten
 
-    def containsFullRecordDelete(recordKey: RecordKey): Boolean =
+    def containsProposedAdds(recordKey: RecordKey): Boolean =
+      getProposedAdds(recordKey).nonEmpty
+
+    def containsProposedDeletes(recordKey: RecordKey): Boolean =
+      getProposedDeletes(recordKey).nonEmpty
+
+    def hasFullRecordSetDelete(recordKey: RecordKey): Boolean =
       innerMap.get(recordKey).exists(_.hasFullRecordSetDelete)
   }
 
