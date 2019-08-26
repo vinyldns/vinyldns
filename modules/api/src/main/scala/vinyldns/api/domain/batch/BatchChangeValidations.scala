@@ -240,7 +240,7 @@ class BatchChangeValidations(
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     changeGroups.changes.mapValid {
       case addUpdate: AddChangeForValidation
-          if changeGroups.getChangeForValidationDeletes(addUpdate.recordKey).nonEmpty =>
+          if changeGroups.containsValidDeleteChanges(addUpdate.recordKey) =>
         validateAddUpdateWithContext(
           addUpdate,
           changeGroups,

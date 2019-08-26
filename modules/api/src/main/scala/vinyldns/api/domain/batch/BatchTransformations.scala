@@ -190,15 +190,12 @@ object BatchTransformations {
     }
 
     def getChangeForValidationAdds(recordKey: RecordKey): Set[RecordData] =
-      innerMap.get(recordKey).toSet.flatMap(_.proposedAdds)
-
-    def getChangeForValidationDeletes(recordKey: RecordKey): Set[RecordData] =
-      innerMap.get(recordKey).toSet.flatMap(_.proposedDeletes)
+      innerMap.get(recordKey).map(_.proposedAdds).toSet.flatten
 
     def addChangesNotUnique(recordKey: RecordKey): Boolean = {
       val validationChanges = innerMap.get(recordKey)
       validationChanges.exists { c =>
-        c.proposedAdds.size > 1 || c.ttls.size > 1
+        c.proposedAdds.size > 1 || c.proposedAddTtls.size > 1
       }
     }
 
@@ -207,11 +204,13 @@ object BatchTransformations {
 
     // There is a distinction between having a delete in the batch and having a valid delete
     def containsValidDeleteChanges(recordKey: RecordKey): Boolean =
-      getChangeForValidationDeletes(recordKey).nonEmpty
+      innerMap.get(recordKey).exists(_.proposedDeletes.nonEmpty)
   }
 
   object ValidationChanges {
-    def apply(changes: List[ChangeForValidation], existingRecordSet: Option[RecordSet]): ValidationChanges = {
+    def apply(
+        changes: List[ChangeForValidation],
+        existingRecordSet: Option[RecordSet]): ValidationChanges = {
       // Grab record entries and ttls from add changes
       val (addChangeRecordDataList, addChangeTtlList) = changes.collect {
         case add: AddChangeForValidation => (add.inputChange.record, add.inputChange.ttl)
@@ -219,18 +218,21 @@ object BatchTransformations {
 
       val existingRecords = existingRecordSet.toList.flatMap(_.records).toSet
 
-      val deleteChangeSet = changes.toSet.collect {
+      val deleteChangeSet = changes
+        .collect {
           case _: DeleteRRSetChangeForValidation => existingRecords
           case del: DeleteRecordChangeForValidation => Set(del.inputChange.record)
         }
+        .toSet
         .flatten
 
-      val hasFullRecordSetDelete = changes.contains {
+      val hasFullRecordSetDelete = changes.exists {
         case _: DeleteRRSetChangeForValidation => true
         case _ => false
       }
 
-      new ValidationChanges(addChangeRecordDataList.toSet,
+      new ValidationChanges(
+        addChangeRecordDataList.toSet,
         deleteChangeSet,
         hasFullRecordSetDelete,
         existingRecords,
@@ -239,11 +241,11 @@ object BatchTransformations {
   }
 
   final case class ValidationChanges(
-                                      proposedAdds: Set[RecordData],
-                                      proposedDeletes: Set[RecordData],
-                                      hasFullRecordSetDelete: Boolean,
-                                      existingRecords: Set[RecordData],
-                                      ttls: Set[Long])
+      proposedAdds: Set[RecordData],
+      proposedDeletes: Set[RecordData],
+      hasFullRecordSetDelete: Boolean,
+      existingRecords: Set[RecordData],
+      proposedAddTtls: Set[Long])
 
   final case class BatchValidationFlowOutput(
       validatedChanges: ValidatedBatch[ChangeForValidation],
