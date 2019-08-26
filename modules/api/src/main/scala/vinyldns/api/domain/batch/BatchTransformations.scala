@@ -67,9 +67,6 @@ object BatchTransformations {
     def get(recordKey: RecordKey): Option[RecordSet] =
       get(recordKey.zoneId, recordKey.recordName, recordKey.recordType)
 
-    def containsRecordSetMatch(zoneId: String, name: String): Boolean =
-      recordSetMap.contains(zoneId, name.toLowerCase)
-
     def getRecordSetMatch(zoneId: String, name: String): List[RecordSet] =
       recordSetMap.getOrElse((zoneId, name.toLowerCase), List())
   }
@@ -149,6 +146,7 @@ object BatchTransformations {
     def isAddChangeForValidation: Boolean = false
   }
 
+  // $COVERAGE-OFF$
   final case class DeleteRecordChangeForValidation(
       zone: Zone,
       recordName: String,
@@ -172,6 +170,8 @@ object BatchTransformations {
 
     def isAddChangeForValidation: Boolean = false
   }
+
+  // $COVERAGE-ON$
 
   final case class BatchConversionOutput(
       batchChange: BatchChange,
