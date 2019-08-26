@@ -354,7 +354,7 @@ describe('BatchChange', function(){
                 expect(this.scope.batch).toEqual({});
                 expect(this.scope.newBatch).toEqual({
                     comments: "zone not found.",
-                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], errorType: 'hard'}]
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], hardErrors: true, softErrors: false}]
                 });
                 expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Errors found. Please correct and submit again.'}]);
             }));
@@ -378,7 +378,7 @@ describe('BatchChange', function(){
                 expect(this.scope.batch).toEqual({});
                 expect(this.scope.newBatch).toEqual({
                     comments: "zone not found.",
-                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], errorType: 'soft'}]
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], hardErrors: false, softErrors: true}]
                 });
                 expect(this.scope.alerts).toEqual([{ type: 'warning', content: 'Issues found that require manual review. Please correct or confirm submission for review.'}]);
             }));
@@ -452,7 +452,7 @@ describe('BatchChange', function(){
                 expect(this.scope.batch).toEqual({});
                 expect(this.scope.newBatch).toEqual({
                     comments: "scheduled date in the past",
-                    changes: [{changeType: "Add", inputName: 'blah.shared.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".'], errorType: 'hard'}]
+                    changes: [{changeType: "Add", inputName: 'blah.shared.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".'], hardErrors: true, softErrors: false}]
                 });
                 expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Errors found. Please correct and submit again.'}]);
                 expect(this.scope.ownerGroupError).toEqual('Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".')
