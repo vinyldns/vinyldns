@@ -185,73 +185,58 @@ object BatchTransformations {
     val innerMap: Map[RecordKey, ValidationChanges] = {
       changes.getValid.groupBy(_.recordKey).map { keyChangesTuple =>
         val (recordKey, changeList) = keyChangesTuple
-        val (addChanges, deleteChangeList) =
-          changeList.partition(_.isAddChangeForValidation)
-        val existingRecords = existingRecordSets.get(recordKey).map(_.records).getOrElse(List())
-
-        // Grab record entries and ttls from add changes
-        val (addChangeRecordDataList, addChangeTtlList) = addChanges.collect {
-          case add: AddChangeForValidation => (add.inputChange.record, add.inputChange.ttl)
-        }.unzip
-
-        // Get exhaustive list of which DNS entries are being deleted
-        val deleteChangeSet = deleteChangeList
-          .collect {
-            case _: DeleteRRSetChangeForValidation =>
-              existingRecords
-            case del: DeleteRecordChangeForValidation => List(del.inputChange.record)
-          }
-          .flatten
-          .toSet
-
-        (
-          recordKey,
-          ValidationChanges(
-            addChangeRecordDataList.toSet,
-            deleteChangeSet,
-            existingRecords.toSet,
-            addChangeTtlList.toSet,
-            deleteChangeList.nonEmpty
-          )
-        )
+        recordKey -> ValidationChanges(changeList, existingRecordSets.get(recordKey))
       }
     }
 
-    def getChangeForValidationChanges(recordKey: RecordKey): ValidationChanges =
-      innerMap.getOrElse(
-        recordKey,
-        ValidationChanges(
-          Set(),
-          Set(),
-          existingRecordSets.get(recordKey).map(_.records).getOrElse(List()).toSet,
-          Set(),
-          false))
-
     def getChangeForValidationAdds(recordKey: RecordKey): Set[RecordData] =
-      getChangeForValidationChanges(recordKey).addChanges
+      innerMap.get(recordKey).toSet.flatMap(_.proposedAdds)
 
     def getChangeForValidationDeletes(recordKey: RecordKey): Set[RecordData] =
-      getChangeForValidationChanges(recordKey).deleteChanges
+      innerMap.get(recordKey).toSet.flatMap(_.proposedDeletes)
 
     def addChangesNotUnique(recordKey: RecordKey): Boolean = {
-      val validationChanges = getChangeForValidationChanges(recordKey)
-      validationChanges.addChanges.size > 1 || validationChanges.ttls.size > 1
+      val validationChanges = innerMap.get(recordKey)
+      validationChanges.exists { c =>
+        c.proposedAdds.size > 1 || c.ttls.size > 1
+      }
     }
 
     def containsAddChanges(recordKey: RecordKey): Boolean =
-      getChangeForValidationChanges(recordKey).addChanges.nonEmpty
+      getChangeForValidationAdds(recordKey).nonEmpty
 
     // There is a distinction between having a delete in the batch and having a valid delete
     def containsValidDeleteChanges(recordKey: RecordKey): Boolean =
-      getChangeForValidationChanges(recordKey).deleteChanges.nonEmpty
+      getChangeForValidationDeletes(recordKey).nonEmpty
+  }
+
+  object ValidationChanges {
+    def apply(changes: List[ChangeForValidation], existingRecordSet: Option[RecordSet]): ValidationChanges = {
+      // Grab record entries and ttls from add changes
+      val (addChangeRecordDataList, addChangeTtlList) = changes.collect {
+        case add: AddChangeForValidation => (add.inputChange.record, add.inputChange.ttl)
+      }.unzip
+
+      val existingRecords = existingRecordSet.toList.flatMap(_.records).toSet
+
+      val deleteChangeSet = changes.toSet.collect {
+          case _: DeleteRRSetChangeForValidation => existingRecords
+          case del: DeleteRecordChangeForValidation => Set(del.inputChange.record)
+        }
+        .flatten
+
+      new ValidationChanges(addChangeRecordDataList.toSet,
+        deleteChangeSet,
+        existingRecords,
+        addChangeTtlList.toSet.flatten)
+    }
   }
 
   final case class ValidationChanges(
-      addChanges: Set[RecordData],
-      deleteChanges: Set[RecordData],
-      existingRecords: Set[RecordData],
-      ttls: Set[Option[Long]], // Only kept track of for adds
-      containsDeletes: Boolean)
+                                      proposedAdds: Set[RecordData],
+                                      proposedDeletes: Set[RecordData],
+                                      existingRecords: Set[RecordData],
+                                      ttls: Set[Long])
 
   final case class BatchValidationFlowOutput(
       validatedChanges: ValidatedBatch[ChangeForValidation],
