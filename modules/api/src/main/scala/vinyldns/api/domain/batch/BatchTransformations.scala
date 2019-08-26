@@ -205,6 +205,9 @@ object BatchTransformations {
     // There is a distinction between having a delete in the batch and having a valid delete
     def containsValidDeleteChanges(recordKey: RecordKey): Boolean =
       innerMap.get(recordKey).exists(_.proposedDeletes.nonEmpty)
+
+    def containsFullRecordDelete(recordKey: RecordKey): Boolean =
+      innerMap.get(recordKey).exists(_.hasFullRecordSetDelete)
   }
 
   object ValidationChanges {
