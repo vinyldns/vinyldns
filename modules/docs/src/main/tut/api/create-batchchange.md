@@ -42,10 +42,12 @@ record        | [RecordData](../api/recordset-model#record-data) | yes         |
 
 name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
-changeType    | ChangeInputType | yes       | Type of change input. Must be **DeleteRecordSet** for *DeleteChangeInput*. |
+changeType    | ChangeInputType | yes       | Type of change input. Must be **DeleteRecord** or **DeleteRecordSet** for *DeleteChangeInput*. **DeleteRecord** deletes one record in a recordset. **DeleteRecordSet** deletes the entire recordset. |
 inputName     | string        | yes         | The fully qualified domain name of the record being deleted. |
 type          | RecordType    | yes         | Type of DNS record. Supported records for batch changes are currently: **A**, **AAAA**, **CNAME**, and **PTR**. |
+record        | [RecordData](../api/recordset-model#record-data) | sometimes         | One existing record data entry in the recordset. Required if the changeType is DeleteRecord. |
 
+Note: record types that only support one record data entry (i.e. CNAME records) will treat a DeleteRecord changeType as DeleteRecordSet
 
 #### EXAMPLE HTTP REQUEST
 ```
@@ -69,6 +71,14 @@ type          | RecordType    | yes         | Type of DNS record. Supported reco
             "ttl": 3600,
             "record": {
                 "ptrdname": "ptrdata.data."
+            }
+        },
+        {
+            "inputName": "single.delete.example.",
+            "changeType": "DeleteRecord",
+            "type": "A",
+            "record": {
+                "address": "1.1.1.1"
             }
         }, 
         {
