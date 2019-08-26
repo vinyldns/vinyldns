@@ -103,7 +103,7 @@
 
                 formatData(payload);
 
-                return batchChangeService.createBatchChange(payload, true)
+                return batchChangeService.createBatchChange(payload, $scope.allowManualReview)
                     .then(success)
                     .catch(function(error){
                         if (payload.scheduledTime) {

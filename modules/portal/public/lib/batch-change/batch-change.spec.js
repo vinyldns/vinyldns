@@ -149,6 +149,7 @@ describe('BatchChange', function(){
             this.groupsService = groupsService;
             this.scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A", ttl: 200}]};
             this.scope.myGroups = {};
+            this.scope.alerts = [];
 
             deferred = $q.defer();
 
@@ -282,56 +283,6 @@ describe('BatchChange', function(){
         });
 
         describe('$scope.createBatchChange', function() {
-            it('should resolve the promise', inject(function(batchChangeService) {
-
-                this.scope.newBatch = {
-                    comments: "this is a comment.",
-                    changes: [{changeType: "Add", type: "A", ttl: 200, record: {address: "1.1.1.2"}}]
-                };
-
-                this.scope.createBatchChange();
-
-                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
-
-                var mockBatchChange = {
-                    userId: "17350028-b2b8-428d-9f10-dbb518a0364d",
-                    userName: "bwrigh833",
-                    comments: "this is a test comment.",
-                    createdTimestamp: "2018-05-09T14:20:50Z",
-                    changes: [{zoneId: "937191c4-b1fd-4ab5-abb4-9553a65b44ab", zoneName: "old-vinyldns2.", recordName:"test1", inputName: "test1.old-vinyldns2.", type: "A", ttl: 200, record: {address:"1.1.1.1"}, status: "Pending", id: "c29d33e4-9bee-4417-a99b-6e815fdeb748", changeType: "Add"}],
-                    status: "Pending",
-                    id: "921e70fa-9bec-48eb-a520-a8e6106158e2"
-                };
-
-                deferred.resolve({data: mockBatchChange});
-                this.rootScope.$apply();
-
-                expect(this.scope.batch).toEqual(mockBatchChange);
-            }));
-
-            it('should reject the promise', inject(function(batchChangeService) {
-
-                this.scope.newBatch = {
-                    comments: "zone not found.",
-                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}]
-                };
-
-                this.scope.createBatchChange();
-
-                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
-
-                deferred.reject({config: {data: this.scope.newBatch}, data: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone for "blah.dummy." does not exist in Vinyl.']}], status: 400});
-                this.rootScope.$apply();
-
-
-                expect(this.scope.batch).toEqual({});
-                expect(this.scope.newBatch).toEqual({
-                    comments: "zone not found.",
-                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone for "blah.dummy." does not exist in Vinyl.']}]
-                });
-                expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Errors found. Please correct and submit again.'}]);
-            }));
-
             it('should format the batch change data', inject(function(batchChangeService) {
 
                 this.scope.newBatch = {
@@ -353,6 +304,158 @@ describe('BatchChange', function(){
                     {changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}},
                     {changeType: "Add", inputName: '1.1.1.2', type: "PTR", ttl: 200, record: {ptrdname: "blah.dummy."}}
                 ]);
+            }));
+
+            it('should resolve the promise', inject(function(batchChangeService) {
+
+                var mockBatchChange = {
+                    approvalStatus: "AutoApproved",
+                    userId: "testuser",
+                    userName: "testuser",
+                    comments: "this is a test comment.",
+                    createdTimestamp: "2018-05-09T14:20:50Z",
+                    changes: [{changeType: "Add", id: "c29d33e4-9bee-4417-a99b-6e815fdeb748", inputName: "test1.old-vinyldns2.", record: {address:"1.1.1.1"}, recordName:"test1", status: "Pending", ttl: 200, type: "A", validationErrors: [], zoneId: "937191c4-b1fd-4ab5-abb4-9553a65b44ab", zoneName: "old-vinyldns2."}],
+                    status: "PendingProcessing",
+                    id: "921e70fa-9bec-48eb-a520-a8e6106158e2"
+                };
+
+                this.scope.newBatch = {
+                    comments: "this is a comment.",
+                    changes: [{changeType: "Add", inputName: "test1.old-vinyldns2", type: "A", ttl: 200, record: {address: "1.1.1.1"}}]
+                };
+
+                this.scope.createBatchChange();
+
+                expect(batchChangeService.createBatchChange).toHaveBeenCalledWith(this.scope.newBatch, undefined);
+
+
+                deferred.resolve({config: {data: this.scope.newBatch}, data: mockBatchChange, status: 202});
+                this.rootScope.$apply();
+
+                expect(this.scope.batch).toEqual(mockBatchChange);
+            }));
+
+            it('should reject the promise with manual review disabled and change errors', inject(function(batchChangeService) {
+
+                this.scope.manualReviewEnabled = false
+                this.scope.newBatch = {
+                    comments: "zone not found.",
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}]
+                };
+
+                this.scope.createBatchChange();
+
+                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+
+                deferred.reject({config: {data: this.scope.newBatch}, data: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.']}], status: 400});
+                this.rootScope.$apply();
+
+
+                expect(this.scope.batch).toEqual({});
+                expect(this.scope.newBatch).toEqual({
+                    comments: "zone not found.",
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], errorType: 'hard'}]
+                });
+                expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Errors found. Please correct and submit again.'}]);
+            }));
+
+            it('should reject the promise with manual review enabled and soft change errors', inject(function(batchChangeService) {
+
+                this.scope.manualReviewEnabled = true
+                this.scope.newBatch = {
+                    comments: "zone not found.",
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}]
+                };
+
+                this.scope.createBatchChange();
+
+                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+
+                deferred.reject({config: {data: this.scope.newBatch}, data: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.']}], status: 400});
+                this.rootScope.$apply();
+
+
+                expect(this.scope.batch).toEqual({});
+                expect(this.scope.newBatch).toEqual({
+                    comments: "zone not found.",
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], errorType: 'soft'}]
+                });
+                expect(this.scope.alerts).toEqual([{ type: 'warning', content: 'Issues found that require manual review. Please correct or confirm submission for review.'}]);
+            }));
+
+            it('should reject the promise with manual review enabled and soft change error and allowManualReview true', inject(function(batchChangeService) {
+
+                this.scope.manualReviewEnabled = true
+                this.scope.allowManualReview = true
+                this.scope.newBatch = {
+                    comments: "zone not found.",
+                    changes: [{changeType: "Add", inputName: 'blah.non-existent.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}]
+                };
+
+                this.scope.createBatchChange();
+
+                expect(batchChangeService.createBatchChange).toHaveBeenCalledWith(this.scope.newBatch, true);
+
+                deferred.reject({config: {data: this.scope.newBatch}, data: '"Batch change requires owner group for manual review/scheduled changes."', status: 400});
+                this.rootScope.$apply();
+
+                expect(this.scope.newBatch).toEqual({
+                    comments: "zone not found.",
+                    changes: [{changeType: "Add", inputName: 'blah.non-existent.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}]
+                });
+
+                expect(this.scope.alerts).toEqual([{ type: 'danger', content: "HTTP 400 (undefined): Batch change requires owner group for manual review/scheduled changes."}]);
+                expect(this.scope.ownerGroupError).toEqual('Batch change requires owner group for manual review/scheduled changes.')
+            }));
+
+            it('should reject the promise with manual review enabled, scheduled enabled and schedule date in the past', inject(function(batchChangeService) {
+
+                this.scope.manualReviewEnabled = true
+                this.scope.scheduledOption = true
+                this.scope.newBatch = {
+                    comments: "scheduled date in the past",
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}],
+                    scheduledTime: moment().startOf('day').subtract(1, 'day').format('LL hh:mm A')
+                };
+
+                this.scope.createBatchChange();
+
+                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+
+                deferred.reject({config: {data: this.scope.newBatch}, data: '"Scheduled time must be in the future."', status: 400});
+                this.rootScope.$apply();
+
+
+                expect(this.scope.batch).toEqual({});
+                expect(this.scope.newBatch).toEqual({
+                    comments: "scheduled date in the past",
+                    changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}],
+                    scheduledTime: moment().startOf('day').subtract(1, 'day').format('LL hh:mm A')
+                });
+                expect(this.scope.alerts).toEqual([{ type: 'danger', content: "HTTP 400 (undefined): Scheduled time must be in the future."}]);
+            }));
+
+            it('should reject the promise with record owner group required for shared zone record', inject(function(batchChangeService) {
+                this.scope.newBatch = {
+                    comments: "scheduled date in the past",
+                    changes: [{changeType: "Add", inputName: 'blah.shared.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}]
+                };
+
+                this.scope.createBatchChange();
+
+                expect(batchChangeService.createBatchChange).toHaveBeenCalled();
+
+                deferred.reject({config: {data: this.scope.newBatch}, data: [{changeType: "Add", inputName: 'blah.shared.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".']}], status: 400});
+                this.rootScope.$apply();
+
+
+                expect(this.scope.batch).toEqual({});
+                expect(this.scope.newBatch).toEqual({
+                    comments: "scheduled date in the past",
+                    changes: [{changeType: "Add", inputName: 'blah.shared.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".'], errorType: 'hard'}]
+                });
+                expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'Errors found. Please correct and submit again.'}]);
+                expect(this.scope.ownerGroupError).toEqual('Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".')
             }));
         });
     });
