@@ -1803,7 +1803,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_CNAME_json("update-unauthorized.dummy.", ttl=300),
             get_change_CNAME_json("existing-cname2.parent.com.", change_type="DeleteRecordSet"),
             get_change_CNAME_json("existing-cname2.parent.com."),
-            get_change_CNAME_json("existing-cname2.parent.com.", ttl=350)
+            get_change_CNAME_json("existing-cname2.parent.com.", cname="test2.com.")
         ]
     }
 
@@ -1864,7 +1864,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[16], input_name="existing-cname2.parent.com.", record_type="CNAME", change_type="DeleteRecordSet")
         assert_failed_change_in_error_response(response[17], input_name="existing-cname2.parent.com.", record_type="CNAME", record_data="test.com.",
                                                error_messages=["Record Name \"existing-cname2.parent.com.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
-        assert_failed_change_in_error_response(response[18], input_name="existing-cname2.parent.com.", record_type="CNAME", record_data="test.com.", ttl=350,
+        assert_failed_change_in_error_response(response[18], input_name="existing-cname2.parent.com.", record_type="CNAME", record_data="test2.com.",
                                                error_messages=["Record Name \"existing-cname2.parent.com.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
 
 
