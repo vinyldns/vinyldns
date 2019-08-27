@@ -73,5 +73,5 @@ final case class ScheduledChangeNotDue(scheduledTime: DateTime) extends BatchCha
 
 case object ManualReviewRequiresOwnerGroup extends BatchChangeErrorResponse {
   val message: String =
-    "Batch change requires owner group for manual review/scheduled changes."
+    "Batch change requires owner group for manual review."
 }

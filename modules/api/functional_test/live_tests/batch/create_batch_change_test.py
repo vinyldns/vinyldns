@@ -315,7 +315,7 @@ def test_create_scheduled_batch_change_with_zone_discovery_error_without_owner_g
 
     errors = client.create_batch_change(batch_change_input, status=400)
 
-    assert_that(errors, is_("Batch change requires owner group for manual review/scheduled changes."))
+    assert_that(errors, is_("Batch change requires owner group for manual review."))
 
 
 @pytest.mark.manual_batch_review
@@ -400,7 +400,7 @@ def test_create_batch_change_with_zone_discovery_error_without_owner_group_fails
 
     errors = client.create_batch_change(batch_change_input, status=400)
 
-    assert_that(errors, is_("Batch change requires owner group for manual review/scheduled changes."))
+    assert_that(errors, is_("Batch change requires owner group for manual review."))
 
 
 def test_create_batch_change_with_updates_deletes_success(shared_zone_test_context):
