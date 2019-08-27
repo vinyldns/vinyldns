@@ -192,9 +192,6 @@ object BatchTransformations {
     def getProposedAdds(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedAdds).toSet.flatten
 
-    def getProposedAddTtls(recordKey: RecordKey): Set[Long] =
-      innerMap.get(recordKey).map(_.proposedAddTtls).toSet.flatten
-
     def getProposedDeletes(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedDeletes).toSet.flatten
 
@@ -215,13 +212,15 @@ object BatchTransformations {
     def apply(
         changes: List[ChangeForValidation],
         existingRecordSet: Option[RecordSet]): ValidationChanges = {
-      // Grab record entries and ttls from add changes
-      val (addChangeRecordDataList, addChangeTtlList) = changes.collect {
-        case add: AddChangeForValidation => (add.inputChange.record, add.inputChange.ttl)
-      }.unzip
+      // Collect add DNS entries
+      val addChangeRecordDataSet = changes.collect {
+        case add: AddChangeForValidation => add.inputChange.record
+      }.toSet
 
       val existingRecords = existingRecordSet.toList.flatMap(_.records).toSet
 
+      // Collect delete DNS entries. This formulates all of the proposed delete entries, including
+      // existing DNS entries in the event of DeleteRecordSet
       val deleteChangeSet = changes
         .collect {
           case _: DeleteRRSetChangeForValidation => existingRecords
@@ -230,17 +229,18 @@ object BatchTransformations {
         .toSet
         .flatten
 
+      // Flag for whether batch contained a DeleteRecordSet request. Needed because proposed deletes may not
+      // find any DNS entries to delete
       val hasFullRecordSetDelete = changes.exists {
         case _: DeleteRRSetChangeForValidation => true
         case _ => false
       }
 
       new ValidationChanges(
-        addChangeRecordDataList.toSet,
+        addChangeRecordDataSet,
         deleteChangeSet,
         hasFullRecordSetDelete,
-        existingRecords,
-        addChangeTtlList.toSet.flatten)
+        existingRecords)
     }
   }
 
@@ -248,12 +248,11 @@ object BatchTransformations {
       proposedAdds: Set[RecordData],
       proposedDeletes: Set[RecordData],
       hasFullRecordSetDelete: Boolean,
-      existingRecords: Set[RecordData],
-      proposedAddTtls: Set[Long])
+      existingRecords: Set[RecordData])
 
   final case class BatchValidationFlowOutput(
       validatedChanges: ValidatedBatch[ChangeForValidation],
       existingZones: ExistingZones,
-      changeGroups: ChangeForValidationMap
+      groupedChanges: ChangeForValidationMap
   )
 }
