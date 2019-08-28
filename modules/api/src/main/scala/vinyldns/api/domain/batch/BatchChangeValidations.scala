@@ -483,7 +483,7 @@ class BatchChangeValidations(
       groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
     val existingRecordSetsMatch = existingRecordSets.getRecordSetMatch(zoneId, recordName)
 
-    val hasNonDeletedExistingRs = existingRecordSetsMatch.find { rs =>
+    val incompatibleDnsRRSetExists = existingRecordSetsMatch.find { rs =>
       val recordKey = RecordKey(zoneId, recordName, rs.typ)
       val containsAdds = groupedChanges.containsProposedAdds(recordKey)
       val proposedDeletes = groupedChanges.getProposedDeletes(recordKey)
@@ -494,7 +494,7 @@ class BatchChangeValidations(
       containsAdds || !containsFullDelete
     }
 
-    hasNonDeletedExistingRs match {
+    incompatibleDnsRRSetExists match {
       case Some(rs) => CnameIsNotUniqueError(inputName, rs.typ).invalidNel
       case None => ().validNel
     }
