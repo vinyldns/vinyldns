@@ -419,10 +419,7 @@ class BatchChangeValidations(
       val recordKey = RecordKey(cnameChange.zone.id, cnameChange.recordName, recordType)
       val proposedAdds = groupedChanges.getProposedAdds(recordKey)
 
-      recordType match {
-        case CNAME => proposedAdds.size > 1 // We are checking on the CNAME
-        case _ => proposedAdds.nonEmpty
-      }
+      proposedAdds.exists(_ != cnameChange.inputChange.record)
     }
 
     if (duplicateNameChangeInBatch) {
