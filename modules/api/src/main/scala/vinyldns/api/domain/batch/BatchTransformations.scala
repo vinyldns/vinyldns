@@ -196,8 +196,8 @@ object BatchTransformations {
     def getProposedDeletes(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedDeletes).toSet.flatten
 
-    def getExistingRecordSets(recordKey: RecordKey): Set[RecordData] =
-      innerMap.get(recordKey).map(_.existingRecords).toSet.flatten
+    def getExistingRecordData(recordKey: RecordKey): Set[RecordData] =
+      innerMap.get(recordKey).map(_.existingRecordData).toSet.flatten
 
     // The new, net record data factoring in existing records, deletes and adds
     // If record is not edited in batch, will fallback to look up record in existing
@@ -268,7 +268,7 @@ object BatchTransformations {
   final case class ValidationChanges(
       proposedAdds: Set[RecordData],
       proposedDeletes: Set[RecordData],
-      existingRecords: Set[RecordData],
+      existingRecordData: Set[RecordData],
       proposedRecordData: Set[RecordData],
       logicalChangeType: LogicalChangeType)
 

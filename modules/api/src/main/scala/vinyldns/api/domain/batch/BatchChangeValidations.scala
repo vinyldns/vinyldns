@@ -455,11 +455,11 @@ class BatchChangeValidations(
         groupedChanges.existingRecordSets.getRecordSetMatch(zoneId, recordName).map(_.typ)
     }
 
-    val incompatibleExistingRecordType = existingRecordTypesMatch.find { recordType =>
+    val incompatibleRecordType = existingRecordTypesMatch.find { recordType =>
       groupedChanges.getProposedRecordData(RecordKey(zoneId, recordName, recordType)).nonEmpty
     }
 
-    incompatibleExistingRecordType match {
+    incompatibleRecordType match {
       case Some(recordType) => CnameIsNotUniqueError(inputName, recordType).invalidNel
       case None => ().validNel
     }
