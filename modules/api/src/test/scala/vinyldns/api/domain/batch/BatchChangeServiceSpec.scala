@@ -196,13 +196,23 @@ class BatchChangeServiceSpec
 
   override protected def beforeEach(): Unit = batchChangeRepo.clear()
 
-  private def makeRS(zoneId: String, name: String, typ: RecordType): RecordSet =
-    RecordSet(zoneId, name, typ, 100, RecordSetStatus.Active, DateTime.now())
+  private def makeRS(
+      zoneId: String,
+      name: String,
+      typ: RecordType,
+      recordData: Option[List[RecordData]] = None): RecordSet = {
+    val records = recordData.getOrElse(List())
+    RecordSet(zoneId, name, typ, 100, RecordSetStatus.Active, DateTime.now(), records = records)
+  }
 
   private val existingApex: RecordSet =
     makeRS(apexAddForVal.zone.id, apexAddForVal.recordName, SOA)
   private val existingNonApex: RecordSet =
-    makeRS(nonApexAddForVal.zone.id, nonApexAddForVal.recordName, TXT)
+    makeRS(
+      nonApexAddForVal.zone.id,
+      nonApexAddForVal.recordName,
+      TXT,
+      recordData = Some(List(TXTData("some data"))))
   private val existingPtr: RecordSet =
     makeRS(ptrAddForVal.zone.id, ptrAddForVal.recordName, PTR)
   private val existingPtrDelegated: RecordSet =

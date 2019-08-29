@@ -200,8 +200,13 @@ object BatchTransformations {
       innerMap.get(recordKey).map(_.existingRecords).toSet.flatten
 
     // The new, net record data factoring in existing records, deletes and adds
-    def getProposedRecordData(recordKey: RecordKey): Set[RecordData] =
-      innerMap.get(recordKey).map(_.proposedRecordData).toSet.flatten
+    // If record is not edited in batch, will fallback to look up record in existing
+    // records
+    def getProposedRecordData(recordKey: RecordKey): Set[RecordData] = {
+      val batchRecordData = innerMap.get(recordKey).map(_.proposedRecordData)
+      lazy val existingRecordData = existingRecordSets.get(recordKey).map(_.records.toSet)
+      batchRecordData.getOrElse(existingRecordData.getOrElse(Set()))
+    }
 
     def getLogicalChangeType(recordKey: RecordKey): Option[LogicalChangeType] =
       innerMap.get(recordKey).map(_.logicalChangeType)
