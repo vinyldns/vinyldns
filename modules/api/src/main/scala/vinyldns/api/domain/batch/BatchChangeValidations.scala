@@ -243,21 +243,9 @@ class BatchChangeValidations(
           if groupedChanges
             .getLogicalChangeType(add.recordKey)
             .contains(LogicalChangeType.Add) =>
-        validateAddWithContext(
-          add,
-          groupedChanges,
-          groupedChanges.existingRecordSets,
-          auth,
-          isApproved,
-          batchOwnerGroupId)
+        validateAddWithContext(add, groupedChanges, auth, isApproved, batchOwnerGroupId)
       case addUpdate: AddChangeForValidation =>
-        validateAddUpdateWithContext(
-          addUpdate,
-          groupedChanges,
-          groupedChanges.existingRecordSets,
-          auth,
-          isApproved,
-          batchOwnerGroupId)
+        validateAddUpdateWithContext(addUpdate, groupedChanges, auth, isApproved, batchOwnerGroupId)
       case del: DeleteRRSetChangeForValidation
           if groupedChanges
             .getLogicalChangeType(del.recordKey)
@@ -313,7 +301,6 @@ class BatchChangeValidations(
   def validateAddUpdateWithContext(
       change: AddChangeForValidation,
       groupedChanges: ChangeForValidationMap,
-      existingRecordSets: ExistingRecordSets,
       auth: AuthPrincipal,
       isApproved: Boolean,
       batchOwnerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
@@ -325,12 +312,13 @@ class BatchChangeValidations(
     }
 
     val commonValidations: SingleValidation[Unit] = {
-      existingRecordSets.get(change.recordKey) match {
+      groupedChanges.existingRecordSets.get(change.recordKey) match {
         case Some(rs) =>
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
             ownerGroupProvidedIfNeeded(
               change,
-              existingRecordSets.get(change.zone.id, change.recordName, change.inputChange.typ),
+              groupedChanges.existingRecordSets
+                .get(change.zone.id, change.recordName, change.inputChange.typ),
               batchOwnerGroupId) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
@@ -365,7 +353,6 @@ class BatchChangeValidations(
   def validateAddWithContext(
       change: AddChangeForValidation,
       groupedChanges: ChangeForValidationMap,
-      existingRecords: ExistingRecordSets,
       auth: AuthPrincipal,
       isApproved: Boolean,
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
@@ -375,7 +362,6 @@ class BatchChangeValidations(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
-          existingRecords,
           groupedChanges,
           Some(CNAME)) |+|
           newRecordSetIsNotMulti(change, groupedChanges) |+|
@@ -385,7 +371,6 @@ class BatchChangeValidations(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
-          existingRecords,
           groupedChanges,
           None) |+|
           cnameHasUniqueNameInBatch(change, groupedChanges) |+|
@@ -395,7 +380,6 @@ class BatchChangeValidations(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
-          existingRecords,
           groupedChanges,
           Some(CNAME)) |+|
           newRecordSetIsNotMulti(change, groupedChanges)
@@ -411,7 +395,7 @@ class BatchChangeValidations(
           change.recordName,
           change.inputChange.inputName,
           change.inputChange.typ,
-          existingRecords) |+|
+          groupedChanges.existingRecordSets) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
 
@@ -459,13 +443,16 @@ class BatchChangeValidations(
       zoneId: String,
       recordName: String,
       inputName: String,
-      existingRecordSets: ExistingRecordSets,
       groupedChanges: ChangeForValidationMap,
       recordTypeFilter: Option[RecordType]): SingleValidation[Unit] = {
     val existingRecordTypesMatch = recordTypeFilter match {
       case Some(recordType) =>
-        existingRecordSets.get(RecordKey(zoneId, recordName, recordType)).map(_.typ).toList
-      case None => existingRecordSets.getRecordSetMatch(zoneId, recordName).map(_.typ)
+        groupedChanges.existingRecordSets
+          .get(RecordKey(zoneId, recordName, recordType))
+          .map(_.typ)
+          .toList
+      case None =>
+        groupedChanges.existingRecordSets.getRecordSetMatch(zoneId, recordName).map(_.typ)
     }
 
     val incompatibleExistingRecordType = existingRecordTypesMatch.find { recordType =>
