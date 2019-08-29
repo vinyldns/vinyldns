@@ -30,7 +30,6 @@
                     handleError(error, 'groupsService::getGroups-failure');
                 });
 
-            $scope.batch = {};
             var tomorrow = moment().startOf('hour').add(1, 'day');
             $scope.newBatch = {comments: "", changes: [{changeType: "Add", type: "A+PTR"}], scheduledTime: tomorrow.format('LL hh:mm A')};
             $scope.scheduledOption = false;
@@ -59,6 +58,7 @@
                     } else {
                         delete payload.scheduledTime;
                     }
+
                     for (var i = 0; i < payload.changes.length; i++) {
                         var entry = payload.changes[i]
                         if(entry.type == 'A+PTR' || entry.type == 'AAAA+PTR') {
@@ -101,7 +101,6 @@
                     $timeout(function(){
                         location.href = "/dnschanges/" + response.data.id;
                      }, 2000);
-                    $scope.batch = response.data;
                 }
 
                 formatData(payload);
