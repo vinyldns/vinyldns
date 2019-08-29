@@ -358,7 +358,7 @@ class BatchChangeValidations(
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        incompatibleRecordExistsOrWillExist(
+        incompatibleRecordExists(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
@@ -367,7 +367,7 @@ class BatchChangeValidations(
           newRecordSetIsNotMulti(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
       case CNAME =>
-        incompatibleRecordExistsOrWillExist(
+        incompatibleRecordExists(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
@@ -376,7 +376,7 @@ class BatchChangeValidations(
           cnameHasUniqueNameInBatch(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
       case TXT | PTR =>
-        incompatibleRecordExistsOrWillExist(
+        incompatibleRecordExists(
           change.zone.id,
           change.recordName,
           change.inputChange.inputName,
@@ -439,7 +439,7 @@ class BatchChangeValidations(
       case None => ().validNel
     }
 
-  def incompatibleRecordExistsOrWillExist(
+  def incompatibleRecordExists(
       zoneId: String,
       recordName: String,
       inputName: String,
