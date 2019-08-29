@@ -789,8 +789,7 @@ class BatchChangeValidationsSpec
       false,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteUpdateA.inputChange.inputName))
+    result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
       RecordDoesNotExist(deleteUpdateA.inputChange.inputName))
   }

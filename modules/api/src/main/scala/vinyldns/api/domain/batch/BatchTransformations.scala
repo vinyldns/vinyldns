@@ -21,6 +21,7 @@ import java.util.UUID
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
+import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType.LogicalChangeType
 import vinyldns.api.domain.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
@@ -198,14 +199,18 @@ object BatchTransformations {
     def getExistingRecordSets(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.existingRecords).toSet.flatten
 
+    // The new, net record data factoring in existing records, deletes and adds
+    def getProposedRecordData(recordKey: RecordKey): Set[RecordData] =
+      innerMap.get(recordKey).map(_.proposedRecordData).toSet.flatten
+
+    def getLogicalChangeType(recordKey: RecordKey): Option[LogicalChangeType] =
+      innerMap.get(recordKey).map(_.logicalChangeType)
+
     def containsProposedAdds(recordKey: RecordKey): Boolean =
       getProposedAdds(recordKey).nonEmpty
 
     def containsProposedDeletes(recordKey: RecordKey): Boolean =
       getProposedDeletes(recordKey).nonEmpty
-
-    def hasFullRecordSetDelete(recordKey: RecordKey): Boolean =
-      innerMap.get(recordKey).exists(_.hasFullRecordSetDelete)
   }
 
   object ValidationChanges {
@@ -229,30 +234,47 @@ object BatchTransformations {
         .toSet
         .flatten
 
-      // Flag for whether batch contained a DeleteRecordSet request. Needed because proposed deletes may not
-      // find any DNS entries to delete
-      val hasFullRecordSetDelete = changes.exists {
-        case _: DeleteRRSetChangeForValidation => true
-        case _ => false
+      // New proposed record data (assuming all validations pass)
+      val proposedRecordData = existingRecords -- deleteChangeSet ++ addChangeRecordDataSet
+
+      // Note: "Update" where an Add and DeleteRecordSet is provided for a DNS record that does not exist will be
+      // treated as a logical Add since the delete validation will fail (on record does not exist)
+      val logicalChangeType = (addChangeRecordDataSet.nonEmpty, deleteChangeSet.nonEmpty) match {
+        case (true, true) => LogicalChangeType.Update
+        case (true, false) => LogicalChangeType.Add
+        case (false, true) =>
+          if ((existingRecords -- deleteChangeSet).isEmpty) {
+            LogicalChangeType.FullDelete
+          } else {
+            LogicalChangeType.Update
+          }
+        case (false, false) => LogicalChangeType.NotEditedInBatch
       }
 
       new ValidationChanges(
         addChangeRecordDataSet,
         deleteChangeSet,
-        hasFullRecordSetDelete,
-        existingRecords)
+        existingRecords,
+        proposedRecordData,
+        logicalChangeType)
     }
   }
 
   final case class ValidationChanges(
       proposedAdds: Set[RecordData],
       proposedDeletes: Set[RecordData],
-      hasFullRecordSetDelete: Boolean,
-      existingRecords: Set[RecordData])
+      existingRecords: Set[RecordData],
+      proposedRecordData: Set[RecordData],
+      logicalChangeType: LogicalChangeType)
 
   final case class BatchValidationFlowOutput(
       validatedChanges: ValidatedBatch[ChangeForValidation],
       existingZones: ExistingZones,
       groupedChanges: ChangeForValidationMap
   )
+
+  object LogicalChangeType extends Enumeration {
+    type LogicalChangeType = Value
+    val Add, FullDelete, Update, NotEditedInBatch = Value
+  }
 }
