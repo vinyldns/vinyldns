@@ -240,8 +240,10 @@ class BatchChangeValidations(
     // Updates are a combination of an add and delete for a record with the same name and type in a zone.
     groupedChanges.changes.mapValid {
       case addUpdate: AddChangeForValidation
-          if groupedChanges.containsProposedDeletes(addUpdate.recordKey) ||
-            groupedChanges.hasFullRecordSetDelete(addUpdate.recordKey) =>
+          if groupedChanges.containsProposedAdds(addUpdate.recordKey) &&
+            groupedChanges
+              .getLogicalChangeType(addUpdate.recordKey)
+              .contains(LogicalChangeType.Update) =>
         validateAddUpdateWithContext(
           addUpdate,
           groupedChanges,
@@ -257,15 +259,17 @@ class BatchChangeValidations(
           auth,
           isApproved,
           batchOwnerGroupId)
-      case deleteUpdate: DeleteRRSetChangeForValidation
-          if groupedChanges.containsProposedAdds(deleteUpdate.recordKey) =>
+      case del: DeleteRRSetChangeForValidation
+          if groupedChanges
+            .getLogicalChangeType(del.recordKey)
+            .contains(LogicalChangeType.FullDelete) =>
+        validateDeleteWithContext(del, groupedChanges.existingRecordSets, auth, isApproved)
+      case deleteUpdate: DeleteRRSetChangeForValidation =>
         validateDeleteUpdateWithContext(
           deleteUpdate,
           groupedChanges.existingRecordSets,
           auth,
           isApproved)
-      case del: DeleteRRSetChangeForValidation =>
-        validateDeleteWithContext(del, groupedChanges.existingRecordSets, auth, isApproved)
     }
 
   def existingRecordSetIsNotMulti(
@@ -455,15 +459,11 @@ class BatchChangeValidations(
       inputName: String,
       existingRecordSets: ExistingRecordSets,
       groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
+    val recordKey = RecordKey(zoneId, recordName, CNAME)
     val cnameExists = existingRecordSets.get(zoneId, recordName, CNAME).isDefined
 
-    val isBeingDeleted = {
-      val recordKey = RecordKey(zoneId, recordName, CNAME)
-      val proposedDeletes = groupedChanges.getProposedDeletes(recordKey)
-      val containsFullRsDelete = groupedChanges.hasFullRecordSetDelete(recordKey)
-      val existingRecordSets = groupedChanges.getExistingRecordSets(recordKey)
-      existingRecordSets.nonEmpty && (containsFullRsDelete || proposedDeletes != existingRecordSets)
-    }
+    val isBeingDeleted =
+      groupedChanges.getLogicalChangeType(recordKey).contains(LogicalChangeType.FullDelete)
 
     (cnameExists, isBeingDeleted) match {
       case (false, _) => ().validNel
@@ -482,13 +482,12 @@ class BatchChangeValidations(
 
     val incompatibleDnsRRSetExists = existingRecordSetsMatch.find { rs =>
       val recordKey = RecordKey(zoneId, recordName, rs.typ)
-      val containsAdds = groupedChanges.containsProposedAdds(recordKey)
-      val proposedDeletes = groupedChanges.getProposedDeletes(recordKey)
-      val containsFullRsDelete = groupedChanges.hasFullRecordSetDelete(recordKey)
-      val existingRecordSets = groupedChanges.getExistingRecordSets(recordKey)
-      val containsFullDelete = existingRecordSets.nonEmpty &&
-        (containsFullRsDelete || proposedDeletes != existingRecordSets)
-      containsAdds || !containsFullDelete
+      val recordExists = existingRecordSets.get(recordKey).isDefined
+      val isBeingDeleted = groupedChanges
+        .getLogicalChangeType(RecordKey(zoneId, recordName, rs.typ))
+        .contains(LogicalChangeType.FullDelete)
+
+      recordExists && !isBeingDeleted
     }
 
     incompatibleDnsRRSetExists match {
