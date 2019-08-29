@@ -75,7 +75,6 @@ describe('BatchChange', function(){
                 deferred.reject({data: "Batch change with id wow cannot be found", status: 404});
                 this.rootScope.$apply();
 
-                expect(this.scope.batch).toEqual({});
                 expect(this.scope.alerts).toEqual([{ type: 'danger', content: 'HTTP 404 (undefined): Batch change with id wow cannot be found' }]);
             }));
         });
@@ -332,7 +331,7 @@ describe('BatchChange', function(){
                 deferred.resolve({config: {data: this.scope.newBatch}, data: mockBatchChange, status: 202});
                 this.rootScope.$apply();
 
-                expect(this.scope.batch).toEqual(mockBatchChange);
+                expect(this.scope.alerts).toEqual([{ type: 'success', content: 'HTTP 202 (undefined): Successfully created DNS Change'}]);
             }));
 
             it('should reject the promise with manual review disabled and change errors', inject(function(batchChangeService) {
@@ -351,7 +350,6 @@ describe('BatchChange', function(){
                 this.rootScope.$apply();
 
 
-                expect(this.scope.batch).toEqual({});
                 expect(this.scope.newBatch).toEqual({
                     comments: "zone not found.",
                     changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], hardErrors: true, softErrors: false}]
@@ -374,8 +372,6 @@ describe('BatchChange', function(){
                 deferred.reject({config: {data: this.scope.newBatch}, data: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.']}], status: 400});
                 this.rootScope.$apply();
 
-
-                expect(this.scope.batch).toEqual({});
                 expect(this.scope.newBatch).toEqual({
                     comments: "zone not found.",
                     changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone Discovery Failed: Zone for "blah.dummy." does not exist in Vinyl.'], hardErrors: false, softErrors: true}]
@@ -425,8 +421,6 @@ describe('BatchChange', function(){
                 deferred.reject({config: {data: this.scope.newBatch}, data: '"Scheduled time must be in the future."', status: 400});
                 this.rootScope.$apply();
 
-
-                expect(this.scope.batch).toEqual({});
                 expect(this.scope.newBatch).toEqual({
                     comments: "scheduled date in the past",
                     changes: [{changeType: "Add", inputName: 'blah.dummy.', type: "A", ttl: 200, record: {address: "1.1.1.2"}}],
@@ -448,8 +442,6 @@ describe('BatchChange', function(){
                 deferred.reject({config: {data: this.scope.newBatch}, data: [{changeType: "Add", inputName: 'blah.shared.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".']}], status: 400});
                 this.rootScope.$apply();
 
-
-                expect(this.scope.batch).toEqual({});
                 expect(this.scope.newBatch).toEqual({
                     comments: "scheduled date in the past",
                     changes: [{changeType: "Add", inputName: 'blah.shared.', type: "A", ttl: 200, record: {address: "1.1.1.2"}, errors: ['Zone "shared." is a shared zone, so owner group ID must be specified for record "blah.shared.".'], hardErrors: true, softErrors: false}]
