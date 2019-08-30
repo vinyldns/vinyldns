@@ -80,11 +80,11 @@
                     .catch(function (error) {
                         if (typeof error.data == "object") {
                             for(var i = 0; i < error.data.changes.length; i++) {
-                                if (error.data.changes[i]) {
-                                    $scope.batch.changes[i].validationErrors = error.data.changes[i].validationErrors
+                                $scope.batch.changes[i] = error.data.changes[i]
+                                if ($scope.batch.changes[i].validationErrors.length > 0) {
                                     $scope.batch.changes[i].outstandingErrors = true
                                 } else {
-                                    $scope.batch.changes[i].validationErrors = []
+                                   $scope.batch.changes[i].outstandingErrors = false
                                 }
                             }
                             var errorAlert = {data: "Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change.", status: error.status}
