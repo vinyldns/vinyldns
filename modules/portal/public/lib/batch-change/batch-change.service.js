@@ -46,7 +46,7 @@
 
             this.cancelBatchChange = function (id) {
                 var url = '/api/dnschanges/' + id + '/cancel';
-                return $http.post(url, null, {headers: utilityService.getCsrfHeader()});
+                return $http.post(url, {}, {headers: utilityService.getCsrfHeader()});
             };
 
             this.approveBatchChange = function (id, reviewComment) {
