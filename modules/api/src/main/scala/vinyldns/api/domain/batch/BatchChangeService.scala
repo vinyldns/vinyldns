@@ -498,8 +498,7 @@ class BatchChangeService(
       batchChange: BatchChange): Either[BatchChangeErrorResponse, BatchChange] =
     batchChange.approvalStatus match {
       case ManuallyApproved => batchChange.asRight
-      case PendingReview => BatchChangeFailedApproval(batchChange.changes).asLeft
-      case _ => UnknownConversionError("Cannot convert to a batch change response.").asLeft
+      case _ => BatchChangeFailedApproval(batchChange.changes).asLeft
     }
 
   def addOwnerGroupNamesToSummaries(
