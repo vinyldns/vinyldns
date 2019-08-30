@@ -33,6 +33,9 @@ final case class InvalidBatchChangeResponses(
     changeRequestResponses: ValidatedBatch[ChangeForValidation])
     extends BatchChangeErrorResponse
 
+final case class BatchChangeFailedApproval(changes: List[SingleChange])
+    extends BatchChangeErrorResponse
+
 final case class BatchChangeNotFound(id: String) extends BatchChangeErrorResponse {
   def message: String = s"Batch change with id $id cannot be found"
 }

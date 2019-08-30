@@ -159,7 +159,7 @@ class BatchChangeService(
         authPrincipal.userId,
         approveBatchChangeInput.reviewComment)
       validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isApproved = true)
-      changeForConversion <- buildResponseForApprover(
+      changeForConversion <- rebuildBatchChangeForUpdate(
         batchChange,
         validationOutput.validatedChanges,
         reviewInfo)
@@ -168,8 +168,8 @@ class BatchChangeService(
         validationOutput.existingZones,
         validationOutput.groupedChanges.existingRecordSets,
         batchChange.ownerGroupId)
-      result <- getApprovalResult(changeForConversion, validationOutput.validatedChanges).toBatchResult
-    } yield result
+      response <- buildResponseForApprover(changeForConversion).toBatchResult
+    } yield response
 
   def cancelBatchChange(
       batchChangeId: String,
@@ -440,7 +440,7 @@ class BatchChangeService(
     }
   }
 
-  def buildResponseForApprover(
+  def rebuildBatchChangeForUpdate(
       existingBatchChange: BatchChange,
       transformed: ValidatedBatch[ChangeForValidation],
       reviewInfo: BatchChangeReviewInfo): BatchResult[BatchChange] = {
@@ -494,14 +494,11 @@ class BatchChangeService(
       UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
   }
 
-  def getApprovalResult(batchChange: BatchChange, transformed: ValidatedBatch[ChangeForValidation])
-    : Either[BatchChangeErrorResponse, BatchChange] =
+  def buildResponseForApprover(
+      batchChange: BatchChange): Either[BatchChangeErrorResponse, BatchChange] =
     batchChange.approvalStatus match {
       case ManuallyApproved => batchChange.asRight
-      case PendingReview => {
-        val batchChangeInput = BatchChangeInput(batchChange)
-        InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
-      }
+      case PendingReview => BatchChangeFailedApproval(batchChange.changes).asLeft
       case _ => UnknownConversionError("Cannot convert to a batch change response.").asLeft
     }
 

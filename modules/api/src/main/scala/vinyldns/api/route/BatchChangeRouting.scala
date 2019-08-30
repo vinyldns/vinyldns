@@ -33,6 +33,7 @@ class BatchChangeRoute(
   def handleErrors(e: BatchChangeErrorResponse): PartialFunction[BatchChangeErrorResponse, Route] = {
     case ibci: InvalidBatchChangeInput => complete(StatusCodes.BadRequest, ibci)
     case crl: InvalidBatchChangeResponses => complete(StatusCodes.BadRequest, crl)
+    case bcfa: BatchChangeFailedApproval => complete(StatusCodes.BadRequest, bcfa)
     case cnf: BatchChangeNotFound => complete(StatusCodes.NotFound, cnf.message)
     case una: UserNotAuthorizedError => complete(StatusCodes.Forbidden, una.message)
     case uct: BatchConversionError => complete(StatusCodes.BadRequest, uct)

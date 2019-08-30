@@ -79,9 +79,9 @@
                     .then(success)
                     .catch(function (error) {
                         if (typeof error.data == "object") {
-                            for(var i = 0; i < error.data.length; i++) {
-                                if (error.data[i].errors) {
-                                    $scope.batch.changes[i].validationErrors = error.data[i].errors
+                            for(var i = 0; i < error.data.changes.length; i++) {
+                                if (error.data.changes[i]) {
+                                    $scope.batch.changes[i].validationErrors = error.data.changes[i].validationErrors
                                     $scope.batch.changes[i].outstandingErrors = true
                                 } else {
                                     $scope.batch.changes[i].validationErrors = []
