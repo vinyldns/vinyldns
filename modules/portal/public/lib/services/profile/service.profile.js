@@ -27,6 +27,6 @@ angular.module('service.profile', [])
         }
 
         this.regenerateCredentials = function(){
-            return $http.post('/regenerate-creds', '', {headers: utilityService.getCsrfHeader()});
+            return $http.post('/regenerate-creds', {}, {headers: utilityService.getCsrfHeader()});
         }
     });
