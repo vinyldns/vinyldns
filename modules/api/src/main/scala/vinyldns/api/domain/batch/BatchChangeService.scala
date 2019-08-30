@@ -502,7 +502,6 @@ class BatchChangeService(
         val batchChangeInput = BatchChangeInput(batchChange)
         InvalidBatchChangeResponses(batchChangeInput.changes, transformed).asLeft
       }
-
       case _ => UnknownConversionError("Cannot convert to a batch change response.").asLeft
     }
 
