@@ -28,13 +28,20 @@ import vinyldns.api.domain.batch.BatchTransformations.{
   ExistingZones
 }
 import vinyldns.api.domain.record.RecordSetChangeGenerator
+import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.batch._
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.queue.MessageQueue
 
-class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue: MessageQueue)
+import scala.util.matching.Regex
+
+class BatchChangeConverter(
+    batchChangeRepo: BatchChangeRepository,
+    messageQueue: MessageQueue,
+    batchAccessSkippedFqdnList: List[Regex] = List())
     extends BatchChangeConverterAlgebra {
 
   private val logger = LoggerFactory.getLogger("BatchChangeConverter")
@@ -186,14 +193,11 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
       key <- deleteChange.recordKey
       zone <- existingZones.getByName(zoneName)
       existingRecordSet <- existingRecordSets.get(key)
-      newRecordSet <- {
-        val setOwnerGroupId = if (zone.shared && existingRecordSet.ownerGroupId.isEmpty) {
-          ownerGroupId
-        } else {
-          existingRecordSet.ownerGroupId
-        }
-        combineAddChanges(addChanges, zone, setOwnerGroupId)
-      }
+      newRecordSet <- combineAddChanges(
+        addChanges,
+        zone,
+        ownerGroupId,
+        existingRecordSet.ownerGroupId)
       changeIds = deleteChanges.map(_.id) ++ addChanges.map(_.id).toList
     } yield
       RecordSetChangeGenerator.forUpdate(
@@ -229,10 +233,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
     for {
       zoneName <- addChanges.head.zoneName
       zone <- existingZones.getByName(zoneName)
-      newRecordSet <- {
-        val setOwnerGroupId = if (zone.shared) ownerGroupId else None
-        combineAddChanges(addChanges, zone, setOwnerGroupId)
-      }
+      newRecordSet <- combineAddChanges(addChanges, zone, ownerGroupId, None)
       ids = addChanges.map(_.id)
     } yield RecordSetChangeGenerator.forAdd(newRecordSet, zone, userId, ids.toList)
 
@@ -241,11 +242,20 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
   def combineAddChanges(
       changes: NonEmptyList[SingleAddChange],
       zone: Zone,
-      ownerGroupId: Option[String]): Option[RecordSet] = {
+      inputOwnerGroupId: Option[String],
+      existingOwnerGroupId: Option[String]
+  ): Option[RecordSet] = {
     val combinedData =
       changes.foldLeft(List[RecordData]())((acc, ch) => ch.recordData :: acc).distinct
     // recordName and typ are shared by all changes passed into this function, can pull those from any change
     // TTL choice is arbitrary here; this is taking the 1st
+    val newOwner = skipOwnerAssignmentCheck(
+      changes.head.inputName,
+      changes.head.typ,
+      combinedData,
+      inputOwnerGroupId,
+      existingOwnerGroupId,
+      zone.shared)
     changes.head.recordName.map { recordName =>
       record.RecordSet(
         zone.id,
@@ -256,7 +266,37 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
         DateTime.now,
         None,
         combinedData,
-        ownerGroupId = ownerGroupId)
+        ownerGroupId = newOwner)
     }
   }
+
+  def skipOwnerAssignmentCheck(
+      fqdn: String,
+      typ: RecordType,
+      records: List[RecordData],
+      inputOwnerGroupId: Option[String],
+      existingOwnerGroupId: Option[String],
+      zoneIsShared: Boolean): Option[String] =
+    if (zoneIsShared && existingOwnerGroupId.isEmpty) {
+      inputOwnerGroupId.flatMap { og =>
+        typ match {
+          case RecordType.PTR =>
+            val shouldSkip = records
+              .collect {
+                case rd: PTRData => rd.ptrdname
+              }
+              .exists {
+                ZoneRecordValidations.isStringInRegexList(batchAccessSkippedFqdnList, _)
+              }
+            if (shouldSkip) {
+              None
+            } else Some(og)
+
+          case _ =>
+            if (ZoneRecordValidations.isStringInRegexList(batchAccessSkippedFqdnList, fqdn)) {
+              None
+            } else Some(og)
+        }
+      }
+    } else existingOwnerGroupId
 }

@@ -135,6 +135,10 @@ object VinylDNSConfig {
     .as[Option[Boolean]]("manual-batch-review-enabled")
     .getOrElse(false)
 
+  lazy val batchAccessSkippedFqdnList: List[Regex] =
+    ZoneRecordValidations.toCaseIgnoredRegexList(
+      getOptionalStringList("batch-access-skipped-fqdns"))
+
   // defines nibble boundary for ipv6 zone discovery
   // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)
   lazy val v6DiscoveryBoundaries: IO[V6DiscoveryNibbleBoundaries] =

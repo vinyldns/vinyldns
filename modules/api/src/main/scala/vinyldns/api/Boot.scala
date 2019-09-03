@@ -131,7 +131,10 @@ object Boot extends App {
         messageQueue.healthCheck :: connectionValidator.healthCheck(healthCheckTimeout) ::
           loaderResponse.healthChecks)
       val batchChangeConverter =
-        new BatchChangeConverter(repositories.batchChangeRepository, messageQueue)
+        new BatchChangeConverter(
+          repositories.batchChangeRepository,
+          messageQueue,
+          VinylDNSConfig.batchAccessSkippedFqdnList)
       val authPrincipalProvider =
         new MembershipAuthPrincipalProvider(
           repositories.userRepository,
