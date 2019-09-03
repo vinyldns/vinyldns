@@ -461,6 +461,23 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
       result shouldBe defined
       result.foreach(_.recordSet.ownerGroupId shouldBe None)
     }
+
+    "generate record set without applying owner group ID for specifically excluded domains" in {
+      val addChangeFwdRegex =
+        makeSingleAddChange("access-skip-fwd", AAAAData("2:3:4:5:6:7:8:9"), AAAA, sharedZone)
+      val addChangeRevRegex =
+        makeSingleAddChange("1", PTRData("access-skip-fwd.test"), PTR, sharedReverseZone)
+
+      val result =
+        underTest.generateAddChange(
+          NonEmptyList.of(addChangeFwdRegex, addChangeRevRegex),
+          existingZones,
+          okUser.id,
+          Some("new-owner-group-id")
+        )
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe None)
+    }
   }
 
   "generateUpdateChange" should {
