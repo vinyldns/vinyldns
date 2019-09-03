@@ -154,9 +154,8 @@
                 }
             };
 
-            $scope.submitChange = function(manualReviewEnabled) {
+            $scope.submitChange = function() {
                 $scope.formStatus = "pendingConfirm";
-                $scope.manualReviewEnabled = manualReviewEnabled;
                 $scope.singleChangeErrors = false;
                 $scope.anyHardErrors = false;
                 $scope.ownerGroupError = null;
