@@ -81,16 +81,11 @@
                               && ($scope.newBatch.changes[i].errors.every(e => e.includes('Zone Discovery Failed') || e.includes('requires manual review')))
                             ) {
                                 $scope.newBatch.changes[i].softErrors = true;
-                                $scope.newBatch.changes[i].hardErrors = false;
                             } else {
                                 $scope.anyHardErrors = true;
-                                $scope.newBatch.changes[i].softErrors = false;
                                 $scope.newBatch.changes[i].hardErrors = true;
                                 $scope.ownerGroupError = $scope.newBatch.changes[i].errors.filter(e => e.includes('owner group ID must be specified for record'))[0]
                             }
-                        } else {
-                            $scope.newBatch.changes[i].softErrors = false;
-                            $scope.newBatch.changes[i].hardErrors = false;
                         }
                     }
                 }
