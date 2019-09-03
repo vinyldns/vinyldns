@@ -1631,8 +1631,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Record \"delete-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[9], input_name="update-nonexistent.ok.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="AAAA", record_data="1::1",
-                                               error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_successful_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="AAAA", record_data="1::1")
         assert_failed_change_in_error_response(response[11], input_name="delete-unauthorized.dummy.", record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"ok\" is not authorized."])
         assert_failed_change_in_error_response(response[12], input_name="update-unauthorized.dummy.", record_type="AAAA", record_data="1::1",
@@ -1803,7 +1802,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
             get_change_CNAME_json("update-unauthorized.dummy.", ttl=300),
             get_change_CNAME_json("existing-cname2.parent.com.", change_type="DeleteRecordSet"),
             get_change_CNAME_json("existing-cname2.parent.com."),
-            get_change_CNAME_json("existing-cname2.parent.com.", ttl=350)
+            get_change_CNAME_json("existing-cname2.parent.com.", cname="test2.com.")
         ]
     }
 
@@ -1854,8 +1853,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Record "non-existent-delete.ok." Does Not Exist: cannot delete a record that does not exist.'])
         assert_failed_change_in_error_response(response[11], input_name="non-existent-update.ok.", record_type="CNAME", change_type="DeleteRecordSet",
                                                error_messages=['Record "non-existent-update.ok." Does Not Exist: cannot delete a record that does not exist.'])
-        assert_failed_change_in_error_response(response[12], input_name="non-existent-update.ok.", record_type="CNAME", record_data="test.com.",
-                                               error_messages=['Record "non-existent-update.ok." Does Not Exist: cannot delete a record that does not exist.'])
+        assert_successful_change_in_error_response(response[12], input_name="non-existent-update.ok.", record_type="CNAME", record_data="test.com.")
         assert_failed_change_in_error_response(response[13], input_name="delete-unauthorized.dummy.", record_type="CNAME", change_type="DeleteRecordSet",
                                                error_messages=['User "ok" is not authorized.'])
         assert_failed_change_in_error_response(response[14], input_name="update-unauthorized.dummy.", record_type="CNAME", change_type="DeleteRecordSet",
@@ -1864,7 +1862,7 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[16], input_name="existing-cname2.parent.com.", record_type="CNAME", change_type="DeleteRecordSet")
         assert_failed_change_in_error_response(response[17], input_name="existing-cname2.parent.com.", record_type="CNAME", record_data="test.com.",
                                                error_messages=["Record Name \"existing-cname2.parent.com.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
-        assert_failed_change_in_error_response(response[18], input_name="existing-cname2.parent.com.", record_type="CNAME", record_data="test.com.", ttl=350,
+        assert_failed_change_in_error_response(response[18], input_name="existing-cname2.parent.com.", record_type="CNAME", record_data="test2.com.",
                                                error_messages=["Record Name \"existing-cname2.parent.com.\" Not Unique In Batch Change: cannot have multiple \"CNAME\" records with the same name."])
 
 
@@ -2112,8 +2110,7 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         # context validation failures: record does not exist
         assert_failed_change_in_error_response(response[11], input_name="192.0.2.199", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"192.0.2.199\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[12], ttl=300, input_name="192.0.2.200", record_type="PTR", record_data="has-updated.ptr.",
-                                                   error_messages=["Record \"192.0.2.200\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_successful_change_in_error_response(response[12], ttl=300, input_name="192.0.2.200", record_type="PTR", record_data="has-updated.ptr.")
         assert_failed_change_in_error_response(response[13], input_name="192.0.2.200", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"192.0.2.200\" Does Not Exist: cannot delete a record that does not exist."])
 
@@ -2245,8 +2242,7 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         # context validation failures: record does not exist, failure on update with double add
         assert_failed_change_in_error_response(response[7], input_name="fd69:27cc:fe91:1000::60", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"fd69:27cc:fe91:1000::60\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[8], ttl=300, input_name="fd69:27cc:fe91:1000::65", record_type="PTR", record_data="has-updated.ptr.",
-                                                   error_messages=["Record \"fd69:27cc:fe91:1000::65\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_successful_change_in_error_response(response[8], ttl=300, input_name="fd69:27cc:fe91:1000::65", record_type="PTR", record_data="has-updated.ptr.")
         assert_failed_change_in_error_response(response[9], input_name="fd69:27cc:fe91:1000::65", record_type="PTR", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"fd69:27cc:fe91:1000::65\" Does Not Exist: cannot delete a record that does not exist."])
 
@@ -2403,8 +2399,7 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Record \"delete-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[7], input_name="update-nonexistent.ok.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[8], input_name="update-nonexistent.ok.", record_type="TXT", record_data="test",
-                                               error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
+        assert_successful_change_in_error_response(response[8], input_name="update-nonexistent.ok.", record_type="TXT", record_data="test")
         assert_failed_change_in_error_response(response[9], input_name="delete-unauthorized.dummy.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"ok\" is not authorized."])
         assert_failed_change_in_error_response(response[10], input_name="update-unauthorized.dummy.", record_type="TXT", record_data="test",
@@ -2579,8 +2574,7 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=["Record \"delete-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
         assert_failed_change_in_error_response(response[9], input_name="update-nonexistent.ok.", record_type="MX", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["Record \"update-nonexistent.ok.\" Does Not Exist: cannot delete a record that does not exist."])
-        assert_failed_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="MX", record_data={"preference": 1000, "exchange": "foo.bar."},
-                                               error_messages=['Record "update-nonexistent.ok." Does Not Exist: cannot delete a record that does not exist.'])
+        assert_successful_change_in_error_response(response[10], input_name="update-nonexistent.ok.", record_type="MX", record_data={"preference": 1000, "exchange": "foo.bar."})
         assert_failed_change_in_error_response(response[11], input_name="delete-unauthorized.dummy.", record_type="MX", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=["User \"ok\" is not authorized."])
         assert_failed_change_in_error_response(response[12], input_name="update-unauthorized.dummy.", record_type="MX", record_data={"preference": 1000, "exchange": "foo.bar."},

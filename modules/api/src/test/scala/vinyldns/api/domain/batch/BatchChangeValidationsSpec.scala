@@ -671,14 +671,16 @@ class BatchChangeValidationsSpec
     )
 
     val result = validateChangesWithContext(
-      List(
-        addA1.validNel,
-        existingA.validNel,
-        existingCname.validNel,
-        addA2.validNel,
-        duplicateNameCname.validNel,
-        duplicateNamePTR.validNel),
-      ExistingRecordSets(existingRsList),
+      ChangeForValidationMap(
+        List(
+          addA1.validNel,
+          existingA.validNel,
+          existingCname.validNel,
+          addA2.validNel,
+          duplicateNameCname.validNel,
+          duplicateNamePTR.validNel),
+        ExistingRecordSets(existingRsList)
+      ),
       okAuth,
       false,
       None
@@ -709,8 +711,9 @@ class BatchChangeValidationsSpec
         "Update",
         DeleteRRSetChangeInput("update.ok.", RecordType.A))
     val result = validateChangesWithContext(
-      List(addUpdateA.validNel, deleteUpdateA.validNel),
-      ExistingRecordSets(List(existingRecord)),
+      ChangeForValidationMap(
+        List(addUpdateA.validNel, deleteUpdateA.validNel),
+        ExistingRecordSets(List(existingRecord))),
       okAuth,
       false,
       None)
@@ -731,8 +734,9 @@ class BatchChangeValidationsSpec
       "update",
       DeleteRRSetChangeInput("update.ok.", RecordType.A))
     val result = validateChangesWithContext(
-      List(addUpdateA.validNel, deleteUpdateA.validNel),
-      ExistingRecordSets(List(existingRecord)),
+      ChangeForValidationMap(
+        List(addUpdateA.validNel, deleteUpdateA.validNel),
+        ExistingRecordSets(List(existingRecord))),
       notAuth,
       false,
       None)
@@ -755,8 +759,9 @@ class BatchChangeValidationsSpec
       "update",
       DeleteRRSetChangeInput("update.ok.", RecordType.A))
     val result = validateChangesWithContext(
-      List(addUpdateA.validNel, deleteUpdateA.validNel),
-      ExistingRecordSets(List(existingRecord)),
+      ChangeForValidationMap(
+        List(addUpdateA.validNel, deleteUpdateA.validNel),
+        ExistingRecordSets(List(existingRecord))),
       notAuth,
       false,
       None)
@@ -777,14 +782,14 @@ class BatchChangeValidationsSpec
       "does-not-exist",
       DeleteRRSetChangeInput("does-not-exist.ok.", RecordType.A))
     val result = validateChangesWithContext(
-      List(addUpdateA.validNel, deleteUpdateA.validNel),
-      ExistingRecordSets(List()),
+      ChangeForValidationMap(
+        List(addUpdateA.validNel, deleteUpdateA.validNel),
+        ExistingRecordSets(List())),
       okAuth,
       false,
       None)
 
-    result(0) should haveInvalid[DomainValidationError](
-      RecordDoesNotExist(deleteUpdateA.inputChange.inputName))
+    result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
       RecordDoesNotExist(deleteUpdateA.inputChange.inputName))
   }
@@ -804,8 +809,9 @@ class BatchChangeValidationsSpec
         "mx",
         DeleteRRSetChangeInput("mx.shared.", RecordType.MX))
     val result = validateChangesWithContext(
-      List(addUpdateA.validNel, deleteUpdateA.validNel),
-      ExistingRecordSets(List(existingRecord)),
+      ChangeForValidationMap(
+        List(addUpdateA.validNel, deleteUpdateA.validNel),
+        ExistingRecordSets(List(existingRecord))),
       okAuth,
       false,
       None)
@@ -826,8 +832,9 @@ class BatchChangeValidationsSpec
       "existing",
       DeleteRRSetChangeInput("existing.ok.", RecordType.CNAME))
     val result = validateChangesWithContext(
-      List(addA.validNel, deleteCname.validNel),
-      ExistingRecordSets(List(existingCname)),
+      ChangeForValidationMap(
+        List(addA.validNel, deleteCname.validNel),
+        ExistingRecordSets(List(existingCname))),
       okAuth,
       false,
       None)
@@ -847,8 +854,7 @@ class BatchChangeValidationsSpec
           records = List(CNAMEData("cname")))
         val newRecordSetList = existingCNAMERecord :: recordSetList
         val result = validateChangesWithContext(
-          List(input.validNel),
-          ExistingRecordSets(newRecordSetList),
+          ChangeForValidationMap(List(input.validNel), ExistingRecordSets(newRecordSetList)),
           okAuth,
           false,
           None)
@@ -863,8 +869,7 @@ class BatchChangeValidationsSpec
     forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
       val result =
         validateChangesWithContext(
-          List(input.validNel),
-          ExistingRecordSets(recordSetList),
+          ChangeForValidationMap(List(input.validNel), ExistingRecordSets(recordSetList)),
           okAuth,
           false,
           None)
@@ -878,8 +883,7 @@ class BatchChangeValidationsSpec
     List(rsOk, aaaa, ptrIp4, ptrIp6).foreach { recordSet =>
       forAll(generateValidAddChangeForValidation(recordSet)) { input: AddChangeForValidation =>
         val result = validateChangesWithContext(
-          List(input.validNel),
-          ExistingRecordSets(recordSetList),
+          ChangeForValidationMap(List(input.validNel), ExistingRecordSets(recordSetList)),
           okAuth,
           false,
           None)
@@ -895,8 +899,7 @@ class BatchChangeValidationsSpec
         zoneId = input.zone.id,
         name = input.recordName.toUpperCase) :: recordSetList
       val result = validateChangesWithContext(
-        List(input.validNel),
-        ExistingRecordSets(existingRecordSetList),
+        ChangeForValidationMap(List(input.validNel), ExistingRecordSets(existingRecordSetList)),
         okAuth,
         false,
         None)
@@ -919,8 +922,9 @@ class BatchChangeValidationsSpec
     val existingA = rsOk.copy(zoneId = addCname.zone.id, name = addCname.recordName)
     val newRecordSetList = existingA :: recordSetList
     val result = validateChangesWithContext(
-      List(addCname.validNel, deleteA.validNel),
-      ExistingRecordSets(newRecordSetList),
+      ChangeForValidationMap(
+        List(addCname.validNel, deleteA.validNel),
+        ExistingRecordSets(newRecordSetList)),
       okAuth,
       false,
       None)
@@ -938,8 +942,7 @@ class BatchChangeValidationsSpec
     val existingA = rsOk.copy(zoneId = addCname.zone.id, name = addCname.recordName)
     val newRecordSetList = existingA :: recordSetList
     val result = validateChangesWithContext(
-      List(addCname.validNel),
-      ExistingRecordSets(newRecordSetList),
+      ChangeForValidationMap(List(addCname.validNel), ExistingRecordSets(newRecordSetList)),
       okAuth,
       false,
       None)
@@ -961,8 +964,9 @@ class BatchChangeValidationsSpec
       DeleteRRSetChangeInput("192.0.2.30", RecordType.PTR))
     val ptr4 = ptrIp4.copy(zoneId = validIp4ReverseZone.id)
     val result = validateChangesWithContext(
-      List(addCname.validNel, deletePtr.validNel),
-      ExistingRecordSets(List(ptr4)),
+      ChangeForValidationMap(
+        List(addCname.validNel, deletePtr.validNel),
+        ExistingRecordSets(List(ptr4))),
       okAuth,
       false,
       None)
@@ -984,8 +988,7 @@ class BatchChangeValidationsSpec
     )
     val existingRecordPTR = ptrIp6.copy(zoneId = addCname.zone.id, name = addCname.recordName)
     val result = validateChangesWithContext(
-      List(addCname.validNel),
-      ExistingRecordSets(List(existingRecordPTR)),
+      ChangeForValidationMap(List(addCname.validNel), ExistingRecordSets(List(existingRecordPTR))),
       okAuth,
       false,
       None)
@@ -1009,8 +1012,9 @@ class BatchChangeValidationsSpec
       "new",
       AddChangeInput("new.ok.", RecordType.CNAME, ttl, CNAMEData("hey.ok.com.")))
     val result = validateChangesWithContext(
-      List(addA.validNel, addAAAA.validNel, addCname.validNel),
-      ExistingRecordSets(List()),
+      ChangeForValidationMap(
+        List(addA.validNel, addAAAA.validNel, addCname.validNel),
+        ExistingRecordSets(List())),
       okAuth,
       false,
       None)
@@ -1035,8 +1039,9 @@ class BatchChangeValidationsSpec
       "testAAAA",
       AddChangeInput("testAAAA.ok.", RecordType.AAAA, ttl, AAAAData("1:2:3:4:5:6:7:8")))
     val result = validateChangesWithContext(
-      List(addA.validNel, addAAAA.validNel, addDuplicateCname.validNel),
-      ExistingRecordSets(List()),
+      ChangeForValidationMap(
+        List(addA.validNel, addAAAA.validNel, addDuplicateCname.validNel),
+        ExistingRecordSets(List())),
       okAuth,
       false,
       None)
@@ -1064,8 +1069,9 @@ class BatchChangeValidationsSpec
       "testAAAA",
       AddChangeInput("testAAAA.ok.", RecordType.CNAME, ttl, CNAMEData("hey2.ok.com.")))
     val result = validateChangesWithContext(
-      List(addA.validNel, addCname.validNel, addDuplicateCname.validNel),
-      ExistingRecordSets(List()),
+      ChangeForValidationMap(
+        List(addA.validNel, addCname.validNel, addDuplicateCname.validNel),
+        ExistingRecordSets(List())),
       okAuth,
       false,
       None)
@@ -1094,8 +1100,9 @@ class BatchChangeValidationsSpec
       "193",
       AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("hey.ok.com.")))
     val result = validateChangesWithContext(
-      List(addA.validNel, addPtr.validNel, addDuplicatePtr.validNel),
-      ExistingRecordSets(List()),
+      ChangeForValidationMap(
+        List(addA.validNel, addPtr.validNel, addDuplicatePtr.validNel),
+        ExistingRecordSets(List())),
       okAuth,
       false,
       None)
@@ -1111,8 +1118,7 @@ class BatchChangeValidationsSpec
       AddChangeInput("valid.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val result =
       validateChangesWithContext(
-        List(addA.validNel),
-        ExistingRecordSets(recordSetList),
+        ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
         okAuth,
         false,
         None)
@@ -1127,8 +1133,7 @@ class BatchChangeValidationsSpec
       "valid",
       AddChangeInput("valid.ok.", RecordType.A, ttl, AData("1.1.1.1")))
     val result = validateChangesWithContext(
-      List(addA.validNel),
-      ExistingRecordSets(recordSetList),
+      ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
       AuthPrincipal(superUser, Seq.empty),
       false,
       None)
@@ -1145,8 +1150,7 @@ class BatchChangeValidationsSpec
     )
     val result =
       validateChangesWithContext(
-        List(addA.validNel),
-        ExistingRecordSets(recordSetList),
+        ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
         notAuth,
         false,
         None)
@@ -1160,8 +1164,7 @@ class BatchChangeValidationsSpec
     forAll(validAddChangeForValidationGen) { input: AddChangeForValidation =>
       val result =
         validateChangesWithContext(
-          List(input.validNel),
-          ExistingRecordSets(recordSetList),
+          ChangeForValidationMap(List(input.validNel), ExistingRecordSets(recordSetList)),
           notAuth,
           false,
           None)
@@ -1182,8 +1185,7 @@ class BatchChangeValidationsSpec
       "existing",
       AddChangeInput("existing.ok.", RecordType.PTR, ttl, CNAMEData("ptrdname.")))
     val result = validateChangesWithContext(
-      List(addCname.validNel, addPtr.validNel),
-      ExistingRecordSets(List()),
+      ChangeForValidationMap(List(addCname.validNel, addPtr.validNel), ExistingRecordSets(List())),
       okAuth,
       false,
       None)
@@ -1201,8 +1203,9 @@ class BatchChangeValidationsSpec
     val existingDeleteRecord =
       rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName.toLowerCase)
     val result = validateChangesWithContext(
-      List(deleteA.validNel),
-      ExistingRecordSets(List(existingDeleteRecord)),
+      ChangeForValidationMap(
+        List(deleteA.validNel),
+        ExistingRecordSets(List(existingDeleteRecord))),
       okAuth,
       false,
       None)
@@ -1219,8 +1222,7 @@ class BatchChangeValidationsSpec
       DeleteRRSetChangeInput("record-does-not-exist.ok.", RecordType.A))
     val result =
       validateChangesWithContext(
-        List(deleteA.validNel),
-        ExistingRecordSets(recordSetList),
+        ChangeForValidationMap(List(deleteA.validNel), ExistingRecordSets(recordSetList)),
         okAuth,
         false,
         None)
@@ -1240,8 +1242,9 @@ class BatchChangeValidationsSpec
       name = deleteA.recordName.toLowerCase,
       status = RecordSetStatus.Active)
     val result = validateChangesWithContext(
-      List(deleteA.validNel),
-      ExistingRecordSets(List(existingDeleteRecord)),
+      ChangeForValidationMap(
+        List(deleteA.validNel),
+        ExistingRecordSets(List(existingDeleteRecord))),
       okAuth,
       false,
       None)
@@ -1258,8 +1261,9 @@ class BatchChangeValidationsSpec
         DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
-      List(deleteA.validNel),
-      ExistingRecordSets(List(existingDeleteRecord)),
+      ChangeForValidationMap(
+        List(deleteA.validNel),
+        ExistingRecordSets(List(existingDeleteRecord))),
       okAuth,
       false,
       None)
@@ -1276,8 +1280,9 @@ class BatchChangeValidationsSpec
         DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
-      List(deleteA.validNel),
-      ExistingRecordSets(List(existingDeleteRecord)),
+      ChangeForValidationMap(
+        List(deleteA.validNel),
+        ExistingRecordSets(List(existingDeleteRecord))),
       AuthPrincipal(superUser, Seq.empty),
       false,
       None)
@@ -1294,8 +1299,9 @@ class BatchChangeValidationsSpec
       DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
-      List(deleteA.validNel),
-      ExistingRecordSets(List(existingDeleteRecord)),
+      ChangeForValidationMap(
+        List(deleteA.validNel),
+        ExistingRecordSets(List(existingDeleteRecord))),
       notAuth,
       false,
       None)
@@ -1312,8 +1318,9 @@ class BatchChangeValidationsSpec
       DeleteRRSetChangeInput("valid.ok.", RecordType.A))
     val existingDeleteRecord = rsOk.copy(zoneId = deleteA.zone.id, name = deleteA.recordName)
     val result = validateChangesWithContext(
-      List(deleteA.validNel),
-      ExistingRecordSets(List(existingDeleteRecord)),
+      ChangeForValidationMap(
+        List(deleteA.validNel),
+        ExistingRecordSets(List(existingDeleteRecord))),
       notAuth,
       false,
       None)
@@ -1354,14 +1361,16 @@ class BatchChangeValidationsSpec
     val existingCname =
       rsOk.copy(zoneId = deleteCname.zone.id, name = deleteCname.recordName, typ = RecordType.CNAME)
     val result = validateChangesWithContext(
-      List(
-        addDuplicateA.validNel,
-        addDuplicateCname.validNel,
-        deleteA.validNel,
-        addCname.validNel,
-        addA.validNel,
-        deleteCname.validNel),
-      ExistingRecordSets(List(existingA, existingCname)),
+      ChangeForValidationMap(
+        List(
+          addDuplicateA.validNel,
+          addDuplicateCname.validNel,
+          deleteA.validNel,
+          addCname.validNel,
+          addA.validNel,
+          deleteCname.validNel),
+        ExistingRecordSets(List(existingA, existingCname))
+      ),
       okAuth,
       false,
       None
@@ -1398,11 +1407,13 @@ class BatchChangeValidationsSpec
       "193",
       AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("test.ok.")))
     val result = validateChangesWithContext(
-      List(deleteA.validNel, addA.validNel, addAAAA.validNel, addCname.validNel, addPtr.validNel),
-      ExistingRecordSets(List(existingA)),
+      ChangeForValidationMap(
+        List(deleteA.validNel, addA.validNel, addAAAA.validNel, addCname.validNel, addPtr.validNel),
+        ExistingRecordSets(List(existingA))),
       okAuth,
       false,
-      None)
+      None
+    )
     result.map(_ shouldBe valid)
   }
 
@@ -1430,11 +1441,13 @@ class BatchChangeValidationsSpec
       AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("test.ok.")))
 
     val result = validateChangesWithContext(
-      List(deleteCname.validNel, addA.validNel, addAAAA.validNel, addPtr.validNel),
-      ExistingRecordSets(List(existingCname)),
+      ChangeForValidationMap(
+        List(deleteCname.validNel, addA.validNel, addAAAA.validNel, addPtr.validNel),
+        ExistingRecordSets(List(existingCname))),
       okAuth,
       false,
-      None)
+      None
+    )
     result.map(_ shouldBe valid)
   }
 
@@ -1453,8 +1466,9 @@ class BatchChangeValidationsSpec
       "new",
       AddChangeInput("new.ok.", RecordType.CNAME, ttl, CNAMEData("updateData.com")))
     val result = validateChangesWithContext(
-      List(deleteCname.validNel, addCname.validNel),
-      ExistingRecordSets(List(existingCname)),
+      ChangeForValidationMap(
+        List(deleteCname.validNel, addCname.validNel),
+        ExistingRecordSets(List(existingCname))),
       okAuth,
       false,
       None)
@@ -1482,11 +1496,13 @@ class BatchChangeValidationsSpec
       AddChangeInput("add.ok.", RecordType.CNAME, ttl, CNAMEData("new.add.cname.")))
 
     val result = validateChangesWithContext(
-      List(deleteUpdateCname.validNel, addUpdateCname.validNel, addCname.validNel),
-      ExistingRecordSets(List(existingCname)),
+      ChangeForValidationMap(
+        List(deleteUpdateCname.validNel, addUpdateCname.validNel, addCname.validNel),
+        ExistingRecordSets(List(existingCname))),
       okAuth,
       false,
-      None)
+      None
+    )
 
     result(0) shouldBe valid
     result(1) should haveInvalid[DomainValidationError](
@@ -1512,8 +1528,9 @@ class BatchChangeValidationsSpec
       AddChangeInput("test.ok.", RecordType.CNAME, ttl, CNAMEData("hey2.there.")))
 
     val result = validateChangesWithContext(
-      List(deletePtr.validNel, addCname.validNel),
-      ExistingRecordSets(List(existingPtr)),
+      ChangeForValidationMap(
+        List(deletePtr.validNel, addCname.validNel),
+        ExistingRecordSets(List(existingPtr))),
       okAuth,
       false,
       None)
@@ -1537,8 +1554,9 @@ class BatchChangeValidationsSpec
       "193",
       AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("updateData.com")))
     val result = validateChangesWithContext(
-      List(deletePtr.validNel, addPtr.validNel),
-      ExistingRecordSets(List(existingPtr)),
+      ChangeForValidationMap(
+        List(deletePtr.validNel, addPtr.validNel),
+        ExistingRecordSets(List(existingPtr))),
       okAuth,
       false,
       None)
@@ -1566,8 +1584,9 @@ class BatchChangeValidationsSpec
       AddChangeInput("192.0.2.193", RecordType.PTR, ttl, PTRData("new.add.ptr.")))
 
     val result = validateChangesWithContext(
-      List(deleteUpdatePtr.validNel, addUpdatePtr.validNel, addPtr.validNel),
-      ExistingRecordSets(List(existingPtr)),
+      ChangeForValidationMap(
+        List(deleteUpdatePtr.validNel, addUpdatePtr.validNel, addPtr.validNel),
+        ExistingRecordSets(List(existingPtr))),
       okAuth,
       false,
       None)
@@ -1650,8 +1669,7 @@ class BatchChangeValidationsSpec
 
     val result =
       validateChangesWithContext(
-        List(addMX.validNel),
-        ExistingRecordSets(List(existingMX)),
+        ChangeForValidationMap(List(addMX.validNel), ExistingRecordSets(List(existingMX))),
         okAuth,
         false,
         None)
@@ -1669,8 +1687,7 @@ class BatchChangeValidationsSpec
       AddChangeInput("name-conflict", RecordType.MX, ttl, MXData(2, "foo.bar.")))
 
     val result = validateChangesWithContext(
-      List(addMx.validNel, addMx2.validNel),
-      ExistingRecordSets(List()),
+      ChangeForValidationMap(List(addMx.validNel, addMx2.validNel), ExistingRecordSets(List())),
       okAuth,
       false,
       None)
@@ -1693,8 +1710,9 @@ class BatchChangeValidationsSpec
       AddChangeInput("name-conflict", RecordType.MX, ttl, MXData(1, "foo.bar.")))
 
     val result = validateChangesWithContext(
-      List(deleteMx.validNel, addMx.validNel),
-      ExistingRecordSets(List(existingMx)),
+      ChangeForValidationMap(
+        List(deleteMx.validNel, addMx.validNel),
+        ExistingRecordSets(List(existingMx))),
       okAuth,
       false,
       None)
@@ -1703,23 +1721,25 @@ class BatchChangeValidationsSpec
 
   property("validateChangesWithContext: should properly validate changes with owner group ID") {
     val result = validateChangesWithContext(
-      List(
-        createPrivateAddChange,
-        createSharedAddChange,
-        updatePrivateAddChange,
-        updatePrivateDeleteChange,
-        updateSharedAddChange,
-        updateSharedDeleteChange,
-        deletePrivateChange,
-        deleteSharedChange
-      ).map(_.validNel),
-      ExistingRecordSets(
+      ChangeForValidationMap(
         List(
-          rsOk.copy(name = "private-update"),
-          sharedZoneRecord.copy(name = "shared-update"),
-          rsOk.copy(name = "private-delete"),
-          sharedZoneRecord.copy(name = "shared-delete")
-        )),
+          createPrivateAddChange,
+          createSharedAddChange,
+          updatePrivateAddChange,
+          updatePrivateDeleteChange,
+          updateSharedAddChange,
+          updateSharedDeleteChange,
+          deletePrivateChange,
+          deleteSharedChange
+        ).map(_.validNel),
+        ExistingRecordSets(
+          List(
+            rsOk.copy(name = "private-update"),
+            sharedZoneRecord.copy(name = "shared-update"),
+            rsOk.copy(name = "private-delete"),
+            sharedZoneRecord.copy(name = "shared-delete")
+          ))
+      ),
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
       false,
       Some("some-owner-group-id")
@@ -1730,23 +1750,25 @@ class BatchChangeValidationsSpec
 
   property("validateChangesWithContext: should properly validate changes without owner group ID") {
     val result = validateChangesWithContext(
-      List(
-        createPrivateAddChange,
-        createSharedAddChange,
-        updatePrivateAddChange,
-        updatePrivateDeleteChange,
-        updateSharedAddChange,
-        updateSharedDeleteChange,
-        deletePrivateChange,
-        deleteSharedChange
-      ).map(_.validNel),
-      ExistingRecordSets(
+      ChangeForValidationMap(
         List(
-          rsOk.copy(name = "private-update"),
-          sharedZoneRecordNoOwnerGroup.copy(name = "shared-update"),
-          rsOk.copy(name = "private-delete"),
-          sharedZoneRecord.copy(name = "shared-delete")
-        )),
+          createPrivateAddChange,
+          createSharedAddChange,
+          updatePrivateAddChange,
+          updatePrivateDeleteChange,
+          updateSharedAddChange,
+          updateSharedDeleteChange,
+          deletePrivateChange,
+          deleteSharedChange
+        ).map(_.validNel),
+        ExistingRecordSets(
+          List(
+            rsOk.copy(name = "private-update"),
+            sharedZoneRecordNoOwnerGroup.copy(name = "shared-update"),
+            rsOk.copy(name = "private-delete"),
+            sharedZoneRecord.copy(name = "shared-delete")
+          ))
+      ),
       AuthPrincipal(okUser, Seq(abcGroup.id, okGroup.id)),
       false,
       None
@@ -1769,8 +1791,9 @@ class BatchChangeValidationsSpec
   property(
     "validateChangesWithContext: should fail deleting record for normal user not in owner group in shared zone") {
     val result = validateChangesWithContext(
-      List(deleteSharedChange.validNel),
-      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
+      ChangeForValidationMap(
+        List(deleteSharedChange.validNel),
+        ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete")))),
       dummyAuth,
       false,
       None)
@@ -1782,8 +1805,9 @@ class BatchChangeValidationsSpec
   property(
     "validateChangesWithContext: should delete record without owner group for normal user in shared zone") {
     val result = validateChangesWithContext(
-      List(deleteSharedChange.validNel),
-      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
+      ChangeForValidationMap(
+        List(deleteSharedChange.validNel),
+        ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete")))),
       okAuth,
       false,
       None)
@@ -1793,8 +1817,9 @@ class BatchChangeValidationsSpec
 
   property("validateChangesWithContext: should delete record for zone admin in shared zone") {
     val result = validateChangesWithContext(
-      List(deleteSharedChange.validNel),
-      ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete"))),
+      ChangeForValidationMap(
+        List(deleteSharedChange.validNel),
+        ExistingRecordSets(List(sharedZoneRecord.copy(name = "shared-delete")))),
       sharedAuth,
       false,
       None)
@@ -1816,15 +1841,17 @@ class BatchChangeValidationsSpec
     )
 
     val result = underTest.validateChangesWithContext(
-      List(
-        updateSharedAddChange.validNel,
-        updateSharedDeleteChange.validNel,
-        deleteSharedChange.validNel,
-        updatePrivateAddChange.validNel,
-        updatePrivateDeleteChange.validNel,
-        deletePrivateChange.validNel
+      ChangeForValidationMap(
+        List(
+          updateSharedAddChange.validNel,
+          updateSharedDeleteChange.validNel,
+          deleteSharedChange.validNel,
+          updatePrivateAddChange.validNel,
+          updatePrivateDeleteChange.validNel,
+          deletePrivateChange.validNel
+        ),
+        ExistingRecordSets(existing)
       ),
-      ExistingRecordSets(existing),
       okAuth,
       false,
       Some(okGroup.id)
@@ -1853,15 +1880,17 @@ class BatchChangeValidationsSpec
     )
 
     val result = underTestMultiDisabled.validateChangesWithContext(
-      List(
-        updateSharedAddChange.validNel,
-        updateSharedDeleteChange.validNel,
-        deleteSharedChange.validNel,
-        updatePrivateAddChange.validNel,
-        updatePrivateDeleteChange.validNel,
-        deletePrivateChange.validNel
+      ChangeForValidationMap(
+        List(
+          updateSharedAddChange.validNel,
+          updateSharedDeleteChange.validNel,
+          deleteSharedChange.validNel,
+          updatePrivateAddChange.validNel,
+          updatePrivateDeleteChange.validNel,
+          deletePrivateChange.validNel
+        ),
+        ExistingRecordSets(existing)
       ),
-      ExistingRecordSets(existing),
       okAuth,
       false,
       Some(okGroup.id)
@@ -1899,15 +1928,17 @@ class BatchChangeValidationsSpec
     )
 
     val result = underTest.validateChangesWithContext(
-      List(
-        updateSharedDeleteChange.validNel,
-        update1.validNel,
-        update2.validNel,
-        add1.validNel,
-        add2.validNel,
-        updatePrivateAddChange.validNel
+      ChangeForValidationMap(
+        List(
+          updateSharedDeleteChange.validNel,
+          update1.validNel,
+          update2.validNel,
+          add1.validNel,
+          add2.validNel,
+          updatePrivateAddChange.validNel
+        ),
+        ExistingRecordSets(existing)
       ),
-      ExistingRecordSets(existing),
       okAuth,
       false,
       Some(okGroup.id)
@@ -1945,15 +1976,17 @@ class BatchChangeValidationsSpec
     )
 
     val result = underTestMultiDisabled.validateChangesWithContext(
-      List(
-        updateSharedDeleteChange.validNel,
-        update1.validNel,
-        update2.validNel,
-        add1.validNel,
-        add2.validNel,
-        updatePrivateAddChange.validNel
+      ChangeForValidationMap(
+        List(
+          updateSharedDeleteChange.validNel,
+          update1.validNel,
+          update2.validNel,
+          add1.validNel,
+          add2.validNel,
+          updatePrivateAddChange.validNel
+        ),
+        ExistingRecordSets(existing)
       ),
-      ExistingRecordSets(existing),
       okAuth,
       false,
       Some(okGroup.id)
@@ -2001,11 +2034,13 @@ class BatchChangeValidationsSpec
 
     val result =
       validateChangesWithContext(
-        List(addA.validNel, addAAAA.validNel, addCNAME.validNel, addMX.validNel, addTXT.validNel),
-        ExistingRecordSets(List()),
+        ChangeForValidationMap(
+          List(addA.validNel, addAAAA.validNel, addCNAME.validNel, addMX.validNel, addTXT.validNel),
+          ExistingRecordSets(List())),
         okAuth,
         false,
-        None)
+        None
+      )
 
     result(0) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.a.ok."))
     result(1) should haveInvalid[DomainValidationError](ZoneDiscoveryError("dotted.aaaa.ok."))
@@ -2042,13 +2077,15 @@ class BatchChangeValidationsSpec
       "existing.dotted.txt",
       DeleteRRSetChangeInput("existing.dotted.txt.ok.", RecordType.TXT))
     val result = validateChangesWithContext(
-      List(
-        deleteA.validNel,
-        deleteAAAA.validNel,
-        deleteCname.validNel,
-        deleteMX.validNel,
-        deleteTXT.validNel),
-      ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT)),
+      ChangeForValidationMap(
+        List(
+          deleteA.validNel,
+          deleteAAAA.validNel,
+          deleteCname.validNel,
+          deleteMX.validNel,
+          deleteTXT.validNel),
+        ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT))
+      ),
       okAuth,
       false,
       None
@@ -2116,19 +2153,21 @@ class BatchChangeValidationsSpec
       AddChangeInput("existing.dotted.txt.ok.", RecordType.TXT, Some(700), TXTData("testing")))
 
     val result = validateChangesWithContext(
-      List(
-        addUpdateA.validNel,
-        addUpdateAAAA.validNel,
-        addUpdateCNAME.validNel,
-        addUpdateMX.validNel,
-        addUpdateTXT.validNel,
-        deleteA.validNel,
-        deleteAAAA.validNel,
-        deleteCname.validNel,
-        deleteMX.validNel,
-        deleteTXT.validNel
+      ChangeForValidationMap(
+        List(
+          addUpdateA.validNel,
+          addUpdateAAAA.validNel,
+          addUpdateCNAME.validNel,
+          addUpdateMX.validNel,
+          addUpdateTXT.validNel,
+          deleteA.validNel,
+          deleteAAAA.validNel,
+          deleteCname.validNel,
+          deleteMX.validNel,
+          deleteTXT.validNel
+        ),
+        ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT))
       ),
-      ExistingRecordSets(List(existingA, existingAAAA, existingCname, existingMX, existingTXT)),
       okAuth,
       false,
       None

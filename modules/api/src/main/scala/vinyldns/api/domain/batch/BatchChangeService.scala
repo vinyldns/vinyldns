@@ -104,7 +104,7 @@ class BatchChangeService(
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
-        validationOutput.existingRecordSets,
+        validationOutput.groupedChanges.existingRecordSets,
         batchChangeInput.ownerGroupId)
     } yield serviceCompleteBatch
 
@@ -120,13 +120,13 @@ class BatchChangeService(
       changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
+      groupedChanges = ChangeForValidationMap(withTtl, recordSets)
       validatedSingleChanges = validateChangesWithContext(
-        withTtl,
-        recordSets,
+        groupedChanges,
         auth,
         isApproved,
         batchChangeInput.ownerGroupId)
-    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, recordSets)
+    } yield BatchValidationFlowOutput(validatedSingleChanges, zoneMap, groupedChanges)
 
   def rejectBatchChange(
       batchChangeId: String,
@@ -167,7 +167,7 @@ class BatchChangeService(
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
-        validationOutput.existingRecordSets,
+        validationOutput.groupedChanges.existingRecordSets,
         batchChange.ownerGroupId)
     } yield serviceCompleteBatch
 
@@ -268,6 +268,7 @@ class BatchChangeService(
           .getOrElse(add)
           .validNel
       case del: DeleteRRSetChangeForValidation => del.validNel
+      case del: DeleteRecordChangeForValidation => del.validNel
     }
 
   def getOwnerGroup(ownerGroupId: Option[String]): BatchResult[Option[Group]] = {

@@ -584,4 +584,14 @@ class BatchChangeJsonProtocolSpec
         s"Comment length must not exceed $MAX_COMMENT_LENGTH characters.".invalidNel
     }
   }
+
+  "Round-trip serialization/deserialization of DeleteRecordChangeInput" should {
+    "succeed" in {
+      val deleteRecordChangeInput =
+        DeleteRecordChangeInput("recordName.zoneName.", A, AData("3.2.4.1"))
+      DeleteRecordChangeInputSerializer.fromJson(
+        DeleteRecordChangeInputSerializer.toJson(deleteRecordChangeInput)) shouldBe
+        deleteRecordChangeInput.validNel
+    }
+  }
 }
