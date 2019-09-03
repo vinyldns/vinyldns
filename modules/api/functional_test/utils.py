@@ -26,6 +26,10 @@ def verify_recordset(actual, expected):
     assert_that(actual, has_key('created'))
     assert_that(actual['status'], is_not(none()))
     assert_that(actual['id'], is_not(none()))
+    if 'ownerGroupId' in expected:
+        assert_that(actual['ownerGroupId'], is_(expected['ownerGroupId']))
+    else:
+        assert_that(actual, is_not(has_key('ownerGroupId')))
     actual_records = [json.dumps(x) for x in actual['records']]
     expected_records = [json.dumps(x) for x in expected['records']]
     for expected_record in expected_records:

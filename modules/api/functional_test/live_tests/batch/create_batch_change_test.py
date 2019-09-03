@@ -2715,7 +2715,8 @@ def test_create_batch_change_for_shared_zone_owner_group_applied_logic(shared_zo
             get_change_A_AAAA_json("update-without-existing-owner-group.shared.", address="1.2.3.4"),
             get_change_A_AAAA_json("update-without-existing-owner-group.shared.", change_type="DeleteRecordSet"),
             get_change_A_AAAA_json("update-with-existing-owner-group.shared.", address="1.2.3.4"),
-            get_change_A_AAAA_json("update-with-existing-owner-group.shared.", change_type="DeleteRecordSet")
+            get_change_A_AAAA_json("update-with-existing-owner-group.shared.", change_type="DeleteRecordSet"),
+            get_change_A_AAAA_json("batch-access-skip-test.shared", address="1.2.3.4")
         ],
         "ownerGroupId": "shared-zone-group"
     }
@@ -2755,11 +2756,15 @@ def test_create_batch_change_for_shared_zone_owner_group_applied_logic(shared_zo
                                               input_name="update-with-existing-owner-group.shared.", record_data="1.2.3.4")
         assert_change_success_response_values(result['changes'], zone=shared_zone, index=4, record_name="update-with-existing-owner-group",
                                               input_name="update-with-existing-owner-group.shared.", change_type="DeleteRecordSet", record_data=None)
+        assert_change_success_response_values(result['changes'], zone=shared_zone, index=5, record_name="batch-access-skip-test",
+                                              input_name="batch-access-skip-test.shared.", record_data="1.2.3.4")
 
         for (zoneId, recordSetId) in to_delete:
             get_recordset = shared_client.get_recordset(zoneId, recordSetId, status=200)
             if get_recordset['recordSet']['name'] == "update-with-existing-owner-group":
                 assert_that(get_recordset['recordSet']['ownerGroupId'], is_(shared_record_group['id']))
+            elif get_recordset['recordSet']['name'] == "batch-access-skip-test":
+                assert_that(get_recordset['recordSet'], is_not(has_key('ownerGroupId')))
             else:
                 assert_that(get_recordset['recordSet']['ownerGroupId'], is_(batch_change_input['ownerGroupId']))
 
