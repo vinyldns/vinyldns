@@ -24,7 +24,7 @@ import vinyldns.api.CatsHelpers
 import vinyldns.api.domain.batch.BatchTransformations.{ExistingRecordSets, ExistingZones}
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.repository._
-import vinyldns.core.TestMembershipData.okUser
+import vinyldns.core.TestMembershipData.{abcGroup, okUser}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
 import vinyldns.core.domain.batch._
@@ -112,7 +112,10 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
     makeSingleAddChange("wrongType", TXTData("Unsupported!"), UNKNOWN)
   )
 
-  private def existingZones = ExistingZones(Set(okZone, sharedZone))
+  private val sharedReverseZone: Zone =
+    Zone("1.1.1.in-addr.arpa.", "test@test.com", shared = true, adminGroupId = abcGroup.id)
+
+  private def existingZones = ExistingZones(Set(okZone, sharedZone, sharedReverseZone))
 
   private val aToDelete = RecordSet(
     okZone.id,
@@ -199,7 +202,8 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
         mxToDelete))
 
   private val batchChangeRepo = new InMemoryBatchChangeRepository
-  private val underTest = new BatchChangeConverter(batchChangeRepo, TestMessageQueue)
+  private val underTest =
+    new BatchChangeConverter(batchChangeRepo, TestMessageQueue, List("access-skip.*".r))
 
   "convertAndSendBatchForProcessing" should {
     "successfully generate add RecordSetChange and map IDs for all adds" in {
@@ -500,6 +504,40 @@ class BatchChangeConverterSpec extends WordSpec with Matchers with CatsHelpers {
           NonEmptyList.of(addChange.copy(zoneId = Some(okZone.id), zoneName = Some(okZone.name))),
           existingZones,
           ExistingRecordSets(List(sharedZoneRecord.copy(ownerGroupId = None, zoneId = okZone.id))),
+          okUser.id,
+          Some("new-owner-group-id")
+        )
+      result shouldBe defined
+      result.foreach(_.recordSet.ownerGroupId shouldBe None)
+    }
+
+    "generate record set without updating owner group ID for specifically excluded domains" in {
+      val addChangeFwdRegex =
+        makeSingleAddChange("access-skip-fwd", AAAAData("2:3:4:5:6:7:8:9"), AAAA, sharedZone)
+      val deleteChangeFwdRegex = makeSingleDeleteRRSetChange("access-skip-fwd", AAAA, sharedZone)
+      val addChangeRevRegex =
+        makeSingleAddChange("1", PTRData("access-skip-fwd.test"), PTR, sharedReverseZone)
+      val deleteChangeRevRegex = makeSingleDeleteRRSetChange("1", PTR, sharedReverseZone)
+
+      val sharedExistingPtr: RecordSet = RecordSet(
+        sharedReverseZone.id,
+        "1",
+        RecordType.PTR,
+        200,
+        RecordSetStatus.Active,
+        DateTime.now,
+        None,
+        List(PTRData("bye.bye")))
+
+      val result =
+        underTest.generateUpdateChange(
+          NonEmptyList.of(deleteChangeFwdRegex, deleteChangeRevRegex),
+          NonEmptyList.of(addChangeFwdRegex, addChangeRevRegex),
+          existingZones,
+          ExistingRecordSets(
+            List(
+              sharedExistingPtr,
+              sharedZoneRecord.copy(name = "access-skip-fwd", ownerGroupId = None))),
           okUser.id,
           Some("new-owner-group-id")
         )
