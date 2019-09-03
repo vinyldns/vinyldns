@@ -356,37 +356,20 @@ class BatchChangeValidations(
       ownerGroupId: Option[String]): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
       case A | AAAA | MX =>
-        noIncompatibleRecordExists(
-          change.zone.id,
-          change.recordName,
-          change.inputChange.inputName,
-          groupedChanges,
-          false) |+|
-          newRecordSetIsNotMulti(change, groupedChanges) |+|
+        newRecordSetIsNotMulti(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
       case CNAME =>
-        noIncompatibleRecordExists(
-          change.zone.id,
-          change.recordName,
-          change.inputChange.inputName,
-          groupedChanges,
-          true) |+|
-          cnameHasUniqueNameInBatch(change, groupedChanges) |+|
+        cnameHasUniqueNameInBatch(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
       case TXT | PTR =>
-        noIncompatibleRecordExists(
-          change.zone.id,
-          change.recordName,
-          change.inputChange.inputName,
-          groupedChanges,
-          false) |+|
-          newRecordSetIsNotMulti(change, groupedChanges)
+        newRecordSetIsNotMulti(change, groupedChanges)
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel
     }
 
     val validations =
       typedValidations |+|
+        noIncompatibleRecordExists(change, groupedChanges) |+|
         userCanAddRecordSet(change, auth) |+|
         recordDoesNotExist(
           change.zone.id,
@@ -439,25 +422,31 @@ class BatchChangeValidations(
     }
 
   def noIncompatibleRecordExists(
-      zoneId: String,
-      recordName: String,
-      inputName: String,
-      groupedChanges: ChangeForValidationMap,
-      checkingCname: Boolean): SingleValidation[Unit] = {
+      change: AddChangeForValidation,
+      groupedChanges: ChangeForValidationMap): SingleValidation[Unit] = {
     // find conflicting types in existing records
-    val conflictingExistingTypes = if (checkingCname) {
-      groupedChanges.existingRecordSets.getRecordSetMatch(zoneId, recordName).map(_.typ)
-    } else {
-      groupedChanges.getExistingRecordSet(RecordKey(zoneId, recordName, CNAME)).map(_.typ).toList
+    val conflictingExistingTypes = change.inputChange.typ match {
+      case CNAME =>
+        groupedChanges.existingRecordSets
+          .getRecordSetMatch(change.zone.id, change.recordName)
+          .map(_.typ)
+      case _ =>
+        groupedChanges
+          .getExistingRecordSet(RecordKey(change.zone.id, change.recordName, CNAME))
+          .map(_.typ)
+          .toList
     }
 
     // find one that isnt being deleted
     val nonDelete = conflictingExistingTypes.find { recordType =>
-      groupedChanges.getProposedRecordData(RecordKey(zoneId, recordName, recordType)).nonEmpty
+      groupedChanges
+        .getProposedRecordData(RecordKey(change.zone.id, change.recordName, recordType))
+        .nonEmpty
     }
 
     nonDelete match {
-      case Some(recordType) => CnameIsNotUniqueError(inputName, recordType).invalidNel
+      case Some(recordType) =>
+        CnameIsNotUniqueError(change.inputChange.inputName, recordType).invalidNel
       case None => ().validNel
     }
   }
