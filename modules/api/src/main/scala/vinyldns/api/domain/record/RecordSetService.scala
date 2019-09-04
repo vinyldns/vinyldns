@@ -17,7 +17,6 @@
 package vinyldns.api.domain.record
 
 import vinyldns.api.Interfaces.{Result, _}
-import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.{Group, GroupRepository, User, UserRepository}
 import vinyldns.api.domain.zone._
@@ -28,6 +27,7 @@ import vinyldns.core.domain.zone.{Zone, ZoneCommandResult, ZoneRepository}
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
+import vinyldns.api.domain.access.AccessValidationAlgebra
 
 object RecordSetService {
   def apply(

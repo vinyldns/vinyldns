@@ -23,9 +23,9 @@ import org.mockito.Mockito.doReturn
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 import vinyldns.api.ResultHelpers
+import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
-import vinyldns.api.domain.AccessValidations
 import vinyldns.api.route.ListRecordSetsResponse
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._

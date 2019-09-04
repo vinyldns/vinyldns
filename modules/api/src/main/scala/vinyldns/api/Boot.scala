@@ -27,7 +27,7 @@ import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.CommandHandler
 import vinyldns.api.crypto.Crypto
-import vinyldns.api.domain.AccessValidations
+import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
 import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._

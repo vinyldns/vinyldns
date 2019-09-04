@@ -23,8 +23,8 @@ import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Seconds, Span}
 import scalikejdbc.DB
+import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
-import vinyldns.api.domain.AccessValidations
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.domain.auth.AuthPrincipal

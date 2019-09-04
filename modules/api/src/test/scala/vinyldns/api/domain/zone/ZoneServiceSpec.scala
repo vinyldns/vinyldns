@@ -22,9 +22,9 @@ import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
-import vinyldns.api.domain.AccessValidations
 import vinyldns.api.ResultHelpers
 import cats.effect._
+import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
