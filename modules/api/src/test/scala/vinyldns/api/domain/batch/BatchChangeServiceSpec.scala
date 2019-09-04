@@ -65,7 +65,7 @@ class BatchChangeServiceSpec
 
   private val nonFatalError = ZoneDiscoveryError("test")
 
-  private val validations = new BatchChangeValidations(10, AccessValidations)
+  private val validations = new BatchChangeValidations(10, new AccessValidations())
   private val ttl = Some(200L)
 
   private val apexAddA = AddChangeInput("apex.test.com", RecordType.A, ttl, AData("1.1.1.1"))

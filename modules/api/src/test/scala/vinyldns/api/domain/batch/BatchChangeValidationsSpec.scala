@@ -49,10 +49,11 @@ class BatchChangeValidationsSpec
   import vinyldns.api.IpAddressGenerator._
 
   private val maxChanges = 10
+  private val accessValidations = new AccessValidations()
   private val underTest =
-    new BatchChangeValidations(maxChanges, AccessValidations, multiRecordEnabled = true)
+    new BatchChangeValidations(maxChanges, accessValidations, multiRecordEnabled = true)
   private val underTestMultiDisabled =
-    new BatchChangeValidations(maxChanges, AccessValidations, multiRecordEnabled = false)
+    new BatchChangeValidations(maxChanges, accessValidations, multiRecordEnabled = false)
 
   import underTest._
 
@@ -278,7 +279,7 @@ class BatchChangeValidationsSpec
       scheduledTime = Some(DateTime.now))
     val bcv = new BatchChangeValidations(
       maxChanges,
-      AccessValidations,
+      accessValidations,
       multiRecordEnabled = true,
       scheduledChangesEnabled = false)
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
@@ -293,7 +294,7 @@ class BatchChangeValidationsSpec
       scheduledTime = Some(DateTime.now.minusHours(1)))
     val bcv = new BatchChangeValidations(
       maxChanges,
-      AccessValidations,
+      accessValidations,
       multiRecordEnabled = true,
       scheduledChangesEnabled = true)
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(

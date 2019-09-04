@@ -49,7 +49,7 @@ class AccessValidationsSpec
   private val badGroupReadAcl =
     ACLRule(AccessLevel.Read, userId = None, groupId = Some("bad-group"))
 
-  private val accessValidationTest = AccessValidations
+  private val accessValidationTest = new AccessValidations()
   private val groupIds = Seq(okGroup.id, twoUserGroup.id)
   private val userAccessNone = okUser.copy(id = "NoAccess")
   private val userAuthNone = AuthPrincipal(userAccessNone, groupIds)
@@ -142,58 +142,44 @@ class AccessValidationsSpec
 
   "canAddRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
-      val mockRecordSet = mock[RecordSet]
-
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone))
+          .canAddRecordSet(userAuthNone, "test", RecordType.A, zoneInNone))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Read" in {
-      val mockRecordSet = mock[RecordSet]
-
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead))
+          .canAddRecordSet(userAuthRead, "test", RecordType.A, zoneInRead))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user has AccessLevel.Write" in {
-      val mockRecordSet = mock[RecordSet]
-      accessValidationTest.canAddRecordSet(
-        userAuthWrite,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zoneInWrite) should be(right)
+      accessValidationTest.canAddRecordSet(userAuthWrite, "test", RecordType.A, zoneInWrite) should be(
+        right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
-      val mockRecordSet = mock[RecordSet]
-      accessValidationTest.canAddRecordSet(
-        userAuthDelete,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zoneInDelete) should be(right)
+      accessValidationTest.canAddRecordSet(userAuthDelete, "test", RecordType.A, zoneInDelete) should be(
+        right)
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
 
       val error = leftValue(
         accessValidationTest
-          .canAddRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone))
+          .canAddRecordSet(auth, "test", RecordType.A, okZone))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return access as calculated if the user is a test user in a test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
       val zone = okZone.copy(isTest = true)
 
       accessValidationTest
-        .canAddRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone) should be(right)
+        .canAddRecordSet(auth, "test", RecordType.A, zone) should be(right)
     }
     "return true if recordset is NS and user is in the admin group" in {
       val zone = okZone
@@ -211,55 +197,35 @@ class AccessValidationsSpec
   }
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
-      val mockRecordSet = mock[RecordSet]
-
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(
-            userAuthNone,
-            mockRecordSet.name,
-            mockRecordSet.typ,
-            zoneInNone,
-            mockRecordSet.ownerGroupId))
+          .canUpdateRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Read" in {
-      val mockRecordSet = mock[RecordSet]
-
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(
-            userAuthRead,
-            mockRecordSet.name,
-            mockRecordSet.typ,
-            zoneInRead,
-            mockRecordSet.ownerGroupId))
+          .canUpdateRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user has AccessLevel.Write" in {
-      val mockRecordSet = mock[RecordSet]
       accessValidationTest.canUpdateRecordSet(
         userAuthWrite,
-        mockRecordSet.name,
-        mockRecordSet.typ,
+        "test",
+        RecordType.A,
         zoneInWrite,
-        mockRecordSet.ownerGroupId) should be(right)
+        None) should be(right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
-      val mockRecordSet = mock[RecordSet]
       val userAccess = okUser.copy(id = "Delete")
       val userAuth = AuthPrincipal(userAccess, groupIds)
       val userAcl = ACLRule(AccessLevel.Delete, userId = Some(userAuth.userId), groupId = None)
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
-      accessValidationTest.canUpdateRecordSet(
-        userAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zoneIn,
-        mockRecordSet.ownerGroupId) should be(right)
+      accessValidationTest.canUpdateRecordSet(userAuth, "test", RecordType.A, zoneIn, None) should be(
+        right)
     }
 
     "return true if the user is in the owner group and the zone is shared" in {
@@ -291,173 +257,136 @@ class AccessValidationsSpec
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
 
       val error = leftValue(
         accessValidationTest
-          .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone, None))
+          .canUpdateRecordSet(auth, "test", RecordType.A, okZone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return access as calculated if the user is a test user in a test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
       val zone = okZone.copy(isTest = true)
 
       accessValidationTest
-        .canUpdateRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone, None) should be(
-        right)
+        .canUpdateRecordSet(auth, "test", RecordType.A, zone, None) should be(right)
     }
   }
 
   "canDeleteRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
-      val mockRecordSet = mock[RecordSet]
-
-      val error = leftValue(accessValidationTest
-        .canDeleteRecordSet(userAuthNone, mockRecordSet.name, mockRecordSet.typ, zoneInNone, None))
+      val error = leftValue(
+        accessValidationTest
+          .canDeleteRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Read" in {
-      val mockRecordSet = mock[RecordSet]
-
-      val error = leftValue(accessValidationTest
-        .canDeleteRecordSet(userAuthRead, mockRecordSet.name, mockRecordSet.typ, zoneInRead, None))
+      val error = leftValue(
+        accessValidationTest
+          .canDeleteRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user has AccessLevel.Write" in {
-      val mockRecordSet = mock[RecordSet]
-
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(
-            userAuthWrite,
-            mockRecordSet.name,
-            mockRecordSet.typ,
-            zoneInWrite,
-            None))
+          .canDeleteRecordSet(userAuthWrite, "test", RecordType.A, zoneInWrite, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user has AccessLevel.Delete" in {
-      val mockRecordSet = mock[RecordSet]
       accessValidationTest.canDeleteRecordSet(
         userAuthDelete,
-        mockRecordSet.name,
-        mockRecordSet.typ,
+        "test",
+        RecordType.A,
         zoneInDelete,
         None) should be(right)
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
 
       val error = leftValue(
         accessValidationTest
-          .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone, None))
+          .canDeleteRecordSet(auth, "test", RecordType.A, okZone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return access as calculated if the user is a test user in a test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
       val zone = okZone.copy(isTest = true)
 
       accessValidationTest
-        .canDeleteRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone, None) should be(
-        right)
+        .canDeleteRecordSet(auth, "test", RecordType.A, zone, None) should be(right)
     }
   }
 
   "canViewRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
-      val mockRecordSet = mock[RecordSet]
-
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(
-            userAuthNone,
-            mockRecordSet.name,
-            mockRecordSet.typ,
-            zoneInNone,
-            mockRecordSet.ownerGroupId))
+          .canViewRecordSet(userAuthNone, "test", RecordType.A, zoneInNone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user has AccessLevel.Read" in {
-      val mockRecordSet = mock[RecordSet]
-      accessValidationTest.canViewRecordSet(
-        userAuthRead,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zoneInRead,
-        mockRecordSet.ownerGroupId) should be(right)
+      accessValidationTest.canViewRecordSet(userAuthRead, "test", RecordType.A, zoneInRead, None) should be(
+        right)
     }
 
     "return true if the user has AccessLevel.Write" in {
-      val mockRecordSet = mock[RecordSet]
-
-      accessValidationTest.canViewRecordSet(
-        userAuthWrite,
-        mockRecordSet.name,
-        mockRecordSet.typ,
-        zoneInWrite,
-        mockRecordSet.ownerGroupId) should be(right)
+      accessValidationTest.canViewRecordSet(userAuthWrite, "test", RecordType.A, zoneInWrite, None) should be(
+        right)
     }
 
     "return true if the user has AccessLevel.Delete" in {
-      val mockRecordSet = mock[RecordSet]
       accessValidationTest.canViewRecordSet(
         userAuthDelete,
-        mockRecordSet.name,
-        mockRecordSet.typ,
+        "test",
+        RecordType.A,
         zoneInDelete,
-        mockRecordSet.ownerGroupId) should be(right)
+        None) should be(right)
     }
 
     "return true if the user is in the recordSet owner group and the recordSet is in a shared zone" in {
-      val mockRecordSet = sharedZoneRecord
+      val recordSet = sharedZoneRecord
       accessValidationTest.canViewRecordSet(
         okAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
+        recordSet.name,
+        recordSet.typ,
         sharedZone,
-        mockRecordSet.ownerGroupId) should be(right)
+        recordSet.ownerGroupId) should be(right)
     }
 
     "return a NotAuthorizedError if the user is in the recordSet owner group but it is not in a shared zone" in {
-      val mockRecordSet = notSharedZoneRecordWithOwnerGroup
+      val recordSet = notSharedZoneRecordWithOwnerGroup
       val error = leftValue(
         accessValidationTest.canViewRecordSet(
           okAuth,
-          mockRecordSet.name,
-          mockRecordSet.typ,
+          recordSet.name,
+          recordSet.typ,
           zoneNotAuthorized,
-          mockRecordSet.ownerGroupId))
+          recordSet.ownerGroupId))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return a NotAuthorizedError if the user is a test user in a non-test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
 
       val error = leftValue(
         accessValidationTest
-          .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, okZone, None))
+          .canViewRecordSet(auth, "test", RecordType.A, okZone, None))
       error shouldBe a[NotAuthorizedError]
     }
 
     "return access as calculated if the user is a test user in a test zone" in {
-      val mockRecordSet = mock[RecordSet]
       val auth = okAuth.copy(signedInUser = testUser)
       val zone = okZone.copy(isTest = true)
 
       accessValidationTest
-        .canViewRecordSet(auth, mockRecordSet.name, mockRecordSet.typ, zone, None) should be(right)
+        .canViewRecordSet(auth, "test", RecordType.A, zone, None) should be(right)
     }
   }
 
@@ -540,13 +469,12 @@ class AccessValidationsSpec
     }
 
     "return the result of getAccessLevel if the user is support but also an admin" in {
-      val mockRecordSet = mock[RecordSet]
       val supportAuth =
         okAuth.copy(signedInUser = okAuth.signedInUser.copy(isSupport = true))
       val result = accessValidationTest.getAccessLevel(
         supportAuth,
-        mockRecordSet.name,
-        mockRecordSet.typ,
+        "test",
+        RecordType.A,
         okZone,
         None)
       result shouldBe AccessLevel.Delete
@@ -570,7 +498,6 @@ class AccessValidationsSpec
     }
 
     "return the result of getAccessLevel if user is not admin/super" in {
-      val mockRecordSet = mock[RecordSet]
       val userAccess = okUser.copy(id = "Read")
       val userAuth = AuthPrincipal(userAccess, groupIds)
       val userAcl = ACLRule(AccessLevel.Read, userId = Some(userAuth.userId), groupId = None)
@@ -579,8 +506,8 @@ class AccessValidationsSpec
       val result =
         accessValidationTest.getAccessLevel(
           userAuth,
-          mockRecordSet.name,
-          mockRecordSet.typ,
+          "test",
+          RecordType.A,
           zoneIn,
           None)
       result shouldBe AccessLevel.Read

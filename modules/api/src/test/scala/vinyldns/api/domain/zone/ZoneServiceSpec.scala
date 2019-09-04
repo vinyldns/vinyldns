@@ -74,7 +74,7 @@ class ZoneServiceSpec
     TestConnectionValidator,
     mockMessageQueue,
     new ZoneValidations(1000),
-    AccessValidations)
+    new AccessValidations())
 
   private val createZoneAuthorized = CreateZoneInput(
     "ok.zone.recordsets.",
