@@ -26,7 +26,8 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
 
-object AccessValidations extends AccessValidationAlgebra {
+class AccessValidations(globalAcls: SystemGlobalAcls = SystemGlobalAcls(List.empty))
+    extends AccessValidationAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
@@ -190,6 +191,8 @@ object AccessValidations extends AccessValidationAlgebra {
     case support if support.isSystemAdmin =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
+    case globalAclUser if globalAcls.hasGlobalAcl(globalAclUser, recordName, zone) =>
+      AccessLevel.Delete
     case _ => getAccessFromAcl(auth, recordName, recordType, zone)
   }
 

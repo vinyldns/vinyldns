@@ -87,6 +87,7 @@ object Boot extends App {
       restHost <- IO(VinylDNSConfig.restConfig.getString("host"))
       restPort <- IO(VinylDNSConfig.restConfig.getInt("port"))
       batchChangeLimit <- IO(VinylDNSConfig.vinyldnsConfig.getInt("batch-change-limit"))
+      globalAcls <- VinylDNSConfig.globalAcl
       syncDelay <- IO(VinylDNSConfig.vinyldnsConfig.getInt("sync-delay"))
       msgsPerPoll <- IO.fromEither(MessageCount(queueConfig.messagesPerPoll))
       healthCheckTimeout <- VinylDNSConfig.healthCheckTimeout
@@ -110,23 +111,25 @@ object Boot extends App {
         )
         .start
     } yield {
+      val batchAccessValidations = new AccessValidations(globalAcls)
+      val recordAccessValidations = new AccessValidations()
       val zoneValidations = new ZoneValidations(syncDelay)
       val batchChangeValidations = new BatchChangeValidations(
         batchChangeLimit,
-        AccessValidations,
+        batchAccessValidations,
         VinylDNSConfig.multiRecordBatchUpdateEnabled,
         VinylDNSConfig.scheduledChangesEnabled
       )
       val membershipService = MembershipService(repositories)
       val connectionValidator =
         new ZoneConnectionValidator(connections)
-      val recordSetService = RecordSetService(repositories, messageQueue, AccessValidations)
+      val recordSetService = RecordSetService(repositories, messageQueue, recordAccessValidations)
       val zoneService = ZoneService(
         repositories,
         connectionValidator,
         messageQueue,
         zoneValidations,
-        AccessValidations)
+        recordAccessValidations)
       val healthService = new HealthService(
         messageQueue.healthCheck :: connectionValidator.healthCheck(healthCheckTimeout) ::
           loaderResponse.healthChecks)
