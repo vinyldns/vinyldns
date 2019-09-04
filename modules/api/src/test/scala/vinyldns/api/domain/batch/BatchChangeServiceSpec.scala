@@ -28,7 +28,7 @@ import vinyldns.api._
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.api.domain.{AccessValidations, _}
+import vinyldns.api.domain._
 import vinyldns.api.repository.{
   EmptyGroupRepo,
   EmptyRecordSetRepo,
@@ -47,6 +47,7 @@ import vinyldns.core.domain.zone.Zone
 import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import vinyldns.api.domain.access.AccessValidations
 
 import scala.concurrent.ExecutionContext
 

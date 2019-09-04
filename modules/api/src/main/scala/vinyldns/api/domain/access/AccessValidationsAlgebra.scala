@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain
+package vinyldns.api.domain.access
 
-import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.Zone
 

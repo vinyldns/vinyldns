@@ -22,8 +22,9 @@ import org.joda.time.DateTime
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{EitherValues, Matchers, PropSpec}
+import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.batch.BatchTransformations._
-import vinyldns.api.domain.{AccessValidations, batch, _}
+import vinyldns.api.domain.{DomainValidations, batch}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._

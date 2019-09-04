@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain
+package vinyldns.api.domain.access
 
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.api.VinylDNSConfig
+import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
 
 object AccessValidations extends AccessValidationAlgebra {
 

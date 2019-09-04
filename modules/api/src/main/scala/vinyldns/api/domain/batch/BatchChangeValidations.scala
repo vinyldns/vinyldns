@@ -20,12 +20,12 @@ import cats.data._
 import cats.implicits._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
+import vinyldns.api.domain.access.AccessValidationAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.record._
-import vinyldns.api.domain.AccessValidationAlgebra
 import vinyldns.core.domain._
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey}
 import vinyldns.core.domain.membership.Group

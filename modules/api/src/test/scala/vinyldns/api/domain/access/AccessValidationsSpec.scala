@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package vinyldns.api.domain
+package vinyldns.api.domain.access
 
 import cats.scalatest.EitherMatchers
 import org.joda.time.DateTime
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
-import vinyldns.core.domain.record._
-import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetListInfo}
 import vinyldns.api.ResultHelpers
+import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.TestMembershipData._
-import vinyldns.core.TestZoneData._
 import vinyldns.core.TestRecordSetData._
+import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
+import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneACL}
 
 class AccessValidationsSpec
