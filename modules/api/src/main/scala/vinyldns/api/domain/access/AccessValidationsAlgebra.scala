@@ -18,11 +18,12 @@ package vinyldns.api.domain.access
 
 import vinyldns.api.domain.zone.{RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.Zone
 
-trait AccessValidationAlgebra {
+trait AccessValidationsAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
 
@@ -35,28 +36,32 @@ trait AccessValidationAlgebra {
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
-      zone: Zone): Either[Throwable, Unit]
+      zone: Zone,
+      recordData: List[RecordData] = List.empty): Either[Throwable, Unit]
 
   def canUpdateRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      recordOwnerGroupId: Option[String]): Either[Throwable, Unit]
+      recordOwnerGroupId: Option[String],
+      newRecordData: List[RecordData] = List.empty): Either[Throwable, Unit]
 
   def canDeleteRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      recordOwnerGroupId: Option[String]): Either[Throwable, Unit]
+      recordOwnerGroupId: Option[String],
+      existingRecordData: List[RecordData] = List.empty): Either[Throwable, Unit]
 
   def canViewRecordSet(
       auth: AuthPrincipal,
       recordName: String,
       recordType: RecordType,
       zone: Zone,
-      recordOwnerGroupId: Option[String]): Either[Throwable, Unit]
+      recordOwnerGroupId: Option[String],
+      recordData: List[RecordData] = List.empty): Either[Throwable, Unit]
 
   def getListAccessLevels(
       auth: AuthPrincipal,

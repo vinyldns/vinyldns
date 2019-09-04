@@ -20,7 +20,7 @@ import cats.data._
 import cats.implicits._
 import vinyldns.api.VinylDNSConfig
 import vinyldns.api.domain.DomainValidations._
-import vinyldns.api.domain.access.AccessValidationAlgebra
+import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
@@ -68,7 +68,7 @@ trait BatchChangeValidationsAlgebra {
 
 class BatchChangeValidations(
     changeLimit: Int,
-    accessValidation: AccessValidationAlgebra,
+    accessValidation: AccessValidationsAlgebra,
     multiRecordEnabled: Boolean = false,
     scheduledChangesEnabled: Boolean = false)
     extends BatchChangeValidationsAlgebra {
@@ -284,10 +284,9 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean): SingleValidation[ChangeForValidation] = {
     val validations =
-      groupedChanges.getExistingRecordSet(
-        RecordKey(change.zone.id, change.recordName, change.inputChange.typ)) match {
+      groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
-          userCanDeleteRecordSet(change, auth, rs.ownerGroupId) |+|
+          userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
         case None => RecordDoesNotExist(change.inputChange.inputName).invalidNel
@@ -311,7 +310,7 @@ class BatchChangeValidations(
     val commonValidations: SingleValidation[Unit] = {
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
-          userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
+          userCanUpdateRecordSet(change, auth, rs.ownerGroupId, List(change.inputChange.record)) |+|
             ownerGroupProvidedIfNeeded(
               change,
               groupedChanges.existingRecordSets
@@ -335,10 +334,10 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean): SingleValidation[ChangeForValidation] = {
     val validations =
-      groupedChanges.getExistingRecordSet(
-        RecordKey(change.zone.id, change.recordName, change.inputChange.typ)) match {
+      groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
-          userCanUpdateRecordSet(change, auth, rs.ownerGroupId) |+|
+          val adds = groupedChanges.getProposedAdds(change.recordKey).toList
+          userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
             existingRecordSetIsNotMulti(change, rs) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
@@ -452,23 +451,30 @@ class BatchChangeValidations(
   }
 
   def userCanAddRecordSet(
-      input: ChangeForValidation,
+      input: AddChangeForValidation,
       authPrincipal: AuthPrincipal): SingleValidation[Unit] = {
-    val result = canAddRecordSet(authPrincipal, input.recordName, input.inputChange.typ, input.zone)
+    val result = canAddRecordSet(
+      authPrincipal,
+      input.recordName,
+      input.inputChange.typ,
+      input.zone,
+      List(input.inputChange.record))
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }
 
   def userCanUpdateRecordSet(
       input: ChangeForValidation,
       authPrincipal: AuthPrincipal,
-      ownerGroupId: Option[String]): SingleValidation[Unit] = {
+      ownerGroupId: Option[String],
+      addRecords: List[RecordData]): SingleValidation[Unit] = {
     val result =
       canUpdateRecordSet(
         authPrincipal,
         input.recordName,
         input.inputChange.typ,
         input.zone,
-        ownerGroupId
+        ownerGroupId,
+        addRecords.toList
       )
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }
@@ -476,14 +482,17 @@ class BatchChangeValidations(
   def userCanDeleteRecordSet(
       input: ChangeForValidation,
       authPrincipal: AuthPrincipal,
-      ownerGroupId: Option[String]): SingleValidation[Unit] = {
+      ownerGroupId: Option[String],
+      existingRecords: List[RecordData]): SingleValidation[Unit] = {
     val result =
       canDeleteRecordSet(
         authPrincipal,
         input.recordName,
         input.inputChange.typ,
         input.zone,
-        ownerGroupId)
+        ownerGroupId,
+        existingRecords
+      )
     result.leftMap(_ => UserIsNotAuthorized(authPrincipal.signedInUser.userName)).toValidatedNel
   }
 

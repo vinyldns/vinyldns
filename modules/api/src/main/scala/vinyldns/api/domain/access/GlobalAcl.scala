@@ -19,6 +19,7 @@ package vinyldns.api.domain.access
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.DomainHelpers
 import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.record.{PTRData, RecordData}
 import vinyldns.core.domain.zone.Zone
 
 import scala.util.matching.Regex
@@ -38,11 +39,21 @@ final case class SystemGlobalAcls(acls: List[GlobalAcl]) {
     }
   }
 
-  def hasGlobalAcl(authPrincipal: AuthPrincipal, record: String, zone: Zone): Boolean = {
+  def hasGlobalAcl(authPrincipal: AuthPrincipal, fqdn: String): Boolean = {
     val regexList = authPrincipal.memberGroupIds.flatMap(aclMap.getOrElse(_, List.empty)).toList
-    val fqdn =
-      if (record.endsWith(".")) record.toLowerCase
-      else DomainHelpers.ensureTrailingDot(s"$record.${zone.name}".toLowerCase)
-    ZoneRecordValidations.isStringInRegexList(regexList, fqdn)
+    val normalizedFqdn = DomainHelpers.ensureTrailingDot(fqdn.toLowerCase)
+    ZoneRecordValidations.isStringInRegexList(regexList, normalizedFqdn)
   }
+
+  def hasGlobalAcl(authPrincipal: AuthPrincipal, recordName: String, zone: Zone): Boolean = {
+    val fqdn = if (recordName.endsWith(".")) recordName else s"$recordName.${zone.name}"
+    hasGlobalAcl(authPrincipal, fqdn)
+  }
+
+  def hasGlobalReverseAcl(authPrincipal: AuthPrincipal, records: List[RecordData]): Boolean =
+    records
+      .collect {
+        case p: PTRData => p.ptrdname
+      }
+      .exists(hasGlobalAcl(authPrincipal, _))
 }
