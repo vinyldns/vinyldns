@@ -75,6 +75,11 @@ class AccessValidationsSpec
     ACLRule(AccessLevel.Delete, userId = Some(userAuthDelete.userId), groupId = None)
   private val zoneInDelete = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAclDelete)))
 
+  private val userAccessGlobalAcl = okUser.copy(id = "GlobalACL")
+  private val userAuthGlobalAcl = AuthPrincipal(userAccessGlobalAcl, groupIds)
+  private val globalAcl = GlobalAcl(List(okGroup.id), List(".*foo.*"))
+  private val globalAclTest = new AccessValidations(GlobalAcls(List(globalAcl)))
+
   private val testUser = User("test", "test", "test", isTest = true)
 
   "canSeeZone" should {
@@ -194,6 +199,33 @@ class AccessValidationsSpec
         RecordType.NS,
         zoneInWrite) should be(right)
     }
+
+    "return true if recordset matches the global ACL" in {
+      globalAclTest.canAddRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.A,
+        okZone.copy(name = "foo.comcast.com")) should be(right)
+    }
+
+    "return false if the record set does not match the global ACL" in {
+      val auth = userAuthGlobalAcl.copy(memberGroupIds = Seq("not-authorized"))
+
+      val error = leftValue(
+        globalAclTest
+          .canAddRecordSet(auth, "test-foo", RecordType.A, okZone))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if the record set is a PTR and the ptrdname matches the global ACL" in {
+      globalAclTest.canAddRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.PTR,
+        zoneIp4,
+        List(PTRData("test.foo.comcast.net"))
+      ) should be(right)
+    }
   }
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
@@ -272,6 +304,35 @@ class AccessValidationsSpec
       accessValidationTest
         .canUpdateRecordSet(auth, "test", RecordType.A, zone, None) should be(right)
     }
+
+    "return true if recordset matches the global ACL" in {
+      globalAclTest.canUpdateRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.A,
+        okZone.copy(name = "foo.comcast.com"),
+        None) should be(right)
+    }
+
+    "return false if the record set does not match the global ACL" in {
+      val auth = userAuthGlobalAcl.copy(memberGroupIds = Seq("not-authorized"))
+
+      val error = leftValue(
+        globalAclTest
+          .canUpdateRecordSet(auth, "test-foo", RecordType.A, okZone, None))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if the record set is a PTR and the ptrdname matches the global ACL" in {
+      globalAclTest.canUpdateRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.PTR,
+        zoneIp4,
+        None,
+        List(PTRData("test.foo.comcast.net"))
+      ) should be(right)
+    }
   }
 
   "canDeleteRecordSet" should {
@@ -320,6 +381,35 @@ class AccessValidationsSpec
 
       accessValidationTest
         .canDeleteRecordSet(auth, "test", RecordType.A, zone, None) should be(right)
+    }
+
+    "return true if recordset matches the global ACL" in {
+      globalAclTest.canDeleteRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.A,
+        okZone.copy(name = "foo.comcast.com"),
+        None) should be(right)
+    }
+
+    "return false if the record set does not match the global ACL" in {
+      val auth = userAuthGlobalAcl.copy(memberGroupIds = Seq("not-authorized"))
+
+      val error = leftValue(
+        globalAclTest
+          .canDeleteRecordSet(auth, "test-foo", RecordType.A, okZone, None))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if the record set is a PTR and the ptrdname matches the global ACL" in {
+      globalAclTest.canDeleteRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.PTR,
+        zoneIp4,
+        None,
+        List(PTRData("test.foo.comcast.net"))
+      ) should be(right)
     }
   }
 
@@ -387,6 +477,35 @@ class AccessValidationsSpec
 
       accessValidationTest
         .canViewRecordSet(auth, "test", RecordType.A, zone, None) should be(right)
+    }
+
+    "return true if recordset matches the global ACL" in {
+      globalAclTest.canViewRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.A,
+        okZone.copy(name = "foo.comcast.com"),
+        None) should be(right)
+    }
+
+    "return false if the record set does not match the global ACL" in {
+      val auth = userAuthGlobalAcl.copy(memberGroupIds = Seq("not-authorized"))
+
+      val error = leftValue(
+        globalAclTest
+          .canViewRecordSet(auth, "test-foo", RecordType.A, okZone, None))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if the record set is a PTR and the ptrdname matches the global ACL" in {
+      globalAclTest.canViewRecordSet(
+        userAuthGlobalAcl,
+        "someRecordName",
+        RecordType.PTR,
+        zoneIp4,
+        None,
+        List(PTRData("test.foo.comcast.net"))
+      ) should be(right)
     }
   }
 
