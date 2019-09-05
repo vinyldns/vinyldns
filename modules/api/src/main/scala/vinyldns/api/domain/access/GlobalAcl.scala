@@ -68,5 +68,6 @@ final case class GlobalAcls(acls: List[GlobalAcl]) {
         val fqdn = if (recordName.endsWith(".")) recordName else s"$recordName.${zone.name}"
         isAuthorized(authPrincipal, fqdn)
     }
+    //}
   }
 }
