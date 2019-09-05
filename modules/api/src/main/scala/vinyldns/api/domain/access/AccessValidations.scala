@@ -203,10 +203,7 @@ class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
       if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
     case globalAclUser
-        if recordType == RecordType.PTR && globalAcls
-          .hasGlobalReverseAcl(globalAclUser, recordData) =>
-      AccessLevel.Delete
-    case globalAclUser if globalAcls.hasGlobalAcl(globalAclUser, recordName, zone) =>
+        if globalAcls.isAuthorized(globalAclUser, recordName, recordType, zone, recordData) =>
       AccessLevel.Delete
     case _ => getAccessFromAcl(auth, recordName, recordType, zone)
   }

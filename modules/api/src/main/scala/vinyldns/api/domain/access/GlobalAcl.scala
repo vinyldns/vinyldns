@@ -19,7 +19,8 @@ package vinyldns.api.domain.access
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.DomainHelpers
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.record.{PTRData, RecordData}
+import vinyldns.core.domain.record.RecordType.RecordType
+import vinyldns.core.domain.record.{PTRData, RecordData, RecordType}
 import vinyldns.core.domain.zone.Zone
 
 import scala.util.matching.Regex
@@ -41,21 +42,29 @@ final case class GlobalAcls(acls: List[GlobalAcl]) {
     }
   }
 
-  def hasGlobalAcl(authPrincipal: AuthPrincipal, fqdn: String): Boolean = {
-    val regexList = authPrincipal.memberGroupIds.flatMap(aclMap.getOrElse(_, List.empty)).toList
-    val normalizedFqdn = DomainHelpers.ensureTrailingDot(fqdn.toLowerCase)
-    ZoneRecordValidations.isStringInRegexList(regexList, normalizedFqdn)
-  }
+  def isAuthorized(
+      authPrincipal: AuthPrincipal,
+      recordName: String,
+      recordType: RecordType,
+      zone: Zone,
+      recordData: List[RecordData] = List.empty): Boolean = {
 
-  def hasGlobalAcl(authPrincipal: AuthPrincipal, recordName: String, zone: Zone): Boolean = {
-    val fqdn = if (recordName.endsWith(".")) recordName else s"$recordName.${zone.name}"
-    hasGlobalAcl(authPrincipal, fqdn)
-  }
+    def isAuthorized(authPrincipal: AuthPrincipal, fqdn: String): Boolean = {
+      val regexList = authPrincipal.memberGroupIds.flatMap(aclMap.getOrElse(_, List.empty)).toList
+      val normalizedFqdn = DomainHelpers.ensureTrailingDot(fqdn.toLowerCase)
+      ZoneRecordValidations.isStringInRegexList(regexList, normalizedFqdn)
+    }
 
-  def hasGlobalReverseAcl(authPrincipal: AuthPrincipal, records: List[RecordData]): Boolean =
-    records
-      .collect {
-        case p: PTRData => p.ptrdname
-      }
-      .exists(hasGlobalAcl(authPrincipal, _))
+    recordType match {
+      case RecordType.PTR =>
+        recordData
+          .collect {
+            case p: PTRData => p.ptrdname
+          }
+          .exists(isAuthorized(authPrincipal, _))
+      case _ =>
+        val fqdn = if (recordName.endsWith(".")) recordName else s"$recordName.${zone.name}"
+        isAuthorized(authPrincipal, fqdn)
+    }
+  }
 }
