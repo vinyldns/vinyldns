@@ -25,7 +25,7 @@ import vinyldns.api.crypto.Crypto
 import com.comcast.ip4s._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.EnumerationReader._
-import vinyldns.api.domain.access.{GlobalAcl, SystemGlobalAcls}
+import vinyldns.api.domain.access.{GlobalAcl, GlobalAcls}
 import vinyldns.api.domain.batch.V6DiscoveryNibbleBoundaries
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import vinyldns.core.domain.DomainHelpers
@@ -136,8 +136,8 @@ object VinylDNSConfig {
     .as[Option[Boolean]]("manual-batch-review-enabled")
     .getOrElse(false)
 
-  lazy val globalAcl: IO[SystemGlobalAcls] =
-    loadConfigF[IO, List[GlobalAcl]](vinyldnsConfig, "global-acl-rules").map(SystemGlobalAcls)
+  lazy val globalAcl: IO[GlobalAcls] =
+    loadConfigF[IO, List[GlobalAcl]](vinyldnsConfig, "global-acl-rules").map(GlobalAcls)
 
   // defines nibble boundary for ipv6 zone discovery
   // (min of 2, max of 3 means zones of form X.X.ip6-arpa. and X.X.X.ip6-arpa. will be discovered)

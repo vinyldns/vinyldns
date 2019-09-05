@@ -26,7 +26,7 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
 
-class AccessValidations(globalAcls: SystemGlobalAcls = SystemGlobalAcls(List.empty))
+class AccessValidations(globalAcls: GlobalAcls = GlobalAcls(List.empty))
     extends AccessValidationsAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =

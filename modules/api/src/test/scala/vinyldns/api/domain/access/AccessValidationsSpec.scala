@@ -471,12 +471,8 @@ class AccessValidationsSpec
     "return the result of getAccessLevel if the user is support but also an admin" in {
       val supportAuth =
         okAuth.copy(signedInUser = okAuth.signedInUser.copy(isSupport = true))
-      val result = accessValidationTest.getAccessLevel(
-        supportAuth,
-        "test",
-        RecordType.A,
-        okZone,
-        None)
+      val result =
+        accessValidationTest.getAccessLevel(supportAuth, "test", RecordType.A, okZone, None)
       result shouldBe AccessLevel.Delete
     }
 
@@ -504,12 +500,7 @@ class AccessValidationsSpec
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(userAcl)))
 
       val result =
-        accessValidationTest.getAccessLevel(
-          userAuth,
-          "test",
-          RecordType.A,
-          zoneIn,
-          None)
+        accessValidationTest.getAccessLevel(userAuth, "test", RecordType.A, zoneIn, None)
       result shouldBe AccessLevel.Read
     }
   }

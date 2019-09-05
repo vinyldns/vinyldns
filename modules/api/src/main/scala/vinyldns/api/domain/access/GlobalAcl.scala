@@ -26,8 +26,10 @@ import scala.util.matching.Regex
 
 final case class GlobalAcl(groupIds: List[String], fqdnRegexList: List[String])
 
-final case class SystemGlobalAcls(acls: List[GlobalAcl]) {
-  val aclMap: Map[String, List[Regex]] = {
+final case class GlobalAcls(acls: List[GlobalAcl]) {
+
+  // Create a map of Group ID -> Regexes valid for that group id
+  private val aclMap: Map[String, List[Regex]] = {
     val tuples = for {
       acl <- acls
       groupId <- acl.groupIds
