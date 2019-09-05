@@ -33,7 +33,7 @@ class GlobalAclSpec
   import vinyldns.core.TestZoneData._
 
   private val globalAcls = GlobalAcls(
-    List(GlobalAcl(List(okGroup.id, dummyGroup.id), List(".*foo.*", ".*bar.com"))))
+    List(GlobalAcl(List(okGroup.id, dummyGroup.id), List(".*foo.*", ".*bar.com."))))
 
   "isAuthorized" should {
     "return false if the acl list is empty" in {
@@ -47,6 +47,22 @@ class GlobalAclSpec
     }
     "normalizes the record name before testing" in {
       globalAcls.isAuthorized(okAuth, "foo.", RecordType.A, okZone, Nil) shouldBe true
+    }
+    "return true for a PTR record when all PTR records match an acl" in {
+      globalAcls.isAuthorized(
+        okAuth,
+        "foo",
+        RecordType.PTR,
+        zoneIp4,
+        List(PTRData("foo.com"), PTRData("bar.com"))) shouldBe true
+    }
+    "return false for a PTR record if one of the PTR records does not match an acl" in {
+      globalAcls.isAuthorized(
+        okAuth,
+        "foo",
+        RecordType.PTR,
+        zoneIp4,
+        List(PTRData("foo.com"), PTRData("blah.net"))) shouldBe false
     }
   }
 }

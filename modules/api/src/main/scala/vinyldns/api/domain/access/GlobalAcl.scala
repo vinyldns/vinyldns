@@ -61,7 +61,7 @@ final case class GlobalAcls(acls: List[GlobalAcl]) {
           .collect {
             case p: PTRData => p.ptrdname
           }
-          .exists(isAuthorized(authPrincipal, _))
+          .forall(isAuthorized(authPrincipal, _))
       case _ =>
         val fqdn = if (recordName.endsWith(".")) recordName else s"$recordName.${zone.name}"
         isAuthorized(authPrincipal, fqdn)
