@@ -182,6 +182,13 @@ object TestDataLoader {
     isTest = true
   )
 
+  final val globalACLGroup = Group(
+    name = "globalACLGroup",
+    id = "global-acl-group-id",
+    email = "email",
+    memberIds = Set(okUser.id, dummyUser.id),
+    adminUserIds = Set(okUser.id, dummyUser.id))
+
   // NOTE: this is intentionally not a flagged test zone for validating our test users cannot access regular zone info
   // All other test zones should be flagged as test
   final val nonTestSharedZone = Zone(
@@ -221,9 +228,13 @@ object TestDataLoader {
       }
       _ <- toDelete.map(zoneRepo.save).parSequence
       _ <- groupRepo.save(sharedZoneGroup)
+      _ <- groupRepo.save(globalACLGroup)
       _ <- membershipRepo.addMembers(
         groupId = "shared-zone-group",
         memberUserIds = Set(sharedZoneUser.id))
+      _ <- membershipRepo.addMembers(
+        groupId = "global-acl-group-id",
+        memberUserIds = Set(okUser.id, dummyUser.id))
       _ <- zoneRepo.save(sharedZone)
       _ <- zoneRepo.save(nonTestSharedZone)
     } yield ()

@@ -3004,7 +3004,7 @@ def test_create_batch_delete_record_for_unassociated_user_not_in_owner_group_fai
     Test delete change in batch for a record in a shared zone for an unassociated user not belonging to the record owner group fails
     """
     shared_client = shared_zone_test_context.shared_zone_vinyldns_client
-    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    unassociated_client = shared_zone_test_context.unassociated_client
     shared_zone = shared_zone_test_context.shared_zone
     shared_group = shared_zone_test_context.shared_record_group
     create_rs = None
@@ -3021,9 +3021,9 @@ def test_create_batch_delete_record_for_unassociated_user_not_in_owner_group_fai
         create_rs = shared_client.create_recordset(shared_delete, status=202)
         shared_client.wait_until_recordset_change_status(create_rs, 'Complete')
 
-        response = dummy_client.create_batch_change(batch_change_input, status=400)
+        response = unassociated_client.create_batch_change(batch_change_input, status=400)
 
-        assert_failed_change_in_error_response(response[0], input_name="shared-delete.shared.", change_type="DeleteRecordSet", error_messages=['User "dummy" is not authorized.'])
+        assert_failed_change_in_error_response(response[0], input_name="shared-delete.shared.", change_type="DeleteRecordSet", error_messages=['User "list-group-user" is not authorized.'])
 
     finally:
         if create_rs:
@@ -3066,7 +3066,8 @@ def test_create_batch_update_record_in_shared_zone_for_unassociated_user_in_owne
     shared_record_group = shared_zone_test_context.shared_record_group
     create_rs = None
 
-    shared_update = get_recordset_json(shared_zone, "mx", "MX", [{"preference": 1, "exchange": "foo.bar."}], 200, shared_record_group['id'])
+    a_record = get_recordset_json(shared_zone, "mx", "MX", [{"preference": 1, "exchange": "foo.bar."}], 200, shared_record_group['id'])
+    ptr_record = get_recordset_json()
 
     batch_change_input = {
         "changes": [
@@ -3091,6 +3092,58 @@ def test_create_batch_update_record_in_shared_zone_for_unassociated_user_in_owne
         if create_rs:
             delete_rs = shared_client.delete_recordset(shared_zone['id'], create_rs['recordSet']['id'], status=202)
             shared_client.wait_until_recordset_change_status(delete_rs, 'Complete')
+
+
+def test_create_batch_with_global_acl_rule_applied_succeeds(shared_zone_test_context):
+    """
+    Test that a user with a relevant global acl rule can update forward and reverse records, regardless of their current ownership
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    shared_zone = shared_zone_test_context.shared_zone
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    classless_base_zone = shared_zone_test_context.classless_base_zone
+    create_a_rs = None
+    create_ptr_rs = None
+
+    a_record = get_recordset_json(shared_zone, "global-a", "A", [{"address": '1.1.1.1'}], 200, "shared-zone-group")
+    ptr_record = get_recordset_json(classless_base_zone, "44", "PTR", [{'ptrdname': 'foo.'}], 200, None)
+
+    batch_change_input = {
+        "changes": [
+            get_change_A_AAAA_json("global-a.shared.", record_type="A", ttl=200, address="192.0.2.44"),
+            get_change_PTR_json("192.0.2.44", ptrdname="global-a.shared."),
+            get_change_A_AAAA_json("global-a.shared.", record_type="A", change_type="DeleteRecordSet"),
+            get_change_PTR_json("192.0.2.44", change_type="DeleteRecordSet")
+        ]
+    }
+
+    try:
+        create_a_rs = shared_client.create_recordset(a_record, status=202)
+        shared_client.wait_until_recordset_change_status(create_a_rs, 'Complete')
+
+        create_ptr_rs = ok_client.create_recordset(ptr_record, status=202)
+        ok_client.wait_until_recordset_change_status(create_ptr_rs, 'Complete')
+
+        result = dummy_client.create_batch_change(batch_change_input, status=202)
+        completed_batch = dummy_client.wait_until_batch_change_completed(result)
+
+        assert_change_success_response_values(completed_batch['changes'], zone=shared_zone, index=0, record_name="global-a", ttl=200,
+                                              record_type="A", input_name="global-a.shared.", record_data="192.0.2.44")
+        assert_change_success_response_values(completed_batch['changes'], zone=classless_base_zone, index=1, record_name="44",
+                                              record_type="PTR", input_name="192.0.2.44", record_data= "global-a.shared.")
+        assert_change_success_response_values(completed_batch['changes'], zone=shared_zone, index=2, record_name="global-a", ttl=200,
+                                              record_type="A", input_name="global-a.shared.", record_data=None, change_type="DeleteRecordSet")
+        assert_change_success_response_values(completed_batch['changes'], zone=classless_base_zone, index=3, record_name="44",
+                                              record_type="PTR", input_name="192.0.2.44", record_data=None, change_type="DeleteRecordSet")
+
+    finally:
+        if create_a_rs:
+            delete_a_rs = shared_client.delete_recordset(shared_zone['id'], create_a_rs['recordSet']['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_a_rs, 'Complete')
+        if create_ptr_rs:
+            delete_ptr_rs = ok_client.delete_recordset(classless_base_zone['id'], create_ptr_rs['recordSet']['id'], status=202)
+            shared_client.wait_until_recordset_change_status(delete_ptr_rs, 'Complete')
 
 
 @pytest.mark.skip_production
@@ -3193,7 +3246,7 @@ def test_create_batch_duplicates_update_check(shared_zone_test_context):
 
 
 @pytest.mark.manual_batch_review
-def test_zone_name_requiring_manual_review(shared_zone_test_context):
+def test_create_batch_with_zone_name_requiring_manual_review(shared_zone_test_context):
     """
     Confirm that individual changes matching zone names requiring review get correctly flagged for manual review
     """

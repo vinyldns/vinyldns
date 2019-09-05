@@ -13,6 +13,7 @@ class SharedZoneTestContext(object):
         self.dummy_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'dummyAccessKey', 'dummySecretKey')
         self.shared_zone_vinyldns_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'sharedZoneUserAccessKey', 'sharedZoneUserSecretKey')
         self.support_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'supportUserAccessKey', 'supportUserSecretKey')
+        self.unassociated_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, 'listGroupAccessKey', 'listGroupSecretKey')
 
         self.dummy_group = None
         self.ok_group = None
@@ -365,8 +366,8 @@ class SharedZoneTestContext(object):
         """
         clear_zones(self.dummy_vinyldns_client)
         clear_zones(self.ok_vinyldns_client)
-        clear_groups(self.dummy_vinyldns_client)
-        clear_groups(self.ok_vinyldns_client)
+        clear_groups(self.dummy_vinyldns_client, "global-acl-group-id")
+        clear_groups(self.ok_vinyldns_client, "global-acl-group-id")
 
     def confirm_member_in_group(self, client, group):
         retries = 2
