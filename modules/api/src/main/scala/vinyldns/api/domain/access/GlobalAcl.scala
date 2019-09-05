@@ -57,14 +57,17 @@ final case class GlobalAcls(acls: List[GlobalAcl]) {
 
     recordType match {
       case RecordType.PTR =>
-        recordData
+        val ptrs = recordData
           .collect {
             case p: PTRData => p.ptrdname
           }
-          .forall(isAuthorized(authPrincipal, _))
+
+        // forall returns true if the list is empty
+        ptrs.nonEmpty && ptrs.forall(isAuthorized(authPrincipal, _))
       case _ =>
         val fqdn = if (recordName.endsWith(".")) recordName else s"$recordName.${zone.name}"
         isAuthorized(authPrincipal, fqdn)
     }
+    //}
   }
 }

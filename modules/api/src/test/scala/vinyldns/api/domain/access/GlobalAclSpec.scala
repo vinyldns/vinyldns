@@ -64,5 +64,14 @@ class GlobalAclSpec
         zoneIp4,
         List(PTRData("foo.com"), PTRData("blah.net"))) shouldBe false
     }
+    "return false for a PTR record if the record data is empty" in {
+      globalAcls.isAuthorized(okAuth, "foo", RecordType.PTR, zoneIp4, Nil) shouldBe false
+    }
+    "return false for a PTR record if the ACL is empty" in {
+      GlobalAcls(Nil).isAuthorized(okAuth, "foo", RecordType.PTR, zoneIp4, List(PTRData("foo.com"))) shouldBe false
+    }
+    "return false for a PTR record if the ACL is empty and the record data is empty" in {
+      GlobalAcls(Nil).isAuthorized(okAuth, "foo", RecordType.PTR, zoneIp4, Nil) shouldBe false
+    }
   }
 }
