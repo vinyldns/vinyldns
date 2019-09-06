@@ -163,12 +163,12 @@ class BatchChangeService(
         batchChange,
         validationOutput.validatedChanges,
         reviewInfo)
-      _ <- convertOrSave(
+      serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
         validationOutput.groupedChanges.existingRecordSets,
         batchChange.ownerGroupId)
-      response <- buildResponseForApprover(changeForConversion).toBatchResult
+      response <- buildResponseForApprover(serviceCompleteBatch).toBatchResult
     } yield response
 
   def cancelBatchChange(
@@ -486,6 +486,7 @@ class BatchChangeService(
     case PendingReview if manualReviewEnabled =>
       // save the change, will need to return to it later on approval
       batchChangeRepo.save(batchChange).toBatchResult
+    // TODO: handle PendingReview if manualReviewEnabled is false
     case _ =>
       // this should not be called with a rejected change (or if manual review is off)!
       logger.error(
