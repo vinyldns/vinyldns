@@ -66,7 +66,7 @@ trait BatchChangeValidationsAlgebra {
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit]
 
-  def validatePendingBatchChangeEdit(
+  def validateScheduledBatchChangeEdit(
       batchChange: BatchChange,
       scheduledTime: Option[DateTime],
       authPrincipal: AuthPrincipal,
@@ -118,7 +118,8 @@ class BatchChangeValidations(
       case (None, _) => ().validNel
       case (Some(groupId), None) => GroupDoesNotExist(groupId).invalidNel
       case (Some(groupId), Some(_)) =>
-        if (authPrincipal.isGroupMember(groupId) || authPrincipal.isSuper) ().validNel
+        if (authPrincipal.isGroupMember(groupId) || authPrincipal.isSystemAdmin)
+          ().validNel
         else NotAMemberOfOwnerGroup(groupId, authPrincipal.signedInUser.userName).invalidNel
     }
 
@@ -141,19 +142,19 @@ class BatchChangeValidations(
   def validateBatchChangeCancellation(
       batchChange: BatchChange,
       authPrincipal: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
-    validateBatchChangePendingReview(batchChange, "cancelled") |+| validateCreatorCancellation(
+    validateBatchChangePendingReview(batchChange, "cancelled") |+| validateCreator(
       batchChange,
       authPrincipal)
 
-  def validatePendingBatchChangeEdit(
+  def validateScheduledBatchChangeEdit(
       batchChange: BatchChange,
       scheduledTime: Option[DateTime],
       authPrincipal: AuthPrincipal,
       isTestChange: Boolean): Either[BatchChangeErrorResponse, Unit] =
-    validateBatchChangePendingReview(batchChange, "edited") |+| validateAuthorizedEditor(
-      batchChange,
-      authPrincipal,
-      isTestChange: Boolean) |+| validateScheduledChange(scheduledTime, scheduledChangesEnabled)
+    validateBatchChangePendingReview(batchChange, "edited") |+|
+      validateScheduledTimeExists(batchChange, scheduledChangesEnabled) |+|
+      validateAuthorizedEditor(batchChange, authPrincipal, isTestChange: Boolean) |+|
+      validateScheduledChange(scheduledTime, scheduledChangesEnabled)
 
   def validateBatchChangePendingReview(
       batchChange: BatchChange,
@@ -190,7 +191,7 @@ class BatchChangeValidations(
       case _ => Right(())
     }
 
-  def validateCreatorCancellation(
+  def validateCreator(
       batchChange: BatchChange,
       auth: AuthPrincipal): Either[BatchChangeErrorResponse, Unit] =
     if (batchChange.userId == auth.userId) {
@@ -600,15 +601,24 @@ class BatchChangeValidations(
     }
 
   def validateScheduledChange(
-      scheduledTime: Option[DateTime],
+      proposedScheduledTime: Option[DateTime],
       scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
-    (scheduledChangesEnabled, scheduledTime) match {
+    (scheduledChangesEnabled, proposedScheduledTime) match {
       case (_, None) => Right(())
       case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
       case (true, _) => Left(ScheduledTimeMustBeInFuture)
       case (false, _) => Left(ScheduledChangesDisabled)
     }
 
+  def validateScheduledTimeExists(
+      batchChange: BatchChange,
+      scheduledChangesEnabled: Boolean): Either[BatchChangeErrorResponse, Unit] =
+    (scheduledChangesEnabled, batchChange.scheduledTime) match {
+      case (true, Some(scheduledTime)) if scheduledTime.isAfterNow => Right(())
+      case (_, None) => Left(BatchChangeNotScheduled(batchChange.id))
+      case (true, _) => Left(ScheduledTimeMustBeInFuture)
+      case (false, _) => Left(ScheduledChangesDisabled)
+    }
   def zoneDoesNotRequireManualReview(
       change: ChangeForValidation,
       isApproved: Boolean): SingleValidation[Unit] =

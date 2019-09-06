@@ -16,6 +16,8 @@
 
 package vinyldns.api.domain.batch
 
+import java.util.UUID
+
 import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
@@ -191,13 +193,15 @@ class BatchChangeService(
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
         BatchRequesterNotFound(batchChange.userId, batchChange.userName)
       )
-      _ <- validatePendingBatchChangeEdit(
+      _ <- validateScheduledBatchChangeEdit(
         batchChange,
         batchChangeInput.scheduledTime,
         authPrincipal,
         requesterAuth.isTestUser).toBatchResult
       rescheduledBatchChange <- updateScheduledTime(batchChange, batchChangeInput.scheduledTime)
-    } yield rescheduledBatchChange
+      asInput = BatchChangeInput(rescheduledBatchChange)
+      thing <- applyBatchChange(asInput, authPrincipal, true)
+    } yield thing
 
   def updateScheduledTime(
       batchChange: BatchChange,
@@ -405,7 +409,7 @@ class BatchChangeService(
       val changes = transformed.zip(batchChangeInput.changes).map {
         case (validated, input) =>
           validated match {
-            case Valid(v) => v.asStoredChange()
+            case Valid(v) => v.asStoredChange(input.id)
             case Invalid(e) => input.asNewStoredChange(e)
           }
       }
@@ -417,13 +421,16 @@ class BatchChangeService(
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.PendingReview,
-        scheduledTime = batchChangeInput.scheduledTime
+        scheduledTime = batchChangeInput.scheduledTime,
+        id = batchChangeInput.id.getOrElse(UUID.randomUUID().toString)
       ).asRight
     }
 
     // Respond with a response to process immediately
     def processNowResponse = {
-      val changes = transformed.getValid.map(_.asStoredChange())
+      val changes = transformed.getValid.zip(batchChangeInput.changes).map {
+        case (validated, input) => validated.asStoredChange(input.id)
+      }
       BatchChange(
         auth.userId,
         auth.signedInUser.userName,
@@ -432,7 +439,8 @@ class BatchChangeService(
         changes,
         batchChangeInput.ownerGroupId,
         BatchChangeApprovalStatus.AutoApproved,
-        scheduledTime = batchChangeInput.scheduledTime
+        scheduledTime = batchChangeInput.scheduledTime,
+        id = batchChangeInput.id.getOrElse(UUID.randomUUID().toString)
       ).asRight
     }
 

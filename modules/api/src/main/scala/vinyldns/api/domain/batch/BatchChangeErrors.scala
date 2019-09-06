@@ -61,6 +61,11 @@ final case class BatchRequesterNotFound(userId: String, userName: String)
     s"The requesting user with id $userId and name $userName cannot be found in VinylDNS"
 }
 
+final case class BatchChangeNotScheduled(id: String) extends BatchChangeErrorResponse {
+  def message: String =
+    s"""Batch change $id is not scheduled, so it cannot be updated."""
+}
+
 case object ScheduledChangesDisabled extends BatchChangeErrorResponse {
   val message: String =
     "Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance."
